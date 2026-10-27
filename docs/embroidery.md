@@ -1383,8 +1383,9 @@ the object a person selects (`id`).
   isn't a number is no exit; an exit never makes a plan worse; an exit at the plan's own end changes
   nothing; a fill with narrow parts is no worse toward one, with underlay none too; and
   `tests/golden_no_exit.rs`: with no exit, 220 seeded random paths in every style and fills with
-  narrow parts sew bit for bit what they sewed before exits were planned toward, against hashes
-  recorded with the planner as it was); where shapes
+  narrow parts sew what they sewed before exits were planned toward, each point to a hundredth of
+  a millimetre (finer than any file holds; a coordinate's last bit differs between macOS's and
+  Linux's maths libraries), against hashes recorded with the planner as it was); where shapes
   can start and end and their shortest joins (`plan/ends.rs`, `plan/joins.rs`, and
   `tests/prop_joins.rs`: equal to trying every choice, never worse than the points they start
   from), Nearest Connection on documents (`tests_nearest.rs`, 17 tests, a second run among them, every

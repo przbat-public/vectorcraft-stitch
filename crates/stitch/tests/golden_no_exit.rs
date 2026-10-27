@@ -1,10 +1,11 @@
 //! The planner with no exit point sews what it sewed before entry and exit points were planned
 //! toward (VectorCraft Stitch, 2026-10-26): a seeded corpus of random paths (open and closed
 //! subpaths, curves, crossings, closed shapes) in every style, with every underlay, from a needle
-//! point or from nowhere, and fills with narrow parts, each planned and its stitches hashed. The
-//! hashes in `golden_no_exit.txt` were recorded by this file run against the planner before that
-//! work (commit be4c60d1), so they are an oracle independent of the new code: a change that moves a
-//! stitch with no exit set fails here, on shapes the pinned exports don't hold.
+//! point or from nowhere, and fills with narrow parts, each planned and its stitches hashed, each
+//! point to a hundredth of a millimetre ([`QUANTUM_MM`]). The hashes in `golden_no_exit.txt` were
+//! recorded by this file run against the planner before that work (commit be4c60d1), so they are an
+//! oracle independent of the new code: a change that moves a stitch with no exit set fails here, on
+//! shapes the pinned exports don't hold.
 //!
 //! To record them again (only for a change meant to move stitches with no exit, said in its
 //! commit): `VECTORCRAFT_STITCH_GOLDEN_RECORD=1 cargo test -p vectorcraft-stitch --test golden_no_exit`.
@@ -25,6 +26,12 @@ const FILLS_WITH_COLUMNS: usize = 60;
 
 /// The corpus's seed: any fixed one.
 const SEED: [u8; 32] = *b"vectorcraft-stitch golden corpus";
+
+/// The grid each point is hashed on, millimetres: a tenth of the formats' 0.1 mm, finer than any
+/// machine file holds, and far coarser than the last bit of a coordinate, where two platforms'
+/// maths libraries (`hypot`, `atan2`, `acos`) may differ: hashed by its bits, one case in 220 sewed
+/// otherwise on Linux than on macOS, with the same stitches.
+const QUANTUM_MM: f64 = 0.01;
 
 /// The file the hashes are kept in, beside this one.
 const GOLDEN: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/golden_no_exit.txt");
@@ -85,8 +92,8 @@ fn sew(case: &Case) -> Option<Vec<Stitch>> {
     }
 }
 
-/// FNV-1a over the stitches' bits (each point's x and y, and its command), or over "refused": a
-/// fingerprint that changes with any stitch.
+/// FNV-1a over the stitches (each point's x and y on the [`QUANTUM_MM`] grid, and its command), or
+/// over "refused": a fingerprint that changes with any stitch moved past the grid.
 fn fingerprint(stitches: Option<&[Stitch]>) -> String {
     const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     const PRIME: u64 = 0x0000_0100_0000_01b3;
@@ -100,8 +107,9 @@ fn fingerprint(stitches: Option<&[Stitch]>) -> String {
         None => eat(b"refused"),
         Some(out) => {
             for s in out {
-                eat(&s.x.to_bits().to_le_bytes());
-                eat(&s.y.to_bits().to_le_bytes());
+                // Rounded to the grid; a point beyond i64's range is no stitch the planner makes.
+                eat(&((s.x / QUANTUM_MM).round() as i64).to_le_bytes());
+                eat(&((s.y / QUANTUM_MM).round() as i64).to_le_bytes());
                 eat(&[match s.command {
                     Command::Stitch => 0,
                     Command::Jump => 1,

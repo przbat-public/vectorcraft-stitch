@@ -5970,7 +5970,6 @@ embroidery	The entry and exit points are already the nearest.	Titik masuk dan ke
 	Embroidery Tool	Alat bordir
 	 a point to move it, or an arrow's head to turn the rows  |  	 titik untuk memindahkannya, atau ujung panah untuk memutar baris  |  
 	 a point or an arrow to put it back to Auto  |  	 titik atau panah untuk mengembalikannya ke Otomatis  |  
-	 an object to show its points	 objek untuk menampilkan titiknya
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	lompatan {value} mm
 embroidery	jump {value} mm, cut	lompatan {value} mm, potong
@@ -5981,9 +5980,6 @@ embroidery	Entry Point	Titik masuk
 embroidery	Exit Point	Titik keluar
 embroidery	Auto (nearest where the needle is)	Otomatis (terdekat dengan jarum)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Titik dipindahkan ke tempat terdekat tempat jahitan dapat dimulai atau berakhir.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Batal
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Atur di kanvas
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Seret titik masuk dan keluar bagian ini di kanvas dengan alat bordir.

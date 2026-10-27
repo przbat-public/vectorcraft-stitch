@@ -5649,7 +5649,6 @@ embroidery	The entry and exit points are already the nearest.	入針點和出針
 	Embroidery Tool	刺繡工具
 	 a point to move it, or an arrow's head to turn the rows  |  	點可移動，箭頭尖端可旋轉行  |  
 	 a point or an arrow to put it back to Auto  |  	點或箭頭可恢復為自動  |  
-	 an object to show its points	物件可顯示其點
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	跳針 {value} mm
 embroidery	jump {value} mm, cut	跳針 {value} mm，剪線
@@ -5660,9 +5659,6 @@ embroidery	Entry Point	入針點
 embroidery	Exit Point	出針點
 embroidery	Auto (nearest where the needle is)	自動（離針最近處）
 embroidery	The point is taken to the nearest place the stitches can start or end.	該點會移到針跡可以開始或結束的最近位置。
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	確定
-embroidery	Cancel	取消
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	在畫布上設定
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	用刺繡工具在畫布上拖曳此部分的入針點和出針點。

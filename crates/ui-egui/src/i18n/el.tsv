@@ -5967,7 +5967,6 @@ embroidery	The entry and exit points are already the nearest.	Τα σημεία 
 	Embroidery Tool	Εργαλείο κεντήματος
 	 a point to move it, or an arrow's head to turn the rows  |  	 σημείο για μετακίνηση ή την αιχμή ενός βέλους για περιστροφή των σειρών  |  
 	 a point or an arrow to put it back to Auto  |  	 σημείο ή βέλος για επιστροφή στο Αυτόματα  |  
-	 an object to show its points	 ένα αντικείμενο για εμφάνιση των σημείων του
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	άλμα {value} mm
 embroidery	jump {value} mm, cut	άλμα {value} mm, κόψιμο
@@ -5978,9 +5977,6 @@ embroidery	Entry Point	Σημείο εισόδου
 embroidery	Exit Point	Σημείο εξόδου
 embroidery	Auto (nearest where the needle is)	Αυτόματα (πλησιέστερα στη βελόνα)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Το σημείο μεταφέρεται στην πλησιέστερη θέση όπου μπορούν να αρχίσουν ή να τελειώσουν οι βελονιές.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	Εντάξει
-embroidery	Cancel	Ακύρωση
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Ορισμός στον καμβά
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Σύρετε τα σημεία εισόδου και εξόδου αυτού του τμήματος στον καμβά με το εργαλείο κεντήματος.

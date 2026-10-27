@@ -5692,7 +5692,6 @@ embroidery	The entry and exit points are already the nearest.	入口と出口の
 	Embroidery Tool	刺繍ツール
 	 a point to move it, or an arrow's head to turn the rows  |  	：点を移動、矢印の先で列を回転  |  
 	 a point or an arrow to put it back to Auto  |  	：点または矢印を自動に戻す  |  
-	 an object to show its points	：オブジェクトの点を表示
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	ジャンプ {value} mm
 embroidery	jump {value} mm, cut	ジャンプ {value} mm・糸切り
@@ -5703,9 +5702,6 @@ embroidery	Entry Point	入口の点
 embroidery	Exit Point	出口の点
 embroidery	Auto (nearest where the needle is)	自動（針に最も近い位置）
 embroidery	The point is taken to the nearest place the stitches can start or end.	点はステッチが始まる、または終わることのできる最も近い位置に移されます。
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	キャンセル
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	カンバス上で設定
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	刺繍ツールで、この部分の入口の点と出口の点をカンバス上でドラッグします。

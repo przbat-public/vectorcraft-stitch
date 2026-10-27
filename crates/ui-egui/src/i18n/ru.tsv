@@ -5626,7 +5626,6 @@ embroidery	The entry and exit points are already the nearest.	Точки вхо�
 	Embroidery Tool	Инструмент «Вышивка»
 	 a point to move it, or an arrow's head to turn the rows  |  	 точку, чтобы переместить её, или острие стрелки, чтобы повернуть ряды  |  
 	 a point or an arrow to put it back to Auto  |  	 на точку или стрелку, чтобы вернуть «Авто»  |  
-	 an object to show its points	 на объект, чтобы показать его точки
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	перескок {value} мм
 embroidery	jump {value} mm, cut	перескок {value} мм, обрезка
@@ -5637,9 +5636,6 @@ embroidery	Entry Point	Точка входа
 embroidery	Exit Point	Точка выхода
 embroidery	Auto (nearest where the needle is)	Авто (ближе всего к игле)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Точка переносится в ближайшее место, где стежки могут начаться или закончиться.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	ОК
-embroidery	Cancel	Отмена
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Задать на холсте
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Перетащите точки входа и выхода этой части на холсте инструментом «Вышивка».

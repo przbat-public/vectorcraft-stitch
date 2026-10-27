@@ -6001,7 +6001,6 @@ embroidery	The entry and exit points are already the nearest.	A belépési és k
 	Embroidery Tool	Hímzés eszköz
 	 a point to move it, or an arrow's head to turn the rows  |  	 egy ponton – áthelyezés, egy nyíl hegyén – a sorok elforgatása  |  
 	 a point or an arrow to put it back to Auto  |  	 egy pontra vagy nyílra – vissza Automatikusra  |  
-	 an object to show its points	 egy objektumra – pontjainak megjelenítése
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	ugrás {value} mm
 embroidery	jump {value} mm, cut	ugrás {value} mm, vágás
@@ -6012,9 +6011,6 @@ embroidery	Entry Point	Belépési pont
 embroidery	Exit Point	Kilépési pont
 embroidery	Auto (nearest where the needle is)	Automatikus (a tűhöz legközelebb)
 embroidery	The point is taken to the nearest place the stitches can start or end.	A pont a legközelebbi helyre kerül, ahol az öltések kezdődhetnek vagy végződhetnek.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Mégse
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Beállítás a vásznon
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Húzza a rész belépési és kilépési pontját a vásznon a Hímzés eszközzel.

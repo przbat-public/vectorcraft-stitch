@@ -5931,7 +5931,6 @@ embroidery	The entry and exit points are already the nearest.	Os pontos de entra
 	Embroidery Tool	Ferramenta Bordado
 	 a point to move it, or an arrow's head to turn the rows  |  	 um ponto para movê-lo, ou a ponta de uma seta para girar as fileiras  |  
 	 a point or an arrow to put it back to Auto  |  	 um ponto ou uma seta para voltá-lo a Automático  |  
-	 an object to show its points	 um objeto para mostrar seus pontos
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	salto {value} mm
 embroidery	jump {value} mm, cut	salto {value} mm, corte
@@ -5942,9 +5941,6 @@ embroidery	Entry Point	Ponto de entrada
 embroidery	Exit Point	Ponto de saída
 embroidery	Auto (nearest where the needle is)	Automático (mais perto da agulha)
 embroidery	The point is taken to the nearest place the stitches can start or end.	O ponto é levado ao lugar mais próximo onde os pontos podem começar ou terminar.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Cancelar
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Definir na tela
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Arraste os pontos de entrada e saída desta parte na tela com a ferramenta Bordado.

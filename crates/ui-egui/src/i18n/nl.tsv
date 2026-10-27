@@ -6013,7 +6013,6 @@ embroidery	The entry and exit points are already the nearest.	De in- en uitgangs
 	Embroidery Tool	Borduur-gereedschap
 	 a point to move it, or an arrow's head to turn the rows  |  	 aan een punt om het te verplaatsen, of aan een pijlpunt om de rijen te draaien  |  
 	 a point or an arrow to put it back to Auto  |  	 op een punt of pijl om het terug op Automatisch te zetten  |  
-	 an object to show its points	 op een object om zijn punten te tonen
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	sprong {value} mm
 embroidery	jump {value} mm, cut	sprong {value} mm, knip
@@ -6024,9 +6023,6 @@ embroidery	Entry Point	Ingangspunt
 embroidery	Exit Point	Uitgangspunt
 embroidery	Auto (nearest where the needle is)	Automatisch (het dichtst bij de naald)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Het punt wordt naar de dichtstbijzijnde plek gezet waar de steken kunnen beginnen of eindigen.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Annuleren
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Instellen op het canvas
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Sleep het in- en uitgangspunt van dit deel op het canvas met het borduur-gereedschap.

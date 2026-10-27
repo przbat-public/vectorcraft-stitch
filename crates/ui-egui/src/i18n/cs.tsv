@@ -6015,7 +6015,6 @@ embroidery	The entry and exit points are already the nearest.	Vstupní a výstup
 	Embroidery Tool	Nástroj Výšivka
 	 a point to move it, or an arrow's head to turn the rows  |  	 bodu jej přesune, tažení hrotu šipky otočí řady  |  
 	 a point or an arrow to put it back to Auto  |  	 na bod nebo šipku jej vrátí na Automaticky  |  
-	 an object to show its points	 na objekt ukáže jeho body
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	přeskok {value} mm
 embroidery	jump {value} mm, cut	přeskok {value} mm, střih
@@ -6026,9 +6025,6 @@ embroidery	Entry Point	Vstupní bod
 embroidery	Exit Point	Výstupní bod
 embroidery	Auto (nearest where the needle is)	Automaticky (nejblíže jehle)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Bod se přesune na nejbližší místo, kde mohou stehy začít nebo skončit.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Zrušit
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Nastavit na plátně
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Přetáhněte vstupní a výstupní bod této části na plátně nástrojem Výšivka.

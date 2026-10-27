@@ -6046,7 +6046,6 @@ embroidery	The entry and exit points are already the nearest.	Aloitus- ja lopetu
 	Embroidery Tool	Kirjontatyökalu
 	 a point to move it, or an arrow's head to turn the rows  |  	 pistettä siirtääksesi sen tai nuolen kärkeä kääntääksesi rivejä  |  
 	 a point or an arrow to put it back to Auto  |  	 pistettä tai nuolta palauttaaksesi sen automaattiseksi  |  
-	 an object to show its points	 objektia näyttääksesi sen pisteet
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	hyppy {value} mm
 embroidery	jump {value} mm, cut	hyppy {value} mm, leikkaus
@@ -6057,9 +6056,6 @@ embroidery	Entry Point	Aloituspiste
 embroidery	Exit Point	Lopetuspiste
 embroidery	Auto (nearest where the needle is)	Automaattinen (lähimpänä neulaa)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Piste siirtyy lähimpään kohtaan, josta pistot voivat alkaa tai jossa ne voivat päättyä.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Peruuta
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Aseta piirtoalueella
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Vedä tämän osan aloitus- ja lopetuspistettä piirtoalueella kirjontatyökalulla.

@@ -5976,7 +5976,6 @@ embroidery	The entry and exit points are already the nearest.	Giriş ve çıkı�
 	Embroidery Tool	Nakış Aracı
 	 a point to move it, or an arrow's head to turn the rows  |  	 taşımak için bir nokta, sıraları döndürmek için bir ok ucu  |  
 	 a point or an arrow to put it back to Auto  |  	 Otomatik'e döndürmek için bir nokta veya ok  |  
-	 an object to show its points	 noktalarını göstermek için bir nesne
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	atlama {value} mm
 embroidery	jump {value} mm, cut	atlama {value} mm, kesme
@@ -5987,9 +5986,6 @@ embroidery	Entry Point	Giriş noktası
 embroidery	Exit Point	Çıkış noktası
 embroidery	Auto (nearest where the needle is)	Otomatik (iğneye en yakın)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Nokta, dikişlerin başlayabileceği veya bitebileceği en yakın yere taşınır.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	Tamam
-embroidery	Cancel	İptal
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Tuvalde ayarla
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Bu parçanın giriş ve çıkış noktalarını Nakış Aracı ile tuvalde sürükleyin.

@@ -5930,7 +5930,6 @@ embroidery	The entry and exit points are already the nearest.	შესვლი
 	Embroidery Tool	ნაქარგობის ხელსაწყო
 	 a point to move it, or an arrow's head to turn the rows  |  	 წერტილზე — მის გადასაადგილებლად, ისრის წვერზე — რიგების მოსაბრუნებლად  |  
 	 a point or an arrow to put it back to Auto  |  	 წერტილზე ან ისარზე — ავტომატურზე დასაბრუნებლად  |  
-	 an object to show its points	 ობიექტზე — მისი წერტილების საჩვენებლად
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	ნახტომი {value} მმ
 embroidery	jump {value} mm, cut	ნახტომი {value} მმ, ჭრა
@@ -5941,9 +5940,6 @@ embroidery	Entry Point	შესვლის წერტილი
 embroidery	Exit Point	გამოსვლის წერტილი
 embroidery	Auto (nearest where the needle is)	ავტომატური (ნემსთან უახლოესი)
 embroidery	The point is taken to the nearest place the stitches can start or end.	წერტილი გადადის უახლოეს ადგილას, სადაც ნაკერები შეიძლება დაიწყოს ან დასრულდეს.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	გაუქმება
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	ტილოზე დაყენება
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	ამ ნაწილის შესვლისა და გამოსვლის წერტილები ტილოზე ნაქარგობის ხელსაწყოთი გადაათრიეთ.

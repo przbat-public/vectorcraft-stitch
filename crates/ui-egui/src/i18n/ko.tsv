@@ -5593,7 +5593,6 @@ embroidery	The entry and exit points are already the nearest.	진입점과 진�
 	Embroidery Tool	자수 도구
 	 a point to move it, or an arrow's head to turn the rows  |  	 점을 이동하거나 화살표 끝으로 줄을 회전  |  
 	 a point or an arrow to put it back to Auto  |  	 점이나 화살표를 자동으로 되돌리기  |  
-	 an object to show its points	 개체의 점 표시
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	점프 {value}mm
 embroidery	jump {value} mm, cut	점프 {value}mm, 실 자르기
@@ -5604,9 +5603,6 @@ embroidery	Entry Point	진입점
 embroidery	Exit Point	진출점
 embroidery	Auto (nearest where the needle is)	자동 (바늘에서 가장 가까운 곳)
 embroidery	The point is taken to the nearest place the stitches can start or end.	점은 스티치가 시작하거나 끝날 수 있는 가장 가까운 곳으로 옮겨집니다.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	확인
-embroidery	Cancel	취소
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	캔버스에서 설정
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	자수 도구로 캔버스에서 이 부분의 진입점과 진출점을 드래그합니다.

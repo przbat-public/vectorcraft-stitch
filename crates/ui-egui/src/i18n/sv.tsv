@@ -5971,7 +5971,6 @@ embroidery	The entry and exit points are already the nearest.	In- och utgångspu
 	Embroidery Tool	Broderiverktyg
 	 a point to move it, or an arrow's head to turn the rows  |  	 en punkt för att flytta den, eller en pilspets för att vrida raderna  |  
 	 a point or an arrow to put it back to Auto  |  	 på en punkt eller pil för att återställa den till Auto  |  
-	 an object to show its points	 på ett objekt för att visa dess punkter
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	hopp {value} mm
 embroidery	jump {value} mm, cut	hopp {value} mm, klipp
@@ -5982,9 +5981,6 @@ embroidery	Entry Point	Ingångspunkt
 embroidery	Exit Point	Utgångspunkt
 embroidery	Auto (nearest where the needle is)	Auto (närmast nålen)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Punkten flyttas till närmaste ställe där stygnen kan börja eller sluta.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Avbryt
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Ange på arbetsytan
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Dra den här delens in- och utgångspunkt på arbetsytan med broderiverktyget.

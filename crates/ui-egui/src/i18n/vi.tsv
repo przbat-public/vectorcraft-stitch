@@ -5610,7 +5610,6 @@ embroidery	The entry and exit points are already the nearest.	Các điểm vào 
 	Embroidery Tool	Công cụ Thêu
 	 a point to move it, or an arrow's head to turn the rows  |  	 một điểm để di chuyển, hoặc đầu mũi tên để xoay các hàng  |  
 	 a point or an arrow to put it back to Auto  |  	 một điểm hoặc mũi tên để đưa về Tự động  |  
-	 an object to show its points	 một đối tượng để hiện các điểm của nó
 # VectorCraft Stitch: the embroidery tool's drag: the jump shown, and when the stitches catch up
 embroidery	jump {value} mm	mũi nhảy {value} mm
 embroidery	jump {value} mm, cut	mũi nhảy {value} mm, cắt chỉ
@@ -5621,9 +5620,6 @@ embroidery	Entry Point	Điểm vào
 embroidery	Exit Point	Điểm ra
 embroidery	Auto (nearest where the needle is)	Tự động (gần kim nhất)
 embroidery	The point is taken to the nearest place the stitches can start or end.	Điểm được đưa đến chỗ gần nhất mà mũi khâu có thể bắt đầu hoặc kết thúc.
-# VectorCraft Stitch: OK and Cancel in the embroidery interface's own rows (the Entry Point and Exit Point dialog)
-embroidery	OK	OK
-embroidery	Cancel	Hủy
 # VectorCraft Stitch: the Object tab's Set on Canvas button (the embroidery tool at the part shown)
 embroidery	Set on Canvas	Đặt trên vùng vẽ
 embroidery	Drag this part's entry and exit points on the canvas with the embroidery tool.	Kéo điểm vào và điểm ra của phần này trên vùng vẽ bằng công cụ Thêu.

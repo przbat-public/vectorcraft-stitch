@@ -26,7 +26,8 @@
 //!   needle didn't).
 //! - **Checked by planning.** The points are written on a copy, the copy planned (the units kept from
 //!   earlier plans), and a stretch between two cuts that saves less than [`MIN_JOIN_GAIN`] as
-//!   planned, its moves and its needle points weighed together ([`plan::stitches_cost`]: the search
+//!   planned (the move across the cut into it weighed lightly, as the search weighs it), its moves
+//!   and its needle points weighed together ([`plan::stitches_cost`]: the search
 //!   takes a fill's way through at no cost, and a fill aimed at an exit far from where its rows end
 //!   travels hidden to get there), or comes out longer, gets its old points back. The plan is
 //!   checked again after that: a round whose plan comes out costlier than before in all, or sews its
@@ -248,7 +249,8 @@ fn round_mm(v: f64) -> f64 {
 /// A stretch of a plan's units between two cuts: its units' keys, and its moves.
 type Stretch = (Vec<(Origin, usize)>, Moves);
 
-/// The moves of `plan` inside its blocks, stretch by stretch (as [`links`] splits them).
+/// The moves of `plan` inside its blocks, stretch by stretch (as [`links`] splits them), and in
+/// each stretch's cost the move across the cut into it, lightly ([`plan::move_cost`]).
 fn measured(plan: &DesignPlan, trim: f64) -> Vec<Stretch> {
     let mut out: Vec<Stretch> = Vec::new();
     let mut before: Option<Point> = None;
@@ -260,8 +262,12 @@ fn measured(plan: &DesignPlan, trim: f64) -> Vec<Stretch> {
         let Some((keys, moves)) = out.last_mut() else { continue };
         keys.push((u.origin, u.occurrence));
         moves.sew(plan.unit_stitches(i).iter().filter(|s| s.command == Command::Stitch).count());
-        if let (Link::Thread, Some(b)) = (link, before) {
-            moves.add(plan::apart(b, first), trim);
+        match (link, before) {
+            (Link::Thread, Some(b)) => moves.add(plan::apart(b, first), trim),
+            // Across a cut only the frame travels: weighed lightly, as the search weighs it, in the
+            // stretch it leads into (no connection of its own).
+            (Link::Cut, Some(b)) => moves.cost += plan::move_cost(plan::apart(b, first), Link::Cut, trim),
+            _ => {}
         }
         before = Some(last);
     }

@@ -1,7 +1,9 @@
-//! `embroidery.nearestConnection` on random designs of running lines, loops, satin lines and filled
-//! rectangles, in one or two colours, some cut after: the moves between parts never cost more after
-//! it than before (by the planner's weights: a millimetre of move, a jump 20, a cut 50 more, a needle
-//! point a half), what it answers is what the design then sews, and run again it changes nothing.
+//! `embroidery.nearestConnection` on random designs of running lines (some starting where the one
+//! before ends), loops, satin lines and filled rectangles, in one or two colours, some cut after:
+//! what the design sews never costs more after it than before (by the planner's weights: a
+//! millimetre of move, a jump 20, a cut 50 more, a needle point a half, a millimetre across a cut a
+//! tenth), read from the sewing order as `embroidery.sequence` gives it, not from the command's own
+//! reply; what it answers is what the design then sews, and run again it changes nothing.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -11,9 +13,11 @@ use vectorcraft_engine::Session;
 
 /// Points in a millimetre.
 const PT_PER_MM: f64 = 72.0 / 25.4;
-/// The planner's weights of a jump and of a cut, in millimetres of move (`plan::runs`).
+/// The planner's weights of a jump and of a cut, in millimetres of move (`plan::runs`), and of a
+/// millimetre of move across a cut, where only the frame travels (`plan::joins::move_cost`).
 const JUMP: f64 = 20.0;
 const CUT: f64 = 50.0;
+const ACROSS_A_CUT: f64 = 0.1;
 /// The weight of a needle point, in millimetres of move: a 2 mm travel stitch hidden under stitching
 /// still to come, weighed a quarter (`plan::stitches_cost`).
 const NEEDLE_POINT: f64 = 0.5;
@@ -26,6 +30,8 @@ enum Kind {
     Loop,
     Satin,
     Square,
+    /// A running line from where the line or satin before it ends (else from its own start).
+    Meets,
 }
 
 /// An object: its kind, where it starts, how long it is and how far it rises (millimetres), whether
@@ -34,7 +40,7 @@ type Object = (Kind, (f64, f64), (f64, f64), bool, bool);
 
 fn arb_object() -> impl Strategy<Value = Object> {
     (
-        prop_oneof![Just(Kind::Line), Just(Kind::Loop), Just(Kind::Satin), Just(Kind::Square)],
+        prop_oneof![Just(Kind::Line), Just(Kind::Loop), Just(Kind::Satin), Just(Kind::Square), Just(Kind::Meets)],
         (5.0..120.0f64, 5.0..120.0f64),
         (8.0..30.0f64, -20.0..20.0f64),
         any::<bool>(),
@@ -49,6 +55,7 @@ fn run(s: &mut Session, command: &str, params: Value) -> Value {
 fn design(objects: &[Object]) -> Session {
     let mut s = Session::new();
     run(&mut s, "file.new", json!({"width": 500, "height": 500, "artboards": 1}));
+    let mut end: Option<(f64, f64)> = None;
     for (kind, (x, y), (len, rise), second, trim) in objects {
         let color = if *second { "#22aa44" } else { "#2233cc" };
         let pt = |v: f64| v * PT_PER_MM;
@@ -65,10 +72,15 @@ fn design(objects: &[Object]) -> Session {
                 run(&mut s, "stroke.set", json!({"weight": 1.0, "ids": [id["id"]]}));
                 id
             }
-            Kind::Line | Kind::Satin => {
+            Kind::Line | Kind::Satin | Kind::Meets => {
                 run(&mut s, "paint.setFill", json!({"none": true}));
                 run(&mut s, "paint.setStroke", json!({"color": color}));
-                let d = format!("M {} {} L {} {}", pt(*x), pt(*y), pt(x + len), pt(y + rise));
+                let (x, y) = match kind {
+                    Kind::Meets => end.unwrap_or((*x, *y)),
+                    _ => (*x, *y),
+                };
+                end = Some((x + len, y + rise));
+                let d = format!("M {} {} L {} {}", pt(x), pt(y), pt(x + len), pt(y + rise));
                 let id = run(&mut s, "path.create", json!({ "d": d }));
                 run(&mut s, "stroke.set", json!({"weight": if matches!(kind, Kind::Satin) { 6.0 } else { 1.0 }, "ids": [id["id"]]}));
                 id
@@ -80,6 +92,37 @@ fn design(objects: &[Object]) -> Session {
         run(&mut s, "select.none", json!({}));
     }
     s
+}
+
+/// Lengths in the sewing order are given to a hundredth of a millimetre: how much a move read there
+/// may be off, millimetres.
+const READ: f64 = 0.02;
+
+/// What the design sews costs by the planner's weights, read from the sewing order
+/// (`embroidery.sequence`), not from the command's reply: the moves from one unit's last needle point
+/// to the next's first (lightly across a cut: after a unit with Trim After set, or a colour
+/// change), every lift and cut the blocks make, and every needle point; with how many moves were
+/// read.
+fn sewn(s: &mut Session) -> (f64, usize) {
+    let order = run(s, "embroidery.sequence", json!({"limit": 10000}));
+    let (mut cost, mut moves) = (0.0, 0);
+    let point = |v: &Value| (v[0].as_f64().unwrap(), v[1].as_f64().unwrap());
+    let mut before: Option<&Value> = None;
+    let mut block_before = None;
+    let blocks = order["blocks"].as_array().unwrap().clone();
+    for (k, b) in blocks.iter().enumerate() {
+        cost += JUMP * b["jumps"].as_f64().unwrap() + CUT * b["trims"].as_f64().unwrap() + NEEDLE_POINT * b["stitches"].as_f64().unwrap();
+        for u in b["units"].as_array().unwrap().iter().filter(|u| u["entry"].is_array()) {
+            if let Some(w) = before {
+                let ((ax, ay), (bx, by)) = (point(&w["exit"]), point(&u["entry"]));
+                let cut = block_before != Some(k) || run(s, "embroidery.info", json!({"ids": [w["id"]]}))["trimAfter"]["value"] == json!(true);
+                cost += (bx - ax).hypot(by - ay) * if cut { ACROSS_A_CUT } else { 1.0 };
+                moves += 1;
+            }
+            (before, block_before) = (Some(u), Some(k));
+        }
+    }
+    (cost, moves)
 }
 
 /// What moves of `m` (`before` or `after`), and its needle points, cost by the planner's weights.
@@ -96,9 +139,10 @@ proptest! {
     #[test]
     fn connections_never_get_worse(objects in prop::collection::vec(arb_object(), 2..7)) {
         let mut s = design(&objects);
+        let (was, read) = sewn(&mut s);
         let r = run(&mut s, "embroidery.nearestConnection", json!({}));
-        // Lengths are given to a hundredth of a millimetre.
-        prop_assert!(cost(&r["after"]) <= cost(&r["before"]) + 0.05, "{r}");
+        let (now, _) = sewn(&mut s);
+        prop_assert!(now <= was + READ * read as f64, "as sewn: {now} after, {was} before: {r}");
         let again = run(&mut s, "embroidery.nearestConnection", json!({"dryRun": true}));
         prop_assert_eq!(&again["before"], &r["after"], "what it answers is what the design sews");
         let second = run(&mut s, "embroidery.nearestConnection", json!({}));

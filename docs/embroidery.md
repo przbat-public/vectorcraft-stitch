@@ -205,7 +205,8 @@ the control channel with ids:
   point taken through document points and back, which can tip a tie in its plan; one that holds its
   points can open a join that one following the needle didn't). The points are written on a copy and
   planned (the units kept); a stretch between two cuts that saves less than 0.1 mm as planned
-  (`MIN_JOIN_GAIN`), or comes out longer, keeps its old points; a run whose result comes out costlier
+  (`MIN_JOIN_GAIN`; the move across the cut into it weighed lightly, as the search weighs it), or
+  comes out longer, keeps its old points; a run whose result comes out costlier
   than the design was changes nothing. The search then runs again on its own result until a round
   changes nothing, at most three times (`MAX_ROUNDS`): a second Nearest Connection then changes
   nothing, unless the third round still moved something (each round keeps only a stretch that saves

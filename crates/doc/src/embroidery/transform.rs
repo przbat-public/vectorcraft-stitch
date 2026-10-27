@@ -71,9 +71,33 @@ impl Embroidery {
             // Every needle point moves: the exact millimetres kept for where they were no longer
             // apply.
             run.exact.clear();
+            // How its stitches were turned and scaled since they were made: a move alone records
+            // nothing (so moving a run leaves its saved form as it was), anything more starts the
+            // record, and every transform after is composed with it.
+            let [m0, m1, m2, m3, _, _] = a.as_coeffs();
+            if run.transformed.is_some() || [m0, m1, m2, m3] != [1.0, 0.0, 0.0, 1.0] {
+                let composed = a * run.transformed.unwrap_or(Affine::IDENTITY);
+                if composed.as_coeffs().iter().all(|c| c.is_finite()) {
+                    run.transformed = Some(composed);
+                }
+            }
             move_shared(&mut run.extra, a);
         }
     }
+}
+
+/// The least and the most transform `a` stretches a length by, in any direction: its linear
+/// part's singular values, smallest first (a turn or a mirror gives `[1, 1]`; a scale by 1.2 along
+/// one axis, `[1, 1.2]`). `None` when they aren't finite numbers.
+pub fn scale_factors(a: Affine) -> Option<[f64; 2]> {
+    let [m0, m1, m2, m3, _, _] = a.as_coeffs();
+    // The closed form for a 2 × 2 matrix [[m0, m2], [m1, m3]]: its rotation-like and
+    // reflection-like halves' sizes, q and r, give σ = q + r and |q − r|; `hypot` keeps a large
+    // coefficient from overflowing on the way.
+    let q = ((m0 + m3) / 2.0).hypot((m1 - m2) / 2.0);
+    let r = ((m0 - m3) / 2.0).hypot((m1 + m2) / 2.0);
+    let (most, least) = (q + r, (q - r).abs());
+    (most.is_finite() && least.is_finite()).then_some([least, most])
 }
 
 /// [`move_kept_map`] of kept data that may be shared: copied only when there is any.
@@ -327,6 +351,80 @@ mod tests {
         assert_eq!(e.original.as_ref().unwrap().frame, a, "a degenerate transform leaves the frame");
     }
 
+    /// A run records how it was turned and scaled since its stitches were made: a move alone
+    /// records nothing, the first transform that does more starts the record, every one after is
+    /// composed with it (moves too), and one that would leave the finite numbers changes nothing.
+    #[test]
+    fn a_run_records_its_transforms_since_it_was_made() {
+        let mut e = Embroidery { stitches: Some(super::super::StitchRun::default()), ..Embroidery::default() };
+        let recorded = |e: &Embroidery| e.stitches.as_ref().and_then(|r| r.transformed);
+        e.transform(Affine::translate((5.0, -2.0)));
+        assert_eq!(recorded(&e), None, "a move records nothing");
+        let scale = Affine::scale_non_uniform(1.15, 1.0);
+        e.transform(scale);
+        assert_eq!(recorded(&e), Some(scale));
+        let then = Affine::translate((1.0, 1.0)) * turn(90.0);
+        e.transform(then);
+        assert_eq!(recorded(&e), Some(then * scale), "composed with every transform after");
+        e.transform(Affine::scale(f64::MAX));
+        assert_eq!(recorded(&e), Some(then * scale), "a degenerate transform leaves the record");
+        let mut mirrored = Embroidery { stitches: Some(super::super::StitchRun::default()), ..Embroidery::default() };
+        mirrored.transform(Affine::new([-1.0, 0.0, 0.0, 1.0, 0.0, 0.0]));
+        assert!(recorded(&mirrored).is_some(), "a mirror is more than a move");
+    }
+
+    /// The record saves as an object holding a frame and reads back; so an older version, which
+    /// keeps it unread, composes it with each transform as this one does (the convention for kept
+    /// data); one holding anything more is kept unread, and composed all the same.
+    #[test]
+    fn a_runs_record_is_a_kept_frame() {
+        let scale = Affine::scale(1.2);
+        let run = super::super::StitchRun { transformed: Some(scale), ..Default::default() };
+        let saved = serde_json::Value::from(run.clone());
+        assert_eq!(saved, json!({"transformed": {"frame": [1.2, 0.0, 0.0, 1.2, 0.0, 0.0]}}));
+        let back = super::super::StitchRun::from(saved.as_object().unwrap().clone());
+        assert_eq!(back, run);
+        // As an older version holds it: unread, among the run's kept keys.
+        let mut older = Embroidery {
+            stitches: Some(super::super::StitchRun { extra: std::sync::Arc::new(saved.as_object().unwrap().clone()), ..Default::default() }),
+            ..Embroidery::default()
+        };
+        older.transform(Affine::scale(0.5));
+        assert_eq!(older.stitches.as_ref().unwrap().extra["transformed"], json!({"frame": [0.6, 0.0, 0.0, 0.6, 0.0, 0.0]}));
+        let newer = json!({"transformed": {"frame": [1.2, 0.0, 0.0, 1.2, 0.0, 0.0], "by": "a newer version"}});
+        let read = super::super::StitchRun::from(newer.as_object().unwrap().clone());
+        assert_eq!((read.transformed, serde_json::Value::from(read)), (None, newer), "kept as it was");
+        for odd in [json!({"frame": [1.0, 0.0]}), json!({"frame": "x"}), json!([1.0, 0.0, 0.0, 1.0, 0.0, 0.0])] {
+            let held = json!({ "transformed": odd });
+            assert_eq!(super::super::StitchRun::from(held.as_object().unwrap().clone()).transformed, None, "{held}");
+        }
+    }
+
+    /// The least and most a transform stretches a length by: a turn and a mirror keep lengths, a
+    /// scale gives its factors (smallest first), a shear stretches one way and shrinks the other,
+    /// and one past the finite numbers gives none.
+    #[test]
+    fn scale_factors_are_the_stretches() {
+        let near = |got: Option<[f64; 2]>, want: [f64; 2]| got.is_some_and(|g| g.iter().zip(want).all(|(g, w)| (g - w).abs() < 1e-12));
+        let flip = Affine::new([-1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
+        for (a, want) in [
+            (Affine::IDENTITY, [1.0, 1.0]),
+            (Affine::translate((40.0, -3.0)), [1.0, 1.0]),
+            (turn(33.0), [1.0, 1.0]),
+            (flip, [1.0, 1.0]),
+            (Affine::scale_non_uniform(1.15, 0.9), [0.9, 1.15]),
+            (turn(90.0) * Affine::scale_non_uniform(-2.0, 0.5) * turn(-20.0), [0.5, 2.0]),
+            // A shear by 1: its stretches are the golden ratio and its inverse.
+            (Affine::new([1.0, 0.0, 1.0, 1.0, 0.0, 0.0]), [(5f64.sqrt() - 1.0) / 2.0, (5f64.sqrt() + 1.0) / 2.0]),
+            (Affine::scale(0.0), [0.0, 0.0]),
+        ] {
+            assert!(near(scale_factors(a), want), "{a:?}: {:?}, not {want:?}", scale_factors(a));
+        }
+        for a in [Affine::scale(f64::MAX), Affine::new([f64::NAN, 0.0, 0.0, 1.0, 0.0, 0.0])] {
+            assert_eq!(scale_factors(a), None, "{a:?}");
+        }
+    }
+
     /// A mirror turns a set angle half round beyond its image and swaps the per-side values, never
     /// a column's ends; unset values stay unset.
     #[test]
@@ -389,6 +487,8 @@ mod tests {
             // A kept original, where it was converted (its frame the identity, as a convert leaves it).
             let node = std::sync::Arc::new(json!({"id": 7}));
             e.original = Some(super::super::Original { frame: Affine::IDENTITY, node, fingerprint: None, extra: Default::default() });
+            // A run already transformed once since it was made, so that its record is composed.
+            e.stitches = Some(super::super::StitchRun { transformed: Some(Affine::IDENTITY), ..Default::default() });
             e
         })
     }
@@ -412,11 +512,16 @@ mod tests {
             .and_then(|v| v.entry)
             .zip(q.points.as_ref().and_then(|v| v.entry))
             .is_some_and(|(x, y)| x.distance(y) < POINT_TOLERANCE);
+        let near = |x: Affine, y: Affine| x.as_coeffs().iter().zip(y.as_coeffs()).all(|(u, v)| (u - v).abs() < POINT_TOLERANCE);
         let frames = match (&a.original, &b.original) {
-            (Some(x), Some(y)) => x.frame.as_coeffs().iter().zip(y.frame.as_coeffs()).all(|(u, v)| (u - v).abs() < POINT_TOLERANCE),
+            (Some(x), Some(y)) => near(x.frame, y.frame),
             (x, y) => x == y,
         };
-        angle && entry && p.pull == q.pull && frames
+        let records = match (a.stitches.as_ref().and_then(|r| r.transformed), b.stitches.as_ref().and_then(|r| r.transformed)) {
+            (Some(x), Some(y)) => near(x, y),
+            (x, y) => x == y,
+        };
+        angle && entry && p.pull == q.pull && frames && records
     }
 
     proptest! {

@@ -19,10 +19,19 @@ proptest! {
     /// for both sides as two); saved a second time, the file is the same.
     #[test]
     fn any_embroidery_an_object_carries_opens_and_saves_back(written in arb_json()) {
-        let (once, id) = saved_with(&written);
-        let kept = node_json(&mut once.clone(), id).expect("the object is in the file").get("embroidery").cloned().unwrap_or(Value::Null);
+        let (kept, once, twice) = saved_once_and_twice(&written);
         prop_assert_eq!(kept, as_saved(&written));
-        let twice: Value = serde_json::from_slice(&save(&load(&serde_json::to_vec(&once).unwrap()).unwrap(), false)).unwrap();
+        prop_assert_eq!(twice, once);
+    }
+
+    /// A run's marks (its cuts, stops and exact needle points, its record of transforms, its flags)
+    /// and an object's original and Stop After, as a newer version might write them: mostly in the
+    /// forms this version reads, which random JSON seldom reaches (a frame is six numbers), and
+    /// sometimes not. The file opens and saves back as the first property says.
+    #[test]
+    fn marks_and_originals_open_and_save_back(written in arb_marks()) {
+        let (kept, once, twice) = saved_once_and_twice(&written);
+        prop_assert_eq!(kept, as_saved(&written));
         prop_assert_eq!(twice, once);
     }
 
@@ -57,6 +66,86 @@ fn saved_with(embroidery: &Value) -> (Value, u64) {
     node["embroidery"] = embroidery.clone();
     let back = load(&serde_json::to_vec(&file).unwrap()).unwrap_or_else(|e| panic!("{embroidery}: {e:?}"));
     (serde_json::from_slice(&save(&back, false)).unwrap(), id.0)
+}
+
+/// `written` under an object's `embroidery` key, opened and saved: what the saved file holds there,
+/// and the file saved once and a second time.
+fn saved_once_and_twice(written: &Value) -> (Value, Value, Value) {
+    let (once, id) = saved_with(written);
+    let kept = node_json(&mut once.clone(), id).expect("the object is in the file").get("embroidery").cloned().unwrap_or(Value::Null);
+    let twice: Value = serde_json::from_slice(&save(&load(&serde_json::to_vec(&once).unwrap()).unwrap(), false)).unwrap();
+    (kept, once, twice)
+}
+
+/// A value of the shapes a run's marks and an original take, as a newer version might write it:
+/// mostly as this version reads it (weights first), sometimes not.
+fn arb_index() -> impl Strategy<Value = Value> {
+    prop_oneof![6 => (0u64..12).prop_map(Value::from), 1 => Just(serde_json::json!(-1)), 1 => Just(serde_json::json!(1.5)), 1 => Just(Value::Null)]
+}
+
+fn arb_coordinate() -> impl Strategy<Value = Value> {
+    prop_oneof![
+        4 => (-4000i32..4000).prop_map(|n| Value::from(f64::from(n) / 4.0)),
+        2 => (-50i64..50).prop_map(Value::from),
+        1 => Just(Value::Null),
+        1 => Just(Value::from("x")),
+    ]
+}
+
+fn arb_list(item: impl Strategy<Value = Value>) -> impl Strategy<Value = Value> {
+    prop_oneof![6 => prop::collection::vec(item, 0..5).prop_map(Value::Array), 1 => Just(Value::Null), 1 => Just(Value::from("x"))]
+}
+
+fn arb_frame() -> impl Strategy<Value = Value> {
+    prop_oneof![6 => prop::collection::vec(arb_coordinate(), 6), 1 => prop::collection::vec(arb_coordinate(), 0..8)].prop_map(Value::Array)
+}
+
+fn arb_flag() -> impl Strategy<Value = Value> {
+    prop_oneof![Just(Value::Bool(true)), Just(Value::Bool(false)), Just(Value::Null), Just(Value::from("x"))]
+}
+
+/// An object holding each of `entries` that is there.
+fn object(entries: impl IntoIterator<Item = (&'static str, Option<Value>)>) -> Value {
+    Value::Object(entries.into_iter().filter_map(|(k, v)| Some((k.to_string(), v?))).collect())
+}
+
+/// An object's embroidery holding a run's marks, an original and Stop After, each maybe.
+fn arb_marks() -> impl Strategy<Value = Value> {
+    let pair = prop_oneof![6 => prop::collection::vec(arb_index(), 2), 1 => prop::collection::vec(arb_index(), 0..4)].prop_map(Value::Array);
+    let exact = prop_oneof![
+        6 => (arb_index(), arb_index(), arb_coordinate(), arb_coordinate()).prop_map(|(s, a, x, y)| Value::Array(vec![s, a, x, y])),
+        1 => prop::collection::vec(arb_coordinate(), 0..6).prop_map(Value::Array),
+    ];
+    let transformed = prop_oneof![
+        6 => arb_frame().prop_map(|f| serde_json::json!({ "frame": f })),
+        1 => arb_frame().prop_map(|f| serde_json::json!({ "frame": f, "by": "a newer version" })),
+        1 => arb_frame(),
+    ];
+    let o = Just;
+    let run = (
+        prop::option::of(arb_list(arb_index())),
+        prop::option::of(arb_list(pair)),
+        prop::option::of(arb_list(exact)),
+        prop::option::of(transformed),
+        prop::option::of(arb_flag()),
+        prop::option::of(arb_flag()),
+    )
+        .prop_map(|(trims, stops, exact, transformed, manual, stop_after)| {
+            object([
+                ("trims", trims),
+                ("stops", stops),
+                ("exact", exact),
+                ("transformed", transformed),
+                ("manual", manual),
+                ("stop_after", stop_after),
+            ])
+        });
+    let node = prop_oneof![6 => o(serde_json::json!({"kind": "path", "points": [[1.0, 2.0]]})), 1 => o(serde_json::json!([1.0]))];
+    let fingerprint = prop_oneof!["[0-9a-fA-F]{16}".prop_map(Value::from), "[0-9a-f]{0,20}".prop_map(Value::from), o(Value::Null)];
+    let original = (prop::option::of(arb_frame()), prop::option::of(node), prop::option::of(fingerprint), prop::option::of(o(Value::from("kept"))))
+        .prop_map(|(frame, node, fingerprint, by)| object([("frame", frame), ("node", node), ("fingerprint", fingerprint), ("by", by)]));
+    (prop::option::of(run), prop::option::of(original), prop::option::of(arb_flag()))
+        .prop_map(|(run, original, stop_after)| object([("stitches", run), ("original", original), ("stop_after", stop_after)]))
 }
 
 /// The node of id `id` in a saved file's JSON.
@@ -112,9 +201,10 @@ fn as_saved(v: &Value) -> Value {
     Value::Object(out)
 }
 
-/// A run as it is saved again: its flags unset when false or null; its lists of cuts and stops,
-/// when every entry is one it reads, written as indices (an empty or null list dropped); the rest
-/// as written.
+/// A run as it is saved again: its flags unset when false or null; its lists of cuts, stops and
+/// exact millimetres, when every entry is one it reads, written as it writes them (indices, and
+/// coordinates as floats; an empty or null list dropped); its transforms since it was made, an
+/// object holding only a frame, with the frame as floats; the rest as written.
 fn run_as_saved(run: &serde_json::Map<String, Value>) -> Value {
     let list = |items: &[Value], read: &dyn Fn(&Value) -> Option<Value>| {
         items.iter().map(read).collect::<Option<Vec<_>>>().map(|l| (!l.is_empty()).then_some(Value::Array(l)))
@@ -124,11 +214,27 @@ fn run_as_saved(run: &serde_json::Map<String, Value>) -> Value {
         Some([subpath, anchor]) => Some(serde_json::json!([index(subpath)?, index(anchor)?])),
         _ => None,
     };
+    // An exact needle point: two indices, then each coordinate a finite number or null, not both
+    // null.
+    let exact = |v: &Value| match v.as_array().map(Vec::as_slice) {
+        Some([subpath, anchor, x, y]) => {
+            let coordinate = |c: &Value| match c {
+                Value::Null => Some(Value::Null),
+                c => c.as_f64().filter(|c| c.is_finite()).map(Value::from),
+            };
+            let (x, y) = (coordinate(x)?, coordinate(y)?);
+            let (subpath, anchor) = (index(subpath)?, index(anchor)?);
+            (!(x.is_null() && y.is_null())).then(|| serde_json::json!([subpath, anchor, x, y]))
+        }
+        _ => None,
+    };
     let read = read_keys(run, |k, x| match (k, x) {
         (k, Value::Bool(false) | Value::Null) if RUN_FLAGS.contains(&k) => Some(None),
-        ("trims" | "stops", Value::Null) => Some(None),
+        ("trims" | "stops" | "exact", Value::Null) => Some(None),
         ("trims", Value::Array(items)) => list(items, &index),
         ("stops", Value::Array(items)) => list(items, &stop),
+        ("exact", Value::Array(items)) => list(items, &exact),
+        ("transformed", Value::Object(t)) if t.len() == 1 => t.get("frame").and_then(frame_as_saved).map(|f| Some(serde_json::json!({ "frame": f }))),
         _ => None,
     });
     read.unwrap_or_else(|| Value::Object(serde_json::Map::new()))

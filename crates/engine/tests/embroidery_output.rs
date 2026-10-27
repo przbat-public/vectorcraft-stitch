@@ -1141,12 +1141,21 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
         Unchanging::Kept => {
             let doc = s.doc().unwrap().doc.clone();
             let mut file: Value = serde_json::from_slice(&vectorcraft_format::save(&doc, false)).unwrap();
-            let kept = json!({"fill": {"motif": {"name": "wave"}, "spacing": "auto"}, "stroke": {"points": {"rails": [[0.0, 0.0], [5.0, 5.0]]}}, "branch": true});
+            // The marks a later version reads, of another shape than it reads (kept, read as unset):
+            // Stop After, a kept original, and a run's mark, cuts and stops.
+            let kept = json!({"fill": {"motif": {"name": "wave"}, "spacing": "auto"}, "stroke": {"points": {"rails": [[0.0, 0.0], [5.0, 5.0]]}}, "branch": true,
+                "stop_after": "after", "original": {"frame": [1, 2], "node": 5}});
+            let run_kept = json!({"manual": "yes", "trims": "all", "stops": [[0]], "stop_after": 1});
             each_node(&mut file["document"], &mut |node| {
                 let e = node.as_object_mut().unwrap().entry("embroidery").or_insert_with(|| json!({}));
                 if let Value::Object(e) = e {
                     for (k, v) in kept.as_object().unwrap() {
                         e.entry(k.clone()).or_insert_with(|| v.clone());
+                    }
+                    if let Some(Value::Object(run)) = e.get_mut("stitches") {
+                        for (k, v) in run_kept.as_object().unwrap() {
+                            run.entry(k.clone()).or_insert_with(|| v.clone());
+                        }
                     }
                 }
             });

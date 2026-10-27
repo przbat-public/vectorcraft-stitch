@@ -78,24 +78,26 @@ const SIDES: [&str; 3] = ["pull", "pull_percent", "push"];
 /// A part's keys read as an id.
 const IDS: [&str; 2] = ["stitch", "underlay"];
 
+/// The flags a run reads: unset when false or null.
+const RUN_FLAGS: [&str; 5] = ["trim_before", "trim_after", "double_point", "manual", "stop_after"];
+
 /// An object's embroidery as it is saved again (the reading rules of `doc::embroidery`, told
-/// apart): what reads as unset dropped (`null`; a cut that is false or null; a run that is null; a
-/// part, or a part's points, with nothing left in it), what is read written in one form (a part's
-/// numbers as floats, one value for both sides as two, a point's coordinates as floats), the rest
-/// as written.
+/// apart): what reads as unset dropped (`null`; a cut or a stop that is false or null; a run that
+/// is null; a part, or a part's points, with nothing left in it), what is read written in one form
+/// (a part's numbers as floats, one value for both sides as two, a point's coordinates as floats,
+/// a run's marks as [`run_as_saved`] writes them, an original's frame as floats), the rest as
+/// written.
 fn as_saved(v: &Value) -> Value {
     let Value::Object(m) = v else { return v.clone() };
     let mut out = serde_json::Map::new();
     for (k, x) in m {
         match (k.as_str(), x) {
-            ("trim_after", Value::Bool(false) | Value::Null) | ("stitches" | "fill" | "stroke", Value::Null) => {}
+            ("trim_after" | "stop_after", Value::Bool(false) | Value::Null) | ("stitches" | "fill" | "stroke", Value::Null) => {}
             ("stitches", Value::Object(run)) => {
-                let run: serde_json::Map<String, Value> = run
-                    .iter()
-                    .filter(|(k, x)| !(matches!(k.as_str(), "trim_after" | "trim_before") && matches!(x, Value::Bool(false) | Value::Null)))
-                    .map(|(k, x)| (k.clone(), x.clone()))
-                    .collect();
-                out.insert(k.clone(), Value::Object(run));
+                out.insert(k.clone(), run_as_saved(run));
+            }
+            ("original", Value::Object(o)) if original_as_saved(o).is_some() => {
+                out.insert(k.clone(), original_as_saved(o).unwrap_or_default());
             }
             ("fill" | "stroke", Value::Object(part)) => {
                 if let Some(part) = part_as_saved(part) {
@@ -108,6 +110,49 @@ fn as_saved(v: &Value) -> Value {
         }
     }
     Value::Object(out)
+}
+
+/// A run as it is saved again: its flags unset when false or null; its lists of cuts and stops,
+/// when every entry is one it reads, written as indices (an empty or null list dropped); the rest
+/// as written.
+fn run_as_saved(run: &serde_json::Map<String, Value>) -> Value {
+    let list = |items: &[Value], read: &dyn Fn(&Value) -> Option<Value>| {
+        items.iter().map(read).collect::<Option<Vec<_>>>().map(|l| (!l.is_empty()).then_some(Value::Array(l)))
+    };
+    let index = |v: &Value| v.as_u64().map(Value::from);
+    let stop = |v: &Value| match v.as_array().map(Vec::as_slice) {
+        Some([subpath, anchor]) => Some(serde_json::json!([index(subpath)?, index(anchor)?])),
+        _ => None,
+    };
+    let read = read_keys(run, |k, x| match (k, x) {
+        (k, Value::Bool(false) | Value::Null) if RUN_FLAGS.contains(&k) => Some(None),
+        ("trims" | "stops", Value::Null) => Some(None),
+        ("trims", Value::Array(items)) => list(items, &index),
+        ("stops", Value::Array(items)) => list(items, &stop),
+        _ => None,
+    });
+    read.unwrap_or_else(|| Value::Object(serde_json::Map::new()))
+}
+
+/// An original as it is saved again, when it is one the reader reads (a frame of six finite
+/// numbers, and a node that is an object): its frame as floats, a fingerprint of sixteen
+/// hexadecimal digits in small letters, the rest as written.
+fn original_as_saved(o: &serde_json::Map<String, Value>) -> Option<Value> {
+    let frame = frame_as_saved(o.get("frame")?)?;
+    o.get("node").filter(|n| n.is_object())?;
+    let mut out = o.clone();
+    out.insert("frame".into(), frame);
+    let fingerprint = o.get("fingerprint").and_then(Value::as_str).filter(|f| f.len() == 16).and_then(|f| u64::from_str_radix(f, 16).ok());
+    if let Some(f) = fingerprint {
+        out.insert("fingerprint".into(), Value::from(format!("{f:016x}")));
+    }
+    Some(Value::Object(out))
+}
+
+/// A frame as it is saved again, when it is one (six finite numbers): as floats.
+fn frame_as_saved(v: &Value) -> Option<Value> {
+    let coeffs: Vec<f64> = v.as_array().filter(|a| a.len() == 6)?.iter().map(Value::as_f64).collect::<Option<_>>()?;
+    coeffs.iter().all(|c| c.is_finite()).then(|| serde_json::json!(coeffs))
 }
 
 /// A part's settings as they are saved again ([`as_saved`]); `None` when nothing is left.

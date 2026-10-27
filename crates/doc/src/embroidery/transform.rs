@@ -53,9 +53,18 @@ impl Embroidery {
         if a == Affine::IDENTITY {
             return;
         }
-        let Self { stitches, trim_after: _, fill, stroke, extra, unread: _ } = self;
+        let Self { stitches, trim_after: _, stop_after: _, fill, stroke, original, extra, unread: _ } = self;
         for part in [fill, stroke].into_iter().flatten() {
             part.transform(a);
+        }
+        // The original goes where its stitches go: its frame composed with the transform, as the
+        // convention for kept data composes any frame (so older versions move it the same).
+        if let Some(o) = original {
+            let composed = a * o.frame;
+            if composed.as_coeffs().iter().all(|c| c.is_finite()) {
+                o.frame = composed;
+            }
+            move_shared(&mut o.extra, a);
         }
         move_shared(extra, a);
         if let Some(run) = stitches {
@@ -300,6 +309,21 @@ mod tests {
         assert_eq!(same, settings(), "the identity changes nothing");
     }
 
+    /// A converted object's kept original goes where its stitches go: its frame composed with each
+    /// transform (moved, turned, mirrored, scaled), its node left as it was until it is restored. A
+    /// transform that would leave the finite numbers leaves the frame as it was.
+    #[test]
+    fn an_original_goes_where_its_stitches_go() {
+        let mut e = settings();
+        let a = Affine::translate((5.0, -2.0)) * turn(90.0) * Affine::scale_non_uniform(1.2, -0.5);
+        e.transform(a);
+        let o = e.original.as_ref().unwrap();
+        assert_eq!(o.frame, a);
+        assert_eq!(*o.node, json!({"points": [[1.0, 1.0], [2.0, 2.0]]}), "the node isn't moved");
+        e.transform(Affine::scale(f64::MAX));
+        assert_eq!(e.original.as_ref().unwrap().frame, a, "a degenerate transform leaves the frame");
+    }
+
     /// A mirror turns a set angle half round beyond its image and swaps the per-side values, never
     /// a column's ends; unset values stay unset.
     #[test]
@@ -359,6 +383,9 @@ mod tests {
                 p.set(PartKey::Pull, Some(PartValue::Sides([l, r])));
                 p.set(PartKey::Entry, Some(PartValue::Point(Point::new(x, y))));
             });
+            // A kept original, where it was converted (its frame the identity, as a convert leaves it).
+            let node = std::sync::Arc::new(json!({"id": 7}));
+            e.original = Some(super::super::Original { frame: Affine::IDENTITY, node, fingerprint: None, extra: Default::default() });
             e
         })
     }
@@ -382,7 +409,11 @@ mod tests {
             .and_then(|v| v.entry)
             .zip(q.points.as_ref().and_then(|v| v.entry))
             .is_some_and(|(x, y)| x.distance(y) < POINT_TOLERANCE);
-        angle && entry && p.pull == q.pull
+        let frames = match (&a.original, &b.original) {
+            (Some(x), Some(y)) => x.frame.as_coeffs().iter().zip(y.frame.as_coeffs()).all(|(u, v)| (u - v).abs() < POINT_TOLERANCE),
+            (x, y) => x == y,
+        };
+        angle && entry && p.pull == q.pull && frames
     }
 
     proptest! {

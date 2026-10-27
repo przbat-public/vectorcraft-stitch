@@ -345,6 +345,174 @@ pub fn points(run: Run) -> Points {
     }
 }
 
+/// The side of the document [`manual`] makes, points: room for four opened designs side by side
+/// ([`three_threads`] apart is about 190 by 320 points) and the runs below them.
+pub const MANUAL_PAGE: (f64, f64) = (1700.0, 800.0);
+/// How far apart [`manual`] lays the four opened designs, points.
+const DESIGN_STEP: f64 = 400.0;
+/// Where [`manual`] lays the runs of its own, points from the page's top: below the designs.
+const RUNS_TOP: f64 = 500.0;
+/// How far apart [`manual`] lays its own runs, points.
+const RUN_STEP: f64 = 60.0;
+
+/// A design opened from a machine file and pasted into [`manual`]'s document: the format it was
+/// written in, its top object (the group holding the file's colour blocks' groups) and its runs.
+#[derive(Clone, Debug)]
+pub struct OpenedRuns {
+    pub format: &'static str,
+    pub top: u64,
+    pub runs: Vec<u64>,
+}
+
+/// The objects of [`manual`], by what each is.
+#[derive(Clone, Debug)]
+pub struct Manual {
+    /// [`three_threads`] (apart) written as DST, PES, JEF and VP3 and opened again, each pasted in.
+    pub opened: Vec<OpenedRuns>,
+    /// A run of one needle point: a line from the point to itself, as a machine file opens it.
+    pub one_point: u64,
+    /// A run of two needle points at one spot (a tack: `double_point`).
+    pub double_point: u64,
+    /// A run the thread is cut before (`trim_before`), and one it is cut after (`trim_after`).
+    pub trim_before: u64,
+    pub trim_after: u64,
+    /// A run edited into a curve: its middle anchor's handles pulled out.
+    pub curved: u64,
+    /// A run inside a symbol's art: the instance placing it.
+    pub instance: u64,
+    /// A run on a locked layer.
+    pub locked: u64,
+    /// A hidden run.
+    pub hidden: u64,
+}
+
+/// One document holding each kind of run of literal stitches the stitch commands meet: designs
+/// opened from DST, PES, JEF and VP3 files (their colour blocks' groups and runs), runs of one
+/// needle point and of two at one spot, runs with a cut before and after, a run edited into a
+/// curve, a run inside a symbol's art, a locked run and a hidden one. Starts a new document,
+/// [`MANUAL_PAGE`] in size (others are opened and closed on the way: it is the only one left
+/// open, and active), and leaves nothing selected.
+pub fn manual(run: Run) -> Manual {
+    run("file.new", json!({"width": MANUAL_PAGE.0, "height": MANUAL_PAGE.1, "artboards": 1}));
+    let mut opened = Vec::new();
+    for (k, format) in ["dst", "pes", "jef", "vp3"].into_iter().enumerate() {
+        // The design opened (two documents more), copied, both closed: the fixture is active again.
+        opened_design(run, format);
+        run("select.all", json!({}));
+        run("edit.copy", json!({}));
+        run("file.close", json!({}));
+        run("file.close", json!({}));
+        let top = pasted(run);
+        run("object.move", json!({"ids": [top], "dx": DESIGN_STEP * k as f64, "dy": 0.0}));
+        run("select.none", json!({}));
+        opened.push(OpenedRuns { format, top, runs: runs_under(run, top) });
+    }
+    // A run of a DST's line, pasted six times: the runs of the fixture's own, made from it below.
+    let line = [(0.0, 0.0), (30.0, 0.0), (60.0, 10.0), (90.0, 0.0)];
+    blank(run);
+    stroke(run, RED, RUNNING_WEIGHT, &line);
+    let data = run("document.export", json!({"format": "dst"}))["dataBase64"].as_str().map(str::to_string);
+    let data = data.unwrap_or_else(|| panic!("no dataBase64 exporting the line as dst"));
+    run("document.open", json!({"name": "line.dst", "dataBase64": data}));
+    run("select.all", json!({}));
+    run("edit.copy", json!({}));
+    run("file.close", json!({}));
+    run("file.close", json!({}));
+    let mut own = Vec::new();
+    for k in 0..6 {
+        let top = pasted(run);
+        run("object.move", json!({"ids": [top], "dx": 20.0, "dy": RUNS_TOP + RUN_STEP * k as f64}));
+        run("select.none", json!({}));
+        let runs = runs_under(run, top);
+        own.push(*runs.first().unwrap_or_else(|| panic!("no run pasted: {top}")));
+    }
+    let [one_point, double_point, trim_before, trim_after, curved, hidden] = own.try_into().unwrap_or_else(|o| panic!("six runs: {o:?}"));
+    // The runs edited in the file, as a newer version or a file of another maker might hold them,
+    // and opened again: the same ids.
+    let data = run("document.serialize", json!({"format": "vectorcraft"}))["dataBase64"].as_str().map(str::to_string);
+    let bytes = data.and_then(|d| vectorcraft_format::base64_decode(&d)).unwrap_or_else(|| panic!("no document serialized"));
+    let mut file: Value = serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("the document isn't JSON: {e}"));
+    edit_node(&mut file, one_point, |n| {
+        let first = n["kind"]["path"]["subpaths"][0]["anchors"][0].clone();
+        n["kind"]["path"]["subpaths"][0]["anchors"] = json!([first.clone(), first]);
+    });
+    edit_node(&mut file, double_point, |n| {
+        let first = n["kind"]["path"]["subpaths"][0]["anchors"][0].clone();
+        n["kind"]["path"]["subpaths"][0]["anchors"] = json!([first.clone(), first]);
+        n["embroidery"]["stitches"]["double_point"] = json!(true);
+    });
+    edit_node(&mut file, trim_before, |n| n["embroidery"]["stitches"]["trim_before"] = json!(true));
+    edit_node(&mut file, trim_after, |n| n["embroidery"]["stitches"]["trim_after"] = json!(true));
+    edit_node(&mut file, curved, |n| {
+        let anchors = &mut n["kind"]["path"]["subpaths"][0]["anchors"];
+        let middle = anchors.as_array().map_or(0, Vec::len) / 2;
+        let p = anchors[middle]["p"].clone();
+        let (x, y) = (p[0].as_f64().unwrap_or(0.0), p[1].as_f64().unwrap_or(0.0));
+        anchors[middle]["in"] = json!([x - 10.0, y - 10.0]);
+        anchors[middle]["out"] = json!([x + 10.0, y + 10.0]);
+        anchors[middle]["kind"] = json!("Smooth");
+    });
+    let edited = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap_or_default());
+    run("document.open", json!({"name": "manual.vectorcraft", "dataBase64": edited}));
+    // The built document closed: the edited one is the fixture.
+    run("document.activate", json!({"index": 0}));
+    run("file.close", json!({}));
+    run("select.set", json!({"ids": [hidden]}));
+    run("object.hide", json!({}));
+    run("select.none", json!({}));
+    // A run in a symbol's art, and one on a locked layer: each a DST line's run pasted.
+    let top = pasted(run);
+    run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP}));
+    let instance = id(&run("symbol.new", json!({"name": "Manual run"})));
+    run("select.none", json!({}));
+    let locked_layer = id(&run("layer.new", json!({})));
+    let top = pasted(run);
+    run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP + 2.0 * RUN_STEP}));
+    run("select.none", json!({}));
+    let locked = *runs_under(run, top).first().unwrap_or_else(|| panic!("no run pasted: {top}"));
+    run("layer.setProps", json!({"id": locked_layer, "locked": true}));
+    Manual { opened, one_point, double_point, trim_before, trim_after, curved, instance, locked, hidden }
+}
+
+/// What the clipboard holds, pasted: the id of its top object (left selected).
+fn pasted(run: Run) -> u64 {
+    let pasted = run("edit.paste", json!({}));
+    pasted["ids"].get(0).and_then(Value::as_u64).unwrap_or_else(|| panic!("nothing pasted: {pasted}"))
+}
+
+/// The runs of literal stitches under `id` (itself, when it is one), in stacking order.
+pub fn runs_under(run: Run, id: u64) -> Vec<u64> {
+    let node = run("document.node", json!({"id": id}));
+    let mut out = Vec::new();
+    collect_runs(&node, &mut out);
+    out
+}
+
+/// The ids of the runs in the node JSON `node` (`document.node`'s reply), in stacking order.
+fn collect_runs(node: &Value, out: &mut Vec<u64>) {
+    if node.get("embroidery").and_then(|e| e.get("stitches")).is_some_and(Value::is_object)
+        && let Some(id) = node["id"].as_u64()
+    {
+        out.push(id);
+    }
+    for child in node["children"].as_array().into_iter().flatten().chain(node["kind"]["children"].as_array().into_iter().flatten()) {
+        collect_runs(child, out);
+    }
+}
+
+/// Edit the node `id` of a saved document's JSON with `f`.
+fn edit_node(v: &mut Value, id: u64, f: impl FnOnce(&mut Value) + Copy) {
+    if v.get("id").and_then(Value::as_u64) == Some(id) && v.get("kind").is_some() {
+        f(v);
+        return;
+    }
+    match v {
+        Value::Object(m) => m.values_mut().for_each(|c| edit_node(c, id, f)),
+        Value::Array(a) => a.iter_mut().for_each(|c| edit_node(c, id, f)),
+        _ => {}
+    }
+}
+
 /// The keys an object's embroidery and the document's are read by: those this version reads, so
 /// that random JSON holds them, with any value, often enough to test what they read as.
 const EMBROIDERY_KEYS: [&str; 40] = [

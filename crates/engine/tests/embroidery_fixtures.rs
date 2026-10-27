@@ -138,3 +138,51 @@ fn the_points_fixture_plans_and_holds_its_points() {
     assert_eq!(info(&mut s, p.both, "fill", "exit"), Value::Null, "only the points given are set");
     assert_eq!(info(&mut s, p.compound, "fill", "entry"), serde_json::json!(p.compound_entry));
 }
+
+/// The manual fixture plans, the document holds together, every format writes it, and each of its
+/// runs is what it says: the designs opened from DST, PES, JEF and VP3 files hold the file's runs
+/// (three threads, sewn as their stitches are), the run of one needle point and the tack are two
+/// anchors at one spot (only the tack marked so), the cuts are marked, the curved run has handles,
+/// the instance places a run, the locked run is on a locked layer and the hidden one isn't sewn.
+#[test]
+fn the_manual_fixture_holds_each_kind_of_run() {
+    use vectorcraft_doc::embroidery::StitchRun;
+    use vectorcraft_doc::{Node, NodeKind};
+    let mut s = Session::new();
+    let mut run = runner(&mut s);
+    let m = fx::manual(&mut run);
+    drop(run);
+    assert_eq!(s.documents().len(), 1, "the fixture is the one document left open");
+    vectorcraft_testkit::invariants::check_session(&s).unwrap();
+    let plan = checked_plan(&mut s);
+    let sewn: Vec<u64> = plan.units.iter().map(|u| u.origin.selected().0).collect();
+    for o in &m.opened {
+        assert!(!o.runs.is_empty(), "{}: runs pasted", o.format);
+        for r in &o.runs {
+            assert!(sewn.contains(r), "{}: run {r} is sewn", o.format);
+        }
+    }
+    for id in [m.one_point, m.double_point, m.trim_before, m.trim_after, m.curved, m.instance, m.locked] {
+        assert!(sewn.contains(&id), "{id} is sewn: {m:?}");
+    }
+    assert!(!sewn.contains(&m.hidden), "the hidden run isn't sewn");
+    assert!(plan.units.iter().all(|u| u.params.is_none()), "every unit is a run sewn as its stitches are");
+    let doc = s.doc().unwrap().doc.clone();
+    let node = |id: u64| -> &Node { doc.node(vectorcraft_doc::NodeId(id)).unwrap() };
+    let stitches = |id: u64| -> StitchRun { node(id).extras().embroidery.as_deref().and_then(|e| e.stitches.clone()).unwrap() };
+    let anchors = |id: u64| node(id).path_data().unwrap().subpaths[0].anchors.clone();
+    for id in [m.one_point, m.double_point] {
+        let a = anchors(id);
+        assert!(a.len() == 2 && a[0].p == a[1].p, "{id}: two anchors at one spot");
+    }
+    assert_eq!((stitches(m.one_point).double_point, stitches(m.double_point).double_point), (false, true));
+    assert!(stitches(m.trim_before).trim_before && stitches(m.trim_after).trim_after);
+    assert!(anchors(m.curved).iter().any(|a| a.h_in != a.p || a.h_out != a.p), "the curved run has handles");
+    assert!(matches!(node(m.instance).kind, NodeKind::SymbolInstance { .. }));
+    assert!(!node(m.hidden).visible);
+    assert!(!doc.is_editable(vectorcraft_doc::NodeId(m.locked)), "the locked run can't be edited");
+    for format in vectorcraft_stitch::format::Format::ALL {
+        let reply = s.execute("document.export", &serde_json::json!({"format": format.id()}));
+        assert!(reply.is_ok(), "{}: {reply:?}", format.id());
+    }
+}

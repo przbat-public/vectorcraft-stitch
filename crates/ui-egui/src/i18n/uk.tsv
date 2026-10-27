@@ -5688,3 +5688,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Відновити {count} об’єкт?|Відновити {count} об’єкти?|Відновити {count} об’єктів?
 @plural	{count} object restored|{count} objects restored	Відновлено {count} об’єкт|Відновлено {count} об’єкти|Відновлено {count} об’єктів
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} об’єкт перетворено на ручні стібки: «Відновити об’єкт» поверне його|{count} об’єкти перетворено на ручні стібки: «Відновити об’єкт» поверне їх|{count} об’єктів перетворено на ручні стібки: «Відновити об’єкт» поверне їх
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Редагування стібків
+embroidery	Editing stitches: {name}	Редагування стібків: {name}
+embroidery	Zoom in to see the needle points.	Збільште масштаб, щоб побачити проколи.
+embroidery	Needle points are edited in the Stitches view.	Проколи редагуються в поданні «Стібки».
+embroidery	Show Stitches	Показати стібки
+embroidery	Edit Stitches	Редагувати стібки
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Переміщуйте, вставляйте й видаляйте ці проколи на полотні інструментом «Вишивка».
+@plural	{count} needle point|{count} needle points	{count} прокол|{count} проколи|{count} проколів
+@plural	{count} selected|{count} selected	{count} вибраний|{count} вибрані|{count} вибраних
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} ряд не можна редагувати: заблокований, прихований або обрізаний відсічною маскою|{count} ряди не можна редагувати: заблоковані, приховані або обрізані відсічною маскою|{count} рядів не можна редагувати: заблоковані, приховані або обрізані відсічною маскою
+	 needle points, or a frame round them  |  	 проколи або рамку навколо них  |  
+	 a stitch to insert a needle point  |  	 по стібку, щоб вставити прокол  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 зсувають на 0,1 мм  |  
+	 deselects, then ends editing	 знімає виділення, потім завершує редагування

@@ -470,11 +470,17 @@ hotspot = "The arrow's tip."
 look = "The Width cursor with a mark across the swell (the width being dragged)."
 
 # ── Embroidery (VectorCraft Stitch) ──────────────────────────────────────────────────────────────
+# The embroidery tool also shows two of upstream's cursors, whose entries stay as upstream has them:
+# Rotate over a tatami fill's angle arrow's head, and PenAdd with Alt over a stitch while it edits
+# stitches (a click inserts a needle point there).
 
 [[cursor]]
 id = "Embroidery"
 group = "Embroidery"
-shown_when = ["The embroidery tool away from every entry and exit point, over nothing or over an object that takes points: a click selects the object under the pointer, in the stitch view by its stitches where the plan shown has them, else by its art. Over an object that takes no points (type, an image, a run of stitches read from a file), NotAllowed shows instead: a click there selects nothing."]
+shown_when = [
+    "The embroidery tool away from every entry and exit point, over nothing, over an object that takes points or over stitches (manual stitches, a run read from a file): a click selects the object under the pointer, in the stitch view by its stitches where the plan shown has them, else by its art, and a double-click on stitches starts editing their needle points. Over an object that takes no points and holds no stitches (type, an image), NotAllowed shows instead: a click there selects nothing.",
+    "While the embroidery tool edits stitches (in isolation of an object holding stitches, in the stitch view), away from every needle point and stitch, and while drawing a marquee: a drag there draws a marquee that selects the needle points inside it.",
+]
 hotspot = "The arrow's tip."
 look = "The arrow with a small needle badge. EmbroideryPoint builds on it."
 
@@ -483,6 +489,7 @@ id = "EmbroideryPoint"
 group = "Embroidery"
 shown_when = [
     "The embroidery tool over the point where the needle goes in to sew a selected object's fill or stroke, or where it comes out after it, and while dragging either (a drag moves it). Over the head of a tatami fill's angle arrow, and while turning it, Rotate shows instead.",
+    "While the embroidery tool edits stitches, over a needle point or a stitch (a click selects it, a drag moves the needle points selected), and while dragging needle points. With Alt over a stitch, PenAdd shows instead (upstream's, reused): a click there inserts a needle point.",
 ]
 hotspot = "The arrow's tip."
 look = "The Embroidery cursor with a small four-way move badge: the point it is over moves with it."

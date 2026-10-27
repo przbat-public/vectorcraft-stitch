@@ -5727,3 +5727,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	還原 {count} 個物件？
 @plural	{count} object restored|{count} objects restored	已還原 {count} 個物件
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	已將 {count} 個物件轉換為手動針跡：還原物件可將其找回
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	編輯針跡
+embroidery	Editing stitches: {name}	編輯針跡：{name}
+embroidery	Zoom in to see the needle points.	放大以檢視落針點。
+embroidery	Needle points are edited in the Stitches view.	落針點在「針跡」檢視中編輯。
+embroidery	Show Stitches	顯示針跡
+embroidery	Edit Stitches	編輯針跡
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	用刺繡工具在畫布上移動、插入和刪除這些落針點。
+@plural	{count} needle point|{count} needle points	{count} 個落針點
+@plural	{count} selected|{count} selected	已選 {count} 個
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} 個針段無法編輯：已鎖定、已隱藏或被剪裁遮色片裁切
+	 needle points, or a frame round them  |  	落針點，或在其周圍拖出選框  |  
+	 a stitch to insert a needle point  |  	針跡以插入落針點  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	移動 0.1 公釐  |  
+	 deselects, then ends editing	取消選取，再按則結束編輯

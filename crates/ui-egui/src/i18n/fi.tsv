@@ -6124,3 +6124,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Palautetaanko {count} objekti?|Palautetaanko {count} objektia?
 @plural	{count} object restored|{count} objects restored	{count} objekti palautettu|{count} objektia palautettu
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekti muunnettu manuaalisiksi pistoiksi: Palauta objekti tuo sen takaisin|{count} objektia muunnettu manuaalisiksi pistoiksi: Palauta objekti tuo ne takaisin
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Pistojen muokkaus
+embroidery	Editing stitches: {name}	Pistojen muokkaus: {name}
+embroidery	Zoom in to see the needle points.	Lähennä nähdäksesi neulanpistot.
+embroidery	Needle points are edited in the Stitches view.	Neulanpistoja muokataan Pistot-näkymässä.
+embroidery	Show Stitches	Näytä pistot
+embroidery	Edit Stitches	Muokkaa pistoja
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Siirrä, lisää ja poista näitä neulanpistoja piirtoalueella Kirjontatyökalulla.
+@plural	{count} needle point|{count} needle points	{count} neulanpisto|{count} neulanpistoa
+@plural	{count} selected|{count} selected	{count} valittu|{count} valittua
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} pistosarjaa ei voi muokata: lukittu, piilotettu tai leikkausmaskin rajaama|{count} pistosarjaa ei voi muokata: lukittuja, piilotettuja tai leikkausmaskin rajaamia
+	 needle points, or a frame round them  |  	 neulanpistoja tai kehys niiden ympärille  |  
+	 a stitch to insert a needle point  |  	 pistoa lisätäksesi neulanpiston  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 siirtävät 0,1 mm  |  
+	 deselects, then ends editing	 poistaa valinnan ja sitten lopettaa muokkauksen

@@ -5688,3 +5688,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Khôi phục {count} đối tượng?
 @plural	{count} object restored|{count} objects restored	Đã khôi phục {count} đối tượng
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	Đã chuyển {count} đối tượng thành mũi thêu thủ công: Khôi phục đối tượng sẽ đưa chúng trở lại
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Chỉnh sửa mũi thêu
+embroidery	Editing stitches: {name}	Chỉnh sửa mũi thêu: {name}
+embroidery	Zoom in to see the needle points.	Phóng to để thấy các điểm đâm kim.
+embroidery	Needle points are edited in the Stitches view.	Điểm đâm kim được chỉnh sửa ở chế độ xem Mũi thêu.
+embroidery	Show Stitches	Hiện mũi thêu
+embroidery	Edit Stitches	Sửa mũi thêu
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Di chuyển, chèn và xóa các điểm đâm kim này trên vùng vẽ bằng Công cụ Thêu.
+@plural	{count} needle point|{count} needle points	{count} điểm đâm kim
+@plural	{count} selected|{count} selected	{count} đã chọn
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} đoạn không sửa được: bị khóa, bị ẩn hoặc bị mặt nạ cắt cắt bớt
+	 needle points, or a frame round them  |  	 các điểm đâm kim, hoặc một khung quanh chúng  |  
+	 a stitch to insert a needle point  |  	 vào một mũi thêu để chèn điểm đâm kim  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 dịch 0,1 mm  |  
+	 deselects, then ends editing	 bỏ chọn, rồi kết thúc chỉnh sửa

@@ -5944,3 +5944,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Przywrócić {count} obiekt?|Przywrócić {count} obiekty?|Przywrócić {count} obiektów?
 @plural	{count} object restored|{count} objects restored	Przywrócono {count} obiekt|Przywrócono {count} obiekty|Przywrócono {count} obiektów
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	Zamieniono {count} obiekt na ściegi ręczne: Przywróć obiekt go przywróci|Zamieniono {count} obiekty na ściegi ręczne: Przywróć obiekt je przywróci|Zamieniono {count} obiektów na ściegi ręczne: Przywróć obiekt je przywróci
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Edycja ściegów
+embroidery	Editing stitches: {name}	Edycja ściegów: {name}
+embroidery	Zoom in to see the needle points.	Przybliż, aby zobaczyć nakłucia.
+embroidery	Needle points are edited in the Stitches view.	Nakłucia edytuje się w widoku Ściegi.
+embroidery	Show Stitches	Pokaż ściegi
+embroidery	Edit Stitches	Edytuj ściegi
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Przesuwaj, wstawiaj i usuwaj te nakłucia na płótnie narzędziem Haft.
+@plural	{count} needle point|{count} needle points	{count} nakłucie|{count} nakłucia|{count} nakłuć
+@plural	{count} selected|{count} selected	{count} zaznaczone|{count} zaznaczone|{count} zaznaczonych
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} odcinek bez możliwości edycji: zablokowany, ukryty lub przycięty maską przycinającą|{count} odcinki bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą|{count} odcinków bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą
+	 needle points, or a frame round them  |  	 nakłucia albo ramkę wokół nich  |  
+	 a stitch to insert a needle point  |  	 ścieg, aby wstawić nakłucie  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 przesuwają o 0,1 mm  |  
+	 deselects, then ends editing	 odznacza, potem kończy edycję

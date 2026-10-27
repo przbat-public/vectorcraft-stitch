@@ -5674,3 +5674,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	{count} Objekt wiederherstellen?|{count} Objekte wiederherstellen?
 @plural	{count} object restored|{count} objects restored	{count} Objekt wiederhergestellt|{count} Objekte wiederhergestellt
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} Objekt in manuelle Stiche umgewandelt: „Objekt wiederherstellen“ holt es zurück|{count} Objekte in manuelle Stiche umgewandelt: „Objekt wiederherstellen“ holt sie zurück
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Stichbearbeitung
+embroidery	Editing stitches: {name}	Stichbearbeitung: {name}
+embroidery	Zoom in to see the needle points.	Einzoomen, um die Einstichpunkte zu sehen.
+embroidery	Needle points are edited in the Stitches view.	Einstichpunkte werden in der Ansicht „Stiche“ bearbeitet.
+embroidery	Show Stitches	Stiche zeigen
+embroidery	Edit Stitches	Stiche bearbeiten
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Diese Einstichpunkte auf der Leinwand mit dem Stickwerkzeug verschieben, einfügen und löschen.
+@plural	{count} needle point|{count} needle points	{count} Einstichpunkt|{count} Einstichpunkte
+@plural	{count} selected|{count} selected	{count} ausgewählt|{count} ausgewählt
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} Stichfolge kann nicht bearbeitet werden: gesperrt, ausgeblendet oder von einer Schnittmaske beschnitten|{count} Stichfolgen können nicht bearbeitet werden: gesperrt, ausgeblendet oder von einer Schnittmaske beschnitten
+	 needle points, or a frame round them  |  	 Einstichpunkte oder einen Rahmen um sie  |  
+	 a stitch to insert a needle point  |  	 auf einen Stich, um einen Einstichpunkt einzufügen  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 verschieben um 0,1 mm  |  
+	 deselects, then ends editing	 hebt die Auswahl auf, dann beendet es die Bearbeitung

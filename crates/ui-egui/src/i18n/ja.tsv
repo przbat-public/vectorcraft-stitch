@@ -5770,3 +5770,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	{count} 個のオブジェクトを復元しますか?
 @plural	{count} object restored|{count} objects restored	{count} 個のオブジェクトを復元しました
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} 個のオブジェクトを手動ステッチに変換しました。オブジェクトを復元で元に戻せます
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	ステッチの編集
+embroidery	Editing stitches: {name}	ステッチの編集: {name}
+embroidery	Zoom in to see the needle points.	針落ち点を表示するにはズームインしてください。
+embroidery	Needle points are edited in the Stitches view.	針落ち点はステッチ表示で編集します。
+embroidery	Show Stitches	ステッチを表示
+embroidery	Edit Stitches	ステッチを編集
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	刺繍ツールでカンバス上のこれらの針落ち点を移動、挿入、削除します。
+@plural	{count} needle point|{count} needle points	針落ち点 {count}
+@plural	{count} selected|{count} selected	選択 {count}
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	編集できない区間 {count}: ロック、非表示、またはクリッピングマスクで切り取られています
+	 needle points, or a frame round them  |  	：針落ち点、またはそれを囲む枠  |  
+	 a stitch to insert a needle point  |  	：ステッチに針落ち点を挿入  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	：0.1 mm 移動  |  
+	 deselects, then ends editing	：選択を解除し、次に編集を終了

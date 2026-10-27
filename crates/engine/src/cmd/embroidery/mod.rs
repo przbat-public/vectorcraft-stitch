@@ -99,6 +99,7 @@ mod tests_view;
 mod tests_walk;
 pub mod threadlib;
 pub(crate) mod tool;
+pub use tool::StitchEditing;
 mod unit;
 pub mod view;
 mod vocabulary;

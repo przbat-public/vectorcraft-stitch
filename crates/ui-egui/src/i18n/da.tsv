@@ -6048,3 +6048,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Gendan {count} objekt?|Gendan {count} objekter?
 @plural	{count} object restored|{count} objects restored	{count} objekt gendannet|{count} objekter gendannet
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt konverteret til manuelle sting: Gendan objekt bringer det tilbage|{count} objekter konverteret til manuelle sting: Gendan objekt bringer dem tilbage
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Redigering af sting
+embroidery	Editing stitches: {name}	Redigering af sting: {name}
+embroidery	Zoom in to see the needle points.	Zoom ind for at se nålestikkene.
+embroidery	Needle points are edited in the Stitches view.	Nålestik redigeres i visningen Sting.
+embroidery	Show Stitches	Vis sting
+embroidery	Edit Stitches	Rediger sting
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Flyt, indsæt og slet disse nålestik på lærredet med Broderiværktøjet.
+@plural	{count} needle point|{count} needle points	{count} nålestik|{count} nålestik
+@plural	{count} selected|{count} selected	{count} valgt|{count} valgte
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} række kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske|{count} rækker kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske
+	 needle points, or a frame round them  |  	 nålestik eller en ramme om dem  |  
+	 a stitch to insert a needle point  |  	 på et sting for at indsætte et nålestik  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 flytter 0,1 mm  |  
+	 deselects, then ends editing	 fravælger, og afslutter derefter redigeringen

@@ -6009,3 +6009,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Restaurar {count} objeto?|Restaurar {count} objetos?
 @plural	{count} object restored|{count} objects restored	{count} objeto restaurado|{count} objetos restaurados
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objeto convertido em pontos manuais: Restaurar objeto o traz de volta|{count} objetos convertidos em pontos manuais: Restaurar objeto os traz de volta
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Edição de pontos
+embroidery	Editing stitches: {name}	Edição de pontos: {name}
+embroidery	Zoom in to see the needle points.	Amplie para ver os pontos de agulha.
+embroidery	Needle points are edited in the Stitches view.	Os pontos de agulha são editados na visualização Pontos.
+embroidery	Show Stitches	Mostrar pontos
+embroidery	Edit Stitches	Editar pontos
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Mova, insira e exclua estes pontos de agulha na tela com a ferramenta Bordado.
+@plural	{count} needle point|{count} needle points	{count} ponto de agulha|{count} pontos de agulha
+@plural	{count} selected|{count} selected	{count} selecionado|{count} selecionados
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} sequência não pode ser editada: bloqueada, oculta ou cortada por uma máscara de recorte|{count} sequências não podem ser editadas: bloqueadas, ocultas ou cortadas por uma máscara de recorte
+	 needle points, or a frame round them  |  	 pontos de agulha, ou um quadro em volta deles  |  
+	 a stitch to insert a needle point  |  	 em um ponto para inserir um ponto de agulha  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 movem 0,1 mm  |  
+	 deselects, then ends editing	 desmarca e depois termina a edição

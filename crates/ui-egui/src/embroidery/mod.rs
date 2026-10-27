@@ -20,6 +20,8 @@
 //! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
 //! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
 //! - [`handles`]: the embroidery tool's entry and exit points, in both views.
+//! - [`editing`]: stitch editing (the tool in isolation of a stitch object): the chip under
+//!   isolation's bar, and Edit Stitches.
 //! - [`point_dialog`]: the Entry Point and Exit Point dialog (X and Y typed, or Auto).
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
@@ -29,6 +31,7 @@
 pub mod check_marks;
 pub mod convert_job;
 pub mod counters;
+pub mod editing;
 pub mod fields;
 pub mod handles;
 pub mod marks;
@@ -69,6 +72,8 @@ pub struct Embroidery {
     pub(crate) ends: overlay::Ends,
     /// The embroidery tool's handles, as last found ([`handles`]).
     pub(crate) handles: handles::Cache,
+    /// What stitch editing edits, as last read ([`editing`]).
+    pub(crate) editing: editing::Editing,
     /// Nearest Connection under way from the interface ([`nearest`]).
     pub(crate) nearest: nearest::Nearest,
     /// Convert to Manual Stitches under way ([`convert_job`]).
@@ -118,6 +123,7 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
     let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };
     switch::show(app, ui, below);
     notice::show(app, ui, below);
+    editing::show(app, ui, below);
 }
 
 /// The fork's work at the frame's end: a click on the status bar's counters acted on, then what

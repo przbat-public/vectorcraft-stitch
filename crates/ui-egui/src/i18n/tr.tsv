@@ -6054,3 +6054,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	{count} nesne geri yüklensin mi?
 @plural	{count} object restored|{count} objects restored	{count} nesne geri yüklendi
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} nesne manuel dikişlere dönüştürüldü: Nesneyi Geri Yükle onu geri getirir
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Dikiş düzenleme
+embroidery	Editing stitches: {name}	Dikiş düzenleme: {name}
+embroidery	Zoom in to see the needle points.	İğne noktalarını görmek için yakınlaştırın.
+embroidery	Needle points are edited in the Stitches view.	İğne noktaları Dikişler görünümünde düzenlenir.
+embroidery	Show Stitches	Dikişleri göster
+embroidery	Edit Stitches	Dikişleri düzenle
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Bu iğne noktalarını Nakış Aracı ile tuvalde taşıyın, ekleyin ve silin.
+@plural	{count} needle point|{count} needle points	{count} iğne noktası
+@plural	{count} selected|{count} selected	{count} seçili
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} dizi düzenlenemez: kilitli, gizli veya bir kırpma maskesiyle kırpılmış
+	 needle points, or a frame round them  |  	 iğne noktalarını veya etraflarına bir çerçeve  |  
+	 a stitch to insert a needle point  |  	 bir dikişe iğne noktası eklemek için  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 0,1 mm kaydırır  |  
+	 deselects, then ends editing	 seçimi kaldırır, sonra düzenlemeyi bitirir

@@ -6048,3 +6048,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Pulihkan {count} objek?
 @plural	{count} object restored|{count} objects restored	{count} objek dipulihkan
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objek diubah menjadi jahitan manual: Pulihkan objek mengembalikannya
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Mengedit jahitan
+embroidery	Editing stitches: {name}	Mengedit jahitan: {name}
+embroidery	Zoom in to see the needle points.	Perbesar untuk melihat titik tusukan.
+embroidery	Needle points are edited in the Stitches view.	Titik tusukan diedit di tampilan Jahitan.
+embroidery	Show Stitches	Tampilkan jahitan
+embroidery	Edit Stitches	Edit jahitan
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Pindahkan, sisipkan, dan hapus titik tusukan ini di kanvas dengan Alat bordir.
+@plural	{count} needle point|{count} needle points	{count} titik tusukan
+@plural	{count} selected|{count} selected	{count} dipilih
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} rangkaian tidak dapat diedit: terkunci, tersembunyi, atau terpotong masker kliping
+	 needle points, or a frame round them  |  	 titik tusukan, atau bingkai di sekelilingnya  |  
+	 a stitch to insert a needle point  |  	 jahitan untuk menyisipkan titik tusukan  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 menggeser 0,1 mm  |  
+	 deselects, then ends editing	 membatalkan pilihan, lalu mengakhiri pengeditan

@@ -141,6 +141,50 @@ impl crate::Session {
         self.embroidery_plans.drop_facts();
     }
 
+    /// What stitch editing edits now (the embroidery tool working inside isolation of an object
+    /// holding paths of stitches, in the stitch view, `view`): the object, its paths of stitches and
+    /// needle points, how many of them are selected and the selection's first and last along the
+    /// thread with their record numbers in the plan shown; `None` while it isn't editing. Never
+    /// plans; walks the selected needle points once (the interface asks once a revision).
+    pub fn stitch_editing(&mut self, view: crate::ViewInfo) -> Option<StitchEditing> {
+        if self.tool_id() != vectorcraft_tools::embroidery::ID {
+            return None;
+        }
+        self.with_tool_cx(view, |_, cx| {
+            let n = cx.embroidery.and_then(|f| f.needle_points())?;
+            let mut selected = 0usize;
+            let mut ends: Option<[NeedleRef; 2]> = None;
+            // Along the thread: the paths in the order they are sewn, then the needle points.
+            let along = |r: NeedleRef| (n.order(r.id), r.index);
+            for id in cx.selection.objects.iter().copied().filter(|id| n.holds(*id)) {
+                let (count, lo, hi) = match cx.selection.anchors.get(&id) {
+                    Some(anchors) => {
+                        let ks: Vec<usize> = anchors.iter().filter_map(|a| n.of_anchor(id, *a)).collect();
+                        let lo = ks.iter().copied().min();
+                        let hi = ks.iter().copied().max();
+                        // A run of one needle point is two anchors: counted once.
+                        let mut unique = ks;
+                        unique.dedup();
+                        (unique.len(), lo, hi)
+                    }
+                    None => (n.count(id), Some(0), n.count(id).checked_sub(1)),
+                };
+                selected += count;
+                if let (Some(lo), Some(hi)) = (lo, hi) {
+                    let (a, b) = (NeedleRef { id, index: lo }, NeedleRef { id, index: hi });
+                    ends = Some(match ends {
+                        None => [a, b],
+                        // The selection lists paths in the order they were selected: the first
+                        // and last are the ones sewn first and last.
+                        Some([f, l]) => [if along(a) < along(f) { a } else { f }, if along(l) < along(b) { b } else { l }],
+                    });
+                }
+            }
+            let ends = ends.map(|[a, b]| [(a, n.number(a)), (b, n.number(b))]);
+            Some(StitchEditing { scope: n.scope(), selected, ends })
+        })
+    }
+
     /// The embroidery tool's handles as the canvas draws them, while it is the active tool (else
     /// none), in `view`: the list the tool catches ([`vectorcraft_tools::embroidery::handles`]), of
     /// the part its options show, and its options (`hover`, `focus`, `drag`). Never plans.
@@ -154,6 +198,17 @@ impl crate::Session {
             (vectorcraft_tools::embroidery::handles(cx, part), opts)
         })
     }
+}
+
+/// What stitch editing edits now ([`crate::Session::stitch_editing`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StitchEditing {
+    pub scope: NeedleScope,
+    /// How many needle points being edited are selected.
+    pub selected: usize,
+    /// The selection's first and last needle points along the thread, each with its record number
+    /// in the plan shown (`None` while that plan lags behind an edit of its path).
+    pub ends: Option<[(NeedleRef, Option<usize>); 2]>,
 }
 
 /// [`ToolFacts`] (when a plan is remembered) read against the document as it is now.

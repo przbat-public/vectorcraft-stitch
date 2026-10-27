@@ -6049,3 +6049,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Återställa {count} objekt?|Återställa {count} objekt?
 @plural	{count} object restored|{count} objects restored	{count} objekt återställt|{count} objekt återställda
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt konverterat till manuella stygn: Återställ objekt tar tillbaka det|{count} objekt konverterade till manuella stygn: Återställ objekt tar tillbaka dem
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Redigering av stygn
+embroidery	Editing stitches: {name}	Redigering av stygn: {name}
+embroidery	Zoom in to see the needle points.	Zooma in för att se nålsticken.
+embroidery	Needle points are edited in the Stitches view.	Nålstick redigeras i vyn Stygn.
+embroidery	Show Stitches	Visa stygn
+embroidery	Edit Stitches	Redigera stygn
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Flytta, infoga och ta bort dessa nålstick på arbetsytan med Broderiverktyget.
+@plural	{count} needle point|{count} needle points	{count} nålstick|{count} nålstick
+@plural	{count} selected|{count} selected	{count} markerat|{count} markerade
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} rad kan inte redigeras: låst, dold eller beskuren av en klippmask|{count} rader kan inte redigeras: låsta, dolda eller beskurna av en klippmask
+	 needle points, or a frame round them  |  	 nålstick, eller en ram runt dem  |  
+	 a stitch to insert a needle point  |  	 på ett stygn för att infoga ett nålstick  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 flyttar 0,1 mm  |  
+	 deselects, then ends editing	 avmarkerar och avslutar sedan redigeringen

@@ -5708,3 +5708,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Ripristinare {count} oggetto?|Ripristinare {count} oggetti?
 @plural	{count} object restored|{count} objects restored	{count} oggetto ripristinato|{count} oggetti ripristinati
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} oggetto convertito in punti manuali: Ripristina oggetto lo riporta|{count} oggetti convertiti in punti manuali: Ripristina oggetto li riporta
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Modifica dei punti
+embroidery	Editing stitches: {name}	Modifica dei punti: {name}
+embroidery	Zoom in to see the needle points.	Ingrandisci per vedere i punti dell’ago.
+embroidery	Needle points are edited in the Stitches view.	I punti dell’ago si modificano nella vista Punti.
+embroidery	Show Stitches	Mostra i punti
+embroidery	Edit Stitches	Modifica i punti
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Sposta, inserisci ed elimina questi punti dell’ago sulla tela con lo strumento Ricamo.
+@plural	{count} needle point|{count} needle points	{count} punto dell’ago|{count} punti dell’ago
+@plural	{count} selected|{count} selected	{count} selezionato|{count} selezionati
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} serie non si può modificare: bloccata, nascosta o ritagliata da una maschera di ritaglio|{count} serie non si possono modificare: bloccate, nascoste o ritagliate da una maschera di ritaglio
+	 needle points, or a frame round them  |  	 i punti dell’ago, o un riquadro intorno  |  
+	 a stitch to insert a needle point  |  	 su un punto per inserire un punto dell’ago  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 spostano di 0,1 mm  |  
+	 deselects, then ends editing	 deseleziona, poi termina la modifica

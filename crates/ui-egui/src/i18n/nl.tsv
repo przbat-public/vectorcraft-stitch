@@ -6091,3 +6091,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	{count} object herstellen?|{count} objecten herstellen?
 @plural	{count} object restored|{count} objects restored	{count} object hersteld|{count} objecten hersteld
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} object omgezet naar handmatige steken: Object herstellen brengt het terug|{count} objecten omgezet naar handmatige steken: Object herstellen brengt ze terug
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Steken bewerken
+embroidery	Editing stitches: {name}	Steken bewerken: {name}
+embroidery	Zoom in to see the needle points.	Zoom in om de insteekpunten te zien.
+embroidery	Needle points are edited in the Stitches view.	Insteekpunten bewerk je in de weergave Steken.
+embroidery	Show Stitches	Steken tonen
+embroidery	Edit Stitches	Steken wijzigen
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Verplaats, voeg in en verwijder deze insteekpunten op het canvas met het Borduur-gereedschap.
+@plural	{count} needle point|{count} needle points	{count} insteekpunt|{count} insteekpunten
+@plural	{count} selected|{count} selected	{count} geselecteerd|{count} geselecteerd
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} reeks kan niet worden bewerkt: vergrendeld, verborgen of bijgesneden door een knipmasker|{count} reeksen kunnen niet worden bewerkt: vergrendeld, verborgen of bijgesneden door een knipmasker
+	 needle points, or a frame round them  |  	 insteekpunten, of een kader eromheen  |  
+	 a stitch to insert a needle point  |  	 op een steek om een insteekpunt in te voegen  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 verplaatsen 0,1 mm  |  
+	 deselects, then ends editing	 heft de selectie op en beëindigt daarna het bewerken

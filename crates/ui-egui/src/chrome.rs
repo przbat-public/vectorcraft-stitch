@@ -1020,8 +1020,9 @@ fn hint_for(tool: &str) -> Option<&'static [(&'static str, bool)]> {
             (" to sample a color", false),
         ],
         "gradient" => &[("Drag", true), (" across a selected object to set the gradient direction", false)],
-        // VectorCraft Stitch: the embroidery tool.
+        // VectorCraft Stitch: the embroidery tool, and its hint while it edits stitches.
         "embroidery" => crate::embroidery::tool_bar::HINT,
+        crate::embroidery::tool_bar::EDITING_HINT_ID => crate::embroidery::tool_bar::EDITING_HINT,
         "artboard" => &[
             ("Click", true),
             (" to select an artboard  |  ", false),
@@ -1165,7 +1166,12 @@ pub fn hint_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     vec![(crate::dialogs::revolve_gizmo::hint(d).into(), false)]
                 } else {
                     let tool = app.session.tool_id();
-                    let hint = if tool == "zoom" && crate::canvas::animated_zoom(&app.session.prefs) { ANIMATED_ZOOM_HINT } else { tool };
+                    // VectorCraft Stitch: the Embroidery Tool's hint while it edits stitches.
+                    let hint = if tool == "zoom" && crate::canvas::animated_zoom(&app.session.prefs) {
+                        ANIMATED_ZOOM_HINT
+                    } else {
+                        crate::embroidery::tool_bar::hint_id(app, tool)
+                    };
                     hint_segments(hint)
                 };
                 for (txt, bold) in segments {

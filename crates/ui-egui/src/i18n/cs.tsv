@@ -6093,3 +6093,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Obnovit {count} objekt?|Obnovit {count} objekty?|Obnovit {count} objektů?
 @plural	{count} object restored|{count} objects restored	Obnoven {count} objekt|Obnoveny {count} objekty|Obnoveno {count} objektů
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt převeden na ruční stehy: Obnovit objekt ho vrátí|{count} objekty převedeny na ruční stehy: Obnovit objekt je vrátí|{count} objektů převedeno na ruční stehy: Obnovit objekt je vrátí
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Úprava stehů
+embroidery	Editing stitches: {name}	Úprava stehů: {name}
+embroidery	Zoom in to see the needle points.	Přibližte, abyste viděli vpichy.
+embroidery	Needle points are edited in the Stitches view.	Vpichy se upravují v zobrazení Stehy.
+embroidery	Show Stitches	Zobrazit stehy
+embroidery	Edit Stitches	Upravit stehy
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Přesouvejte, vkládejte a mažte tyto vpichy na plátně nástrojem Výšivka.
+@plural	{count} needle point|{count} needle points	{count} vpich|{count} vpichy|{count} vpichů
+@plural	{count} selected|{count} selected	{count} vybraný|{count} vybrané|{count} vybraných
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} řadu nelze upravit: je zamčená, skrytá nebo oříznutá ořezovou maskou|{count} řady nelze upravit: jsou zamčené, skryté nebo oříznuté ořezovou maskou|{count} řad nelze upravit: jsou zamčené, skryté nebo oříznuté ořezovou maskou
+	 needle points, or a frame round them  |  	 vpichy nebo rámeček kolem nich  |  
+	 a stitch to insert a needle point  |  	 na steh pro vložení vpichu  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 posouvají o 0,1 mm  |  
+	 deselects, then ends editing	 zruší výběr, pak ukončí úpravy

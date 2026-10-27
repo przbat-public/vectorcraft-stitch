@@ -6008,3 +6008,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	აღდგეს {count} ობიექტი?
 @plural	{count} object restored|{count} objects restored	აღდგა {count} ობიექტი
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} ობიექტი გარდაიქმნა ხელით ნაკერებად: ობიექტის აღდგენა დააბრუნებს
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	ნაკერების რედაქტირება
+embroidery	Editing stitches: {name}	ნაკერების რედაქტირება: {name}
+embroidery	Zoom in to see the needle points.	გაადიდეთ ნემსის ჩხვლეტების სანახავად.
+embroidery	Needle points are edited in the Stitches view.	ნემსის ჩხვლეტები რედაქტირდება ხედში „ნაკერები“.
+embroidery	Show Stitches	ნაკერების ჩვენება
+embroidery	Edit Stitches	ნაკერების შესწორება
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	გადაიტანეთ, ჩასვით და წაშალეთ ეს ნემსის ჩხვლეტები ტილოზე ნაქარგობის ხელსაწყოთი.
+@plural	{count} needle point|{count} needle points	ნემსის ჩხვლეტები: {count}
+@plural	{count} selected|{count} selected	მონიშნული: {count}
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	შეუცვლელი მწკრივები: {count} — ჩაკეტილი, დამალული ან მომჭრელი ნიღბით მოჭრილი
+	 needle points, or a frame round them  |  	 ნემსის ჩხვლეტებზე ან მათ გარშემო ჩარჩო  |  
+	 a stitch to insert a needle point  |  	 ნაკერზე — ნემსის ჩხვლეტის ჩასასმელად  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 — გადაადგილება 0,1 მმ-ით  |  
+	 deselects, then ends editing	 — მონიშვნის მოხსნა, შემდეგ რედაქტირების დასრულება

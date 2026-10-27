@@ -5704,3 +5704,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Восстановить {count} объект?|Восстановить {count} объекта?|Восстановить {count} объектов?
 @plural	{count} object restored|{count} objects restored	Восстановлен {count} объект|Восстановлено {count} объекта|Восстановлено {count} объектов
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} объект преобразован в ручные стежки: «Восстановить объект» вернёт его|{count} объекта преобразованы в ручные стежки: «Восстановить объект» вернёт их|{count} объектов преобразовано в ручные стежки: «Восстановить объект» вернёт их
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Редактирование стежков
+embroidery	Editing stitches: {name}	Редактирование стежков: {name}
+embroidery	Zoom in to see the needle points.	Увеличьте масштаб, чтобы увидеть проколы.
+embroidery	Needle points are edited in the Stitches view.	Проколы редактируются в режиме просмотра «Стежки».
+embroidery	Show Stitches	Показать стежки
+embroidery	Edit Stitches	Редактировать стежки
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Перемещайте, вставляйте и удаляйте эти проколы на холсте инструментом «Вышивка».
+@plural	{count} needle point|{count} needle points	{count} прокол|{count} прокола|{count} проколов
+@plural	{count} selected|{count} selected	{count} выбранный|{count} выбранных|{count} выбранных
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} ряд нельзя редактировать: заблокирован, скрыт или обрезан маской обрезки|{count} ряда нельзя редактировать: заблокированы, скрыты или обрезаны маской обрезки|{count} рядов нельзя редактировать: заблокированы, скрыты или обрезаны маской обрезки
+	 needle points, or a frame round them  |  	 проколы или рамку вокруг них  |  
+	 a stitch to insert a needle point  |  	 по стежку, чтобы вставить прокол  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 сдвигают на 0,1 мм  |  
+	 deselects, then ends editing	 снимает выделение, затем завершает редактирование

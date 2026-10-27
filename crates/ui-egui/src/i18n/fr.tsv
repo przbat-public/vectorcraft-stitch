@@ -6092,3 +6092,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Restaurer {count} objet ?|Restaurer {count} objets ?
 @plural	{count} object restored|{count} objects restored	{count} objet restauré|{count} objets restaurés
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objet converti en points manuels : Restaurer l’objet le rétablit|{count} objets convertis en points manuels : Restaurer l’objet les rétablit
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Modification des points
+embroidery	Editing stitches: {name}	Modification des points : {name}
+embroidery	Zoom in to see the needle points.	Zoomez pour voir les points de piqûre.
+embroidery	Needle points are edited in the Stitches view.	Les points de piqûre se modifient dans la vue Points.
+embroidery	Show Stitches	Afficher les points
+embroidery	Edit Stitches	Modifier les points
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Déplacez, insérez et supprimez ces points de piqûre sur la toile avec l’outil Broderie.
+@plural	{count} needle point|{count} needle points	{count} point de piqûre|{count} points de piqûre
+@plural	{count} selected|{count} selected	{count} sélectionné|{count} sélectionnés
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} suite ne peut pas être modifiée : verrouillée, masquée ou découpée par un masque d’écrêtage|{count} suites ne peuvent pas être modifiées : verrouillées, masquées ou découpées par un masque d’écrêtage
+	 needle points, or a frame round them  |  	 des points de piqûre, ou un cadre autour  |  
+	 a stitch to insert a needle point  |  	 sur un point pour insérer un point de piqûre  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 déplacent de 0,1 mm  |  
+	 deselects, then ends editing	 désélectionne, puis termine la modification

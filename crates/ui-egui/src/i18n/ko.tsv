@@ -5671,3 +5671,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	개체 {count}개를 복원할까요?
 @plural	{count} object restored|{count} objects restored	개체 {count}개를 복원했습니다
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	개체 {count}개를 수동 스티치로 변환했습니다. 개체 복원으로 되돌릴 수 있습니다
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	스티치 편집
+embroidery	Editing stitches: {name}	스티치 편집: {name}
+embroidery	Zoom in to see the needle points.	바늘 위치를 보려면 확대하세요.
+embroidery	Needle points are edited in the Stitches view.	바늘 위치는 스티치 보기에서 편집합니다.
+embroidery	Show Stitches	스티치 표시
+embroidery	Edit Stitches	스티치 편집하기
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	자수 도구로 캔버스에서 이 바늘 위치를 이동, 삽입, 삭제합니다.
+@plural	{count} needle point|{count} needle points	바늘 위치 {count}개
+@plural	{count} selected|{count} selected	{count}개 선택됨
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	편집할 수 없는 구간 {count}개: 잠김, 숨김 또는 클리핑 마스크로 잘림
+	 needle points, or a frame round them  |  	: 바늘 위치 또는 그 주위의 틀  |  
+	 a stitch to insert a needle point  |  	: 스티치에 바늘 위치 삽입  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	: 0.1mm 이동  |  
+	 deselects, then ends editing	: 선택 해제 후 편집 끝내기

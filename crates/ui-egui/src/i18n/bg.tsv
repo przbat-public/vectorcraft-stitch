@@ -6032,3 +6032,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Възстановяване на {count} обект?|Възстановяване на {count} обекта?
 @plural	{count} object restored|{count} objects restored	Възстановен е {count} обект|Възстановени са {count} обекта
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} обект е преобразуван в ръчни бодове: „Възстановяване на обекта“ го връща|{count} обекта са преобразувани в ръчни бодове: „Възстановяване на обекта“ ги връща
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Редактиране на бодове
+embroidery	Editing stitches: {name}	Редактиране на бодове: {name}
+embroidery	Zoom in to see the needle points.	Увеличете, за да видите точките на убождане.
+embroidery	Needle points are edited in the Stitches view.	Точките на убождане се редактират в изгледа „Бодове“.
+embroidery	Show Stitches	Показване на бодовете
+embroidery	Edit Stitches	Редактиране на бодовете
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Премествайте, вмъквайте и изтривайте тези точки на убождане в платното с инструмента „Бродерия“.
+@plural	{count} needle point|{count} needle points	{count} точка на убождане|{count} точки на убождане
+@plural	{count} selected|{count} selected	{count} избрана|{count} избрани
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} редица не може да се редактира: заключена, скрита или изрязана от маска за изрязване|{count} редици не могат да се редактират: заключени, скрити или изрязани от маска за изрязване
+	 needle points, or a frame round them  |  	 точки на убождане или рамка около тях  |  
+	 a stitch to insert a needle point  |  	 бод, за да вмъкнете точка на убождане  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 преместват с 0,1 mm  |  
+	 deselects, then ends editing	 отменя избора, после приключва редактирането

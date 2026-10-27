@@ -6079,3 +6079,19 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Visszaállít {count} objektumot?
 @plural	{count} object restored|{count} objects restored	{count} objektum visszaállítva
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objektum kézi öltésekké alakítva: az Objektum visszaállítása visszahozza
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Öltésszerkesztés
+embroidery	Editing stitches: {name}	Öltésszerkesztés: {name}
+embroidery	Zoom in to see the needle points.	Nagyítson rá a tűszúrások megjelenítéséhez.
+embroidery	Needle points are edited in the Stitches view.	A tűszúrások az Öltések nézetben szerkeszthetők.
+embroidery	Show Stitches	Öltések megjelenítése
+embroidery	Edit Stitches	Öltések szerkesztése
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Helyezze át, szúrja be és törölje ezeket a tűszúrásokat a vásznon a Hímzés eszközzel.
+@plural	{count} needle point|{count} needle points	{count} tűszúrás
+@plural	{count} selected|{count} selected	{count} kijelölve
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} öltéssor nem szerkeszthető: zárolt, rejtett vagy vágómaszk vágja
+	 needle points, or a frame round them  |  	 – tűszúrások vagy egy keret köréjük  |  
+	 a stitch to insert a needle point  |  	 egy öltésre – tűszúrás beszúrása  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 – 0,1 mm-es elmozdítás  |  
+	 deselects, then ends editing	 – kijelölés megszüntetése, majd a szerkesztés befejezése

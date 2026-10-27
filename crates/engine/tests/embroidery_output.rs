@@ -188,14 +188,14 @@ acd5f11fec696dd60f1a14ad6be2a8d9b56439f15730fae35511031d7cf01a9a  expanded-strok
 378726b33be570a973251ac99dd990557811412c9b65db8ceea187b9f0726aac  expanded-strokes.pec
 95ffcaef59cb1059de241988da46245489d28fece34be3d80b9238f65999293c  expanded-strokes.jef
 b76956c76384704f29880fada6abd8874d6eafec02ea692d19ade1fa40f4e523  expanded-strokes.vp3
-8400c8bc58a8189d8006be89eff200106da342b6c9be28dae1c15a3e038c2b28  exits.dst
-39c5ac7d691d12852bad33ed523c8245a9a88084a8c39e3ba11326c4f95296c7  exits.tap
-39c5ac7d691d12852bad33ed523c8245a9a88084a8c39e3ba11326c4f95296c7  exits.t01
-702d4940797237e3f4528395214489d8a87d4ae8ec7d1181fbc943c7bc4e1f93  exits.exp
-eb78fbfdb085610d54d2c51f4aee09ee142913a7946dab505be9853c941a3592  exits.pes
-3b73808ced14e87afd1c2260c232cdcef0c3e73b8b5fd699bd3f0843644c3ed1  exits.pec
-697f8629e8cc46ab9dfa5c12dcddfe099217ea3b5c8b1bc555b7acfa65364ff0  exits.jef
-e2c066f6fac0bf3d122047f47e0ca1529360af6f3090da7c6a85a76aa81921de  exits.vp3
+fce9d310b0ada80d79c9a257ad2556c59193f266e2e67e42f3ea9799f567d8ec  exits.dst
+6288fa0e2280346aed1d614e3d39c286b3c1afc5b2688971d1f440ade5676008  exits.tap
+6288fa0e2280346aed1d614e3d39c286b3c1afc5b2688971d1f440ade5676008  exits.t01
+e18eeebc37bfc4058e77562b175095c25910d28d31b7e93c0f368a0a98354958  exits.exp
+479cff290a256393a5000370e86cda9302399dc90ec99b4dc2649a5df6fd45f1  exits.pes
+c44621c4ff83e459eaead14246d6e501a32eaf458fb2fff5986470214e71c6cc  exits.pec
+2ccd0a2f00269a6b034aa696f908233559f7c75c3c1b13e42d6a223cec02fc01  exits.jef
+b20992b7856d058115f889b35679dfcbeb0b683a306da77cb64ee516b91281f7  exits.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -341,9 +341,9 @@ f9d076f966da6c047c90c544ccfd4d86f3ccee1795f03d8de522e50fdbe21263  settings.pec  
 79a8a67e308ae3a0cc950bd2cb90fd669a548de59bc4c9517262d9b87bf5c30e  expanded-strokes.pes  5 21 37 7 52
 f7f6a5bd7553ed5bd2d6421442ff0f098edccb715de3b043152c304d7d54c51a  expanded-strokes.pec  5 21 37 7 52
 e62c4e62b875154f17c8a099ba501137c311288778b627dff3e0c152c9274489  expanded-strokes.jef  33 59 45 59 71
-8f30149c5c0edf9812530325735564b20bacfc0b2d8e2aa02f192f3278450947  exits.pes  5 37 21 7
-c8646ee6b4567ed3ecaae4145e691b48ce21d1b4687780e8116af7467ca4d8d1  exits.pec  5 37 21 7
-9583975b81b5be04649b119ebca54136e0b3c9688fb8cf39482d0d82e23703aa  exits.jef  33 45 59 59
+7525e937850f077b6d72fbd7ae897b4694f12797d2d8c0c9b51b8d320b3ddcb6  exits.pes  5 37 21 7
+61f7c43d42260f042d6037004bb38dd644e2806f020117671d842cd9abdfca8e  exits.pec  5 37 21 7
+a3e4b067d744441d2a8c4ddeef48373d866aebe41326aade0c20252f59ee69d1  exits.jef  33 45 59 59
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -514,14 +514,14 @@ expanded-strokes.pes  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  tri
 expanded-strokes.pec  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.5  longest 4.67  shortest 0.41  cells 1641
 expanded-strokes.jef  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
 expanded-strokes.vp3  blocks 5  needle 693/593/703/1038/73  jumps 1/2/1/2/1  trims 0/0/0/0/0  size 73.8x65.6  longest 4.60  shortest 0.36  cells 1639
-exits.dst  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
-exits.tap  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
-exits.t01  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
-exits.exp  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 883
-exits.pes  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 882
-exits.pec  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.60  shortest 0.41  cells 882
-exits.jef  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.53  shortest 0.41  cells 884
-exits.vp3  blocks 4  needle 613/25/353/48  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 4.53  shortest 0.41  cells 884
+exits.dst  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.40  shortest 0.41  cells 1138
+exits.tap  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.40  shortest 0.41  cells 1138
+exits.t01  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.40  shortest 0.41  cells 1138
+exits.exp  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.40  shortest 0.41  cells 1138
+exits.pes  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.40  shortest 0.41  cells 1139
+exits.pec  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.40  shortest 0.41  cells 1139
+exits.jef  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.41  shortest 0.41  cells 1137
+exits.vp3  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.41  shortest 0.41  cells 1137
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -1585,15 +1585,16 @@ fn expanded_strokes() -> Session {
 
 /// Entry and exit points the planner sews toward: a rectangle that ends at an exit on its right
 /// side, a running line whose exit lies at its start (sewn from its end, reversed), a satin line
-/// entered at its left end and leaving at its right (a pass along its middle turning it round), and
-/// a running loop carried on round to its exit.
+/// 6 mm wide entered at its left end and leaving at its right (its underlay ending it back at the
+/// left, a pass along its middle turns it round), and a running loop carried on round to its exit.
 fn exits() -> Session {
     let mut s = blank(300.0, 300.0);
     let fill = rect(&mut s, "#cc2222", 20.0, 20.0, 80.0, 50.0);
     run(&mut s, "embroidery.setEntryExit", json!({"id": fill, "part": "fill", "exit": [100, 45]}));
     let line = stroked(&mut s, "#22aa44", 1.0, "M 130 30 L 270 30");
     run(&mut s, "embroidery.setEntryExit", json!({"id": line, "part": "stroke", "exit": [130, 30]}));
-    let satin = stroked(&mut s, "#2233cc", 6.0, "M 20 120 L 200 120");
+    // 6 mm wide: its underlay (an edge run and a zigzag) ends it back at its left end.
+    let satin = stroked(&mut s, "#2233cc", 6.0 * PT_PER_MM, "M 20 120 L 200 120");
     run(&mut s, "embroidery.setEntryExit", json!({"id": satin, "part": "stroke", "entry": [20, 120], "exit": [200, 120]}));
     let ring = ellipse(&mut s, "#8822aa", 40.0, 170.0, 120.0, 60.0);
     run(&mut s, "paint.setFill", json!({"none": true, "ids": [ring]}));

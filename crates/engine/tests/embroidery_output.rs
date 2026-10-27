@@ -196,6 +196,14 @@ e18eeebc37bfc4058e77562b175095c25910d28d31b7e93c0f368a0a98354958  exits.exp
 c44621c4ff83e459eaead14246d6e501a32eaf458fb2fff5986470214e71c6cc  exits.pec
 2ccd0a2f00269a6b034aa696f908233559f7c75c3c1b13e42d6a223cec02fc01  exits.jef
 b20992b7856d058115f889b35679dfcbeb0b683a306da77cb64ee516b91281f7  exits.vp3
+9b7f1522c65324c21d8032e7d82e498fa296844d30f16a32d213965fd36bd0f1  stops.dst
+49d5a6c977f5baaef896bc1cd26879c467b02880bcb4a1ff3de5f47a05bb88f8  stops.tap
+49d5a6c977f5baaef896bc1cd26879c467b02880bcb4a1ff3de5f47a05bb88f8  stops.t01
+704861e647dcaadaf9a8e544124897272f92d7815c47f8770b1e5d24eac5668e  stops.exp
+99ef9afbf210186a494d977404bd600bb8ab15dbb96d8f4ed585b5e4d4ba6a61  stops.pes
+181d9ac9fc9d6c34d7f776e58dc502dc98d61b2c25f589383d779d2041364431  stops.pec
+d2238d55ce687e38e34bda4876c983f1b21034c978580abc19e3b61dc48259bc  stops.jef
+a77bc0e2ff5f19ceb4bea099c075139bab412a8c1cf02da2759b55e301d16acf  stops.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -344,6 +352,9 @@ e62c4e62b875154f17c8a099ba501137c311288778b627dff3e0c152c9274489  expanded-strok
 7525e937850f077b6d72fbd7ae897b4694f12797d2d8c0c9b51b8d320b3ddcb6  exits.pes  5 37 21 7
 61f7c43d42260f042d6037004bb38dd644e2806f020117671d842cd9abdfca8e  exits.pec  5 37 21 7
 a3e4b067d744441d2a8c4ddeef48373d866aebe41326aade0c20252f59ee69d1  exits.jef  33 45 59 59
+0cbdbeaf8f5a6b54c08931ca2b8a8132f27e10b2ee67498351caa446d8ed9915  stops.pes  5 5 55 5 5 21 56 56 56
+0de51589ee049991fc511ff98f549cb9742893c818db4450209a826ac44b9043  stops.pec  5 5 55 5 5 21 56 56 56
+e4484bd08cdd4abbc709e8285797662885f60e3f1eff64d4ce448f1ec03db8cd  stops.jef  33 33 59 33 33 59 75 75 75
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -522,6 +533,14 @@ exits.pes  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88
 exits.pec  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.40  shortest 0.41  cells 1139
 exits.jef  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.41  shortest 0.41  cells 1137
 exits.vp3  blocks 4  needle 613/25/480/49  jumps 1/1/1/1  trims 0/0/0/0  size 88.3x74.2  longest 6.41  shortest 0.41  cells 1137
+stops.dst  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 0/1/1/1/1/2/1/3/1  trims 0/0/0/0/0/0/0/0/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+stops.tap  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 0/1/1/1/1/2/1/3/1  trims 0/0/0/0/0/0/0/0/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+stops.t01  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 0/1/1/1/1/2/1/3/1  trims 0/0/0/0/0/0/0/0/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+stops.exp  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 0/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+stops.pes  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+stops.pec  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+stops.jef  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+stops.vp3  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/0/0/0/0/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -862,10 +881,11 @@ fn the_test_sheet_on_each_fabric_exports_unchanged() {
     check(FABRIC_SHEETS, FABRIC_SHEETS_THREADS, FABRIC_SHEETS_SUMMARIES, &now);
 }
 
-/// What a session's design plans (`embroidery.stats`): each block's needle points, and its longest
-/// needle-down stitch (millimetres).
+/// What a session's design plans (`embroidery.stats`): each block's needle points and stops, and
+/// its longest needle-down stitch (millimetres).
 struct Planned {
     needle: Vec<usize>,
+    stops: Vec<usize>,
     longest: f64,
 }
 
@@ -876,8 +896,10 @@ fn planned(s: &mut Session, options: &Value) -> Planned {
     options["limit"] = json!(10_000);
     let stats = run(s, "embroidery.stats", options);
     assert_eq!(stats["truncated"], json!(false));
-    let needle = stats["blocks"].as_array().unwrap().iter().map(|b| b["stitches"].as_u64().unwrap() as usize).collect();
-    Planned { needle, longest: stats["longestStitch"].as_f64().unwrap_or(0.0) }
+    let blocks = stats["blocks"].as_array().unwrap();
+    let needle = blocks.iter().map(|b| b["stitches"].as_u64().unwrap() as usize).collect();
+    let stops = blocks.iter().map(|b| b["stops"].as_u64().unwrap() as usize).collect();
+    Planned { needle, stops, longest: stats["longestStitch"].as_f64().unwrap_or(0.0) }
 }
 
 impl Planned {
@@ -885,7 +907,12 @@ impl Planned {
     /// longer than one of its format's records holds (a longer one is written as several).
     fn holds(&self, pinned: &Pinned, format: Format) {
         if self.longest <= format.max_step() {
-            assert_eq!(pinned.summary.needle, self.needle, "{}: the needle points read back are not the plan's", pinned.name);
+            // A stop is written as a change to the same thread: a block with stops reads back as one
+            // block more for each.
+            let mut read = pinned.summary.needle.iter();
+            let grouped: Vec<usize> = self.stops.iter().map(|&stops| read.by_ref().take(stops + 1).sum()).collect();
+            assert_eq!(grouped, self.needle, "{}: the needle points read back are not the plan's", pinned.name);
+            assert_eq!(read.next(), None, "{}: blocks read back that the plan doesn't have", pinned.name);
         }
     }
 }
@@ -1372,6 +1399,7 @@ fn documents() -> Vec<(&'static str, Session, Value)> {
         ("settings", settings(), json!({"length": 3, "jumpLength": 4})),
         ("expanded-strokes", expanded_strokes(), json!({})),
         ("exits", exits(), json!({})),
+        ("stops", stops(), json!({})),
     ]
 }
 
@@ -1525,6 +1553,58 @@ fn opened_with_cuts() -> Session {
     let pattern = Pattern { name: "cuts".into(), blocks: vec![a, b], ..Pattern::default() };
     let mut s = Session::new();
     open(&mut s, "cuts.pes", &Format::Pes.write(&pattern).unwrap());
+    s
+}
+
+/// Stops, each written as a change to the same thread: a design written in code with a stop
+/// between two needle points of its first block and one at that block's end (the thread change's,
+/// written as nothing), opened from PES, so that the stop reads back as one; two squares of one
+/// thread far apart, the first stopped after (Stop After), and a line stopped and cut after as the
+/// design's last object (its stop the end's, written as nothing); and a run of three subpaths, the
+/// thread cut before the third, a stop inside the first and one at the end of the second.
+fn stops() -> Session {
+    use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+    let line = |y: f64, from: i32, to: i32| (from..to).map(move |i| Stitch::new(f64::from(i) * 2.0, y, Command::Stitch));
+    let mut a = Block::new(Thread::rgb([200, 0, 0]));
+    a.stitches.extend(line(0.0, 0, 5));
+    a.stitches.push(Stitch::new(8.0, 0.0, Command::Stop));
+    a.stitches.extend(line(0.0, 5, 10));
+    a.stitches.push(Stitch::new(18.0, 0.0, Command::Stop));
+    let mut b = Block::new(Thread::rgb([0, 0, 200]));
+    b.stitches.extend(line(10.0, 0, 10));
+    let pattern = Pattern { name: "stops".into(), blocks: vec![a, b], ..Pattern::default() };
+    let mut s = Session::new();
+    open(&mut s, "stops.pes", &Format::Pes.write(&pattern).unwrap());
+    run(&mut s, "file.info", json!({"title": "stops"}));
+    let first = rect(&mut s, "#cc2222", 20.0, 60.0, 20.0, 20.0);
+    rect(&mut s, "#cc2222", 150.0, 60.0, 20.0, 20.0);
+    run(&mut s, "embroidery.setStopAfter", json!({"ids": [first]}));
+    let last = stroked(&mut s, "#2233cc", 1.0, "M 20 120 L 150 120");
+    run(&mut s, "embroidery.setStopAfter", json!({"ids": [last]}));
+    run(&mut s, "embroidery.setTrimAfter", json!({"ids": [last]}));
+    s.edit("Add Run", |d, _| {
+        let layer = d.layers.first().map(|l| l.id);
+        let id = d.alloc_id();
+        let mut bp = vectorcraft_geom::BezPath::new();
+        for (k, y) in [150.0, 160.0, 170.0].into_iter().enumerate() {
+            let x0 = 20.0 + 60.0 * k as f64;
+            bp.move_to((x0, y));
+            for i in 1..5 {
+                bp.line_to((x0 + 6.0 * f64::from(i), y));
+            }
+        }
+        let paint = vectorcraft_color::Paint::solid(vectorcraft_color::Color::rgb8(0x22, 0x99, 0x44));
+        let mut node = vectorcraft_doc::Node::path(
+            id,
+            vectorcraft_geom::PathData::from_bezpath(&bp),
+            vectorcraft_doc::Appearance::basic(vectorcraft_color::Paint::None, paint, 1.0),
+        );
+        let marks = StitchRun { trims: vec![2], stops: vec![(0, 2), (1, 4)], ..StitchRun::default() };
+        node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(marks), ..Embroidery::default() }));
+        d.insert(layer, usize::MAX, node).map_err(|e| vectorcraft_engine::EngineError::Other(e.to_string()))?;
+        Ok(())
+    })
+    .unwrap();
     s
 }
 

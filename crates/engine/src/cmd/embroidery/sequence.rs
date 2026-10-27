@@ -53,13 +53,18 @@ pub(super) struct Planned {
     pub(super) literal: Option<(NodeId, bool)>,
 }
 
-/// A unit in a block: what it is and was planned with, the box its stitches cover as planned, and
-/// where its stitches start in the block (they run up to the next unit's first stitch). It is sewn
-/// in its block's thread.
+/// A unit in a block: what it is and was planned with, the box its stitches cover as planned, where
+/// its stitches start in the block (they run up to the next unit's first stitch), where its own
+/// stitches are (without the move that reaches it and the cut or stop after it), whether it starts
+/// at the needle point before them (where the needle already was), and its place in walk order. It
+/// is sewn in its block's thread.
 struct Member {
     facts: Facts,
     bounds: Option<Rect>,
     start: usize,
+    own: std::ops::Range<usize>,
+    met: bool,
+    walked: usize,
 }
 
 /// Whether a record lifts the needle where it is: a cut, or a stop (the needle up, the thread kept
@@ -157,7 +162,8 @@ impl Sequence {
         let Planned { facts, block, literal } = planned;
         let Some(&first) = block.stitches.first() else { return };
         let planned_bounds = block.bounds();
-        let member = |start: usize| Member { facts, bounds: planned_bounds, start };
+        let walked = self.adds.len();
+        let member = |start: usize, own: std::ops::Range<usize>, met: bool| Member { facts, bounds: planned_bounds, start, own, met, walked };
         match literal {
             Some((owner, trim_before)) => self.add_literal(block, first, member, owner, trim_before),
             None => self.add_art(block, first, member),
@@ -166,7 +172,14 @@ impl Sequence {
 
     /// A literal run's stitches (`b`, starting at `first`): into the block of its group's runs
     /// before it (its thread's), or a block of its own, with the cut before it the file had.
-    fn add_literal(&mut self, mut b: Block, first: Stitch, member: impl Fn(usize) -> Member, owner: NodeId, trim_before: bool) {
+    fn add_literal(
+        &mut self,
+        mut b: Block,
+        first: Stitch,
+        member: impl Fn(usize, std::ops::Range<usize>, bool) -> Member,
+        owner: NodeId,
+        trim_before: bool,
+    ) {
         let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
         match self.blocks.last_mut() {
             Some(sewn) if sewn.literal == Some(owner) && sewn.block.thread.color == b.thread.color => {
@@ -176,16 +189,18 @@ impl Sequence {
                     cut_after(&mut merged.stitches);
                 }
                 merged.stitches.push(Stitch::jump(first.point()));
+                let own = merged.stitches.len();
                 merged.stitches.extend(b.stitches.iter().copied());
                 sewn.bounds = union(sewn.bounds, bounds);
-                sewn.members.push(member(start));
+                sewn.members.push(member(start, own..merged.stitches.len(), false));
             }
             _ => {
                 // A cut at the very start of the block, as the file had it.
+                let own = usize::from(trim_before);
                 if trim_before {
                     b.stitches.insert(0, Stitch::new(first.x, first.y, Command::Trim));
                 }
-                let members = vec![member(0)];
+                let members = vec![member(0, own..b.stitches.len(), false)];
                 self.blocks.push(Sewn { block: b, bounds, literal: Some(owner), members });
             }
         }
@@ -194,7 +209,7 @@ impl Sequence {
 
     /// Art's stitches (`b`, starting at `first`): into the last block of its colour when nothing
     /// sewn since overlaps it ([`Sequence::target`]), else a block of its own.
-    fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize) -> Member) {
+    fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize, std::ops::Range<usize>, bool) -> Member) {
         let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
         let target = self.target(b.thread.color, bounds);
         self.adds.push(target.unwrap_or(self.blocks.len()));
@@ -219,12 +234,13 @@ impl Sequence {
                         skip = 1;
                     }
                 }
+                let own = merged.stitches.len();
                 merged.stitches.extend(b.stitches.iter().skip(skip).copied());
                 sewn.bounds = union(sewn.bounds, bounds);
-                sewn.members.push(member(start));
+                sewn.members.push(member(start, own..merged.stitches.len(), skip == 1));
             }
             None => {
-                let members = vec![member(0)];
+                let members = vec![member(0, 0..b.stitches.len(), false)];
                 self.last_of.insert(b.thread.color, self.blocks.len());
                 self.blocks.push(Sewn { block: b, bounds, literal: None, members });
             }
@@ -282,8 +298,11 @@ impl Sequence {
             for (m, end) in members.into_iter().zip(ends) {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
-                let Member { facts: Facts { origin, occurrence, params, columns, satin_widths, why, asked }, bounds, .. } = m;
+                let Member { facts: Facts { origin, occurrence, params, columns, satin_widths, why, asked }, bounds, own, met, walked, .. } = m;
                 plan.units.push(Unit {
+                    own,
+                    met,
+                    walked,
                     origin,
                     occurrence,
                     thread: thread.clone(),
@@ -324,8 +343,10 @@ fn written_stops_only(stitches: Vec<Stitch>, members: &mut [Member]) -> Vec<Stit
         dropped += usize::from(!kept(i, s));
     }
     dropped_before.push(dropped);
+    let moved = |i: usize| i.saturating_sub(dropped_before.get(i).copied().unwrap_or(dropped));
     for m in members.iter_mut() {
-        m.start = m.start.saturating_sub(dropped_before.get(m.start).copied().unwrap_or(dropped));
+        m.start = moved(m.start);
+        m.own = moved(m.own.start)..moved(m.own.end);
     }
     stitches.into_iter().enumerate().filter(|(i, s)| kept(*i, s)).map(|(_, s)| s).collect()
 }

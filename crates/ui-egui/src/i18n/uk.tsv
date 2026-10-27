@@ -5659,3 +5659,5 @@ embroidery	manual stitches	ручні стібки
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Перемістити проколи
 @msg	select needle points of a run of stitches, or give needlePoints	виберіть проколи ряду стібків або вкажіть needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Вставити проколи

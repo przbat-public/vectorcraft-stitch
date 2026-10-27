@@ -5979,3 +5979,5 @@ embroidery	manual stitches	ხელით ნაკერები
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	ნემსის ჩხვლეტების გადატანა
 @msg	select needle points of a run of stitches, or give needlePoints	აირჩიეთ ნაკერების მწკრივის ნემსის ჩხვლეტები ან მიუთითეთ needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	ნემსის ჩხვლეტების ჩასმა

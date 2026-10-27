@@ -5645,3 +5645,5 @@ embroidery	manual stitches	manuelle Stiche
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Einstichpunkte verschieben
 @msg	select needle points of a run of stitches, or give needlePoints	wählen Sie Einstichpunkte einer Stichfolge aus oder geben Sie needlePoints an
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Einstichpunkte einfügen

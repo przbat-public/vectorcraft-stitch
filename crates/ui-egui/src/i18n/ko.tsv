@@ -5642,3 +5642,5 @@ embroidery	manual stitches	수동 스티치
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	바늘 위치 이동
 @msg	select needle points of a run of stitches, or give needlePoints	스티치 구간의 바늘 위치를 선택하거나 needlePoints를 지정하세요
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	바늘 위치 삽입

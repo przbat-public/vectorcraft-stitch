@@ -5679,3 +5679,5 @@ embroidery	manual stitches	punti manuali
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Sposta i punti dell’ago
 @msg	select needle points of a run of stitches, or give needlePoints	seleziona i punti dell’ago di una serie di punti, oppure indica needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Inserisci punti dell’ago

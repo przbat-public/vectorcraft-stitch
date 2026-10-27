@@ -5659,3 +5659,5 @@ embroidery	manual stitches	mũi thêu thủ công
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Di chuyển điểm đâm kim
 @msg	select needle points of a run of stitches, or give needlePoints	chọn các điểm đâm kim của một đoạn mũi thêu, hoặc cung cấp needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Chèn điểm đâm kim

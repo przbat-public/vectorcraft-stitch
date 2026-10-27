@@ -6063,3 +6063,5 @@ embroidery	manual stitches	points manuels
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Déplacer les points de piqûre
 @msg	select needle points of a run of stitches, or give needlePoints	sélectionnez des points de piqûre d’une suite de points, ou donnez needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Insérer des points de piqûre

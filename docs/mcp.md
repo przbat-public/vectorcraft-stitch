@@ -5181,6 +5181,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     (millimetres, y down), or the one addressed to `to` (`[x, y]`, millimetres from the document's origin); a path
     whose only run is two needle points brought to one spot sews both (a tack). The selection keeps its needle points.
     It answers `{changedCount, paths: [{id, needlePoints}], pathCount, lengths, passedOver}`.
+  - `embroidery.insertNeedlePoints {id?, index?, at?, needlePoints?, ranges?}` adds needle points: with `id` and
+    `index`, the points `at` (`[[x, y]…]`, millimetres, 1 to 10,000) put before needle point `index` of path `id`
+    (`index` its count: after its last), in that needle point's run, or without `at` one at the middle of the stitch
+    arriving at it (refused where a run starts); else one midway after each needle point addressed (or selected) that
+    a stitch leaves. The new needle points take the places from `index` on (those after move up) and are left
+    selected; a stop stays after the needle point it followed. At most 100,000 added. It answers `{changedCount,
+    inserted: [{id, index}], paths, pathCount, lengths, passedOver}`.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,

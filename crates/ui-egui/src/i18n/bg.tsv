@@ -6003,3 +6003,5 @@ embroidery	manual stitches	ръчни бодове
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Преместване на точките на убождане
 @msg	select needle points of a run of stitches, or give needlePoints	изберете точки на убождане от редица бодове или подайте needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Вмъкване на точки на убождане

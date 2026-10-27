@@ -6062,3 +6062,5 @@ embroidery	manual stitches	handmatige steken
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Insteekpunten verplaatsen
 @msg	select needle points of a run of stitches, or give needlePoints	selecteer insteekpunten van een reeks steken, of geef needlePoints op
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Insteekpunten invoegen

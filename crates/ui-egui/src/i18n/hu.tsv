@@ -6050,3 +6050,5 @@ embroidery	manual stitches	kézi öltések
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Tűszúrások áthelyezése
 @msg	select needle points of a run of stitches, or give needlePoints	jelöljön ki tűszúrásokat egy öltéssorból, vagy adja meg a needlePoints értéket
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Tűszúrások beszúrása

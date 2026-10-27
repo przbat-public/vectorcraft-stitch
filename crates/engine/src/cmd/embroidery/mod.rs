@@ -283,6 +283,15 @@ pub fn specs() -> Vec<CommandSpec> {
             needle_edits::move_points
         ),
         cmd!(
+            "embroidery.insertNeedlePoints",
+            "Insert Needle Points",
+            [],
+            None,
+            "{id?, index?, at?: [[x, y]…] (millimetres from the document's origin, y down; 1 to 10,000) | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's)} adds needle points: with id and index, the points at put before needle point index of path id (index its count: after its last), each in that needle point's run, or without at one at the middle of the stitch arriving at it (refused where a run starts: give at); else one midway after each needle point addressed that a stitch leaves (a run's last is passed by). The new needle points take the places from index on (those after move up) and are left selected, in place of what was selected of their paths; a stop stays after the needle point it followed. At most 100,000 added, and a path at most 2,000,000 needle points. One undo step \"Insert Needle Points\", none when nothing is added → {changedCount: the needle points added, inserted: [{id, index}] (at most 1000), paths: [{id, needlePoints}], pathCount, lengths (as embroidery.moveNeedlePoints gives them: the stitches into and out of each new needle point), passedOver}",
+            has_doc,
+            needle_edits::insert
+        ),
+        cmd!(
             "embroidery.setStopAfter",
             "Embroidery Stop After",
             [],

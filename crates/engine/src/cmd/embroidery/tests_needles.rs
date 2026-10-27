@@ -48,12 +48,14 @@ fn path_mm(s: &mut Session, points: &[(f64, f64)], marks: StitchRun) -> u64 {
     id
 }
 
-/// Needle point `k` of path `id`, millimetres.
+/// Needle point `k` of path `id`, millimetres to a millionth (what points to millimetres and back
+/// leaves aside).
 fn at(s: &Session, id: u64, k: usize) -> (f64, f64) {
     let st = needles::read(&node(s, id)).unwrap();
     let (r, i) = st.locate(k).unwrap();
     let p = st.runs[r].needles[i].p;
-    (p.x / PT_PER_MM, p.y / PT_PER_MM)
+    let mm = |v: f64| (v / PT_PER_MM * 1e6).round() / 1e6;
+    (mm(p.x), mm(p.y))
 }
 
 /// Every path of stitches of the manual fixture (the runs of the four opened designs, the fixture's
@@ -247,4 +249,49 @@ fn moved_away_and_back_a_converted_run_exports_the_same() {
     assert_ne!(exports(&mut s), before);
     run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": address, "dx": -3.3, "dy": -1.7}));
     assert_eq!(exports(&mut s), before, "moved back: the same bytes");
+}
+
+/// Insert Needle Points: at the middle of the stitch arriving at a needle point, the points given
+/// at either end, or one midway after each needle point selected that a stitch leaves (a run's last
+/// passed by); the new ones take their places, those after move up, a stop stays after the needle
+/// point it followed, and the new needle points are left selected; one undo step, none when nothing
+/// is added.
+#[test]
+fn needle_points_are_inserted() {
+    let mut s = blank();
+    let marks = StitchRun { stops: vec![(0, 1)], ..StitchRun::default() };
+    let id = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0), (14.0, 14.0)], marks);
+    let r = run(&mut s, "embroidery.insertNeedlePoints", json!({"id": id, "index": 1}));
+    assert_eq!((r["changedCount"].clone(), r["inserted"].clone()), (json!(1), json!([{"id": id, "index": 1}])), "{r}");
+    assert_eq!((at(&s, id, 1), at(&s, id, 2)), ((12.0, 10.0), (14.0, 10.0)));
+    assert_eq!(s.doc().unwrap().selection.anchors[&NodeId(id)], [(0, 1)].into_iter().collect(), "the new one selected");
+    assert_eq!(stitches(&node(&s, id)).stops, [(0, 2)], "the stop stays after the needle point it followed");
+    run(&mut s, "embroidery.insertNeedlePoints", json!({"id": id, "index": 0, "at": [[5, 5], [7, 7]]}));
+    run(&mut s, "embroidery.insertNeedlePoints", json!({"id": id, "index": 6, "at": [[20, 20]]}));
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!(st.len(), 7);
+    assert_eq!((at(&s, id, 0), at(&s, id, 1), at(&s, id, 2), at(&s, id, 6)), ((5.0, 5.0), (7.0, 7.0), (10.0, 10.0), (20.0, 20.0)));
+    // Midway after the selected needle points that a stitch leaves.
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 0], [0, 6]]}));
+    let steps = s.doc().unwrap().history.undo.len();
+    let r = run(&mut s, "embroidery.insertNeedlePoints", json!({}));
+    assert_eq!(r["inserted"], json!([{"id": id, "index": 1}]), "the last needle point passed by: {r}");
+    assert_eq!(at(&s, id, 1), (6.0, 6.0));
+    assert_eq!(s.doc().unwrap().history.undo.len(), steps + 1);
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 7]]}));
+    let r = run(&mut s, "embroidery.insertNeedlePoints", json!({}));
+    assert_eq!((r["changedCount"].clone(), s.doc().unwrap().history.undo.len()), (json!(0), steps + 1), "nothing added, no step");
+    // Refused: no stitch arrives where a run starts; `at` without a place; too many points.
+    for p in [
+        json!({"id": id, "index": 0}),
+        json!({"at": [[1, 1]]}),
+        json!({"id": id, "index": 99, "at": [[1, 1]]}),
+        json!({"id": id, "index": 1, "at": []}),
+        json!({"id": id, "index": 1, "at": vec![[1.0, 1.0]; 10_001]}),
+        json!({"id": id, "index": 1, "at": [[1e308, 1]]}),
+        json!({"id": id}),
+        json!({"id": id, "index": 1, "needlePoints": [{"id": id, "index": 0}]}),
+    ] {
+        assert!(s.execute("embroidery.insertNeedlePoints", &p).is_err(), "{p}");
+    }
 }

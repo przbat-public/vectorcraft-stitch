@@ -163,3 +163,168 @@ pub(super) fn move_points(s: &mut Session, p: &Value) -> Result<Value> {
     }
     Ok(reply)
 }
+
+pub(super) const INSERT: &str = "embroidery.insertNeedlePoints";
+/// The undo step's name, the command's label.
+pub(super) const INSERT_LABEL: &str = "Insert Needle Points";
+/// The most needle points one `at` list places: far more than one gesture or list makes, a bound
+/// on what one call can allocate. An estimate.
+const MAX_INSERT_AT: usize = 10_000;
+/// The most needle points one call adds in all: far above any real edit. An estimate.
+const MAX_ADDED: usize = 100_000;
+
+/// `embroidery.insertNeedlePoints {id?, index?, at?, needlePoints?, ranges?}`: with `id` and
+/// `index`, the points `at` (millimetres) put before needle point `index` of path `id` (`index`
+/// its length: after its last), or one at the middle of the stitch arriving at it; else one needle
+/// point midway after each needle point addressed (or selected) that a stitch leaves. The new
+/// needle points are left selected.
+pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
+    let o = params(p, INSERT, &["id", "index", "at"])?;
+    let place = match (o.get("id"), o.get("index")) {
+        (None, None) => None,
+        (Some(id), Some(index)) => {
+            if o.contains_key("needlePoints") || o.contains_key("ranges") {
+                return Err(bad(INSERT, "give `id` and `index`, or needle points to insert after, not both"));
+            }
+            let id = id.as_u64().ok_or_else(|| bad(INSERT, format!("`id` {id}: an object's id")))?;
+            let index = index
+                .as_u64()
+                .and_then(|k| usize::try_from(k).ok())
+                .ok_or_else(|| bad(INSERT, format!("`index` {index}: a whole number, 0 or more")))?;
+            Some((NodeId(id), index))
+        }
+        _ => return Err(bad(INSERT, "`id` and `index` go together")),
+    };
+    let at: Option<Vec<Point>> = match o.get("at").filter(|v| !v.is_null()) {
+        None => None,
+        Some(v) => {
+            let items = v.as_array().ok_or_else(|| bad(INSERT, format!("`at` {v}: a list of [x, y], millimetres")))?;
+            if items.is_empty() || items.len() > MAX_INSERT_AT {
+                return Err(bad(INSERT, format!("`at` lists {} points: 1 to {MAX_INSERT_AT}", items.len())));
+            }
+            let mut out = Vec::with_capacity(items.len());
+            for item in items {
+                let one = Map::from_iter([("at".to_string(), item.clone())]);
+                let p = point_mm(&one, "at", INSERT)?.ok_or_else(|| bad(INSERT, "`at`: [x, y], millimetres"))?;
+                let p = Point::new(mm_to_pt(p.x), mm_to_pt(p.y));
+                if !(p.x.abs() <= vectorcraft_doc::MAX_COORD && p.y.abs() <= vectorcraft_doc::MAX_COORD) {
+                    return Err(bad(INSERT, format!("`at` {item}: outside the document's coordinates")));
+                }
+                out.push(p);
+            }
+            Some(out)
+        }
+    };
+    if at.is_some() && place.is_none() {
+        return Err(bad(INSERT, "`at` places needle points before `index` of path `id`: give them"));
+    }
+    let doc = s.doc()?.doc.clone();
+    let before = s.doc()?.selection.clone();
+    let (min, max) = (needles::shortest_stitch(&doc), LONGEST);
+    let mut lengths = Lengths::default();
+    let mut sel = before.clone();
+    let (mut edits, mut inserted, mut passed_over) = (Vec::new(), Vec::new(), Vec::new());
+    let mut added_all = 0usize;
+    if let Some((id, index)) = place {
+        let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
+        let mut st = needles::read(n).map_err(|why| bad(INSERT, format!("object {}: {}", id.0, needles::said(why))))?;
+        if !doc.is_editable(id) {
+            return Err(bad(INSERT, format!("object {}: {}", id.0, needles::said(needles::reason::LOCKED))));
+        }
+        let len = st.len();
+        if index > len {
+            return Err(bad(INSERT, format!("object {}: index {index}, past its {len} needle points (at most {len}: after the last)", id.0)));
+        }
+        let points = match at {
+            Some(points) => points,
+            // The middle of the stitch arriving at it: a stitch, not the jump onto a run's first.
+            None => {
+                let (r, i) = st.locate(index).filter(|&(_, i)| i > 0).ok_or_else(|| {
+                    bad(
+                        INSERT,
+                        format!("object {}: no stitch arrives at needle point {index} (a run starts there, or the path ends): give `at`", id.0),
+                    )
+                })?;
+                let run = st.runs.get(r).ok_or_else(|| bad(INSERT, "no such run"))?;
+                let (Some(a), Some(b)) = (run.needles.get(i - 1), run.needles.get(i)) else { return Err(bad(INSERT, "no such needle point")) };
+                vec![a.p.midpoint(b.p)]
+            }
+        };
+        if len + points.len() > needles::MAX_NEEDLE_POINTS {
+            return Err(bad(INSERT, format!("object {}: more than {} needle points", id.0, needles::MAX_NEEDLE_POINTS)));
+        }
+        // Before needle point `index`, in its run; after the last, in the last run.
+        let (r, i) = st.locate(index).unwrap_or_else(|| (st.runs.len().saturating_sub(1), st.runs.last().map_or(0, |r| r.needles.len())));
+        if st.runs.is_empty() {
+            st.runs.push(needles::Run::default());
+        }
+        let Some(run) = st.runs.get_mut(r) else { return Err(bad(INSERT, "no such run")) };
+        let new = points.iter().map(|&p| needles::Needle { p, stop: false, exact: [None, None] });
+        run.needles.splice(i..i, new);
+        let first = st.index_of(r, i);
+        let added: std::collections::BTreeSet<usize> = (first..first + points.len()).collect();
+        added_all = added.len();
+        for &k in &added {
+            lengths.around(&st, k, min, max);
+            if inserted.len() < MAX_LISTED {
+                inserted.push(json!({"id": id.0, "index": k}));
+            }
+        }
+        needles::select_in(&mut sel, id, &st, &added);
+        edits.push((id, Left::Stitches(st)));
+    } else {
+        let (t, _) = targets(s, &o, INSERT)?;
+        passed_over = t.passed_over;
+        for (id, st, indices) in t.paths {
+            let mut out = st.clone();
+            let mut added = std::collections::BTreeSet::new();
+            let mut k = 0usize;
+            let mut at_now = 0usize;
+            for (r, run) in st.runs.iter().enumerate() {
+                let mut needles: Vec<needles::Needle> = Vec::with_capacity(run.needles.len());
+                for (i, n) in run.needles.iter().enumerate() {
+                    needles.push(*n);
+                    at_now += 1;
+                    if indices.contains(&k)
+                        && let Some(next) = run.needles.get(i + 1)
+                    {
+                        needles.push(needles::Needle { p: n.p.midpoint(next.p), stop: false, exact: [None, None] });
+                        added.insert(at_now);
+                        at_now += 1;
+                    }
+                    k += 1;
+                }
+                if let Some(slot) = out.runs.get_mut(r) {
+                    slot.needles = needles;
+                }
+            }
+            if added.is_empty() {
+                continue;
+            }
+            added_all += added.len();
+            if added_all > MAX_ADDED || out.len() > needles::MAX_NEEDLE_POINTS {
+                return Err(bad(INSERT, format!("more than {MAX_ADDED} needle points added, or a path past {}", needles::MAX_NEEDLE_POINTS)));
+            }
+            for &k in &added {
+                lengths.around(&out, k, min, max);
+                if inserted.len() < MAX_LISTED {
+                    inserted.push(json!({"id": id.0, "index": k}));
+                }
+            }
+            needles::select_in(&mut sel, id, &out, &added);
+            edits.push((id, Left::Stitches(out)));
+        }
+    }
+    let reply = json!({
+        "changedCount": added_all,
+        "inserted": inserted,
+        "paths": listed(&edits),
+        "pathCount": edits.len(),
+        "lengths": lengths.json(min, max),
+        "passedOver": passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
+    });
+    if !edits.is_empty() {
+        apply(s, INSERT_LABEL, edits, sel)?;
+    }
+    Ok(reply)
+}

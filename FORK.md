@@ -542,7 +542,10 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     away (they hold a plan the plans' memory budget no longer counts);
   - `tools/src/cursors.toml`: the Embroidery section before Blend;
   - `ui-egui/src/canvas.rs`: the two in `cursor_icon`'s list of cursors not drawn yet;
-  - `ui-egui/src/cursors.rs`: the two in the tests' `GLYPHS`;
+  - `ui-egui/src/cursors.rs`: the two in the tests' `GLYPHS`, whose length is upstream's count
+    plus the fork's two: a sync sums it again by hand, since git merges two sides that both raise
+    it to the same number without a conflict (upstream's 78 → 80 for its own two cursors would
+    leave 82 entries in a `[Cursor; 80]`, and the tests would not compile);
   - `tools/src/catalog.rs`: the tool's own group at the end of `TOOL_GROUPS` (the Advanced
     toolbar), with no default shortcut;
   - `ui-egui/src/toolbar.rs`: the Embroidery category at the end of `BASIC`, the index of the

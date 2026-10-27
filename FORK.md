@@ -536,7 +536,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     its drag (Undo mid-drag); in `with_tool_cx`, the stitch plan's and the settings' answers for
     the embroidery tool (`Services::tool_facts`, `cmd/embroidery/tool.rs`'s `FactsNow`, told whether
     the canvas draws the stitches), only while that tool is active, and the context's `embroidery`
-    field set from them;
+    field set from them; in `switch_tool`, the answers it kept dropped when the tool is put
+    away (they hold a plan the plans' memory budget no longer counts);
   - `tools/src/cursors.toml`: the Embroidery section before Blend;
   - `ui-egui/src/canvas.rs`: the two in `cursor_icon`'s list of cursors not drawn yet;
   - `ui-egui/src/cursors.rs`: the two in the tests' `GLYPHS`;

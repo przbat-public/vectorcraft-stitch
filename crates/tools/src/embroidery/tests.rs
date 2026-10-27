@@ -660,3 +660,20 @@ fn the_keys_say_when_they_acted_on_the_point() {
     t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0));
     assert_eq!(t.options()["keyed"], json!(false), "a press");
 }
+
+/// Put away, the tool keeps none of the handles it found: taken up again, it finds them afresh.
+#[test]
+fn put_away_it_keeps_no_handles() {
+    let (d, ids) = doc();
+    let [square, ..] = ids;
+    let (s, p, f) = (select(&[square]), PaintDefaults::default(), plan(ids));
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    let mut t = EmbroideryTool::default();
+    t.pointer(&c, &ev(PointerKind::Move, 10.0, 10.0));
+    let walks = handle_walks();
+    t.pointer(&c, &ev(PointerKind::Move, 12.0, 10.0));
+    assert_eq!(handle_walks(), walks, "kept while it is in use");
+    t.deactivate(&c);
+    t.pointer(&c, &ev(PointerKind::Move, 14.0, 10.0));
+    assert_eq!(handle_walks(), walks + 1, "found afresh");
+}

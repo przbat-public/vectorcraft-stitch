@@ -168,10 +168,9 @@ pub fn active(app: &VectorcraftApp) -> bool {
 /// Draw the tool's handles over the canvas (both views), and ask for a plan while it is active.
 pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
     if !active(app) {
-        // The tool put away: the answers it kept go, and the tab's part leads when it is taken up.
-        if app.embroidery.handles.handed.take().is_some() {
-            app.session.drop_embroidery_tool_facts();
-        }
+        // The tool put away (the session drops the answers it kept): the plan drawn is handed again,
+        // and the tab's part leads, when it is taken up.
+        app.embroidery.handles.handed = None;
         app.embroidery.handles.parts = None;
         return;
     }

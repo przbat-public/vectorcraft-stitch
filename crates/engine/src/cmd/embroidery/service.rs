@@ -618,6 +618,12 @@ impl Services {
         self.facts.clear();
     }
 
+    /// How many documents' answers the embroidery tool keeps.
+    #[cfg(test)]
+    pub(crate) fn kept_facts(&self) -> usize {
+        self.facts.len()
+    }
+
     /// The embroidery tool's answers for document `uid`: of the plan the interface draws of it
     /// ([`Services::show`]: what is drawn is what is caught), else, with no interface (an agent, a
     /// test), of the newest plan its service remembers of the whole document with `opts` (the stitch

@@ -99,8 +99,9 @@ impl crate::Session {
         self.embroidery_plans.show(uid, snapshot, planned);
     }
 
-    /// The embroidery tool's kept answers dropped (the tool was put away).
-    pub fn drop_embroidery_tool_facts(&mut self) {
+    /// The embroidery tool's kept answers dropped (the tool was put away): a plan, its scene and its
+    /// snapshot, which the plans' memory budget doesn't count.
+    pub(crate) fn drop_embroidery_tool_facts(&mut self) {
         self.embroidery_plans.drop_facts();
     }
 
@@ -291,6 +292,26 @@ mod tests {
         assert_eq!(now.part_at(Point::new(200.0, 200.0), tol), None);
         let art = FactsNow::new(Some(&facts), &doc, false);
         assert_eq!(art.part_at(Point::new(80.0, 80.0), tol), None, "in the art view, by the art alone");
+    }
+
+    /// The tool put away (another tool chosen), the answers it kept go: they hold a plan the plans'
+    /// memory budget no longer counts. Taken up again, it answers afresh.
+    #[test]
+    fn put_away_the_tool_keeps_no_answers() {
+        use crate::ViewInfo;
+        use vectorcraft_tools::{PointerEvent, PointerKind};
+        let mut s = blank();
+        run(&mut s, "shape.rectangle", json!({"x": 20, "y": 20, "width": 80, "height": 50}));
+        run(&mut s, "embroidery.sequence", json!({}));
+        let v = ViewInfo::default();
+        s.select_tool("embroidery", v).unwrap();
+        s.pointer(&PointerEvent::new(PointerKind::Move, 30.0, 30.0), v).unwrap();
+        assert_eq!(s.embroidery_plans.kept_facts(), 1, "kept while it is in use");
+        s.select_tool("selection", v).unwrap();
+        assert_eq!(s.embroidery_plans.kept_facts(), 0);
+        s.select_tool("embroidery", v).unwrap();
+        s.pointer(&PointerEvent::new(PointerKind::Move, 30.0, 30.0), v).unwrap();
+        assert_eq!(s.embroidery_plans.kept_facts(), 1);
     }
 
     /// No plan remembered, no answers: nothing plans to answer.

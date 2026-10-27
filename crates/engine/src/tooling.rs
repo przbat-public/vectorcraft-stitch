@@ -119,6 +119,10 @@ impl Session {
             .filter(|o| o.get("editing").is_some_and(|v| !v.is_null()) && o.get("start") != o.get("end"));
         let acts = self.with_tool_cx(view, |t, cx| t.deactivate(cx));
         self.apply_actions(acts)?;
+        // VectorCraft Stitch: the embroidery tool put away, the plan's answers it kept go with it.
+        if self.tool.id() == vectorcraft_tools::embroidery::ID {
+            self.drop_embroidery_tool_facts();
+        }
         self.keep_tool_settings();
         self.tool = self.make_tool(id);
         if let Some(selection) = text_selection {

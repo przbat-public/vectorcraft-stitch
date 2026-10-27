@@ -503,6 +503,8 @@ impl Tool for EmbroideryTool {
         self.hover = None;
         self.hover_object = None;
         self.focus = None;
+        // Put away, it keeps no handles (the session drops the plan's answers it kept likewise).
+        self.memo.get_mut().take();
         self.finish_drag()
     }
 }

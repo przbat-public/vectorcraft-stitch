@@ -350,3 +350,152 @@ fn every_filters_count_in_one_pass() {
         assert!((0..picked.len()).all(|i| flags.matches(picked.record(i).unwrap(), f)), "{f:?}");
     }
 }
+
+/// A seeded sweep, as a property test would (this crate has no proptest): clicks on the rows drawn
+/// (with Shift, Cmd or neither), the list's keys and others, words typed into Go to, the scope and
+/// the filter switched, needle points moved and deleted, undo and redo, the selection changed and
+/// stitch editing started and left, a frame after each. Nothing panics, caught by the engine or not
+/// (the panic hook counts them on this thread, where the light designs are planned), and at the end
+/// the whole design's rows are `embroidery.stitches`' records.
+#[test]
+fn random_input_never_breaks_the_tab() {
+    use std::cell::Cell;
+    thread_local!(static CAUGHT: Cell<usize> = const { Cell::new(0) });
+    static HOOK: std::sync::Once = std::sync::Once::new();
+    HOOK.call_once(|| {
+        let printed = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            CAUGHT.with(|c| c.set(c.get() + 1));
+            printed(info);
+        }));
+    });
+    /// A small linear congruential generator: the same numbers every run.
+    struct Seeded(u64);
+    impl Seeded {
+        fn next(&mut self) -> u64 {
+            self.0 = self.0.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
+            self.0 >> 33
+        }
+        fn pick<'a, T>(&mut self, of: &'a [T]) -> &'a T {
+            &of[(self.next() as usize) % of.len()]
+        }
+    }
+    const RUNS: u64 = 4;
+    const STEPS: usize = 160;
+    let keys = [
+        Key::ArrowUp,
+        Key::ArrowDown,
+        Key::ArrowLeft,
+        Key::ArrowRight,
+        Key::PageUp,
+        Key::PageDown,
+        Key::Home,
+        Key::End,
+        Key::Space,
+        Key::Enter,
+        Key::Escape,
+        Key::Delete,
+        Key::Tab,
+    ];
+    let mods = [Modifiers::NONE, Modifiers::SHIFT, Modifiers::COMMAND, Modifiers::ALT];
+    let typed = ["12", "abc", "0", "-3", "99999999999999999999", "4–9", "١٢", "", " 7 ", "1e9"];
+    let scopes = ["selection", "design"];
+    let filters = ["all", "jumps", "trims", "stops", "short", "long"];
+    CAUGHT.with(|c| c.set(0));
+    for seed in 0..RUNS {
+        let (mut app, id) = app();
+        let other = app.run("shape.rectangle", json!({"x": 200, "y": 160, "width": 60, "height": 50})).unwrap()["id"].as_u64().unwrap();
+        let ctx = context();
+        let mut time = 0.0;
+        let mut rng = Seeded(seed + 1);
+        let (mut shapes, mut nodes) = settle(&mut app, &ctx, &mut time);
+        for step in 0..STEPS {
+            let events = match rng.next() % 10 {
+                0 | 1 => {
+                    let rows: Vec<Pos2> = shapes
+                        .iter()
+                        .filter_map(|s| match s {
+                            Shape::Text(t)
+                                if t.pos.x > 800.0
+                                    && !t.galley.text().is_empty()
+                                    && t.galley.text().chars().all(|c| c.is_ascii_digit() || c == ',') =>
+                            {
+                                Some(t.visual_bounding_rect().center())
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    match rows.is_empty() {
+                        true => vec![],
+                        false => {
+                            let at = *rng.pick(&rows);
+                            let m = *rng.pick(&mods);
+                            vec![
+                                Event::PointerMoved(at),
+                                Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: true, modifiers: m },
+                                Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: false, modifiers: m },
+                            ]
+                        }
+                    }
+                }
+                2 | 3 => vec![key_with(*rng.pick(&keys), *rng.pick(&mods))],
+                4 => match nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0) {
+                    Some(field) => {
+                        let focus = Event::AccessKitActionRequest(ActionRequest {
+                            action: Action::Focus,
+                            target_node: field,
+                            target_tree: TreeId::ROOT,
+                            data: None,
+                        });
+                        time += 0.05;
+                        frame(&mut app, &ctx, time, vec![focus]);
+                        vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(rng.pick(&typed).to_string()), key(Key::Enter)]
+                    }
+                    None => vec![],
+                },
+                5 => {
+                    let p = json!({"scope": rng.pick(&scopes), "filter": rng.pick(&filters)});
+                    app.run("ui.embroideryPanel", p).unwrap();
+                    vec![]
+                }
+                6 => {
+                    let dx = (rng.next() % 9) as f64 - 4.0;
+                    let cmd = *rng.pick(&["embroidery.moveNeedlePoints", "embroidery.deleteNeedlePoints", "edit.undo", "edit.redo"]);
+                    let p = if cmd == "embroidery.moveNeedlePoints" { json!({"dx": dx}) } else { json!({}) };
+                    if let Err(e) = app.run(cmd, p) {
+                        assert!(!e.contains("internal"), "seed {seed}, step {step}: {cmd}: {e}");
+                    }
+                    vec![]
+                }
+                7 => {
+                    let ids = match rng.next() % 3 {
+                        0 => json!([id]),
+                        1 => json!([other]),
+                        _ => json!([]),
+                    };
+                    let _ = app.run("select.set", json!({ "ids": ids }));
+                    vec![]
+                }
+                _ => {
+                    if app.session.active().is_some_and(|st| st.isolation.is_some()) {
+                        let _ = app.run("object.exitIsolation", json!({}));
+                    } else if app.session.active().is_some_and(|st| st.doc.node(NodeId(id)).is_some()) {
+                        let _ = app.run("object.isolate", json!({ "id": id }));
+                        let _ = app.run("view.stitchPreview", json!({"on": true}));
+                        let _ = app.run("tool.select", json!({"tool": "embroidery"}));
+                    }
+                    vec![]
+                }
+            };
+            time += 0.05;
+            (shapes, nodes) = frame(&mut app, &ctx, time, events);
+            assert_eq!(CAUGHT.with(Cell::get), 0, "seed {seed}, step {step}: a panic");
+        }
+        // The whole design's rows are the command's records.
+        app.run("ui.embroideryPanel", json!({"scope": "design", "filter": "all"})).unwrap();
+        settle(&mut app, &ctx, &mut time);
+        let want = app.run("embroidery.stitches", json!({"limit": 0})).unwrap()["recordCount"].as_u64().unwrap() as usize;
+        let got = app.embroidery.stitches.list.as_ref().map(|(_, l)| l.len());
+        assert_eq!(got, Some(want), "seed {seed}");
+    }
+}

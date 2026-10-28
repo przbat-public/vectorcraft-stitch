@@ -225,7 +225,11 @@ stitch (Document Setup's `minStitch`, else 0.4 mm) or longer than the format's l
 12.7 mm) is marked as the Check tab marks it, and beside the selection a bubble gives the lengths
 of the stitches either side. The actions on the selection (Insert, Delete, Split Run, Join Runs,
 Trim, Stop, Split Long Stitches) are in the Contextual Task Bar under it, in the Embroidery panel's
-≡ menu and in the Stitches tab.
+≡ menu and in the Stitches tab. A limit: on a design near the 2 million needle points a design may
+hold, dragging a single needle point runs at about 46 ms a frame, as the canvas measures the whole
+art for its scroll bars after every edit (upstream VectorCraft's canvas, as any edit there pays; a
+change is proposed to upstream, not made here); a drag of more than 20,000 selected moves only
+their box until a pause and stays smooth.
 
 **The Stitches tab.** The Embroidery panel's fourth tab lists the design's records as the Sewing
 order and the Check tab number them: for the selection (while stitches are edited, the object

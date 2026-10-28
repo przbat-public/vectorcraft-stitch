@@ -63,6 +63,8 @@ pub use symbols::SymbolBoxes;
 pub mod text;
 pub mod trace;
 pub mod variables;
+// VectorCraft Stitch: visual bounds measured again only where an edit changed the document.
+pub mod visual_bounds;
 pub mod xml_id;
 
 use std::collections::BTreeMap;
@@ -2682,3 +2684,6 @@ mod tests_lookups;
 mod tests_slices;
 #[cfg(test)]
 mod tests_units;
+// VectorCraft Stitch: `visual_bounds`' tests.
+#[cfg(test)]
+mod tests_visual_bounds;

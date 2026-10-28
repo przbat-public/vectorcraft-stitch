@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-27 · **Change:** the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-28 · **Change:** the canvas's bounds measured only where an edit changed the document, so that dragging one point of a design of 2 million no longer re-measures every stitch each frame (Architecture › Editing a large design; Files); earlier: the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -2423,6 +2423,60 @@ frame at fit at most 6.1 ms: within the 50 ms the research set for real designs.
 cancel checks in the planner's loops are needed. The other embroidery rows didn't move (the 20
 rings in one fill plan in 563 to 572 ms cold against their 600 ms).
 
+### Editing a large design
+
+The canvas measures the art's visual bounds (the span of its scroll bars) and the selection's (its
+frame) once per revision of the document, and a drag makes a revision a frame. Upstream's canvas
+walked every object for it (`Document::art_bounds`, each path's stroke measured along its
+segments): on a design of 2 million needle points (2,000 runs of 1,000 in 20 thread groups) that
+was 45 to 60 ms of every frame of any edit, a needle point dragged by the embroidery tool or an
+anchor by Direct Selection alike (profiled with macOS `sample`: `StrokeLayer::bounds_on` under
+`content_bounds`).
+
+`vectorcraft_doc::visual_bounds::VisualBounds` keeps each object's visual bounds as it measured
+them, in a tree that mirrors the document: a layer's, group's or Intertwine group's entry holds its
+members' entries, and each entry holds its object weakly, by its address. An edit replaces only the
+objects it changes and the containers on the way up to their layer (`Arc`, copy on write), so an
+object found at the address it was measured at is unchanged and its bounds stand; any other object
+is measured again, a container as the union of its members' bounds, most of them kept. While an
+entry holds an object weakly no other object can take its address, and `Arc::make_mut` moves an
+object it changes to a new one. Objects added, removed or restacked are lined up by id (those in the
+same order at the start and at the end in place, a map for those between). The bounds of symbol
+instances and Repeats read the symbols' art, so another set of symbols (by name and art) measures
+everything again. The rule for containers is `Node::visual_members`, which `Node::visual` measures
+by too, so the two answer alike bit for bit.
+
+Memory: an entry (about 80 bytes) for each object of the document last measured, down to the
+objects measured whole (everything but layers, groups without a clipping mask and Intertwine
+groups); nothing of an earlier version once the next is measured. The weak references keep only
+the allocation of an object replaced since the last measure, until the next one.
+
+**Measured** (2026-10-28: release build, 12-core Apple Silicon, a 1440 × 900 window at 2 pixels a
+point, 90 frames of a drag at 60 Hz). Two drags on the design of 2 million points (20 groups of 100
+paths of 1,000), with the canvas's two calls on the full walk ("before") and on the cache:
+
+| Drag | Before p50 / p95 / max | With the cache p50 / p95 / max |
+|---|---:|---:|
+| One anchor with Direct Selection, the art drawn (`large_design_drag_gate`; load 4 to 6) | 59.9 / 64.8 / 67.6 ms | 1.4 / 2.9 / 3.1 ms |
+| One needle point with the embroidery tool, the stitches drawn (the stitch-editing gate's design, on the second manual-stitches PR with this applied; load 2 to 7; ten runs without, eleven with) | 46–49 / 47–73 / 65–84 ms | 2.0–3.4 / 4.0–5.9 / 4.5–8.6 ms |
+
+Every frame of both drags is now well within a 60 Hz frame. After the embroidery tool's drag, the
+stitches of the document as it is are drawn 234 to 253 ms after the release with the cache, and
+210 to 227 ms after it without (four runs each). It isn't more work: with the drag's frames slowed
+by 45 ms, to the pace they had before, the same runs take 178 to 196 ms. A light design's plan of
+an earlier state is let finish before the last state is planned (Planning for the stitch preview),
+and how far it has got when the drag ends depends on the frames' pace.
+
+Tests (`doc/src/tests_visual_bounds.rs`): an edit of one path of 2,000 (in 20 groups) measures the
+path, its group and the layer again, 3 objects of 2,021, with or without the version before kept,
+and undoing it the same 3; a path added measures 3, a path removed 2, a path restacked in its group
+2 and moved to another group 4, a group removed 1, and new symbols every object; an object inside a
+clipping group is measured on its own; and on random documents (paths stroked mitred or round,
+symbol instances of symbols holding instances, groups stroked or clipping, Intertwine groups,
+compound paths, sublayers, Repeats, some hidden) through random sessions of edits with undo, every
+answer (the art, each object, all of them at once) is the full walk's bit for bit, with never more
+entries than objects.
+
 ### One embroidery tool
 
 The canvas has one embroidery tool with kinds of handles: today a part's entry and exit points and
@@ -2662,6 +2716,7 @@ Public documentation, cited per claim in the crate:
   `tests_preview.rs` (the scheduler end to end), `tests_languages.rs` (every language),
   `tests_handles.rs` (the tool's handles headless with real pointer events, and their contrast),
   `tests_gate.rs` (the third gate, the Object tab's scrub and the tool's drag, by hand),
+  `tests_gate_large.rs` (one point of a design of 2 million dragged, by hand),
   `tests_shots.rs` (the pictures, by hand).
 - `crates/tools/src/embroidery/` — the embroidery tool: `mod.rs` (its gestures and keys),
   `handles.rs` (its kinds of handles and where they stand), `facts.rs` (what the engine hands it,
@@ -2681,7 +2736,9 @@ Public documentation, cited per claim in the crate:
   among them; `crates/doc/src/embroidery.rs` — what an object and the document keep for embroidery
   (`embroidery/part.rs`: the settings of an object's fills and strokes; `embroidery/setup.rs`: the
   document's fabric and machine; `embroidery/transform.rs`: the settings moved and turned with
-  their object; `embroidery/mem.rs`: the memory they hold, for the undo history's budget).
+  their object; `embroidery/mem.rs`: the memory they hold, for the undo history's budget);
+  `crates/doc/src/visual_bounds.rs` — the visual bounds measured only where an edit changed the
+  document, which the canvas reads (its tests `tests_visual_bounds.rs`).
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
   `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
@@ -2705,6 +2762,7 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-28 | minor | The canvas's scroll-bar span and the selection's frame measured only where an edit changed the document (`vectorcraft_doc::visual_bounds`): each object's visual bounds kept by its address, a container's as the union of its members'; the same answers as the full walk, bit for bit; a point dragged on a design of 2 million measured (Architecture › Editing a large design). |
 | 2026-10-27 | minor | The embroidery tool's review round: the guard toward an exit strict (no more lifts, cuts or travel, the move in counted, at least 1 mm gained); Nearest Connection from the menu and the tool's bar off the interface thread, with progress and Escape; the handles, focus ring and lines readable on any fabric in every theme, 24 px targets; NotAllowed where a click selects nothing; a warning that documents saved before may sew otherwise; the words table (`embroidery-tool-words.md`); new perf rows, and everything measured again. |
 | 2026-10-26 | minor | The embroidery tool: entry and exit points on the canvas in both views, dragged (snapped to where the stitches can start or end, a ghost of the jump, a pause planning a heavy design), typed in the Entry Point and Exit Point dialog, reset with Alt-click or Delete, nudged with the arrows; a tatami fill's angle arrow; picking an object by its stitches; the planner meeting an entry exactly and sewing toward the exit, kept only where no worse; points kept on the piece nearest them; misses reported and checked; Nearest Connection; the Object tab's entry and exit rows and Set on Canvas; the One embroidery tool rules and limits; the in-app gate measured. |
 | 2026-10-25 | minor | The settings interface's review round: Document Setup's Embroidery tab's fields named by `embroidery.setup`'s paths, an agent's fabric choice taken as the tab's menu takes it and a field it can't take refused with the reason, changes marked against the document's copy of its preset, the built-in values keeping the fabric's colour, both layouts scrolling, a value OK would refuse said under its field; Copy taking a snapshot and Paste one batch in any document; Trim After marking and counting only what is sewn; the Object tab read without a listing and kept through a canvas drag, its footer from the document alone; the keyboard's focus drawn and a setting's help shown on it; the measurements taken again. |

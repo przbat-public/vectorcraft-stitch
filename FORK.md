@@ -208,8 +208,17 @@ stitches fast, is tried before anything is built on it.
    order moving a converted object whole; the Object tab's words and buttons. Every word in the 24
    catalogues (AI-drafted, not yet reviewed; English and Polish in `docs/manual-stitches-words.md`
    for review).
-   The second: editing needle points with the tool above, in isolation, drawn thin with their
-   needle points by the stitch scene; a Stitches tab listing the plan's numbered stitches.
+   The second, done (in review): editing needle points on the canvas with the Embroidery Tool in
+   isolation of a stitch object, in the stitch view (the rest faded, the stitches 1 pt wide, needle
+   points as two-tone circles from 250 %): click, Shift-click, marquee, the Lasso tool, drag (past
+   20,000 selected refreshed on a pause or the release), the arrows 0.1 mm and 1 mm, `[` `]`,
+   Alt-click to insert, Delete to merge, Escape; the limits marked on the stitches and a live check
+   beside the selection; the stitch actions in the Contextual Task Bar, the panel's ≡ menu and the
+   Stitches tab. The Embroidery panel's Stitches tab: the plan's records for the selection or the
+   whole design, filters with counts, X and Y from the rulers' zero, a click that shows (or, while
+   editing, selects), Go to, Move by, the keyboard and screen readers, the tab strip's short names.
+   Every word in the 24 catalogues (AI-drafted; English and Polish in
+   `docs/manual-stitches-words.md`).
 9. **Digitizing from an image.** First the engine, through commands: the smallest area in mm²,
    colour overlap in mm, centre lines as running stitch or satin, optionally an angle along the
    shape, colours matched to the format's palette through Image Trace with the thread library.

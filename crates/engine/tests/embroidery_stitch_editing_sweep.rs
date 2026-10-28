@@ -277,7 +277,10 @@ fn a_drag_is_the_move_command() {
     assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1, "one undo step");
     assert_eq!(s.doc().unwrap().history.undo.last().map(|e| e.label.clone()), Some("Move Needle Points".into()));
     by_command.execute("embroidery.moveNeedlePoints", &json!({"dx": 7.1, "dy": 3.5})).unwrap();
-    assert_eq!(s.doc().unwrap().doc, by_command.doc().unwrap().doc, "the drag is the command");
+    // Made a moment apart, the two documents may say they were created a second apart.
+    let (mut dragged, mut commanded) = ((*s.doc().unwrap().doc).clone(), (*by_command.doc().unwrap().doc).clone());
+    (dragged.metadata.created, commanded.metadata.created) = (None, None);
+    assert_eq!(dragged, commanded, "the drag is the command");
 }
 
 /// The lasso of stitch editing is the Lasso tool (the project owner's choice, 2026-10-27): in

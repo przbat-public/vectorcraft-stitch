@@ -2,8 +2,8 @@
 //! with a value set on an object and with objects that differ, a check's rule opened and shown, its
 //! chart), its states (planning, failed over the last stitches, checking, a check that failed) and
 //! the status bar's counters draw no English the language's catalogue doesn't give, and the panel's
-//! words stay inside it at 256 and 300 points; Document Setup's Embroidery tab likewise, in its two
-//! layouts; and what screen readers are told.
+//! words stay inside it at 256 and 300 points; the Stitches tab likewise in its states, at 220 too;
+//! Document Setup's Embroidery tab likewise, in its two layouts; and what screen readers are told.
 
 use egui::accesskit::{Node, Role};
 use egui::{Pos2, Rect, Shape, vec2};
@@ -169,6 +169,14 @@ fn may_be_english(catalogue: &str, text: &str, names: &[String]) -> bool {
     if text.contains(" · ") {
         return text.split(" · ").all(|part| may_be_english(catalogue, part, names));
     }
+    // A word followed by its count (the Stitches tab's filters, "Stops 3"): the word.
+    if let Some((word, count)) = text.rsplit_once(' ')
+        && !count.is_empty()
+        && count.chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | ',' | '\u{a0}' | '\u{202f}'))
+        && may_be_english(catalogue, word, names)
+    {
+        return true;
+    }
     let text = text.trim_start_matches("· ");
     let without_names = names.iter().fold(text.to_string(), |t, n| t.replace(n.as_str(), ""));
     let worded = |t: &str| {
@@ -309,6 +317,84 @@ fn the_embroidery_interface_in_every_language() {
                             info.code
                         );
                     }
+                }
+            }
+        }
+    }
+}
+
+/// The Stitches tab at `width`: nothing selected, the whole design listed, a planned square
+/// selected (its foot: planned, Convert to Manual Stitches), then that square converted and its
+/// stitches edited with a needle point selected (its foot: the count, Move by, the actions) → each
+/// state's texts.
+fn stitches_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Vec<Vec<(String, Rect)>> {
+    use crate::panels::embroidery::stitches::Scope;
+    let panel = &mut app.ui.embroidery_panel;
+    (panel.stitches_scope, panel.stitches_filter) = (Scope::Selection, vectorcraft_engine::cmd::embroidery::stitch_list::Filter::All);
+    app.run("select.set", json!({"ids": []})).unwrap();
+    let nothing = frames(app, ctx, Tab::Stitches, width).0;
+    app.ui.embroidery_panel.stitches_scope = Scope::Design;
+    let design = frames(app, ctx, Tab::Stitches, width).0;
+    app.ui.embroidery_panel.stitches_scope = Scope::Selection;
+    let order = app.run("embroidery.sequence", json!({})).unwrap();
+    let first = order["blocks"][0]["units"][0]["id"].as_u64().unwrap();
+    app.run("select.set", json!({ "ids": [first] })).unwrap();
+    let planned = frames(app, ctx, Tab::Stitches, width).0;
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    app.run("object.isolate", json!({ "id": first })).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let run = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 1}]})).unwrap();
+    let editing = frames(app, ctx, Tab::Stitches, width).0;
+    assert!(crate::embroidery::editing::editing(app).is_some_and(|e| e.selected == 1), "editing, one needle point selected");
+    vec![nothing, design, planned, editing]
+}
+
+/// In every complete language, the Stitches tab, in each of its states, draws no English its
+/// catalogue doesn't give, no words over others, and nothing outside the panel, at the shared
+/// dock's narrowest (220 points) and at 256 and 300.
+#[test]
+fn the_stitches_tab_in_every_language() {
+    const WIDTHS: [f32; 3] = [220.0, 256.0, 300.0];
+    let english: Vec<String> = {
+        crate::i18n::set_current(Lang::EN);
+        let ctx = egui::Context::default();
+        theme::install_fonts(&ctx);
+        let mut app = app_with_findings();
+        stitches_tab(&mut app, &ctx, 300.0).into_iter().flatten().map(|(t, _)| numbers_blanked(&t)).collect()
+    };
+    for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
+        let lang = Lang::from_code(info.code).unwrap();
+        for width in WIDTHS {
+            crate::i18n::set_current(lang);
+            let ctx = egui::Context::default();
+            theme::install_fonts(&ctx);
+            let mut app = app_with_findings();
+            let drawn = stitches_tab(&mut app, &ctx, width);
+            let names = names(&app, lang);
+            crate::i18n::set_current(Lang::EN);
+            let panel = Rect::from_min_max(Pos2::new(WINDOW - width, 0.0), Pos2::new(WINDOW, HEIGHT - 24.0));
+            for (state, texts) in drawn.iter().enumerate() {
+                let inside: Vec<&(String, Rect)> = texts.iter().filter(|(_, r)| panel.intersects(*r)).collect();
+                for (k, (a, ra)) in inside.iter().enumerate() {
+                    for (b, rb) in &inside[k + 1..] {
+                        // A field's value painted over the app's own words in their place: one text.
+                        if a == b && ra == rb {
+                            continue;
+                        }
+                        assert!(!ra.shrink(0.5).intersects(rb.shrink(0.5)), "{} at {width}, state {state}: {a:?} overlaps {b:?}", info.code);
+                    }
+                }
+                for (text, rect) in inside {
+                    if english.contains(&numbers_blanked(text)) {
+                        assert!(may_be_english(info.source, text, &names), "{}, state {state}: {text:?} is drawn in English", info.code);
+                    }
+                    assert!(
+                        rect.left() >= panel.left() - 0.5 && rect.right() <= panel.right() + 0.5,
+                        "{} at {width}, state {state}: {text:?} {rect:?} leaves the panel",
+                        info.code
+                    );
                 }
             }
         }

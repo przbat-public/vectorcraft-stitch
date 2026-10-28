@@ -462,6 +462,7 @@ fn part_switch(ui: &mut Ui, info: &ObjectSettings, shown: Option<Part>) -> Optio
         .map(|(part, has, label)| super::Segment {
             id: ui.id().with(("embroidery-part", part.id())),
             label,
+            full: label,
             selected: shown == Some(*part),
             enabled: *has,
         })

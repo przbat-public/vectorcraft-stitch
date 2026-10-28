@@ -90,6 +90,8 @@ pub struct Embroidery {
     pub(crate) check: crate::panels::embroidery::check::CheckState,
     /// The Embroidery panel's Object tab.
     pub(crate) object: crate::panels::embroidery::object::ObjectState,
+    /// The Embroidery panel's Stitches tab.
+    pub(crate) stitches: crate::panels::embroidery::stitches::StitchesState,
     /// Document Setup's Embroidery tab, while the dialog is open: what it opened with.
     pub(crate) setup: Option<setup_tab::Opened>,
     /// The status bar's counters.
@@ -125,6 +127,7 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
         check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
         handles::draw(app, &ui.painter_at(canvas), &xf);
         selection::draw(app, ui, &ui.painter_at(canvas), &xf);
+        crate::panels::embroidery::stitches::draw_mark(app, &ui.painter_at(canvas), &xf);
     }
     let isolated = app.ui.screen_mode < 3 && app.session.active().is_some_and(|st| st.isolation.is_some());
     let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };

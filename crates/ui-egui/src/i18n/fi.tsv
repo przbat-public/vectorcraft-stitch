@@ -6153,3 +6153,39 @@ embroidery	Trim After the Selected Needle Points	Leikkaus valittujen neulanpisto
 embroidery	Stop After the Selected Needle Points	Pysäytys valittujen neulanpistojen jälkeen
 @plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} alle {value} mm:n pisto|{count} alle {value} mm:n pistoa
 @plural	{count} stitch too long|{count} stitches too long	{count} liian pitkä pisto|{count} liian pitkää pistoa
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Järjestys
+embroidery	Selection	Valinta
+embroidery	Whole design	Koko kuvio
+embroidery	All	Kaikki
+embroidery	Stops	Pysäytykset
+embroidery	Too short	Liian lyhyet
+embroidery	Shorter than {value} mm	Lyhyemmät kuin {value} mm
+embroidery	Longer than {value} mm	Pidemmät kuin {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Pituus (mm)
+embroidery	stitch	pisto
+embroidery	jump	hyppy
+embroidery	trim	leikkaus
+embroidery	stop	pysäytys
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Tietue {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, pituus {value} mm
+embroidery	, too short	, liian lyhyt
+embroidery	, too long	, liian pitkä
+embroidery	Rows {first}–{last} of {total}	Rivit {first}–{last} / {total}
+embroidery	Previous rows	Edelliset rivit
+embroidery	Next rows	Seuraavat rivit
+embroidery	Listing stitches…	Luetellaan pistoja…
+embroidery	Select objects to list their stitches.	Valitse objekteja nähdäksesi niiden pistot.
+embroidery	The selection sews no stitches.	Valinta ei ompele pistoja.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Tätä pistoa ei voi muokata: se suunnitellaan objektinsa muodosta.
+embroidery	Go to #	Siirry nro
+embroidery	Record number	Tietueen numero
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Tietuetta nro {value} ei ole tässä: nämä ovat nrot {first}–{last}.
+embroidery	Move by	Siirrä
+embroidery	Apply	Käytä
+embroidery	Click a row or a needle point to select it.	Valitse rivi tai neulanpisto napsauttamalla sitä.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Suunniteltu muodosta: muunna objekti manuaalisiksi pistoiksi muokataksesi niitä.
+@plural	{count} needle point selected|{count} needle points selected	{count} neulanpisto valittu|{count} neulanpistoa valittu

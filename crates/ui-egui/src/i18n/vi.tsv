@@ -5717,3 +5717,39 @@ embroidery	Trim After the Selected Needle Points	Cắt chỉ sau các điểm đ
 embroidery	Stop After the Selected Needle Points	Dừng sau các điểm đâm kim đã chọn
 @plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} mũi ngắn hơn {value} mm
 @plural	{count} stitch too long|{count} stitches too long	{count} mũi quá dài
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Thứ tự
+embroidery	Selection	Vùng chọn
+embroidery	Whole design	Toàn bộ mẫu
+embroidery	All	Tất cả
+embroidery	Stops	Lần dừng
+embroidery	Too short	Quá ngắn
+embroidery	Shorter than {value} mm	Ngắn hơn {value} mm
+embroidery	Longer than {value} mm	Dài hơn {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Độ dài (mm)
+embroidery	stitch	mũi thêu
+embroidery	jump	mũi nhảy
+embroidery	trim	cắt chỉ
+embroidery	stop	dừng
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Bản ghi {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, độ dài {value} mm
+embroidery	, too short	, quá ngắn
+embroidery	, too long	, quá dài
+embroidery	Rows {first}–{last} of {total}	Hàng {first}–{last} / {total}
+embroidery	Previous rows	Các hàng trước
+embroidery	Next rows	Các hàng sau
+embroidery	Listing stitches…	Đang liệt kê mũi thêu…
+embroidery	Select objects to list their stitches.	Chọn đối tượng để liệt kê mũi thêu của chúng.
+embroidery	The selection sews no stitches.	Vùng chọn không thêu mũi nào.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Không thể sửa mũi thêu này: nó được lập từ hình dạng của đối tượng.
+embroidery	Go to #	Đến số
+embroidery	Record number	Số bản ghi
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Không có bản ghi số {value} ở đây: ở đây là số {first}–{last}.
+embroidery	Move by	Dịch chuyển
+embroidery	Apply	Áp dụng
+embroidery	Click a row or a needle point to select it.	Nhấp vào một hàng hoặc điểm đâm kim để chọn.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Được lập từ hình dạng: chuyển đối tượng thành mũi thêu thủ công để sửa.
+@plural	{count} needle point selected|{count} needle points selected	Đã chọn {count} điểm đâm kim

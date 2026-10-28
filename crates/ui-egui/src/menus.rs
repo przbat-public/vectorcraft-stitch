@@ -756,7 +756,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "ui.embroideryPanel",
         "Embroidery Panel",
         "",
-        "{tab?: object|order|check, part?: fill|stroke (the part of the selected objects the Object tab shows), format?: a format's id (embroidery.check's), or null for the thread palette's} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for → {tab, part, format}",
+        "{tab?: object|order|check|stitches, part?: fill|stroke (the part of the selected objects the Object tab shows), format?: a format's id (embroidery.check's), or null for the thread palette's, scope?: selection|design, filter?: all|jumps|trims|stops|short|long (the Stitches tab's)} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for; scope and filter: the rows the Stitches tab lists → {tab, part, format, scope, filter}",
     ),
     (
         "embroidery.copySettings",

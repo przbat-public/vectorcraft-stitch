@@ -6078,3 +6078,39 @@ embroidery	Trim After the Selected Needle Points	Klipp efter de markerade nålst
 embroidery	Stop After the Selected Needle Points	Stopp efter de markerade nålsticken
 @plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} stygn kortare än {value} mm|{count} stygn kortare än {value} mm
 @plural	{count} stitch too long|{count} stitches too long	{count} för långt stygn|{count} för långa stygn
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Ordning
+embroidery	Selection	Markering
+embroidery	Whole design	Hela designen
+embroidery	All	Alla
+embroidery	Stops	Stopp
+embroidery	Too short	För korta
+embroidery	Shorter than {value} mm	Kortare än {value} mm
+embroidery	Longer than {value} mm	Längre än {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Längd (mm)
+embroidery	stitch	stygn
+embroidery	jump	hopp
+embroidery	trim	klipp
+embroidery	stop	stopp
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Post {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, längd {value} mm
+embroidery	, too short	, för kort
+embroidery	, too long	, för långt
+embroidery	Rows {first}–{last} of {total}	Rader {first}–{last} av {total}
+embroidery	Previous rows	Föregående rader
+embroidery	Next rows	Nästa rader
+embroidery	Listing stitches…	Listar stygn…
+embroidery	Select objects to list their stitches.	Markera objekt för att lista deras stygn.
+embroidery	The selection sews no stitches.	Markeringen syr inga stygn.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Det här stygnet kan inte redigeras: det planeras utifrån objektets form.
+embroidery	Go to #	Gå till nr
+embroidery	Record number	Postens nummer
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Ingen post nr {value} här: här finns nr {first}–{last}.
+embroidery	Move by	Flytta med
+embroidery	Apply	Använd
+embroidery	Click a row or a needle point to select it.	Klicka på en rad eller ett nålstick för att markera det.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Planerade utifrån formen: konvertera objektet till manuella stygn för att redigera dem.
+@plural	{count} needle point selected|{count} needle points selected	{count} nålstick markerat|{count} nålstick markerade

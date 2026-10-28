@@ -405,11 +405,11 @@ pub(super) fn exit_color([r, g, b]: [u8; 3]) -> Color32 {
     super::marks::readable(Color32::from_rgb(r, g, b), &[light()], false)
 }
 
-pub(super) fn dark() -> Color32 {
+pub(crate) fn dark() -> Color32 {
     Color32::from_rgb(MARK_DARK[0], MARK_DARK[1], MARK_DARK[2])
 }
 
-pub(super) fn light() -> Color32 {
+pub(crate) fn light() -> Color32 {
     Color32::from_rgb(MARK_LIGHT[0], MARK_LIGHT[1], MARK_LIGHT[2])
 }
 

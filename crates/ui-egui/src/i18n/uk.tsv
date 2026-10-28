@@ -5717,3 +5717,39 @@ embroidery	Trim After the Selected Needle Points	Обрізання після �
 embroidery	Stop After the Selected Needle Points	Зупинка після вибраних проколів
 @plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} стібок коротший за {value} мм|{count} стібки коротші за {value} мм|{count} стібків коротших за {value} мм
 @plural	{count} stitch too long|{count} stitches too long	{count} задовгий стібок|{count} задовгі стібки|{count} задовгих стібків
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Порядок
+embroidery	Selection	Виділення
+embroidery	Whole design	Увесь дизайн
+embroidery	All	Усі
+embroidery	Stops	Зупинки
+embroidery	Too short	Закороткі
+embroidery	Shorter than {value} mm	Коротші за {value} мм
+embroidery	Longer than {value} mm	Довші за {value} мм
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (мм)
+embroidery	Y (mm)	Y (мм)
+embroidery	Length (mm)	Довжина (мм)
+embroidery	stitch	стібок
+embroidery	jump	перескок
+embroidery	trim	обрізання
+embroidery	stop	зупинка
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Запис {number}: {type}, X {x} мм, Y {y} мм
+embroidery	, length {value} mm	, довжина {value} мм
+embroidery	, too short	, закороткий
+embroidery	, too long	, задовгий
+embroidery	Rows {first}–{last} of {total}	Рядки {first}–{last} з {total}
+embroidery	Previous rows	Попередні рядки
+embroidery	Next rows	Наступні рядки
+embroidery	Listing stitches…	Складання списку стібків…
+embroidery	Select objects to list their stitches.	Виділіть об’єкти, щоб побачити список їхніх стібків.
+embroidery	The selection sews no stitches.	Виділення не вишиває жодного стібка.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Цей стібок не можна змінити: його розраховано за формою об’єкта.
+embroidery	Go to #	Перейти до №
+embroidery	Record number	Номер запису
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Тут немає запису № {value}: тут № {first}–{last}.
+embroidery	Move by	Зсунути на
+embroidery	Apply	Застосувати
+embroidery	Click a row or a needle point to select it.	Клацніть рядок або прокол, щоб виділити його.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Розраховано за формою: перетворіть об’єкт на ручні стібки, щоб змінити їх.
+@plural	{count} needle point selected|{count} needle points selected	Вибрано {count} прокол|Вибрано {count} проколи|Вибрано {count} проколів

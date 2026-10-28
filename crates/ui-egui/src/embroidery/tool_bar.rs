@@ -66,7 +66,13 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
     let labels = [(Part::Fill, crate::et!("Fill")), (Part::Stroke, crate::et!("Stroke"))];
     let items: Vec<Segment<'_>> = labels
         .iter()
-        .map(|(part, label)| Segment { id: ui.id().with(("embroidery-tool-part", part.id())), label, selected: shown == *part, enabled: true })
+        .map(|(part, label)| Segment {
+            id: ui.id().with(("embroidery-tool-part", part.id())),
+            label,
+            full: label,
+            selected: shown == *part,
+            enabled: true,
+        })
         .collect();
     let chosen = ui.allocate_ui(vec2(SWITCH_WIDTH, SWITCH_HEIGHT), |ui| segments(ui, SWITCH_HEIGHT, SWITCH_TEXT, &items)).inner;
     if let Some((part, _)) = chosen.and_then(|i| labels.get(i)) {

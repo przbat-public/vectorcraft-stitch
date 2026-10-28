@@ -6061,3 +6061,39 @@ embroidery	Trim After the Selected Needle Points	Срязване след из�
 embroidery	Stop After the Selected Needle Points	Спиране след избраните точки на убождане
 @plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} бод, по-къс от {value} мм|{count} бода, по-къси от {value} мм
 @plural	{count} stitch too long|{count} stitches too long	{count} твърде дълъг бод|{count} твърде дълги бода
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Ред
+embroidery	Selection	Селекция
+embroidery	Whole design	Целият дизайн
+embroidery	All	Всички
+embroidery	Stops	Спирания
+embroidery	Too short	Твърде къси
+embroidery	Shorter than {value} mm	По-къси от {value} mm
+embroidery	Longer than {value} mm	По-дълги от {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Дължина (mm)
+embroidery	stitch	бод
+embroidery	jump	прескок
+embroidery	trim	срязване
+embroidery	stop	спиране
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Запис {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, дължина {value} mm
+embroidery	, too short	, твърде къс
+embroidery	, too long	, твърде дълъг
+embroidery	Rows {first}–{last} of {total}	Редове {first}–{last} от {total}
+embroidery	Previous rows	Предишни редове
+embroidery	Next rows	Следващи редове
+embroidery	Listing stitches…	Изброяване на бодовете…
+embroidery	Select objects to list their stitches.	Изберете обекти, за да изброите бодовете им.
+embroidery	The selection sews no stitches.	Избраното не шие бодове.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Този бод не може да се редактира: планиран е от формата на обекта си.
+embroidery	Go to #	Към №
+embroidery	Record number	Номер на запис
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Тук няма запис № {value}: тук са № {first}–{last}.
+embroidery	Move by	Преместване с
+embroidery	Apply	Прилагане
+embroidery	Click a row or a needle point to select it.	Щракнете ред или точка на убождане за избор.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Планирани от формата: преобразувайте обекта в ръчни бодове, за да ги редактирате.
+@plural	{count} needle point selected|{count} needle points selected	{count} избрана точка на убождане|{count} избрани точки на убождане

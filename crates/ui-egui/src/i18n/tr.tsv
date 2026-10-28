@@ -6083,3 +6083,39 @@ embroidery	Trim After the Selected Needle Points	Seçili iğne noktalarından so
 embroidery	Stop After the Selected Needle Points	Seçili iğne noktalarından sonra durma
 @plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{value} mm'den kısa {count} dikiş
 @plural	{count} stitch too long|{count} stitches too long	{count} çok uzun dikiş
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Sıra
+embroidery	Selection	Seçim
+embroidery	Whole design	Tüm tasarım
+embroidery	All	Tümü
+embroidery	Stops	Durmalar
+embroidery	Too short	Çok kısa
+embroidery	Shorter than {value} mm	{value} mm'den kısa
+embroidery	Longer than {value} mm	{value} mm'den uzun
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Uzunluk (mm)
+embroidery	stitch	dikiş
+embroidery	jump	atlama
+embroidery	trim	kesme
+embroidery	stop	durma
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Kayıt {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, uzunluk {value} mm
+embroidery	, too short	, çok kısa
+embroidery	, too long	, çok uzun
+embroidery	Rows {first}–{last} of {total}	{total} satırdan {first}–{last}
+embroidery	Previous rows	Önceki satırlar
+embroidery	Next rows	Sonraki satırlar
+embroidery	Listing stitches…	Dikişler listeleniyor…
+embroidery	Select objects to list their stitches.	Dikişlerini listelemek için nesneleri seçin.
+embroidery	The selection sews no stitches.	Seçim hiç dikiş dikmiyor.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Bu dikiş düzenlenemez: nesnesinin şeklinden planlanır.
+embroidery	Go to #	Git: #
+embroidery	Record number	Kayıt numarası
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Burada {value} numaralı kayıt yok: buradakiler {first}–{last}.
+embroidery	Move by	Taşı
+embroidery	Apply	Uygula
+embroidery	Click a row or a needle point to select it.	Seçmek için bir satıra veya iğne noktasına tıklayın.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Şekilden planlanır: düzenlemek için nesneyi manuel dikişlere dönüştürün.
+@plural	{count} needle point selected|{count} needle points selected	{count} iğne noktası seçili

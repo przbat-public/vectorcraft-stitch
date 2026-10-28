@@ -92,6 +92,12 @@ impl ToolFacts {
         Self { generation: planned.generation, snapshot, ends, trim, planned: planned.clone(), numbers: std::sync::Mutex::default() }
     }
 
+    /// The plan these answers are of.
+    #[cfg(test)]
+    pub(crate) fn plan(&self) -> Arc<DesignPlan> {
+        self.planned.plan.clone()
+    }
+
     /// The record numbers the plan gives path `id`'s needle points, in order (`None`: the plan
     /// sews no unit of it as its needle points), worked out the first time it is asked.
     fn numbers_of(&self, id: NodeId) -> Option<Arc<Vec<usize>>> {

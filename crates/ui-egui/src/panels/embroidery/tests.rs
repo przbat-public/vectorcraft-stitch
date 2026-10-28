@@ -84,11 +84,19 @@ fn window_embroidery_docks_it_beside_the_three_tabs() {
 fn ui_embroidery_panel_shows_it_at_a_tab() {
     let mut app = blank_app();
     let none = Value::Null;
-    assert_eq!(app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap(), json!({"tab": "check", "part": "fill", "format": none}));
+    let reply = |tab: &str| json!({"tab": tab, "part": "fill", "format": Value::Null, "scope": "selection", "filter": "all"});
+    assert_eq!(app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap(), reply("check"));
     assert_eq!(app.ui.embroidery_panel.tab, Tab::Check);
     assert!(app.ui.docking.as_ref().is_some_and(|l| l.contains(&ID.to_string())));
-    assert_eq!(app.run("ui.embroideryPanel", json!({})).unwrap(), json!({"tab": "check", "part": "fill", "format": none}), "the tab stays");
-    assert!(app.run("ui.embroideryPanel", json!({"tab": "stitches"})).is_err(), "not shown yet");
+    assert_eq!(app.run("ui.embroideryPanel", json!({})).unwrap(), reply("check"), "the tab stays");
+    assert!(app.run("ui.embroideryPanel", json!({"tab": "stitch"})).is_err(), "no such tab");
+    // The Stitches tab, at the whole design's jumps; a scope or filter refused changes nothing.
+    let r = app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "design", "filter": "jumps"})).unwrap();
+    assert_eq!((&r["tab"], &r["scope"], &r["filter"]), (&json!("stitches"), &json!("design"), &json!("jumps")));
+    for bad in [json!({"scope": "all"}), json!({"filter": "short stitches"}), json!({"filter": 3})] {
+        assert!(app.run("ui.embroideryPanel", bad.clone()).is_err(), "{bad}");
+    }
+    assert_eq!(app.run("ui.embroideryPanel", json!({"tab": "check", "scope": "selection", "filter": "all"})).unwrap(), reply("check"));
     assert!(app.run("ui.embroideryPanel", json!({"tab": 1})).is_err());
     assert!(app.run("ui.embroideryPanel", json!({"tabs": "order"})).is_err());
     assert_eq!(app.ui.embroidery_panel.tab, Tab::Check);
@@ -119,7 +127,8 @@ fn the_open_tab_is_read_leniently() {
     for (saved, tab, part) in [
         (json!({"tab": "check"}), Tab::Check, Part::Fill),
         (json!({"tab": "object", "part": "stroke"}), Tab::Object, Part::Stroke),
-        (json!({"tab": "stitches", "part": 3}), Tab::Object, Part::Fill),
+        (json!({"tab": "stitches", "part": 3}), Tab::Stitches, Part::Fill),
+        (json!({"tab": "threads", "part": 3}), Tab::Object, Part::Fill),
         (json!({"tab": 7}), Tab::Object, Part::Fill),
         (json!({}), Tab::Object, Part::Fill),
     ] {
@@ -129,7 +138,7 @@ fn the_open_tab_is_read_leniently() {
     // Whatever is saved for the panel, the rest of the interface's state loads.
     let mut ui = serde_json::to_value(crate::state::UiState::default()).unwrap();
     ui["recent_files"] = json!(["kept.svg"]);
-    for saved in [json!({"tab": "stitches", "zoom": 3}), json!(null), json!("check"), json!(5), json!([1, 2]), json!({"tab": "check"})] {
+    for saved in [json!({"tab": "threads", "zoom": 3}), json!(null), json!("check"), json!(5), json!([1, 2]), json!({"tab": "check"})] {
         ui["embroidery_panel"] = saved.clone();
         let read = serde_json::from_value::<crate::state::UiState>(ui.clone()).unwrap_or_else(|e| panic!("{saved}: {e}"));
         assert_eq!(read.recent_files, ["kept.svg"], "{saved}");
@@ -148,7 +157,8 @@ fn its_states() {
     // Not planned yet: blank (the strip only), then planned and ready.
     let mut app = with_art();
     let words = frame(&mut app, &ctx, 1.0);
-    assert!(has(&words, "Sewing Order") && has(&words, "Check"), "{words:?}");
+    // The strip's short names (the project owner's choice): "Order" for Sewing Order.
+    assert!(has(&words, "Order") && has(&words, "Check") && has(&words, "Stitches"), "{words:?}");
     assert!(!has(&words, "Planning"), "no busy mark at once: {words:?}");
     frame(&mut app, &ctx, 1.05);
     let words = frame(&mut app, &ctx, 1.1);
@@ -201,7 +211,12 @@ fn planning_with_its_progress_then_a_failure_over_the_last_stitches() {
     let (words, tree) = frame_and_tree(&mut app, &ctx, 0.2);
     assert!(has(&words, "Planning stitches…"), "{words:?}");
     let tree = tree.expect("an accessibility tree");
-    let bar = tree.nodes.iter().find(|(_, n)| n.role() == egui::accesskit::Role::ProgressIndicator).map(|(_, n)| n.numeric_value());
+    // The bar (the spinner beside it is a progress indicator with no value).
+    let bar = tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.role() == egui::accesskit::Role::ProgressIndicator && n.numeric_value().is_some())
+        .map(|(_, n)| n.numeric_value());
     assert_eq!(bar, Some(Some(40.0)), "two steps of five");
     held.release();
     frame(&mut app, &ctx, 0.3);
@@ -337,8 +352,8 @@ fn the_tabs_are_tabs() {
         .filter(|(_, n)| n.role() == egui::accesskit::Role::Tab)
         .map(|(_, n)| (n.label().map(str::to_string), n.is_selected()))
         .collect();
-    assert_eq!(tabs.len(), 3, "{tabs:?}");
-    for (name, open) in [("Object", false), ("Sewing Order", true), ("Check", false)] {
+    assert_eq!(tabs.len(), 4, "{tabs:?}");
+    for (name, open) in [("Object", false), ("Sewing Order", true), ("Check", false), ("Stitches", false)] {
         assert!(tabs.contains(&(Some(name.into()), Some(open))), "{name}: {tabs:?}");
     }
 }

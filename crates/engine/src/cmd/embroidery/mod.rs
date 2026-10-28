@@ -49,6 +49,7 @@ mod sequence;
 pub(crate) mod service;
 pub mod setup;
 mod stats;
+pub mod stitch_list;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]

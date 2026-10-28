@@ -301,6 +301,40 @@ fn a_record_shown_is_in_view_and_marked_on_the_canvas() {
     assert_eq!(rings(&shapes), 0, "only while the tab shows");
 }
 
+/// X and Y are millimetres from the rulers' zero point (the project owner's choice): moved an inch
+/// right and half an inch down, every row's X is 25.4 less and its Y 12.7 less.
+#[test]
+fn x_and_y_are_measured_from_the_rulers_zero() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let places = |nodes: &[Node]| -> Vec<(String, f64, f64)> {
+        let mut out: Vec<(String, f64, f64)> = nodes
+            .iter()
+            .filter(|n| n.1 == Role::Row)
+            .filter_map(|n| {
+                let (head, rest) = n.2.split_once(", X ")?;
+                let (x, rest) = rest.split_once(" mm, Y ")?;
+                let y = rest.split(" mm").next()?;
+                Some((head.to_string(), x.parse().ok()?, y.parse().ok()?))
+            })
+            .collect();
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        out
+    };
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let before = places(&nodes);
+    assert!(before.len() > 5, "{nodes:?}");
+    app.run("document.setRulerOrigin", json!({"x": 72, "y": 36})).unwrap();
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let after = places(&nodes);
+    assert_eq!(before.len(), after.len());
+    for ((name, x0, y0), (same, x1, y1)) in before.iter().zip(&after) {
+        assert_eq!(name, same);
+        assert!((x0 - x1 - 25.4).abs() < 0.051 && (y0 - y1 - 12.7).abs() < 0.051, "{name}: {x0},{y0} → {x1},{y1}");
+    }
+}
+
 /// With needle points selected, Move by X 0,3 typed in Polish (a comma) moves them 0.3 mm in one undo
 /// step.
 #[test]

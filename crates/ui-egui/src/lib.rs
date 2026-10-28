@@ -372,6 +372,10 @@ pub struct CanvasCache {
     pub selection_bounds: Option<((u64, u64), Option<vectorcraft_geom::Rect>)>,
     /// [`VectorcraftApp::content_bounds`] for (document uid, revision).
     pub content_bounds: Option<((u64, u64), Option<vectorcraft_geom::Rect>)>,
+    /// VectorCraft Stitch: the visual bounds of the active document's objects as last measured, so
+    /// that [`VectorcraftApp::content_bounds`] and [`VectorcraftApp::selection_bounds`] measure only
+    /// the objects an edit changed.
+    pub visual_bounds: vectorcraft_doc::visual_bounds::VisualBounds,
     /// The tools' cursors as OS cursor bitmaps.
     pub cursors: cursors::Images,
     /// The view the canvas last drew and when it last changed (egui's input time): while it moves,
@@ -620,6 +624,8 @@ impl VectorcraftApp {
                 selection_box: None,
                 selection_bounds: None,
                 content_bounds: None,
+                // VectorCraft Stitch: nothing measured yet.
+                visual_bounds: Default::default(),
                 cursors: Default::default(),
                 view_moved: None,
                 hover_cursor: None,
@@ -1287,7 +1293,8 @@ impl VectorcraftApp {
         {
             return b;
         }
-        let b = st.doc.bounds_of(&st.selection.objects, true);
+        // VectorCraft Stitch: measured again only where the document changed.
+        let b = self.canvas.visual_bounds.bounds_of(&st.doc, &st.selection.objects);
         self.canvas.selection_bounds = Some((key, b));
         b
     }
@@ -1303,7 +1310,8 @@ impl VectorcraftApp {
             return b;
         }
         let boards = st.doc.artboards.iter().map(|a| a.rect).reduce(|r, a| r.union(a));
-        let b = vectorcraft_geom::union_opt(st.doc.art_bounds(), boards);
+        // VectorCraft Stitch: measured again only where the document changed.
+        let b = vectorcraft_geom::union_opt(self.canvas.visual_bounds.art_bounds(&st.doc), boards);
         self.canvas.content_bounds = Some((key, b));
         b
     }

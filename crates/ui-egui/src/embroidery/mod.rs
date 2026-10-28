@@ -171,6 +171,8 @@ mod tests_fields;
 #[cfg(test)]
 mod tests_gate;
 #[cfg(test)]
+mod tests_gate_large;
+#[cfg(test)]
 mod tests_languages;
 #[cfg(test)]
 mod tests_preview;

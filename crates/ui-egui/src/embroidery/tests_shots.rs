@@ -3,7 +3,7 @@
 //! the GPU at 2 pixels a point (egui_kittest on wgpu: no window is presented, so a locked screen
 //! doesn't stop them), of art the test draws itself (the corpus's designs are never committed, so
 //! no picture of them is either). It makes the pictures `docs/images` holds, by their names there
-//! (`embroidery-object-tab.png`, `embroidery-tool-stitches.png`…): copy them over the committed
+//! (`embroidery-object-tab.png`, `embroidery-stitch-editing.png`…): copy them over the committed
 //! ones. Run by hand:
 //!
 //! `VECTORCRAFT_STITCH_SHOTS=<folder> cargo test --release -p vectorcraft-ui-egui --lib -- --ignored embroidery_shots`
@@ -53,6 +53,12 @@ fn shot(dir: &Path, name: &str, prepare: impl FnOnce(&mut VectorcraftApp, u64)) 
 
 /// [`shot`] in a window of `size` points.
 fn shot_sized(dir: &Path, name: &str, size: [f32; 2], prepare: impl FnOnce(&mut VectorcraftApp, u64)) {
+    shot_then(dir, name, size, prepare, |_, _| {});
+}
+
+/// [`shot_sized`], with `then` run once the window has been drawn a few frames (the canvas laid
+/// out, so a zoom to a box can fit it).
+fn shot_then(dir: &Path, name: &str, size: [f32; 2], prepare: impl FnOnce(&mut VectorcraftApp, u64), then: impl FnOnce(&mut VectorcraftApp, u64)) {
     let (mut app, disc) = badge();
     prepare(&mut app, disc);
     let mut harness =
@@ -64,12 +70,43 @@ fn shot_sized(dir: &Path, name: &str, size: [f32; 2], prepare: impl FnOnce(&mut 
             app,
         );
     harness.input_mut().max_texture_side = Some(8192);
-    for _ in 0..FRAMES {
+    let mut then = Some(then);
+    for k in 0..FRAMES {
+        if k == FRAMES / 4
+            && let Some(then) = then.take()
+        {
+            then(harness.state_mut(), disc);
+        }
         harness.step();
         std::thread::sleep(std::time::Duration::from_millis(FRAME_PAUSE_MS));
     }
     harness.render().unwrap().save(dir.join(format!("{name}.png"))).unwrap();
 }
+
+/// The red disc converted to manual stitches and edited: isolated, in the stitch view, with the
+/// Embroidery Tool; the Embroidery panel at its Stitches tab.
+fn editing(app: &mut VectorcraftApp, id: u64) {
+    app.run("select.set", json!({ "ids": [id] })).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    app.run("object.isolate", json!({ "id": id })).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "selection", "filter": "all"})).unwrap();
+}
+
+/// Zoomed in on the disc's left side (its needle points drawn as circles), the needle points in a
+/// box there selected (the Contextual Task Bar under them, their rows lit in the Stitches tab).
+fn zoomed_and_selected(app: &mut VectorcraftApp, _: u64) {
+    app.run("view.zoomTo", json!({"rect": EDIT_VIEW, "margin": 0})).unwrap();
+    let mm = |v: f64| v * 25.4 / 72.0;
+    let [x0, y0, x1, y1] = EDIT_SELECTED;
+    app.run("embroidery.selectNeedlePoints", json!({"rect": [mm(x0), mm(y0), mm(x1), mm(y1)]})).unwrap();
+}
+
+/// The box the editing pictures zoom to, and the box whose needle points they select, document
+/// points: the disc's left edge, where its fill's rows meet its outline.
+const EDIT_VIEW: [f64; 4] = [64.0, 78.0, 154.0, 138.0];
+const EDIT_SELECTED: [f64; 4] = [96.0, 100.0, 108.0, 112.0];
 
 #[test]
 #[ignore = "pictures, made by hand"]
@@ -132,4 +169,41 @@ fn embroidery_shots() {
         tool(app, id);
         app.run("view.stitchPreview", json!({"on": true})).unwrap();
     });
+    // Editing stitches: the disc's needle points, some selected, with the Stitches tab.
+    shot_then(&dir, "embroidery-stitch-editing", WINDOW, editing, zoomed_and_selected);
+    shot_then(
+        &dir,
+        "embroidery-stitch-editing-polish",
+        WINDOW,
+        |app, id| {
+            app.session.prefs.interface_language = "pl".into();
+            editing(app, id);
+        },
+        zoomed_and_selected,
+    );
+    // The Stitches tab outside editing: the whole design's records, one in the middle in focus,
+    // marked on the canvas, zoomed to.
+    shot_then(
+        &dir,
+        "embroidery-stitches-tab",
+        WINDOW,
+        |app, _| {
+            app.run("view.stitchPreview", json!({"on": true})).unwrap();
+            app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "design", "filter": "all"})).unwrap();
+        },
+        |app, _| {
+            let count = app.run("embroidery.stitches", json!({"limit": 0})).unwrap()["recordCount"].as_u64().unwrap();
+            let middle = app.run("embroidery.stitches", json!({"from": count / 2, "to": count / 2})).unwrap();
+            let record = &middle["records"][0];
+            let pt = |mm: f64| mm * 72.0 / 25.4;
+            let (x, y) = (pt(record["at"][0].as_f64().unwrap()), pt(record["at"][1].as_f64().unwrap()));
+            let half = pt(SHOWN_MM / 2.0);
+            app.run("view.zoomTo", json!({"rect": [x - half, y - half, x + half, y + half], "margin": 0})).unwrap();
+            let number = usize::try_from(record["record"].as_u64().unwrap()).unwrap();
+            crate::panels::embroidery::stitches::reveal(app, number);
+        },
+    );
 }
+
+/// How much of the design the Stitches tab's picture shows round the stitch shown, millimetres.
+const SHOWN_MM: f64 = 60.0;

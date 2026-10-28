@@ -353,6 +353,7 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-10-26 | A free open satin column (no entry set) sewn toward an exit at the end it doesn't end at takes the cheaper of turning round and starting nearest the needle with a pass along its middle, by the planner's weights with the move in from the needle (a lift past the jump length, a cut past the trim length; the pass hidden, a quarter a millimetre), and turns round only when that lifts and cuts no more often; the design's first part, planned from nowhere, still turns round | the project owner's choice („Tańsze według kosztów planera”): turning round always moved the start away from the needle, adding a jump and a cut outside the unit, where the pass approved earlier ends it there with neither | always the pass (a long hidden pass where turning round costs nothing); always turning round, as before | `plan::toward::turned_or_passed`; `a_free_satin_is_turned_round_only_when_that_adds_no_jump_or_cut`, `a_satin_column_ends_at_its_end_nearest_its_exit` |
 | 2026-10-26 | Every fix the review of the embroidery tool found goes into that PR, by the session that built it, one task a commit and each gated, then new measurements and pictures; the owner merges with a merge commit | the owner's choice | follow-up PRs | the embroidery tool PR's history |
 | 2026-10-26 | Every PR, an upstream sync included, is merged with "Create a merge commit", the only method the repository allows (squash and rebase are off); `feat/embroidery` is the default branch and changes only through a PR whose check "gate / gate (ubuntu-24.04)" passes; neither it nor `main` can be deleted or force-pushed (rulesets); a PR's head branch is deleted when it merges | the project owner's choice: every commit is gated, so `git bisect` lands on one task; each commit's message keeps its why; `git log --first-parent` gives one entry per PR; upstream merges the same way; a squash would drop an upstream sync's second parent | squash merges (the rule before, upstream syncs apart), rebase merges | the repository's settings and rulesets on GitHub; FORK.md › Branches |
+| 2026-10-28 | The canvas's scroll-bar span and the selection's frame are measured only where an edit changed the document: each object's visual bounds kept by its address in a fork file (`doc/src/visual_bounds.rs`), with marked hooks in three upstream files, answering as the full walk does, bit for bit | the project owner's choice, first a proposal for upstream only, then the fix in the fork („Niech wypchnie (utworzy pr) to co ma”): with the full walk, dragging one point of a design of 2 million took about 60 ms a frame, with the fix 1.4 ms (Direct Selection, the 50th percentile) | leaving it to upstream (described there as a proposal, not filed: the owner files it if they choose) | `VisualBounds`, `Node::visual_members`; `an_edit_measures_again_only_the_objects_on_its_way_up`, `bounds_measured_from_what_changed_are_the_full_walks`, `large_design_drag_gate`; FORK.md › Keeping up with upstream |
 
 ## Clean-room for embroidery
 
@@ -568,6 +569,22 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   (`embroidery/rows.rs`'s `check`) draws as upstream's `widgets::check_row_named` does (its box,
   tick and dash), its words wrapped and its colours read on what it lies on: when a sync restyles
   upstream's checkboxes, restyle it too.
+- **The canvas's bounds measured only where an edit changed the document** (the fork's own code is
+  `doc/src/visual_bounds.rs`, its tests `doc/src/tests_visual_bounds.rs`; `docs/embroidery.md` ›
+  Editing a large design), each hook marked "VectorCraft Stitch":
+  - `doc/src/node.rs`: `Node::visual`'s two arms for layers, groups and Intertwine groups made one,
+    which measures by `visual_members` (new, after `visual`: a container's members and how far its
+    own strokes grow their union) and `grown` (new, after `moves_only`). The cache measures
+    containers by the same two, so a sync that changes how `visual` measures a container changes
+    them instead of the arm;
+  - `doc/src/lib.rs`: `pub mod visual_bounds` and `mod tests_visual_bounds`;
+  - `ui-egui/src/lib.rs`: `CanvasCache::visual_bounds` and its init, and `content_bounds` and
+    `selection_bounds` measuring through it instead of `Document::art_bounds` and `bounds_of`.
+  The cache holds what an object's visual bounds read: the object and the document's symbols. A
+  sync that makes them read anything else (patterns, fonts, plug-ins) must start the cache over when
+  that changes too (`VisualBounds::update`); `bounds_measured_from_what_changed_are_the_full_walks`
+  compares it with the full walk on random documents and edits. Upstream could take it as it is
+  (a proposal for upstream, not filed).
 - **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
   when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in

@@ -245,6 +245,62 @@ fn go_to_takes_a_number_and_refuses_junk() {
     }
 }
 
+/// Go to a record far down the list (in its middle, so the end's clamp can't bring it in) scrolls
+/// its row into view.
+#[test]
+fn go_to_scrolls_the_record_into_view() {
+    let (mut app, _) = app();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, nodes) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let last = list.record(list.len() / 2).unwrap();
+    assert!(!shapes.iter().any(|s| matches!(s, Shape::Text(t) if t.galley.text() == last.to_string())), "not in view at first");
+    let field = nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0).expect("the field");
+    let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![focus]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(last.to_string()), key(Key::Enter)]);
+    let (shapes, nodes) = settle(&mut app, &ctx, &mut time);
+    row_at(&shapes, last);
+    // Rows are numbered for screen readers by their place: the one shown is the one in focus.
+    let shown = nodes.iter().find(|n| n.1 == Role::Row && n.2.starts_with(&format!("Record {last}:"))).and_then(|n| n.3);
+    assert_eq!(shown, list.row_of(last));
+}
+
+/// A record shown from the list: its row in view, ringed in focus, and its needle point ringed on
+/// the canvas while the tab shows.
+#[test]
+fn a_record_shown_is_in_view_and_marked_on_the_canvas() {
+    let (mut app, _) = app();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let number = list.record(list.len() / 2).unwrap();
+    super::reveal(&mut app, number);
+    let (shapes, nodes) = settle(&mut app, &ctx, &mut time);
+    row_at(&shapes, number);
+    assert!(nodes.iter().any(|n| n.1 == Role::Row && n.2.starts_with(&format!("Record {number}:"))));
+    // Rings round the needle point, where the canvas draws it.
+    let uid = app.session.active().unwrap().uid;
+    let row = vectorcraft_engine::cmd::embroidery::stitch_list::row(&app.embroidery.preview.shown(uid).unwrap().planned.plan, number).unwrap();
+    let pt = vectorcraft_engine::cmd::embroidery::mm_to_pt;
+    let at =
+        crate::canvas::Xf::new(app.canvas_rect.unwrap(), app.view().unwrap()).to_screen(vectorcraft_geom::Point::new(pt(row.at.x), pt(row.at.y)));
+    let rings = |shapes: &[Shape]| {
+        shapes.iter().filter(|s| matches!(s, Shape::Circle(c) if c.radius == super::MARK_RING && c.center.distance(at) < 0.5)).count()
+    };
+    assert_eq!(rings(&shapes), 2, "a two-tone ring");
+    app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap();
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(rings(&shapes), 0, "only while the tab shows");
+}
+
 /// With needle points selected, Move by X 0,3 typed in Polish (a comma) moves them 0.3 mm in one undo
 /// step.
 #[test]

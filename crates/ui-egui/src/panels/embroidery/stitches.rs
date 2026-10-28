@@ -212,6 +212,9 @@ pub struct StitchesState {
     numbering: Option<(u64, u64, HashMap<usize, Option<Numbered>>)>,
     /// How many times the rows were worked out (the tests count them: never on an idle frame).
     pub(crate) builds: usize,
+    /// The foot's height as last drawn, points, outside stitch editing and while editing (0: not
+    /// drawn yet): the room kept for it under the list.
+    foot: [f32; 2],
 }
 
 /// A unit's numbering: the path, its first needle point's place, and each record's ordinal.
@@ -450,7 +453,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let columns = Columns::fit(ui, width);
     header(ui, &columns, &t);
     let in_page = (total - (page * MAX_SCROLLED_ROWS).min(total)).min(MAX_SCROLLED_ROWS);
-    let foot = foot_height(editing.is_some());
+    let drawn = app.embroidery.stitches.foot[usize::from(editing.is_some())];
+    let foot = if drawn > 0.0 { drawn } else { foot_height(editing.is_some()) };
     // Whole rows: none cut by the foot's words under the list.
     let room = (((ui.available_height() - foot) / ROW_HEIGHT).floor() * ROW_HEIGHT).max(MIN_LIST);
     let list_id = ui.id().with("embroidery-stitch-list");
@@ -468,8 +472,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         node.set_row_count(total);
         node.set_column_count(columns.count());
     });
+    // No spacing between rows, in the list as in egui's sums: it places a row and works out the
+    // rows in view from its height plus the spacing of the ui it is given.
+    let spacing = ui.spacing().item_spacing.y;
+    ui.spacing_mut().item_spacing.y = 0.0;
     let scrolled = area.show_rows(ui, ROW_HEIGHT, in_page, |ui, range| {
-        ui.spacing_mut().item_spacing.y = 0.0;
         for i in range {
             let row_index = page * MAX_SCROLLED_ROWS + i;
             let Some(number) = listed.record(row_index) else { continue };
@@ -492,6 +499,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         }
     });
     // The list itself takes the keyboard's focus (a row clicked gives it), so its keys are its own.
+    ui.spacing_mut().item_spacing.y = spacing;
     let list = ui.interact(scrolled.inner_rect, list_id, Sense::focusable_noninteractive());
     if clicked.is_some() {
         list.request_focus();
@@ -505,7 +513,17 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     if let Some((number, mods, double)) = clicked {
         click(app, &shown, number, mods, double);
     }
+    let top = ui.cursor().top();
     foot_ui(app, ui, editing, &listed, lang, &t);
+    // The room the next frame keeps for it; a frame at once when it changed (the list drawn this
+    // frame had the old room), so the list never lies over the foot past one frame.
+    let used = ui.cursor().top() - top;
+    if let Some(kept) = app.embroidery.stitches.foot.get_mut(usize::from(editing.is_some()))
+        && (*kept - used).abs() > FOOT_SETTLED
+    {
+        *kept = used;
+        ui.ctx().request_repaint();
+    }
 }
 
 /// The columns drawn at a width: every column with words where they fit (the kinds' words in the
@@ -533,13 +551,32 @@ impl Columns {
         let kinds = [RecordKind::Stitch, RecordKind::Jump, RecordKind::Trim, RecordKind::Stop];
         let widest =
             kinds.iter().map(|k| ui.painter().layout_no_wrap(kind_word(*k).to_string(), font.clone(), Color32::WHITE).size().x).fold(0.0, f32::max);
-        if width >= all && widest + 2.0 * CELL_PAD <= KIND_W {
+        let mut c = if width >= all && widest + 2.0 * CELL_PAD <= KIND_W {
             Self { xy: true, words: true, widths: [NUMBER_W, KIND_W, PLACE_W, PLACE_W, LENGTH_W] }
         } else if width >= glyphs {
             Self { xy: true, words: false, widths: [NUMBER_W, KIND_GLYPH_W, PLACE_W, PLACE_W, LENGTH_W] }
         } else {
             Self { xy: false, words: false, widths: [NUMBER_W, KIND_GLYPH_W, 0.0, 0.0, LENGTH_W] }
+        };
+        // The room left over goes to the heads cut short, each column widened to its head in turn:
+        // the length, X, Y, then the kind.
+        let heads = heads();
+        let mut spare = width - c.widths.iter().sum::<f32>();
+        for k in [4, 2, 3, 1] {
+            let (Some(head), Some(w)) = (heads.get(k), c.widths.get(k).copied()) else { continue };
+            if spare <= 0.0 || w <= 0.0 || (k == 1 && !c.words) {
+                continue;
+            }
+            let need = ui.painter().layout_no_wrap(head.to_string(), font.clone(), Color32::WHITE).size().x + 2.0 * CELL_PAD - w;
+            if need > 0.0
+                && let Some(slot) = c.widths.get_mut(k)
+            {
+                let grow = need.min(spare);
+                *slot += grow;
+                spare -= grow;
+            }
         }
+        c
     }
 
     fn count(&self) -> usize {
@@ -547,10 +584,15 @@ impl Columns {
     }
 }
 
+/// The columns' heads: the number, the kind, X, Y and the length.
+fn heads() -> [&'static str; 5] {
+    ["#", crate::et!("Type"), crate::et!("X (mm)"), crate::et!("Y (mm)"), crate::et!("Length (mm)")]
+}
+
 /// The column heads.
 fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), ROW_HEIGHT), Sense::hover());
-    let heads = ["#", crate::et!("Type"), crate::et!("X (mm)"), crate::et!("Y (mm)"), crate::et!("Length (mm)")];
+    let heads = heads();
     let mut x = rect.left();
     for (k, (head, w)) in heads.iter().zip(columns.widths).enumerate() {
         if w <= 0.0 || (k == 1 && !columns.words) {
@@ -728,6 +770,15 @@ fn show_stitch(app: &mut VectorcraftApp, shown: &Shown, number: usize, zoom: boo
     }
 }
 
+/// Record `number` in focus, its row scrolled into view and its stitch marked on the canvas, as a
+/// click on its row outside stitch editing leaves them (the pictures of the tab).
+#[cfg(test)]
+pub(crate) fn reveal(app: &mut VectorcraftApp, number: usize) {
+    let Some(uid) = app.session.active().map(|st| st.uid) else { return };
+    let d = app.embroidery.stitches.docs.entry(uid).or_default();
+    (d.focus, d.shown, d.page, d.reveal) = (Some(number), Some(number), number.saturating_sub(1) / MAX_SCROLLED_ROWS, true);
+}
+
 /// The keys while the list has the keyboard's focus (a row clicked gives it; Escape gives it
 /// back to the canvas, whose keys then act on the canvas again): ↑ ↓ the row in focus, Page Up/Down
 /// a screenful, Home and End the first and last; Space as a click on it; Enter shows it, zoomed to.
@@ -830,7 +881,11 @@ fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Listed) {
     }
 }
 
-/// The foot's height, points: room kept under the list.
+/// How much the foot's height may change, points, before the next frame lays the list out again:
+/// less than a pixel.
+const FOOT_SETTLED: f32 = 0.5;
+
+/// The foot's height before it is first drawn, points: room kept under the list.
 fn foot_height(editing: bool) -> f32 {
     if editing { 5.0 * ROW_HEIGHT } else { 3.0 * ROW_HEIGHT }
 }
@@ -894,15 +949,38 @@ fn foot_ui(
             {
                 app.status(err);
             }
-            ui.horizontal_wrapped(|ui| {
-                // Each button whole: one that doesn't fit the row starts the next.
-                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                for (label, _, id, params) in crate::embroidery::task_bar::items(app).unwrap_or_default() {
-                    if ui.button(label).clicked() {
-                        crate::menus::invoke(app, id, params);
+            // The stitch actions in rows of whole buttons; one wider than the panel (a long word at
+            // its narrowest) on a row of its own, its words wrapped.
+            let items = crate::embroidery::task_bar::items(app).unwrap_or_default();
+            let full = ui.available_width();
+            let mut rows: Vec<Vec<usize>> = Vec::new();
+            let mut used = 0.0;
+            for (k, (label, ..)) in items.iter().enumerate() {
+                let w = width(ui, label, egui::TextStyle::Button) + 2.0 * ui.spacing().button_padding.x;
+                match rows.last_mut() {
+                    Some(row) if used + gap + w <= full => {
+                        row.push(k);
+                        used += gap + w;
+                    }
+                    _ => {
+                        rows.push(vec![k]);
+                        used = w;
                     }
                 }
-            });
+            }
+            let mut chosen = None;
+            for row in rows {
+                ui.horizontal(|ui| {
+                    for (label, _, id, params) in row.iter().filter_map(|k| items.get(*k)) {
+                        if ui.add(egui::Button::new(*label).wrap()).clicked() {
+                            chosen = Some((*id, params.clone()));
+                        }
+                    }
+                });
+            }
+            if let Some((id, params)) = chosen {
+                crate::menus::invoke(app, id, params);
+            }
         } else {
             ui.label(egui::RichText::new(crate::et!("Click a row or a needle point to select it.")).size(TEXT).color(t.text_dim));
         }

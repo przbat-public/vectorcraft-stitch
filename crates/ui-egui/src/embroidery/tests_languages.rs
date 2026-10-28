@@ -64,11 +64,13 @@ fn frame_at(
     });
     out.textures_delta.clear();
     let mut texts = vec![];
-    let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
-    while let Some(s) = pending.pop() {
+    // A text its clip hides whole isn't drawn (a list's row past its end, laid out for scrolling);
+    // one it cuts keeps its whole box, so words leaving the panel still show.
+    let mut pending: Vec<(Rect, Shape)> = out.shapes.into_iter().map(|c| (c.clip_rect, c.shape)).collect();
+    while let Some((clip, s)) = pending.pop() {
         match s {
-            Shape::Vec(v) => pending.extend(v),
-            Shape::Text(t) => texts.push((t.galley.text().to_string(), t.visual_bounding_rect())),
+            Shape::Vec(v) => pending.extend(v.into_iter().map(|s| (clip, s))),
+            Shape::Text(t) if clip.intersects(t.visual_bounding_rect()) => texts.push((t.galley.text().to_string(), t.visual_bounding_rect())),
             _ => {}
         }
     }
@@ -323,6 +325,29 @@ fn the_embroidery_interface_in_every_language() {
     }
 }
 
+/// [`frames`] at the Stitches tab, then frames until two in a row draw the same (the rows listed
+/// and the foot's room, laid out from the frame before, settled; at most [`SETTLE_FRAMES`] more).
+fn stitches_frames(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Vec<(String, Rect)> {
+    // A frame's words and their boxes to a tenth of a point (an empty text's box isn't a number).
+    let seen = |texts: &[(String, Rect)]| -> Vec<(String, Option<[i64; 4]>)> {
+        let tenth = |v: f32| v.is_finite().then(|| (v * 10.0).round() as i64);
+        texts.iter().map(|(t, r)| (t.clone(), (|| Some([tenth(r.min.x)?, tenth(r.min.y)?, tenth(r.max.x)?, tenth(r.max.y)?]))())).collect()
+    };
+    let mut last = frames(app, ctx, Tab::Stitches, width).0;
+    for k in 0..SETTLE_FRAMES {
+        let now = frame_at(app, ctx, 1.0 + k as f64 * 0.05, width, &mut |app, ui| crate::panels::embroidery::show(app, ui)).0;
+        let settled = seen(&now) == seen(&last);
+        last = now;
+        if settled {
+            break;
+        }
+    }
+    last
+}
+
+/// The most frames [`stitches_frames`] waits for the Stitches tab to settle.
+const SETTLE_FRAMES: usize = 20;
+
 /// The Stitches tab at `width`: nothing selected, the whole design listed, a planned square
 /// selected (its foot: planned, Convert to Manual Stitches), then that square converted and its
 /// stitches edited with a needle point selected (its foot: the count, Move by, the actions) → each
@@ -332,21 +357,21 @@ fn stitches_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Ve
     let panel = &mut app.ui.embroidery_panel;
     (panel.stitches_scope, panel.stitches_filter) = (Scope::Selection, vectorcraft_engine::cmd::embroidery::stitch_list::Filter::All);
     app.run("select.set", json!({"ids": []})).unwrap();
-    let nothing = frames(app, ctx, Tab::Stitches, width).0;
+    let nothing = stitches_frames(app, ctx, width);
     app.ui.embroidery_panel.stitches_scope = Scope::Design;
-    let design = frames(app, ctx, Tab::Stitches, width).0;
+    let design = stitches_frames(app, ctx, width);
     app.ui.embroidery_panel.stitches_scope = Scope::Selection;
     let order = app.run("embroidery.sequence", json!({})).unwrap();
     let first = order["blocks"][0]["units"][0]["id"].as_u64().unwrap();
     app.run("select.set", json!({ "ids": [first] })).unwrap();
-    let planned = frames(app, ctx, Tab::Stitches, width).0;
+    let planned = stitches_frames(app, ctx, width);
     app.run("embroidery.convertToManual", json!({})).unwrap();
     app.run("object.isolate", json!({ "id": first })).unwrap();
     app.run("view.stitchPreview", json!({"on": true})).unwrap();
     app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
     let run = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().children().unwrap()[0].id;
     app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 1}]})).unwrap();
-    let editing = frames(app, ctx, Tab::Stitches, width).0;
+    let editing = stitches_frames(app, ctx, width);
     assert!(crate::embroidery::editing::editing(app).is_some_and(|e| e.selected == 1), "editing, one needle point selected");
     vec![nothing, design, planned, editing]
 }

@@ -498,8 +498,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
             }
         }
     });
-    // The list itself takes the keyboard's focus (a row clicked gives it), so its keys are its own.
     ui.spacing_mut().item_spacing.y = spacing;
+    // The list itself takes the keyboard's focus (a row clicked gives it), so its keys are its own.
     let list = ui.interact(scrolled.inner_rect, list_id, Sense::focusable_noninteractive());
     if clicked.is_some() {
         list.request_focus();
@@ -509,7 +509,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     ui.memory_mut(|m| {
         m.set_focus_lock_filter(list_id, egui::EventFilter { tab: false, horizontal_arrows: true, vertical_arrows: true, escape: true })
     });
-    keys(app, ui, list_id, uid, &listed, &shown);
+    // A screenful for Page Up and Down: the rows the list shows.
+    let screenful = ((room / ROW_HEIGHT) as usize).max(1);
+    keys(app, ui, list_id, uid, &listed, &shown, screenful);
     if let Some((number, mods, double)) = clicked {
         click(app, &shown, number, mods, double);
     }
@@ -783,7 +785,7 @@ pub(crate) fn reveal(app: &mut VectorcraftApp, number: usize) {
 /// back to the canvas, whose keys then act on the canvas again): ↑ ↓ the row in focus, Page Up/Down
 /// a screenful, Home and End the first and last; Space as a click on it; Enter shows it, zoomed to.
 /// Keys taken from egui, so neither the canvas's arrows nor upstream's shortcuts see them.
-fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Listed, shown: &Shown) {
+fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Listed, shown: &Shown, screenful: usize) {
     if !ui.memory(|m| m.has_focus(list)) {
         return;
     }
@@ -793,7 +795,6 @@ fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Li
         ui.memory_mut(|m| m.surrender_focus(list));
         return;
     }
-    let screenful = (ui.available_height() / ROW_HEIGHT).max(1.0) as usize;
     let last = listed.len().saturating_sub(1);
     // No row of this list in focus (filtered away, or none yet): ↓ and Home start at the first.
     let Some((focus, row)) = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus).and_then(|f| listed.row_of(f).map(|r| (f, r))) else {

@@ -218,6 +218,30 @@ fn while_editing_a_click_selects_the_needle_point_and_the_keys_stay_the_lists() 
     assert!(app.session.active().unwrap().doc != doc, "the focus given back: the canvas's arrow nudges again");
 }
 
+/// Page Down moves the focus a screenful: as many rows as the list shows, the rows drawn.
+#[test]
+fn page_down_moves_a_screenful() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let first = list.record(0).unwrap();
+    let at = row_at(&shapes, first);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let rows = nodes.iter().filter(|n| n.1 == Role::Row).count();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::PageDown)]);
+    let uid = app.session.active().unwrap().uid;
+    let focus = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus).and_then(|f| list.row_of(f));
+    // The rows drawn are those in view, and a part row at either end at most.
+    assert!(focus.is_some_and(|r| r + 2 >= rows && r <= rows), "{focus:?} of {rows} drawn");
+}
+
 /// Go to takes a number in the scope (the focus moves to it), and says so when one isn't there;
 /// junk and huge numbers are refused without a panic.
 #[test]

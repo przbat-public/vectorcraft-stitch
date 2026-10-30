@@ -141,33 +141,101 @@ pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
     Ok(st)
 }
 
+/// Where a path's needle points lie among its runs, so that one is found by its index without
+/// walking the runs before it (a path may hold as many runs as needle points): the index of each
+/// run's first needle point, and the subpath each run is written as (a run with no needle point
+/// isn't written). Made from the stitches as they are: an edit that adds or removes a needle point,
+/// or a run, makes the stitches another index.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Index {
+    /// Run `r`'s first needle point's index, and one past the last needle point at the end.
+    starts: Vec<usize>,
+    /// The subpath run `r` is written as: its place among the runs holding needle points.
+    subpaths: Vec<usize>,
+}
+
+impl Index {
+    /// The index of `st` as it is.
+    pub(crate) fn of(st: &Stitches) -> Self {
+        let mut starts = Vec::with_capacity(st.runs.len() + 1);
+        let mut subpaths = Vec::with_capacity(st.runs.len());
+        let (mut at, mut written) = (0usize, 0usize);
+        for r in &st.runs {
+            starts.push(at);
+            subpaths.push(written);
+            at += r.needles.len();
+            written += usize::from(!r.needles.is_empty());
+        }
+        starts.push(at);
+        Self { starts, subpaths }
+    }
+
+    /// How many needle points the path holds.
+    pub(crate) fn len(&self) -> usize {
+        self.starts.last().copied().unwrap_or(0)
+    }
+
+    /// Needle point `index`'s run and place in it: the run whose needle points start at or before
+    /// it and end after it (a run with no needle point never holds one).
+    pub(crate) fn locate(&self, index: usize) -> Option<(usize, usize)> {
+        if index >= self.len() {
+            return None;
+        }
+        let r = self.starts.partition_point(|&start| start <= index).checked_sub(1)?;
+        Some((r, index - self.starts.get(r)?))
+    }
+
+    /// The index of needle point `i` of run `r` (one past the run's last, for `i` its length).
+    pub(crate) fn index_of(&self, r: usize, i: usize) -> usize {
+        self.starts.get(r).map_or(self.len(), |start| start + i)
+    }
+
+    /// How many needle points run `r` holds.
+    pub(crate) fn run_len(&self, r: usize) -> usize {
+        match (self.starts.get(r), self.starts.get(r + 1)) {
+            (Some(a), Some(b)) => b - a,
+            _ => 0,
+        }
+    }
+
+    /// The anchors needle point `index` is written as ([`Stitches::written`]): one, or both of a run
+    /// of one needle point.
+    pub(crate) fn anchors_of(&self, index: usize) -> Vec<(usize, usize)> {
+        let Some((r, i)) = self.locate(index) else { return Vec::new() };
+        let Some(&s) = self.subpaths.get(r) else { return Vec::new() };
+        match self.run_len(r) {
+            1 => vec![(s, 0), (s, 1)],
+            _ => vec![(s, i)],
+        }
+    }
+
+    /// The needle point anchor `(subpath, anchor)` is, of stitches read from a path (a run a
+    /// subpath): the second anchor of a line to its own start is its one needle point.
+    fn needle_of_anchor(&self, (s, a): (usize, usize)) -> Option<usize> {
+        let i = a.min(self.run_len(s).checked_sub(1)?);
+        Some(self.index_of(s, i))
+    }
+}
+
 impl Stitches {
     /// How many needle points the path holds.
     pub(crate) fn len(&self) -> usize {
         self.runs.iter().map(|r| r.needles.len()).sum()
     }
 
-    /// Needle point `index`'s run and place in it.
-    pub(crate) fn locate(&self, index: usize) -> Option<(usize, usize)> {
-        let mut start = 0usize;
-        for (s, r) in self.runs.iter().enumerate() {
-            if index < start + r.needles.len() {
-                return Some((s, index - start));
-            }
-            start += r.needles.len();
-        }
-        None
+    /// The path's [`Index`], as it is now.
+    pub(crate) fn index(&self) -> Index {
+        Index::of(self)
     }
 
-    /// The index of needle point `i` of run `s` (one past the last, for `i` its length).
-    pub(crate) fn index_of(&self, s: usize, i: usize) -> usize {
-        self.runs.iter().take(s).map(|r| r.needles.len()).sum::<usize>() + i
+    /// Needle point `i` of run `r`.
+    pub(crate) fn needle(&self, (r, i): (usize, usize)) -> Option<&Needle> {
+        self.runs.get(r)?.needles.get(i)
     }
 
-    /// Needle point `index`, to change.
-    pub(crate) fn needle_mut(&mut self, index: usize) -> Option<&mut Needle> {
-        let (s, i) = self.locate(index)?;
-        self.runs.get_mut(s)?.needles.get_mut(i)
+    /// Needle point `i` of run `r`, to change.
+    pub(crate) fn needle_mut(&mut self, (r, i): (usize, usize)) -> Option<&mut Needle> {
+        self.runs.get_mut(r)?.needles.get_mut(i)
     }
 
     /// Runs left with no needle point dropped: a cut before one passes to the run after it.
@@ -247,32 +315,14 @@ pub(crate) fn write(n: &mut Node, st: &Stitches) -> bool {
     true
 }
 
-/// The needle point anchor `(subpath, anchor)` of a path is, among `st`'s (read from that path):
-/// the second anchor of a line to its own start is its one needle point.
-fn needle_of_anchor(st: &Stitches, (s, a): (usize, usize)) -> Option<usize> {
-    let r = st.runs.get(s)?;
-    let i = a.min(r.needles.len().checked_sub(1)?);
-    Some(st.index_of(s, i))
-}
-
-/// The anchors needle point `index` of `st` is written as ([`Stitches::written`]): one, or both
-/// of a run of one needle point.
-pub(crate) fn anchors_of(st: &Stitches, index: usize) -> Vec<(usize, usize)> {
-    let Some((s, i)) = st.locate(index) else { return Vec::new() };
-    // Runs with no needle point aren't written: the subpath is the run's place among the others.
-    let s = st.runs.iter().take(s).filter(|r| !r.needles.is_empty()).count();
-    match st.runs.iter().filter(|r| !r.needles.is_empty()).nth(s).map(|r| r.needles.len()) {
-        Some(1) => vec![(s, 0), (s, 1)],
-        Some(_) => vec![(s, i)],
-        None => Vec::new(),
-    }
-}
-
 /// The needle points of path `id` (read as `st`) that `sel` selects: those whose anchors it
 /// selects, or all of them when it selects the path whole.
 pub(crate) fn selected_in(sel: &Selection, id: NodeId, st: &Stitches) -> BTreeSet<usize> {
     match sel.anchors.get(&id) {
-        Some(anchors) => anchors.iter().filter_map(|&a| needle_of_anchor(st, a)).collect(),
+        Some(anchors) => {
+            let ix = st.index();
+            anchors.iter().filter_map(|&a| ix.needle_of_anchor(a)).collect()
+        }
         None if sel.objects.contains(&id) => (0..st.len()).collect(),
         None => BTreeSet::new(),
     }
@@ -282,7 +332,8 @@ pub(crate) fn selected_in(sel: &Selection, id: NodeId, st: &Stitches) -> BTreeSe
 /// in place of what it selected of the path: their anchors, the path among the objects. None:
 /// the path leaves the selection.
 pub(crate) fn select_in(sel: &mut Selection, id: NodeId, st: &Stitches, indices: &BTreeSet<usize>) {
-    let anchors: BTreeSet<(usize, usize)> = indices.iter().flat_map(|&k| anchors_of(st, k)).collect();
+    let ix = st.index();
+    let anchors: BTreeSet<(usize, usize)> = indices.iter().flat_map(|&k| ix.anchors_of(k)).collect();
     if anchors.is_empty() {
         sel.remove(id);
         sel.anchors.remove(&id);
@@ -380,8 +431,9 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             }
             let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, said(why))))?;
             let ranges = named.remove(&id).unwrap_or_default();
-            if let Some(past) = ranges.iter().map(|&(_, to)| to).filter(|&to| to >= st.len()).max() {
-                return Err(bad(cmd, format!("object {}: needle point {past}, of {} (from 0)", id.0, st.len())));
+            let len = st.len();
+            if let Some(past) = ranges.iter().map(|&(_, to)| to).filter(|&to| to >= len).max() {
+                return Err(bad(cmd, format!("object {}: needle point {past}, of {len} (from 0)", id.0)));
             }
             let k = ranges.into_iter().flat_map(|(from, to)| from..=to).collect();
             out.paths.push((id, st, k));
@@ -469,9 +521,10 @@ impl Lengths {
         self.above += usize::from(mm > max);
     }
 
-    /// Count the stitches into and out of needle point `index` of `st` (within its run).
-    pub(crate) fn around(&mut self, st: &Stitches, index: usize, min: f64, max: f64) {
-        let Some((s, i)) = st.locate(index) else { return };
+    /// Count the stitches into and out of needle point `index` of `st` (within its run; `ix` its
+    /// index).
+    pub(crate) fn around(&mut self, st: &Stitches, ix: &Index, index: usize, min: f64, max: f64) {
+        let Some((s, i)) = ix.locate(index) else { return };
         let Some(r) = st.runs.get(s) else { return };
         let p = |i: usize| r.needles.get(i).map(|n| n.p);
         if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(p), p(i)) {

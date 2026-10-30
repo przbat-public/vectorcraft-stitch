@@ -52,7 +52,7 @@ fn path_mm(s: &mut Session, points: &[(f64, f64)], marks: StitchRun) -> u64 {
 /// leaves aside).
 fn at(s: &Session, id: u64, k: usize) -> (f64, f64) {
     let st = needles::read(&node(s, id)).unwrap();
-    let (r, i) = st.locate(k).unwrap();
+    let (r, i) = st.index().locate(k).unwrap();
     let p = st.runs[r].needles[i].p;
     let mm = |v: f64| (v / PT_PER_MM * 1e6).round() / 1e6;
     (mm(p.x), mm(p.y))
@@ -153,6 +153,33 @@ fn the_selection_maps_to_needle_points_and_back() {
     sel.anchors.clear();
     sel.objects = vec![NodeId(id)];
     assert_eq!(needles::selected_in(&sel, NodeId(id), &st).len(), 4, "selected whole: all of it");
+}
+
+/// The index finds a needle point by its place across the runs, passing over a run with none (an
+/// edit may leave one before it is written back), and gives the anchors it is written as: a run with
+/// none isn't written, and a run of one needle point is two anchors.
+#[test]
+fn the_index_finds_needle_points_across_runs() {
+    let needle = |x: f64| needles::Needle { p: vectorcraft_geom::Point::new(x, 0.0), stop: false, exact: [None, None] };
+    let run = |xs: &[f64]| needles::Run { cut_before: false, needles: xs.iter().map(|&x| needle(x)).collect() };
+    let st = needles::Stitches {
+        runs: vec![run(&[0.0, 1.0, 2.0]), run(&[]), run(&[5.0]), run(&[7.0, 8.0])],
+        marks: StitchRun::default(),
+        object_after: [false, false],
+    };
+    let ix = st.index();
+    assert_eq!(ix.len(), 6);
+    let found: Vec<_> = (0..7).map(|k| ix.locate(k)).collect();
+    assert_eq!(found, [Some((0, 0)), Some((0, 1)), Some((0, 2)), Some((2, 0)), Some((3, 0)), Some((3, 1)), None]);
+    assert_eq!((ix.index_of(2, 0), ix.index_of(3, 1), ix.index_of(1, 0), ix.index_of(9, 0)), (3, 5, 3, 6));
+    assert_eq!((ix.run_len(1), ix.run_len(2), ix.run_len(3), ix.run_len(4)), (0, 1, 2, 0));
+    assert_eq!(ix.anchors_of(3), [(1, 0), (1, 1)], "the run with none isn't written: the one-point run is subpath 1");
+    assert_eq!(ix.anchors_of(5), [(2, 1)]);
+    assert!(ix.anchors_of(6).is_empty());
+    for k in 0..6 {
+        let (r, i) = ix.locate(k).unwrap();
+        assert_eq!(st.needle((r, i)).unwrap().p.x, [0.0, 1.0, 2.0, 5.0, 7.0, 8.0][k]);
+    }
 }
 
 /// Move Needle Points moves the needle points addressed by millimetres, or one to a point, one undo
@@ -602,7 +629,7 @@ fn the_records_name_the_needle_points_they_sew() {
         let node = r["node"].as_u64().unwrap();
         editable.insert(node);
         let st = paths.entry(node).or_insert_with(|| needles::read(doc.node(NodeId(node)).unwrap()).unwrap());
-        let (ri, i) = st.locate(k as usize).unwrap_or_else(|| panic!("{r}: no needle point {k}"));
+        let (ri, i) = st.index().locate(k as usize).unwrap_or_else(|| panic!("{r}: no needle point {k}"));
         if r["kind"] == "stitch" || r["kind"] == "jump" {
             let p = st.runs[ri].needles[i].p;
             let at = (r["at"][0].as_f64().unwrap(), r["at"][1].as_f64().unwrap());

@@ -136,9 +136,14 @@ fn after(head: &[u8], p: &Pattern) -> Result<Vec<u8>> {
     Ok(out)
 }
 
+/// The frame PES and PEC count `p`'s points in: from where it starts (or its corner), y down.
+pub(crate) fn frame(p: &Pattern) -> Result<Frame> {
+    Frame::of(p, false)
+}
+
 /// The PEC section: the PEC header, the stitch block and the previews.
 fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
-    let frame = Frame::of(p, false)?;
+    let frame = frame(p)?;
     // A stop is written as a change to the same thread: a colour of its own in the header.
     let colors = written_blocks(p).count();
     if colors == 0 {

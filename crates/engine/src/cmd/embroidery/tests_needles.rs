@@ -866,6 +866,22 @@ fn long_stitches_split_as_the_writer_would() {
     for p in [json!({"maxLength": 0.5}), json!({"maxLength": 20}), json!({"maxLength": 5, "format": "dst"}), json!({"format": "svg"})] {
         assert!(s.execute("embroidery.splitLongStitches", &p).is_err(), "{p}");
     }
+    // Every format, from a manual run's needle point kept at a half tenth its document point can't
+    // give back (11.55 mm, kept exactly; from the design's left edge, 2 mm, a round trip through
+    // points rounds the other way): split on the grid the writer counts the design on, from
+    // the millimetres the walk sews, the file the same bytes.
+    for f in vectorcraft_stitch::format::Format::ALL {
+        let mut s = blank();
+        let exact = vec![vectorcraft_doc::embroidery::Exact { subpath: 0, anchor: 0, x: Some(11.55), y: Some(10.05) }];
+        path_mm(&mut s, &[(2.0, 3.0), (4.0, 3.0)], StitchRun::default());
+        let id = path_mm(&mut s, &[(11.55, 10.05), (262.35, 13.05), (264.0, 13.0)], StitchRun { manual: true, exact, ..StitchRun::default() });
+        assert_eq!(needles::read(&node(&s, id)).unwrap().runs[0].needles[0].mm(), vectorcraft_geom::Point::new(11.55, 10.05));
+        let export = |s: &mut Session| s.execute("document.export", &json!({"format": f.id()})).unwrap()["dataBase64"].clone();
+        let before = export(&mut s);
+        let r = run(&mut s, "embroidery.splitLongStitches", json!({"needlePoints": [{"id": id, "index": 1}], "format": f.id()}));
+        assert!(r["addedCount"].as_u64().unwrap() >= 1, "{}: {r}", f.id());
+        assert_eq!(export(&mut s), before, "{}: the same file, from a half tenth", f.id());
+    }
     // Every format: a stitch of 300 mm split where its writer cuts it, its file the same bytes.
     for f in vectorcraft_stitch::format::Format::ALL {
         let mut s = blank();

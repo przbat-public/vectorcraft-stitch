@@ -1301,18 +1301,24 @@ pub(super) const SPLIT_LONG_LABEL: &str = "Split Long Stitches";
 /// the default.
 const MAX_LENGTH_RANGE: (f64, f64) = (1.0, LONGEST);
 
-/// The needle points a stitch from `a` to `b` (document points) is split into, besides its ends:
-/// with `format`, where that format's writer would cut it (each end on the 0.1 mm grid, the fewest
-/// equal steps of at most one record's reach along x and along y, `format::steps`); else the
-/// fewest equal stitches no longer than `max` millimetres. Refused past `room` new needle points.
-fn pieces(a: Point, b: Point, format: Option<vectorcraft_stitch::format::Format>, max: f64, room: usize) -> std::result::Result<Vec<Point>, String> {
-    let mm = |p: Point| Point::new(pt_to_mm(p.x), pt_to_mm(p.y));
-    let (am, bm) = (mm(a), mm(b));
-    match format {
-        Some(f) => {
-            let reach = vectorcraft_stitch::quantize(f.max_step());
-            let (ax, ay) = (vectorcraft_stitch::quantize(am.x), vectorcraft_stitch::quantize(am.y));
-            let (dx, dy) = (vectorcraft_stitch::quantize(bm.x) - ax, vectorcraft_stitch::quantize(bm.y) - ay);
+/// The needle points (document points) a stitch from `a` to `b` (millimetres, as the walk sews
+/// them) is split into, besides its ends: with `grid` (a format's, and its records' reach in
+/// tenths), where that format's writer would cut it (each end on the grid the writer counts the
+/// design on, the fewest equal steps of at most one record's reach along x and along y,
+/// `format::steps`); else the fewest equal stitches no longer than `max` millimetres. Refused past
+/// `room` new needle points.
+fn pieces(
+    a: Point,
+    b: Point,
+    grid: Option<(&vectorcraft_stitch::format::Grid, i32)>,
+    max: f64,
+    room: usize,
+) -> std::result::Result<Vec<Point>, String> {
+    let pt = |p: Point| Point::new(mm_to_pt(p.x), mm_to_pt(p.y));
+    match grid {
+        Some((grid, reach)) => {
+            let ((ax, ay), (bx, by)) = (grid.units(a), grid.units(b));
+            let (dx, dy) = (bx - ax, by - ay);
             let span = dx.unsigned_abs().max(dy.unsigned_abs());
             if span <= reach.unsigned_abs() {
                 return Ok(Vec::new());
@@ -1325,15 +1331,14 @@ fn pieces(a: Point, b: Point, format: Option<vectorcraft_stitch::format::Format>
             let (mut x, mut y) = (ax, ay);
             for (sx, sy) in vectorcraft_stitch::format::steps(dx, dy, reach) {
                 (x, y) = (x + sx, y + sy);
-                let at = |u: i32| mm_to_pt(f64::from(u) / vectorcraft_stitch::UNITS_PER_MM);
-                out.push(Point::new(at(x), at(y)));
+                out.push(pt(grid.point((x, y))));
             }
             // The last step ends on the stitch's own end.
             out.pop();
             Ok(out)
         }
         None => {
-            let length = am.distance(bm);
+            let length = a.distance(b);
             // Within the limit, or no number (no split).
             if !length.is_finite() || length <= max {
                 return Ok(Vec::new());
@@ -1343,7 +1348,7 @@ fn pieces(a: Point, b: Point, format: Option<vectorcraft_stitch::format::Format>
                 return Err(format!("a stitch {length:.1} mm long would take more needle points than one edit adds"));
             }
             let n = n as usize;
-            Ok((1..n).map(|i| a.lerp(b, i as f64 / n as f64)).collect())
+            Ok((1..n).map(|i| pt(a.lerp(b, i as f64 / n as f64))).collect())
         }
     }
 }
@@ -1374,6 +1379,16 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(SPLIT_LONG, format!("`maxLength` {max}: {lo} to {hi} millimetres")));
     }
     let (t, before) = targets(s, &o, SPLIT_LONG)?;
+    // With a format, the grid its writer counts the design on: the design planned as the export
+    // plans it (splitting a stitch on its segment changes neither where it starts nor its extent).
+    let grid = match format {
+        Some(f) => {
+            let (plan, _) = super::planned(s, &super::Options::default(), false, SPLIT_LONG)?;
+            let grid = f.grid(&plan.to_pattern()).map_err(|e| EngineError::Other(e.to_string()))?;
+            Some((grid, vectorcraft_stitch::quantize(f.max_step())))
+        }
+        None => None,
+    };
     let mut e = Edit::begin(s, SPLIT_LONG, before, t.passed_over)?;
     // The live check measures against the limit asked for.
     e.max = max;
@@ -1388,7 +1403,8 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
             for (i, n) in run.needles.iter().enumerate() {
                 if let (true, Some(prev)) = (indices.contains(&k), i.checked_sub(1).and_then(|j| run.needles.get(j))) {
                     let room = MAX_ADDED.saturating_sub(added);
-                    let new = pieces(prev.p, n.p, format, max, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
+                    let grid = grid.as_ref().map(|(g, reach)| (g, *reach));
+                    let new = pieces(prev.mm(), n.mm(), grid, max, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
                     if !new.is_empty() {
                         split += 1;
                         added += new.len();

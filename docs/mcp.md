@@ -5238,8 +5238,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     a needle point addressed (a path or group selected whole: all of its stitches) that is longer than `maxLength`
     millimetres (1 to 12.7, its own length) into the fewest equal stitches within it, or, with `format` (one of the
     eight embroidery formats), longer along x or y than one of its records, where that format's writer would cut it:
-    each end on the 0.1 mm grid, the fewest equal steps (`vectorcraft_stitch::format::steps`), so that format's export
-    is the same bytes. More needle points, never jumps; the move between runs is never split. At most 100,000 added.
+    from the needle points as the walk sews them (exact millimetres included), each end on the 0.1 mm grid that
+    format's writer counts the design on (from where the design starts or its corner, or its centre: the design is
+    planned as the export plans it, for this only), the fewest equal steps (`vectorcraft_stitch::format::steps`), so
+    that format's export is the same bytes, a point halfway between two tenths too. More needle points, never jumps; the move between runs is never split. At most 100,000 added.
     It answers `{changedCount, addedCount, limit: {length} | {format, step}, needlePoints: [{id, index}], paths,
     pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed, numbered as after the edit).
   - `embroidery.stitches {…embroidery options, from?, to?, ids?, kinds?, shorterThan?, longerThan?, offset?, limit?}`

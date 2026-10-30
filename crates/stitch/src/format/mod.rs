@@ -376,6 +376,42 @@ impl Format {
     }
 }
 
+/// The 0.1 mm grid a format's writer counts a design's points on ([`Format::grid`]): its origin
+/// (where the design starts or its corner, or its centre) and whether y counts upwards, as that
+/// writer makes them for the design.
+pub struct Grid(Frame);
+
+impl Grid {
+    /// The units (tenths of a millimetre from the grid's origin) the writer writes a point of the
+    /// design (millimetres) as.
+    pub fn units(&self, p: vectorcraft_geom::Point) -> (i32, i32) {
+        (self.0.x(p.x), self.0.y(p.y))
+    }
+
+    /// The point of the design (millimetres) that units `(x, y)` stand for: on the grid, so that the
+    /// writer writes it as those units.
+    pub fn point(&self, (x, y): (i32, i32)) -> vectorcraft_geom::Point {
+        let mm = |u: i32| f64::from(u) / crate::UNITS_PER_MM;
+        let f = &self.0;
+        vectorcraft_geom::Point::new(f.left + mm(x), if f.flip { f.top - mm(y) } else { f.top + mm(y) })
+    }
+}
+
+impl Format {
+    /// The grid this format's writer counts `pattern`'s points on: the frame each writer makes (from
+    /// where the design starts, or its corner, for DST, TAP, T01, EXP, PES and PEC; from its centre
+    /// for JEF and VP3).
+    pub fn grid(self, pattern: &Pattern) -> Result<Grid> {
+        Ok(Grid(match self {
+            Self::Dst | Self::Tap | Self::T01 => dst::frame(pattern)?,
+            Self::Exp => exp::frame(pattern)?,
+            Self::Pes | Self::Pec => pes::frame(pattern)?,
+            Self::Jef => jef::frame(pattern)?,
+            Self::Vp3 => vp3::frame(pattern)?,
+        }))
+    }
+}
+
 /// The design's points in the file's frame: tenths of a millimetre from the frame's origin (the
 /// design's top-left corner, or its centre), y flipped when the format counts y upwards; and the
 /// box the design's points fall in, which the frame was made from.

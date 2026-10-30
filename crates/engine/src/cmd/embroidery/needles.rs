@@ -92,6 +92,19 @@ fn same(a: Point, b: Point) -> bool {
     a.distance(b) * MM_PER_PT < SAME_POINT
 }
 
+impl Needle {
+    /// Where the walk sews it, millimetres: its document point in millimetres, or its exact
+    /// millimetres while it lies where they were kept for ([`StitchRun::exact`]), as
+    /// `digitize::exact` applies them.
+    pub(crate) fn mm(&self) -> Point {
+        let at = Point::new(pt_to_mm(self.p.x), pt_to_mm(self.p.y));
+        let [x, y] = self.exact;
+        let (x, y) = (x.unwrap_or(at.x), y.unwrap_or(at.y));
+        let near = |kept: f64, now: f64| (kept - now).abs() <= SAME_POINT;
+        if near(x, at.x) && near(y, at.y) { Point::new(x, y) } else { at }
+    }
+}
+
 /// Whether `p` is a finite point within the document's coordinates.
 fn in_range(p: Point) -> bool {
     p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD

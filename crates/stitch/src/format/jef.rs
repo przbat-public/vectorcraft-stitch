@@ -67,10 +67,15 @@ const HOOPS: [(u32, u32, u32); 4] = [(500, 500, 1), (1260, 1100, 3), (1400, 2000
 /// The hoop number for a design that fits none of [`HOOPS`]: the 110×110 default.
 const DEFAULT_HOOP: u32 = 0;
 
+/// The frame JEF counts `p`'s points in: from its centre, y counting upwards (Janome places a
+/// design around the hoop's centre: the stitches start there, and the header's extents are
+/// distances from it).
+pub(crate) fn frame(p: &Pattern) -> Result<Frame> {
+    Frame::centered(p, true)
+}
+
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
-    // Janome places a design around the hoop's centre: the stitches start there, and the header's
-    // extents are distances from it.
-    let frame = Frame::centered(p, true)?;
+    let frame = frame(p)?;
     let b = frame.bounds;
     // A stop is written as a change to the same thread: a colour of its own in the header.
     let colors = written_blocks(p).count();

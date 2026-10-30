@@ -519,6 +519,32 @@ fn runs_split_and_join() {
     assert_eq!(s.doc().unwrap().selection.anchors[&NodeId(id)], [(1, 3)].into_iter().collect(), "the selected needle point at its new place");
 }
 
+/// Joined paths carry the selection to where its needle points went: a needle point after one kept
+/// once (a later path starting where the one before ends) is selected where it is, not one on; paths
+/// selected whole leave the joined path selected whole, not every anchor of it.
+#[test]
+fn joined_paths_keep_the_selection_on_its_needle_points() {
+    let mut s = blank();
+    // As Scissors leaves a run cut at a2: the second piece starts where the first ends.
+    let a = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (14.0, 10.0)], StitchRun::default());
+    let b = path_mm(&mut s, &[(14.0, 10.0), (16.0, 10.0), (18.0, 10.0)], StitchRun::default());
+    run(&mut s, "embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": b, "index": 1}]}));
+    let r = run(&mut s, "embroidery.joinRuns", json!({"ids": [a, b]}));
+    assert_eq!(r["paths"], json!([{"id": a, "needlePoints": 5}, {"id": b, "needlePoints": 0}]), "{r}");
+    assert_eq!(r["pathCount"], json!(2), "the joined path and the one it took in");
+    let sel = s.doc().unwrap().selection.clone();
+    assert_eq!(sel.anchors[&NodeId(a)], [(0, 3)].into_iter().collect(), "16 mm: index 3 of the joined path, not 4");
+    assert_eq!(at(&s, a, 3), (16.0, 10.0));
+    // Selected whole: the joined path selected whole.
+    let mut s = blank();
+    let a = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0)], StitchRun::default());
+    let b = path_mm(&mut s, &[(20.0, 10.0), (22.0, 10.0)], StitchRun::default());
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    run(&mut s, "embroidery.joinRuns", json!({"ids": [a, b]}));
+    let sel = s.doc().unwrap().selection.clone();
+    assert!(sel.objects == [NodeId(a)] && !sel.anchors.contains_key(&NodeId(a)), "{sel:?}");
+}
+
 /// Every edit keeps to one set of rules: no path past the most needle points a design may have (a
 /// split with its ties, a cut or a stop inside a run, a join), and what of the selection it passed
 /// over said, Join Runs' too.

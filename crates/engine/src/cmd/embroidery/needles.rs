@@ -437,10 +437,12 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
         }
     }
     let mut out = Targets::default();
+    // The locked artboards measured once for all the paths.
+    let editable = doc.editable();
     if given {
         for id in order {
             let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
-            if !doc.is_editable(id) {
+            if !editable(id) {
                 return Err(bad(cmd, format!("object {}: {}", id.0, said(reason::LOCKED))));
             }
             let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, said(why))))?;
@@ -466,7 +468,7 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
         let Some(n) = doc.node(id) else { continue };
         let mut found: Vec<&Node> = Vec::new();
         n.walk(&mut |c| {
-            if read_marks(c) {
+            if is_stitches(c) {
                 found.push(c);
             }
         });
@@ -478,7 +480,7 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             if !seen.insert(c.id) {
                 continue;
             }
-            if !doc.is_editable(c.id) {
+            if !editable(c.id) {
                 out.passed_over.push((c.id, reason::LOCKED));
                 continue;
             }
@@ -500,8 +502,9 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
     Ok(out)
 }
 
-/// Whether `n` is a path holding a run of literal stitches.
-fn read_marks(n: &Node) -> bool {
+/// Whether `n` is a path holding a run of literal stitches (whether its stitches can be edited
+/// aside: [`read`] says).
+pub(crate) fn is_stitches(n: &Node) -> bool {
     matches!(n.kind, NodeKind::Path { .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some())
 }
 

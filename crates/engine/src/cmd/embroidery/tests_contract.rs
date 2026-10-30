@@ -162,7 +162,7 @@ fn the_manual_stitch_commands_replies_keep_their_shape() {
     let pinned = "{changedCount: int, jumps: [{id: int, index: int, length: float}], lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, passedOver: [], pathCount: int, paths: [{id: int, needlePoints: int}], unchangedCount: int}";
     assert_eq!(split, pinned, "replies changed shape; if on purpose, pin it");
     let joined = shape(&run(&mut s, "embroidery.joinRuns", json!({"needlePoints": [{"id": a_run, "index": 2}]})));
-    let pinned = "{changedCount: int, dropped: [], lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, pathCount: int, paths: [{id: int, needlePoints: int}], removed: []}";
+    let pinned = "{changedCount: int, dropped: [], lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, passedOver: [], pathCount: int, paths: [{id: int, needlePoints: int}], removed: []}";
     assert_eq!(joined, pinned, "replies changed shape; if on purpose, pin it");
     let function = shape(&run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": a_run, "index": 2}], "function": "trim"})));
     let pinned = "{changedCount: int, function: string, lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, on: bool, passedOver: [], pathCount: int, paths: [{id: int, needlePoints: int}], splitCount: int, unchangedCount: int}";

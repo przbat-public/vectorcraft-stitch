@@ -258,16 +258,15 @@ impl Stitches {
     /// points and the exact millimetres from the needle points that carry them; the tack mark set
     /// when the path's only run is two needle points at one spot. `None` when no needle point is
     /// left.
-    pub(crate) fn written(&self) -> Option<(PathData, StitchRun)> {
-        let mut runs = self.clone();
-        runs.drop_empty_runs();
-        if runs.runs.is_empty() {
+    pub(crate) fn written(mut self) -> Option<(PathData, StitchRun)> {
+        self.drop_empty_runs();
+        let Self { runs, mut marks, .. } = self;
+        if runs.is_empty() {
             return None;
         }
-        let mut marks = runs.marks.clone();
         let (mut trims, mut stops, mut exact) = (Vec::new(), Vec::new(), Vec::new());
-        let mut subpaths = Vec::with_capacity(runs.runs.len());
-        for (s, r) in runs.runs.iter().enumerate() {
+        let mut subpaths = Vec::with_capacity(runs.len());
+        for (s, r) in runs.iter().enumerate() {
             if s > 0 && r.cut_before {
                 trims.push(s);
             }
@@ -289,7 +288,7 @@ impl Stitches {
             }
             subpaths.push(SubPath { anchors, closed: false });
         }
-        marks.double_point = matches!(runs.runs.as_slice(), [r] if matches!(r.needles.as_slice(), [a, b] if same(a.p, b.p)));
+        marks.double_point = matches!(runs.as_slice(), [r] if matches!(r.needles.as_slice(), [a, b] if same(a.p, b.p)));
         (marks.trims, marks.stops, marks.exact) = (trims, stops, exact);
         Some((PathData::new(subpaths), marks))
     }
@@ -297,14 +296,15 @@ impl Stitches {
 
 /// Write `st` back into path `n` (its path and its run's marks); `false` when no needle point is
 /// left, and nothing is written.
-pub(crate) fn write(n: &mut Node, st: &Stitches) -> bool {
+pub(crate) fn write(n: &mut Node, st: Stitches) -> bool {
+    let object_after = st.object_after;
     let Some((path, marks)) = st.written() else { return false };
     if let NodeKind::Path { path: p, .. } = &mut n.kind {
         *p = path;
     }
     if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
         e.stitches = Some(marks);
-        let [trim, stop] = st.object_after;
+        let [trim, stop] = object_after;
         if e.trim_after != trim {
             e.set_trim_after(trim);
         }
@@ -315,24 +315,20 @@ pub(crate) fn write(n: &mut Node, st: &Stitches) -> bool {
     true
 }
 
-/// The needle points of path `id` (read as `st`) that `sel` selects: those whose anchors it
-/// selects, or all of them when it selects the path whole.
-pub(crate) fn selected_in(sel: &Selection, id: NodeId, st: &Stitches) -> BTreeSet<usize> {
+/// The needle points of path `id` (read from it, `ix` its index) that `sel` selects: those whose
+/// anchors it selects, or all of them when it selects the path whole.
+pub(crate) fn selected_in(sel: &Selection, id: NodeId, ix: &Index) -> BTreeSet<usize> {
     match sel.anchors.get(&id) {
-        Some(anchors) => {
-            let ix = st.index();
-            anchors.iter().filter_map(|&a| ix.needle_of_anchor(a)).collect()
-        }
-        None if sel.objects.contains(&id) => (0..st.len()).collect(),
+        Some(anchors) => anchors.iter().filter_map(|&a| ix.needle_of_anchor(a)).collect(),
+        None if sel.objects.contains(&id) => (0..ix.len()).collect(),
         None => BTreeSet::new(),
     }
 }
 
-/// Select needle points `indices` of path `id` (read as `st`, as it will be written) in `sel`,
-/// in place of what it selected of the path: their anchors, the path among the objects. None:
-/// the path leaves the selection.
-pub(crate) fn select_in(sel: &mut Selection, id: NodeId, st: &Stitches, indices: &BTreeSet<usize>) {
-    let ix = st.index();
+/// Select needle points `indices` of path `id` (`ix` the index of its stitches as they will be
+/// written) in `sel`, in place of what it selected of the path: their anchors, the path among the
+/// objects. None: the path leaves the selection.
+pub(crate) fn select_in(sel: &mut Selection, id: NodeId, ix: &Index, indices: &BTreeSet<usize>) {
     let anchors: BTreeSet<(usize, usize)> = indices.iter().flat_map(|&k| ix.anchors_of(k)).collect();
     if anchors.is_empty() {
         sel.remove(id);
@@ -464,7 +460,7 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             }
             match read(c) {
                 Ok(st) => {
-                    let k = if c.id == id { selected_in(sel, id, &st) } else { (0..st.len()).collect() };
+                    let k = if c.id == id { selected_in(sel, id, &st.index()) } else { (0..st.len()).collect() };
                     count = count.saturating_add(k.len());
                     if count > MAX_NEEDLE_POINTS || out.paths.len() >= MAX_PATHS {
                         return Err(bad(cmd, format!("more than {MAX_NEEDLE_POINTS} needle points or {MAX_PATHS} paths of stitches selected")));

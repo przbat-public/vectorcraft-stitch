@@ -224,11 +224,13 @@ impl Sequence {
                 // than `trimLength` (each object ties itself off and in), or when the object
                 // before asked for it. An object that starts where the needle is goes on from
                 // there, its first needle point left out: the needle is already in that hole.
-                // After a cut or a stop the needle is lifted: a jump, and nothing left out.
+                // After a cut or a stop the needle is lifted: a jump, and nothing left out. A cut
+                // among the lifts the block ends with (a cut, then a stop after it) is the cut.
                 let mut skip = 0;
                 if let Some(last) = merged.stitches.last().copied() {
                     let at = needle_at(&merged.stitches).unwrap_or(last);
-                    if last.command != Command::Trim && at.distance(first) > self.connect.trim {
+                    let cut = merged.stitches.iter().rev().take_while(|s| lifts(s.command)).any(|s| s.command == Command::Trim);
+                    if !cut && at.distance(first) > self.connect.trim {
                         merged.stitches.push(Stitch::new(at.x, at.y, Command::Trim));
                     }
                     if at.distance(first) > SAME_POINT || lifts(last.command) {

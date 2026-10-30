@@ -172,7 +172,9 @@ names no object is reported as a missing object.
 **Stopping the machine after an object.** `embroidery.setStopAfter` (`{on?, ids?}`) marks objects
 the machine stops after, as for an appliqué piece to be laid down, read and toggled as Trim After
 is, and goes where Trim After goes when objects are made from others; the Object tab shows it
-beside Trim After (Stop the machine after the object). How a stop is written is in The formats.
+beside Trim After (Stop the machine after the object). The machine stops after the object's cut
+when it has one, and the move to the next object is cut no second time; with a stop alone, a move
+longer than `trimLength` is cut after the stop. How a stop is written is in The formats.
 
 **Manual stitches.** Convert to Manual Stitches (`embroidery.convertToManual`, the Object tab's
 button under a planned object's rows, the command palette) freezes the selected objects' stitches

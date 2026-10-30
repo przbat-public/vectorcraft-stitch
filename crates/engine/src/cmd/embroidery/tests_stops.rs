@@ -170,6 +170,18 @@ fn stop_after_on_an_object_stops_the_machine_after_it() {
     let [_, b] = two_apart(&mut s, Embroidery::default());
     run(&mut s, "embroidery.setStopAfter", json!({"ids": [b]}));
     assert_eq!(run(&mut s, "embroidery.stats", json!({}))["stops"], json!(0));
+    // Trim After and Stop After both, the next object of the colour far: cut once, then stopped,
+    // not cut again after the stop.
+    let mut both = stop;
+    both.set_trim_after(true);
+    let mut s = blank();
+    two_apart(&mut s, both);
+    let plan = plan_of(&mut s);
+    let commands: Vec<Command> = plan.blocks[0].stitches.iter().map(|s| s.command).filter(|c| *c != Command::Stitch).collect();
+    assert_eq!(commands.iter().filter(|c| **c == Command::Trim).count(), 1, "{commands:?}");
+    let at = commands.iter().position(|c| *c == Command::Stop).expect("a stop");
+    assert_eq!((commands.get(at.wrapping_sub(1)), commands.get(at + 1)), (Some(&Command::Trim), Some(&Command::Jump)), "{commands:?}");
+    assert_eq!(run(&mut s, "embroidery.stats", json!({}))["trims"], json!(1));
 }
 
 /// A design whose neighbouring blocks are in one thread: a red block, a stop (written as a change to

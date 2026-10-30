@@ -5196,9 +5196,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     inserted: [{id, index}], paths, pathCount, lengths, passedOver}`.
   - `embroidery.deleteNeedlePoints {needlePoints?, ranges?}` deletes each needle point addressed: the stitches beside
     it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point
-    before it that stays. A run left empty goes, its cut passing to the run after it; a path left empty is removed,
+    before it that stays. A run left empty goes, its cut passing to the run after it (to the path's own cut before it
+    when no run with needle points is before, its cut after it when none is after); a path left empty is removed,
     its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when there is none, to the
-    one after it), else dropped. The paths it changed leave the selection. It answers `{changedCount, merged: [{id,
+    one after it), else dropped, each said once. The paths it changed leave the selection. `path.deleteAnchors` (the
+    Delete key, Edit › Clear and Cut with anchors selected) deletes needle points of runs of stitches this way. It answers `{changedCount, merged: [{id,
     index}], paths, pathCount, removed: [id], removedCount, moved: [{function, id, index | before: true}], dropped:
     [{function, id}], lengths, passedOver}` (`merged`: the needle point each merged stitch now leaves from, numbered as
     after the edit; the needle points after a deleted one move down by one).

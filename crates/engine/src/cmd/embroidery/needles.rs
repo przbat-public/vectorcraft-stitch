@@ -217,6 +217,16 @@ impl Index {
     }
 }
 
+/// How many needle points path `n` holds, counted as [`read`] reads them without reading them;
+/// `None` when it isn't a path of stitches.
+pub(crate) fn count(n: &Node) -> Option<usize> {
+    let NodeKind::Path { path, .. } = &n.kind else { return None };
+    let marks = n.extras().embroidery.as_deref()?.stitches.as_ref()?;
+    let alone = path.subpaths.len() == 1;
+    let one = |sp: &SubPath| matches!(sp.anchors.as_slice(), [a, b] if same(a.p, b.p) && !(alone && marks.double_point));
+    Some(path.subpaths.iter().map(|sp| if one(sp) { 1 } else { sp.anchors.len() }).sum())
+}
+
 impl Stitches {
     /// How many needle points the path holds.
     pub(crate) fn len(&self) -> usize {

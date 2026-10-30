@@ -595,6 +595,10 @@ fn convert_anchors(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 pub(crate) fn delete_anchors(s: &mut Session, _: &Value) -> Result<Value> {
+    // VectorCraft Stitch: needle points of runs of stitches are deleted as stitches (neighbours merge).
+    if let Some(done) = super::embroidery::delete_needle_points_selected(s) {
+        return done;
+    }
     let st = s.doc()?;
     let sel = st.selection.anchors.clone();
     let segments = st.selection.segments.clone();

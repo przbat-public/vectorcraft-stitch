@@ -114,8 +114,9 @@ use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 pub use self::objects::skip_reasons;
 
 /// The marked upstream hooks of the stitch commands: Delete with needle points selected
-/// (`edit.clear`), a run of stitches cut into pieces (`draw2::replace_with_pieces`), and Join of
-/// runs of stitches (`path.join`).
+/// (`path::delete_anchors`, which the Delete key, Edit › Clear, Edit › Cut and `path.deleteAnchors`
+/// all reach), a run of stitches cut into pieces (`draw2::replace_with_pieces`), and Join of runs of
+/// stitches (`path.join`).
 pub(crate) fn delete_needle_points_selected(s: &mut Session) -> Option<Result<Value>> {
     needle_edits::delete_selected(s)
 }
@@ -322,7 +323,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Delete Needle Points",
             [],
             None,
-            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's)} deletes each needle point addressed: the stitches beside it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point before it that stays (dropped when none). A run left with no needle point goes, its cut passing to the run after it; a path left with none is removed, its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when none, to the one after it, as a cut before it), else dropped. The paths it changed leave the selection, so a second Delete deletes nothing. One undo step \"Delete Needle Points\" → {changedCount: the needle points deleted, merged: [{id, index}] (the needle point each merged stitch now leaves from, numbered as after the edit), paths: [{id, needlePoints}] (0: removed), pathCount, removed: [id], removedCount, moved: [{function: \"trim\"|\"stop\", id, index (the needle point it follows now) | before: true (a cut before the path)}], dropped: [{function, id}], lengths (the stitches merged), passedOver}",
+            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's)} deletes each needle point addressed: the stitches beside it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point before it that stays (dropped when none). A run left with no needle point goes, its cut passing to the run after it (to the path's own cut before it when no run with needle points is before, its cut after it when none is after); a path left with none is removed, its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when none, to the one after it, as a cut before it), else dropped, each said once. The paths it changed leave the selection, so a second Delete deletes nothing. One undo step \"Delete Needle Points\" → {changedCount: the needle points deleted, merged: [{id, index}] (the needle point each merged stitch now leaves from, numbered as after the edit), paths: [{id, needlePoints}] (0: removed), pathCount, removed: [id], removedCount, moved: [{function: \"trim\"|\"stop\", id, index (the needle point it follows now) | before: true (a cut before the path)}], dropped: [{function, id}], lengths (the stitches merged), passedOver}",
             has_doc,
             needle_edits::delete
         ),

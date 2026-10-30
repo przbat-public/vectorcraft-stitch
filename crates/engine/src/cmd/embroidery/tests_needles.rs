@@ -477,6 +477,43 @@ fn a_path_left_empty_passes_its_cut_and_stop_on() {
     assert!(stitches(&node(&s, c)).trim_before);
 }
 
+/// A run left empty at a path's start or end passes the cut before it to the path's own cut before
+/// or after it, and the reply says so; a path removed says once where its stop went; a neighbour
+/// edited in the same call is numbered as after the edit; `path.deleteAnchors` (the Delete key's
+/// command) deletes needle points as stitches too.
+#[test]
+fn delete_keeps_the_cuts_at_a_paths_ends_and_says_each_once() {
+    // [10 12] ✂ [20 22]: the second run deleted, then (undone) the first.
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (20.0, 10.0), (22.0, 10.0)], StitchRun::default());
+    run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 1}], "function": "trim", "ties": false}));
+    assert_eq!(stitches(&node(&s, id)).trims, [1]);
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": id, "from": 2, "to": 3}]}));
+    assert_eq!((r["moved"].clone(), r["dropped"].clone()), (json!([{"function": "trim", "id": id, "index": 1}]), json!([])), "{r}");
+    assert!(stitches(&node(&s, id)).trim_after, "the cut after the path now");
+    run(&mut s, "edit.undo", json!({}));
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": id, "from": 0, "to": 1}]}));
+    assert_eq!(r["moved"], json!([{"function": "trim", "id": id, "before": true}]), "{r}");
+    assert!(stitches(&node(&s, id)).trim_before, "the cut before the path now");
+    // B's stop, on its last needle point, said once: passed to A.
+    let mut s = blank();
+    let a = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (14.0, 10.0)], StitchRun::default());
+    let b = path_mm(&mut s, &[(20.0, 10.0), (22.0, 10.0)], StitchRun { stops: vec![(0, 1)], trim_after: true, ..StitchRun::default() });
+    let c = path_mm(&mut s, &[(30.0, 10.0), (32.0, 10.0)], StitchRun::default());
+    run(&mut s, "select.set", json!({"ids": [a, b, c]}));
+    run(&mut s, "object.group", json!({}));
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": a, "from": 2, "to": 2}, {"id": b, "from": 0, "to": 1}]}));
+    let moved = json!([{"function": "trim", "id": a, "index": 1}, {"function": "stop", "id": a, "index": 1}]);
+    assert_eq!((r["moved"].clone(), r["dropped"].clone()), (moved, json!([])), "A numbered as after the edit, B's stop once: {r}");
+    // The Delete key's command.
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (14.0, 10.0)], StitchRun::default());
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 1]]}));
+    run(&mut s, "path.deleteAnchors", json!({}));
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!((st.runs.len(), st.len()), (1, 2), "neighbours merged, no gap");
+}
+
 /// The plan's records of the active document: how many jumps and needle-down stitches.
 fn jumps_and_stitches(s: &mut Session) -> (usize, usize) {
     let p = s.embroidery_plan(&super::Options::default()).unwrap();

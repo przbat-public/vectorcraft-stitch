@@ -87,6 +87,10 @@ fn stitch_commands_on_every_kind_of_run_never_panic() {
         for (command, params) in [
             ("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 0}], "dx": 1e308})),
             ("embroidery.moveNeedlePoints", json!({"ranges": [{"id": id, "from": 0, "to": 1_999_999}], "dy": 0.1})),
+            ("embroidery.moveNeedlePoints", json!({"ranges": [{"id": id, "from": 0, "to": u64::MAX}], "dy": 0.1})),
+            ("embroidery.deleteNeedlePoints", json!({"ranges": [{"id": id, "from": u32::MAX, "to": u64::MAX}]})),
+            ("embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": u64::MAX}], "function": "trim"})),
+            ("embroidery.insertNeedlePoints", json!({"id": id, "index": u64::MAX})),
             ("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 1}], "to": [f64::MAX, 0]})),
             ("embroidery.insertNeedlePoints", json!({"id": id, "index": 0, "at": [[0, 0], [1e9, 1e9]]})),
             ("embroidery.insertNeedlePoints", json!({"id": id, "index": 1})),

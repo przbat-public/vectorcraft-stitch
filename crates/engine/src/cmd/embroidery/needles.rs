@@ -323,10 +323,13 @@ fn whole(v: Option<&Value>, what: &str, cmd: &str) -> Result<u64> {
 /// inclusive), each refused by `cmd` when it isn't one that can be edited; with neither, the
 /// selection's needle points (`sel`: of each path of stitches it selects, the needle points whose
 /// anchors it selects, or all when it selects the path whole; a group selected whole stands for
-/// the paths of stitches in it), the other objects passed over. Checked before anything changes:
-/// at most [`MAX_PATHS`] paths and [`MAX_NEEDLE_POINTS`] needle points.
+/// the paths of stitches in it), the other objects passed over. Checked before anything changes or
+/// is counted: no index past what a path can hold, at most [`MAX_PATHS`] paths and
+/// [`MAX_NEEDLE_POINTS`] needle points, and a path's needle points listed only once every index
+/// given is known to be one of them.
 pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, cmd: &str) -> Result<Targets> {
-    let mut named: BTreeMap<NodeId, BTreeSet<usize>> = BTreeMap::new();
+    // Each path's ranges as given (inclusive), listed one by one only once the path is read.
+    let mut named: BTreeMap<NodeId, Vec<(usize, usize)>> = BTreeMap::new();
     let mut order: Vec<NodeId> = Vec::new();
     let mut given = false;
     let mut count = 0usize;
@@ -350,8 +353,10 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             if from > to {
                 return Err(bad(cmd, format!("`ranges` entry from {from} to {to}: `from` after `to`")));
             }
-            let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
-                return Err(bad(cmd, format!("index {to}: past any path's needle points")));
+            // No path holds more needle points than a design may have: an index past that is refused
+            // before it is counted (the count of a range from 0 to the largest number overflows).
+            let (Some(from), Some(to)) = (usize::try_from(from).ok(), usize::try_from(to).ok().filter(|to| *to < MAX_NEEDLE_POINTS)) else {
+                return Err(bad(cmd, format!("index {to}: past any path's needle points (a path holds at most {MAX_NEEDLE_POINTS})")));
             };
             count = count.saturating_add(to - from + 1);
             if count > MAX_NEEDLE_POINTS {
@@ -360,7 +365,7 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             if !named.contains_key(&id) {
                 order.push(id);
             }
-            named.entry(id).or_default().extend(from..=to);
+            named.entry(id).or_default().push((from, to));
             if named.len() > MAX_PATHS {
                 return Err(bad(cmd, format!("more than {MAX_PATHS} paths of stitches addressed")));
             }
@@ -370,14 +375,15 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
     if given {
         for id in order {
             let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
-            let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, said(why))))?;
             if !doc.is_editable(id) {
                 return Err(bad(cmd, format!("object {}: {}", id.0, said(reason::LOCKED))));
             }
-            let k = named.remove(&id).unwrap_or_default();
-            if let Some(past) = k.iter().next_back().filter(|&&k| k >= st.len()) {
+            let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, said(why))))?;
+            let ranges = named.remove(&id).unwrap_or_default();
+            if let Some(past) = ranges.iter().map(|&(_, to)| to).filter(|&to| to >= st.len()).max() {
                 return Err(bad(cmd, format!("object {}: needle point {past}, of {} (from 0)", id.0, st.len())));
             }
+            let k = ranges.into_iter().flat_map(|(from, to)| from..=to).collect();
             out.paths.push((id, st, k));
         }
         return Ok(out);

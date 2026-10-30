@@ -227,6 +227,38 @@ fn move_needle_points_refuses_before_changing_anything() {
     assert_eq!(at(&s, id, 0), (10.0, 10.0));
 }
 
+/// An index past what any path can hold is refused before it is counted, of a path of stitches or
+/// of no object at all: a range from 0 to the largest number, whose count would overflow, included.
+/// One within that bound but past the path's needle points is refused for the path; nothing changes.
+#[test]
+fn indices_past_any_path_are_refused_before_they_are_counted() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (14.0, 10.0)], StitchRun::default());
+    let steps = s.doc().unwrap().history.undo.len();
+    for target in [id, 0, u64::MAX] {
+        for (command, p) in [
+            ("embroidery.deleteNeedlePoints", json!({"ranges": [{"id": target, "from": 0, "to": u64::MAX}]})),
+            ("embroidery.selectNeedlePoints", json!({"ranges": [{"id": target, "from": 0, "to": u64::MAX}]})),
+            ("embroidery.moveNeedlePoints", json!({"ranges": [{"id": target, "from": u32::MAX, "to": u64::MAX}], "dx": 1})),
+            ("embroidery.splitRun", json!({"needlePoints": [{"id": target, "index": u64::MAX}]})),
+            ("embroidery.setMachineFunction", json!({"needlePoints": [{"id": target, "index": u32::MAX}], "function": "stop"})),
+        ] {
+            let r = s.execute(command, &p);
+            let said = r.as_ref().err().map(ToString::to_string).unwrap_or_default();
+            assert!(said.contains("past any path's needle points"), "{command} {p}: {r:?}");
+        }
+        let r = s.execute("embroidery.moveNeedlePoints", &json!({"ranges": [{"id": target, "from": 0, "to": 1_999_999}], "dx": 1}));
+        let refused = match r {
+            Err(crate::EngineError::BadParams { msg, .. }) => target == id && msg.contains("needle point 1999999, of 3"),
+            Err(crate::EngineError::NoNode(n)) => n.0 == target,
+            _ => false,
+        };
+        assert!(refused, "within the bound, past the path: refused for the path");
+    }
+    assert_eq!(s.doc().unwrap().history.undo.len(), steps);
+    assert_eq!(at(&s, id, 2), (14.0, 10.0));
+}
+
 /// A converted run's exact millimetres stay with its needle points: a needle point moved away and
 /// back is sewn exactly as before, and so are the others, so the export is the same bytes.
 #[test]

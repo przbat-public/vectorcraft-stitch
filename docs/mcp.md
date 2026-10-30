@@ -5222,7 +5222,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     unless every needle point has it already. Inside a run the run splits there first, tied off and in as
     `embroidery.splitRun` ties (on unless `ties: false`); at a run's last needle point it is the gap's (a cut before
     the next run, a stop after it), at the path's last the path's (its Trim After or Stop After, the object's own
-    included). Turned off, the runs stay split. It answers `{function, on, changedCount, unchangedCount, splitCount,
+    included). A function set with ties comes after the tie-off that follows the needle point addressed, and is
+    found there again: the same call at the same index turns it off, and on again without a second split. Turned
+    off, the runs stay split. It answers `{function, on, changedCount, unchangedCount, splitCount,
     needlePoints: [{id, index}], paths, pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed,
     numbered as after the edit, which splits and ties renumber).
   - `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?: 12.7 | format?}` splits each stitch arriving at

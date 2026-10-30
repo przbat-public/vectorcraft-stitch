@@ -1004,19 +1004,35 @@ enum Function {
     Stop,
 }
 
+/// The needle point a function after needle point `k` of `st` (`ix` its index) comes after: `k`
+/// itself when it ends its run; else, when all its run has after it is a tie-off back to its spot
+/// (as Machine Function ties a run off after the needle point addressed), the tie's end, so that a
+/// function set with ties is found again, and turned off, at the needle point it was set at;
+/// `None` inside a run.
+fn function_end(st: &Stitches, ix: &Index, k: usize) -> Option<usize> {
+    let (r, i) = ix.locate(k)?;
+    let n = ix.run_len(r);
+    if i + 1 == n {
+        return Some(k);
+    }
+    let tied = i + 3 == n && st.needle((r, i + 2)).zip(st.needle((r, i))).is_some_and(|(end, at)| same_spot(end.p, at.p));
+    tied.then_some(k + 2)
+}
+
 /// Whether `st` (`ix` its index) has function `f` after needle point `k`: a cut before the next run
-/// (or after the path), a stop after it (or after the path).
+/// (or after the path) where `k`'s run ends ([`function_end`]), a stop after it, after the tie that
+/// follows it, or after the path.
 fn has(st: &Stitches, ix: &Index, k: usize, f: Function) -> bool {
-    let Some((r, i)) = ix.locate(k) else { return false };
-    let last_of_run = i + 1 == ix.run_len(r);
-    let last = k + 1 == ix.len();
+    let end = function_end(st, ix, k);
+    let last = end.is_some_and(|e| e + 1 == ix.len());
     let after = st.marks.after() | st.object_after;
-    match f {
-        Function::Trim if last => after.trim,
+    let stop_at = |k: usize| ix.locate(k).and_then(|at| st.needle(at)).is_some_and(|n| n.stop);
+    match (f, end) {
+        (Function::Trim, Some(_)) if last => after.trim,
         // The run the next needle point is in, past any run with none.
-        Function::Trim if last_of_run => ix.locate(k + 1).and_then(|(next, _)| st.runs.get(next)).is_some_and(|r| r.cut_before),
-        Function::Trim => false,
-        Function::Stop => st.needle((r, i)).is_some_and(|n| n.stop) || (last && after.stop),
+        (Function::Trim, Some(e)) => ix.locate(e + 1).and_then(|(next, _)| st.runs.get(next)).is_some_and(|r| r.cut_before),
+        (Function::Trim, None) => false,
+        (Function::Stop, end) => stop_at(k) || end.is_some_and(|e| e != k && stop_at(e)) || (last && after.stop),
     }
 }
 
@@ -1060,17 +1076,20 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
                 unchanged += 1;
                 continue;
             }
-            let Some((r, i)) = ix.locate(k) else { continue };
-            // The run the next needle point is in, past any run with none.
-            let next = ix.locate(k + 1).map(|(n, _)| n).filter(|&n| n > r);
-            let last_of_run = i + 1 == ix.run_len(r);
             changed += 1;
             any = true;
-            // Inside a run, on: the run splits after it, below. Off, only a stop can be there.
-            if !last_of_run && on {
-                inside.insert(k + 1);
+            let Some(end) = function_end(&out, &ix, k) else {
+                // Inside a run, on: the run splits after it, below. Off, only a stop can be there.
+                if on {
+                    inside.insert(k + 1);
+                } else if let Some(n) = ix.locate(k).and_then(|at| out.needle_mut(at)) {
+                    n.stop = false;
+                }
                 continue;
-            }
+            };
+            let Some((r, _)) = ix.locate(end) else { continue };
+            // The run the next needle point is in, past any run with none.
+            let next = ix.locate(end + 1).map(|(n, _)| n).filter(|&n| n > r);
             match (f, next) {
                 (Function::Trim, Some(n)) => {
                     if let Some(next) = out.runs.get_mut(n) {
@@ -1082,10 +1101,13 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
                     out.object_after.trim = on;
                 }
                 (Function::Stop, next) => {
-                    if let Some(n) = out.needle_mut((r, i)) {
-                        n.stop = on;
+                    // On: after the run's end (the tie's, when one follows it); off: wherever it is.
+                    for at in if on { vec![end] } else { vec![k, end] } {
+                        if let Some(n) = ix.locate(at).and_then(|at| out.needle_mut(at)) {
+                            n.stop = on;
+                        }
                     }
-                    if next.is_none() && last_of_run && !on {
+                    if next.is_none() && !on {
                         out.marks.stop_after = false;
                         out.object_after.stop = false;
                     }

@@ -593,6 +593,43 @@ fn scissors_and_cuts_in_place_cut_runs_as_stitches() {
     }
 }
 
+/// With ties on (the default), a function set after a needle point is found again at that needle
+/// point, past the tie-off that follows it: the same call toggles it off (the runs stay split) and on
+/// again without splitting or tying again, so set then unset gives the runs back, cut or stopped
+/// nowhere; the reply and the selection stay on the needle point addressed.
+#[test]
+fn a_function_set_with_ties_toggles_at_its_needle_point() {
+    for function in ["trim", "stop"] {
+        let mut s = blank();
+        let id = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0), (18.0, 10.0), (22.0, 10.0)], StitchRun::default());
+        run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 1]]}));
+        let at = |s: &mut Session| run(s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 1}], "function": function}));
+        let shape = |s: &Session| needles::read(&node(s, id)).unwrap().runs.iter().map(|r| r.needles.len()).collect::<Vec<_>>();
+        let r = at(&mut s);
+        assert_eq!(
+            (r["on"].clone(), r["splitCount"].clone(), r["needlePoints"].clone()),
+            (json!(true), json!(1), json!([{"id": id, "index": 1}])),
+            "{r}"
+        );
+        assert_eq!(shape(&s), [4, 4], "{function}: 10 14 13 14 | 18 19 18 22");
+        assert_eq!(s.doc().unwrap().selection.anchors[&NodeId(id)], [(0, 1)].into_iter().collect(), "the selection stays on 14");
+        let records =
+            |s: &mut Session| records(s, if function == "trim" { vectorcraft_stitch::Command::Trim } else { vectorcraft_stitch::Command::Stop });
+        let set = records(&mut s);
+        let r = at(&mut s);
+        assert_eq!(
+            (r["on"].clone(), r["changedCount"].clone(), r["splitCount"].clone()),
+            (json!(false), json!(1), json!(0)),
+            "{function}: off at 14: {r}"
+        );
+        assert_eq!(shape(&s), [4, 4], "{function}: the runs stay split");
+        assert_eq!(records(&mut s), set - 1, "{function}: no longer there");
+        let r = at(&mut s);
+        assert_eq!((r["on"].clone(), r["splitCount"].clone()), (json!(true), json!(0)), "{function}: on again, no second split: {r}");
+        assert_eq!((shape(&s), records(&mut s)), (vec![4, 4], set), "{function}");
+    }
+}
+
 /// The plan's records of the active document: how many jumps and needle-down stitches.
 fn jumps_and_stitches(s: &mut Session) -> (usize, usize) {
     let p = s.embroidery_plan(&super::Options::default()).unwrap();

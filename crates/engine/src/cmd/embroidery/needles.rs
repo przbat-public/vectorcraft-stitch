@@ -52,6 +52,9 @@ pub(crate) mod reason {
     pub(crate) const OUT_OF_RANGE: &str = "outOfRange";
     /// More needle points than a design may have.
     pub(crate) const TOO_MANY: &str = "tooManyNeedlePoints";
+    /// A path whose first needle point Join Runs was given has no path of stitches sewn right before
+    /// it in its parent, in its colour and of its kind, to join it to.
+    pub(crate) const NOT_JOINABLE: &str = "notJoinable";
 }
 
 /// One needle point: where it is (document points), whether the machine stops after it, and the

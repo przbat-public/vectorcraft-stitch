@@ -877,6 +877,45 @@ fn all_records(s: &mut Session, params: Value) -> Vec<Value> {
     }
 }
 
+/// An opened design keeps each run a path, the cut between two runs before the second: the stitch
+/// list numbers the jump onto a run (its first needle point) and the cut before it (the needle point
+/// before, in the path before), Machine Function at that needle point finds that cut and turns it
+/// off and on, and Join Runs given a path's first needle point joins the path to the one before it
+/// (passing over one with none to join to).
+#[test]
+fn an_opened_designs_gaps_between_runs_can_be_edited() {
+    let mut s = blank();
+    let a = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0)], StitchRun::default());
+    let b = path_mm(&mut s, &[(30.0, 10.0), (34.0, 10.0)], StitchRun { trim_before: true, ..StitchRun::default() });
+    let c = path_mm(&mut s, &[(50.0, 10.0), (54.0, 10.0)], StitchRun::default());
+    run(&mut s, "select.set", json!({"ids": [a, b, c]}));
+    run(&mut s, "object.group", json!({}));
+    run(&mut s, "select.none", json!({}));
+    let rows = all_records(&mut s, json!({}));
+    let row = |kind: &str, node: u64| rows.iter().find(|r| r["kind"] == json!(kind) && r["node"] == json!(node)).cloned();
+    let cut = row("trim", a).unwrap_or_else(|| panic!("the cut before b, after a's last: {rows:?}"));
+    assert_eq!((cut["index"].clone(), cut["editable"].clone()), (json!(1), json!(true)));
+    let jump = row("jump", b).unwrap();
+    assert_eq!((jump["index"].clone(), jump["editable"].clone()), (json!(0), json!(true)), "the jump onto b lands on its first");
+    // Machine Function at a's last needle point: the file's cut there, turned off, then on again.
+    let trims = |s: &mut Session| records(s, vectorcraft_stitch::Command::Trim);
+    let before = trims(&mut s);
+    let r = run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": a, "index": 1}], "function": "trim"}));
+    assert_eq!((r["on"].clone(), r["changedCount"].clone()), (json!(false), json!(1)), "it has the file's cut: {r}");
+    assert!(!stitches(&node(&s, b)).trim_before && trims(&mut s) == before - 1);
+    let r = run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": a, "index": 1}], "function": "trim"}));
+    assert_eq!(r["on"], json!(true), "{r}");
+    assert_eq!(trims(&mut s), before);
+    // Join Runs at b's first needle point: b joined to a; then c (now after a) to a.
+    let r = run(&mut s, "embroidery.joinRuns", json!({"needlePoints": [{"id": b, "index": 0}]}));
+    assert_eq!((r["changedCount"].clone(), r["removed"].clone()), (json!(1), json!([b])), "{r}");
+    assert_eq!(needles::read(&node(&s, a)).unwrap().len(), 4);
+    run(&mut s, "embroidery.joinRuns", json!({"needlePoints": [{"id": c, "index": 0}]}));
+    assert_eq!(needles::read(&node(&s, a)).unwrap().len(), 6);
+    let r = run(&mut s, "embroidery.joinRuns", json!({"needlePoints": [{"id": a, "index": 0}]}));
+    assert_eq!((r["changedCount"].clone(), r["passedOver"].clone()), (json!(0), json!([{"id": a, "reason": "notJoinable"}])), "{r}");
+}
+
 /// `embroidery.stitches` numbers every record from 1, and where the stitch commands can edit one
 /// its `{id, index}` is the needle point the record sews (a jump: the one it lands on; a cut or a
 /// stop: the one before), in every path of the manual fixture that can be edited (opened designs,

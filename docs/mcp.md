@@ -5171,7 +5171,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   edit since never moves another needle point; an entry with any other key is refused. Select first, then act, where
   indices may be stale. With neither, a command takes the selection's needle points: the anchors selected of each path of
   stitches, all of one selected whole, all of those in a group selected whole (other objects are passed over and
-  listed in `passedOver` with why: `notStitches`, `locked`, `outOfRange`, `tooManyNeedlePoints`). An id stays put
+  listed in `passedOver` with why: `notStitches`, `locked`, `outOfRange`, `tooManyNeedlePoints`; Join Runs also
+  `notJoinable`). An id stays put
   across edits and an index shifts only inside the path an edit changes; record numbers are for showing, never for
   editing. Refused before anything changes: an id that isn't a path of stitches in the document's layers, a locked or
   hidden one, an index past its needle points (or past 1,999,999, whatever the path), anchors that aren't numbers or
@@ -5213,7 +5214,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   - `embroidery.joinRuns {needlePoints?, ranges? | ids?}` joins each run whose first needle point is addressed to the
     run before it in its path, or (`ids`, 2 or more) the paths of stitches given into the first: they must be sewn
     one right after another (next to one another in one parent, in the order given, in one colour, all opened or all
-    manual), else it is refused ("these runs aren't sewn one right after another in one colour block"). The jump
+    manual), else it is refused ("these runs aren't sewn one right after another in one colour block"). A path's
+    first needle point addressed (given, or its anchor selected; not a path selected whole) joins the path to the
+    path of stitches sewn right before it in its parent (an opened design keeps each run a path), passed over as
+    `notJoinable` when that isn't one in its colour and of its kind. The jump
     becomes a stitch (a needle point lying where the run before ends is kept once), never reversed; a cut or a stop at
     a gap joined goes. It answers `{changedCount, paths, pathCount, removed: [id], dropped: [{function, id}],
     lengths, passedOver}`.
@@ -5222,7 +5226,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     unless every needle point has it already. Inside a run the run splits there first, tied off and in as
     `embroidery.splitRun` ties (on unless `ties: false`); at a run's last needle point it is the gap's (a cut before
     the next run, a stop after it), at the path's last the path's (its Trim After or Stop After, the object's own
-    included). A function set with ties comes after the tie-off that follows the needle point addressed, and is
+    included, and the cut an opened design keeps before the path sewn right after it). A function set with ties comes after the tie-off that follows the needle point addressed, and is
     found there again: the same call at the same index turns it off, and on again without a second split. Turned
     off, the runs stay split. It answers `{function, on, changedCount, unchangedCount, splitCount,
     needlePoints: [{id, index}], paths, pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed,
@@ -5241,7 +5245,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     "stitch"|"jump"|"trim"|"stop", at, length, id, node, block, unit, index, editable}], options}`. `length` is a
     needle-down stitch's from the needle point before it, or a jump's move (null for the needle point a jump or a cut
     lands on, a cut, a stop). Where the stitch commands can edit a record, `index` is the needle point of `node` it is
-    (a jump: the one it lands on; a cut or a stop: the one before it): a run of literal stitches in the document's
+    (a jump: the one it lands on; a cut or a stop: the one before it, in the path before for the cut an opened
+    design's run starts with): a run of literal stitches in the document's
     layers that can be edited, not cut by a clip group, whose needle-down records are as many as its needle points;
     else `null` (planned art, a symbol's art, a run cut by a clip group, a locked one). `from`/`to` pick record
     numbers, `ids` objects (the one a person selects, or the path sewn), `kinds` kinds, `shorterThan`/`longerThan` a

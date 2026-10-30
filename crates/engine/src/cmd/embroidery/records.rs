@@ -166,6 +166,9 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
     // Each unit's needle-down records so far among its own.
     let mut counts = vec![0usize; plan.units.len()];
     let mut total = 0usize;
+    // The needle point the last needle-down record numbered is, in its block: a cut before the next
+    // unit's own records (an opened design's run's) follows it.
+    let mut last_needle: Option<(usize, NodeId, usize)> = None;
     measure::each_until_cancelled(plan, |r| {
         total += 1;
         let Some(u) = plan.units.get(r.unit) else { return };
@@ -177,7 +180,13 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
             Command::Stop | Command::ColorChange => "stop",
         };
         // Its place in the path the unit sews, where the records number it.
-        let place = r.number.checked_sub(block.first_number).filter(|i| u.own.contains(i));
+        let at = r.number.checked_sub(block.first_number);
+        let place = at.filter(|i| u.own.contains(i));
+        // Before the unit's own records (an opened design's run, which the cut and the jump onto it
+        // the file had come before): the jump lands on its first needle point, a cut follows the
+        // needle point numbered last in the block.
+        let leading = at.is_some_and(|i| i < u.own.start);
+        let mut node = u.origin.node;
         let index = match (numbered.get(r.unit).copied().flatten(), place) {
             (Some((_, first)), Some(_)) => {
                 let count = counts.get(r.unit).copied().unwrap_or(0);
@@ -186,6 +195,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
                         if let Some(c) = counts.get_mut(r.unit) {
                             *c += 1;
                         }
+                        last_needle = Some((u.block, node, first + count));
                         Some(first + count)
                     }
                     // A jump: the needle point it lands on.
@@ -194,8 +204,22 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
                     _ => (first + count).checked_sub(1),
                 }
             }
+            (Some((_, first)), None) if leading => match r.stitch.command {
+                Command::Jump => Some(first),
+                Command::Trim | Command::Stop => match last_needle.filter(|(b, ..)| *b == u.block) {
+                    Some((_, before, k)) => {
+                        node = before;
+                        Some(k)
+                    }
+                    None => None,
+                },
+                _ => None,
+            },
             _ => None,
         };
+        if index.is_none() && r.stitch.command == Command::Stitch {
+            last_needle = None;
+        }
         let length = match r.stitch.command {
             Command::Stitch => r.sewn(),
             Command::Jump => Some(r.moved()),
@@ -216,7 +240,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
         {
             return;
         }
-        f(Row { record: r.number, kind, at: [r.stitch.x, r.stitch.y], length, id, node: u.origin.node, block: u.block + 1, unit: r.unit + 1, index });
+        f(Row { record: r.number, kind, at: [r.stitch.x, r.stitch.y], length, id, node, block: u.block + 1, unit: r.unit + 1, index });
     });
     total
 }

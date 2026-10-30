@@ -111,7 +111,13 @@ fn object(entries: impl IntoIterator<Item = (&'static str, Option<Value>)>) -> V
 
 /// An object's embroidery holding a run's marks, an original and Stop After, each maybe.
 fn arb_marks() -> impl Strategy<Value = Value> {
-    let pair = prop_oneof![6 => prop::collection::vec(arb_index(), 2), 1 => prop::collection::vec(arb_index(), 0..4)].prop_map(Value::Array);
+    // A needle point a cut or a stop is kept at: its place, with where it lay or without.
+    let mark = prop_oneof![
+        3 => prop::collection::vec(arb_index(), 2).prop_map(Value::Array),
+        3 => (arb_index(), arb_index(), arb_coordinate(), arb_coordinate()).prop_map(|(s, a, x, y)| Value::Array(vec![s, a, x, y])),
+        1 => prop::collection::vec(arb_index(), 0..4).prop_map(Value::Array),
+    ];
+    let shape = prop_oneof![6 => prop::collection::vec(arb_index(), 2), 1 => prop::collection::vec(arb_index(), 0..4)].prop_map(Value::Array);
     let exact = prop_oneof![
         6 => (arb_index(), arb_index(), arb_coordinate(), arb_coordinate()).prop_map(|(s, a, x, y)| Value::Array(vec![s, a, x, y])),
         1 => prop::collection::vec(arb_coordinate(), 0..6).prop_map(Value::Array),
@@ -123,17 +129,19 @@ fn arb_marks() -> impl Strategy<Value = Value> {
     ];
     let o = Just;
     let run = (
-        prop::option::of(arb_list(arb_index())),
-        prop::option::of(arb_list(pair)),
+        prop::option::of(arb_list(prop_oneof![arb_index(), mark.clone()])),
+        prop::option::of(arb_list(mark)),
+        prop::option::of(prop_oneof![4 => shape, 1 => Just(Value::Null)]),
         prop::option::of(arb_list(exact)),
         prop::option::of(transformed),
         prop::option::of(arb_flag()),
         prop::option::of(arb_flag()),
     )
-        .prop_map(|(trims, stops, exact, transformed, manual, stop_after)| {
+        .prop_map(|(trims, stops, shape, exact, transformed, manual, stop_after)| {
             object([
                 ("trims", trims),
                 ("stops", stops),
+                ("shape", shape),
                 ("exact", exact),
                 ("transformed", transformed),
                 ("manual", manual),
@@ -210,8 +218,21 @@ fn run_as_saved(run: &serde_json::Map<String, Value>) -> Value {
         items.iter().map(read).collect::<Option<Vec<_>>>().map(|l| (!l.is_empty()).then_some(Value::Array(l)))
     };
     let index = |v: &Value| v.as_u64().map(Value::from);
-    let stop = |v: &Value| match v.as_array().map(Vec::as_slice) {
+    // A needle point a cut or a stop is kept at: two indices, and where it lay as two finite
+    // numbers (written as floats) or nothing.
+    let mark = |v: &Value| match v.as_array().map(Vec::as_slice) {
         Some([subpath, anchor]) => Some(serde_json::json!([index(subpath)?, index(anchor)?])),
+        Some([subpath, anchor, x, y]) => {
+            let c = |c: &Value| c.as_f64().filter(|c| c.is_finite()).map(Value::from);
+            Some(serde_json::json!([index(subpath)?, index(anchor)?, c(x)?, c(y)?]))
+        }
+        _ => None,
+    };
+    // A cut: a mark, or a bare subpath number (an earlier form), written as that subpath's first
+    // anchor.
+    let trim = |v: &Value| index(v).map(|s| serde_json::json!([s, 0])).or_else(|| mark(v));
+    let shape = |v: &[Value]| match v {
+        [subpaths, anchors] => Some(serde_json::json!([index(subpaths)?, index(anchors)?])),
         _ => None,
     };
     // An exact needle point: two indices, then each coordinate a finite number or null, not both
@@ -230,9 +251,10 @@ fn run_as_saved(run: &serde_json::Map<String, Value>) -> Value {
     };
     let read = read_keys(run, |k, x| match (k, x) {
         (k, Value::Bool(false) | Value::Null) if RUN_FLAGS.contains(&k) => Some(None),
-        ("trims" | "stops" | "exact", Value::Null) => Some(None),
-        ("trims", Value::Array(items)) => list(items, &index),
-        ("stops", Value::Array(items)) => list(items, &stop),
+        ("trims" | "stops" | "exact" | "shape", Value::Null) => Some(None),
+        ("trims", Value::Array(items)) => list(items, &trim),
+        ("stops", Value::Array(items)) => list(items, &mark),
+        ("shape", Value::Array(items)) => shape(items).map(Some),
         ("exact", Value::Array(items)) => list(items, &exact),
         ("transformed", Value::Object(t)) if t.len() == 1 => t.get("frame").and_then(frame_as_saved).map(|f| Some(serde_json::json!({ "frame": f }))),
         _ => None,

@@ -200,7 +200,14 @@ order: handles are ignored, a closed path sews no closing stitch, and its subpat
 needle jumps between. Direct Selection moves needle points as it moves anchors; its Delete merges
 the neighbouring stitches (it doesn't leave a gap the machine still sews), the cutting tools put a
 run's cut before on its first piece and its cut and stop after on its last, and Join joins runs in
-sewing order, never reversed. For agents and MCP, the stitch commands edit needle points addressed
+sewing order, never reversed. A run's stops and cuts are kept by their needle points, where each
+lies (the project owner's choice, 2026-10-30): the other path commands (Reverse Path Direction, Add
+and Delete Anchor Point, Remove Anchor Points, Simplify, Join's merge of coincident anchors, Close
+Path) add, remove and reorder anchors as art, and each stop stays after its needle point, each cut
+before the run holding the needle point it was kept at; a needle point moved in place (Direct
+Selection) keeps its marks while the path has as many runs and anchors. A mark whose needle point
+is gone is left out, and the Check tab says so (set it again with `setMachineFunction`). A
+transform of the object moves the marks with their needle points. For agents and MCP, the stitch commands edit needle points addressed
 as `{id, index}` (the path and the needle point's place in it), in millimetres, without a plan:
 `embroidery.moveNeedlePoints`, `insertNeedlePoints`, `deleteNeedlePoints`, `splitRun` and
 `joinRuns` (a run boundary is a jump, tied off and in), `setMachineFunction` (a cut or a stop after
@@ -1115,6 +1122,8 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
 - Raster effects (drop shadows, glows, blurs, feathers, pixel effects) are left off, the art under
   them sewn, and an opacity mask isn't sewn, the masked art is, whole: both said in the warnings.
 - Symbols that place one another more than 100,000 times in all are left out past that, said.
+- A run's stop or cut whose needle point a path command deleted, or moved along with other edits
+  to the path, is left out, said (Using it › Editing stitches).
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
   and are at most 50 mm wide (wider strokes are warned about).
@@ -2563,7 +2572,11 @@ Limits:
   fingerprint of the stitches as converted, telling edits from moves), and one path of literal
   stitches marked `manual` per sewing unit, in walk order. Each path's subpaths are runs the needle
   jumps between; `trims` names the runs reached after a cut, `stops` the needle points followed by a
-  stop, `stop_after` and `trim_after` the path's end, `exact` the millimetres a document point can't
+  stop, each kept by its needle point (`[subpath, anchor, x, y]`, with the path's `shape`;
+  `doc::embroidery::Mark`, found on the path as it is now by `StitchRun::placed`: at its place while
+  its needle point lies there, else where that needle point lies, else at its place while the path
+  has as many subpaths and anchors, else left out and said), `stop_after` and `trim_after` the
+  path's end, `exact` the millimetres a document point can't
   give back (applied while the needle point lies where they were kept for), `transformed` the
   transforms since the stitches were made (for the scale warning).
 - **How a needle point is addressed** (`needles.rs`): `{id, index}`, the path and the needle point's

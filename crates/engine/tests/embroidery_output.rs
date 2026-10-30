@@ -1645,7 +1645,8 @@ fn stops() -> Session {
             vectorcraft_geom::PathData::from_bezpath(&bp),
             vectorcraft_doc::Appearance::basic(vectorcraft_color::Paint::None, paint, 1.0),
         );
-        let marks = StitchRun { trims: vec![2], stops: vec![(0, 2), (1, 4)], ..StitchRun::default() };
+        let place = vectorcraft_doc::embroidery::Mark::place;
+        let marks = StitchRun { trims: vec![place(2, 0)], stops: vec![place(0, 2), place(1, 4)], ..StitchRun::default() };
         node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(marks), ..Embroidery::default() }));
         d.insert(layer, usize::MAX, node).map_err(|e| vectorcraft_engine::EngineError::Other(e.to_string()))?;
         Ok(())

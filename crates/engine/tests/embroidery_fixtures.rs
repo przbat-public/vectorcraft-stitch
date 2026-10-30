@@ -184,7 +184,8 @@ fn the_manual_fixture_holds_each_kind_of_run() {
     assert!(!node(m.hidden).visible);
     assert!(!doc.is_editable(vectorcraft_doc::NodeId(m.locked)), "the locked run can't be edited");
     let stopped = stitches(m.stopped);
-    assert_eq!((stopped.stops, stopped.stop_after), (vec![(0, 1)], true));
+    let places: Vec<(usize, usize)> = stopped.stops.iter().map(|m| (m.subpath, m.anchor)).collect();
+    assert_eq!((places, stopped.stop_after), (vec![(0, 1)], true));
     // Each converted object: a group keeping its id, holding runs marked manual, its original kept,
     // sewn as manual stitches; the group given whole holds its two members converted.
     let c = m.converted;

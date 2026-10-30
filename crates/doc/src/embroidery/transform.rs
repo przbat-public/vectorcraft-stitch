@@ -71,6 +71,15 @@ impl Embroidery {
             // Every needle point moves: the exact millimetres kept for where they were no longer
             // apply.
             run.exact.clear();
+            // Each cut and stop is kept where its needle point lies: it moves with it (by the same
+            // arithmetic, so the two still agree to the bit), or, when that leaves the numbers, is
+            // found by its place alone.
+            for m in run.trims.iter_mut().chain(run.stops.iter_mut()) {
+                if let Some(at) = m.at {
+                    let moved = a * at;
+                    m.at = (moved.x.is_finite() && moved.y.is_finite()).then_some(moved);
+                }
+            }
             // How its stitches were turned and scaled since they were made: a move alone records
             // nothing (so moving a run leaves its saved form as it was), anything more starts the
             // record, and every transform after is composed with it.

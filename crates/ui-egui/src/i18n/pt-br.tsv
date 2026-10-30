@@ -6009,3 +6009,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Restaurar {count} objeto?|Restaurar {count} objetos?
 @plural	{count} object restored|{count} objects restored	{count} objeto restaurado|{count} objetos restaurados
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objeto convertido em pontos manuais: Restaurar objeto o traz de volta|{count} objetos convertidos em pontos manuais: Restaurar objeto os traz de volta
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	cortes ou paradas de pontos foram omitidos: um comando de traçado excluiu ou moveu os pontos de agulha que eles seguiam (defina-os de novo com Função da máquina)

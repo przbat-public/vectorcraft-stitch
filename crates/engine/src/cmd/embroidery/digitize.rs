@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 use vectorcraft_color::Paint;
 use vectorcraft_doc::cancel;
-use vectorcraft_doc::embroidery::{PartKind, StitchRun, ThreadPalette, scale_factors};
+use vectorcraft_doc::embroidery::{PartKind, Placed, StitchRun, ThreadPalette, scale_factors};
 use vectorcraft_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer};
 use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, normalize, outline_stroke};
@@ -31,6 +31,9 @@ const INTERTWINE_LEFT_OUT: &str = "intertwined objects are not stitched: release
 const EXPANDED_AWAY: &str = "a negative expand left nothing of some filled shapes, so they are not stitched: shrink them less";
 const GRADIENT_LEFT_OUT: &str = "gradients and patterns are painted in the colour of their first stop; a design sews one thread per block";
 const OUT_OF_RANGE: &str = "art far outside the document's range (or with coordinates that aren't numbers) is not stitched";
+/// A cut or a stop of a run of stitches whose needle point is gone ([`StitchRun::placed`]).
+pub(super) const MARKS_LEFT_OUT: &str =
+    "cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)";
 /// A stroke at least this wide (millimetres) is sewn as a satin column, a narrower one as a running
 /// line (unless the `stitch` option says otherwise): the planner's narrowest satin column.
 pub(super) use vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
@@ -96,24 +99,22 @@ fn exact(subpaths: &mut [Vec<Point>], run: &StitchRun) {
 
 /// A run of literal stitches' records from its subpaths' needle points (millimetres): each
 /// subpath's needle points sewn, the needle lifted to the next subpath's first (a jump, after a cut
-/// when `run.trims` names that subpath), a stop after each needle point `run.stops` names (the
+/// when `marks` puts one before that subpath), a stop after each needle point `marks` names (the
 /// needle then lifted to the next, as after a cut; at a subpath's end, after the cut). A subpath
 /// that is a line to its own start is one needle point (a single stitch as a file stores it), or
-/// two when it is the run's only one and the run says so (`double_point`). Marks naming a subpath
-/// or needle point the run doesn't have are passed by. Also whether a stop is named after the
-/// run's last needle point: the cut and the stop after the run are the caller's, in that order.
-fn literal_stitches(subpaths: &[Vec<Point>], run: &StitchRun) -> (Vec<Stitch>, bool) {
-    // Looked up once a needle point: as sets, so that a file's long lists cost no more than a
-    // walk of them.
-    let trims: HashSet<usize> = run.trims.iter().copied().collect();
-    let stops: HashSet<(usize, usize)> = run.stops.iter().copied().collect();
+/// two when it is the run's only one and the run says so (`double_point`). `marks` are the run's
+/// cuts and stops where they fall on its path now ([`StitchRun::placed`]). Also whether a stop is
+/// named after the run's last needle point: the cut and the stop after the run are the caller's, in
+/// that order.
+fn literal_stitches(subpaths: &[Vec<Point>], double_point: bool, marks: &Placed) -> (Vec<Stitch>, bool) {
+    let (trims, stops) = (&marks.cuts, &marks.stops);
     let one = subpaths.len() == 1;
     let mut out: Vec<Stitch> = Vec::with_capacity(subpaths.iter().map(Vec::len).sum::<usize>() + subpaths.len());
     // A stop after the needle point sewn last, written once what follows it is known.
     let mut stop = false;
     for (k, sub) in subpaths.iter().enumerate() {
         let points: &[Point] = match sub.as_slice() {
-            [a, b] if a.distance(*b) < SAME_POINT && !(one && run.double_point) => &sub[..1],
+            [a, b] if a.distance(*b) < SAME_POINT && !(one && double_point) => &sub[..1],
             _ => sub,
         };
         let Some(&first) = points.first() else { continue };
@@ -583,7 +584,13 @@ impl<'a> Digitizer<'a> {
         if !run.exact.is_empty() {
             exact(&mut subpaths, run);
         }
-        let (mut points, stop_at_end) = literal_stitches(&subpaths, run);
+        // The cuts and stops where their needle points are now: one whose needle point a path
+        // command deleted or moved is left out, and said.
+        let marks = run.placed(path);
+        if marks.lost > 0 {
+            self.warn(MARKS_LEFT_OUT);
+        }
+        let (mut points, stop_at_end) = literal_stitches(&subpaths, run.double_point, &marks);
         // Manual stitches are frozen as sewn: a clip group already cut them (a fill's edge run lies
         // on the cut, which a second cut would chop). A file's runs are cut, as its lines are drawn.
         if let Some(clip) = self.clip.as_ref().filter(|_| !run.manual) {

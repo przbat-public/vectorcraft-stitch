@@ -5688,3 +5688,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Khôi phục {count} đối tượng?
 @plural	{count} object restored|{count} objects restored	Đã khôi phục {count} đối tượng
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	Đã chuyển {count} đối tượng thành mũi thêu thủ công: Khôi phục đối tượng sẽ đưa chúng trở lại
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	đã bỏ qua các lần cắt chỉ hoặc dừng của mũi thêu: một lệnh đường dẫn đã xóa hoặc di chuyển các điểm đâm kim mà chúng theo sau (đặt lại bằng Chức năng máy)

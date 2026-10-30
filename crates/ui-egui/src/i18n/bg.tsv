@@ -6032,3 +6032,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Възстановяване на {count} обект?|Възстановяване на {count} обекта?
 @plural	{count} object restored|{count} objects restored	Възстановен е {count} обект|Възстановени са {count} обекта
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} обект е преобразуван в ръчни бодове: „Възстановяване на обекта“ го връща|{count} обекта са преобразувани в ръчни бодове: „Възстановяване на обекта“ ги връща
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	срязвания или спирания на бодове бяха пропуснати: команда за контур изтри или премести точките на убождане, след които идваха (задайте ги отново с „Функция на машината“)

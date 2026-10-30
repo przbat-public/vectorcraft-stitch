@@ -24,7 +24,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::embroidery::{Exact, StitchRun};
+use vectorcraft_doc::embroidery::{Exact, Mark, StitchRun, shape_of};
 use vectorcraft_doc::{Document, MAX_COORD, Node, NodeId, NodeKind, Selection};
 use vectorcraft_geom::{Anchor, PathData, Point, SubPath};
 use vectorcraft_stitch::{MM_PER_PT, SAME_POINT, pt_to_mm};
@@ -109,8 +109,10 @@ pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
     if !path.subpaths.iter().flat_map(|sp| &sp.anchors).all(|a| in_range(a.p)) {
         return Err(reason::OUT_OF_RANGE);
     }
-    let trims: BTreeSet<usize> = marks.trims.iter().copied().collect();
-    let stops: BTreeSet<(usize, usize)> = marks.stops.iter().copied().collect();
+    // The cuts and stops where their needle points are now (one whose needle point is gone left
+    // out: the plan says so until an edit writes the path back without it).
+    let placed = marks.placed(path);
+    let (trims, stops) = (placed.cuts, placed.stops);
     let exact: BTreeMap<(usize, usize), &Exact> = marks.exact.iter().map(|e| ((e.subpath, e.anchor), e)).collect();
     let alone = path.subpaths.len() == 1;
     let mut runs = Vec::with_capacity(path.subpaths.len());
@@ -277,8 +279,13 @@ impl Stitches {
         let (mut trims, mut stops, mut exact) = (Vec::new(), Vec::new(), Vec::new());
         let mut subpaths = Vec::with_capacity(runs.len());
         for (s, r) in runs.iter().enumerate() {
-            if s > 0 && r.cut_before {
-                trims.push(s);
+            // A cut is kept at the first needle point of the run it comes before, a stop at the
+            // needle point it follows, each where it lies.
+            if s > 0
+                && r.cut_before
+                && let Some(first) = r.needles.first()
+            {
+                trims.push(Mark::at(s, 0, first.p));
             }
             let mut anchors: Vec<Anchor> = r.needles.iter().map(|n| Anchor::corner(n.p)).collect();
             if let [only] = anchors.as_slice() {
@@ -286,7 +293,7 @@ impl Stitches {
             }
             for (i, n) in r.needles.iter().enumerate() {
                 if n.stop {
-                    stops.push((s, i));
+                    stops.push(Mark::at(s, i, n.p));
                 }
                 if let [x, y] = n.exact
                     && (x.is_some() || y.is_some())
@@ -299,8 +306,10 @@ impl Stitches {
             subpaths.push(SubPath { anchors, closed: false });
         }
         marks.double_point = matches!(runs.as_slice(), [r] if matches!(r.needles.as_slice(), [a, b] if same(a.p, b.p)));
+        let path = PathData::new(subpaths);
+        marks.shape = (!trims.is_empty() || !stops.is_empty()).then(|| shape_of(&path));
         (marks.trims, marks.stops, marks.exact) = (trims, stops, exact);
-        Some((PathData::new(subpaths), marks))
+        Some((path, marks))
     }
 }
 

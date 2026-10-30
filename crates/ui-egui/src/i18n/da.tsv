@@ -6048,3 +6048,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Gendan {count} objekt?|Gendan {count} objekter?
 @plural	{count} object restored|{count} objects restored	{count} objekt gendannet|{count} objekter gendannet
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt konverteret til manuelle sting: Gendan objekt bringer det tilbage|{count} objekter konverteret til manuelle sting: Gendan objekt bringer dem tilbage
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	klip eller stop i sting blev udeladt: en stikommando slettede eller flyttede de nålestik, de fulgte efter (sæt dem igen med Maskinfunktion)

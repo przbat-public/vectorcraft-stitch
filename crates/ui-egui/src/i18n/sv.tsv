@@ -6049,3 +6049,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Återställa {count} objekt?|Återställa {count} objekt?
 @plural	{count} object restored|{count} objects restored	{count} objekt återställt|{count} objekt återställda
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt konverterat till manuella stygn: Återställ objekt tar tillbaka det|{count} objekt konverterade till manuella stygn: Återställ objekt tar tillbaka dem
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	klipp eller stopp i stygn utelämnades: ett banakommando tog bort eller flyttade nålstick som de följde efter (ange dem igen med Maskinfunktion)

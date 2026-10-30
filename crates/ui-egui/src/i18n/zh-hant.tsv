@@ -5727,3 +5727,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	還原 {count} 個物件？
 @plural	{count} object restored|{count} objects restored	已還原 {count} 個物件
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	已將 {count} 個物件轉換為手動針跡：還原物件可將其找回
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	已略去針跡的剪線或停機：某個路徑命令刪除或移動了它們所在的落針點（請用「機器功能」重新設定）

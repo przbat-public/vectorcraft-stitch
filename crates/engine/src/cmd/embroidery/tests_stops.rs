@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use serde_json::json;
 use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+use vectorcraft_doc::embroidery::{Embroidery, Mark, StitchRun};
 use vectorcraft_doc::{Appearance, Node, NodeId};
 use vectorcraft_geom::{BezPath, PathData, Point};
 use vectorcraft_stitch::format::Format as StitchFormat;
@@ -62,7 +62,8 @@ fn records(b: &plan::ThreadBlock) -> Vec<(Command, i64, i64)> {
 fn a_runs_subpaths_cuts_and_stops_are_sewn_as_marked() {
     use Command::{Jump, Stitch as Sew, Stop, Trim};
     let mut s = blank();
-    let run_marks = StitchRun { trims: vec![2], stops: vec![(0, 1), (1, 1)], stop_after: true, ..StitchRun::default() };
+    let run_marks =
+        StitchRun { trims: vec![Mark::place(2, 0)], stops: vec![Mark::place(0, 1), Mark::place(1, 1)], stop_after: true, ..StitchRun::default() };
     add_run(&mut s, RED, &[&[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0)], &[(10.0, 0.0), (12.0, 0.0)], &[(20.0, 0.0), (22.0, 0.0)]], run_marks);
     let plan = plan_of(&mut s);
     assert_eq!(plan.blocks.len(), 1);
@@ -110,7 +111,7 @@ fn a_runs_subpaths_cuts_and_stops_are_sewn_as_marked() {
 #[test]
 fn a_stop_takes_a_record_number_and_is_counted() {
     let mut s = blank();
-    add_run(&mut s, RED, &[&[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0), (6.0, 0.0)]], StitchRun { stops: vec![(0, 1)], ..StitchRun::default() });
+    add_run(&mut s, RED, &[&[(0.0, 0.0), (2.0, 0.0), (4.0, 0.0), (6.0, 0.0)]], StitchRun { stops: vec![Mark::place(0, 1)], ..StitchRun::default() });
     let plan = plan_of(&mut s);
     let b = &plan.blocks[0];
     // Two needle points, the stop, the jump the needle is lifted by, two more needle points.

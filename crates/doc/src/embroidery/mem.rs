@@ -44,8 +44,8 @@ pub(crate) fn object_bytes(e: &Embroidery) -> usize {
     let run = |r: &super::StitchRun| {
         map_bytes(&r.extra)
             + r.thread.as_ref().map_or(0, thread)
-            + r.trims.capacity() * size_of::<usize>()
-            + r.stops.capacity() * size_of::<(usize, usize)>()
+            + r.trims.capacity() * size_of::<super::Mark>()
+            + r.stops.capacity() * size_of::<super::Mark>()
             + r.exact.capacity() * size_of::<super::Exact>()
     };
     // The original's node, as the file saved it: shared by the copies of the object, counted with

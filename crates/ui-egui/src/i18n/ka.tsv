@@ -6008,3 +6008,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	აღდგეს {count} ობიექტი?
 @plural	{count} object restored|{count} objects restored	აღდგა {count} ობიექტი
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} ობიექტი გარდაიქმნა ხელით ნაკერებად: ობიექტის აღდგენა დააბრუნებს
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	ნაკერების ჭრები ან გაჩერებები გამოტოვებულია: კონტურის ბრძანებამ წაშალა ან გადაადგილა ნემსის ჩხვლეტები, რომლებსაც ისინი მოსდევდნენ (ხელახლა დააყენეთ „მანქანის ფუნქციით“)

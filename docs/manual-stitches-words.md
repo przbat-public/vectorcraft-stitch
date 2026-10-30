@@ -1,8 +1,9 @@
 # Manual stitches: the words
 
-> **Last updated:** 2026-10-27 · **Change:** written for the manual stitches' first pull request
-> (converting an object to manual stitches, restoring it, stops, and editing needle points by
-> command): every interface string it adds, in English and Polish.
+> **Last updated:** 2026-10-30 · **Change:** the review's fixes: the plan's warning for a cut or a
+> stop left out; earlier: written for the manual stitches' first pull request (converting an object
+> to manual stitches, restoring it, stops, and editing needle points by command): every interface
+> string it adds, in English and Polish.
 > Earlier changes: [Revision history](#revision-history)
 
 Every interface string the first manual-stitches pull request adds, in English and in Polish, for
@@ -90,11 +91,12 @@ Restore asks only when the stitches were edited since converting.
 | No run to edit | select needle points of a run of stitches, or give needlePoints | zaznacz nakłucia odcinka ściegów lub podaj needlePoints |
 | A join of runs not sewn one after another | these runs aren't sewn one right after another in one colour block | te odcinki nie są szyte jeden zaraz po drugim w jednym bloku koloru |
 
-## The stitch plan's warning
+## The stitch plan's warnings
 
 | Where | English | Polish |
 |---|---|---|
 | The plan's warning when a run's look isn't sewn (the export's and the Check tab's notes) | effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are | efekty, pędzle oraz dodatkowe wypełnienia lub obrysy na ściegach ręcznych lub z pliku (albo na grupie, która je zawiera) nie są haftowane: ściegi są szyte tak, jak są |
+| The plan's warning when a run's cut or stop lost its needle point to a path command | cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function) | pominięto cięcia lub stopy ściegów: polecenie ścieżki usunęło lub przesunęło nakłucia, po których następowały (ustaw je ponownie poleceniem Funkcja maszyny) |
 
 ## Terms in every language
 
@@ -132,5 +134,6 @@ and manual stitches; Polish's are the project owner's. Upstream VectorCraft has 
 
 | Date | Change |
 |---|---|
+| 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved. |
 | 2026-10-27 | Brought in step with what landed: the Check tab's, the Sewing order's and the plan's words, the scale with the catalogues' percent sign, the terms each language chose. |
 | 2026-10-27 | Written for the manual stitches' first pull request: the planned strings, in English and Polish. |

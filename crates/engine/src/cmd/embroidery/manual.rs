@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::embroidery::{Embroidery, Exact, Original, StitchRun};
+use vectorcraft_doc::embroidery::{Embroidery, Exact, Mark, Original, StitchRun, shape_of};
 use vectorcraft_doc::{Appearance, AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, Shared};
 use vectorcraft_geom::{Affine, Anchor, PathData, Point, SubPath};
 use vectorcraft_stitch::plan::THREAD_WIDTH;
@@ -206,12 +206,9 @@ pub(crate) fn fingerprint(group: &Node, frame: Affine) -> Option<u64> {
                 eat(step(p.y));
             }
         }
-        for k in &run.trims {
-            eat(*k as u64);
-        }
-        for (s, a) in &run.stops {
-            eat(*s as u64);
-            eat(*a as u64);
+        for m in run.trims.iter().chain(&run.stops) {
+            eat(m.subpath as u64);
+            eat(m.anchor as u64);
         }
         eat(u64::from(run.trim_before) | u64::from(run.trim_after) << 1 | u64::from(run.stop_after) << 2 | u64::from(run.double_point) << 3);
     }
@@ -310,10 +307,14 @@ fn convert_one(doc: &mut Document, n: &Node, units: &[usize], plan: &DesignPlan)
     for (art, f) in frozen_units {
         runs += f.subpaths.len();
         needle_points += f.subpaths.iter().map(Vec::len).sum::<usize>();
-        let mut node = Node::path(doc.alloc_id(), run_path(&f), Appearance::default());
+        let path = run_path(&f);
+        // Each cut kept at the first needle point of the run it comes before, where it lies.
+        let trims: Vec<Mark> = f.trims.iter().filter_map(|&s| path.subpaths.get(s)?.anchors.first().map(|a| Mark::at(s, 0, a.p))).collect();
+        let shape = (!trims.is_empty()).then(|| shape_of(&path));
+        let mut node = Node::path(doc.alloc_id(), path, Appearance::default());
         node.appearance = looks.entry(art).or_insert_with(|| Shared::new(run_look(art))).clone();
         let exact = exact_millimetres(&f);
-        let run = StitchRun { manual: true, trims: f.trims, double_point: f.double_point, exact, ..StitchRun::default() };
+        let run = StitchRun { manual: true, trims, shape, double_point: f.double_point, exact, ..StitchRun::default() };
         node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(run), ..Embroidery::default() }));
         children.push(Arc::new(node));
     }

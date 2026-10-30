@@ -6045,3 +6045,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Επαναφορά {count} αντικειμένου;|Επαναφορά {count} αντικειμένων;
 @plural	{count} object restored|{count} objects restored	Επαναφέρθηκε {count} αντικείμενο|Επαναφέρθηκαν {count} αντικείμενα
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} αντικείμενο μετατράπηκε σε χειροκίνητες βελονιές: η Επαναφορά αντικειμένου το επαναφέρει|{count} αντικείμενα μετατράπηκαν σε χειροκίνητες βελονιές: η Επαναφορά αντικειμένου τα επαναφέρει
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	κοψίματα ή διακοπές βελονιών παραλείφθηκαν: μια εντολή διαδρομής διέγραψε ή μετακίνησε τα σημεία βελόνας μετά τα οποία έρχονταν (ορίστε τα ξανά με τη «Λειτουργία μηχανής»)

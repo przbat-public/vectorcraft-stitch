@@ -6079,3 +6079,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Visszaállít {count} objektumot?
 @plural	{count} object restored|{count} objects restored	{count} objektum visszaállítva
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objektum kézi öltésekké alakítva: az Objektum visszaállítása visszahozza
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	öltések vágásai vagy megállásai kimaradtak: egy útvonalparancs törölte vagy áthelyezte a tűszúrásokat, amelyeket követtek (állítsa be őket újra a Gépfunkció paranccsal)

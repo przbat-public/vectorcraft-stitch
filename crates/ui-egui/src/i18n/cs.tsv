@@ -6093,3 +6093,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	Obnovit {count} objekt?|Obnovit {count} objekty?|Obnovit {count} objektů?
 @plural	{count} object restored|{count} objects restored	Obnoven {count} objekt|Obnoveny {count} objekty|Obnoveno {count} objektů
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt převeden na ruční stehy: Obnovit objekt ho vrátí|{count} objekty převedeny na ruční stehy: Obnovit objekt je vrátí|{count} objektů převedeno na ruční stehy: Obnovit objekt je vrátí
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	střihy nebo zastavení stehů byly vynechány: příkaz pro cestu smazal nebo posunul vpichy, po kterých následovaly (nastavte je znovu příkazem Funkce stroje)

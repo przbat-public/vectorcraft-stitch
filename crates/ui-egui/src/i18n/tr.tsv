@@ -6054,3 +6054,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	Restore {count} object?|Restore {count} objects?	{count} nesne geri yüklensin mi?
 @plural	{count} object restored|{count} objects restored	{count} nesne geri yüklendi
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} nesne manuel dikişlere dönüştürüldü: Nesneyi Geri Yükle onu geri getirir
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	dikişlerin kesmeleri veya durmaları atlandı: bir yol komutu, ardından geldikleri iğne noktalarını sildi veya taşıdı (Makine İşlevi ile yeniden ayarlayın)

@@ -557,7 +557,13 @@ fn a_run_sews_its_anchors_whatever_its_handles() {
     use vectorcraft_doc::embroidery::StitchRun;
     let points = [(10.0, 10.0), (20.0, 10.0), (30.0, 15.0), (40.0, 10.0)];
     let mut s = blank();
-    let id = literal_path(&mut s, None, [200, 30, 30], &points, StitchRun { stops: vec![(2, 0)], ..StitchRun::default() });
+    let id = literal_path(
+        &mut s,
+        None,
+        [200, 30, 30],
+        &points,
+        StitchRun { stops: vec![vectorcraft_doc::embroidery::Mark::place(2, 0)], ..StitchRun::default() },
+    );
     let before = sewn_by(&export_plan(&mut s), id).0;
     assert_eq!(before.len(), points.len());
     s.edit("Curves", |d, _| {

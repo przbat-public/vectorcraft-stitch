@@ -65,6 +65,8 @@ mod tests_info;
 #[cfg(test)]
 mod tests_manual;
 #[cfg(test)]
+mod tests_marks;
+#[cfg(test)]
 mod tests_matrix;
 #[cfg(test)]
 mod tests_nearest;

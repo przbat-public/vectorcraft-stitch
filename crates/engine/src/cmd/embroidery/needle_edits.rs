@@ -448,6 +448,8 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
     let doc = s.doc()?.doc.clone();
     let mut e = Edit::begin(s, DELETE, before, t.passed_over)?;
     let (mut moved, mut dropped, mut removed) = (Vec::new(), Vec::new(), BTreeSet::new());
+    // Each needle point a merged stitch now leaves from, as numbered after the edit.
+    let mut merged_listed = Vec::new();
     let mut deleted = 0usize;
     for (id, mut st, indices) in t.paths {
         // Each kept needle point a deleted one followed (its stitch merged), by its new index.
@@ -493,6 +495,7 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
         }
         if kept > 0 {
             let ix = st.index();
+            merged_listed.extend(merged.iter().take(MAX_LISTED.saturating_sub(merged_listed.len())).map(|k| json!({"id": id.0, "index": k})));
             e.rebuilt(id, st, &ix, None, Kept::Left, merged)?;
             continue;
         }
@@ -552,6 +555,7 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
     e.edits.extend(passed.into_iter().map(|(id, m)| (id, Left::Marks(m))));
     let own = json!({
         "changedCount": deleted,
+        "merged": merged_listed,
         "removed": removed.iter().take(MAX_LISTED).map(|id| id.0).collect::<Vec<_>>(),
         "removedCount": removed.len(),
         "moved": moved.into_iter().take(MAX_LISTED).collect::<Vec<_>>(),
@@ -970,6 +974,8 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
         })
     });
     let (mut changed, mut unchanged, mut splits) = (0usize, 0usize, 0usize);
+    // Each needle point addressed, as numbered after the edit.
+    let mut addressed = Vec::new();
     for (id, mut out, indices) in t.paths {
         // Setting a function moves no needle point: one index serves throughout.
         let ix = out.index();
@@ -1014,9 +1020,11 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
         if !any {
+            addressed.extend(indices.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
             continue;
         }
         if inside.is_empty() {
+            addressed.extend(indices.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
             e.rebuilt(id, out, &ix, selected, Kept::Same, indices)?;
             continue;
         }
@@ -1024,6 +1032,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
         let (out, moved_to) = split_before(&out, &inside, ties, f == Function::Trim, f == Function::Stop).done(out);
         let ix = out.index();
         let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
+        addressed.extend(touched.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
         e.rebuilt(id, out, &ix, selected, Kept::Moved(&moved_to), touched)?;
     }
     let own = json!({
@@ -1032,6 +1041,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
         "changedCount": changed,
         "unchangedCount": unchanged,
         "splitCount": splits,
+        "needlePoints": addressed,
     });
     e.finish(s, FUNCTION_LABEL, changed > 0, own)
 }
@@ -1121,6 +1131,8 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
     // The live check measures against the limit asked for.
     e.max = max;
     let (mut split, mut added) = (0usize, 0usize);
+    // Each needle point addressed, as numbered after the edit.
+    let mut addressed = Vec::new();
     for (id, st, indices) in t.paths {
         let mut out = Rebuilt::new(st.len());
         let (mut k, mut here) = (0usize, 0usize);
@@ -1144,19 +1156,21 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
         if here == 0 {
+            addressed.extend(indices.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
             continue;
         }
         let selected = e.selected(id, &st.index());
         let (out, moved_to) = out.done(st);
         let ix = out.index();
         let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
+        addressed.extend(touched.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
         e.rebuilt(id, out, &ix, selected, Kept::Moved(&moved_to), touched)?;
     }
     let limit = match format {
         Some(f) => json!({"format": f.id(), "step": f.max_step()}),
         None => json!({"length": max}),
     };
-    e.finish(s, SPLIT_LONG_LABEL, split > 0, json!({"changedCount": split, "addedCount": added, "limit": limit}))
+    e.finish(s, SPLIT_LONG_LABEL, split > 0, json!({"changedCount": split, "addedCount": added, "limit": limit, "needlePoints": addressed}))
 }
 
 /// Delete with needle points selected (the marked hook in `edit.clear`): when every object the

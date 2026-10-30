@@ -366,8 +366,14 @@ fn whole(v: Option<&Value>, what: &str, cmd: &str) -> Result<u64> {
     v.and_then(Value::as_u64).ok_or_else(|| bad(cmd, format!("{what} {}: a whole number, 0 or more", v.unwrap_or(&Value::Null))))
 }
 
-/// The paths named in `o`'s `needlePoints` (`[{id, index}…]`) and `ranges` (`[{id, from, to}…]`,
-/// inclusive), each refused by `cmd` when it isn't one that can be edited; with neither, the
+/// The keys an entry of `needlePoints` takes, and one of `ranges`: `of`, the path's needle points
+/// as the caller last counted them, refuses an address made stale by an edit since.
+const NEEDLE_POINT_KEYS: [&str; 3] = ["id", "index", "of"];
+const RANGE_KEYS: [&str; 4] = ["id", "from", "to", "of"];
+
+/// The paths named in `o`'s `needlePoints` (`[{id, index, of?}…]`) and `ranges` (`[{id, from, to,
+/// of?}…]`, inclusive), each refused by `cmd` when it isn't one that can be edited, or holds another
+/// number of needle points than an entry's `of` says; with neither, the
 /// selection's needle points (`sel`: of each path of stitches it selects, the needle points whose
 /// anchors it selects, or all when it selects the path whole; a group selected whole stands for
 /// the paths of stitches in it), the other objects passed over. Checked before anything changes or
@@ -377,6 +383,8 @@ fn whole(v: Option<&Value>, what: &str, cmd: &str) -> Result<u64> {
 pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, cmd: &str) -> Result<Targets> {
     // Each path's ranges as given (inclusive), listed one by one only once the path is read.
     let mut named: BTreeMap<NodeId, Vec<(usize, usize)>> = BTreeMap::new();
+    // The needle points each path held as the caller counted them, where an entry says.
+    let mut counted: BTreeMap<NodeId, u64> = BTreeMap::new();
     let mut order: Vec<NodeId> = Vec::new();
     let mut given = false;
     let mut count = 0usize;
@@ -389,7 +397,17 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
         }
         for item in items {
             let item = item.as_object().ok_or_else(|| bad(cmd, format!("`{key}` entry {item}: an object")))?;
+            let keys: &[&str] = if key == "needlePoints" { &NEEDLE_POINT_KEYS } else { &RANGE_KEYS };
+            if let Some(other) = item.keys().find(|k| !keys.contains(&k.as_str())) {
+                return Err(bad(cmd, format!("`{key}` entry {}: no key `{other}` (it takes {})", Value::Object(item.clone()), keys.join(", "))));
+            }
             let id = NodeId(whole(item.get("id"), "`id`", cmd)?);
+            if let Some(of) = item.get("of").filter(|v| !v.is_null()) {
+                let of = whole(Some(of), "`of`", cmd)?;
+                if *counted.entry(id).or_insert(of) != of {
+                    return Err(bad(cmd, format!("object {}: `of` given as two numbers of needle points", id.0)));
+                }
+            }
             let (from, to) = match key {
                 "needlePoints" => {
                     let k = whole(item.get("index"), "`index`", cmd)?;
@@ -428,6 +446,12 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, said(why))))?;
             let ranges = named.remove(&id).unwrap_or_default();
             let len = st.len();
+            if let Some(of) = counted.get(&id).filter(|&&of| of != len as u64) {
+                return Err(bad(
+                    cmd,
+                    format!("object {}: counted as {of} needle points, it holds {len}: an edit since moved them, list it again", id.0),
+                ));
+            }
             if let Some(past) = ranges.iter().map(|&(_, to)| to).filter(|&to| to >= len).max() {
                 return Err(bad(cmd, format!("object {}: needle point {past}, of {len} (from 0)", id.0)));
             }

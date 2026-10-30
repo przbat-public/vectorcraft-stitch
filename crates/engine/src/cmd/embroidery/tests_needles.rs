@@ -183,6 +183,43 @@ fn the_index_finds_needle_points_across_runs() {
     }
 }
 
+/// An address takes only its own keys, and `of` (the needle points the caller counted) refuses one
+/// an edit since made stale; the edits that renumber needle points say where those addressed are
+/// now (Machine Function, Split Long Stitches), or where each merged stitch leaves from (Delete).
+#[test]
+fn addresses_are_strict_and_replies_give_new_ones() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0), (18.0, 10.0), (48.0, 10.0)], StitchRun::default());
+    let steps = s.doc().unwrap().history.undo.len();
+    for p in [
+        json!({"needlePoints": [{"id": id, "index": 0, "to": 7}], "dx": 1}),
+        json!({"needlePoints": [{"id": id, "index": 0, "run": 1}], "dx": 1}),
+        json!({"ranges": [{"id": id, "from": 0, "to": 1, "index": 3}], "dx": 1}),
+        json!({"needlePoints": [{"id": id, "index": 0, "of": 5}], "dx": 1}),
+        json!({"needlePoints": [{"id": id, "index": 0, "of": 4}, {"id": id, "index": 1, "of": 3}], "dx": 1}),
+        json!({"ranges": [{"id": id, "from": 0, "to": 1, "of": -1}], "dx": 1}),
+    ] {
+        let r = s.execute("embroidery.moveNeedlePoints", &p);
+        assert!(matches!(r, Err(crate::EngineError::BadParams { .. })), "{p}: {r:?}");
+    }
+    assert_eq!(s.doc().unwrap().history.undo.len(), steps);
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 0, "of": 4}], "dx": 0.5}));
+    assert_eq!(r["changedCount"], json!(1), "the count right: moved");
+    // The 30 mm stitch into needle point 3 split into three: needle point 3 is now 5.
+    let r = run(&mut s, "embroidery.splitLongStitches", json!({"needlePoints": [{"id": id, "index": 3, "of": 4}], "maxLength": 10}));
+    assert_eq!((r["addedCount"].clone(), r["needlePoints"].clone()), (json!(2), json!([{"id": id, "index": 5}])), "{r}");
+    assert_eq!(at(&s, id, 5), (48.0, 10.0));
+    // A cut after needle point 1, the run split there and tied: needle point 1 stays 1.
+    let r = run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 1, "of": 6}], "function": "trim"}));
+    assert_eq!(r["needlePoints"], json!([{"id": id, "index": 1}]), "{r}");
+    // 10.5 14 13 14 ✂ 18 19 18 28 38 48: needle point 8 deleted, the stitch from needle point 7
+    // goes on.
+    let len = needles::read(&node(&s, id)).unwrap().len();
+    assert_eq!(len, 10);
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": id, "index": 8, "of": len}]}));
+    assert_eq!(r["merged"], json!([{"id": id, "index": 7}]), "{r}");
+}
+
 /// Move Needle Points moves the needle points addressed by millimetres, or one to a point, one undo
 /// step that undo takes back with the selection; nothing moved is no step; the live check measures
 /// the stitches into and out of each; a two-point run brought to one spot sews both (a tack), and

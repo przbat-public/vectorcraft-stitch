@@ -143,6 +143,9 @@ struct Edit {
     lengths: Lengths,
     edits: Vec<(NodeId, Left)>,
     passed_over: Vec<(NodeId, &'static str)>,
+    /// Runs of two needle points at one spot in a path of several, made one needle point
+    /// ([`Stitches::collapse_tacks`]).
+    collapsed: usize,
 }
 
 impl Edit {
@@ -151,7 +154,7 @@ impl Edit {
     /// document's shortest stitch.
     fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, &'static str)>) -> Result<Self> {
         let min = needles::shortest_stitch(&s.doc()?.doc);
-        Ok(Self { cmd, sel: before.clone(), before, min, max: LONGEST, lengths: Lengths::default(), edits: Vec::new(), passed_over })
+        Ok(Self { cmd, sel: before.clone(), before, min, max: LONGEST, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
     }
 
     /// The needle points of path `id` (read from it, `ix` its index) that the selection selected
@@ -167,7 +170,7 @@ impl Edit {
     fn rebuilt(
         &mut self,
         id: NodeId,
-        out: Stitches,
+        mut out: Stitches,
         ix: &Index,
         selected: Option<BTreeSet<usize>>,
         kept: Kept,
@@ -176,20 +179,31 @@ impl Edit {
         if ix.len() > MAX_NEEDLE_POINTS {
             return Err(bad(self.cmd, format!("object {}: more than {MAX_NEEDLE_POINTS} needle points", id.0)));
         }
-        self.lengths.around(&out, ix, touched, self.min, self.max);
+        // A run of two needle points brought to one spot is one needle point when written: made so
+        // now, the selection and the stitches measured taken along.
+        let collapse = out.collapse_tacks();
+        self.collapsed += collapse.as_ref().map_or(0, |map| map.iter().filter(|k| k.is_none()).count());
+        let index = collapse.as_ref().map(|_| out.index());
+        let ix = index.as_ref().unwrap_or(ix);
+        let after = |k: usize| match &collapse {
+            Some(map) => map.get(k).copied().flatten(),
+            None => Some(k),
+        };
+        self.lengths.around(&out, ix, touched.into_iter().filter_map(&after), self.min, self.max);
+        let carried = |k: BTreeSet<usize>| -> BTreeSet<usize> { k.into_iter().filter_map(&after).collect() };
         match kept {
             Kept::Same => {
                 if let Some(k) = selected {
-                    needles::select_in(&mut self.sel, id, ix, &k);
+                    needles::select_in(&mut self.sel, id, ix, &carried(k));
                 }
             }
             Kept::Moved(moved_to) => {
                 if let Some(k) = selected {
                     let k = k.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()).collect();
-                    needles::select_in(&mut self.sel, id, ix, &k);
+                    needles::select_in(&mut self.sel, id, ix, &carried(k));
                 }
             }
-            Kept::Only(k) => needles::select_in(&mut self.sel, id, ix, &k),
+            Kept::Only(k) => needles::select_in(&mut self.sel, id, ix, &carried(k)),
             Kept::Left => self.leave(id),
             Kept::Whole => {
                 self.sel.anchors.remove(&id);
@@ -227,6 +241,7 @@ impl Edit {
         reply.insert("paths".into(), Value::Array(paths));
         reply.insert("pathCount".into(), json!(count));
         reply.insert("lengths".into(), self.lengths.json(self.min, self.max));
+        reply.insert("collapsedCount".into(), json!(self.collapsed));
         let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect();
         reply.insert("passedOver".into(), Value::Array(passed));
         if changed {

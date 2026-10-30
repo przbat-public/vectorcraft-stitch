@@ -5180,13 +5180,16 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   and nothing selected is an error ("select needle points of a run of stitches, or give needlePoints"). No edit leaves
   a path of more than 2,000,000 needle points. Each edit is one undo step (none when nothing changes), leaves the
   selection on what it says, and answers `paths: [{id, needlePoints}]` (the paths it changed or removed, with their
-  needle points now; at most 1,000), `pathCount` (how many), `passedOver: [{id, reason}]` and `lengths: {count,
+  needle points now; at most 1,000), `pathCount` (how many), `passedOver: [{id, reason}]`, `collapsedCount` (runs of
+  two needle points an edit brought to one spot in a path of several runs, each made one needle point, as only a
+  path's only run can be a tack: the needle points after it move down by one) and `lengths: {count,
   shortest, longest, belowMin, aboveMax, min, max}`: the needle-down stitches it made or changed, each counted once, in
   millimetres, against the document's shortest stitch (`min`, Document Setup's) and the 12.7 mm a machine sews well
   (`max`, the Check tab's; Split Long Stitches' own limit).
   - `embroidery.moveNeedlePoints {needlePoints?, ranges?, dx?, dy?, to?}` moves each needle point by `dx, dy`
     (millimetres, y down), or the one addressed to `to` (`[x, y]`, millimetres from the document's origin); a path
-    whose only run is two needle points brought to one spot sews both (a tack). The selection keeps its needle points.
+    whose only run is two needle points brought to one spot sews both (a tack); such a run among others is one needle
+    point (`collapsedCount`). The selection keeps its needle points.
     It answers `{changedCount, paths: [{id, needlePoints}], pathCount, lengths, passedOver}`.
   - `embroidery.insertNeedlePoints {id?, index?, at?, needlePoints?, ranges?}` adds needle points: with `id` and
     `index`, the points `at` (`[[x, y]…]`, millimetres, 1 to 10,000) put before needle point `index` of path `id`

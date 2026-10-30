@@ -280,6 +280,23 @@ fn the_live_check_counts_each_stitch_once() {
     assert!((shortest - 0.2).abs() < 1e-9 && min > shortest, "{r}");
 }
 
+/// A run of two needle points brought to one spot in a path of several runs is one needle point
+/// (only a path's only run can be a tack): the reply counts what is written, says how many collapsed,
+/// measures no stitch of no length, and the selection leaves the needle point that went.
+#[test]
+fn a_two_point_run_brought_to_one_spot_among_others_is_one_needle_point() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (20.0, 10.0), (22.0, 10.0), (24.0, 10.0)], StitchRun::default());
+    run(&mut s, "embroidery.splitRun", json!({"needlePoints": [{"id": id, "index": 2}], "ties": false}));
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 1]]}));
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"to": [10, 10]}));
+    assert_eq!((r["paths"].clone(), r["collapsedCount"].clone()), (json!([{"id": id, "needlePoints": 4}]), json!(1)), "{r}");
+    assert_eq!((r["lengths"]["count"].clone(), r["lengths"]["belowMin"].clone()), (json!(0), json!(0)), "{r}");
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!((st.len(), at(&s, id, 1)), (4, (20.0, 10.0)), "written as it says: 20 is needle point 1 now");
+    assert!(!s.doc().unwrap().selection.anchors.contains_key(&NodeId(id)), "the needle point that went left the selection");
+}
+
 /// What Move Needle Points refuses, changing nothing: `to` with more than one needle point, or with
 /// `dx`; an index past the path's needle points; an object that isn't a path of stitches; a locked
 /// one; a needle point taken outside the document's coordinates; nothing addressed or selected.

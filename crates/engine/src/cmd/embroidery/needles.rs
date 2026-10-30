@@ -253,6 +253,35 @@ impl Stitches {
         self.runs.get_mut(r)?.needles.get_mut(i)
     }
 
+    /// Each run of two needle points at one spot, in a path of several runs, made one needle point:
+    /// only a path's only run can be a tack (two needle points stored at one spot read back as one,
+    /// [`read`]), so the edit says what is written. A stop after either is kept. Each needle point's
+    /// new index (`None`: the second of such a run), or `None` when no run was such.
+    pub(crate) fn collapse_tacks(&mut self) -> Option<Vec<Option<usize>>> {
+        let tack = |r: &Run| matches!(r.needles.as_slice(), [a, b] if same(a.p, b.p));
+        if self.runs.iter().filter(|r| !r.needles.is_empty()).count() < 2 || !self.runs.iter().any(tack) {
+            return None;
+        }
+        let mut moved_to = Vec::with_capacity(self.len());
+        let mut at = 0usize;
+        for r in &mut self.runs {
+            if tack(r)
+                && let Some(second) = r.needles.pop()
+                && let Some(first) = r.needles.first_mut()
+            {
+                first.stop |= second.stop;
+                moved_to.extend([Some(at), None]);
+                at += 1;
+                continue;
+            }
+            for _ in &r.needles {
+                moved_to.push(Some(at));
+                at += 1;
+            }
+        }
+        Some(moved_to)
+    }
+
     /// Runs left with no needle point dropped: a cut before one passes to the run after it.
     pub(crate) fn drop_empty_runs(&mut self) {
         let mut kept: Vec<Run> = Vec::with_capacity(self.runs.len());

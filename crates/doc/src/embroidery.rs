@@ -278,6 +278,36 @@ impl From<ThreadRecord> for serde_json::Value {
     }
 }
 
+/// What comes after an object's stitches: the thread cut, the machine stopped, each or both
+/// ([`Embroidery::after`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct After {
+    pub trim: bool,
+    pub stop: bool,
+}
+
+impl After {
+    /// Whether anything comes after.
+    pub fn any(self) -> bool {
+        self.trim || self.stop
+    }
+}
+
+impl std::ops::BitOr for After {
+    type Output = Self;
+    fn bitor(self, other: Self) -> Self {
+        Self { trim: self.trim || other.trim, stop: self.stop || other.stop }
+    }
+}
+
+impl StitchRun {
+    /// The cut and the stop after the run, as its file had them (or as an edit wrote them: a stop
+    /// after its last needle point is written as its stop after it).
+    pub fn after(&self) -> After {
+        After { trim: self.trim_after, stop: self.stop_after }
+    }
+}
+
 impl Embroidery {
     /// Set whether the thread is cut after the object. This replaces whatever a newer version wrote
     /// under that key in a form this version can't read.
@@ -290,6 +320,28 @@ impl Embroidery {
     pub fn set_stop_after(&mut self, on: bool) {
         self.stop_after = on;
         unkeep(&mut self.extra, STOP_AFTER);
+    }
+
+    /// The object's own Trim After and Stop After.
+    pub fn own_after(&self) -> After {
+        After { trim: self.trim_after, stop: self.stop_after }
+    }
+
+    /// Set the object's own Trim After and Stop After to `after`, each only where it differs.
+    pub fn set_own_after(&mut self, after: After) {
+        if self.trim_after != after.trim {
+            self.set_trim_after(after.trim);
+        }
+        if self.stop_after != after.stop {
+            self.set_stop_after(after.stop);
+        }
+    }
+
+    /// What comes after the object's stitches, wherever it is kept: its own Trim After and Stop
+    /// After, and its run's cut and stop after it (a file's, or an edit's). What the Object tab
+    /// shows and Restore's fingerprint reads.
+    pub fn after(&self) -> After {
+        self.own_after() | self.stitches.as_ref().map(StitchRun::after).unwrap_or_default()
     }
 
     /// The settings of the object's part `kind`, when it keeps any.

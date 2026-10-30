@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use vectorcraft_stitch::plan::Style;
 use vectorcraft_stitch::{Command, Stitch};
 
+use super::needles;
 use super::plan::{Choice, DesignPlan, Part};
 use super::test_support::{PT_PER_MM, blank, plan, run, unit};
 use super::*;
@@ -346,6 +347,32 @@ fn the_dry_run_tells_edited_stitches_from_moved_ones() {
         matches!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(b)).unwrap().kind, vectorcraft_doc::NodeKind::Path { .. }),
         "a run stands for its object"
     );
+}
+
+/// What comes after a run is part of its stitches wherever it is kept: Stop After set on one run of
+/// a converted object (the run's own, the object-level flag), or a stop or a cut at a run's end by
+/// Machine Function, is an edit the dry run names, so Restore asks before dropping it.
+#[test]
+fn a_stop_or_cut_after_a_run_is_an_edit() {
+    for edit in ["setStopAfter", "setTrimAfter", "stopAtTheEnd", "cutAtAGap"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+        let group = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(a)).unwrap().clone();
+        let first = group.children().unwrap()[0].id.0;
+        let last = needles::read(&group.children().unwrap()[0]).unwrap().len() - 1;
+        let fresh = run(&mut s, "embroidery.restoreObject", json!({"ids": [a], "dryRun": true}));
+        assert_eq!(fresh["edited"], json!([]), "{edit}: nothing edited yet");
+        match edit {
+            "setStopAfter" | "setTrimAfter" => run(&mut s, &format!("embroidery.{edit}"), json!({"ids": [first], "on": true})),
+            "stopAtTheEnd" => {
+                run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": first, "index": last}], "function": "stop"}))
+            }
+            _ => run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": first, "index": last}], "function": "trim"})),
+        };
+        let dry = run(&mut s, "embroidery.restoreObject", json!({"ids": [a], "dryRun": true}));
+        assert_eq!(dry["edited"], json!([a]), "{edit}: {dry}");
+    }
 }
 
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,

@@ -905,11 +905,11 @@ pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
         let (mut offsets, mut removed) = (vec![0usize], Vec::new());
         let mut count = whole.len();
         for (id, _, st) in paths {
-            let [trim_after, stop_after] = whole.object_after;
-            if whole.marks.trim_after || trim_after || st.marks.trim_before {
+            let after = whole.marks.after() | whole.object_after;
+            if after.trim || st.marks.trim_before {
                 dropped.push(json!({"function": "trim", "id": id.0}));
             }
-            if whole.marks.stop_after || stop_after || whole.runs.last().and_then(|r| r.needles.last()).is_some_and(|n| n.stop) {
+            if after.stop || whole.runs.last().and_then(|r| r.needles.last()).is_some_and(|n| n.stop) {
                 dropped.push(json!({"function": "stop", "id": id.0}));
             }
             if let Some(last) = whole.runs.last_mut().and_then(|r| r.needles.last_mut()) {
@@ -1010,13 +1010,13 @@ fn has(st: &Stitches, ix: &Index, k: usize, f: Function) -> bool {
     let Some((r, i)) = ix.locate(k) else { return false };
     let last_of_run = i + 1 == ix.run_len(r);
     let last = k + 1 == ix.len();
-    let [trim_after, stop_after] = st.object_after;
+    let after = st.marks.after() | st.object_after;
     match f {
-        Function::Trim if last => st.marks.trim_after || trim_after,
+        Function::Trim if last => after.trim,
         // The run the next needle point is in, past any run with none.
         Function::Trim if last_of_run => ix.locate(k + 1).and_then(|(next, _)| st.runs.get(next)).is_some_and(|r| r.cut_before),
         Function::Trim => false,
-        Function::Stop => st.needle((r, i)).is_some_and(|n| n.stop) || (last && (st.marks.stop_after || stop_after)),
+        Function::Stop => st.needle((r, i)).is_some_and(|n| n.stop) || (last && after.stop),
     }
 }
 
@@ -1079,7 +1079,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
                 }
                 (Function::Trim, None) => {
                     out.marks.trim_after = on;
-                    out.object_after[0] = on;
+                    out.object_after.trim = on;
                 }
                 (Function::Stop, next) => {
                     if let Some(n) = out.needle_mut((r, i)) {
@@ -1087,7 +1087,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
                     }
                     if next.is_none() && last_of_run && !on {
                         out.marks.stop_after = false;
-                        out.object_after[1] = false;
+                        out.object_after.stop = false;
                     }
                 }
             }
@@ -1332,7 +1332,7 @@ pub(crate) fn run_cut(run: Option<&Stitches>, pieces: &mut [vectorcraft_doc::Nod
         st.marks.trim_before = first && run.marks.trim_before;
         st.marks.trim_after = final_piece && run.marks.trim_after;
         st.marks.stop_after = final_piece && run.marks.stop_after;
-        st.object_after = if final_piece { run.object_after } else { [false, false] };
+        st.object_after = if final_piece { run.object_after } else { Default::default() };
         needles::write(piece, st);
     }
 }

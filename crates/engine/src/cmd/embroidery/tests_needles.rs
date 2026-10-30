@@ -171,7 +171,7 @@ fn the_index_finds_needle_points_across_runs() {
     let st = needles::Stitches {
         runs: vec![run(&[0.0, 1.0, 2.0]), run(&[]), run(&[5.0]), run(&[7.0, 8.0])],
         marks: StitchRun::default(),
-        object_after: [false, false],
+        object_after: Default::default(),
     };
     let ix = st.index();
     assert_eq!(ix.len(), 6);
@@ -521,6 +521,24 @@ fn delete_keeps_the_cuts_at_a_paths_ends_and_says_each_once() {
     assert_eq!((st.runs.len(), st.len()), (1, 2), "neighbours merged, no gap");
 }
 
+/// A stop set after a path's last needle point is its stop after it: the Object tab shows it as Stop
+/// After, and Stop After off clears it, so the export stops there no more.
+#[test]
+fn a_stop_at_a_paths_end_is_its_stop_after() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (12.0, 10.0), (14.0, 10.0)], StitchRun::default());
+    path_mm(&mut s, &[(20.0, 10.0), (22.0, 10.0)], StitchRun::default());
+    run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 2}], "function": "stop"}));
+    let marks = stitches(&node(&s, id));
+    assert!(marks.stops.is_empty() && marks.stop_after, "written as its stop after it");
+    let info = run(&mut s, "embroidery.info", json!({"ids": [id]}));
+    assert_eq!(info["stopAfter"]["value"], json!(true), "{info}");
+    let stats = |s: &mut Session| run(s, "embroidery.stats", json!({}))["stops"].as_u64().unwrap();
+    assert_eq!(stats(&mut s), 1);
+    run(&mut s, "embroidery.setStopAfter", json!({"ids": [id], "on": false}));
+    assert_eq!(stats(&mut s), 0, "cleared by Stop After");
+}
+
 /// The plan's records of the active document: how many jumps and needle-down stitches.
 fn jumps_and_stitches(s: &mut Session) -> (usize, usize) {
     let p = s.embroidery_plan(&super::Options::default()).unwrap();
@@ -697,7 +715,7 @@ fn machine_functions_go_after_needle_points() {
     let n = node(&s, id);
     assert!(!stitches(&n).trim_after && !n.extras().embroidery.as_deref().unwrap().trim_after);
     run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 3}], "function": "stop"}));
-    assert!(needles::read(&node(&s, id)).unwrap().runs[0].needles[3].stop);
+    assert!(stitches(&node(&s, id)).stop_after, "a stop after the last needle point: the run's stop after it");
     for p in [
         json!({"needlePoints": [{"id": id, "index": 0}], "function": "colorChange"}),
         json!({"needlePoints": [{"id": id, "index": 0}]}),

@@ -346,23 +346,23 @@ fn stored(p: &PartSettings) -> Map<String, Value> {
 /// out, as the command passes them over): whether they ask for it, how many do, and whether they
 /// differ.
 fn trim_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
-    let mut seen = HashSet::new();
-    let (mut given, mut set) = (0usize, 0usize);
-    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
-        given += 1;
-        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after)));
-    }
-    let mixed = set > 0 && set < given;
-    Merged { value: (!mixed).then_some(set > 0), set_count: set, mixed }
+    after(doc, ids, |a| a.trim)
 }
 
 /// The stop after the objects as given that are sewn, read as [`trim_after`] reads the cut.
 fn stop_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
+    after(doc, ids, |a| a.stop)
+}
+
+/// What `which` picks of what comes after the objects as given that are sewn
+/// ([`vectorcraft_doc::embroidery::Embroidery::after`], wherever it is kept): whether they ask for
+/// it, how many do, and whether they differ.
+fn after(doc: &Document, ids: &[NodeId], which: fn(vectorcraft_doc::embroidery::After) -> bool) -> Merged<bool> {
     let mut seen = HashSet::new();
     let (mut given, mut set) = (0usize, 0usize);
     for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
         given += 1;
-        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.stop_after || e.stitches.as_ref().is_some_and(|r| r.stop_after)));
+        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| which(e.after())));
     }
     let mixed = set > 0 && set < given;
     Merged { value: (!mixed).then_some(set > 0), set_count: set, mixed }

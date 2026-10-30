@@ -24,7 +24,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::embroidery::{Exact, Mark, StitchRun, shape_of};
+use vectorcraft_doc::embroidery::{After, Exact, Mark, StitchRun, shape_of};
 use vectorcraft_doc::{Document, MAX_COORD, Node, NodeId, NodeKind, Selection};
 use vectorcraft_geom::{Anchor, PathData, Point, SubPath};
 use vectorcraft_stitch::{MM_PER_PT, SAME_POINT, pt_to_mm};
@@ -79,8 +79,8 @@ pub(crate) struct Stitches {
     pub(crate) runs: Vec<Run>,
     pub(crate) marks: StitchRun,
     /// The object's own Trim After and Stop After ([`vectorcraft_doc::embroidery::Embroidery`]'s
-    /// `trim_after`, `stop_after`): a cut and a stop after its last needle point, as the run's are.
-    pub(crate) object_after: [bool; 2],
+    /// `own_after`): a cut and a stop after its last needle point, as the run's are.
+    pub(crate) object_after: After,
 }
 
 /// Whether two points (document points) lie at one spot, as the walk tells a line to its own
@@ -101,7 +101,7 @@ pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
     let NodeKind::Path { path, .. } = &n.kind else { return Err(reason::NOT_STITCHES) };
     let Some(e) = n.extras().embroidery.as_deref() else { return Err(reason::NOT_STITCHES) };
     let Some(marks) = e.stitches.clone() else { return Err(reason::NOT_STITCHES) };
-    let object_after = [e.trim_after, e.stop_after];
+    let object_after = e.own_after();
     let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
     if anchors > 2 * MAX_NEEDLE_POINTS {
         return Err(reason::TOO_MANY);
@@ -268,10 +268,16 @@ impl Stitches {
     /// The path and the marks to write back: each run one open subpath of corner anchors (a run of
     /// one needle point a line to its own start), the cuts between runs, the stops after needle
     /// points and the exact millimetres from the needle points that carry them; the tack mark set
-    /// when the path's only run is two needle points at one spot. `None` when no needle point is
-    /// left.
+    /// when the path's only run is two needle points at one spot. A stop after the last needle
+    /// point is the run's stop after it, where Stop After shows and clears it. `None` when no
+    /// needle point is left.
     pub(crate) fn written(mut self) -> Option<(PathData, StitchRun)> {
         self.drop_empty_runs();
+        if let Some(last) = self.runs.last_mut().and_then(|r| r.needles.last_mut())
+            && std::mem::take(&mut last.stop)
+        {
+            self.marks.stop_after = true;
+        }
         let Self { runs, mut marks, .. } = self;
         if runs.is_empty() {
             return None;
@@ -323,13 +329,7 @@ pub(crate) fn write(n: &mut Node, st: Stitches) -> bool {
     }
     if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
         e.stitches = Some(marks);
-        let [trim, stop] = object_after;
-        if e.trim_after != trim {
-            e.set_trim_after(trim);
-        }
-        if e.stop_after != stop {
-            e.set_stop_after(stop);
-        }
+        e.set_own_after(object_after);
     }
     true
 }

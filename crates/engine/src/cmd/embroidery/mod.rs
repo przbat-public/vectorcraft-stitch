@@ -534,74 +534,83 @@ pub fn specs() -> Vec<CommandSpec> {
 }
 
 fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setTrimAfter";
-    let o = object(p, C)?;
-    let on = match o.get("on") {
-        None | Some(Value::Null) => None,
-        Some(v) => Some(v.as_bool().ok_or_else(|| bad(C, format!("`on` {v}: true or false")))?),
-    };
-    let ids = targets(s, p)?;
-    if ids.is_empty() {
-        return Err(bad(C, "select the objects whose thread is cut after them, or give ids"));
-    }
-    // Every id names an object, before anything changes.
-    let d = &s.doc()?.doc;
-    if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
-        return Err(EngineError::NoNode(*missing));
-    }
-    // Only what is sewn is cut after: type, images and the like are passed over.
-    let ids: Vec<NodeId> = ids.into_iter().filter(|id| d.node(*id).is_some_and(objects::cut_after_sewn)).collect();
-    if ids.is_empty() {
-        return Err(bad(C, "none of the objects given is sewn (type, images, placed files and guides aren't), so none is cut after"));
-    }
-    // Marked: asked for a cut after it, or a run of stitches whose file had one.
-    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after));
-    let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
-    let changed = edit_counted(s, "Embroidery Trim After", |d| {
-        objects::edit_each(d, &ids, |e| {
-            e.set_trim_after(on);
-            // Off: no cut after it, the one its file had included.
-            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
-                run.trim_after = false;
-            }
-        })
-    })?;
-    Ok(json!({ "on": on, "changed": changed }))
+    set_after(s, p, AfterSet::TRIM)
 }
 
 fn set_stop_after(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setStopAfter";
-    let o = object(p, C)?;
+    set_after(s, p, AfterSet::STOP)
+}
+
+/// What one of Trim After and Stop After sets ([`set_after`]): its command, its undo step, what it
+/// says when nothing can take it, and the flag it reads and sets.
+struct AfterSet {
+    cmd: &'static str,
+    label: &'static str,
+    none_given: &'static str,
+    none_sewn: &'static str,
+    of: fn(vectorcraft_doc::embroidery::After) -> bool,
+    set: fn(&mut Embroidery, bool),
+}
+
+impl AfterSet {
+    const TRIM: Self = Self {
+        cmd: "embroidery.setTrimAfter",
+        label: "Embroidery Trim After",
+        none_given: "select the objects whose thread is cut after them, or give ids",
+        none_sewn: "none of the objects given is sewn (type, images, placed files and guides aren't), so none is cut after",
+        of: |a| a.trim,
+        // Off: no cut after it, the one its file had included.
+        set: |e, on| {
+            e.set_trim_after(on);
+            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
+                run.trim_after = false;
+            }
+        },
+    };
+    const STOP: Self = Self {
+        cmd: "embroidery.setStopAfter",
+        label: "Embroidery Stop After",
+        none_given: "select the objects the machine stops after, or give ids",
+        none_sewn: "none of the objects given is sewn (type, images, placed files and guides aren't), so the machine stops after none",
+        of: |a| a.stop,
+        // Off: no stop after it, the run's own included.
+        set: |e, on| {
+            e.set_stop_after(on);
+            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
+                run.stop_after = false;
+            }
+        },
+    };
+}
+
+/// `embroidery.setTrimAfter` and `embroidery.setStopAfter {ids?, on?}`: the thread cut, or the
+/// machine stopped, after each object given (else selected) that is sewn, or (`on: false`) no
+/// longer, wherever it is kept (a run's file's included); `on` left out is on unless every object
+/// has it already. One undo step.
+fn set_after(s: &mut Session, p: &Value, what: AfterSet) -> Result<Value> {
+    let c = what.cmd;
+    let o = object(p, c)?;
     let on = match o.get("on") {
         None | Some(Value::Null) => None,
-        Some(v) => Some(v.as_bool().ok_or_else(|| bad(C, format!("`on` {v}: true or false")))?),
+        Some(v) => Some(v.as_bool().ok_or_else(|| bad(c, format!("`on` {v}: true or false")))?),
     };
     let ids = targets(s, p)?;
     if ids.is_empty() {
-        return Err(bad(C, "select the objects the machine stops after, or give ids"));
+        return Err(bad(c, what.none_given));
     }
     // Every id names an object, before anything changes.
     let d = &s.doc()?.doc;
     if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
     }
-    // Only what is sewn is stopped after, as only what is sewn is cut after.
+    // Only what is sewn is cut or stopped after: type, images and the like are passed over.
     let ids: Vec<NodeId> = ids.into_iter().filter(|id| d.node(*id).is_some_and(objects::cut_after_sewn)).collect();
     if ids.is_empty() {
-        return Err(bad(C, "none of the objects given is sewn (type, images, placed files and guides aren't), so the machine stops after none"));
+        return Err(bad(c, what.none_sewn));
     }
-    // Marked: asked for a stop after it, or a run of stitches with one.
-    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.stop_after || e.stitches.as_ref().is_some_and(|r| r.stop_after));
-    let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
-    let changed = edit_counted(s, "Embroidery Stop After", |d| {
-        objects::edit_each(d, &ids, |e| {
-            e.set_stop_after(on);
-            // Off: no stop after it, the run's own included.
-            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
-                run.stop_after = false;
-            }
-        })
-    })?;
+    let marked = |id: &NodeId| d.node(*id).and_then(|n| n.extras().embroidery.as_deref()).is_some_and(|e| (what.of)(e.after()));
+    let on = on.unwrap_or_else(|| !ids.iter().all(marked));
+    let changed = edit_counted(s, what.label, |d| objects::edit_each(d, &ids, |e| (what.set)(e, on)))?;
     Ok(json!({ "on": on, "changed": changed }))
 }
 

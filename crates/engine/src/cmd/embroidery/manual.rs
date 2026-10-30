@@ -196,7 +196,9 @@ pub(crate) fn fingerprint(group: &Node, frame: Affine) -> Option<u64> {
     let step = |v: f64| (v / FINGERPRINT_STEP).round() as i64 as u64;
     for c in group.children().into_iter().flatten() {
         let Some(path) = c.path_data() else { continue };
-        let run = c.extras().embroidery.as_deref().and_then(|e| e.stitches.clone()).unwrap_or_default();
+        let e = c.extras().embroidery.as_deref();
+        let none = StitchRun::default();
+        let run = e.and_then(|e| e.stitches.as_ref()).unwrap_or(&none);
         eat(path.subpaths.len() as u64);
         for sp in &path.subpaths {
             eat(sp.anchors.len() as u64);
@@ -210,7 +212,9 @@ pub(crate) fn fingerprint(group: &Node, frame: Affine) -> Option<u64> {
             eat(m.subpath as u64);
             eat(m.anchor as u64);
         }
-        eat(u64::from(run.trim_before) | u64::from(run.trim_after) << 1 | u64::from(run.stop_after) << 2 | u64::from(run.double_point) << 3);
+        // What comes after the run, wherever it is kept: its own Trim After and Stop After too.
+        let after = e.map(|e| e.after()).unwrap_or_default();
+        eat(u64::from(run.trim_before) | u64::from(after.trim) << 1 | u64::from(after.stop) << 2 | u64::from(run.double_point) << 3);
     }
     Some(h)
 }

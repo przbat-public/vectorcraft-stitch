@@ -539,6 +539,60 @@ fn a_stop_at_a_paths_end_is_its_stop_after() {
     assert_eq!(stats(&mut s), 0, "cleared by Stop After");
 }
 
+/// Scissors, at an anchor or on a segment, cuts a run as Cut Path does: the halves take the marks of
+/// the needle points they hold (a stop on the cut point stays on the first), the first the cut before
+/// the run, the second the cut and the stop after it, and a file's run's second half starts after
+/// the cut point. A run of several subpaths cut where it lies (Scissors, Cut Path at Anchors) keeps
+/// its pieces as subpaths, the cut point once, its cuts before the runs they were before.
+#[test]
+fn scissors_and_cuts_in_place_cut_runs_as_stitches() {
+    let points = [(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (16.0, 10.0), (18.0, 10.0)];
+    let marks = || StitchRun {
+        trim_before: true,
+        trim_after: true,
+        stop_after: true,
+        stops: vec![Mark::place(0, 2), Mark::place(0, 3)],
+        ..StitchRun::default()
+    };
+    // At an anchor: 10 12 14 | 14 16 18.
+    let mut s = blank();
+    let id = path_mm(&mut s, &points, marks());
+    let r = run(&mut s, "path.split", json!({"id": id, "anchor": 2}));
+    let ids: Vec<u64> = r["ids"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap()).collect();
+    let (first, last) = (stitches(&node(&s, ids[0])), stitches(&node(&s, ids[1])));
+    // 14's stop on the first half only, after its last needle point: its stop after it.
+    assert!(first.trim_before && !first.trim_after && first.stop_after && first.stops.is_empty(), "{first:?}");
+    assert!(!last.trim_before && last.trim_after && last.stop_after, "{last:?}");
+    assert_eq!(places(&last.stops), [(0, 0)], "16's on the second");
+    assert_eq!(at(&s, ids[1], 0), (16.0, 10.0), "the second half starts after the cut point");
+    assert_eq!(jumps_and_stitches(&mut s).1, 5);
+    // On a segment: a needle point made by the cut, sewn once.
+    let mut s = blank();
+    let id = path_mm(&mut s, &points, marks());
+    let r = run(&mut s, "path.split", json!({"id": id, "segment": 1, "t": 0.5}));
+    let ids: Vec<u64> = r["ids"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap()).collect();
+    assert_eq!((at(&s, ids[0], 2), at(&s, ids[1], 0)), ((13.0, 10.0), (14.0, 10.0)));
+    assert_eq!(jumps_and_stitches(&mut s).1, 6, "five and the one the cut made");
+    // In place: a converted run of two subpaths, a cut before the second, cut in its first.
+    let mut s = blank();
+    let id = path_mm(&mut s, &points, StitchRun { manual: true, ..StitchRun::default() });
+    run(&mut s, "embroidery.splitRun", json!({"needlePoints": [{"id": id, "index": 3}], "ties": false}));
+    run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 2}], "function": "trim", "ties": false}));
+    assert_eq!(places(&stitches(&node(&s, id)).trims), [(1, 0)]);
+    for (command, p) in [("path.split", json!({"id": id, "subpath": 0, "anchor": 1})), ("path.cutAtAnchors", json!({}))] {
+        let mut t = Session::new();
+        t.add_document(s.doc().unwrap().doc.as_ref().clone(), None);
+        if command == "path.cutAtAnchors" {
+            run(&mut t, "select.anchors", json!({"id": id, "anchors": [[0, 1]]}));
+        }
+        run(&mut t, command, p);
+        let st = needles::read(&node(&t, id)).unwrap();
+        let runs: Vec<(bool, usize)> = st.runs.iter().map(|r| (r.cut_before, r.needles.len())).collect();
+        assert_eq!(runs, [(false, 2), (false, 1), (true, 2)], "{command}: 10 12 | 14 ✂ 16 18");
+        assert_eq!(st.len(), 5, "{command}: 12 kept once");
+    }
+}
+
 /// The plan's records of the active document: how many jumps and needle-down stitches.
 fn jumps_and_stitches(s: &mut Session) -> (usize, usize) {
     let p = s.embroidery_plan(&super::Options::default()).unwrap();
@@ -920,7 +974,12 @@ fn delete_cut_path_and_join_treat_runs_as_stitches() {
     let (first, last) = (stitches(&node(&s, pieces[0])), stitches(&node(&s, pieces[1])));
     assert!(first.trim_before && !first.trim_after && !first.stop_after, "{first:?}");
     assert!(!last.trim_before && last.trim_after && last.stop_after, "{last:?}");
-    assert_eq!((places(&first.stops), places(&last.stops)), (vec![(0, 1)], vec![(0, 1)]), "each stop on its piece");
+    // A file's run: the second piece starts after the needle point the cut made twice, so it isn't
+    // sewn twice; the stop after 16 is the second piece's first.
+    assert_eq!((at(&s, pieces[0], 2), at(&s, pieces[1], 0)), ((14.0, 10.0), (16.0, 10.0)));
+    assert_eq!((places(&first.stops), places(&last.stops)), (vec![(0, 1)], vec![(0, 0)]), "each stop on its piece");
+    let needle_points = |s: &mut Session| jumps_and_stitches(s).1;
+    assert_eq!(needle_points(&mut s), 5, "five needle points, none sewn twice");
     // Join: never reversed; with art, refused.
     let mut s = blank();
     let a = path_mm(&mut s, &[(10.0, 10.0), (20.0, 10.0)], StitchRun::default());

@@ -132,7 +132,21 @@ pub(crate) fn stitches_before_cut(d: &Document, id: vectorcraft_doc::NodeId) -> 
 /// ([`derive::cut_once`]), then a run's marks on its pieces.
 pub(crate) fn cut_into_pieces(run: Option<&needles::Stitches>, pieces: &mut [vectorcraft_doc::Node]) {
     derive::cut_once(pieces.iter_mut());
-    needle_edits::run_cut(run, pieces);
+    needle_edits::run_cut(run, &mut pieces.iter_mut().collect::<Vec<_>>());
+}
+
+/// See [`delete_needle_points_selected`]: [`cut_into_pieces`] of the two halves Scissors makes of a
+/// path of one subpath (`draw2::split`).
+pub(crate) fn cut_in_two(run: Option<&needles::Stitches>, first: &mut vectorcraft_doc::Node, second: &mut vectorcraft_doc::Node) {
+    derive::cut_once([&mut *first, &mut *second].into_iter());
+    needle_edits::run_cut(run, &mut [first, second]);
+}
+
+/// See [`delete_needle_points_selected`]: a run of stitches cut into pieces kept as its subpaths
+/// (Scissors and Cut Path at Anchors on a path of several), the needle point a cut makes twice kept
+/// once.
+pub(crate) fn runs_cut_in_place(d: &mut Document, id: vectorcraft_doc::NodeId, run: Option<&needles::Stitches>) {
+    needle_edits::cut_in_place(d, id, run);
 }
 
 /// See [`delete_needle_points_selected`].

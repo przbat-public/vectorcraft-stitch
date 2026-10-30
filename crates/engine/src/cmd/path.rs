@@ -834,7 +834,10 @@ fn cut_at_anchors(s: &mut Session, _: &Value) -> Result<Value> {
                 picked.extend(ids.iter().zip(&starts).filter(|(_, s)| **s).map(|(id, _)| (*id, (0, 0))));
                 all.extend(ids);
             } else {
+                // VectorCraft Stitch: a run of stitches as it was, then the needle point each cut made twice kept once.
+                let run = super::embroidery::stitches_before_cut(d, id);
                 path_mut(d, id)?.subpaths = subs;
+                super::embroidery::runs_cut_in_place(d, id, run.as_ref());
                 picked.extend(starts.iter().enumerate().filter(|(_, s)| **s).map(|(si, _)| (id, (si, 0))));
                 all.push(id);
             }

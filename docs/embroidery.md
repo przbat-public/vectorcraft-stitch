@@ -200,9 +200,11 @@ opened design's stitches too, since stitches scaled keep their count, not their 
 **Editing stitches.** A path of literal stitches (opened or manual) is sewn as its anchors, in
 order: handles are ignored, a closed path sews no closing stitch, and its subpaths are runs the
 needle jumps between. Direct Selection moves needle points as it moves anchors; its Delete merges
-the neighbouring stitches (it doesn't leave a gap the machine still sews), the cutting tools put a
-run's cut before on its first piece and its cut and stop after on its last, and Join joins runs in
-sewing order, never reversed. A run's stops and cuts are kept by their needle points, where each
+the neighbouring stitches (it doesn't leave a gap the machine still sews), the cutting tools (Cut
+Path at Anchors, Scissors; the Knife cuts only closed paths) put a run's cut before on its first
+piece and its cut and stop after on its last, each stop on the piece holding its needle point, and
+sew the cut point once (a file's run's later piece starts after it; pieces kept as subpaths keep it
+once), and Join joins runs in sewing order, never reversed. A run's stops and cuts are kept by their needle points, where each
 lies (the project owner's choice, 2026-10-30): the other path commands (Reverse Path Direction, Add
 and Delete Anchor Point, Remove Anchor Points, Simplify, Join's merge of coincident anchors, Close
 Path) add, remove and reorder anchors as art, and each stop stays after its needle point, each cut

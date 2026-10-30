@@ -1064,6 +1064,8 @@ fn split(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(C, "invalid t"));
     }
     let ids = s.edit("Split Path", |d, sel| {
+        // VectorCraft Stitch: a run of stitches as it was, for its marks to follow its needle points onto the halves.
+        let run = super::embroidery::stitches_before_cut(d, id);
         let path = path_mut(d, id)?;
         let mut sp = path.subpaths.get(si).cloned().ok_or_else(|| EngineError::Other("no such subpath".into()))?;
         let n = sp.anchors.len();
@@ -1091,9 +1093,9 @@ fn split(s: &mut Session, p: &Value) -> Result<Value> {
         if path.subpaths.len() == 1 {
             path.subpaths[0] = left;
             let mut node = sibling_with(d, id, PathData::single(right))?;
-            // VectorCraft Stitch: the object's embroidery cut once, each point on the nearer piece.
+            // VectorCraft Stitch: the object's embroidery cut once, each point on the nearer piece; a run's marks on its halves.
             if let Some(n) = d.node_mut(id) {
-                super::embroidery::derive::cut_once([n, &mut node].into_iter());
+                super::embroidery::cut_in_two(run.as_ref(), n, &mut node);
             }
             let (parent, idx, _) = d.position(id).ok_or(EngineError::NoNode(id))?;
             let nid = d.insert(parent, idx + 1, node)?;
@@ -1102,6 +1104,8 @@ fn split(s: &mut Session, p: &Value) -> Result<Value> {
         } else {
             path.subpaths[si] = left;
             path.subpaths.insert(si + 1, right);
+            // VectorCraft Stitch: a run of stitches cut in place keeps the needle point the cut made twice once.
+            super::embroidery::runs_cut_in_place(d, id, run.as_ref());
             sel.set([id]);
             Ok(vec![id])
         }

@@ -6094,3 +6094,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objet converti en points manuels : Restaurer l’objet le rétablit|{count} objets convertis en points manuels : Restaurer l’objet les rétablit
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	des coupes ou des arrêts de points ont été omis : une commande de tracé a supprimé ou déplacé les points de piqûre qu’ils suivaient (définissez-les de nouveau avec la commande Fonction machine)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	runs of stitches join only with runs of stitches: select only them	les suites de points ne se joignent qu’à des suites de points : ne sélectionnez qu’elles
+@msg	select two or more runs of stitches sewn one right after another to join them	sélectionnez au moins deux suites de points brodées l’une juste après l’autre pour les joindre

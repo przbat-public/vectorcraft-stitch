@@ -1100,5 +1100,11 @@ fn delete_cut_path_and_join_treat_runs_as_stitches() {
     assert_eq!(joined.len(), 4);
     let art = run(&mut s, "path.create", json!({"d": "M 200 200 L 220 200"}))["id"].as_u64().unwrap();
     run(&mut s, "select.set", json!({"ids": [a, art]}));
-    assert!(s.execute("path.join", &json!({})).is_err(), "a run with art");
+    let said = |r: crate::Result<Value>| match r {
+        Err(crate::EngineError::Other(m)) => m,
+        r => panic!("a translated refusal: {r:?}"),
+    };
+    assert_eq!(said(s.execute("path.join", &json!({}))), super::needle_edits::RUNS_WITH_ART, "a run with art");
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    assert_eq!(said(s.execute("path.join", &json!({}))), super::needle_edits::ONE_RUN, "one run alone");
 }

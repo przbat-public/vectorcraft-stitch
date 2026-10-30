@@ -6056,3 +6056,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} nesne manuel dikişlere dönüştürüldü: Nesneyi Geri Yükle onu geri getirir
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	dikişlerin kesmeleri veya durmaları atlandı: bir yol komutu, ardından geldikleri iğne noktalarını sildi veya taşıdı (Makine İşlevi ile yeniden ayarlayın)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	runs of stitches join only with runs of stitches: select only them	dikiş dizileri yalnızca dikiş dizileriyle birleşir: yalnızca onları seçin
+@msg	select two or more runs of stitches sewn one right after another to join them	birleştirmek için art arda dikilen iki veya daha fazla dikiş dizisi seçin

@@ -5706,3 +5706,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} объект преобразован в ручные стежки: «Восстановить объект» вернёт его|{count} объекта преобразованы в ручные стежки: «Восстановить объект» вернёт их|{count} объектов преобразовано в ручные стежки: «Восстановить объект» вернёт их
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	обрезки или остановки стежков пропущены: команда контура удалила или переместила проколы, за которыми они следовали (задайте их снова командой «Функция машины»)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	runs of stitches join only with runs of stitches: select only them	ряды стежков соединяются только с рядами стежков: выберите только их
+@msg	select two or more runs of stitches sewn one right after another to join them	выберите два или более ряда стежков, которые шьются один сразу за другим, чтобы соединить их

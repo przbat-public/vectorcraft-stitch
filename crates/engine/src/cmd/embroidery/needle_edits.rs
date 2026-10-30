@@ -808,6 +808,10 @@ pub(super) const JOIN: &str = "embroidery.joinRuns";
 pub(super) const JOIN_LABEL: &str = "Join Runs";
 /// The message Join Runs gives for paths it can't join: translated (the interface shows it).
 pub(super) const NOT_JOINABLE: &str = "these runs aren't sewn one right after another in one colour block";
+/// What Join (⌘J) says of runs of stitches selected with art: translated.
+pub(super) const RUNS_WITH_ART: &str = "runs of stitches join only with runs of stitches: select only them";
+/// What Join (⌘J) says of one run of stitches selected alone: translated.
+pub(super) const ONE_RUN: &str = "select two or more runs of stitches sewn one right after another to join them";
 
 /// `st` with each run whose first needle point is in `at` joined to the run before it: the jump
 /// onto it becomes a stitch (a first needle point lying where the run before ends is kept once), a
@@ -1460,7 +1464,10 @@ pub(crate) fn join_paths(s: &mut Session, ids: &[NodeId]) -> Option<Result<Value
         return None;
     }
     if !ids.iter().all(stitches) {
-        return Some(Err(bad(JOIN, "a run of stitches joins only runs of stitches (Join Runs): select only them")));
+        return Some(Err(EngineError::Other(RUNS_WITH_ART.to_string())));
+    }
+    if ids.len() < 2 {
+        return Some(Err(EngineError::Other(ONE_RUN.to_string())));
     }
     // Each one's place among its parent's children, each parent's read once.
     let mut place: std::collections::HashMap<NodeId, usize> = std::collections::HashMap::new();

@@ -5729,3 +5729,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	已將 {count} 個物件轉換為手動針跡：還原物件可將其找回
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	已略去針跡的剪線或停機：某個路徑命令刪除或移動了它們所在的落針點（請用「機器功能」重新設定）
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	runs of stitches join only with runs of stitches: select only them	針跡段只能與針跡段連接：請只選擇它們
+@msg	select two or more runs of stitches sewn one right after another to join them	請選擇兩段或更多緊接著縫製的針跡段以連接它們

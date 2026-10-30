@@ -517,17 +517,25 @@ impl Lengths {
         self.above += usize::from(mm > max);
     }
 
-    /// Count the stitches into and out of needle point `index` of `st` (within its run; `ix` its
-    /// index).
-    pub(crate) fn around(&mut self, st: &Stitches, ix: &Index, index: usize, min: f64, max: f64) {
-        let Some((s, i)) = ix.locate(index) else { return };
-        let Some(r) = st.runs.get(s) else { return };
-        let p = |i: usize| r.needles.get(i).map(|n| n.p);
-        if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(p), p(i)) {
-            self.add(a, b, min, max);
+    /// Count the stitches into and out of needle points `around` of `st` (within their runs; `ix`
+    /// its index), each stitch once however many of its ends are among them.
+    pub(crate) fn around(&mut self, st: &Stitches, ix: &Index, around: impl IntoIterator<Item = usize>, min: f64, max: f64) {
+        // Each stitch by the needle point it arrives at.
+        let mut arriving = BTreeSet::new();
+        for k in around {
+            let Some((r, i)) = ix.locate(k) else { continue };
+            if i > 0 {
+                arriving.insert(k);
+            }
+            if i + 1 < ix.run_len(r) {
+                arriving.insert(k + 1);
+            }
         }
-        if let (Some(a), Some(b)) = (p(i), p(i + 1)) {
-            self.add(a, b, min, max);
+        for k in arriving {
+            let Some((r, i)) = ix.locate(k) else { continue };
+            if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(|h| st.needle((r, h))), st.needle((r, i))) {
+                self.add(a.p, b.p, min, max);
+            }
         }
     }
 

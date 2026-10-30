@@ -170,9 +170,7 @@ impl Edit {
         if ix.len() > MAX_NEEDLE_POINTS {
             return Err(bad(self.cmd, format!("object {}: more than {MAX_NEEDLE_POINTS} needle points", id.0)));
         }
-        for k in touched {
-            self.lengths.around(&out, ix, k, self.min, self.max);
-        }
+        self.lengths.around(&out, ix, touched, self.min, self.max);
         match kept {
             Kept::Same => {
                 if let Some(k) = selected {

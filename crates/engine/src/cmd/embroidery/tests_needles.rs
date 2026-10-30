@@ -222,6 +222,22 @@ fn needle_points_move_by_millimetres() {
     assert!(!stitches(&node(&s, two)).double_point && needles::read(&node(&s, two)).unwrap().len() == 2);
 }
 
+/// The live check counts each stitch an edit changed once, however many of its ends were addressed,
+/// against the document's shortest stitch and the longest a machine sews well.
+#[test]
+fn the_live_check_counts_each_stitch_once() {
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0), (18.0, 10.0), (22.0, 10.0)], StitchRun::default());
+    // Needle point 2 brought 0.2 mm from needle point 1, then both moved together: three stitches
+    // changed (into 1, between them, out of 2), the short one counted once.
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "dx": -3.8}));
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 1}, {"id": id, "index": 2}], "dy": 0.1}));
+    let l = &r["lengths"];
+    assert_eq!((l["count"].clone(), l["belowMin"].clone(), l["aboveMax"].clone()), (json!(3), json!(1), json!(0)), "{r}");
+    let (shortest, min) = (l["shortest"].as_f64().unwrap(), l["min"].as_f64().unwrap());
+    assert!((shortest - 0.2).abs() < 1e-9 && min > shortest, "{r}");
+}
+
 /// What Move Needle Points refuses, changing nothing: `to` with more than one needle point, or with
 /// `dx`; an index past the path's needle points; an object that isn't a path of stitches; a locked
 /// one; a needle point taken outside the document's coordinates; nothing addressed or selected.

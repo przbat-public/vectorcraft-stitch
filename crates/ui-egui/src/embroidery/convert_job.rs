@@ -109,6 +109,8 @@ pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     if app.session.active().map(|st| st.uid) != Some(r.uid) || ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
         r.stop.cancel();
     }
+    // Stopped is stopped, even when the plan had just finished.
+    let stopped = r.stop.is_cancelled();
     let finished = match &r.result {
         Pending::Thread(receive) => match receive.try_recv() {
             Ok(result) => Some(result),
@@ -117,26 +119,17 @@ pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
                 Some(Err(vectorcraft_engine::EngineError::Internal { cmd: CONVERT.into(), msg: "the plan stopped".into() }))
             }
         },
-        Pending::InLine(_) => None,
-    };
-    let finished = match finished {
-        Some(result) => Some(result),
-        None => match app.embroidery.converting.running.take() {
-            // The web's frame after the one that said it has begun: planned now, in one go.
-            Some(Running { result: Pending::InLine(job), .. }) => Some(job.plan()),
-            other => {
-                app.embroidery.converting.running = other;
-                None
-            }
-        },
+        // The web's frame after the one that said it has begun: planned now, in one go, unless an
+        // Escape or another document stopped it first.
+        Pending::InLine(_) if stopped => Some(Err(vectorcraft_engine::EngineError::Cancelled)),
+        Pending::InLine(job) => Some(job.plan()),
     };
     let Some(result) = finished else {
         say_progress(app);
         ctx.request_repaint_after(std::time::Duration::from_secs_f32(PROGRESS_EVERY_SECS));
         return;
     };
-    // Stopped is stopped, even when the plan had just finished.
-    let stopped = app.embroidery.converting.running.take().is_some_and(|r| r.stop.is_cancelled());
+    app.embroidery.converting.running = None;
     let said = match result {
         _ if stopped => format!("{} · {}", command_label(app, CONVERT), crate::et!("Stopped: nothing was changed.")),
         Ok(planned) if !app.session.convert_to_manual_current(&planned) => {
@@ -229,5 +222,29 @@ mod tests {
         assert_eq!(undo_steps(&app), edited + 1, "{}", app.ui.status);
         assert_eq!(app.ui.status, "1 object converted to manual stitches: Restore Object brings it back");
         assert!(app.run("embroidery.info", json!({"ids": [a]})).unwrap()["manual"].is_object());
+    }
+
+    /// Where no thread plans (the web), the convert plans in the frame after the one that said it
+    /// has begun: an Escape in that frame stops it before it plans, nothing changed, and the status
+    /// bar says so; with none, it converts in that frame.
+    #[test]
+    fn escape_stops_a_convert_planned_in_line() {
+        let ctx = egui::Context::default();
+        let (mut app, a) = app();
+        let steps = undo_steps(&app);
+        let in_line = |app: &mut VectorcraftApp| {
+            let job = app.session.convert_to_manual_job(&json!({"ids": [a]})).unwrap();
+            let uid = app.session.active().unwrap().uid;
+            let (stop, done) = (CancelToken::new(), Arc::new(AtomicU64::new(0)));
+            app.embroidery.converting.running = Some(Running { uid, stop, done, result: Pending::InLine(Box::new(job)) });
+        };
+        in_line(&mut app);
+        let escape = Event::Key { key: Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
+        frame(&mut app, &ctx, vec![escape]);
+        assert!(!running(&app));
+        assert_eq!((undo_steps(&app), app.ui.status.as_str()), (steps, "Convert to Manual Stitches · Stopped: nothing was changed."));
+        in_line(&mut app);
+        frame(&mut app, &ctx, vec![]);
+        assert_eq!(undo_steps(&app), steps + 1, "{}", app.ui.status);
     }
 }

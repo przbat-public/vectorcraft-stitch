@@ -599,7 +599,8 @@ fn a_record_shown_is_in_view_and_marked_on_the_canvas() {
     settle(&mut app, &ctx, &mut time);
     let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
     let number = list.record(list.len() / 2).unwrap();
-    super::reveal(&mut app, number);
+    let shown = app.run("embroidery.showRecord", json!({"record": number})).unwrap();
+    assert_eq!(shown, json!({"record": number, "row": list.len() / 2}));
     let (shapes, nodes) = settle(&mut app, &ctx, &mut time);
     row_at(&shapes, number);
     assert!(nodes.iter().any(|n| n.1 == Role::Row && n.2.starts_with(&format!("Record {number}:"))));
@@ -1037,7 +1038,7 @@ fn the_focus_follows_its_needle_point_into_a_new_plan() {
     let stitch = |n: &usize| stitch_list::row(&before, *n).is_some_and(|r| r.kind == stitch_list::RecordKind::Stitch);
     let number = (0..list.len()).filter_map(|i| list.record(i)).filter(stitch).nth(8).unwrap();
     let at = stitch_list::row(&before, number).unwrap().at;
-    super::reveal(&mut app, number);
+    app.run("embroidery.showRecord", json!({"record": number})).unwrap();
     settle(&mut app, &ctx, &mut time);
     app.run("embroidery.insertNeedlePoints", json!({"id": run.0, "index": 1})).unwrap();
     settle(&mut app, &ctx, &mut time);
@@ -1052,4 +1053,27 @@ fn the_focus_follows_its_needle_point_into_a_new_plan() {
     settle(&mut app, &ctx, &mut time);
     let d = app.embroidery.stitches.docs.get(&uid).unwrap();
     assert_eq!((d.focus, d.shown), (None, None));
+}
+
+/// `embroidery.showRecord` refuses junk, and a record the filter leaves out, saying which; a record
+/// listed is in focus and shown.
+#[test]
+fn show_record_refuses_what_isnt_listed() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let number = list.record(3).unwrap();
+    for junk in [json!({}), json!({"record": 0}), json!({"record": "four"}), json!({"record": 4, "zoomed": true}), json!({"record": 4, "zoom": 1})] {
+        assert!(app.run("embroidery.showRecord", junk.clone()).is_err(), "{junk}");
+    }
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let e = app.run("embroidery.showRecord", json!({"record": number})).unwrap_err();
+    assert!(e.contains("isn't listed") && e.contains("filter trims"), "{e}");
+    app.run("ui.embroideryPanel", json!({"filter": "all"})).unwrap();
+    assert_eq!(app.run("embroidery.showRecord", json!({"record": number, "zoom": true})).unwrap()["row"], json!(3));
+    let uid = app.session.active().unwrap().uid;
+    let d = app.embroidery.stitches.docs.get(&uid).unwrap();
+    assert_eq!((d.focus, d.shown), (Some(number), Some(number)));
 }

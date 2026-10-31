@@ -480,7 +480,12 @@ or previous listed hit of that rule (round from the end), answering `{rule, hit}
 rule's listed `hits`, unlike the replies' block, unit and record numbers, which count from 1). They are refused while no
 finding is shown or while the check is of an older plan than the document's. `view.checkMarks {on?: bool}` turns the
 check's marks on the canvas off or on for the session (no `on`: the other way; no other key), answering `{on}` as the
-other view switches do.
+other view switches do. In the Stitches tab, `embroidery.showRecord {record, zoom?}` puts a record in focus, scrolls
+its row into view and shows its stitch on the canvas (a ring, the view panned to it, or with `zoom` zoomed to it), as
+Go to # and a click outside stitch editing do, answering `{record, row}` (`row` from 0); it is refused when the
+scope or the filter (`ui.embroideryPanel`'s) leaves the record out, and while the plan's records are still being
+judged. `ui.inspect.embroideryPanel.stitches` reports `scope`, `filter`, `rowCount` (`null` until the tab has listed
+the rows for that scope and filter), `focus`, `shown` and `page`.
 
 `view.zoomTo {rect: [left, top, right, bottom], margin?}` centres a box of document points in the window and zooms
 so that it fills it less `margin` screen points on each side (default 30, as Fit Artboard in Window leaves), within

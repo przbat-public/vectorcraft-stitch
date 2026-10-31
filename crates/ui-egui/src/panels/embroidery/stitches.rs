@@ -1341,12 +1341,56 @@ const MARK_RING: f32 = 7.0;
 const MARK_LINE: f32 = 1.5;
 const MARK_LINE_UNDER: f32 = 3.5;
 
-/// `ui.inspect`'s `embroideryPanel.stitches`: the scope, the filter, the rows listed and the record
-/// in focus.
+/// `embroidery.showRecord {record, zoom?}`: record `record` of the plan the Stitches tab lists, in
+/// focus, its row scrolled into view and the list given the keyboard, its stitch shown on the
+/// canvas (a ring, the view panned to it when it lies out of view; `zoom`: zoomed to it), as Go to #
+/// and a click outside stitch editing do → `{record, row}` (its place among the rows listed, from
+/// 0). Refused when the record isn't listed (the scope or the filter leaves it out) and while the
+/// plan's records aren't judged yet.
+pub(crate) fn show_record_command(app: &mut VectorcraftApp, p: &serde_json::Value) -> Result<serde_json::Value, String> {
+    super::only_keys(p, &["record", "zoom"])?;
+    let number = p
+        .get("record")
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|n| usize::try_from(n).ok())
+        .filter(|n| *n >= 1)
+        .ok_or("`record`: a record's number, from 1")?;
+    let zoom = crate::menus::opt_bool(p, "zoom")?.unwrap_or(false);
+    let uid = app.session.active().map(|st| st.uid).ok_or("no document")?;
+    let limits = limits_of(app).ok_or("no document")?;
+    let preview = app.embroidery.preview.shown(uid).ok_or("the stitches aren't planned yet")?;
+    let flags = preview.planned.built_stitch_flags(&limits).ok_or("the records are being judged: ask again in a moment")?;
+    let shown = Shown {
+        plan: preview.planned.plan.clone(),
+        generation: preview.planned.generation,
+        document: preview.document.clone(),
+        stale: false,
+        flags: Some(flags.clone()),
+    };
+    let listed = rows(app, &shown.plan, shown.generation, &flags);
+    let row = listed.row_of(number).ok_or_else(|| {
+        let (scope, filter) = (app.ui.embroidery_panel.stitches_scope.id(), app.ui.embroidery_panel.stitches_filter.id());
+        format!("record {number} isn't listed (scope {scope}, filter {filter})")
+    })?;
+    let d = app.embroidery.stitches.docs.entry(uid).or_default();
+    (d.focus, d.page, d.reveal, d.of) = (Some(number), row / MAX_SCROLLED_ROWS, true, Some(shown.generation));
+    show_stitch(app, &shown, number, zoom);
+    Ok(json!({"record": number, "row": row}))
+}
+
+/// `ui.inspect`'s `embroideryPanel.stitches`: the scope, the filter, the rows listed (`null` until the
+/// tab has listed them for this scope and filter) and the record in focus.
 pub fn inspect(app: &VectorcraftApp) -> serde_json::Value {
     let uid = app.session.active().map(|st| st.uid);
     let d = uid.and_then(|u| app.embroidery.stitches.docs.get(&u));
-    let rows = app.embroidery.stitches.list.as_ref().filter(|(k, _)| Some(k.0) == uid).map(|(_, l)| l.len());
+    let (scope, filter) = (app.ui.embroidery_panel.stitches_scope, app.ui.embroidery_panel.stitches_filter);
+    let rows = app
+        .embroidery
+        .stitches
+        .list
+        .as_ref()
+        .filter(|(k, _)| Some(k.0) == uid && k.3 == filter && k.2.is_some() == (scope == Scope::Selection))
+        .map(|(_, l)| l.len());
     json!({
         "scope": app.ui.embroidery_panel.stitches_scope.id(),
         "filter": app.ui.embroidery_panel.stitches_filter.id(),

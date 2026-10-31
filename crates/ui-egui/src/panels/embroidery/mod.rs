@@ -209,6 +209,7 @@ pub(crate) fn command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "ui.embroideryPanel" => Some(panel_command(app, p)),
         "embroidery.nextHit" => Some(check::step(app, true)),
         "embroidery.showFinding" => Some(check::show_finding_command(app, p)),
+        "embroidery.showRecord" => Some(stitches::show_record_command(app, p)),
         "view.checkMarks" => Some(check_marks(app, p)),
         "embroidery.previousHit" => Some(check::step(app, false)),
         "embroidery.copySettings" => Some(object::copy(app, p)),
@@ -253,7 +254,7 @@ pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
         "embroidery.nextHit" | "embroidery.previousHit" => Some(check::can_step(app)),
         "embroidery.copySettings" => Some(object::can_copy(app)),
         "embroidery.pasteSettings" => Some(object::can_paste(app)),
-        "embroidery.documentSetup" => Some(app.session.active().is_some()),
+        "embroidery.documentSetup" | "embroidery.showRecord" => Some(app.session.active().is_some()),
         _ => None,
     }
 }

@@ -783,6 +783,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{rule: a check rule's id, hit?: a listed hit's place, from 0} (VectorCraft Stitch) Show from the Embroidery panel's Check tab: select the rule's objects (or the hit's) and zoom to its hits, on the check the tab shows for the document as it is; then embroidery.nextHit and embroidery.previousHit step from it → {rule, hit}",
     ),
     (
+        "embroidery.showRecord",
+        "Show Record",
+        "",
+        "{record: a record's number, from 1, zoom?: false} (VectorCraft Stitch) the Embroidery panel's Stitches tab: the record in focus, its row scrolled into view, its stitch shown on the canvas (a ring, the view panned to it; zoom: zoomed to it), as Go to # and a click outside stitch editing do; refused when the scope or the filter leaves it out, or while the plan's records aren't judged yet → {record, row: its place among the rows listed, from 0}",
+    ),
+    (
         "ui.flattenerPreview",
         "Flattener Preview",
         "",

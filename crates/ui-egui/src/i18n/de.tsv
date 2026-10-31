@@ -5779,3 +5779,5 @@ embroidery	Only the first {count} rows of the range are selected: a click select
 embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	Länger als {longest} mm oder entlang x oder y länger als ein {format}-Datensatz ({step} mm)
 # VectorCraft Stitch: the Stitches tab's Go to #, when the filter chosen leaves the record out
 embroidery	Record #{value} is left out by the filter chosen.	Datensatz Nr. {value} wird vom gewählten Filter ausgelassen.
+# VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
+	Show Record	Datensatz zeigen

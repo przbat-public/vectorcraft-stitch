@@ -5776,3 +5776,5 @@ embroidery	Only the first {count} rows of the range are selected: a click select
 embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	{longest}mm보다 길거나 x 또는 y 방향으로 {format} 레코드 하나보다 김({step}mm)
 # VectorCraft Stitch: the Stitches tab's Go to #, when the filter chosen leaves the record out
 embroidery	Record #{value} is left out by the filter chosen.	{value}번 레코드는 선택한 필터에서 빠져 있습니다.
+# VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
+	Show Record	레코드 보기

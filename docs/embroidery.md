@@ -268,8 +268,9 @@ each filter with its count. A row gives the record's number in its thread's colo
 and Y in millimetres from the rulers' zero point, and the stitch's length, with a warning mark
 past the limits. Outside stitch editing a click on a row shows the stitch on the canvas (a ring,
 the view panned to it when it lies out of view), a double-click or Enter zooms to it; while
-stitches are edited it selects the needle point (Shift a range, Cmd or Ctrl one more), and the
-rows of the needle points selected are lit. Go to # takes a record's number; under the list, while
+stitches are edited it selects the needle point the record is edited by, as
+`embroidery.selectNeedlePoints` selects it by its record (a cut's or a stop's the one it follows;
+Shift a range, Cmd or Ctrl one more), and the rows of the needle points selected are lit. Go to # takes a record's number; under the list, while
 needle points are selected, Move by X and Y moves them in one undo step. The list takes the
 keyboard when a row is clicked: ↑ ↓, Page Up and Down, Home and End move through it, Space selects,
 Escape gives the keyboard back to the canvas. The tab strip's names are short so that four tabs
@@ -2691,7 +2692,9 @@ Limits:
   spend) and kept with it; the rows a scope and a filter list, with every filter's count, are worked
   out once per plan, scope, filter and limits (a counting test proves idle frames work out nothing);
   only the rows in view are drawn, in pages of 400,000 rows (egui lays rows out in `f32`). A row's
-  needle point is resolved from its unit's numbering, worked out once a unit for the plan shown.
+  needle point is resolved from its unit's numbering, worked out once a unit for the plan shown,
+  as `embroidery.stitches` names it: the records before a unit's own (an opened design's run) from
+  `stitch_list::leading`, once a unit too.
 - **Upstream hooks:** the hint line while editing (`chrome.rs`, two lines) and the Contextual Task
   Bar's stitch actions (`canvas.rs`, three lines); FORK.md lists them.
 

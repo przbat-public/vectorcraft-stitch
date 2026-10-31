@@ -5701,3 +5701,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
 @plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} khối chỉ, tính cả lần dừng
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} lần đổi chỉ, tính cả lần dừng
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	mỗi lần dừng được ghi thành một lần đổi sang cùng sợi chỉ: máy một kim dừng ở đó, máy nhiều kim chỉ dừng ở nơi người vận hành đặt điểm dừng cho lần đổi đó

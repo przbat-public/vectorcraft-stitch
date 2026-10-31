@@ -353,6 +353,25 @@ fn a_same_thread_change_between_cuts_writes_back_unchanged() {
     }
 }
 
+/// An export that writes a stop says how: as a change to the same thread, which a multi-needle
+/// machine stops at only where its operator sets a stop. One with no stop says nothing of it.
+#[test]
+fn an_export_with_stops_says_how_they_were_written() {
+    let note = crate::cmd::fileio::embroidery::STOPS_WRITTEN;
+    let notes = |s: &mut Session| -> Vec<String> {
+        let r = run(s, "document.export", json!({"format": "pes"}));
+        r["warnings"].as_array().unwrap().iter().filter_map(|w| w.as_str().map(str::to_string)).collect()
+    };
+    let mut stop = Embroidery::default();
+    stop.set_stop_after(true);
+    let mut s = blank();
+    two_apart(&mut s, stop);
+    assert!(notes(&mut s).iter().any(|w| w == note), "with a stop");
+    let mut s = blank();
+    two_apart(&mut s, Embroidery::default());
+    assert!(!notes(&mut s).iter().any(|w| w == note), "with none");
+}
+
 /// `embroidery.setStopAfter` marks the objects given (or selected), toggles when `on` is left out,
 /// clears a run's own stop when off, takes one undo step, and refuses what isn't sewn.
 #[test]

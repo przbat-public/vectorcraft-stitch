@@ -6022,3 +6022,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
 @plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} bloco de linha, paradas incluídas|{count} blocos de linha, paradas incluídas
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} troca de linha, paradas incluídas|{count} trocas de linha, paradas incluídas
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	cada parada é gravada como uma troca para a mesma linha: uma máquina de uma agulha para ali; uma de várias agulhas, só onde o operador define uma parada nessa troca

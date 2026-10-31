@@ -1024,7 +1024,8 @@ design's end or right after another is written as nothing, since the thread chan
 already stops a machine there (the project owner's choice, 2026-10-27). Machines differ in what
 they do at it: a single-needle machine stops at every thread change (Brother's also cut the thread
 there); a multi-needle machine changes needle and stops only where its operator sets a stop on
-that change. The Check tab counts each stop among the format's colour
+that change. So an export that writes a stop says both in its notes, which the status bar shows
+(the project owner's choice, 2026-10-30). The Check tab counts each stop among the format's colour
 blocks and the machine's thread changes, and says so ("stops included"); the status bar's thread
 changes leave stops out, and PEC's limit of 255 colours says each stop counts as one. Before this, a stop in a PES, PEC or JEF export left the header one colour short:
 pyembroidery 1.5.1, run as an outside reader, read the block after the stop in the next block's

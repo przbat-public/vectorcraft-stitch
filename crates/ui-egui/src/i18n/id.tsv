@@ -6061,3 +6061,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
 @plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} blok benang, termasuk pemberhentian
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} ganti benang, termasuk pemberhentian
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	setiap pemberhentian ditulis sebagai ganti ke benang yang sama: mesin satu jarum berhenti di sana, mesin multi-jarum hanya di tempat operatornya menetapkan pemberhentian pada ganti itu

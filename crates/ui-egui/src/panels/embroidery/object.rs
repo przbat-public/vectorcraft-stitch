@@ -291,7 +291,8 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
         if cmd == RESTORE_DIALOG {
             let count = params["count"].as_u64().unwrap_or(1) as usize;
-            crate::embroidery::restore_dialog::open(app, params["ids"].take(), count);
+            let ids = params.get_mut("ids").map(Value::take).unwrap_or_default();
+            crate::embroidery::restore_dialog::open(app, ids, count);
             continue;
         }
         for_selection(&mut params, &ids, &selected);

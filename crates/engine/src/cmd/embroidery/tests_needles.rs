@@ -170,7 +170,7 @@ fn the_selection_maps_to_needle_points_and_back() {
 /// none isn't written, and a run of one needle point is two anchors.
 #[test]
 fn the_index_finds_needle_points_across_runs() {
-    let needle = |x: f64| needles::Needle { p: vectorcraft_geom::Point::new(x, 0.0), stop: false, exact: [None, None] };
+    let needle = |x: f64| needles::Needle::at(vectorcraft_geom::Point::new(x, 0.0));
     let run = |xs: &[f64]| needles::Run { cut_before: false, needles: xs.iter().map(|&x| needle(x)).collect() };
     let st = needles::Stitches {
         runs: vec![run(&[0.0, 1.0, 2.0]), run(&[]), run(&[5.0]), run(&[7.0, 8.0])],

@@ -390,12 +390,12 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
             return Err(bad(INSERT, format!("object {}: more than {MAX_NEEDLE_POINTS} needle points", id.0)));
         }
         // Before needle point `index`, in its run; after the last, in the last run.
-        let (r, i) = ix.locate(index).unwrap_or_else(|| (st.runs.len().saturating_sub(1), st.runs.last().map_or(0, |r| r.needles.len())));
+        let (r, i) = ix.locate(index).unwrap_or_else(|| (st.runs.len().saturating_sub(1), st.runs.last().map_or(0, |last| last.needles.len())));
         if st.runs.is_empty() {
             st.runs.push(needles::Run::default());
         }
         let Some(run) = st.runs.get_mut(r) else { return Err(bad(INSERT, "no such run")) };
-        run.needles.splice(i..i, points.iter().map(|&p| needles::Needle { p, stop: false, exact: [None, None] }));
+        run.needles.splice(i..i, points.iter().map(|&p| needles::Needle::at(p)));
         // The runs before it are as they were: its place among the path's needle points is too.
         let first = ix.index_of(r, i);
         let added: BTreeSet<usize> = (first..first + points.len()).collect();
@@ -418,7 +418,7 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
                     if indices.contains(&k)
                         && let Some(next) = was.get(i + 1)
                     {
-                        run.needles.push(needles::Needle { p: n.p.midpoint(next.p), stop: false, exact: [None, None] });
+                        run.needles.push(needles::Needle::at(n.p.midpoint(next.p)));
                         added.insert(at_now);
                         at_now += 1;
                     }
@@ -725,7 +725,7 @@ impl Rebuilt {
         if let Some(last) = self.last_mut() {
             last.stop = false;
         }
-        self.push(needles::Needle { p: step, stop: false, exact: [None, None] }, None);
+        self.push(needles::Needle::at(step), None);
         self.push(b, None);
     }
 
@@ -737,7 +737,7 @@ impl Rebuilt {
         let Some(step) = next.and_then(|next| lock_step(first.p, next, min)) else { return };
         // The first needle point is sewn again after the step: a stop after it goes after that.
         let stop = self.last_mut().is_some_and(|n| std::mem::take(&mut n.stop));
-        self.push(needles::Needle { p: step, stop: false, exact: [None, None] }, None);
+        self.push(needles::Needle::at(step), None);
         self.push(needles::Needle { stop, ..first }, None);
     }
 
@@ -1334,7 +1334,7 @@ pub(super) const SPLIT_LONG_LABEL: &str = "Split Long Stitches";
 /// The range `maxLength` is taken in, millimetres: from Melco's 1 mm, the shortest stitch it keeps
 /// for most needles (`check::SHORT`), to the 12.7 mm a machine sews well (`check::LONGEST_STITCH`),
 /// the default.
-const MAX_LENGTH_RANGE: (f64, f64) = (super::check::SHORT, LONGEST);
+const MAX_LENGTH_RANGE: std::ops::RangeInclusive<f64> = super::check::SHORT..=LONGEST;
 
 /// The needle points (document points) a stitch from `a` to `b` (millimetres, as the walk sews
 /// them) is split into, besides its ends: with `grid` (a format's, and its records' reach in
@@ -1408,9 +1408,9 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
     if format.is_some() && max.is_some() {
         return Err(bad(SPLIT_LONG, "give `maxLength` or `format`, not both"));
     }
-    let (lo, hi) = MAX_LENGTH_RANGE;
+    let (lo, hi) = (*MAX_LENGTH_RANGE.start(), *MAX_LENGTH_RANGE.end());
     let max = max.unwrap_or(hi);
-    if !(lo..=hi).contains(&max) {
+    if !MAX_LENGTH_RANGE.contains(&max) {
         return Err(bad(SPLIT_LONG, format!("`maxLength` {max}: {lo} to {hi} millimetres")));
     }
     let (t, before) = targets(s, &o, SPLIT_LONG)?;
@@ -1445,7 +1445,7 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
                         added += new.len();
                         here += new.len();
                         for p in new {
-                            out.push(needles::Needle { p, stop: false, exact: [None, None] }, None);
+                            out.push(needles::Needle::at(p), None);
                         }
                     }
                 }

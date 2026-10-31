@@ -129,6 +129,11 @@ pub(crate) fn one_needle_point(distance_mm: f64, alone: bool, double_point: bool
 }
 
 impl Needle {
+    /// A needle point at `p` (document points), with no stop after it and no exact millimetres.
+    pub(crate) fn at(p: Point) -> Self {
+        Self { p, stop: false, exact: [None, None] }
+    }
+
     /// Where the walk sews it, millimetres: its document point in millimetres, or its exact
     /// millimetres while it lies where they were kept for ([`StitchRun::exact`]), as
     /// `digitize::exact` applies them.

@@ -619,10 +619,7 @@ impl<'a> Digitizer<'a> {
         block.stitches = points;
         // A file's run joins only its group's block (that file's colour block); manual stitches are
         // placed as art is, so that converting an object changes nothing it sews.
-        let (part, why, literal) = match run.manual {
-            true => (Part::Manual, Choice::Manual, None),
-            false => (Part::Literal, Choice::Literal, self.owner),
-        };
+        let (part, why, literal) = if run.manual { (Part::Manual, Choice::Manual, None) } else { (Part::Literal, Choice::Literal, self.owner) };
         let origin = self.origin(n, part);
         let occurrence = self.occurrence(&origin);
         // How much its stitches were scaled since they were made, as walked: a symbol's art carries

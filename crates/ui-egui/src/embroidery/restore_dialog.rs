@@ -1,7 +1,8 @@
 //! Restore Object's question, asked only when the stitches of an object converted to manual
 //! stitches were edited since converting (the project owner's choice): restoring discards those
 //! edits, which Undo brings back. Restore (or Enter) runs `embroidery.restoreObject` on the objects
-//! it was asked for; Escape or Cancel changes nothing.
+//! it was asked for; Escape or Cancel changes nothing. The Enter that opened it, on the Object tab's
+//! button, is its Restore only once let go and pressed again.
 //!
 //! It is one of upstream's dialogs ([`SPEC`], a row of the dialog registry). It is of the document
 //! it was opened on, and closes as Cancel when that is no longer the active one.
@@ -12,7 +13,7 @@
 use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
-use crate::dialogs::{DialogResult, DialogSpec};
+use crate::dialogs::{AFTER_PANEL, DialogResult, DialogSpec};
 use crate::state::Dialog;
 
 /// The dialog's kind.
@@ -24,7 +25,8 @@ pub(crate) const SPEC: DialogSpec = DialogSpec { heading, body, confirm, ok: Som
 /// Ask before restoring the `count` converted objects among `ids` of the active document.
 pub(crate) fn open(app: &mut VectorcraftApp, ids: Value, count: usize) {
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
-    app.ui.dialog = Some(Dialog::new(KIND, json!({"ids": ids, "count": count, "uid": uid})));
+    // Opened by Enter on the tab's button: that Enter, still held, isn't its Restore.
+    app.ui.dialog = Some(Dialog::new(KIND, json!({"ids": ids, "count": count, "uid": uid, AFTER_PANEL: true})));
 }
 
 fn heading(d: &Dialog) -> String {

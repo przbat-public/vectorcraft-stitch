@@ -77,6 +77,16 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
 
 /// [`frame`] in a panel `width` points wide.
 fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>, width: f32) -> Drawn {
+    drawn(app, ctx, time, events, width, false)
+}
+
+/// [`frame`] as the app draws one: its keys handled first, then the panel, then the open dialog.
+fn frame_with_dialogs(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> Drawn {
+    drawn(app, ctx, time, events, WIDTH, true)
+}
+
+/// One frame of the panel `width` points wide, with the app's keys and dialogs when `dialogs`.
+fn drawn(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>, width: f32, dialogs: bool) -> Drawn {
     let raw = egui::RawInput {
         time: Some(time),
         focused: true,
@@ -86,7 +96,13 @@ fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Ve
     };
     crate::scrub::begin_frame(app, ctx);
     let mut out = ctx.run_ui(raw, |ui| {
+        if dialogs {
+            crate::shortcuts::handle(app, ui.ctx());
+        }
         crate::panels::embroidery::show(app, ui);
+        if dialogs {
+            crate::dialogs::show(app, ui.ctx());
+        }
         stitch_preview::schedule(app, ui.ctx());
     });
     crate::scrub::end_frame(app, ctx);
@@ -1142,6 +1158,60 @@ fn converted_now(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) 
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
     panic!("still converting");
+}
+
+/// Enter on a focused Restore Object… opens its question and isn't the question's answer: held
+/// over frames, the question stays. Escape closes it and Cancel too, nothing restored, and the
+/// button has let the keyboard go, so another Enter doesn't ask again; Enter let go and pressed
+/// again restores. Drawn as the app draws a frame: keys, then the panel, then the dialog.
+#[test]
+fn the_enter_that_opens_the_restore_question_is_not_its_answer() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    let run = app.session.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    app.run("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run, "index": 1}], "dx": 1})).unwrap();
+    select(&mut app, &[a]);
+    let key = |key, pressed| Event::Key { key, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let asked = |app: &VectorcraftApp| app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND);
+    let restore = crate::et!("Restore Object…");
+    let mut time = 0.0;
+    let mut step = |app: &mut VectorcraftApp, events: Vec<Event>| {
+        time += 0.05;
+        frame_with_dialogs(app, &ctx, time, events)
+    };
+    let mut last = step(&mut app, vec![]);
+    for _ in 0..4 {
+        last = step(&mut app, vec![]);
+    }
+    let undo = steps(&app);
+    // Escape, then Cancel: each closes the question, nothing restored.
+    for close in ["escape", "cancel"] {
+        step(&mut app, vec![last.focus(restore)]);
+        step(&mut app, vec![key(Key::Enter, true)]);
+        assert!(asked(&app), "{close}: Enter opened the question");
+        for _ in 0..3 {
+            last = step(&mut app, vec![]);
+        }
+        assert!(asked(&app), "{close}: the Enter still held isn't its answer");
+        step(&mut app, vec![key(Key::Enter, false)]);
+        let events = if close == "escape" { vec![key(Key::Escape, true), key(Key::Escape, false)] } else { vec![last.click("Cancel")] };
+        step(&mut app, events);
+        assert!(!asked(&app), "{close} closed it");
+        assert_eq!(steps(&app), undo, "{close}: nothing restored");
+        step(&mut app, vec![key(Key::Enter, true), key(Key::Enter, false)]);
+        last = step(&mut app, vec![]);
+        assert!(!asked(&app), "{close}: the button let the keyboard go, so Enter doesn't ask again");
+    }
+    // Enter let go, and pressed again: its answer.
+    step(&mut app, vec![last.focus(restore)]);
+    step(&mut app, vec![key(Key::Enter, true)]);
+    step(&mut app, vec![key(Key::Enter, false)]);
+    assert!(asked(&app));
+    step(&mut app, vec![key(Key::Enter, true), key(Key::Enter, false)]);
+    assert!(!asked(&app), "Enter, pressed again, restores");
+    assert_eq!(steps(&app), undo + 1);
+    assert_eq!(info(&mut app, &[a])["manual"], json!(null), "put back");
 }
 
 /// A pointer click in the middle of the node screen readers call `name`.

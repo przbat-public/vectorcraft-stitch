@@ -903,12 +903,16 @@ fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, comman
     let tip = crate::et!("Puts the object back in place of its manual stitches, planned again at its size now.");
     let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(crate::et!("Restore Object…")));
     rows::keyboard_tip(ui, resp.id, tip);
-    if resp.on_hover_text(tip).clicked() {
-        // The question only when their stitches were edited since converting.
-        commands.push(match m.edited {
-            0 => (RESTORE, json!({"ids": ids_json(ids)})),
-            _ => (RESTORE_DIALOG, json!({"ids": ids_json(ids), "count": m.objects})),
-        });
+    let resp = resp.on_hover_text(tip);
+    if resp.clicked() {
+        // The question only when their stitches were edited since converting. It takes the
+        // keyboard: the button lets it go, or each Enter would press it again behind the question.
+        if m.edited == 0 {
+            commands.push((RESTORE, json!({"ids": ids_json(ids)})));
+        } else {
+            resp.surrender_focus();
+            commands.push((RESTORE_DIALOG, json!({"ids": ids_json(ids), "count": m.objects})));
+        }
     }
 }
 

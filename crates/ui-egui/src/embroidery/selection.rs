@@ -336,9 +336,18 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     let Some(editing) = super::editing::editing(app) else { return };
     let Some(st) = app.session.active() else { return };
     let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
-    let doc = st.doc.clone();
     let options = app.session.tool_options().get("stitches").cloned().unwrap_or_default();
-    let by = moved(app).unwrap_or(Vec2::ZERO);
+    let dragged = moved(app);
+    let by = dragged.unwrap_or(Vec2::ZERO);
+    // Where the needle points drawn below are read: while a drag is under way, in the document it
+    // started from, then moved by it (`screen`), as the selected circles are (the live document
+    // holds the last preview only, which lags the pointer on a drag of many needle points; what a
+    // drag holds is what the pointer was over and the selection's ends, all selected); else in the
+    // document.
+    let doc = match (&st.interaction, dragged) {
+        (Some(i), Some(_)) => i.doc.clone(),
+        _ => st.doc.clone(),
+    };
     let t = Tokens::get(ui.ctx());
     let clip = xf.rect;
     let Some(k) = kept(app, &limits) else { return };
@@ -375,7 +384,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     // The needle point or stitch under the pointer, and the current needle point's ring.
     let hover = options.get("hover").cloned().unwrap_or_default();
     if let Some(p) = hover.get("needlePoint").and_then(|v| needle_at(&doc, v)) {
-        painter.circle_stroke(xf.to_screen(p), SELECTED_RADIUS_PT + RING_OUT_PT / 2.0, Stroke::new(STITCH_PT, dark()));
+        painter.circle_stroke(screen(p), SELECTED_RADIUS_PT + RING_OUT_PT / 2.0, Stroke::new(STITCH_PT, dark()));
     } else if let Some(from) = hover.get("stitch").and_then(|v| needle_at(&doc, v)) {
         let to = hover.get("stitch").and_then(|v| {
             let mut next = v.clone();
@@ -383,12 +392,12 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
             needle_at(&doc, &next)
         });
         if let Some(to) = to {
-            painter.line_segment([xf.to_screen(from), xf.to_screen(to)], Stroke::new(STITCH_UNDER_PT, dark()));
-            painter.line_segment([xf.to_screen(from), xf.to_screen(to)], Stroke::new(STITCH_PT, light()));
+            painter.line_segment([screen(from), screen(to)], Stroke::new(STITCH_UNDER_PT, dark()));
+            painter.line_segment([screen(from), screen(to)], Stroke::new(STITCH_PT, light()));
         }
     }
     if let Some(p) = options.get("current").and_then(|v| needle_at(&doc, v)) {
-        let c = xf.to_screen(p);
+        let c = screen(p);
         let radius = SELECTED_RADIUS_PT + RING_OUT_PT;
         for (width, colour) in RING_PT.iter().zip([dark(), light(), ink]) {
             painter.circle_stroke(c, radius, Stroke::new(*width, colour));

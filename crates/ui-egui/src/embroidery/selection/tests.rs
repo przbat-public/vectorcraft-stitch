@@ -165,6 +165,55 @@ fn a_drag_moves_needle_points_and_escape_puts_them_back() {
     assert!(needle(&app, object, 4).x > from.x + 1.0);
 }
 
+/// While a needle point is dragged, its range pill and the current needle point's ring go with its
+/// circle: drawn from the document the drag started from, moved once.
+#[test]
+fn the_pill_and_the_ring_follow_the_drag_once() {
+    let (mut app, object) = editing();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let at = on_screen(&app, needle(&app, object, 4));
+    for e in [Event::PointerMoved(at), press(at, true), press(at, false)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    settle(&mut app, &ctx, &mut time);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![press(at, true)]);
+    let mut shapes = vec![];
+    for k in 1..=8 {
+        time += 0.05;
+        shapes = frame(&mut app, &ctx, time, vec![Event::PointerMoved(at + egui::vec2(8.0 * k as f32, 0.0))]);
+    }
+    let circle = shapes
+        .iter()
+        .find_map(|s| match s {
+            Shape::Circle(c) if (c.radius - super::SELECTED_RADIUS_PT).abs() < 1e-3 && c.fill != egui::Color32::TRANSPARENT => Some(c.center),
+            _ => None,
+        })
+        .expect("the selected circle");
+    assert!(circle.x > at.x + 30.0, "the circle moved with the drag: {circle:?} from {at:?}");
+    let ring = shapes
+        .iter()
+        .find_map(|s| match s {
+            Shape::Circle(c) if (c.radius - (super::SELECTED_RADIUS_PT + super::RING_OUT_PT)).abs() < 1e-3 => Some(c.center),
+            _ => None,
+        })
+        .expect("the current needle point's ring");
+    assert!(ring.distance(circle) < 0.5, "the ring {ring:?} on the circle {circle:?}");
+    let pill = shapes
+        .iter()
+        .find_map(|s| match s {
+            Shape::Text(t) if t.galley.text().starts_with('#') => Some(t.visual_bounding_rect().center()),
+            _ => None,
+        })
+        .expect("the range pill");
+    assert!(pill.distance(circle) < 30.0, "the pill {pill:?} beside the circle {circle:?}, not a drag further");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Escape)]);
+}
+
 /// A marquee dragged far off the canvas: the tool keeps it within the document's coordinates, so
 /// the frames that draw it end, whether the pointer is the mouse's (held across frames) or an
 /// agent's (`ui.pointer`, whose release selects the needle points it covers).

@@ -5978,7 +5978,7 @@ embroidery	manual stitches	ხელით ნაკერები
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	ხელით ნაკერებზე ან ფაილიდან ნაკერებზე (ან მათ შემცველ ჯგუფზე) დამატებული ეფექტები, ფუნჯები და დამატებითი შევსებები ან კონტურები არ იქარგება: ნაკერები იკერება ისე, როგორც არის
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	ნემსის ჩხვლეტების გადატანა
-@msg	select needle points of a run of stitches, or give needlePoints	აირჩიეთ ნაკერების მწკრივის ნემსის ჩხვლეტები ან მიუთითეთ needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	აირჩიეთ ნაკერების ტრაექტორიის ნემსის ჩხვლეტები ან მიუთითეთ needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	ნემსის ჩხვლეტების ჩასმა
 # VectorCraft Stitch: Delete Needle Points
@@ -6011,8 +6011,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	ნაკერების ჭრები ან გაჩერებები გამოტოვებულია: კონტურის ბრძანებამ წაშალა ან გადაადგილა ნემსის ჩხვლეტები, რომლებსაც ისინი მოსდევდნენ (ხელახლა დააყენეთ „მანქანის ფუნქციით“)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	ნაკერების მწკრივები მხოლოდ ნაკერების მწკრივებს უერთდება: აირჩიეთ მხოლოდ ისინი
-@msg	select two or more runs of stitches sewn one right after another to join them	შესაერთებლად აირჩიეთ ორი ან მეტი ნაკერების მწკრივი, რომლებიც ერთმანეთის შემდეგ იკერება
+@msg	paths of stitches join only with paths of stitches: select only them	ნაკერების ტრაექტორიები მხოლოდ ნაკერების ტრაექტორიებს უერთდება: აირჩიეთ მხოლოდ ისინი
+@msg	select two or more paths of stitches sewn one right after another to join them	შესაერთებლად აირჩიეთ ორი ან მეტი ნაკერების ტრაექტორია, რომლებიც ერთმანეთის შემდეგ იკერება
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	ჭრა ნემსის ჩხვლეტის შემდეგ
 	Stop After Needle Point	გაჩერება ნემსის ჩხვლეტის შემდეგ

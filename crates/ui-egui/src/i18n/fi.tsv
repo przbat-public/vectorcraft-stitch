@@ -6094,7 +6094,7 @@ embroidery	manual stitches	manuaaliset pistot
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	tehosteita, siveltimiä ja ylimääräisiä täyttöjä tai viivoja manuaalisissa pistoissa tai tiedoston pistoissa (tai niitä sisältävässä ryhmässä) ei kirjota: pistot ommellaan sellaisinaan
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Siirrä neulanpistoja
-@msg	select needle points of a run of stitches, or give needlePoints	valitse pistosarjan neulanpistoja tai anna needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	valitse pistopolun neulanpistoja tai anna needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Lisää neulanpistoja
 # VectorCraft Stitch: Delete Needle Points
@@ -6127,8 +6127,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	pistojen leikkauksia tai pysäytyksiä jätettiin pois: polkukomento poisti tai siirsi neulanpistot, joiden jälkeen ne tulivat (aseta ne uudelleen Konetoiminto-komennolla)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	pistosarjat yhdistyvät vain pistosarjoihin: valitse vain ne
-@msg	select two or more runs of stitches sewn one right after another to join them	valitse kaksi tai useampia heti peräkkäin ommeltavia pistosarjoja yhdistääksesi ne
+@msg	paths of stitches join only with paths of stitches: select only them	pistopolut yhdistyvät vain pistopolkuihin: valitse vain ne
+@msg	select two or more paths of stitches sewn one right after another to join them	valitse kaksi tai useampia heti peräkkäin ommeltavia pistopolkuja yhdistääksesi ne
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Leikkaus neulanpiston jälkeen
 	Stop After Needle Point	Pysäytys neulanpiston jälkeen

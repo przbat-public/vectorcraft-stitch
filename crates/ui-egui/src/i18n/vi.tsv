@@ -5658,7 +5658,7 @@ embroidery	manual stitches	mũi thêu thủ công
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	hiệu ứng, cọ vẽ và các phần tô hoặc nét bổ sung trên mũi thêu thủ công hoặc mũi thêu từ tệp (hoặc trên nhóm chứa chúng) không được thêu: các mũi thêu được thêu nguyên như vậy
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Di chuyển điểm đâm kim
-@msg	select needle points of a run of stitches, or give needlePoints	chọn các điểm đâm kim của một đoạn mũi thêu, hoặc cung cấp needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	chọn các điểm đâm kim của một đường dẫn mũi thêu, hoặc cung cấp needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Chèn điểm đâm kim
 # VectorCraft Stitch: Delete Needle Points
@@ -5691,8 +5691,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	đã bỏ qua các lần cắt chỉ hoặc dừng của mũi thêu: một lệnh đường dẫn đã xóa hoặc di chuyển các điểm đâm kim mà chúng theo sau (đặt lại bằng Chức năng máy)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	các đoạn mũi thêu chỉ nối với các đoạn mũi thêu: chỉ chọn chúng
-@msg	select two or more runs of stitches sewn one right after another to join them	chọn hai đoạn mũi thêu trở lên được may nối tiếp nhau để nối chúng
+@msg	paths of stitches join only with paths of stitches: select only them	các đường dẫn mũi thêu chỉ nối với các đường dẫn mũi thêu: chỉ chọn chúng
+@msg	select two or more paths of stitches sewn one right after another to join them	chọn hai đường dẫn mũi thêu trở lên được may nối tiếp nhau để nối chúng
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Cắt chỉ sau điểm đâm kim
 	Stop After Needle Point	Dừng sau điểm đâm kim

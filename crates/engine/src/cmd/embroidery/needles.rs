@@ -76,7 +76,7 @@ impl Unfit {
     /// In words, for a refusal.
     pub(crate) fn words(self) -> &'static str {
         match self {
-            Self::NotStitches => "it isn't a run of stitches",
+            Self::NotStitches => "it isn't a path of stitches",
             Self::Locked => "it is locked or hidden, or in a locked layer, group or artboard",
             Self::OutOfRange => "its anchors aren't numbers, or lie outside the document's coordinates",
             Self::TooMany => "it holds more needle points than a design may have",
@@ -465,7 +465,7 @@ impl Targets {
 
 /// The message a command gives when nothing it could edit was given or selected: translated
 /// (the interface shows it).
-pub(crate) const NOTHING_ADDRESSED: &str = "select needle points of a run of stitches, or give needlePoints";
+pub(crate) const NOTHING_ADDRESSED: &str = "select needle points of a path of stitches, or give needlePoints";
 
 /// A non-negative whole number `v` (an id or an index), refused by command `cmd` as `what`
 /// otherwise.

@@ -5175,8 +5175,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   selection after it. One undo step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
   Edit is on ("not while Global Edit is on: stop Global Edit first").
-- **Editing stitches.** The stitch commands edit a path of literal stitches (a run opened from a machine file, or one
-  an object was converted to) needle point by needle point, in millimetres, without a plan. A needle point is
+- **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
+  object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
+  the needle points between two jumps. A needle point is
   addressed as `{id, index}`: the path and the needle point's place in it, from 0 across its runs (its anchors in
   order; a run stored as a line to its own start is one needle point); `ranges: [{id, from, to}]` addresses a stretch
   (inclusive). An entry may add `of`, the path's needle points as the caller last counted them (`paths[].needlePoints`
@@ -5190,7 +5191,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   editing. Refused before anything changes: an id that isn't a path of stitches in the document's layers, a locked or
   hidden one, an index past its needle points (or past 1,999,999, whatever the path), anchors that aren't numbers or
   lie outside the document's coordinates, more than 2,000,000 needle points or 100,000 paths addressed; nothing given
-  and nothing selected is an error ("select needle points of a run of stitches, or give needlePoints"). No edit leaves
+  and nothing selected is an error ("select needle points of a path of stitches, or give needlePoints"). No edit leaves
   a path of more than 2,000,000 needle points. Each edit is one undo step (none when nothing changes), leaves the
   selection on what it says, and answers `paths: [{id, needlePoints}]` (the paths it changed or removed, with their
   needle points now; at most 1,000), `pathCount` (how many), `passedOver: [{id, reason}]`, `collapsedCount` (runs of

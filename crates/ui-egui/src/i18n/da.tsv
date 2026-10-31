@@ -6018,7 +6018,7 @@ embroidery	manual stitches	manuelle sting
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	effekter, pensler og ekstra fyld eller streger på manuelle sting eller sting fra en fil (eller på en gruppe med dem) broderes ikke: stingene sys, som de er
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Flyt nålestik
-@msg	select needle points of a run of stitches, or give needlePoints	vælg nålestik i en række sting, eller angiv needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	vælg nålestik i en kurve af sting, eller angiv needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Indsæt nålestik
 # VectorCraft Stitch: Delete Needle Points
@@ -6051,8 +6051,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	klip eller stop i sting blev udeladt: en stikommando slettede eller flyttede de nålestik, de fulgte efter (sæt dem igen med Maskinfunktion)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	rækker af sting samles kun med rækker af sting: vælg kun dem
-@msg	select two or more runs of stitches sewn one right after another to join them	vælg to eller flere rækker af sting, der sys lige efter hinanden, for at samle dem
+@msg	paths of stitches join only with paths of stitches: select only them	kurver af sting samles kun med kurver af sting: vælg kun dem
+@msg	select two or more paths of stitches sewn one right after another to join them	vælg to eller flere kurver af sting, der sys lige efter hinanden, for at samle dem
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Klip efter nålestik
 	Stop After Needle Point	Stop efter nålestik

@@ -6018,7 +6018,7 @@ embroidery	manual stitches	jahitan manual
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	efek, kuas, serta isian atau goresan tambahan pada jahitan manual atau jahitan dari berkas (atau pada grup yang memuatnya) tidak dibordir: jahitan dijahit apa adanya
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Pindahkan titik tusukan
-@msg	select needle points of a run of stitches, or give needlePoints	pilih titik tusukan dari rangkaian jahitan, atau berikan needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	pilih titik tusukan dari jalur jahitan, atau berikan needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Sisipkan titik tusukan
 # VectorCraft Stitch: Delete Needle Points
@@ -6051,8 +6051,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	potongan atau pemberhentian jahitan dihilangkan: perintah jalur menghapus atau memindahkan titik tusukan yang mereka ikuti (atur lagi dengan Fungsi mesin)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	rangkaian jahitan hanya dapat digabung dengan rangkaian jahitan: pilih hanya itu
-@msg	select two or more runs of stitches sewn one right after another to join them	pilih dua rangkaian jahitan atau lebih yang dijahit tepat berurutan untuk menggabungkannya
+@msg	paths of stitches join only with paths of stitches: select only them	jalur jahitan hanya dapat digabung dengan jalur jahitan: pilih hanya itu
+@msg	select two or more paths of stitches sewn one right after another to join them	pilih dua jalur jahitan atau lebih yang dijahit tepat berurutan untuk menggabungkannya
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Potong setelah titik tusukan
 	Stop After Needle Point	Berhenti setelah titik tusukan

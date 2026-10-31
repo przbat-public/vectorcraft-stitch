@@ -5674,7 +5674,7 @@ embroidery	manual stitches	ручные стежки
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	эффекты, кисти и дополнительные заливки или обводки на ручных стежках или стежках из файла (или на группе, которая их содержит) не вышиваются: стежки вышиваются как есть
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Переместить проколы
-@msg	select needle points of a run of stitches, or give needlePoints	выберите проколы в ряду стежков или укажите needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	выберите проколы в контуре стежков или укажите needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Вставить проколы
 # VectorCraft Stitch: Delete Needle Points
@@ -5707,8 +5707,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	обрезки или остановки стежков пропущены: команда контура удалила или переместила проколы, за которыми они следовали (задайте их снова командой «Функция машины»)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	ряды стежков соединяются только с рядами стежков: выберите только их
-@msg	select two or more runs of stitches sewn one right after another to join them	выберите два или более ряда стежков, которые шьются один сразу за другим, чтобы соединить их
+@msg	paths of stitches join only with paths of stitches: select only them	контуры стежков соединяются только с контурами стежков: выберите только их
+@msg	select two or more paths of stitches sewn one right after another to join them	выберите два или более контура стежков, которые шьются один сразу за другим, чтобы соединить их
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Обрезка после прокола
 	Stop After Needle Point	Остановка после прокола

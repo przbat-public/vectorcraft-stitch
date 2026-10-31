@@ -6062,7 +6062,7 @@ embroidery	manual stitches	points manuels
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	les effets, pinceaux et fonds ou contours supplémentaires sur des points manuels ou d’un fichier (ou sur un groupe qui les contient) ne sont pas brodés : les points sont brodés tels quels
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Déplacer les points de piqûre
-@msg	select needle points of a run of stitches, or give needlePoints	sélectionnez des points de piqûre d’une suite de points, ou donnez needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	sélectionnez des points de piqûre d’un tracé de points, ou donnez needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Insérer des points de piqûre
 # VectorCraft Stitch: Delete Needle Points
@@ -6095,8 +6095,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	des coupes ou des arrêts de points ont été omis : une commande de tracé a supprimé ou déplacé les points de piqûre qu’ils suivaient (définissez-les de nouveau avec la commande Fonction machine)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	les suites de points ne se joignent qu’à des suites de points : ne sélectionnez qu’elles
-@msg	select two or more runs of stitches sewn one right after another to join them	sélectionnez au moins deux suites de points brodées l’une juste après l’autre pour les joindre
+@msg	paths of stitches join only with paths of stitches: select only them	les tracés de points ne se joignent qu’à des tracés de points : ne sélectionnez qu’eux
+@msg	select two or more paths of stitches sewn one right after another to join them	sélectionnez au moins deux tracés de points brodés l’un juste après l’autre pour les joindre
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Coupe après le point de piqûre
 	Stop After Needle Point	Arrêt après le point de piqûre

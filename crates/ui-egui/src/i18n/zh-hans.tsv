@@ -5902,7 +5902,7 @@ embroidery	manual stitches	手动针迹
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	手动针迹或文件中的针迹（或包含它们的编组）上的效果、画笔以及额外的填色或描边不会被刺绣：针迹按原样缝制
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	移动落针点
-@msg	select needle points of a run of stitches, or give needlePoints	请选择一段针迹中的落针点，或提供 needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	请选择针迹路径中的落针点，或提供 needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	插入落针点
 # VectorCraft Stitch: Delete Needle Points
@@ -5935,8 +5935,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	已略去针迹的剪线或停机：某个路径命令删除或移动了它们所在的落针点（请用“机器功能”重新设置）
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	针迹段只能与针迹段连接：请只选择它们
-@msg	select two or more runs of stitches sewn one right after another to join them	请选择两段或更多紧接着缝制的针迹段以连接它们
+@msg	paths of stitches join only with paths of stitches: select only them	针迹路径只能与针迹路径连接：请只选择它们
+@msg	select two or more paths of stitches sewn one right after another to join them	请选择两条或更多紧接着缝制的针迹路径以连接它们
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	落针点后剪线
 	Stop After Needle Point	落针点后停机

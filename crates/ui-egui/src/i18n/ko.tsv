@@ -5641,7 +5641,7 @@ embroidery	manual stitches	수동 스티치
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	수동 스티치나 파일의 스티치(또는 이를 담은 그룹)에 적용한 효과, 브러시, 추가 칠이나 선은 자수로 놓이지 않습니다: 스티치는 있는 그대로 수놓아집니다
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	바늘 위치 이동
-@msg	select needle points of a run of stitches, or give needlePoints	스티치 구간의 바늘 위치를 선택하거나 needlePoints를 지정하세요
+@msg	select needle points of a path of stitches, or give needlePoints	스티치 패스의 바늘 위치를 선택하거나 needlePoints를 지정하세요
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	바늘 위치 삽입
 # VectorCraft Stitch: Delete Needle Points
@@ -5674,8 +5674,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	스티치의 실 자르기 또는 정지가 빠졌습니다: 경로 명령이 그 앞의 바늘 위치를 삭제하거나 옮겼습니다(기계 기능으로 다시 설정하세요)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	스티치 구간은 스티치 구간끼리만 연결됩니다: 그것만 선택하세요
-@msg	select two or more runs of stitches sewn one right after another to join them	연결하려면 바로 이어서 꿰매는 스티치 구간을 두 개 이상 선택하세요
+@msg	paths of stitches join only with paths of stitches: select only them	스티치 패스는 스티치 패스끼리만 연결됩니다: 그것만 선택하세요
+@msg	select two or more paths of stitches sewn one right after another to join them	연결하려면 바로 이어서 꿰매는 스티치 패스를 두 개 이상 선택하세요
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	바늘 위치 뒤 실 자르기
 	Stop After Needle Point	바늘 위치 뒤 정지

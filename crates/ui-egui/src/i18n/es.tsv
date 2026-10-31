@@ -6004,7 +6004,7 @@ embroidery	manual stitches	puntadas manuales
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	los efectos, los pinceles y los rellenos o trazos adicionales en puntadas manuales o de un archivo (o en un grupo que las contiene) no se bordan: las puntadas se cosen tal como están
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Mover puntos de aguja
-@msg	select needle points of a run of stitches, or give needlePoints	seleccione puntos de aguja de una serie de puntadas o indique needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	seleccione puntos de aguja de un trazado de puntadas o indique needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Insertar puntos de aguja
 # VectorCraft Stitch: Delete Needle Points
@@ -6037,8 +6037,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	se omitieron cortes o paradas de puntadas: un comando de trazado eliminó o movió los puntos de aguja a los que seguían (vuelva a definirlos con el comando Función de máquina)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	las series de puntadas solo se unen con series de puntadas: seleccione solo esas
-@msg	select two or more runs of stitches sewn one right after another to join them	seleccione dos o más series de puntadas cosidas una justo después de otra para unirlas
+@msg	paths of stitches join only with paths of stitches: select only them	los trazados de puntadas solo se unen con trazados de puntadas: seleccione solo esos
+@msg	select two or more paths of stitches sewn one right after another to join them	seleccione dos o más trazados de puntadas cosidos uno justo después de otro para unirlos
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Corte tras el punto de aguja
 	Stop After Needle Point	Parada tras el punto de aguja

@@ -6061,7 +6061,7 @@ embroidery	manual stitches	handmatige steken
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	effecten, penselen en extra vullingen of lijnen op handmatige steken of steken uit een bestand (of op een groep die ze bevat) worden niet geborduurd: de steken worden genaaid zoals ze zijn
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Insteekpunten verplaatsen
-@msg	select needle points of a run of stitches, or give needlePoints	selecteer insteekpunten van een reeks steken, of geef needlePoints op
+@msg	select needle points of a path of stitches, or give needlePoints	selecteer insteekpunten van een pad van steken, of geef needlePoints op
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Insteekpunten invoegen
 # VectorCraft Stitch: Delete Needle Points
@@ -6094,8 +6094,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	knippen of stops van steken zijn weggelaten: een padopdracht heeft de insteekpunten waarop ze volgden verwijderd of verplaatst (stel ze opnieuw in met Machinefunctie)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	reeksen steken worden alleen met reeksen steken samengevoegd: selecteer alleen die
-@msg	select two or more runs of stitches sewn one right after another to join them	selecteer twee of meer reeksen steken die direct na elkaar worden genaaid om ze samen te voegen
+@msg	paths of stitches join only with paths of stitches: select only them	paden van steken worden alleen met paden van steken samengevoegd: selecteer alleen die
+@msg	select two or more paths of stitches sewn one right after another to join them	selecteer twee of meer paden van steken die direct na elkaar worden genaaid om ze samen te voegen
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Knip na insteekpunt
 	Stop After Needle Point	Stop na insteekpunt

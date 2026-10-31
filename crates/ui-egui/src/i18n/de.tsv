@@ -5644,7 +5644,7 @@ embroidery	manual stitches	manuelle Stiche
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	Effekte, Pinsel und weitere Flächen oder Konturen auf manuellen Stichen oder Stichen aus einer Datei (oder auf einer Gruppe, die sie enthält) werden nicht gestickt: die Stiche werden so genäht, wie sie sind
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Einstichpunkte verschieben
-@msg	select needle points of a run of stitches, or give needlePoints	wählen Sie Einstichpunkte einer Stichfolge aus oder geben Sie needlePoints an
+@msg	select needle points of a path of stitches, or give needlePoints	wählen Sie Einstichpunkte eines Stichpfads aus oder geben Sie needlePoints an
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Einstichpunkte einfügen
 # VectorCraft Stitch: Delete Needle Points
@@ -5677,8 +5677,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	Schnitte oder Stopps von Stichen wurden ausgelassen: ein Pfadbefehl hat die Einstichpunkte gelöscht oder verschoben, auf die sie folgten (mit „Maschinenfunktion“ neu setzen)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	Stichfolgen lassen sich nur mit Stichfolgen verbinden: wählen Sie nur diese aus
-@msg	select two or more runs of stitches sewn one right after another to join them	wählen Sie zwei oder mehr Stichfolgen aus, die direkt nacheinander genäht werden, um sie zu verbinden
+@msg	paths of stitches join only with paths of stitches: select only them	Stichpfade lassen sich nur mit Stichpfaden verbinden: wählen Sie nur diese aus
+@msg	select two or more paths of stitches sewn one right after another to join them	wählen Sie zwei oder mehr Stichpfade aus, die direkt nacheinander genäht werden, um sie zu verbinden
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Schnitt nach Einstichpunkt
 	Stop After Needle Point	Stopp nach Einstichpunkt

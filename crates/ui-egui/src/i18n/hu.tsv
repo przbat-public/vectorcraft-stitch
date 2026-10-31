@@ -6049,7 +6049,7 @@ embroidery	manual stitches	kézi öltések
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	a kézi öltéseken vagy fájlból származó öltéseken (vagy az őket tartalmazó csoporton) lévő effektusok, ecsetek és további kitöltések vagy körvonalak nem kerülnek kihímzésre: az öltések úgy varródnak, ahogy vannak
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Tűszúrások áthelyezése
-@msg	select needle points of a run of stitches, or give needlePoints	jelöljön ki tűszúrásokat egy öltéssorból, vagy adja meg a needlePoints értéket
+@msg	select needle points of a path of stitches, or give needlePoints	jelöljön ki tűszúrásokat egy öltésútvonalból, vagy adja meg a needlePoints értéket
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Tűszúrások beszúrása
 # VectorCraft Stitch: Delete Needle Points
@@ -6082,8 +6082,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	öltések vágásai vagy megállásai kimaradtak: egy útvonalparancs törölte vagy áthelyezte a tűszúrásokat, amelyeket követtek (állítsa be őket újra a Gépfunkció paranccsal)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	öltéssorok csak öltéssorokkal egyesíthetők: csak azokat jelölje ki
-@msg	select two or more runs of stitches sewn one right after another to join them	jelöljön ki két vagy több, közvetlenül egymás után varrt öltéssort az egyesítésükhöz
+@msg	paths of stitches join only with paths of stitches: select only them	öltésútvonalak csak öltésútvonalakkal egyesíthetők: csak azokat jelölje ki
+@msg	select two or more paths of stitches sewn one right after another to join them	jelöljön ki két vagy több, közvetlenül egymás után varrt öltésútvonalat az egyesítésükhöz
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Vágás a tűszúrás után
 	Stop After Needle Point	Megállás a tűszúrás után

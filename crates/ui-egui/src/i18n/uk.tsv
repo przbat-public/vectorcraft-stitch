@@ -5658,7 +5658,7 @@ embroidery	manual stitches	ручні стібки
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	ефекти, пензлі та додаткові заливки чи обведення на ручних стібках або стібках з файлу (чи на групі, що їх містить) не вишиваються: стібки вишиваються як є
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Перемістити проколи
-@msg	select needle points of a run of stitches, or give needlePoints	виберіть проколи ряду стібків або вкажіть needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	виберіть проколи контуру стібків або вкажіть needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Вставити проколи
 # VectorCraft Stitch: Delete Needle Points
@@ -5691,8 +5691,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	обрізання або зупинки стібків пропущено: команда контуру видалила або перемістила проколи, після яких вони йшли (задайте їх знову командою «Функція машини»)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	ряди стібків з’єднуються лише з рядами стібків: виберіть лише їх
-@msg	select two or more runs of stitches sewn one right after another to join them	виберіть два або більше рядів стібків, що шиються один одразу за одним, щоб з’єднати їх
+@msg	paths of stitches join only with paths of stitches: select only them	контури стібків з’єднуються лише з контурами стібків: виберіть лише їх
+@msg	select two or more paths of stitches sewn one right after another to join them	виберіть два або більше контурів стібків, що шиються один одразу за одним, щоб з’єднати їх
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Обрізання після проколу
 	Stop After Needle Point	Зупинка після проколу

@@ -6015,7 +6015,7 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	τα εφέ, τα πινέλα και οι επιπλέον γεμίσεις ή πινελιές σε χειροκίνητες βελονιές ή βελονιές από αρχείο (ή σε ομάδα που τις περιέχει) δεν κεντιούνται: οι βελονιές ράβονται όπως είναι
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Μετακίνηση σημείων βελόνας
-@msg	select needle points of a run of stitches, or give needlePoints	επιλέξτε σημεία βελόνας μιας σειράς βελονιών ή δώστε needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	επιλέξτε σημεία βελόνας μιας διαδρομής βελονιών ή δώστε needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Εισαγωγή σημείων βελόνας
 # VectorCraft Stitch: Delete Needle Points
@@ -6048,8 +6048,8 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	κοψίματα ή διακοπές βελονιών παραλείφθηκαν: μια εντολή διαδρομής διέγραψε ή μετακίνησε τα σημεία βελόνας μετά τα οποία έρχονταν (ορίστε τα ξανά με τη «Λειτουργία μηχανής»)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
-@msg	runs of stitches join only with runs of stitches: select only them	οι σειρές βελονιών ενώνονται μόνο με σειρές βελονιών: επιλέξτε μόνο αυτές
-@msg	select two or more runs of stitches sewn one right after another to join them	επιλέξτε δύο ή περισσότερες σειρές βελονιών που ράβονται η μία αμέσως μετά την άλλη για να τις ενώσετε
+@msg	paths of stitches join only with paths of stitches: select only them	οι διαδρομές βελονιών ενώνονται μόνο με διαδρομές βελονιών: επιλέξτε μόνο αυτές
+@msg	select two or more paths of stitches sewn one right after another to join them	επιλέξτε δύο ή περισσότερες διαδρομές βελονιών που ράβονται η μία αμέσως μετά την άλλη για να τις ενώσετε
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Κόψιμο μετά το σημείο βελόνας
 	Stop After Needle Point	Διακοπή μετά το σημείο βελόνας

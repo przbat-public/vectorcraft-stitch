@@ -6153,3 +6153,5 @@ embroidery	Apply	Uygula
 embroidery	Click a row or a needle point to select it.	Seçmek için bir satıra veya iğne noktasına tıklayın.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Şekilden planlanır: düzenlemek için nesneyi manuel dikişlere dönüştürün.
 @plural	{count} needle point selected|{count} needle points selected	{count} iğne noktası seçili
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Aralığın yalnızca ilk {count} satırı seçildi: bir tıklama daha fazlasını seçmez.

@@ -6190,3 +6190,5 @@ embroidery	Apply	Toepassen
 embroidery	Click a row or a needle point to select it.	Klik op een rij of een insteekpunt om het te selecteren.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Gepland uit de vorm: zet het object om naar handmatige steken om ze te bewerken.
 @plural	{count} needle point selected|{count} needle points selected	{count} insteekpunt geselecteerd|{count} insteekpunten geselecteerd
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Alleen de eerste {count} rijen van het bereik zijn geselecteerd: één klik selecteert er niet meer.

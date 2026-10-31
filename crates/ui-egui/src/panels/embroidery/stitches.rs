@@ -62,8 +62,9 @@ const MARK: f32 = 11.0;
 const MIN_LIST: f32 = 6.0 * ROW_HEIGHT;
 /// Points in a millimetre.
 const PT_PER_MM: f64 = 72.0 / 25.4;
-/// The most needle points a Shift-click's range selects at once: the stitch commands' bound on a
-/// call's addresses is far above, this keeps one click's params small.
+/// The most rows a Shift-click's range selects at once (the status line says so past it): the
+/// stitch commands' bound on a call's addresses is far above, this keeps one click's work and params
+/// small.
 const RANGE_MAX: usize = 100_000;
 
 /// Where the list's rows come from.
@@ -549,7 +550,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let screenful = ((room / ROW_HEIGHT) as usize).max(1);
     keys(app, ui, list_id, uid, &listed, &shown, screenful);
     if let Some((number, mods, double)) = clicked {
-        click(app, &shown, number, mods, double);
+        click(app, &shown, &listed, number, mods, double);
     }
     let top = ui.cursor().top();
     foot_ui(app, ui, editing, &listed, lang, &t);
@@ -741,12 +742,12 @@ fn draw_row(
     name
 }
 
-/// A click on record `number`'s row: the row in focus; while stitches are edited the needle point
-/// it is edited by selected, as `embroidery.selectNeedlePoints` selects it by its record (a jump's
-/// the one it lands on, a cut's or a stop's the one it follows; Shift: the range from the last
-/// clicked; Cmd or Ctrl: one more or one less), else the stitch shown on the canvas (a
-/// double-click: zoomed to).
-fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Modifiers, double: bool) {
+/// A click on record `number`'s row of `listed`: the row in focus; while stitches are edited the
+/// needle point it is edited by selected, as `embroidery.selectNeedlePoints` selects it by its
+/// record (a jump's the one it lands on, a cut's or a stop's the one it follows; Shift: those of the
+/// rows listed from the last clicked, at most [`RANGE_MAX`]; Cmd or Ctrl: one more or one less),
+/// else the stitch shown on the canvas (a double-click: zoomed to).
+fn click(app: &mut VectorcraftApp, shown: &Shown, listed: &Listed, number: usize, mods: egui::Modifiers, double: bool) {
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
     let anchor = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.anchor);
     {
@@ -763,14 +764,18 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
         show_stitch(app, shown, number, double);
         return;
     };
-    let range = match (mods.shift, anchor) {
-        (true, Some(a)) => a.min(number)..a.max(number) + 1,
-        _ => number..number + 1,
+    // The rows from the last clicked to this one, as the list shows them (its filter's): rows, not
+    // the records between them. A last clicked the list doesn't show now leaves this one alone.
+    let (from, to) = match (mods.shift, anchor.and_then(|a| listed.row_of(a)), listed.row_of(number)) {
+        (true, Some(a), Some(b)) => (a.min(b), a.max(b)),
+        (_, _, Some(b)) => (b, b),
+        _ => return,
     };
+    let cut = to - from >= RANGE_MAX;
     // Each needle point once: a cut follows the needle point the stitch before it is, and Cmd
     // would otherwise take it away again.
     let mut picked: std::collections::BTreeSet<(u64, usize, usize)> = std::collections::BTreeSet::new();
-    for n in range.take(RANGE_MAX) {
+    for n in (from..=to).take(RANGE_MAX).filter_map(|r| listed.record(r)) {
         let Some(row) = stitch_list::row(&shown.plan, n) else { continue };
         if let Some(a) = edited_by(app, shown, row.unit, n, row.kind) {
             picked.insert((a.node.0, a.index, a.of));
@@ -782,8 +787,8 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
     let view = app.view_info();
     let held: std::collections::HashSet<u64> = ids.iter().zip(app.session.stitch_edits(view, &ids)).filter(|(_, h)| *h).map(|(id, _)| id.0).collect();
     picked.retain(|(id, ..)| held.contains(id));
-    let points: Vec<serde_json::Value> = picked.into_iter().map(|(id, k, of)| json!({"id": id, "index": k, "of": of})).collect();
-    if points.is_empty() {
+    let ranges = ranges_of(&picked);
+    if ranges.is_empty() {
         // A row of another object: its stitch shown, as outside editing.
         let inside = stitch_list::row(&shown.plan, number)
             .and_then(|r| app.session.active().and_then(|st| st.doc.ancestry(r.node)))
@@ -796,9 +801,39 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
         return;
     }
     let mode = if mods.command || mods.ctrl { "toggle" } else { "set" };
-    if let Err(e) = app.run("embroidery.selectNeedlePoints", json!({"needlePoints": points, "mode": mode})) {
-        app.status(e);
+    match app.run("embroidery.selectNeedlePoints", json!({"ranges": ranges, "mode": mode})) {
+        Err(e) => app.status(e),
+        Ok(_) if cut => {
+            let count = numbers::count(crate::i18n::current(), RANGE_MAX as u64);
+            app.status(crate::embroidery::text::fill(
+                crate::et!("Only the first {count} rows of the range are selected: a click selects no more."),
+                &[("count", &count)],
+            ));
+        }
+        Ok(_) => {}
     }
+}
+
+/// `picked` (path, needle point, the path's needle points), in order, as `ranges` entries: each
+/// run of consecutive needle points of a path in one, so a range of a whole run is one entry.
+fn ranges_of(picked: &std::collections::BTreeSet<(u64, usize, usize)>) -> Vec<serde_json::Value> {
+    let mut out = Vec::new();
+    let mut run: Option<(u64, usize, usize, usize)> = None;
+    for &(id, k, of) in picked {
+        run = match run {
+            Some((rid, from, to, rof)) if rid == id && rof == of && to.checked_add(1) == Some(k) => Some((rid, from, k, rof)),
+            done => {
+                if let Some((rid, from, to, rof)) = done {
+                    out.push(json!({"id": rid, "from": from, "to": to, "of": rof}));
+                }
+                Some((id, k, k, of))
+            }
+        };
+    }
+    if let Some((rid, from, to, rof)) = run {
+        out.push(json!({"id": rid, "from": from, "to": to, "of": rof}));
+    }
+    out
 }
 
 /// Record `number` shown on the canvas: marked, and the view panned to it when it lies out of view
@@ -865,7 +900,7 @@ fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Li
         return;
     }
     if pressed(egui::Key::Space) {
-        click(app, shown, focus, egui::Modifiers::NONE, false);
+        click(app, shown, listed, focus, egui::Modifiers::NONE, false);
         return;
     }
     let target = if pressed(egui::Key::ArrowDown) {

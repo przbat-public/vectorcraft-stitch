@@ -6107,3 +6107,5 @@ embroidery	Apply	გამოყენება
 embroidery	Click a row or a needle point to select it.	მოსანიშნად დააწკაპუნეთ სტრიქონზე ან ნემსის ჩხვლეტაზე.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	ფორმიდან იგეგმება: რედაქტირებისთვის გარდაქმენით ობიექტი ხელით ნაკერებად.
 @plural	{count} needle point selected|{count} needle points selected	მონიშნული ნემსის ჩხვლეტები: {count}
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	მონიშნულია დიაპაზონის მხოლოდ პირველი {count} სტრიქონი: ერთი დაწკაპუნება მეტს არ მონიშნავს.

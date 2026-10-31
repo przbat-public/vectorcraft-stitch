@@ -270,7 +270,9 @@ past the limits. Outside stitch editing a click on a row shows the stitch on the
 the view panned to it when it lies out of view), a double-click or Enter zooms to it; while
 stitches are edited it selects the needle point the record is edited by, as
 `embroidery.selectNeedlePoints` selects it by its record (a cut's or a stop's the one it follows;
-Shift a range, Cmd or Ctrl one more), and the rows of the needle points selected are lit. A row
+Shift those of the rows listed from the last clicked, as the filter lists them, at most 100,000 at
+once, the status line saying so past it; Cmd or Ctrl one more), and the rows of the needle points
+selected are lit. A row
 of another object (the Whole design scope lists it) only shows its stitch, as outside editing, and
 while the list waits for the plan of an edit a click only shows the stitch: the needle points its
 rows number may have moved. Go to # takes a record's number; under the list, while

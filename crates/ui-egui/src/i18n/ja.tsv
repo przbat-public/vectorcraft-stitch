@@ -5869,3 +5869,5 @@ embroidery	Apply	適用
 embroidery	Click a row or a needle point to select it.	行または針落ち点をクリックすると選択されます。
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	形状から計画されています。編集するには、オブジェクトを手動ステッチに変換してください。
 @plural	{count} needle point selected|{count} needle points selected	選択した針落ち点 {count}
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	範囲の最初の {count} 行だけが選択されています。1 回のクリックではこれ以上選択されません。

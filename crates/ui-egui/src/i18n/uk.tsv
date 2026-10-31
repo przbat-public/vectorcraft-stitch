@@ -5787,3 +5787,5 @@ embroidery	Apply	Застосувати
 embroidery	Click a row or a needle point to select it.	Клацніть рядок або прокол, щоб виділити його.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Розраховано за формою: перетворіть об’єкт на ручні стібки, щоб змінити їх.
 @plural	{count} needle point selected|{count} needle points selected	Вибрано {count} прокол|Вибрано {count} проколи|Вибрано {count} проколів
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Вибрано лише перші {count} рядків діапазону: одне клацання більше не вибирає.

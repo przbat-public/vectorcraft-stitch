@@ -6131,3 +6131,5 @@ embroidery	Apply	Прилагане
 embroidery	Click a row or a needle point to select it.	Щракнете ред или точка на убождане за избор.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Планирани от формата: преобразувайте обекта в ръчни бодове, за да ги редактирате.
 @plural	{count} needle point selected|{count} needle points selected	{count} избрана точка на убождане|{count} избрани точки на убождане
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Избрани са само първите {count} реда от диапазона: едно щракване не избира повече.

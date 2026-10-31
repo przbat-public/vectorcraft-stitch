@@ -6133,3 +6133,5 @@ embroidery	Apply	Aplicar
 embroidery	Click a row or a needle point to select it.	Haga clic en una fila o un punto de aguja para seleccionarlo.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Planificadas a partir de la forma: convierta el objeto en puntadas manuales para editarlas.
 @plural	{count} needle point selected|{count} needle points selected	{count} punto de aguja seleccionado|{count} puntos de aguja seleccionados
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Solo están seleccionadas las primeras {count} filas del intervalo: un clic no selecciona más.

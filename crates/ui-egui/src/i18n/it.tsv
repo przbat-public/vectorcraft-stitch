@@ -5807,3 +5807,5 @@ embroidery	Apply	Applica
 embroidery	Click a row or a needle point to select it.	Fai clic su una riga o su un punto dell’ago per selezionarlo.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Pianificati dalla forma: converti l’oggetto in punti manuali per modificarli.
 @plural	{count} needle point selected|{count} needle points selected	{count} punto dell’ago selezionato|{count} punti dell’ago selezionati
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Sono selezionate solo le prime {count} righe dell'intervallo: un clic non ne seleziona di più.

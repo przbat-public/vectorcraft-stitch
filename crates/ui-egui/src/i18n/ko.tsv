@@ -5770,3 +5770,5 @@ embroidery	Apply	적용
 embroidery	Click a row or a needle point to select it.	행이나 바늘 위치를 클릭하면 선택됩니다.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	모양에서 계획됨: 편집하려면 개체를 수동 스티치로 변환하세요.
 @plural	{count} needle point selected|{count} needle points selected	선택한 바늘 위치 {count}개
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	범위의 처음 {count}개 행만 선택되었습니다. 한 번 클릭으로는 더 선택되지 않습니다.

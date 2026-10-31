@@ -6147,3 +6147,5 @@ embroidery	Apply	Terapkan
 embroidery	Click a row or a needle point to select it.	Klik baris atau titik tusukan untuk memilihnya.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Direncanakan dari bentuk: ubah objek menjadi jahitan manual untuk mengeditnya.
 @plural	{count} needle point selected|{count} needle points selected	{count} titik tusukan dipilih
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Hanya {count} baris pertama dari rentang yang dipilih: satu klik tidak memilih lebih banyak.

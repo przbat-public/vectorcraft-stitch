@@ -6148,3 +6148,5 @@ embroidery	Apply	Använd
 embroidery	Click a row or a needle point to select it.	Klicka på en rad eller ett nålstick för att markera det.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Planerade utifrån formen: konvertera objektet till manuella stygn för att redigera dem.
 @plural	{count} needle point selected|{count} needle points selected	{count} nålstick markerat|{count} nålstick markerade
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Bara de första {count} raderna i intervallet är markerade: ett klick markerar inte fler.

@@ -6043,3 +6043,5 @@ embroidery	Apply	Zastosuj
 embroidery	Click a row or a needle point to select it.	Kliknij wiersz albo nakłucie, aby je zaznaczyć.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Planowane z kształtu: zamień obiekt na ściegi ręczne, aby je edytować.
 @plural	{count} needle point selected|{count} needle points selected	Zaznaczono {count} nakłucie|Zaznaczono {count} nakłucia|Zaznaczono {count} nakłuć
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Zaznaczono tylko pierwsze {count} wierszy zakresu: jedno kliknięcie nie zaznacza więcej.

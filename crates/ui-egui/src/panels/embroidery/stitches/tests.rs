@@ -376,6 +376,64 @@ fn while_editing_a_row_of_another_object_only_shows_its_stitch() {
     assert_eq!(app.ui.status, "", "no word that it can't be edited");
 }
 
+/// A Shift-click selects the needle points of the rows listed between the two, as the filter lists
+/// them, not of every record between: with the cuts listed, the two needle points they follow.
+#[test]
+fn a_shift_range_takes_the_rows_the_filter_lists() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    for k in [5, 20] {
+        app.run("embroidery.setMachineFunction", json!({"needlePoints": [{"id": run.0, "index": k}], "function": "trim"})).unwrap();
+    }
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    assert_eq!(list.len(), 2, "the two cuts listed");
+    let (first, last) = (list.record(0).unwrap(), list.record(1).unwrap());
+    assert!(last > first + 10, "records between them that the filter leaves out");
+    // What the command selects by those two records.
+    let mut wanted = std::collections::BTreeSet::new();
+    for n in [first, last] {
+        app.run("embroidery.selectNeedlePoints", json!({"records": [n, n]})).unwrap();
+        wanted.extend(app.session.active().unwrap().selection.anchors.get(&run).cloned().unwrap_or_default());
+    }
+    assert_eq!(wanted.len(), 2, "{wanted:?}");
+    app.run("select.none", json!({})).unwrap();
+    let (a, b) = (row_at(&shapes, first), row_at(&shapes, last));
+    for e in [Event::PointerMoved(a), press(a, true, Modifiers::NONE), press(a, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    time += 1.0;
+    // Shift held as a keyboard says it.
+    let shift = [Event::ModifiersChanged(Modifiers::SHIFT), Event::PointerMoved(b), press(b, true, Modifiers::SHIFT)];
+    for e in [shift.to_vec(), vec![press(b, false, Modifiers::SHIFT)], vec![Event::ModifiersChanged(Modifiers::NONE)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+    }
+    let anchors = &app.session.active().unwrap().selection.anchors;
+    assert_eq!(anchors.get(&run), Some(&wanted), "the needle points the two cuts follow: {anchors:?}");
+    assert_eq!(anchors.len(), 1);
+}
+
+/// The needle points picked go as `ranges`: each run of consecutive needle points of a path one
+/// entry, with the path's count.
+#[test]
+fn picked_needle_points_go_as_ranges() {
+    let picked: std::collections::BTreeSet<(u64, usize, usize)> =
+        [(4, 0, 9), (4, 1, 9), (4, 2, 9), (4, 7, 9), (6, 3, 5), (6, 4, 5)].into_iter().collect();
+    assert_eq!(
+        super::ranges_of(&picked),
+        [json!({"id": 4, "from": 0, "to": 2, "of": 9}), json!({"id": 4, "from": 7, "to": 7, "of": 9}), json!({"id": 6, "from": 3, "to": 4, "of": 5})]
+    );
+    assert!(super::ranges_of(&Default::default()).is_empty());
+}
+
 /// Go to takes a number in the scope (the focus moves to it), and says so when one isn't there;
 /// junk and huge numbers are refused without a panic.
 #[test]

@@ -6144,3 +6144,5 @@ embroidery	Apply	Εφαρμογή
 embroidery	Click a row or a needle point to select it.	Κάντε κλικ σε μια γραμμή ή ένα σημείο βελόνας για να το επιλέξετε.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Σχεδιάζονται από το σχήμα: μετατρέψτε το αντικείμενο σε χειροκίνητες βελονιές για να τις επεξεργαστείτε.
 @plural	{count} needle point selected|{count} needle points selected	{count} επιλεγμένο σημείο βελόνας|{count} επιλεγμένα σημεία βελόνας
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Επιλέχθηκαν μόνο οι πρώτες {count} γραμμές του εύρους: ένα κλικ δεν επιλέγει περισσότερες.

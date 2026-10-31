@@ -6031,3 +6031,5 @@ embroidery	Apply	应用
 embroidery	Click a row or a needle point to select it.	单击行或落针点即可选择。
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	根据形状规划：将对象转换为手动针迹即可编辑。
 @plural	{count} needle point selected|{count} needle points selected	已选择 {count} 个落针点
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	只选中了范围的前 {count} 行：一次单击不会选中更多。

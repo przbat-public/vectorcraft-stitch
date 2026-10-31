@@ -6178,3 +6178,5 @@ embroidery	Apply	Alkalmaz
 embroidery	Click a row or a needle point to select it.	Kattintson egy sorra vagy tűszúrásra a kijelöléséhez.
 embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Az alakból tervezve: a szerkesztéshez alakítsa át az objektumot kézi öltésekké.
 @plural	{count} needle point selected|{count} needle points selected	{count} tűszúrás kijelölve
+# VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
+embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Csak a tartomány első {count} sora van kijelölve: egy kattintás ennél többet nem jelöl ki.

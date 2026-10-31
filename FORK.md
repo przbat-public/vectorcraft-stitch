@@ -524,8 +524,10 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
     `view.zoomTo`, `view.checkMarks`, `embroidery.showFinding`, `embroidery.nextHit`,
     `embroidery.previousHit`, `embroidery.copySettings`, `embroidery.pasteSettings`), the
-    `view.zoomTo` arm (into `embroidery::zoom`), and `panels::embroidery::command` before the dock's
-    commands;
+    `view.zoomTo` arm (into `embroidery::zoom`), `panels::embroidery::command` before the dock's
+    commands, and at the top of `invoke`, `embroidery::menu::invoked` (a person's Convert to Manual
+    Stitches, Restore Object and Nearest Connection from the palette or a shortcut, run as the
+    Embroidery panel runs them: off the interface thread, Restore asking after edits);
   - `control.rs`: `ui.set {stitchPreview}`, `ui.render {stitchPreview}`, `ui.inspect`'s
     `stitchPreview` and `embroideryPanel`;
   - `panels/mod.rs`, `dock.rs`, `state.rs`, `icon_data.rs`: the panel's module, its show and menu

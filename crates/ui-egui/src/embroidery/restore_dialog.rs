@@ -7,8 +7,8 @@
 //! It is one of upstream's dialogs ([`SPEC`], a row of the dialog registry). It is of the document
 //! it was opened on, and closes as Cancel when that is no longer the active one.
 //!
-//! Fields: `ids` (the objects, as the Object tab gives them), `count` (the converted objects among
-//! them), `uid` (the document).
+//! Fields: `ids` (the objects, as the Object tab gives them; null, from the command palette, for the
+//! selection), `count` (the converted objects among them), `uid` (the document).
 
 use serde_json::{Value, json};
 

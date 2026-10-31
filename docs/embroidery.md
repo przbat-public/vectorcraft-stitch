@@ -191,10 +191,10 @@ instances, a clipping path, a locked object, stitches from a file, a group sewn 
 images, placed files, symbol instances, or hidden, locked or unpainted objects) is passed over with
 the reason.
 Converting asks nothing; the status bar says how to go back. A convert plans the whole design
-afresh, as the export does, so from the Object tab it plans off the interface thread, the status
-bar saying how far it has got and Escape stopping it; it converts only if the document is as it
-was when the convert began. Restore Object
-(`embroidery.restoreObject`, the Object tab's button on manual stitches) puts the object back,
+afresh, as the export does, so from the Object tab or the command palette it plans off the
+interface thread, the status bar saying how far it has got and Escape stopping it; it converts only
+if the document is as it was when the convert began. Restore Object
+(`embroidery.restoreObject`, the Object tab's button on manual stitches, the command palette) puts the object back,
 moved, turned and scaled as its stitches were since, planned again at its size now; it asks first
 only when the stitches were edited since converting (a run hidden or recoloured, or art pasted into
 the object, counts), as those edits are then lost (Undo brings them back); art pasted into the
@@ -676,7 +676,8 @@ as Melco's checker reads it, on each object's settings, it flags none.
   it can't), or use a selected row's ↑ and ↓ and the panel's ≡ menu: Sew Earlier, Sew Later, Sew
   First and Sew Last (also the commands `embroidery.sewEarlier`, `sewLater`, `sewFirst` and
   `sewLast`, with no default shortcuts). The sewing order follows the stacking order, so each moves
-  the object in the stack, as one undo step. The ≡ menu's Nearest Connection sets the entry and
+  the object in the stack, as one undo step. The ≡ menu's Nearest Connection (the command palette
+  runs it the same way, off the interface thread) sets the entry and
   exit points of the selection, else of the whole design, for the shortest jumps between parts
   (`embroidery.nearestConnection`, below), and says in a line on the status bar how many parts it
   set and what it saved ("3 parts set · jumps 12.5 mm shorter · trims 1 → 0"). **Check** shows `embroidery.check` for the format chosen ("Checked for"), problems

@@ -92,7 +92,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 81] = [
+pub const ROWS: [&str; 82] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -172,6 +172,7 @@ pub const ROWS: [&str; 81] = [
     "needle points: 95th percentile, 2,000,000",
     "needle points: slowest press, 2,000,000",
     "needle points: a marquee over 2,000,000",
+    "needle points: slowest press at 10%",
     "edit look: draw 500,000 all flagged",
     "stitches tab: counts and rows, 2,000,000",
 ];
@@ -193,7 +194,7 @@ pub const ROWS: [&str; 81] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 81] = [
+const BUDGETS: [f64; 82] = [
     400.0,
     100.0,
     100.0,
@@ -273,6 +274,7 @@ const BUDGETS: [f64; 81] = [
     NEEDLE_INDEX_BUDGETS[1],
     NEEDLE_INDEX_BUDGETS[2],
     NEEDLE_INDEX_BUDGETS[3],
+    NEEDLE_INDEX_BUDGETS[4],
     // Set in the run, beside the same picture drawn plain ([`FLAGGED_FRAME_RATIO`]).
     f64::INFINITY,
     TAB_ROWS_MS,
@@ -857,8 +859,9 @@ fn convert_parts(doc: &Document) -> Result<[f64; 2], String> {
 /// selecting its needle points, about 2.5 times what they measured ([`NEEDLE_INDEX_MS`]); the
 /// nearest needle point to a press, its 95th percentile within a quarter of the 1 ms a press on the
 /// stitches may take (a hover asks for it twice a frame), its slowest of [`NEEDLE_QUERIES`] presses
-/// anywhere over the design (misses included) within that 1 ms.
-const NEEDLE_INDEX_BUDGETS: [f64; 4] = [NEEDLE_INDEX_MS[0] * 2.5, NEEDLE_PRESS_P95_MS, NEEDLE_PRESS_MS, NEEDLE_INDEX_MS[3] * 2.5];
+/// anywhere over the design (misses included) within that 1 ms, at 100 % and zoomed out to
+/// [`NEEDLE_ZOOMED_OUT`] alike.
+const NEEDLE_INDEX_BUDGETS: [f64; 5] = [NEEDLE_INDEX_MS[0] * 2.5, NEEDLE_PRESS_P95_MS, NEEDLE_PRESS_MS, NEEDLE_INDEX_MS[3] * 2.5, NEEDLE_PRESS_MS];
 /// A press's nearest needle point: its 95th percentile's budget and its slowest's, milliseconds
 /// (see [`NEEDLE_INDEX_BUDGETS`]).
 const NEEDLE_PRESS_P95_MS: f64 = 0.25;
@@ -874,12 +877,16 @@ const NEEDLE_INDEX_MS: [f64; 4] = [15.8, 0.04, 0.17, 158.0];
 const NEEDLE_QUERIES: usize = 1000;
 /// How far a press reaches, points: the selection tolerance's default at 100 %.
 const NEEDLE_REACH_PT: f64 = 3.0;
+/// The zoom the slowest press is timed at again, zoomed out (10 %): a press reaches the selection
+/// tolerance over it, ten times as far, and the search narrows as it finds nearer needle points.
+const NEEDLE_ZOOMED_OUT: f64 = 0.1;
 
 /// The needle-point index's rows on `doc` (literal runs, [`literal_runs`]): the index of every path
 /// of stitches in its layers built; the nearest needle point to [`NEEDLE_QUERIES`] presses (the
 /// 95th percentile and the slowest); `embroidery.selectNeedlePoints {rect}` over the left half of
-/// the design, its layer isolated, the median of [`DRAW_RUNS`].
-fn needle_index(doc: &Document) -> Result<[f64; 4], String> {
+/// the design, its layer isolated, the median of [`DRAW_RUNS`]; the slowest of the presses again,
+/// zoomed out to [`NEEDLE_ZOOMED_OUT`].
+fn needle_index(doc: &Document) -> Result<[f64; 5], String> {
     use vectorcraft_engine::cmd::embroidery::needle_index::NeedleIndex;
     let roots: Vec<_> = doc.layers.iter().map(|l| l.id).collect();
     let mut built = Vec::with_capacity(DRAW_RUNS);
@@ -892,21 +899,27 @@ fn needle_index(doc: &Document) -> Result<[f64; 4], String> {
     let index = index.ok_or("needle points: the design holds no path of stitches")?;
     let b = index.scope().bounds.ok_or("needle points: none")?;
     // Spread over the design's box and as far again round it: a fixed sequence, the same each run.
-    let mut times = Vec::with_capacity(NEEDLE_QUERIES);
-    let mut hits = 0usize;
-    for k in 0..NEEDLE_QUERIES {
-        let (u, v) = ((k * 7919 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64, (k * 104_729 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64);
-        let at = Point::new(b.x0 - b.width() / 2.0 + 2.0 * b.width() * u, b.y0 - b.height() / 2.0 + 2.0 * b.height() * v);
-        let t = Instant::now();
-        hits += usize::from(index.needle_at(at, NEEDLE_REACH_PT).is_some());
-        times.push(t.elapsed().as_secs_f64() * 1000.0);
-    }
+    let presses = |reach: f64| {
+        let mut times = Vec::with_capacity(NEEDLE_QUERIES);
+        let mut hits = 0usize;
+        for k in 0..NEEDLE_QUERIES {
+            let (u, v) = ((k * 7919 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64, (k * 104_729 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64);
+            let at = Point::new(b.x0 - b.width() / 2.0 + 2.0 * b.width() * u, b.y0 - b.height() / 2.0 + 2.0 * b.height() * v);
+            let t = Instant::now();
+            hits += usize::from(index.needle_at(at, reach).is_some());
+            times.push(t.elapsed().as_secs_f64() * 1000.0);
+        }
+        times.sort_by(f64::total_cmp);
+        (hits, times)
+    };
+    let (hits, times) = presses(NEEDLE_REACH_PT);
     if hits == 0 || hits == NEEDLE_QUERIES {
         return Err(format!("needle points: {hits} of {NEEDLE_QUERIES} presses found one; the row needs hits and misses"));
     }
-    times.sort_by(f64::total_cmp);
     let p95 = times.get(NEEDLE_QUERIES * 95 / 100).copied().unwrap_or(f64::NAN);
     let slowest = times.last().copied().unwrap_or(f64::NAN);
+    let (_, far) = presses(NEEDLE_REACH_PT / NEEDLE_ZOOMED_OUT);
+    let slowest_far = far.last().copied().unwrap_or(f64::NAN);
     let mut s = fresh(doc);
     let layer = roots.first().ok_or("needle points: no layer")?;
     s.execute("object.isolate", &json!({"id": layer.0})).map_err(err)?;
@@ -920,7 +933,7 @@ fn needle_index(doc: &Document) -> Result<[f64; 4], String> {
         }
         marquee.push(ms);
     }
-    Ok([middle(built), p95, slowest, middle(marquee)])
+    Ok([middle(built), p95, slowest, middle(marquee), slowest_far])
 }
 
 /// The width of a literal run's line, points: a thread's 0.4 mm, as opening a machine file draws it.

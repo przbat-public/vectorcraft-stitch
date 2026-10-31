@@ -78,37 +78,37 @@ pub(crate) fn paths_built() -> usize {
     BUILT.with(std::cell::Cell::get)
 }
 
-/// One subpath of a path of stitches: its first needle point's index in the path, how many needle
-/// points it holds, and whether it is a line to its own start (two anchors, one needle point).
-#[derive(Clone, Copy, Debug)]
-struct Sub {
-    first: usize,
-    needles: usize,
-    collapsed: bool,
-}
-
-/// At most [`CHUNK_POINTS`] needle points of one subpath: anchors `from..from + len` (a line to its
-/// own start: anchor 0 alone), and the box they and the needle point after the last (the stitch
-/// leaving it) fall in, document points.
+/// At most [`CHUNK_POINTS`] needle points one after the other, of one run or of several short ones
+/// (at most [`CHUNK_RUNS`] runs): from needle point `from` of run `run`, `len` in all, and the box
+/// they fall in with the needle point after each run's last of them (the stitch leaving it),
+/// document points.
 #[derive(Clone, Copy, Debug)]
 struct Chunk {
-    sub: usize,
+    run: usize,
     from: usize,
     len: usize,
     bounds: Rect,
 }
 
+/// The most runs a chunk spans: a path of many short runs (a file of one needle point a run, which
+/// a design may hold two million of) costs a chunk for that many, not one a run, and a query looks
+/// at no more runs in a chunk than it has needle points. As many as [`CHUNK_POINTS`].
+const CHUNK_RUNS: usize = CHUNK_POINTS;
+
 /// One path of stitches as the index finds its needle points: the node it was built from (its
-/// identity says whether it is still the document's), its subpaths and chunks, how many needle
-/// points it holds, the box they fall in, and the needle points the machine stops after (the
-/// needle is then lifted to the next: no stitch between them).
+/// identity says whether it is still the document's), where each of its runs (its subpaths) starts
+/// among its needle points, its chunks, how many needle points it holds, the box they fall in, and
+/// the needle points the machine stops after (the needle is then lifted to the next: no stitch
+/// between them).
 pub struct PathIndex {
     node: Arc<Node>,
-    subs: Vec<Sub>,
+    /// Run `r`'s first needle point's index in the path, and one past the last needle point at the
+    /// end: a needle point's run is found by its index without walking the runs before it.
+    starts: Vec<usize>,
     chunks: Vec<Chunk>,
     needles: usize,
     bounds: Option<Rect>,
-    stops: std::collections::BTreeSet<usize>,
+    stops: BTreeSet<usize>,
 }
 
 impl PathIndex {
@@ -121,41 +121,66 @@ impl PathIndex {
         let Some(marks) = node.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) else { return Err(Unfit::NotStitches) };
         BUILT.with(|b| b.set(b.get().saturating_add(1)));
         let alone = path.subpaths.len() == 1;
-        let mut subs = Vec::with_capacity(path.subpaths.len());
+        let mut starts = Vec::with_capacity(path.subpaths.len() + 1);
         let mut chunks = Vec::new();
         let mut needles = 0usize;
         let mut bounds: Option<Rect> = None;
+        // The chunk being filled: its first needle point's run and place, how many it holds, and
+        // its box.
+        let mut open: Option<(usize, usize, usize, Option<Rect>)> = None;
+        let mut close = |c: Option<(usize, usize, usize, Option<Rect>)>, chunks: &mut Vec<Chunk>| {
+            if let Some((run, from, len, Some(b))) = c {
+                chunks.push(Chunk { run, from, len, bounds: b });
+                bounds = Some(bounds.map_or(b, |o| o.union(b)));
+            }
+        };
         for (s, sp) in path.subpaths.iter().enumerate() {
             // A line to its own start is one needle point, as every reader counts it.
             let count = needles::needle_count(&sp.anchors, alone, marks.double_point);
-            let collapsed = count < sp.anchors.len();
-            subs.push(Sub { first: needles, needles: count, collapsed });
+            starts.push(needles);
             let mut from = 0;
             while from < count {
-                let len = (count - from).min(CHUNK_POINTS);
-                // The stitch leaving the chunk's last needle point is caught by it too.
-                let last = (from + len).min(count - 1);
-                let b = sp.anchors.get(from..=last).unwrap_or_default().iter().map(|a| Rect::from_points(a.p, a.p)).reduce(|a, b| a.union(b));
-                if let Some(b) = b {
-                    chunks.push(Chunk { sub: s, from, len, bounds: b });
-                    bounds = Some(bounds.map_or(b, |o| o.union(b)));
+                let (run, first, len, b) = open.take().unwrap_or((s, from, 0, None));
+                let take = (count - from).min(CHUNK_POINTS - len);
+                // The stitch leaving the last of them is caught by the chunk too.
+                let last = (from + take).min(count - 1);
+                let more = sp.anchors.get(from..=last).unwrap_or_default().iter().map(|a| Rect::from_points(a.p, a.p)).reduce(|a, b| a.union(b));
+                let b = match (b, more) {
+                    (Some(b), Some(m)) => Some(b.union(m)),
+                    (b, m) => b.or(m),
+                };
+                let filled = (run, first, len + take, b);
+                from += take;
+                if len + take >= CHUNK_POINTS {
+                    close(Some(filled), &mut chunks);
+                } else {
+                    open = Some(filled);
                 }
-                from += len;
+            }
+            // A chunk spans at most so many runs, those with no needle point too.
+            if open.is_some_and(|(run, ..)| s + 1 - run >= CHUNK_RUNS) {
+                close(open.take(), &mut chunks);
             }
             needles += count;
         }
+        close(open.take(), &mut chunks);
+        starts.push(needles);
         if needles > MAX_NEEDLE_POINTS {
             return Err(Unfit::TooMany);
         }
+        let mut index = Self { node: node.clone(), starts, chunks, needles, bounds, stops: BTreeSet::new() };
         // The stops where their needle points are now, as the walk places them; one named past a
         // subpath's last needle point (the second of a line to its own start) is that one's.
-        let stops = marks
+        index.stops = marks
             .placed(path)
             .stops
             .iter()
-            .filter_map(|&(s, a)| subs.get(s).filter(|sub| sub.needles > 0).map(|sub| sub.first + a.min(sub.needles - 1)))
+            .filter_map(|&(s, a)| {
+                let len = index.run_len(s).filter(|&l| l > 0)?;
+                Some(index.starts.get(s)? + a.min(len - 1))
+            })
             .collect();
-        Ok(Self { node: node.clone(), subs, chunks, needles, bounds, stops })
+        Ok(index)
     }
 
     /// The path's anchors of subpath `s`.
@@ -166,11 +191,30 @@ impl PathIndex {
         }
     }
 
-    /// Needle point `index`'s subpath and its place among the subpath's needle points.
+    /// How many needle points run `s` holds (`None`: no such run).
+    fn run_len(&self, s: usize) -> Option<usize> {
+        Some(self.starts.get(s + 1)? - self.starts.get(s)?)
+    }
+
+    /// Whether run `s` is a line to its own start: two anchors, one needle point.
+    fn collapsed(&self, s: usize) -> bool {
+        self.run_len(s).is_some_and(|len| len < self.anchors(s).len())
+    }
+
+    /// Needle point `index`'s run and its place among the run's needle points.
     fn locate(&self, index: usize) -> Option<(usize, usize)> {
-        let s = self.subs.partition_point(|sub| sub.first + sub.needles <= index);
-        let sub = self.subs.get(s)?;
-        (index >= sub.first && index < sub.first + sub.needles).then(|| (s, index - sub.first))
+        if index >= self.needles {
+            return None;
+        }
+        let s = self.starts.partition_point(|&start| start <= index).checked_sub(1)?;
+        Some((s, index - self.starts.get(s)?))
+    }
+
+    /// The first and the last needle point of the run needle point `index` is in.
+    fn run_of(&self, index: usize) -> Option<(usize, usize)> {
+        let (s, _) = self.locate(index)?;
+        let first = *self.starts.get(s)?;
+        Some((first, first + self.run_len(s)?.checked_sub(1)?))
     }
 
     /// Where needle point `index` is.
@@ -182,7 +226,7 @@ impl PathIndex {
     /// The anchors needle point `index` is: one, or both of a line to its own start.
     fn anchors_of(&self, index: usize) -> Vec<(usize, usize)> {
         match self.locate(index) {
-            Some((s, _)) if self.subs.get(s).is_some_and(|sub| sub.collapsed) => vec![(s, 0), (s, 1)],
+            Some((s, _)) if self.collapsed(s) => vec![(s, 0), (s, 1)],
             Some((s, i)) => vec![(s, i)],
             None => Vec::new(),
         }
@@ -191,24 +235,57 @@ impl PathIndex {
     /// The needle point anchor `(s, a)` is (the second anchor of a line to its own start is its one
     /// needle point).
     fn of_anchor(&self, (s, a): (usize, usize)) -> Option<usize> {
-        let sub = self.subs.get(s)?;
-        let i = if sub.collapsed { 0 } else { a };
-        (i < sub.needles).then_some(sub.first + i)
+        let len = self.run_len(s)?;
+        let i = if self.collapsed(s) { 0 } else { a };
+        (i < len).then(|| self.starts.get(s).map(|first| first + i)).flatten()
     }
 
-    /// The needle points of its chunks whose box `test_box` passes, each tested by `test`: `(index,
-    /// point)` to `f`.
+    /// The needle points chunk `c` holds, one after the other: `(run, place in it)`; the runs it
+    /// spans with no needle point are passed over.
+    fn places<'a>(&'a self, c: &Chunk) -> impl Iterator<Item = (usize, usize)> + 'a {
+        let (mut s, mut k, mut left) = (c.run, c.from, c.len);
+        std::iter::from_fn(move || {
+            if left == 0 {
+                return None;
+            }
+            while k >= self.run_len(s)? {
+                (s, k) = (s + 1, 0);
+            }
+            left -= 1;
+            k += 1;
+            Some((s, k - 1))
+        })
+    }
+
+    /// The needle points of its chunks whose box `test_box` passes: `(index, point)` to `f`.
     fn each_in(&self, test_box: impl Fn(Rect) -> bool, mut f: impl FnMut(usize, Point)) {
         for c in &self.chunks {
             if !test_box(c.bounds) {
                 continue;
             }
-            let Some(sub) = self.subs.get(c.sub) else { continue };
-            for (k, a) in self.anchors(c.sub).iter().enumerate().skip(c.from).take(c.len) {
-                f(sub.first + if sub.collapsed { 0 } else { k }, a.p);
+            for (s, k) in self.places(c) {
+                let (Some(first), Some(a)) = (self.starts.get(s), self.anchors(s).get(k)) else { continue };
+                f(first + k, a.p);
             }
         }
     }
+
+    /// How many chunks it holds (the tests: a path of many short runs holds few).
+    #[cfg(test)]
+    pub(crate) fn chunk_count(&self) -> usize {
+        self.chunks.len()
+    }
+}
+
+/// Whether a search near `at` within `tol` can be made: both finite, `tol` not below 0.
+fn searchable(at: Point, tol: f64) -> bool {
+    at.x.is_finite() && at.y.is_finite() && tol.is_finite() && tol >= 0.0
+}
+
+/// Whether `at` lies within `reach` of box `b` along each axis, its edges included (the searches it
+/// prunes take a needle point exactly `reach` away).
+fn reaches(b: Rect, at: Point, reach: f64) -> bool {
+    at.x >= b.x0 - reach && at.x <= b.x1 + reach && at.y >= b.y0 - reach && at.y <= b.y1 + reach
 }
 
 /// The paths of stitches inside an object (or several, or the whole document): those whose needle
@@ -419,23 +496,28 @@ impl NeedleIndex {
 
     /// The needle point nearest `at` within `tol`; of equally near ones, the one sewn later.
     pub fn needle_at(&self, at: Point, tol: f64) -> Option<NeedleHit> {
-        if !(at.x.is_finite() && at.y.is_finite() && tol.is_finite() && tol >= 0.0) {
+        if !searchable(at, tol) {
             return None;
         }
         let mut best: Option<(f64, NeedleHit)> = None;
         for (id, p) in &self.paths {
-            if !p.bounds.is_some_and(|b| b.inflate(tol, tol).contains(at)) {
+            // Once one is found, only a box as near can hold a nearer one (or one as near, sewn
+            // later).
+            if !p.bounds.is_some_and(|b| reaches(b, at, best.map_or(tol, |(d, _)| d))) {
                 continue;
             }
-            p.each_in(
-                |b| b.inflate(tol, tol).contains(at),
-                |index, q| {
-                    let d = q.distance(at);
+            for c in &p.chunks {
+                if !reaches(c.bounds, at, best.map_or(tol, |(d, _)| d)) {
+                    continue;
+                }
+                for (s, k) in p.places(c) {
+                    let (Some(first), Some(a)) = (p.starts.get(s), p.anchors(s).get(k)) else { continue };
+                    let d = a.p.distance(at);
                     if d <= tol && best.is_none_or(|(e, _)| d <= e) {
-                        best = Some((d, NeedleHit { needle: NeedleRef { id: *id, index }, point: q }));
+                        best = Some((d, NeedleHit { needle: NeedleRef { id: *id, index: first + k }, point: a.p }));
                     }
-                },
-            );
+                }
+            }
         }
         best.map(|(_, h)| h)
     }
@@ -443,30 +525,31 @@ impl NeedleIndex {
     /// The stitch nearest `at` within `tol` (between two needle points of one run), and the place on
     /// it nearest `at`; of equally near ones, the one sewn later.
     pub fn thread_at(&self, at: Point, tol: f64) -> Option<ThreadHit> {
-        if !(at.x.is_finite() && at.y.is_finite() && tol.is_finite() && tol >= 0.0) {
+        if !searchable(at, tol) {
             return None;
         }
         let mut best: Option<(f64, ThreadHit)> = None;
         for (id, p) in &self.paths {
-            if !p.bounds.is_some_and(|b| b.inflate(tol, tol).contains(at)) {
+            if !p.bounds.is_some_and(|b| reaches(b, at, tol)) {
                 continue;
             }
             for c in &p.chunks {
-                if !c.bounds.inflate(tol, tol).contains(at) {
+                if !reaches(c.bounds, at, tol) {
                     continue;
                 }
-                let Some(sub) = p.subs.get(c.sub).filter(|s| !s.collapsed && s.needles > 1) else { continue };
-                let anchors = p.anchors(c.sub);
-                for k in c.from..(c.from + c.len).min(sub.needles - 1) {
-                    // After a stop the needle is lifted to the next: no stitch.
-                    if p.stops.contains(&(sub.first + k)) {
+                for (s, k) in p.places(c) {
+                    let (Some(first), Some(len)) = (p.starts.get(s), p.run_len(s)) else { continue };
+                    // A stitch to the run's next needle point; after a stop the needle is lifted to
+                    // the next: no stitch.
+                    if k + 1 >= len || p.stops.contains(&(first + k)) {
                         continue;
                     }
+                    let anchors = p.anchors(s);
                     let (Some(a), Some(b)) = (anchors.get(k), anchors.get(k + 1)) else { continue };
                     let q = nearest_on(a.p, b.p, at);
                     let d = q.distance(at);
                     if d <= tol && best.is_none_or(|(e, _)| d <= e) {
-                        best = Some((d, ThreadHit { from: NeedleRef { id: *id, index: sub.first + k }, ends: [a.p, b.p], point: q }));
+                        best = Some((d, ThreadHit { from: NeedleRef { id: *id, index: first + k }, ends: [a.p, b.p], point: q }));
                     }
                 }
             }
@@ -524,10 +607,7 @@ impl NeedleIndex {
 
     /// The first and the last needle point of the run `n` is in (their places in its path).
     pub(crate) fn run(&self, n: NeedleRef) -> Option<(usize, usize)> {
-        let p = self.path(n.id)?;
-        let (s, _) = p.locate(n.index)?;
-        let sub = p.subs.get(s)?;
-        Some((sub.first, sub.first + sub.needles.checked_sub(1)?))
+        self.path(n.id)?.run_of(n.index)
     }
 
     /// The first needle point of the first path holding one.

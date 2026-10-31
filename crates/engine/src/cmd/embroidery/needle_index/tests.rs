@@ -12,7 +12,7 @@ use vectorcraft_testkit::embroidery as fx;
 use vectorcraft_tools::embroidery::{NeedleRef, PlanFacts};
 
 use super::super::needles;
-use super::super::test_support::{PT_PER_MM, run};
+use super::super::test_support::{PT_PER_MM, blank, run};
 use super::{Area, Lasso, NeedleIndex, paths_built, paths_looked_at};
 use crate::Session;
 
@@ -88,6 +88,10 @@ fn queries_find_what_brute_force_finds() {
     }
     assert_eq!(index.needle_at(Point::new(f64::NAN, 0.0), tol), None);
     assert_eq!(index.needle_at(Point::new(0.0, 0.0), f64::INFINITY), None);
+    // At no tolerance each needle point is found where it lies, one on its chunk's box's edge too.
+    for &(n, p) in &all {
+        assert_eq!(index.needle_at(p, 0.0).map(|h| h.point), Some(p), "{n:?}");
+    }
     // The nearest stitch: as near as the nearest of every stitch between two needle points of a run.
     let segments: Vec<(Point, Point)> = ids
         .iter()
@@ -517,4 +521,60 @@ fn the_needle_points_kept_go_when_editing_ends_with_the_stitch_view() {
     run(&mut s, "view.stitchPreview", json!({"on": true}));
     assert!(s.stitch_editing(crate::ViewInfo { outline: true, ..view }).is_some(), "Outline");
     assert_eq!(s.embroidery_plans.kept_needles(), 1);
+}
+
+/// A path of many short runs (one needle point a run, as a machine file may hold millions of, a run
+/// with none among them) holds a chunk for many runs, not one a run, and is searched as one of long
+/// runs is: against brute force at its needle points, beside them and on its stitches.
+#[test]
+fn a_path_of_many_short_runs_holds_few_chunks() {
+    const RUNS: usize = 600;
+    let mut s = blank();
+    // A line to its own start (one needle point) a run, every third run three needle points.
+    let d: Vec<String> = (0..RUNS)
+        .map(|i| {
+            let (x, y) = ((i % 40) as f64 * 6.0 + 10.0, (i / 40) as f64 * 6.0 + 10.0);
+            if i % 3 == 2 { format!("M {x} {y} L {} {y} L {} {}", x + 2.0, x + 4.0, y + 1.0) } else { format!("M {x} {y} L {x} {y}") }
+        })
+        .collect();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#c81e1e"}));
+    let id = NodeId(run(&mut s, "path.create", json!({"d": d.join(" ")}))["id"].as_u64().unwrap());
+    s.edit("Stitches", |d, _| {
+        let n = d.node_mut(id).unwrap();
+        n.extras_mut().embroidery = Some(Box::new(vectorcraft_doc::embroidery::Embroidery {
+            stitches: Some(vectorcraft_doc::embroidery::StitchRun::default()),
+            ..Default::default()
+        }));
+        if let vectorcraft_doc::NodeKind::Path { path, .. } = &mut n.kind {
+            path.subpaths.insert(RUNS / 2, vectorcraft_geom::SubPath { anchors: Vec::new(), closed: false });
+        }
+        Ok(())
+    })
+    .unwrap();
+    let index = whole(&s);
+    let chunks = index.path(id).expect("indexed").chunk_count();
+    assert!(chunks <= RUNS.div_ceil(20), "{chunks} chunks for {RUNS} runs");
+    let points = read_points(&s, id);
+    assert_eq!(index.count(id), points.len());
+    let tol = 2.0;
+    for (k, &p) in points.iter().enumerate() {
+        assert_eq!(index.point(NeedleRef { id, index: k }), Some(p), "needle point {k}");
+        assert_eq!(index.needle_at(p, 0.0).map(|h| h.point), Some(p), "needle point {k} at no tolerance");
+        let at = p + vectorcraft_geom::Vec2::new(0.6, 0.5);
+        let near = points.iter().map(|q| q.distance(at)).filter(|d| *d <= tol).fold(f64::INFINITY, f64::min);
+        assert!(index.needle_at(at, tol).is_some_and(|h| (h.point.distance(at) - near).abs() < 1e-9), "beside needle point {k}");
+    }
+    let segments: Vec<(Point, Point)> = needles::read(s.doc().unwrap().doc.node(id).unwrap())
+        .unwrap()
+        .runs
+        .into_iter()
+        .flat_map(|r| r.needles.windows(2).map(|w| (w[0].p, w[1].p)).collect::<Vec<_>>())
+        .collect();
+    assert!(segments.len() > RUNS / 4, "{} stitches", segments.len());
+    for &(a, b) in &segments {
+        let at = a.midpoint(b) + vectorcraft_geom::Vec2::new(0.0, 0.2);
+        let near = segments.iter().map(|&(a, b)| super::nearest_on(a, b, at).distance(at)).fold(f64::INFINITY, f64::min);
+        assert!(index.thread_at(at, tol).is_some_and(|h| (h.point.distance(at) - near).abs() < 1e-9), "on {a:?}–{b:?}");
+    }
 }

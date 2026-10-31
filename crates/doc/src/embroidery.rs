@@ -119,7 +119,7 @@ pub struct StitchRun {
     /// back (a manual run's, as the plan it was frozen from sewed them): a point stored in document
     /// points and read in millimetres may come back a unit in the last place off, and one exactly
     /// halfway between two tenths of a millimetre would then be written a tenth off. Each applies
-    /// while its needle point lies where it was stored (within a nanometre): a transform of the
+    /// while its needle point lies where it was stored (within a picometre): a transform of the
     /// object keeps them, so moved and moved back, the run sews as it did.
     pub exact: Vec<Exact>,
     /// The transforms of the run since its stitches were made (read from a machine file, or

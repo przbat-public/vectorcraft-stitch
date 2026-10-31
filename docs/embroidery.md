@@ -130,10 +130,7 @@ and `embroidery.setup {label}` changes or unsets it (unset, the export writes th
 title). Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the
 needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
-stitches. A run's needle points are its anchors, in order: handles pulled out of them are ignored
-(the curve the art then draws between two needle points is sewn as the straight stitch a machine
-makes), a closed run sews no closing stitch, and its subpaths are runs the needle jumps between.
-A document saved before manual stitches came (2026-10-30) may sew its runs otherwise now: a run
+stitches, as Editing stitches (below) says. A document saved before manual stitches came (2026-10-30) may sew its runs otherwise now: a run
 whose handles were pulled out was sewn along its curve and is now sewn straight between its
 needle points, and a run that upstream's Delete Anchor Point left in pieces, as subpaths of one
 path, was stitched across each gap and now jumps there (untrimmed). Turning a design back into shapes that are stitched by the rules (what professional
@@ -217,7 +214,8 @@ they were scaled since converting; the Check tab warns past ±10 % (`stitchesSca
 opened design's stitches too, since stitches scaled keep their count, not their density.
 
 **Editing stitches.** A path of literal stitches (opened or manual) is sewn as its anchors, in
-order: handles are ignored, a closed path sews no closing stitch, and its subpaths are runs the
+order: handles are ignored (the curve the art then draws between two needle points is sewn as the
+straight stitch a machine makes), a closed path sews no closing stitch, and its subpaths are runs the
 needle jumps between (here, and in the stitch commands' words, a run is always such a subpath,
 and the object is a path of stitches). Direct Selection moves needle points as it moves anchors;
 its Delete merges the neighbouring stitches (it doesn't leave a gap the machine still sews), the
@@ -2751,8 +2749,12 @@ Public documentation, cited per claim in the crate:
   it is no worse), `ends.rs` (where each shape can start and end, by the planner's own rules),
   `joins.rs` (the shortest joins of a chain of shapes in a fixed order), `tests.rs`,
   `tests_narrow.rs`, `tests_aim.rs` (entry and exit points met and sewn toward).
-- `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building), `dst.rs`,
-  `tap.rs` (TAP and T01), `exp.rs`, `pes.rs` (PES and PEC), `jef.rs`, `vp3.rs`.
+- `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building, where a stop is
+  written: `stretches`, `written_stops`), `dst.rs`, `tap.rs` (TAP and T01), `exp.rs`, `pes.rs`
+  (PES and PEC), `jef.rs`, `vp3.rs`; `tests_stops.rs` (stops written as changes to the same thread,
+  and read back).
+- `crates/doc/src/embroidery/marks.rs` — a run's cuts and stops kept by their needle points
+  (`Mark`), and where each falls on the path as it is now (`StitchRun::placed`).
 - `crates/stitch/src/thread.rs` — the thread palettes (`Palette`), matching a colour to the nearest
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
@@ -2797,7 +2799,13 @@ Public documentation, cited per claim in the crate:
   `tests_matrix.rs` (the resolution order, every combination of layers), `tests_transform.rs`
   (settings under the transform commands), `tests_derive.rs` (settings kept by objects made from
   others), `tests_expanded.rs` (an expanded object's strokes, sewn along their path, nested in a
-  group too).
+  group too), `manual.rs` (Convert to Manual Stitches and Restore Object: what is frozen, the
+  original kept, the fingerprint telling edits from moves), `needles.rs` (a path of stitches read
+  as runs of needle points, addressed `{id, index}`, and written back), `needle_edits.rs` (the
+  stitch commands: move, insert, delete, split, join, machine functions, split long stitches),
+  `hooks.rs` (what upstream's Delete, cutting tools and Join do to runs of stitches), `records.rs`
+  (`embroidery.stitches` and `selectNeedlePoints`), `tests_manual.rs`, `tests_needles.rs`,
+  `tests_marks.rs` (cuts and stops through upstream's path commands), `tests_stops.rs`.
 - `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
   stitch view draws with, knowing nothing about stitches.
 - `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
@@ -2809,7 +2817,9 @@ Public documentation, cited per claim in the crate:
   `numbers.rs` and `text.rs` (severity marks, numbers in the interface language, filled
   templates), `rows.rs`, `fields.rs` and `vocabulary.rs` (a settings row, its numbers, the settings'
   words), `setup_tab.rs` (Document Setup's Embroidery tab), `handles.rs` (the embroidery tool's
-  handles drawn on the canvas), `point_dialog.rs` (the Entry Point and Exit Point dialog);
+  handles drawn on the canvas), `point_dialog.rs` (the Entry Point and Exit Point dialog),
+  `convert_job.rs` (Convert to Manual Stitches off the interface thread), `restore_dialog.rs`
+  (Restore Object's question), `nearest.rs` (Nearest Connection off the interface thread);
   `tests_preview.rs` (the scheduler end to end), `tests_languages.rs` (every language),
   `tests_handles.rs` (the tool's handles headless with real pointer events, and their contrast),
   `tests_gate.rs` (the third gate, the Object tab's scrub and the tool's drag, by hand),

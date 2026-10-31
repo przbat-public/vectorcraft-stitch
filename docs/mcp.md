@@ -5295,8 +5295,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   what the design then sews) (lengths in millimetres, the
   points in document points; `reason` also `notSewn`, `pieces`, `symbolInstance`, `clipped`, `unmodelled` or `locked`). They take the
   vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
-  names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,
-  `live`, `placed`, `intertwine` or `noPart`; a client must accept others later.
+  names the one to use (`density` → `spacing`). `reason` is `literal`, `manual` (manual stitches, sewn as they are
+  placed), `guide`, `type`, `image`, `symbolInstance`, `live`, `placed`, `intertwine` or `noPart`; a client must accept
+  others later.
 - `embroidery.info {ids?, plan?, offset?, limit?, …embroidery options}` reads the objects' settings (a query, no undo
   step; nothing selected and no `ids`: an empty answer): `{objectCount, offset, truncated, objects: [{id, kind, fills,
   strokes, expanded, settings: {fill, stroke}, kept}], skippedCount, skipped, trimAfter: {value, setCount, mixed},

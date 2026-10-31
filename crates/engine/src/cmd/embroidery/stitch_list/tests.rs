@@ -39,7 +39,7 @@ fn rows_are_what_the_stitch_list_lists() {
     for r in records {
         let n = r["record"].as_u64().unwrap() as usize;
         let row = row(&plan, n).unwrap();
-        assert_eq!(row.kind.id(), r["kind"].as_str().unwrap(), "record {n}");
+        assert_eq!(row.kind.name(), r["kind"].as_str().unwrap(), "record {n}");
         let mm = |v: &Value| v.as_f64().unwrap();
         assert!((row.at.x - mm(&r["at"][0])).abs() < 1e-9 && (row.at.y - mm(&r["at"][1])).abs() < 1e-9, "record {n}");
         match (row.length, r["length"].as_f64()) {

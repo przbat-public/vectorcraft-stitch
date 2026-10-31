@@ -25,9 +25,9 @@ use crate::cmd::bad;
 /// The keys `embroidery.stitches` takes besides the embroidery options.
 pub(super) const KEYS: [&str; 8] = ["from", "to", "ids", "kinds", "shorterThan", "longerThan", Page::KEYS[0], Page::KEYS[1]];
 
-/// A kind of record, as the reply names it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum RecordKind {
+/// A kind of record, as the reply names it (and the Stitches tab lists it, [`super::stitch_list`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RecordKind {
     /// A needle point: the needle goes down.
     Stitch,
     /// The needle moves with it up.
@@ -42,7 +42,7 @@ impl RecordKind {
     const ALL: [Self; 4] = [Self::Stitch, Self::Jump, Self::Trim, Self::Stop];
 
     /// As the reply and `kinds` name it.
-    pub(crate) fn name(self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match self {
             Self::Stitch => "stitch",
             Self::Jump => "jump",
@@ -52,7 +52,7 @@ impl RecordKind {
     }
 
     /// The kind of a record of command `c`.
-    fn of(c: Command) -> Self {
+    pub(crate) fn of(c: Command) -> Self {
         match c {
             Command::Stitch => Self::Stitch,
             Command::Jump => Self::Jump,

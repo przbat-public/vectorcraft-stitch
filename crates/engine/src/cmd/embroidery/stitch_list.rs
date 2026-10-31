@@ -23,51 +23,24 @@ use vectorcraft_stitch::Command;
 use super::check::StitchLimits;
 use super::plan::{DesignPlan, Part};
 
-/// A record's kind.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum RecordKind {
-    Stitch,
-    Jump,
-    Trim,
-    Stop,
+pub use super::records::RecordKind;
+
+/// A record's kind in its flags byte's low bits ([`KIND_BITS`]), and back.
+fn kind_bits(kind: RecordKind) -> u8 {
+    match kind {
+        RecordKind::Stitch => 0,
+        RecordKind::Jump => 1,
+        RecordKind::Trim => 2,
+        RecordKind::Stop => 3,
+    }
 }
 
-impl RecordKind {
-    /// As `embroidery.stitches` names it.
-    pub fn id(self) -> &'static str {
-        match self {
-            Self::Stitch => "stitch",
-            Self::Jump => "jump",
-            Self::Trim => "trim",
-            Self::Stop => "stop",
-        }
-    }
-
-    fn of(command: Command) -> Self {
-        match command {
-            Command::Stitch => Self::Stitch,
-            Command::Jump => Self::Jump,
-            Command::Trim => Self::Trim,
-            Command::Stop | Command::ColorChange => Self::Stop,
-        }
-    }
-
-    fn bits(self) -> u8 {
-        match self {
-            Self::Stitch => 0,
-            Self::Jump => 1,
-            Self::Trim => 2,
-            Self::Stop => 3,
-        }
-    }
-
-    fn from_bits(bits: u8) -> Self {
-        match bits & KIND_BITS {
-            1 => Self::Jump,
-            2 => Self::Trim,
-            3 => Self::Stop,
-            _ => Self::Stitch,
-        }
+fn kind_of_bits(bits: u8) -> RecordKind {
+    match bits & KIND_BITS {
+        1 => RecordKind::Jump,
+        2 => RecordKind::Trim,
+        3 => RecordKind::Stop,
+        _ => RecordKind::Stitch,
     }
 }
 
@@ -141,7 +114,7 @@ impl Flags {
     pub fn of(plan: &DesignPlan, limits: &StitchLimits) -> Self {
         let mut bits = Vec::with_capacity(plan.blocks.iter().map(|b| b.stitches.len()).sum());
         super::measure::each_until_cancelled(plan, |r| {
-            let mut b = RecordKind::of(r.stitch.command).bits();
+            let mut b = kind_bits(RecordKind::of(r.stitch.command));
             if let Some(length) = r.sewn() {
                 if limits.short(length) {
                     b |= SHORT_BIT;
@@ -181,7 +154,7 @@ impl Flags {
 
     /// Record `number`'s kind.
     pub fn kind(&self, number: usize) -> Option<RecordKind> {
-        self.bits.get(number.checked_sub(1)?).map(|b| RecordKind::from_bits(*b))
+        self.bits.get(number.checked_sub(1)?).map(|b| kind_of_bits(*b))
     }
 
     /// Whether record `number` is listed under `filter`.
@@ -189,9 +162,9 @@ impl Flags {
         let Some(&b) = number.checked_sub(1).and_then(|i| self.bits.get(i)) else { return false };
         match filter {
             Filter::All => true,
-            Filter::Jumps => RecordKind::from_bits(b) == RecordKind::Jump,
-            Filter::Trims => RecordKind::from_bits(b) == RecordKind::Trim,
-            Filter::Stops => RecordKind::from_bits(b) == RecordKind::Stop,
+            Filter::Jumps => kind_of_bits(b) == RecordKind::Jump,
+            Filter::Trims => kind_of_bits(b) == RecordKind::Trim,
+            Filter::Stops => kind_of_bits(b) == RecordKind::Stop,
             Filter::Short => b & SHORT_BIT != 0,
             Filter::Long => b & LONG_BIT != 0,
         }

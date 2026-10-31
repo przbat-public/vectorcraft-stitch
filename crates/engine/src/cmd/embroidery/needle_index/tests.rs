@@ -235,6 +235,41 @@ fn a_shape_selects_the_needle_points_inside_it() {
     }
 }
 
+/// Roots named many times, or inside one another, are walked once: the index holds and refuses what
+/// the outermost hold and refuse alone, and an id that isn't in the document costs nothing. A
+/// shape's selection over the layers named as often as `ids` may selects and passes over as over
+/// them once.
+#[test]
+fn repeated_and_nested_roots_are_walked_once() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    let doc = s.doc().unwrap().doc.clone();
+    let layers: Vec<NodeId> = doc.layers.iter().map(|l| l.id).collect();
+    let alone = NeedleIndex::of(&doc, &layers, None).unwrap();
+    assert!(alone.scope().refused >= 2, "the fixture's locked and hidden runs: {:?}", alone.scope());
+    let mut roots: Vec<NodeId> = layers.iter().copied().cycle().take(layers.len() * 300).collect();
+    roots.extend([NodeId(m.converted.group), NodeId(m.one_point), NodeId(u64::MAX), NodeId(m.locked), NodeId(m.hidden)]);
+    roots.extend(&layers);
+    let many = NeedleIndex::of(&doc, &roots, None).unwrap();
+    assert_eq!(many.scope(), alone.scope());
+    assert!(many.ids().eq(alone.ids()), "the same paths, in the same order");
+    // Nested first: the object it says it edits stays the first named, its paths walked once.
+    let mut nested = vec![NodeId(m.converted.group)];
+    nested.extend(&layers);
+    nested.push(NodeId(m.converted.group));
+    let nested = NeedleIndex::of(&doc, &nested, None).unwrap().scope();
+    assert_eq!(nested.object, NodeId(m.converted.group));
+    assert_eq!((nested.paths, nested.needles, nested.refused), (alone.scope().paths, alone.scope().needles, alone.scope().refused));
+    let b = alone.scope().bounds.unwrap();
+    let mm = |v: f64| v / PT_PER_MM;
+    let rect = json!([mm(b.x0), mm(b.y0), mm(b.x1), mm(b.y1)]);
+    let ids = |times: usize| -> Vec<u64> { layers.iter().map(|l| l.0).cycle().take(layers.len() * times).collect() };
+    let once = run(&mut s, "embroidery.selectNeedlePoints", json!({"rect": rect, "ids": ids(1)}));
+    let repeated = run(&mut s, "embroidery.selectNeedlePoints", json!({"rect": rect, "ids": ids(needles::MAX_PATHS / layers.len())}));
+    assert_eq!(repeated, once);
+    assert_eq!(once["passedOver"].as_u64().unwrap() as usize, alone.scope().refused, "{once}");
+}
+
 /// Through the session: the embroidery tool's answers hold the needle points only while it works
 /// inside isolation of an object holding stitches, in the stitch view; the numbers are the plan's
 /// (`embroidery.stitches`' records of the path's needle points); out of isolation, what was kept

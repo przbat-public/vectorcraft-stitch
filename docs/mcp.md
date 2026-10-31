@@ -5277,9 +5277,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     them, planning the design (a jump selects the needle point it lands on, a cut or a stop the one it follows; a
     record that can't be edited is passed over and counted), by their addresses, planning nothing, or by a shape:
     those inside a rectangle or a polygon of 3 to 4,096 points (millimetres from the document's origin, y down;
-    inside by the even-odd rule, as the Lasso tool selects anchors), of the paths of stitches inside `ids`, else
-    inside the object isolated, else in the whole document, planning nothing (the paths that can't be edited,
-    locked or hidden or a file's run cut by a clip group, passed over and counted). The Embroidery Tool's marquee,
+    inside by the even-odd rule, as the Lasso tool selects anchors), of the paths of stitches inside `ids` (each
+    path once, however often or however nested `ids` names it), else inside the object isolated, else in the whole
+    document, planning nothing (the paths that can't be edited, locked or hidden or a file's run cut by a clip
+    group, passed over and counted once). The Embroidery Tool's marquee,
     while it edits stitches, is this command with `rect`. A selection, not an undo step:
     `{selectedCount, pathCount, passedOver}`. Selecting the needle points that end stitches shorter than a length,
     then `embroidery.deleteNeedlePoints {}`, deletes them.

@@ -188,13 +188,52 @@ pub struct NeedleIndex {
     bounds: Option<Rect>,
 }
 
-/// The node `id` of `doc`, as its parent holds it (its identity is what an edit changes).
-fn arc_of(doc: &Document, id: NodeId) -> Option<Arc<Node>> {
-    let siblings = match doc.parent_of(id) {
-        Some(parent) => doc.children(Some(parent))?,
-        None => &doc.layers,
+/// The node at index path `path` of `doc`, as its parent holds it (its identity is what an edit
+/// changes), and whether a clip group above it holds it.
+fn arc_at(doc: &Document, path: &[usize]) -> Option<(Arc<Node>, bool)> {
+    let (last, up) = path.split_last()?;
+    let mut nodes = &doc.layers;
+    let mut clipped = false;
+    for &i in up {
+        let n = nodes.get(i)?;
+        clipped |= n.clips();
+        nodes = n.children()?;
+    }
+    nodes.get(*last).map(|n| (n.clone(), clipped))
+}
+
+/// `roots` of `doc` each once, and only the outermost (one inside another is walked with it), with
+/// whether a clip group holds them: so each node is walked once however often, or however nested,
+/// `ids` names it. Looked up in one walk of the document, so an id that isn't in it costs nothing
+/// more.
+fn outermost(doc: &Document, roots: &[NodeId]) -> Vec<(Arc<Node>, bool)> {
+    let found = doc.index_paths(roots.iter().copied());
+    let mut seen: HashSet<NodeId> = HashSet::with_capacity(found.len());
+    let mut out = Vec::new();
+    for &root in roots {
+        let Some(path) = found.get(&root) else { continue };
+        if !seen.insert(root) {
+            continue;
+        }
+        let above = doc.ancestry_at(path).unwrap_or_default();
+        if above.iter().any(|a| *a != root && found.contains_key(a)) {
+            continue;
+        }
+        if let Some(n) = arc_at(doc, path) {
+            out.push(n);
+        }
+    }
+    out
+}
+
+/// How many needle points path `n` has, as [`PathIndex::of`] counts them (0 when it isn't a path
+/// of stitches): weighed against the budget before the path is indexed.
+fn needles_in(n: &Node) -> usize {
+    let (NodeKind::Path { path, .. }, Some(marks)) = (&n.kind, n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref())) else {
+        return 0;
     };
-    siblings.iter().find(|n| n.id == id).cloned()
+    let alone = path.subpaths.len() == 1;
+    path.subpaths.iter().map(|sp| needles::needle_count(&sp.anchors, alone, marks.double_point)).fold(0, usize::saturating_add)
 }
 
 /// Whether `n` is a path holding a run of literal stitches.
@@ -203,15 +242,16 @@ fn holds_stitches(n: &Node) -> bool {
 }
 
 impl NeedleIndex {
-    /// The index of the paths of stitches inside `roots` of `doc` (each root itself when it is one),
-    /// each path reusing `kept`'s chunks when its node is the same; `None` when they hold no path of
-    /// stitches at all. `roots`' first is the object it says it edits.
+    /// The index of the paths of stitches inside `roots` of `doc` (each root itself when it is one;
+    /// each root once, and none inside another: [`outermost`]), each path reusing `kept`'s chunks
+    /// when its node is the same; `None` when they hold no path of stitches at all. `roots`' first
+    /// is the object it says it edits.
     pub fn of(doc: &Document, roots: &[NodeId], kept: Option<&NeedleIndex>) -> Option<Self> {
         let editable = doc.editable();
         let mut paths: Vec<(NodeId, Arc<PathIndex>)> = Vec::new();
         let mut order = HashMap::new();
         let mut refused = 0usize;
-        // A node, whether a clip group holds it, and whether it is reached already.
+        // The paths of stitches under a node, each with whether a clip group holds it.
         fn walk(n: &Arc<Node>, clipped: bool, out: &mut Vec<(Arc<Node>, bool)>) {
             if holds_stitches(n) {
                 out.push((n.clone(), clipped));
@@ -223,9 +263,7 @@ impl NeedleIndex {
             }
         }
         let mut found: Vec<(Arc<Node>, bool)> = Vec::new();
-        for &root in roots {
-            let Some(n) = arc_of(doc, root) else { continue };
-            let clipped = doc.ancestry(root).unwrap_or_default().iter().filter(|a| **a != root).any(|a| doc.node(*a).is_some_and(Node::clips));
+        for (n, clipped) in outermost(doc, roots) {
             walk(&n, clipped, &mut found);
         }
         if found.is_empty() {
@@ -237,8 +275,9 @@ impl NeedleIndex {
             if order.contains_key(&n.id) {
                 continue;
             }
-            // Where it lies, as the stitch commands judge it (its needle points next).
-            if needles::placed_unfit(&n, editable(n.id), clipped).is_some() {
+            // Where it lies, as the stitch commands judge it (its needle points next), and whether
+            // it fits what the budget has left: past it, a path isn't indexed at all.
+            if needles::placed_unfit(&n, editable(n.id), clipped).is_some() || needles.saturating_add(needles_in(&n)) > MAX_NEEDLE_POINTS {
                 refused += 1;
                 continue;
             }
@@ -253,10 +292,6 @@ impl NeedleIndex {
                     }
                 },
             };
-            if needles.saturating_add(path.needles) > MAX_NEEDLE_POINTS {
-                refused += 1;
-                continue;
-            }
             needles += path.needles;
             bounds = match (bounds, path.bounds) {
                 (Some(a), Some(b)) => Some(a.union(b)),

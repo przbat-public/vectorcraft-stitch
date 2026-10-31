@@ -23,6 +23,10 @@ use vectorcraft_engine::{EngineError, Session};
 use vectorcraft_testkit::embroidery::{self as fx, StitchOp, paths_of_stitches};
 use vectorcraft_testkit::invariants::check_session;
 
+/// The most ids `embroidery.selectNeedlePoints {rect, ids}` takes (the stitch commands' cap on the
+/// paths they are given, as the Layers panel's on its rows).
+const IDS_MAX: usize = 100_000;
+
 fn runner(s: &mut Session) -> impl FnMut(&str, Value) -> Value + '_ {
     |c, p| s.execute(c, &p).unwrap_or_else(|e| panic!("{c} {p}: {e}"))
 }
@@ -83,6 +87,7 @@ fn stitch_commands_on_every_kind_of_run_never_panic() {
     let m = fx::manual(&mut runner(&mut s));
     let c = m.converted;
     let doc = s.doc().unwrap().doc.clone();
+    let layer = doc.layers[0].id.0;
     let mut ids: Vec<u64> =
         vec![m.opened[0].runs[0], m.one_point, m.double_point, m.trim_before, m.curved, m.instance, m.locked, m.hidden, m.stopped];
     ids.extend(doc.node(vectorcraft_doc::NodeId(c.fill)).unwrap().children().unwrap().iter().map(|n| n.id.0));
@@ -114,6 +119,9 @@ fn stitch_commands_on_every_kind_of_run_never_panic() {
             ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, f64::MAX, 1], "ids": [id]})),
             ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], [1e5, 0], [0, 1e5], [1e5, 1e5]], "ids": [id], "mode": "toggle"})),
             ("embroidery.selectNeedlePoints", json!({"polygon": (0..5000).map(|k| json!([k, k % 7])).collect::<Vec<_>>(), "ids": [id]})),
+            // One id named as often as `ids` may, and roots inside one another: each walked once.
+            ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": vec![id; IDS_MAX]})),
+            ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": [id, layer, id, layer, u64::MAX], "mode": "toggle"})),
             ("embroidery.stitches", json!({"ids": [id], "limit": 5})),
         ] {
             let mut t = Session::new();

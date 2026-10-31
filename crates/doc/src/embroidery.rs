@@ -84,8 +84,9 @@ pub struct Embroidery {
 /// [`StitchRun::extra`].
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct StitchRun {
-    /// The thread was cut before the run, as the file had it; otherwise the needle jumped to the
-    /// run's first point with the thread still on.
+    /// The thread is cut before the run, as the file had it (or, for manual stitches, as a stitch
+    /// edit passed a cut to it); otherwise the needle jumps to the run's first point with the thread
+    /// still on, cut only when the move is long.
     pub trim_before: bool,
     /// The thread was cut after the run, at the end of its colour block, as the file had it
     /// (machines and digitizers often cut before the thread is changed).

@@ -451,6 +451,31 @@ fn restored_duplicates_keep_every_id_unique() {
     assert_eq!((members(compound), members(copy)), (2, 2), "both compounds back, each with its two members");
 }
 
+/// A cut before a manual run is sewn, whatever the move into it: the first run of two deleted, its
+/// cut after it passes to the second as the cut before it, and the export still cuts there (the
+/// runs lie near a square of their colour, so no move is long enough to be cut for its length).
+#[test]
+fn a_cut_before_a_manual_run_is_sewn() {
+    use vectorcraft_doc::embroidery::StitchRun;
+    let mut s = blank();
+    red_square(&mut s, 10.0, 6.0, 3.0);
+    let a = literal_path(
+        &mut s,
+        None,
+        [200, 30, 30],
+        &[(10.0, 5.0), (12.0, 5.0), (14.0, 5.0)],
+        StitchRun { manual: true, trim_after: true, ..StitchRun::default() },
+    );
+    let b = literal_path(&mut s, None, [200, 30, 30], &[(16.0, 5.0), (18.0, 5.0)], StitchRun { manual: true, ..StitchRun::default() });
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    run(&mut s, "object.group", json!({}));
+    let trims = |s: &mut Session| run(s, "embroidery.stats", json!({}))["trims"].as_u64().unwrap();
+    assert_eq!(trims(&mut s), 1, "a's cut after it");
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": a, "from": 0, "to": 2}]}));
+    assert_eq!(r["moved"], json!([{"function": "trim", "id": b, "before": true}]), "{r}");
+    assert_eq!(trims(&mut s), 1, "b's cut before it, sewn");
+}
+
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,
 /// an original that doesn't read as an object, one placing a symbol the document no longer has.
 #[test]

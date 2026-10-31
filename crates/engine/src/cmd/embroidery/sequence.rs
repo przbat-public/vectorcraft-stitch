@@ -51,9 +51,12 @@ pub(super) struct Facts {
 pub(super) struct Planned {
     pub(super) facts: Facts,
     pub(super) block: Block,
-    /// A literal run read from a machine file: the group it belongs to (that file's colour block)
-    /// and whether the thread was cut before it. `None`: stitches planned from art.
-    pub(super) literal: Option<(NodeId, bool)>,
+    /// A literal run read from a machine file: the group it belongs to (that file's colour block).
+    /// `None`: stitches placed as art is (planned from art, or manual stitches).
+    pub(super) literal: Option<NodeId>,
+    /// The thread cut before it, whatever the move into it: as a file had it, or a manual run's
+    /// cut before it (one a stitch edit passed to it).
+    pub(super) cut_before: bool,
 }
 
 /// A unit in a block: what it is and was planned with, the box its stitches cover as planned, where
@@ -162,14 +165,14 @@ impl Sequence {
 
     /// Add one unit's stitches after the others.
     pub(super) fn add(&mut self, planned: Planned) {
-        let Planned { facts, block, literal } = planned;
+        let Planned { facts, block, literal, cut_before } = planned;
         let Some(&first) = block.stitches.first() else { return };
         let planned_bounds = block.bounds();
         let walked = self.adds.len();
         let member = |start: usize, own: std::ops::Range<usize>, met: bool| Member { facts, bounds: planned_bounds, start, own, met, walked };
         match literal {
-            Some((owner, trim_before)) => self.add_literal(block, first, member, owner, trim_before),
-            None => self.add_art(block, first, member),
+            Some(owner) => self.add_literal(block, first, member, owner, cut_before),
+            None => self.add_art(block, first, member, cut_before),
         }
     }
 
@@ -211,8 +214,9 @@ impl Sequence {
     }
 
     /// Art's stitches (`b`, starting at `first`): into the last block of its colour when nothing
-    /// sewn since overlaps it ([`Sequence::target`]), else a block of its own.
-    fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize, std::ops::Range<usize>, bool) -> Member) {
+    /// sewn since overlaps it ([`Sequence::target`]), else a block of its own; the thread cut before
+    /// it when `cut_before` asks, whatever the move.
+    fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize, std::ops::Range<usize>, bool) -> Member, cut_before: bool) {
         let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
         let target = self.target(b.thread.color, bounds);
         self.adds.push(target.unwrap_or(self.blocks.len()));
@@ -230,7 +234,7 @@ impl Sequence {
                 if let Some(last) = merged.stitches.last().copied() {
                     let at = needle_at(&merged.stitches).unwrap_or(last);
                     let cut = merged.stitches.iter().rev().take_while(|s| lifts(s.command)).any(|s| s.command == Command::Trim);
-                    if !cut && at.distance(first) > self.connect.trim {
+                    if !cut && (cut_before || at.distance(first) > self.connect.trim) {
                         merged.stitches.push(Stitch::new(at.x, at.y, Command::Trim));
                     }
                     if at.distance(first) > SAME_POINT || lifts(last.command) {
@@ -396,7 +400,7 @@ mod tests {
             why: Choice::Fill,
             asked: Asked::default(),
         };
-        Planned { facts, block: b, literal: None }
+        Planned { facts, block: b, literal: None, cut_before: false }
     }
 
     /// The trims and jumps between two objects of one thread, the second starting `gap` mm from

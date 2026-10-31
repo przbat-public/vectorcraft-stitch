@@ -615,7 +615,7 @@ impl<'a> Digitizer<'a> {
         // placed as art is, so that converting an object changes nothing it sews.
         let (part, why, literal) = match run.manual {
             true => (Part::Manual, Choice::Manual, None),
-            false => (Part::Literal, Choice::Literal, self.owner.map(|g| (g, run.trim_before))),
+            false => (Part::Literal, Choice::Literal, self.owner),
         };
         let origin = self.origin(n, part);
         let occurrence = self.occurrence(&origin);
@@ -623,7 +623,8 @@ impl<'a> Digitizer<'a> {
         // its instance's transform too.
         let scale = run.transformed.and_then(scale_factors);
         let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default() };
-        self.seq.add(Planned { facts, block, literal });
+        // The cut before it: as its file had it, or one a stitch edit passed to a manual run.
+        self.seq.add(Planned { facts, block, literal, cut_before: run.trim_before });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the
@@ -960,7 +961,7 @@ impl<'a> Digitizer<'a> {
         }
         let asked = Asked { entry: settings.entry(), exit: settings.exit(), reach };
         let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, scale: None, why, asked };
-        self.seq.add(Planned { facts, block, literal: None });
+        self.seq.add(Planned { facts, block, literal: None, cut_before: false });
     }
 
     /// `request`'s stitches: those the cache keeps for it, else planned, and kept.

@@ -59,7 +59,10 @@ type Key = (u64, u64, Option<u64>, &'static str, bool, bool);
 /// a gesture is under way (its previews move the revision every frame): the last answer stands.
 pub fn editing(app: &mut VectorcraftApp) -> Option<StitchEditing> {
     let st = app.session.active()?;
-    let (uid, revision, gesture) = (st.uid, st.revision, st.interaction.is_some());
+    // A Cmd-press lends the Selection tool for the press: editing holds through it, as through a
+    // gesture of its own.
+    let lent = app.session.lent_from() == Some(vectorcraft_tools::embroidery::ID);
+    let (uid, revision, gesture) = (st.uid, st.revision, st.interaction.is_some() || lent);
     let shown = app.embroidery.preview.shown(uid).map(|s| s.planned.generation);
     let key = (uid, revision, shown, app.session.tool_id(), app.session.stitch_view_of(uid).on, app.ui.view.outline);
     let kept = &app.embroidery.editing;
@@ -172,6 +175,13 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) {
             app.status(e);
         }
     }
+}
+
+/// Whether the Embroidery Tool is the tool now, or lent the Selection tool for the press under way
+/// (a Cmd-press): what shows for stitch editing holds through such a press.
+pub fn embroidery_tool(app: &VectorcraftApp) -> bool {
+    let id = vectorcraft_tools::embroidery::ID;
+    app.session.tool_id() == id || app.session.lent_from() == Some(id)
 }
 
 /// Edit Stitches: the object holding stitches that `id` is or lies in isolated (a converted object

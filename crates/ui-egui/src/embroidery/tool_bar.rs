@@ -41,13 +41,11 @@ pub(crate) const EDITING_HINT: &[(&str, bool)] = &[
 ];
 
 /// The hint the status bar shows for `tool`: the stitch-editing hint ([`EDITING_HINT_ID`]) while the
-/// Embroidery Tool edits stitches, else the tool's own (upstream's choice by the tool's id).
+/// Embroidery Tool edits stitches (a Cmd-press it lends the Selection tool for included), else the
+/// tool's own (upstream's choice by the tool's id).
 pub(crate) fn hint_id(app: &mut VectorcraftApp, tool: &'static str) -> &'static str {
-    if tool == ID_OF_TOOL && super::editing::editing(app).is_some() { EDITING_HINT_ID } else { tool }
+    if super::editing::embroidery_tool(app) && super::editing::editing(app).is_some() { EDITING_HINT_ID } else { tool }
 }
-
-/// The Embroidery Tool's id.
-const ID_OF_TOOL: &str = vectorcraft_tools::embroidery::ID;
 
 /// The command its button runs: its label is the menu's.
 const NEAREST: &str = "embroidery.nearestConnection";

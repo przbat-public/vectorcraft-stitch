@@ -214,3 +214,38 @@ fn in_the_art_view_the_chip_offers_the_stitches() {
     let uid = app.session.active().unwrap().uid;
     assert!(app.session.stitch_view_of(uid).on);
 }
+
+/// A Cmd-press lends the Selection tool for the press: stitch editing holds through it (its chip,
+/// hint and the stitches drawn as edited stay), with no frame of stitches drawn again.
+#[test]
+fn a_cmd_press_keeps_editing_on() {
+    let (mut app, object) = app();
+    app.run("object.isolate", json!({"id": object})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    assert!(super::editing(&mut app).is_some());
+    let uploads = app.embroidery.layer.uploads;
+    let at = needle_on_screen(&app, object, 3);
+    let cmd = egui::Modifiers::COMMAND;
+    let down = Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: true, modifiers: cmd };
+    for e in [vec![Event::ModifiersChanged(cmd), Event::PointerMoved(at), down], vec![]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+        assert_eq!(app.session.lent_from(), Some(vectorcraft_tools::embroidery::ID), "the Selection tool lent for the press");
+        assert!(super::editing(&mut app).is_some(), "still editing during the press");
+        let tool = app.session.tool_id();
+        assert_eq!(crate::embroidery::tool_bar::hint_id(&mut app, tool), crate::embroidery::tool_bar::EDITING_HINT_ID);
+    }
+    let up = Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: false, modifiers: cmd };
+    for e in [vec![up], vec![Event::ModifiersChanged(egui::Modifiers::NONE)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+    }
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(app.session.tool_id(), vectorcraft_tools::embroidery::ID, "given back");
+    assert!(super::editing(&mut app).is_some());
+    assert_eq!(app.embroidery.layer.uploads, uploads, "no frame of stitches drawn again for the press");
+}

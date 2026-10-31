@@ -204,6 +204,12 @@ impl crate::Session {
         self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| n.selected_paths(cx.selection)))
     }
 
+    /// The tool that lent the Selection tool for the press under way (a Cmd-press), if one did: the
+    /// tool the interface keeps showing, and stitch editing holds, while the press lasts.
+    pub fn lent_from(&self) -> Option<&'static str> {
+        self.lender.as_ref().map(|t| t.id())
+    }
+
     /// Which of `ids` stitch editing edits now (the needle index holds them), in order; all `false`
     /// while it isn't editing. The Stitches tab selects only these from its rows.
     pub fn stitch_edits(&mut self, view: crate::ViewInfo, ids: &[NodeId]) -> Vec<bool> {

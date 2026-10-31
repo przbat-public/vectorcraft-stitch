@@ -15,7 +15,7 @@ pub type Item = (&'static str, &'static str, &'static str, Value);
 /// Whether the bar shows for the Embroidery Tool now: while it edits stitches and needle points are
 /// selected.
 pub fn shows(app: &mut VectorcraftApp) -> bool {
-    app.session.tool_id() == vectorcraft_tools::embroidery::ID && super::editing::editing(app).is_some_and(|e| e.selected > 0)
+    super::editing::embroidery_tool(app) && super::editing::editing(app).is_some_and(|e| e.selected > 0)
 }
 
 /// The bar's items in place of upstream's while stitches are edited with needle points selected:

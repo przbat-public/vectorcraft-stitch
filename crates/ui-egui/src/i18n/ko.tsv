@@ -5044,7 +5044,7 @@ lighting	Light	광원
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft 팀의 VectorCraft를 기반으로 합니다. MIT OR Apache-2.0. 글꼴: Source Sans 3, Inter, JetBrains Mono (OFL). 아이콘: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC에는 최대 {MAX_COLORS}가지 색이 들어가며, {colors}가지는 들어가지 않습니다
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC에는 최대 {MAX_COLORS}가지 색이 들어가며(정지도 한 가지로 셉니다), {colors}가지는 들어가지 않습니다
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3에는 최대 {MAX_COLORS}개의 색 블록이 들어갑니다
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST 파일에는 {HEADER}바이트 헤더와 3바이트 레코드가 하나 이상 있어야 하지만, 이 파일은 {_1}바이트입니다
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 헤더는 최대 {MAX_RECORDS}개의 레코드를 세는데, 디자인에는 {_1}개가 필요합니다
@@ -5681,3 +5681,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	바늘 위치 뒤 정지
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	전체 편집 중에는 할 수 없습니다: 먼저 전체 편집을 끝내세요
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	실 블록 {count}개(정지 포함)
+@plural	{count} thread change, stops included|{count} thread changes, stops included	실 교체 {count}회(정지 포함)

@@ -5306,7 +5306,7 @@ lighting	Light	光源
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	基于 ArtCraft 团队的 VectorCraft。MIT 或 Apache-2.0 许可。字体：Source Sans 3、Inter、JetBrains Mono、Noto Sans SC (OFL)。图标：Lucide (ISC)+ VectorCraft。
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC 最多容纳 {MAX_COLORS} 种颜色，而不是 {colors} 种
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC 最多容纳 {MAX_COLORS} 种颜色（每次停机算一种），而不是 {colors} 种
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 最多容纳 {MAX_COLORS} 个颜色块
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST 文件有 {HEADER} 字节的文件头和至少一条 3 字节的记录，但此文件只有 {_1} 字节
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 文件头最多计 {MAX_RECORDS} 条记录，而图案需要 {_1} 条
@@ -5942,3 +5942,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	落针点后停机
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	全局编辑开启时不可用：请先停止全局编辑
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} 个线块（含停机）
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} 次换线（含停机）

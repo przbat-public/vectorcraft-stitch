@@ -5086,7 +5086,7 @@ lighting	Light	光源
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基於 ArtCraft 團隊的 VectorCraft。MIT OR Apache-2.0。字體：Source Sans 3、Inter、JetBrains Mono (OFL)。圖示：Lucide (ISC) + VectorCraft。
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC 最多容納 {MAX_COLORS} 種顏色，而不是 {colors} 種
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC 最多容納 {MAX_COLORS} 種顏色（每次停機算一種），而不是 {colors} 種
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 最多容納 {MAX_COLORS} 個顏色區塊
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST 檔案有 {HEADER} 位元組的檔頭與至少一筆 3 位元組的記錄，但此檔案只有 {_1} 位元組
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 檔頭最多計 {MAX_RECORDS} 筆記錄，而圖案需要 {_1} 筆
@@ -5737,3 +5737,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	落針點後停機
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	整體編輯開啟時無法使用：請先停止整體編輯
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} 個線塊（含停機）
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} 次換線（含停機）

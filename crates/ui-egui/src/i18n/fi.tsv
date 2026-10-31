@@ -5432,7 +5432,7 @@ mark-style	Japanese	Japanilainen
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Perustuu ArtCraft-tiimin VectorCraftiin. MIT OR Apache-2.0. Fontit: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Kuvakkeet: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC mahduttaa enintään {MAX_COLORS} väriä, ei {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC mahduttaa enintään {MAX_COLORS} väriä (jokainen pysäytys lasketaan yhdeksi), ei {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 mahduttaa enintään {MAX_COLORS} värilohkoa
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST-tiedostossa on {HEADER} tavun otsake ja vähintään yksi 3 tavun tietue, mutta tämä tiedosto on {_1} tavua
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST-otsake laskee enintään {MAX_RECORDS} tietuetta, ja malli tarvitsee {_1}
@@ -6134,3 +6134,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Pysäytys neulanpiston jälkeen
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	ei yleismuokkauksen ollessa käytössä: lopeta se ensin
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} lankalohko, pysäytykset mukaan lukien|{count} lankalohkoa, pysäytykset mukaan lukien
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} langanvaihto, pysäytykset mukaan lukien|{count} langanvaihtoa, pysäytykset mukaan lukien

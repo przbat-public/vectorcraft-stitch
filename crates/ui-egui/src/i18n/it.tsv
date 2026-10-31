@@ -5081,7 +5081,7 @@ lighting	Light	Luce
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basato su VectorCraft del team ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono (OFL). Icone: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC contiene al massimo {MAX_COLORS} colori, non {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC contiene al massimo {MAX_COLORS} colori (ogni arresto conta come uno), non {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 contiene al massimo {MAX_COLORS} blocchi di colore
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	un file DST ha un’intestazione di {HEADER} byte e almeno un record di 3 byte, ma questo file è di {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	un’intestazione DST conta al massimo {MAX_RECORDS} record, e il disegno ne richiede {_1}
@@ -5718,3 +5718,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Arresto dopo il punto dell’ago
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	non mentre la modifica globale è attiva: fermala prima
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} blocco di filo, arresti compresi|{count} blocchi di filo, arresti compresi
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} cambio filo, arresti compresi|{count} cambi filo, arresti compresi

@@ -5424,7 +5424,7 @@ theme	Appearance	Utseende
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Baserat på VectorCraft från ArtCraft-teamet. MIT OR Apache-2.0. Typsnitt: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikoner: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC rymmer högst {MAX_COLORS} färger, inte {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC rymmer högst {MAX_COLORS} färger (varje stopp räknas som en), inte {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 rymmer högst {MAX_COLORS} färgblock
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	en DST-fil har ett huvud på {HEADER} byte och minst en post på 3 byte, men den här filen är {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	ett DST-huvud räknar högst {MAX_RECORDS} poster, och mönstret behöver {_1}
@@ -6059,3 +6059,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Stopp efter nålstick
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	inte medan global redigering pågår: avsluta den först
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} trådblock, stopp inräknade|{count} trådblock, stopp inräknade
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} trådbyte, stopp inräknade|{count} trådbyten, stopp inräknade

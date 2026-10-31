@@ -5339,7 +5339,7 @@ imageTrace	Outline	კონტური
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	დაფუძნებულია ArtCraft-ის გუნდის VectorCraft-ზე. MIT OR Apache-2.0. შრიფტები: Source Sans 3, Inter, JetBrains Mono (OFL). ხატულები: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC-ში ეტევა არაუმეტეს {MAX_COLORS} ფერი და არა {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC-ში ეტევა არაუმეტეს {MAX_COLORS} ფერი (ყოველი გაჩერება ერთად ითვლება) და არა {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3-ში ეტევა არაუმეტეს {MAX_COLORS} ფერის ბლოკი
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST ფაილს აქვს {HEADER}-ბაიტიანი სათაური და მინიმუმ ერთი 3-ბაიტიანი ჩანაწერი, მაგრამ ეს ფაილი {_1} ბაიტია
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST სათაური ითვლის არაუმეტეს {MAX_RECORDS} ჩანაწერს, დიზაინს კი {_1} სჭირდება
@@ -6018,3 +6018,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	გაჩერება ნემსის ჩხვლეტის შემდეგ
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	არა, სანამ გლობალური რედაქტირება ჩართულია: ჯერ შეაჩერეთ ის
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	ძაფის ბლოკები: {count} (გაჩერებების ჩათვლით)
+@plural	{count} thread change, stops included|{count} thread changes, stops included	ძაფის ცვლა: {count} (გაჩერებების ჩათვლით)

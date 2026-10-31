@@ -5452,7 +5452,7 @@ swatch	Bright Violet	Felviolet
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Gebaseerd op VectorCraft van het ArtCraft-team. MIT OR Apache-2.0. Lettertypen: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Pictogrammen: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC bevat hoogstens {MAX_COLORS} kleuren, niet {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC bevat hoogstens {MAX_COLORS} kleuren (elke stop telt als één), niet {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 bevat hoogstens {MAX_COLORS} kleurblokken
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	een DST-bestand heeft een header van {HEADER} bytes en ten minste één record van 3 bytes, maar dit bestand is {_1} bytes
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	een DST-header telt hoogstens {MAX_RECORDS} records, en het ontwerp heeft er {_1} nodig
@@ -6101,3 +6101,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Stop na insteekpunt
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	niet tijdens globale bewerking: stop die eerst
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} draadblok, stops inbegrepen|{count} draadblokken, stops inbegrepen
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} draadwissel, stops inbegrepen|{count} draadwissels, stops inbegrepen

@@ -5077,7 +5077,7 @@ lighting	Light	Свет
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Основано на VectorCraft от команды ArtCraft. MIT OR Apache-2.0. Шрифты: Source Sans 3, Inter, JetBrains Mono (OFL). Значки: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC вмещает не более {MAX_COLORS} цветов, а не {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC вмещает не более {MAX_COLORS} цветов (каждая остановка считается за один), а не {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 вмещает не более {MAX_COLORS} цветовых блоков
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	у файла DST заголовок из {HEADER} байт и хотя бы одна 3-байтовая запись, но этот файл — {_1} байт
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заголовок DST считает не более {MAX_RECORDS} записей, а дизайну нужно {_1}
@@ -5714,3 +5714,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Остановка после прокола
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	не во время глобального редактирования: сначала завершите его
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} блок нити, включая остановки|{count} блока нити, включая остановки|{count} блоков нити, включая остановки
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} смена нити, включая остановки|{count} смены нити, включая остановки|{count} смен нити, включая остановки

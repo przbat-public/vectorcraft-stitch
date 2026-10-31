@@ -5061,7 +5061,7 @@ theme	Appearance	Giao diện
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Dựa trên VectorCraft của nhóm ArtCraft. MIT OR Apache-2.0. Phông chữ: Source Sans 3, Inter, JetBrains Mono (OFL). Biểu tượng: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC chứa tối đa {MAX_COLORS} màu, không phải {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC chứa tối đa {MAX_COLORS} màu (mỗi lần dừng tính là một màu), không phải {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 chứa tối đa {MAX_COLORS} khối màu
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	tệp DST có phần đầu {HEADER} byte và ít nhất một bản ghi 3 byte, nhưng tệp này có {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	phần đầu DST đếm tối đa {MAX_RECORDS} bản ghi, còn thiết kế cần {_1}
@@ -5698,3 +5698,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Dừng sau điểm đâm kim
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	không được khi đang chỉnh sửa toàn cục: hãy dừng chỉnh sửa toàn cục trước
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} khối chỉ, tính cả lần dừng
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} lần đổi chỉ, tính cả lần dừng

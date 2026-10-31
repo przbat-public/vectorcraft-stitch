@@ -5047,7 +5047,7 @@ effect	Soft	Weich
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basiert auf VectorCraft vom ArtCraft-Team. MIT OR Apache-2.0. Schriften: Source Sans 3, Inter, JetBrains Mono (OFL). Symbole: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC fasst höchstens {MAX_COLORS} Farben, nicht {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC fasst höchstens {MAX_COLORS} Farben (jeder Stopp zählt als eine), nicht {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 fasst höchstens {MAX_COLORS} Farbblöcke
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	eine DST-Datei hat einen {HEADER}-Byte-Kopf und mindestens einen 3-Byte-Datensatz, aber diese Datei hat {_1} Bytes
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	ein DST-Kopf zählt höchstens {MAX_RECORDS} Datensätze, und das Design braucht {_1}
@@ -5684,3 +5684,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Stopp nach Einstichpunkt
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	nicht während der globalen Bearbeitung: beenden Sie sie zuerst
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} Garnblock, Stopps eingeschlossen|{count} Garnblöcke, Stopps eingeschlossen
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} Garnwechsel, Stopps eingeschlossen|{count} Garnwechsel, Stopps eingeschlossen

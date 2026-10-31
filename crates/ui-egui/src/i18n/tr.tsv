@@ -5552,7 +5552,7 @@ axis	Y Axis	Y ekseni
 @msg	the file's several designs are read as one	dosyadaki birden çok tasarım tek bir tasarım olarak okunur
 @msg	the file holds things this version doesn't read	dosya bu sürümün okumadığı öğeler içeriyor
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft ekibinin VectorCraft'ına dayanır. MIT VEYA Apache-2.0. Yazı Tipleri: Source Sans 3, Inter, JetBrains Mono (OFL). Simgeler: Lucide (ISC) + VectorCraft.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC en fazla {MAX_COLORS} renk taşır, {colors} değil
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC en fazla {MAX_COLORS} renk taşır (her durma bir renk sayılır), {colors} değil
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 en fazla {MAX_COLORS} renk bloğu tutar
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	bir DST dosyasında {HEADER} baytlık bir başlık ve en az bir 3 baytlık kayıt bulunur, ancak bu dosya {_1} bayt
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	bir DST başlığı en fazla {MAX_RECORDS} kayıt sayar, tasarım ise {_1} kayıt gerektirir
@@ -6064,3 +6064,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	İğne noktasından sonra durma
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	Genel Düzenleme açıkken olmaz: önce Genel Düzenlemeyi durdurun
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} iplik bloğu, durmalar dahil
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} iplik değişimi, durmalar dahil

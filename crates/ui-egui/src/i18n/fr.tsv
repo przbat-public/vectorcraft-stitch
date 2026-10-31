@@ -5467,7 +5467,7 @@ theme	Appearance	Apparence
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Basé sur VectorCraft de l’équipe ArtCraft. MIT OR Apache-2.0. Polices : Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icônes : Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC contient au plus {MAX_COLORS} couleurs, pas {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC contient au plus {MAX_COLORS} couleurs (chaque arrêt compte pour une), pas {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 contient au plus {MAX_COLORS} blocs de couleur
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	un fichier DST a un en-tête de {HEADER} octets et au moins un enregistrement de 3 octets, mais ce fichier fait {_1} octets
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	un en-tête DST compte au plus {MAX_RECORDS} enregistrements, et le motif en demande {_1}
@@ -6102,3 +6102,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Arrêt après le point de piqûre
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	pas pendant la modification globale : arrêtez-la d’abord
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} bloc de fil, arrêts compris|{count} blocs de fil, arrêts compris
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} changement de fil, arrêts compris|{count} changements de fil, arrêts compris

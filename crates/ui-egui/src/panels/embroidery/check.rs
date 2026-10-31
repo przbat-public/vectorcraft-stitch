@@ -217,9 +217,15 @@ pub fn found(rule: &Value, lang: Lang) -> String {
     let count = measured.as_u64().unwrap_or(0);
     // The design's own figures, against a format's or a machine's limit, found or not.
     match id {
-        "formatColors" if measured.is_u64() => return crate::etn!(count, "{count} thread block", "{count} thread blocks"),
+        // Counted as the file and the machine count them: each stop is a change to the same thread
+        // (the status bar's thread changes leave stops out).
+        "formatColors" if measured.is_u64() => {
+            return crate::etn!(count, "{count} thread block, stops included", "{count} thread blocks, stops included");
+        }
         "machineStitches" if measured.is_u64() => return crate::etn!(count, "{count} stitch", "{count} stitches"),
-        "machineColorChanges" if measured.is_u64() => return crate::etn!(count, "{count} thread change", "{count} thread changes"),
+        "machineColorChanges" if measured.is_u64() => {
+            return crate::etn!(count, "{count} thread change, stops included", "{count} thread changes, stops included");
+        }
         _ => {}
     }
     if hits == 0 {

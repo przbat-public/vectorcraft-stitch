@@ -5384,7 +5384,7 @@ mark-style	Japanese	Japonesas
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Baseado no VectorCraft da equipe ArtCraft. MIT OR Apache-2.0. Fontes: Source Sans 3, Inter, JetBrains Mono (OFL). Ícones: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	o PEC comporta no máximo {MAX_COLORS} cores, não {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	o PEC comporta no máximo {MAX_COLORS} cores (cada parada conta como uma), não {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	o VP3 comporta no máximo {MAX_COLORS} blocos de cor
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	um arquivo DST tem um cabeçalho de {HEADER} bytes e pelo menos um registro de 3 bytes, mas este arquivo tem {_1} bytes
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	um cabeçalho DST conta no máximo {MAX_RECORDS} registros, e o desenho precisa de {_1}
@@ -6019,3 +6019,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Parada após o ponto de agulha
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	não durante a Edição Global: encerre-a primeiro
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} bloco de linha, paradas incluídas|{count} blocos de linha, paradas incluídas
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} troca de linha, paradas incluídas|{count} trocas de linha, paradas incluídas

@@ -5422,7 +5422,7 @@ theme	Appearance	Външен вид
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Базирано на VectorCraft от екипа на ArtCraft. MIT ИЛИ Apache-2.0. Шрифтове: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Икони: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC побира най-много {MAX_COLORS} цвята, а не {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC побира най-много {MAX_COLORS} цвята (всяко спиране се брои за един), а не {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 побира най-много {MAX_COLORS} цветни блока
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST файлът има заглавка от {HEADER} байта и поне един 3-байтов запис, но този файл е {_1} байта
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заглавката на DST брои най-много {MAX_RECORDS} записа, а дизайнът изисква {_1}
@@ -6042,3 +6042,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Спиране след точка на убождане
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	не и докато е включено глобалното редактиране: първо го спрете
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} блок нишки, включително спиранията|{count} блока нишки, включително спиранията
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} смяна на нишката, включително спиранията|{count} смени на нишката, включително спиранията

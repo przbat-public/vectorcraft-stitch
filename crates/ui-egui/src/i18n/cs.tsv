@@ -5468,7 +5468,7 @@ mark-style	Japanese	Japonské
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Založeno na VectorCraft od týmu ArtCraft. MIT OR Apache-2.0. Písma: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikony: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC pojme nejvýše {MAX_COLORS} barev, ne {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC pojme nejvýše {MAX_COLORS} barev (každé zastavení se počítá jako jedna), ne {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 pojme nejvýše {MAX_COLORS} barevných bloků
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	soubor DST má hlavičku o {HEADER} bajtech a aspoň jeden 3bajtový záznam, ale tento soubor má {_1} bajtů
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	hlavička DST počítá nejvýše {MAX_RECORDS} záznamů a návrh jich potřebuje {_1}
@@ -6103,3 +6103,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Zastavení po vpichu
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	ne během globálních úprav: nejdřív je ukončete
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} blok nití, včetně zastavení|{count} bloky nití, včetně zastavení|{count} bloků nití, včetně zastavení
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} výměna nitě, včetně zastavení|{count} výměny nitě, včetně zastavení|{count} výměn nitě, včetně zastavení

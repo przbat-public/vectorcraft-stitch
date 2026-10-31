@@ -5121,7 +5121,7 @@ lighting	Light	ライト
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft チームの VectorCraft をもとにしています。MIT OR Apache-2.0。フォント：Source Sans 3、Inter、JetBrains Mono (OFL)。アイコン：Lucide (ISC) + VectorCraft。
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC に入る色は最大 {MAX_COLORS} 色で、{colors} 色は入りません
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC に入る色は最大 {MAX_COLORS} 色で（停止も 1 色に数えます）、{colors} 色は入りません
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 に入る色ブロックは最大 {MAX_COLORS} 個です
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST ファイルには {HEADER} バイトのヘッダーと 3 バイトのレコードが 1 つ以上必要ですが、このファイルは {_1} バイトです
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST ヘッダーが数えられるレコードは最大 {MAX_RECORDS} 個ですが、デザインには {_1} 個必要です
@@ -5780,3 +5780,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	針落ち点の後で停止
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	グローバル編集中はできません: 先にグローバル編集を終了してください
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} 個の糸ブロック（停止を含む）
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} 回の糸替え（停止を含む）

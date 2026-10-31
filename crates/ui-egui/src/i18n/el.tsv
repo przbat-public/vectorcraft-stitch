@@ -5420,7 +5420,7 @@ effect	Points	Σημεία
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Βασίζεται στο VectorCraft της ομάδας ArtCraft. MIT ή Apache-2.0. Γραμματοσειρές: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Εικονίδια: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	Το PEC χωράει το πολύ {MAX_COLORS} χρώματα, όχι {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	Το PEC χωράει το πολύ {MAX_COLORS} χρώματα (κάθε διακοπή μετράει ως ένα), όχι {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	Το VP3 χωράει το πολύ {MAX_COLORS} μπλοκ χρώματος
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	ένα αρχείο DST έχει κεφαλίδα {HEADER} byte και τουλάχιστον μία εγγραφή 3 byte, αλλά αυτό το αρχείο έχει {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	μια κεφαλίδα DST μετρά το πολύ {MAX_RECORDS} εγγραφές και το σχέδιο χρειάζεται {_1}
@@ -6055,3 +6055,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Διακοπή μετά το σημείο βελόνας
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	όχι όσο είναι ενεργή η καθολική επεξεργασία: σταματήστε την πρώτα
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} μπλοκ κλωστής, μαζί με τις διακοπές|{count} μπλοκ κλωστής, μαζί με τις διακοπές
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} αλλαγή κλωστής, μαζί με τις διακοπές|{count} αλλαγές κλωστής, μαζί με τις διακοπές

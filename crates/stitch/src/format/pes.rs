@@ -150,7 +150,7 @@ fn pec_section(p: &Pattern) -> Result<Vec<u8>> {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
     if colors > MAX_COLORS {
-        return Err(Error::TooLarge(format!("PEC carries at most {MAX_COLORS} colours, not {colors}")));
+        return Err(Error::TooLarge(format!("PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}")));
     }
     let (width, height) = frame.size();
     // The header, room for the start of the stitch block, and the previews (a guess for the

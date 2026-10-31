@@ -5409,7 +5409,7 @@ mark-style	Japanese	Japonesas
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basado en VectorCraft del equipo de ArtCraft. MIT OR Apache-2.0. Fuentes: Source Sans 3, Inter, JetBrains Mono (OFL). Iconos: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC admite como máximo {MAX_COLORS} colores, no {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC admite como máximo {MAX_COLORS} colores (cada parada cuenta como uno), no {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 admite como máximo {MAX_COLORS} bloques de color
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	un archivo DST tiene un encabezado de {HEADER} bytes y al menos un registro de 3 bytes, pero este archivo tiene {_1} bytes
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	un encabezado DST cuenta como máximo {MAX_RECORDS} registros, y el diseño necesita {_1}
@@ -6044,3 +6044,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Parada tras el punto de aguja
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	no mientras la edición global está activa: deténgala primero
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} bloque de hilo, paradas incluidas|{count} bloques de hilo, paradas incluidas
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} cambio de hilo, paradas incluidas|{count} cambios de hilo, paradas incluidas

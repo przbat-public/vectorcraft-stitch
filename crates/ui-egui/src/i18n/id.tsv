@@ -5409,7 +5409,7 @@ swatch	Bright Violet	Violet cerah
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Berdasarkan VectorCraft dari tim ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikon: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC memuat paling banyak {MAX_COLORS} warna, bukan {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC memuat paling banyak {MAX_COLORS} warna (setiap pemberhentian dihitung satu), bukan {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 memuat paling banyak {MAX_COLORS} blok warna
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	file DST memiliki header {HEADER} byte dan setidaknya satu rekaman 3 byte, tetapi file ini berukuran {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	header DST menghitung paling banyak {MAX_RECORDS} rekaman, dan desain memerlukan {_1}
@@ -6058,3 +6058,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Berhenti setelah titik tusukan
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	tidak selama edit global aktif: hentikan edit global dahulu
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} blok benang, termasuk pemberhentian
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} ganti benang, termasuk pemberhentian

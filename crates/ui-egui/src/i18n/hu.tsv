@@ -5454,7 +5454,7 @@ imageTrace	Outline	Körvonal
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikonok: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	a PEC legfeljebb {MAX_COLORS} színt tartalmazhat, ez a minta pedig {colors} színt használna
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	a PEC legfeljebb {MAX_COLORS} színt tartalmazhat (minden megállás egynek számít), ez a minta pedig {colors} színt használna
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	a VP3 legfeljebb {MAX_COLORS} színblokkot tartalmazhat
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	a DST-fájlnak {HEADER} bájtos fejléce és legalább egy 3 bájtos rekordja van, de ez a fájl {_1} bájtos
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	a DST-fejléc legfeljebb {MAX_RECORDS} rekordot számol, a mintához pedig {_1} kell
@@ -6089,3 +6089,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Megállás a tűszúrás után
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	nem, amíg a globális szerkesztés be van kapcsolva: először állítsa le
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} szálblokk, a megállásokkal együtt
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} szálcsere, a megállásokkal együtt

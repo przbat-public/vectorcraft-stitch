@@ -5061,7 +5061,7 @@ lighting	Light	Світло
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Засновано на VectorCraft від команди ArtCraft. MIT OR Apache-2.0. Шрифти: Source Sans 3, Inter, JetBrains Mono (OFL). Значки: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC вміщує щонайбільше {MAX_COLORS} кольорів, а не {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC вміщує щонайбільше {MAX_COLORS} кольорів (кожна зупинка рахується за один), а не {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 вміщує щонайбільше {MAX_COLORS} кольорових блоків
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	файл DST має заголовок із {HEADER} байт і щонайменше один 3-байтовий запис, але цей файл — {_1} байт
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заголовок DST лічить щонайбільше {MAX_RECORDS} записів, а дизайну потрібно {_1}
@@ -5698,3 +5698,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 	Stop After Needle Point	Зупинка після проколу
 # VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
 @msg	not while Global Edit is on: stop Global Edit first	не під час глобального редагування: спершу завершіть його
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} блок нитки, включно із зупинками|{count} блоки нитки, включно із зупинками|{count} блоків нитки, включно із зупинками
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} зміна нитки, включно із зупинками|{count} зміни нитки, включно із зупинками|{count} змін нитки, включно із зупинками

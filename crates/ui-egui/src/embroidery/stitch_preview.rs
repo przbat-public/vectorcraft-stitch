@@ -188,9 +188,16 @@ impl Shown {
         })
     }
 
-    /// Whether `query` has a reply of the plan shown.
+    /// Whether `query` has a reply of the plan shown. The records' flags only once the plan keeps
+    /// them for the query's limits: it keeps one set, so limits changed and changed back (the Check
+    /// tab's format) find a reply for flags another set has replaced.
     fn answers(&self, query: &Query) -> bool {
-        self.reply(query).is_some_and(|r| r.current)
+        let flags =
+            (query.cmd == super::plan_worker::STITCH_FLAGS).then(|| vectorcraft_engine::cmd::embroidery::stitch_list::limits_from(&query.params));
+        match flags.flatten() {
+            Some(limits) => self.planned.built_stitch_flags(&limits).is_some(),
+            None => self.reply(query).is_some_and(|r| r.current),
+        }
     }
 }
 

@@ -542,6 +542,26 @@ fn the_last_rows_stay_dimmed_until_the_new_flags_come() {
     assert_eq!(colour(&shapes), Some(fresh), "the new flags' rows");
 }
 
+/// The Check tab's format changed and changed back (PES, DST, PES): each time the records are judged
+/// again for its limits and the tab lists them fresh, never stuck on the rows of another format's.
+#[test]
+fn a_format_changed_back_lists_its_rows_again() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    for format in ["pes", "dst", "pes", "dst"] {
+        app.embroidery.check.format.insert(uid, format);
+        settle(&mut app, &ctx, &mut time);
+        let limits = super::limits_of(&app).unwrap();
+        let shown = app.embroidery.preview.shown(uid).unwrap();
+        assert!(shown.planned.built_stitch_flags(&limits).is_some(), "{format}: its flags built");
+        let (key, _) = app.embroidery.stitches.list.as_ref().unwrap();
+        assert_eq!(key.4, vectorcraft_engine::cmd::embroidery::stitch_list::limits_key(&limits), "{format}: listed with its limits");
+    }
+}
+
 /// Go to a record far down the list (in its middle, so the end's clamp can't bring it in) scrolls
 /// its row into view.
 #[test]

@@ -425,7 +425,9 @@ impl Editing {
         let selected = || !needles.selected_paths(cx.selection).is_empty();
         match key {
             ToolKey::Escape => self.drag.is_some() || self.marquee.is_some() || selected(),
-            ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down | ToolKey::Delete | ToolKey::Backspace => self.drag.is_none() && selected(),
+            // Also while a press is held, so that they never reach upstream's nudge and clear:
+            // the press ignores them ([`Editing::key`]).
+            ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down | ToolKey::Delete | ToolKey::Backspace => selected(),
             ToolKey::BracketLeft | ToolKey::BracketRight => needles.first().is_some(),
             _ => false,
         }

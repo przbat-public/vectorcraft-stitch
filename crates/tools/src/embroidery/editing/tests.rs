@@ -405,7 +405,8 @@ fn alt_click_on_a_stitch_inserts_a_needle_point_there() {
 }
 
 /// The arrows move the selected needle points a tenth of a millimetre, Shift a millimetre; Delete
-/// and Backspace delete them; with nothing selected none of them is claimed.
+/// and Backspace delete them; while a press is held they are claimed and do nothing (upstream's
+/// nudge and clear never get them); with nothing selected none of them is claimed.
 #[test]
 fn the_arrows_move_and_delete_deletes() {
     let (d, g, ids) = doc();
@@ -425,6 +426,12 @@ fn the_arrows_move_and_delete_deletes() {
         assert!(t.claims_key(&c, key), "{key:?}");
         assert_eq!(t.key(&c, key, mods), vec![want], "{key:?}");
     }
+    t.pointer(&c, &ev(PointerKind::Down, 200.0, 100.0));
+    for key in [ToolKey::Left, ToolKey::Down, ToolKey::Delete, ToolKey::Backspace, ToolKey::BracketRight] {
+        assert!(t.claims_key(&c, key), "{key:?} during a held press");
+        assert_eq!(t.key(&c, key, Mods::default()), vec![], "{key:?} during a held press");
+    }
+    t.pointer(&c, &ev(PointerKind::Up, 200.0, 100.0));
     let none = Selection::default();
     let c = editing(&d, &none, &p, &f, g);
     for key in [ToolKey::Left, ToolKey::Delete, ToolKey::Escape] {

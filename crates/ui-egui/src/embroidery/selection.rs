@@ -231,6 +231,14 @@ fn kept<'a>(app: &'a mut VectorcraftApp, limits: &StitchLimits) -> Option<&'a Ke
     Some(&app.embroidery.selection)
 }
 
+/// The box the needle points being edited that are selected fall in (document points), while
+/// stitches are edited: the Contextual Task Bar sits under it.
+pub fn selected_box(app: &mut VectorcraftApp) -> Option<Rect> {
+    let st = app.session.active()?;
+    let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
+    kept(app, &limits)?.bounds
+}
+
 /// The drag's move now (document points), from the tool's options (millimetres on the grid).
 fn moved(app: &VectorcraftApp) -> Option<Vec2> {
     let m = app.session.tool_options().get("stitches")?.get("moved")?.as_array()?.clone();

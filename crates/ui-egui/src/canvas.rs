@@ -3605,7 +3605,9 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
     {
         return;
     }
-    let Some(b) = (if on_artboards { picked_artboards_bounds(app) } else { app.selection_bounds() }) else { return };
+    // VectorCraft Stitch: and under the selected needle points, not their paths' whole box.
+    let stitch_box = stitch_items.as_ref().and_then(|_| crate::embroidery::selection::selected_box(app));
+    let Some(b) = (if on_artboards { picked_artboards_bounds(app) } else { stitch_box.or_else(|| app.selection_bounds()) }) else { return };
     let Some(st) = app.session.active() else { return };
     let n = st.selection.len();
     let first = st.selection.objects.first().and_then(|id| st.doc.node(*id)).cloned();

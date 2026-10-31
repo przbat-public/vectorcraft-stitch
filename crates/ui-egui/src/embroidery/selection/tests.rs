@@ -482,3 +482,26 @@ fn the_selections_lines_show_on_any_fabric() {
         assert!(c >= 3.0, "{layer:?} on {fabric:?}: {line:?}, {c}");
     }
 }
+
+/// The Contextual Task Bar sits under the selected needle points, not under their paths' whole box:
+/// zoomed in on a fill whose box runs off the canvas, needle points selected on its left put the bar
+/// further left than needle points selected further right (under the fill's box both would put it
+/// in one place, pushed to the canvas's edge).
+#[test]
+fn the_task_bar_sits_under_the_selected_needle_points() {
+    let (mut app, _) = editing();
+    let ctx = context();
+    let mut time = 0.0;
+    app.run("view.setZoom", json!({"zoom": 1000, "center": [70, 105]})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let mm = |v: f64| v / super::PT_PER_MM;
+    let mut bars = vec![];
+    for (from, to) in [(60.0, 75.0), (95.0, 110.0)] {
+        app.run("embroidery.selectNeedlePoints", json!({"rect": [mm(from), mm(60.0), mm(to), mm(150.0)]})).unwrap();
+        settle(&mut app, &ctx, &mut time);
+        let b = super::selected_box(&mut app).expect("needle points selected");
+        assert!(b.x0 >= from - 1.0 && b.x1 <= to + 1.0, "the needle points' box: {b:?}");
+        bars.push(crate::canvas::task_bar_rect(&ctx).expect("the task bar"));
+    }
+    assert!(bars[0].min.x + 100.0 < bars[1].min.x, "the bar follows the needle points: {bars:?}");
+}

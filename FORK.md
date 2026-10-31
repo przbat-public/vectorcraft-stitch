@@ -630,8 +630,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `control_bar_options` the Embroidery Tool's options (`embroidery::tool_bar`);
   - `ui-egui/src/canvas.rs`: in `task_bar`, the stitch actions while the tool edits stitches
     (`embroidery::task_bar::items`): one line taking them, the early return passed over when there
-    are some, and the items replaced by them; the Fill, Recolor and Lock buttons left out then (a
-    condition added to their line);
+    are some, and the items replaced by them; the bar placed under the selected needle points'
+    box (`embroidery::selection::selected_box`, one line, and the box taken in the line placing
+    it); the Fill, Recolor and Lock buttons left out then (a condition added to their line);
   - `ui-egui/src/chrome.rs`: the tool's hint in `hint_for`, one line naming `embroidery::tool_bar::HINT`,
     and one naming `EDITING_HINT` for `EDITING_HINT_ID`; in `hint_bar`, the hint's id taken from
     `embroidery::tool_bar::hint_id` (stitch editing's hint while the tool edits stitches), one line;

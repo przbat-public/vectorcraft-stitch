@@ -2710,7 +2710,8 @@ Limits:
   the canvas's record numbers ask), and each address carries `of`, the needle points the path held,
   so the command refuses it if an edit got in between.
 - **Stitch editing's upstream hooks:** the hint line while editing (`chrome.rs`, two lines) and the
-  Contextual Task Bar's stitch actions (`canvas.rs`, three lines); FORK.md lists them.
+  Contextual Task Bar's stitch actions and its place under the selected needle points (`canvas.rs`,
+  four lines); FORK.md lists them.
 
 Measured at the end of the review round (2026-10-31, release, 12-core Apple Silicon, twice at a
 load of 2.6 to 3.2; `perf --embroidery`: the medians of three on 1,000 paths and of five on 2

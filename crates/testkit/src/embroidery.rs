@@ -38,6 +38,23 @@ pub const BLUE: &str = "#1830c8";
 pub const GREEN: &str = "#20a030";
 
 /// The id in a command's reply.
+/// The seed the fork's property suites run with unless `PROPTEST_RNG_SEED` is set: any fixed one.
+const PROPTEST_SEED: u64 = 0x5717_c4ed;
+
+/// A property suite's config, as upstream's pathops suites take theirs: `cases` cases from a fixed
+/// seed, so that a CI run never fails at random. Explore further locally with `PROPTEST_CASES=5000
+/// PROPTEST_RNG_SEED=<n>`, and keep a minimal failure found that way as a test of its own.
+pub fn proptest_config(cases: u32) -> proptest::test_runner::Config {
+    let mut c = proptest::test_runner::Config { failure_persistence: None, ..proptest::test_runner::Config::default() };
+    if std::env::var_os("PROPTEST_CASES").is_none() {
+        c.cases = cases;
+    }
+    if std::env::var_os("PROPTEST_RNG_SEED").is_none() {
+        c.rng_seed = proptest::test_runner::RngSeed::Fixed(PROPTEST_SEED);
+    }
+    c
+}
+
 pub fn id(reply: &Value) -> u64 {
     reply["id"].as_u64().unwrap_or_else(|| panic!("no id in {reply}"))
 }
@@ -345,12 +362,284 @@ pub fn points(run: Run) -> Points {
     }
 }
 
+/// The side of the document [`manual`] makes, points: room for four opened designs side by side
+/// ([`three_threads`] apart is about 190 by 320 points) and the runs below them.
+pub const MANUAL_PAGE: (f64, f64) = (1700.0, 800.0);
+/// How far apart [`manual`] lays the four opened designs, points.
+const DESIGN_STEP: f64 = 400.0;
+/// Where [`manual`] lays the runs of its own, points from the page's top: below the designs.
+const RUNS_TOP: f64 = 500.0;
+/// Where [`manual`] lays the objects it converts to manual stitches, points: right of the runs,
+/// side by side, two rows.
+const CONVERTED_LEFT: f64 = 1100.0;
+const CONVERTED_TOP: f64 = 500.0;
+/// How far apart, and how large, the converted objects are, points.
+const CONVERTED_STEP: f64 = 80.0;
+const CONVERTED_SIDE: f64 = 50.0;
+/// How far apart [`manual`] lays its own runs, points.
+const RUN_STEP: f64 = 60.0;
+
+/// A design opened from a machine file and pasted into [`manual`]'s document: the format it was
+/// written in, its top object (the group holding the file's colour blocks' groups) and its runs.
+#[derive(Clone, Debug)]
+pub struct OpenedRuns {
+    pub format: &'static str,
+    pub top: u64,
+    pub runs: Vec<u64>,
+}
+
+/// The objects of [`manual`], by what each is.
+#[derive(Clone, Debug)]
+pub struct Manual {
+    /// [`three_threads`] (apart) written as DST, PES, JEF and VP3 and opened again, each pasted in.
+    pub opened: Vec<OpenedRuns>,
+    /// A run of one needle point: a line from the point to itself, as a machine file opens it.
+    pub one_point: u64,
+    /// A run of two needle points at one spot (a tack: `double_point`).
+    pub double_point: u64,
+    /// A run the thread is cut before (`trim_before`), and one it is cut after (`trim_after`).
+    pub trim_before: u64,
+    pub trim_after: u64,
+    /// A run edited into a curve: its middle anchor's handles pulled out.
+    pub curved: u64,
+    /// A run inside a symbol's art: the instance placing it.
+    pub instance: u64,
+    /// A run on a locked layer.
+    pub locked: u64,
+    /// A hidden run.
+    pub hidden: u64,
+    /// A run the machine stops in (after its second needle point) and after (`stop_after`).
+    pub stopped: u64,
+    /// Objects converted to manual stitches, each a group of runs keeping the object's id.
+    pub converted: Converted,
+}
+
+/// The objects [`manual`] converts to manual stitches, by what each was.
+#[derive(Clone, Copy, Debug)]
+pub struct Converted {
+    /// A filled rectangle.
+    pub fill: u64,
+    /// A stroked open path (a running line).
+    pub stroke: u64,
+    /// A rectangle both filled and stroked (a satin column round it).
+    pub both: u64,
+    /// A compound path of two rectangles.
+    pub compound: u64,
+    /// A group of two rectangles in two threads, given to the command as the group: each member
+    /// converted on its own, so the group holds two converted objects.
+    pub group: u64,
+    /// The clipped member of a clip group (a rectangle the clipping circle cuts).
+    pub clip_member: u64,
+    /// An object expanded for sewing: a rectangle with a second stroke.
+    pub expanded: u64,
+}
+
+/// One document holding each kind of run of literal stitches the stitch commands meet: designs
+/// opened from DST, PES, JEF and VP3 files (their colour blocks' groups and runs), runs of one
+/// needle point and of two at one spot, runs with a cut before and after, a run the machine stops
+/// in and after, a run edited into a curve, a run inside a symbol's art, a locked run and a hidden
+/// one, and objects converted to manual stitches ([`Converted`]). Starts a new document,
+/// [`MANUAL_PAGE`] in size (others are opened and closed on the way: it is the only one left
+/// open, and active), and leaves nothing selected.
+pub fn manual(run: Run) -> Manual {
+    run("file.new", json!({"width": MANUAL_PAGE.0, "height": MANUAL_PAGE.1, "artboards": 1}));
+    let mut opened = Vec::new();
+    for (k, format) in ["dst", "pes", "jef", "vp3"].into_iter().enumerate() {
+        // The design opened (two documents more), copied, both closed: the fixture is active again.
+        opened_design(run, format);
+        run("select.all", json!({}));
+        run("edit.copy", json!({}));
+        run("file.close", json!({}));
+        run("file.close", json!({}));
+        let top = pasted(run);
+        run("object.move", json!({"ids": [top], "dx": DESIGN_STEP * k as f64, "dy": 0.0}));
+        run("select.none", json!({}));
+        opened.push(OpenedRuns { format, top, runs: runs_under(run, top) });
+    }
+    // A run of a DST's line, pasted six times: the runs of the fixture's own, made from it below.
+    let line = [(0.0, 0.0), (30.0, 0.0), (60.0, 10.0), (90.0, 0.0)];
+    blank(run);
+    stroke(run, RED, RUNNING_WEIGHT, &line);
+    let data = run("document.export", json!({"format": "dst"}))["dataBase64"].as_str().map(str::to_string);
+    let data = data.unwrap_or_else(|| panic!("no dataBase64 exporting the line as dst"));
+    run("document.open", json!({"name": "line.dst", "dataBase64": data}));
+    run("select.all", json!({}));
+    run("edit.copy", json!({}));
+    run("file.close", json!({}));
+    run("file.close", json!({}));
+    let mut own = Vec::new();
+    for k in 0..6 {
+        let top = pasted(run);
+        run("object.move", json!({"ids": [top], "dx": 20.0, "dy": RUNS_TOP + RUN_STEP * k as f64}));
+        run("select.none", json!({}));
+        let runs = runs_under(run, top);
+        own.push(*runs.first().unwrap_or_else(|| panic!("no run pasted: {top}")));
+    }
+    let [one_point, double_point, trim_before, trim_after, curved, hidden] = own.try_into().unwrap_or_else(|o| panic!("six runs: {o:?}"));
+    let top = pasted(run);
+    run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP + 4.0 * RUN_STEP}));
+    run("select.none", json!({}));
+    let stopped = *runs_under(run, top).first().unwrap_or_else(|| panic!("no run pasted: {top}"));
+    // The runs edited in the file, as a newer version or a file of another maker might hold them,
+    // and opened again: the same ids.
+    let data = run("document.serialize", json!({"format": "vectorcraft"}))["dataBase64"].as_str().map(str::to_string);
+    let bytes = data.and_then(|d| vectorcraft_format::base64_decode(&d)).unwrap_or_else(|| panic!("no document serialized"));
+    let mut file: Value = serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("the document isn't JSON: {e}"));
+    edit_node(&mut file, one_point, |n| {
+        let first = n["kind"]["path"]["subpaths"][0]["anchors"][0].clone();
+        n["kind"]["path"]["subpaths"][0]["anchors"] = json!([first.clone(), first]);
+    });
+    edit_node(&mut file, double_point, |n| {
+        let first = n["kind"]["path"]["subpaths"][0]["anchors"][0].clone();
+        n["kind"]["path"]["subpaths"][0]["anchors"] = json!([first.clone(), first]);
+        n["embroidery"]["stitches"]["double_point"] = json!(true);
+    });
+    edit_node(&mut file, trim_before, |n| n["embroidery"]["stitches"]["trim_before"] = json!(true));
+    edit_node(&mut file, trim_after, |n| n["embroidery"]["stitches"]["trim_after"] = json!(true));
+    edit_node(&mut file, stopped, |n| {
+        // As this version writes a stop: its needle point's place and where it lies, with how many
+        // subpaths and anchors the path has.
+        let anchors = n["kind"]["path"]["subpaths"][0]["anchors"].as_array().map_or(0, Vec::len);
+        let p = n["kind"]["path"]["subpaths"][0]["anchors"][1]["p"].clone();
+        n["embroidery"]["stitches"]["stops"] = json!([[0, 1, p[0], p[1]]]);
+        n["embroidery"]["stitches"]["shape"] = json!([1, anchors]);
+        n["embroidery"]["stitches"]["stop_after"] = json!(true);
+    });
+    edit_node(&mut file, curved, |n| {
+        let anchors = &mut n["kind"]["path"]["subpaths"][0]["anchors"];
+        let middle = anchors.as_array().map_or(0, Vec::len) / 2;
+        let p = anchors[middle]["p"].clone();
+        let (x, y) = (p[0].as_f64().unwrap_or(0.0), p[1].as_f64().unwrap_or(0.0));
+        anchors[middle]["in"] = json!([x - 10.0, y - 10.0]);
+        anchors[middle]["out"] = json!([x + 10.0, y + 10.0]);
+        anchors[middle]["kind"] = json!("Smooth");
+    });
+    let edited = vectorcraft_format::base64_encode(&serde_json::to_vec(&file).unwrap_or_default());
+    run("document.open", json!({"name": "manual.vectorcraft", "dataBase64": edited}));
+    // The built document closed: the edited one is the fixture.
+    run("document.activate", json!({"index": 0}));
+    run("file.close", json!({}));
+    run("select.set", json!({"ids": [hidden]}));
+    run("object.hide", json!({}));
+    run("select.none", json!({}));
+    // A run in a symbol's art, and one on a locked layer: each a DST line's run pasted.
+    let top = pasted(run);
+    run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP}));
+    let instance = id(&run("symbol.new", json!({"name": "Manual run"})));
+    run("select.none", json!({}));
+    let converted = converted(run);
+    let locked_layer = id(&run("layer.new", json!({})));
+    let top = pasted(run);
+    run("object.move", json!({"ids": [top], "dx": 900.0, "dy": RUNS_TOP + 2.0 * RUN_STEP}));
+    run("select.none", json!({}));
+    let locked = *runs_under(run, top).first().unwrap_or_else(|| panic!("no run pasted: {top}"));
+    run("layer.setProps", json!({"id": locked_layer, "locked": true}));
+    Manual { opened, one_point, double_point, trim_before, trim_after, curved, instance, locked, hidden, stopped, converted }
+}
+
+/// The objects [`manual`] converts to manual stitches, drawn right of its runs and converted each
+/// on its own, by one command; nothing is left selected.
+fn converted(run: Run) -> Converted {
+    let at = |k: usize| (CONVERTED_LEFT + CONVERTED_STEP * (k % 4) as f64, CONVERTED_TOP + CONVERTED_STEP * (k / 4) as f64);
+    let side = CONVERTED_SIDE;
+    let (x, y) = at(0);
+    let fill = rect(run, RED, x, y, side, side);
+    let (x, y) = at(1);
+    let stroke = stroke(run, BLUE, RUNNING_WEIGHT, &[(x, y), (x + side, y + side / 2.0), (x, y + side)]);
+    let (x, y) = at(2);
+    let both = rect(run, BLUE, x, y, side, side);
+    run("paint.setStroke", json!({"color": RED, "ids": [both]}));
+    run("stroke.set", json!({"weight": SATIN_WEIGHT, "ids": [both]}));
+    run("select.none", json!({}));
+    let (x, y) = at(3);
+    let outer = rect(run, GREEN, x, y, side, side);
+    let inner = rect(run, GREEN, x + side / 4.0, y + side / 4.0, side / 2.0, side / 2.0);
+    run("select.set", json!({"ids": [outer, inner]}));
+    let compound = id(&run("object.compoundPath.make", json!({})));
+    run("select.none", json!({}));
+    let (x, y) = at(4);
+    let a = rect(run, RED, x, y, side / 2.0, side);
+    let b = rect(run, BLUE, x + side / 2.0, y, side / 2.0, side);
+    run("select.set", json!({"ids": [a, b]}));
+    let group = id(&run("object.group", json!({})));
+    run("select.none", json!({}));
+    let (x, y) = at(5);
+    let clip_member = rect(run, GREEN, x, y, side, side);
+    run("paint.setFill", json!({"none": true}));
+    run("paint.setStroke", json!({"none": true}));
+    let circle = id(&run("shape.ellipse", json!({"x": x + side / 4.0, "y": y, "width": side, "height": side})));
+    run("select.set", json!({"ids": [clip_member, circle]}));
+    run("object.clippingMask.make", json!({}));
+    run("select.none", json!({}));
+    let (x, y) = at(6);
+    let expanded = rect(run, RED, x, y, side, side);
+    run("paint.setStroke", json!({"color": BLUE, "ids": [expanded]}));
+    run("appearance.addStroke", json!({"ids": [expanded]}));
+    run("select.none", json!({}));
+    let given = [fill, stroke, both, compound, group, clip_member, expanded];
+    let done = run("embroidery.convertToManual", json!({ "ids": given }));
+    // The group's two members, not the group.
+    assert_eq!(done["convertedCount"], json!(given.len() + 1), "every fixture object converted: {done}");
+    run("select.none", json!({}));
+    Converted { fill, stroke, both, compound, group, clip_member, expanded }
+}
+
+/// What the clipboard holds, pasted: the id of its top object (left selected).
+fn pasted(run: Run) -> u64 {
+    let pasted = run("edit.paste", json!({}));
+    pasted["ids"].get(0).and_then(Value::as_u64).unwrap_or_else(|| panic!("nothing pasted: {pasted}"))
+}
+
+/// The runs of literal stitches under `id` (itself, when it is one), in stacking order.
+pub fn runs_under(run: Run, id: u64) -> Vec<u64> {
+    let node = run("document.node", json!({"id": id}));
+    let mut out = Vec::new();
+    collect_runs(&node, &mut out);
+    out
+}
+
+/// The ids of the runs in the node JSON `node` (`document.node`'s reply), in stacking order.
+fn collect_runs(node: &Value, out: &mut Vec<u64>) {
+    if node.get("embroidery").and_then(|e| e.get("stitches")).is_some_and(Value::is_object)
+        && let Some(id) = node["id"].as_u64()
+    {
+        out.push(id);
+    }
+    for child in node["children"].as_array().into_iter().flatten().chain(node["kind"]["children"].as_array().into_iter().flatten()) {
+        collect_runs(child, out);
+    }
+}
+
+/// Edit the node `id` of a saved document's JSON with `f`.
+fn edit_node(v: &mut Value, id: u64, f: impl FnOnce(&mut Value) + Copy) {
+    if v.get("id").and_then(Value::as_u64) == Some(id) && v.get("kind").is_some() {
+        f(v);
+        return;
+    }
+    match v {
+        Value::Object(m) => m.values_mut().for_each(|c| edit_node(c, id, f)),
+        Value::Array(a) => a.iter_mut().for_each(|c| edit_node(c, id, f)),
+        _ => {}
+    }
+}
+
 /// The keys an object's embroidery and the document's are read by: those this version reads, so
 /// that random JSON holds them, with any value, often enough to test what they read as.
-const EMBROIDERY_KEYS: [&str; 40] = [
+const EMBROIDERY_KEYS: [&str; 51] = [
     "stitches",
     "trim_after",
     "trim_before",
+    "stop_after",
+    "manual",
+    "trims",
+    "stops",
+    "shape",
+    "original",
+    "frame",
+    "node",
+    "fingerprint",
+    "exact",
+    "transformed",
     "fill",
     "stroke",
     "points",
@@ -410,4 +699,128 @@ pub fn arb_json() -> impl Strategy<Value = Value> {
             prop::collection::btree_map(key.clone(), inner, 0..4).prop_map(|m| Value::Object(m.into_iter().collect())),
         ]
     })
+}
+
+/// One random stitch edit ([`arb_stitch_ops`]): its path and needle points picked by place among a
+/// document's paths of stitches and their needle points (taken modulo their counts), so that most
+/// address what is there and some don't (an index past the end is refused).
+#[derive(Clone, Debug)]
+pub enum StitchOp {
+    Move { path: usize, at: usize, dx: f64, dy: f64 },
+    Insert { path: usize, at: usize },
+    Delete { path: usize, at: usize, count: usize },
+    Split { path: usize, at: usize, ties: bool },
+    Join { path: usize, at: usize },
+    Function { path: usize, at: usize, stop: bool, on: Option<bool> },
+    SplitLong { path: usize, at: usize, max: f64 },
+    Select { from: usize, to: usize },
+    Undo,
+}
+
+/// The paths of stitches of `doc`'s layers, in document order, each with its needle points (its
+/// anchors, a run stored as a line to its own start one).
+pub fn paths_of_stitches(doc: &vectorcraft_doc::Document) -> Vec<(u64, usize)> {
+    runs_of_stitches(doc).into_iter().map(|(id, _, n)| (id, n)).collect()
+}
+
+/// [`paths_of_stitches`] with each path's runs: the needle point each starts at.
+pub fn runs_of_stitches(doc: &vectorcraft_doc::Document) -> Vec<(u64, Vec<usize>, usize)> {
+    let mut out = Vec::new();
+    for l in &doc.layers {
+        l.walk(&mut |n| {
+            let Some(run) = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) else { return };
+            let Some(path) = n.path_data() else { return };
+            let alone = path.subpaths.len() == 1;
+            let (mut starts, mut needles) = (Vec::new(), 0usize);
+            for sp in &path.subpaths {
+                let count = match sp.anchors.as_slice() {
+                    [a, b] if a.p == b.p && !(alone && run.double_point) => 1,
+                    all => all.len(),
+                };
+                if count > 0 {
+                    starts.push(needles);
+                }
+                needles += count;
+            }
+            out.push((n.id.0, starts, needles));
+        });
+    }
+    out
+}
+
+impl StitchOp {
+    /// The command and params this edit is in `doc` (`None`: no path of stitches to edit).
+    pub fn command(&self, doc: &vectorcraft_doc::Document) -> Option<(String, Value)> {
+        let runs = runs_of_stitches(doc);
+        let paths: Vec<(u64, usize)> = runs.iter().map(|(id, _, n)| (*id, *n)).collect();
+        let pick = |path: usize, at: usize| {
+            let (id, n) = paths.get(path % paths.len().max(1)).copied()?;
+            // One past the end now and then: refused.
+            Some((id, at % (n + 1)))
+        };
+        let c = |id: &str, p: Value| Some((id.to_string(), p));
+        match *self {
+            StitchOp::Move { path, at, dx, dy } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": k}], "dx": dx, "dy": dy}))
+            }
+            StitchOp::Insert { path, at } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.insertNeedlePoints", json!({"id": id, "index": k, "at": [[10.0 + k as f64, 20.0]]}))
+            }
+            StitchOp::Delete { path, at, count } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.deleteNeedlePoints", json!({"ranges": [{"id": id, "from": k, "to": k + count}]}))
+            }
+            StitchOp::Split { path, at, ties } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.splitRun", json!({"needlePoints": [{"id": id, "index": k}], "ties": ties}))
+            }
+            StitchOp::Join { path, at } => {
+                let (id, k) = pick(path, at)?;
+                // A run's first, where there is more than one run, else wherever.
+                let starts = runs.iter().find(|(r, ..)| *r == id).map(|(_, s, _)| s.as_slice()).unwrap_or_default();
+                let k = match starts.get(1..).filter(|later| !later.is_empty()) {
+                    Some(later) => later.get(at % later.len()).copied().unwrap_or(k),
+                    None => k,
+                };
+                c("embroidery.joinRuns", json!({"needlePoints": [{"id": id, "index": k}]}))
+            }
+            StitchOp::Function { path, at, stop, on } => {
+                let (id, k) = pick(path, at)?;
+                c(
+                    "embroidery.setMachineFunction",
+                    json!({"needlePoints": [{"id": id, "index": k}], "function": if stop { "stop" } else { "trim" }, "on": on}),
+                )
+            }
+            StitchOp::SplitLong { path, at, max } => {
+                let (id, k) = pick(path, at)?;
+                c("embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": k}], "maxLength": max}))
+            }
+            StitchOp::Select { from, to } => c("embroidery.selectNeedlePoints", json!({"records": [from.min(to) + 1, from.max(to) + 1]})),
+            StitchOp::Undo => c("edit.undo", json!({})),
+        }
+    }
+}
+
+/// A random stitch edit ([`StitchOp`]).
+pub fn arb_stitch_op() -> impl Strategy<Value = StitchOp> {
+    let path = 0usize..64;
+    let at = 0usize..400;
+    prop_oneof![
+        4 => (path.clone(), at.clone(), -5.0..5.0f64, -5.0..5.0f64).prop_map(|(path, at, dx, dy)| StitchOp::Move { path, at, dx, dy }),
+        2 => (path.clone(), at.clone()).prop_map(|(path, at)| StitchOp::Insert { path, at }),
+        2 => (path.clone(), at.clone(), 0usize..4).prop_map(|(path, at, count)| StitchOp::Delete { path, at, count }),
+        2 => (path.clone(), at.clone(), any::<bool>()).prop_map(|(path, at, ties)| StitchOp::Split { path, at, ties }),
+        2 => (path.clone(), at.clone()).prop_map(|(path, at)| StitchOp::Join { path, at }),
+        2 => (path.clone(), at.clone(), any::<bool>(), proptest::option::of(any::<bool>())).prop_map(|(path, at, stop, on)| StitchOp::Function { path, at, stop, on }),
+        1 => (path.clone(), at.clone(), 1.0..12.7f64).prop_map(|(path, at, max)| StitchOp::SplitLong { path, at, max }),
+        1 => (0usize..2000, 0usize..2000).prop_map(|(from, to)| StitchOp::Select { from, to }),
+        1 => Just(StitchOp::Undo),
+    ]
+}
+
+/// A sequence of random stitch edits.
+pub fn arb_stitch_ops(len: std::ops::Range<usize>) -> impl Strategy<Value = Vec<StitchOp>> {
+    prop::collection::vec(arb_stitch_op(), len)
 }

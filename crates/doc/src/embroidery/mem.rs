@@ -41,7 +41,16 @@ pub(crate) fn setup_bytes(e: &EmbroiderySetup) -> usize {
 /// what a newer version wrote in them), and the keys and values this version can't read.
 pub(crate) fn object_bytes(e: &Embroidery) -> usize {
     let thread = |t: &super::ThreadRecord| ALLOC + t.catalogue.len() + t.description.len() + t.brand.len() + map_bytes(&t.extra);
-    let run = |r: &super::StitchRun| map_bytes(&r.extra) + r.thread.as_ref().map_or(0, thread);
+    let run = |r: &super::StitchRun| {
+        map_bytes(&r.extra)
+            + r.thread.as_ref().map_or(0, thread)
+            + r.trims.capacity() * size_of::<super::Mark>()
+            + r.stops.capacity() * size_of::<super::Mark>()
+            + r.exact.capacity() * size_of::<super::Exact>()
+    };
+    // The original's node, as the file saved it: shared by the copies of the object, counted with
+    // each (an estimate errs high rather than low).
+    let original = |o: &super::Original| ALLOC + o.node.len() + map_bytes(&o.extra);
     let text = |t: &Option<String>| t.as_ref().map_or(0, String::capacity);
     let part = |p: &super::PartSettings| {
         ALLOC
@@ -53,6 +62,7 @@ pub(crate) fn object_bytes(e: &Embroidery) -> usize {
     };
     map_bytes(&e.extra)
         + e.stitches.as_ref().map_or(0, run)
+        + e.original.as_ref().map_or(0, original)
         + e.unread.as_ref().map_or(0, json_bytes)
         + e.fill.as_deref().map_or(0, part)
         + e.stroke.as_deref().map_or(0, part)
@@ -102,5 +112,19 @@ mod tests {
         after.node_mut(id).unwrap().extras_mut().embroidery = Some(Box::new(e));
         let part = size_of::<crate::embroidery::PartSettings>();
         assert!(after.retained_bytes(&before) >= same + 2 * (part + 1000), "{} against {same}", after.retained_bytes(&before));
+    }
+
+    /// The original a converted object keeps counts, with its node as the file saved it.
+    #[test]
+    fn a_kept_original_counts() {
+        let before = doc_with_a_rect();
+        let mut after = before.clone();
+        let same = after.retained_bytes(&before);
+        let id = after.layers[0].children().and_then(|c| c.first()).map(|n| n.id).unwrap();
+        let node: std::sync::Arc<str> = serde_json::json!({"name": "x".repeat(10_000)}).to_string().into();
+        let original = crate::embroidery::Original { frame: vectorcraft_geom::Affine::IDENTITY, node, fingerprint: None, extra: Default::default() };
+        let e = Embroidery { original: Some(original), ..Embroidery::default() };
+        after.node_mut(id).unwrap().extras_mut().embroidery = Some(Box::new(e));
+        assert!(after.retained_bytes(&before) > same + 10_000);
     }
 }

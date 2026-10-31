@@ -3786,6 +3786,11 @@ pub fn invoke(app: &mut VectorcraftApp, id: &str, p: Value) {
     if waits_for_ime(app, id) {
         return;
     }
+    // VectorCraft Stitch: a person's Convert to Manual Stitches, Restore Object and Nearest
+    // Connection, run as the Embroidery panel runs them.
+    if p.as_object().is_none_or(|o| o.is_empty()) && crate::embroidery::menu::invoked(app, id) {
+        return;
+    }
     // Params first: some dialogs' fields take a look through the session (Move's last move).
     if p.as_object().is_none_or(|o| o.is_empty())
         && let Some((kind, fields)) = menu_dialog(app, id)

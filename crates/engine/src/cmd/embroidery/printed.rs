@@ -7,6 +7,10 @@
 //! (shadows, glows, blurs) are left off, the art under them sewn; opacity masks are not sewn, the
 //! masked art is, whole.
 //!
+//! A run of literal stitches (manual, or a machine file's) is sewn as its points whatever its
+//! appearance: neither it nor a group holding one (or a symbol instance placing one) is expanded,
+//! and what of its appearance isn't sewn is said ([`RUN_LOOK_LEFT_OUT`]), naming the objects.
+//!
 //! Dashed, aligned, profiled and arrowed strokes of an otherwise basic appearance are sewn as the
 //! area they paint by the walk itself (`Choice::StrokeOutlined`), and a stained symbol instance's
 //! art takes its stain there too.
@@ -35,6 +39,7 @@ use crate::cmd::rasterfx::strip_raster;
 
 pub(super) const RASTER_LEFT_OUT: &str = "shadows, glows, blurs and other raster effects are not stitched: the art under them is";
 pub(super) const MASKS_LEFT_OUT: &str = "opacity masks are not stitched: the masked art is sewn whole";
+pub(super) const RUN_LOOK_LEFT_OUT: &str = "effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are";
 pub(super) const STROKE_LOSES_ITS_PATH: &str = "strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path";
 
 /// The document as the walk sews it, the objects expanded in it (the person selects each of them,
@@ -50,8 +55,15 @@ pub(super) struct Sewable<'a> {
 /// Whether `n` has an appearance the walk can't sew as it is: more than one fill and one stroke,
 /// or any of their own opacity, blend or effects, live effects, a brush; for a group or layer, any
 /// fill, stroke or effect of its own; for a symbol instance, effects. Type and images are left to
-/// the walk (type is not sewn; an image is traced first).
+/// the walk (type is not sewn; an image is traced first). A run of literal stitches, or a group
+/// holding one, is never expanded: it is sewn as its points ([`holds_run`]).
 pub(super) fn needs_expanding(n: &Node) -> bool {
+    shows_more_than_sewn(n) && !holds_run(n, &[])
+}
+
+/// Whether `n`'s appearance shows more than the walk sews as it is ([`needs_expanding`], runs
+/// aside).
+fn shows_more_than_sewn(n: &Node) -> bool {
     match &n.kind {
         NodeKind::Path { clipping: true, .. } | NodeKind::Path { guide: true, .. } => false,
         NodeKind::Path { .. } | NodeKind::Compound { .. } => !n.appearance.is_basic() || vectorcraft_brush::has_brush(n),
@@ -59,6 +71,26 @@ pub(super) fn needs_expanding(n: &Node) -> bool {
         NodeKind::SymbolInstance { .. } => !n.appearance.effects.is_empty(),
         _ => false,
     }
+}
+
+/// Whether `n` is, or holds, a run of literal stitches (a symbol instance through its symbol's art,
+/// among `symbols`, one level deep: a symbol placed in a symbol's art isn't followed, so that no
+/// symbol holding itself loops): expanding it would make its stitches art planned again.
+fn holds_run(n: &Node, symbols: &[vectorcraft_doc::Symbol]) -> bool {
+    let mut found = false;
+    n.walk(&mut |c| match &c.kind {
+        NodeKind::SymbolInstance { symbol, .. } => found |= symbols.iter().any(|s| &s.name == symbol && holds_run(&s.art, &[])),
+        _ => found |= c.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()),
+    });
+    found
+}
+
+/// Whether what `n` (a run or a group holding one) shows past what is sewn is more than raster
+/// effects, which are said apart ([`RASTER_LEFT_OUT`]).
+fn look_left_out(n: &Node) -> bool {
+    let mut bare = n.clone();
+    strip_raster(&mut bare, false);
+    shows_more_than_sewn(&bare)
 }
 
 /// Whether `n` or anything in it has raster effects.
@@ -69,20 +101,37 @@ fn has_raster(n: &Node) -> bool {
         || n.children().is_some_and(|c| c.iter().any(|c| has_raster(c)))
 }
 
-/// The ids of the outermost objects under `n` (itself included) to expand, its raster effects
-/// noted.
-fn targets(n: &Node, out: &mut Vec<NodeId>, raster: &mut bool, masks: &mut bool) {
+/// What the walk finds to expand under an object: the outermost objects to expand, the runs (and
+/// groups holding them) whose appearance isn't sewn, and whether raster effects and opacity masks
+/// are left out.
+#[derive(Default)]
+struct Found {
+    expand: Vec<NodeId>,
+    runs: Vec<NodeId>,
+    raster: bool,
+    masks: bool,
+}
+
+/// What `n` (itself included) holds to expand ([`Found`]), a symbol instance's art among `symbols`.
+fn targets(n: &Node, symbols: &[vectorcraft_doc::Symbol], found: &mut Found) {
     if !n.visible {
         return;
     }
-    *masks |= n.extras().mask.is_some();
-    *raster |= has_raster(n);
-    if needs_expanding(n) && !matches!(n.kind, NodeKind::Layer { .. }) {
-        out.push(n.id);
-        return;
+    found.masks |= n.extras().mask.is_some();
+    found.raster |= has_raster(n);
+    if shows_more_than_sewn(n) && !matches!(n.kind, NodeKind::Layer { .. }) {
+        if !holds_run(n, symbols) {
+            found.expand.push(n.id);
+            return;
+        }
+        // Sewn as its points: what its appearance adds is said; the art beside a run in a group
+        // is expanded as it needs.
+        if look_left_out(n) {
+            found.runs.push(n.id);
+        }
     }
     for c in n.children().into_iter().flatten() {
-        targets(c, out, raster, masks);
+        targets(c, symbols, found);
     }
 }
 
@@ -120,7 +169,7 @@ fn split_strokes(d: &mut Document, n: &Node) -> Option<Node> {
     // the strokes that keep their path alone.
     let rest = e
         .map(|e| {
-            let mut rest = Embroidery { trim_after: false, ..e.clone() };
+            let mut rest = Embroidery { trim_after: false, stop_after: false, ..e.clone() };
             rest.edit_part(PartKind::Stroke, |part| {
                 part.set(PartKey::Entry, None);
                 part.set(PartKey::Exit, None);
@@ -241,19 +290,22 @@ fn expand_for_sewing(
 /// `doc` as the walk sews it ([`Sewable`]), with `forced` the style the export forces: borrowed as
 /// it is when nothing needs expanding.
 pub(super) fn sewable(doc: &Document, forced: Option<Style>) -> Sewable<'_> {
-    let (mut found, mut raster, mut masks) = (Vec::new(), false, false);
+    let mut in_document = Found::default();
     for layer in &doc.layers {
-        targets(layer, &mut found, &mut raster, &mut masks);
+        targets(layer, &doc.symbols, &mut in_document);
     }
-    // Symbols' art, by symbol.
+    // Symbols' art, by symbol: a run in it is said, naming none (its instances select it).
+    let (mut raster, mut masks, mut runs) = (in_document.raster, in_document.masks, !in_document.runs.is_empty());
     let mut in_symbols: Vec<(usize, Vec<NodeId>)> = Vec::new();
     for (k, sym) in doc.symbols.iter().enumerate() {
-        let mut ids = Vec::new();
-        targets(&sym.art, &mut ids, &mut raster, &mut masks);
-        if !ids.is_empty() {
-            in_symbols.push((k, ids));
+        let mut art = Found::default();
+        targets(&sym.art, &doc.symbols, &mut art);
+        (raster, masks, runs) = (raster || art.raster, masks || art.masks, runs || !art.runs.is_empty());
+        if !art.expand.is_empty() {
+            in_symbols.push((k, art.expand));
         }
     }
+    let found = in_document.expand;
     let mut warnings = Vec::new();
     if raster {
         warnings.push(RASTER_LEFT_OUT);
@@ -261,8 +313,13 @@ pub(super) fn sewable(doc: &Document, forced: Option<Style>) -> Sewable<'_> {
     if masks {
         warnings.push(MASKS_LEFT_OUT);
     }
+    let mut about: Vec<(&'static str, NodeId)> = Vec::new();
+    if runs {
+        warnings.push(RUN_LOOK_LEFT_OUT);
+        about.extend(in_document.runs.iter().map(|id| (RUN_LOOK_LEFT_OUT, *id)));
+    }
     if found.is_empty() && in_symbols.is_empty() && !raster {
-        return Sewable { doc: Cow::Borrowed(doc), expanded: HashSet::new(), warnings, about: Vec::new() };
+        return Sewable { doc: Cow::Borrowed(doc), expanded: HashSet::new(), warnings, about };
     }
     let mut d = doc.clone();
     let brushes = vectorcraft_brush::library(&d);
@@ -273,7 +330,6 @@ pub(super) fn sewable(doc: &Document, forced: Option<Style>) -> Sewable<'_> {
     for sym in &mut d.symbols {
         strip_raster(Arc::make_mut(&mut sym.art), true);
     }
-    let mut about = Vec::new();
     for id in &found {
         // Stripped of raster effects, it may be basic now.
         if d.node(*id).is_some_and(needs_expanding) {

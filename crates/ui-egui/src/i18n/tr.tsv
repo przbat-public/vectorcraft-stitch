@@ -5552,7 +5552,7 @@ axis	Y Axis	Y ekseni
 @msg	the file's several designs are read as one	dosyadaki birden çok tasarım tek bir tasarım olarak okunur
 @msg	the file holds things this version doesn't read	dosya bu sürümün okumadığı öğeler içeriyor
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft ekibinin VectorCraft'ına dayanır. MIT VEYA Apache-2.0. Yazı Tipleri: Source Sans 3, Inter, JetBrains Mono (OFL). Simgeler: Lucide (ISC) + VectorCraft.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC en fazla {MAX_COLORS} renk taşır, {colors} değil
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC en fazla {MAX_COLORS} renk taşır (her durma bir renk sayılır), {colors} değil
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 en fazla {MAX_COLORS} renk bloğu tutar
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	bir DST dosyasında {HEADER} baytlık bir başlık ve en az bir 3 baytlık kayıt bulunur, ancak bu dosya {_1} bayt
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	bir DST başlığı en fazla {MAX_RECORDS} kayıt sayar, tasarım ise {_1} kayıt gerektirir
@@ -5841,6 +5841,7 @@ embroidery	Not sewn: it is hidden.	Dikilmez: gizli.
 embroidery	Not sewn: it is on a template or non-printing layer.	Dikilmez: şablon veya yazdırılmayan bir katmanda.
 embroidery	Not sewn.	Dikilmez.
 embroidery	Stitches from a file are sewn as the file has them.	Dosyadan gelen dikişler dosyadaki gibi dikilir.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Manuel dikişler yerleştirildikleri gibi dikilir; dönüştürüldükleri nesne onlarla birlikte saklanmaz.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Metin henüz dikilmez: dikmek için anahatlar oluşturun.
 embroidery	Images aren't sewn.	Resimler dikilmez.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Ayarları sembolün nesneleri alır: ayarlamak için sembolü düzenleyin.
@@ -6003,3 +6004,88 @@ embroidery	Auto (where the plan ends the part)	Otomatik (planın parçayı bitir
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 noktadan noktaya geçer, oklar onu kaydırır, Enter girer
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Giriş ve çıkış noktaları seçilen ilk {count} nesne için gösterilir
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Nakış: Sonrasında Durdur
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Manuel Dikişlere Dönüştür
+@msg	nothing selected can be converted to manual stitches: {_1}	seçilenlerden hiçbiri manuel dikişlere dönüştürülemiyor: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	Nesneyi Geri Yükle
+@msg	nothing selected can be restored: {_1}	seçilenlerden hiçbiri geri yüklenemez: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	%{value} üzerinde ölçeklenmiş manuel dikişler veya dosyadan dikişler
+embroidery	{name}: {value}% larger	{name}: %{value} büyütülmüş
+embroidery	{name}: {value}% smaller	{name}: %{value} küçültülmüş
+embroidery	Largest change: {value}%	En büyük değişim: %{value}
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	manuel dikişler
+@plural	{count} stop|{count} stops	{count} durma
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	manuel dikişlere veya dosyadan dikişlere (ya da onları içeren bir gruba) uygulanan efektler, fırçalar ve ek dolgular veya konturlar dikilmez: dikişler olduğu gibi dikilir
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	İğne Noktalarını Taşı
+@msg	select needle points of a path of stitches, or give needlePoints	bir dikiş yolunun iğne noktalarını seçin ya da needlePoints verin
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	İğne Noktası Ekle
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	İğne Noktalarını Sil
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Diziyi Böl
+	Join Runs	Dizileri Birleştir
+@msg	these runs aren't sewn one right after another in one colour block	bu diziler tek bir renk bloğunda art arda dikilmiyor
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Makine İşlevi
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Uzun Dikişleri Böl
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Dikiş Listesi
+	Select Needle Points	İğne Noktalarını Seç
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Manuel dikişler
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Yerleştirildikleri gibi dikilir: artık kumaşla veya nesnenin ayarlarıyla değişmez.
+embroidery	Scaled to {value}% since converting	Dönüştürmeden bu yana %{value} ölçeğinde
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Nesneyi manuel dikişlerinin yerine geri koyar; şimdiki boyutunda yeniden planlanır.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Şimdi planlanan dikişleri dondurur, böylece her iğne noktası taşınabilir; Nesneyi Geri Yükle nesneyi geri getirir.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Makine, aplikede olduğu gibi nesnenin dikişlerinden sonra durur. Ardından iplik değişimi ya da tasarımın sonu geliyorsa makine orada zaten durur, bu yüzden fazladan durma yazılmaz.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Dönüştürmeden bu yana dikişlerde yapılan değişiklikler kaybolacak; Geri Al onları geri getirir.
+@plural	Stop the machine after the object|Stop the machine after the objects	Her nesneden sonra makineyi durdur
+@plural	Restore {count} object?|Restore {count} objects?	{count} nesne geri yüklensin mi?
+@plural	{count} object restored|{count} objects restored	{count} nesne geri yüklendi
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} nesne manuel dikişlere dönüştürüldü: Nesneyi Geri Yükle ile geri getirilebilir
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	dikişlerin kesmeleri veya durmaları atlandı: bir yol komutu, ardından geldikleri iğne noktalarını sildi veya taşıdı (Makine İşlevi ile yeniden ayarlayın)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	dikiş yolları yalnızca dikiş yollarıyla birleşir: yalnızca onları seçin
+@msg	select two or more paths of stitches sewn one right after another to join them	birleştirmek için art arda dikilen iki veya daha fazla dikiş yolu seçin
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	İğne noktasından sonra kesme
+	Stop After Needle Point	İğne noktasından sonra durma
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	Genel Düzenleme açıkken olmaz: önce Genel Düzenlemeyi durdurun
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} iplik bloğu, durmalar dahil
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} iplik değişimi, durmalar dahil
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	her durma aynı ipliğe geçiş olarak yazılır: tek iğneli makine orada durur, çok iğneli makine yalnızca operatörünün o geçişe durma koyduğu yerde durur
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Kilitli nesneler geri yüklenemez: önce kilitlerini açın.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	dosyadan dikişler
+embroidery	manual stitches already	zaten manuel dikişler
+embroidery	symbol instances	sembol örnekleri
+embroidery	clipping paths	kırpma yolları
+embroidery	parts of an object sewn whole	bütün olarak dikilen nesnenin parçaları
+embroidery	holding what isn't sewn	dikilmeyeni içeriyor
+embroidery	locked	kilitli
+embroidery	not sewn	dikilmez
+embroidery	stitches a manual run can't hold	manuel dizinin tutamayacağı dikişler
+embroidery	not converted	dönüştürülmemiş
+embroidery	the kept object doesn't read	saklanan nesne okunamıyor
+embroidery	its symbol is gone	sembolü yok
+embroidery	would lie outside the document	belgenin dışında kalır
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} nesne atlandı: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} dizi
+@plural	{count} needle point|{count} needle points	{count} iğne noktası
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	Seçili {count} nesne manuel dikiş
+embroidery	Converting to manual stitches…	Manuel dikişlere dönüştürülüyor…

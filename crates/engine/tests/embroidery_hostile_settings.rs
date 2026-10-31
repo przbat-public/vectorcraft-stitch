@@ -30,6 +30,8 @@ const FABRIC_KEYS: [&str; 9] = ["preset", "tatami", "satin", "stabilizer", "topp
 const STITCH_KEYS: [&str; 5] = ["pull", "spacing", "spacing_percent", "length", "underlay"];
 const MACHINE_KEYS: [&str; 5] = ["jump_length", "trim_length", "min_stitch", "split_length", "speed"];
 
+/// The keys a run of stitches' marks are saved under.
+const RUN_KEYS: [&str; 10] = ["manual", "trim_before", "trim_after", "stop_after", "double_point", "trims", "stops", "shape", "exact", "transformed"];
 /// A string far longer than any setting holds.
 const LONG: usize = 10_000;
 
@@ -62,10 +64,44 @@ fn part() -> impl Strategy<Value = Value> {
     object_of(&PART_KEYS, value)
 }
 
-/// An object's settings: its parts (or something else under their keys), its cut, kept keys.
+/// A run of stitches' marks as hostile as a file holds them: indices at the integers' edges, marks
+/// at 1e300, frames past any number, or anything at all under their keys.
+fn run_marks() -> impl Strategy<Value = Value> {
+    let marks = prop_oneof![
+        edge(),
+        Just(json!([[0, 0, 1e300, -1e300], [u32::MAX, u64::MAX], [0, 1], [-1, 2]])),
+        Just(json!((0..2_000).map(|i| json!([i % 3, i])).collect::<Vec<_>>())),
+        Just(json!({"frame": [1e300, 0, 0, 1e300, 0, 0]})),
+        Just(json!([u64::MAX, u64::MAX])),
+    ];
+    object_of(&RUN_KEYS, prop_oneof![2 => edge(), 1 => marks].boxed())
+}
+
+/// A kept original as hostile as a file holds it: a frame past the document's coordinates, a node
+/// that is a layer, type with values out of range, or anything at all.
+fn original() -> impl Strategy<Value = Value> {
+    let frame = prop_oneof![Just(json!([1e300, 0, 0, 1e300, 0, 0])), Just(json!([1.0, 0.0, 0.0, 1.0, 0.0, 0.0])), edge()];
+    let node = prop_oneof![
+        Just(json!({"id": 1, "kind": {"type": "layer", "color": "blue", "children": []}})),
+        Just(json!({"id": 1, "kind": {"type": "path", "path": {"subpaths": [{"anchors": [{"p": [1e300, 1e300]}], "closed": false}]}}})),
+        edge(),
+    ];
+    prop_oneof![1 => edge(), 3 => (frame, node, edge()).prop_map(|(frame, node, fingerprint)| json!({"frame": frame, "node": node, "fingerprint": fingerprint}))]
+}
+
+/// An object's settings: its parts (or something else under their keys), its cut and stop, a run's
+/// marks, a kept original, kept keys.
 fn object_settings() -> impl Strategy<Value = Value> {
-    (prop_oneof![3 => part(), 1 => edge()], prop_oneof![3 => part(), 1 => edge()], any::<bool>(), prop::option::of(arb_json())).prop_map(
-        |(fill, stroke, cut, extra)| {
+    (
+        prop_oneof![3 => part(), 1 => edge()],
+        prop_oneof![3 => part(), 1 => edge()],
+        any::<bool>(),
+        prop::option::of(arb_json()),
+        prop::option::of(run_marks()),
+        prop::option::of(original()),
+        prop::option::of(edge()),
+    )
+        .prop_map(|(fill, stroke, cut, extra, stitches, original, stop)| {
             let mut m = Map::new();
             m.insert("fill".into(), fill);
             m.insert("stroke".into(), stroke);
@@ -73,9 +109,17 @@ fn object_settings() -> impl Strategy<Value = Value> {
             if let Some(extra) = extra {
                 m.insert("branch".into(), extra);
             }
+            if let Some(stitches) = stitches {
+                m.insert("stitches".into(), stitches);
+            }
+            if let Some(original) = original {
+                m.insert("original".into(), original);
+            }
+            if let Some(stop) = stop {
+                m.insert("stop_after".into(), stop);
+            }
             Value::Object(m)
-        },
-    )
+        })
 }
 
 /// The document's settings: its keys with edge values, its fabric's and machine's too.
@@ -223,6 +267,19 @@ proptest! {
         let _ = no_panic(s.execute("select.set", &json!({"ids": [ids[3], ids[4]]})));
         let _ = no_panic(s.execute("object.pathfinder.divide", &json!({})));
         let _ = no_panic(s.execute("embroidery.reset", &ask));
+        plan_is_finite(&mut s);
+        // Converted, restored, stopped, and edited as stitches, marks and originals as they are.
+        let _ = no_panic(s.execute("embroidery.restoreObject", &json!({"ids": ids, "dryRun": true})));
+        let _ = no_panic(s.execute("embroidery.restoreObject", &ask));
+        let _ = no_panic(s.execute("embroidery.setStopAfter", &ask));
+        let _ = no_panic(s.execute("embroidery.stitches", &json!({"limit": 50})));
+        for id in &ids {
+            let _ = no_panic(s.execute("embroidery.moveNeedlePoints", &json!({"needlePoints": [{"id": id, "index": 0}], "dx": 1})));
+            let _ = no_panic(s.execute("embroidery.setMachineFunction", &json!({"needlePoints": [{"id": id, "index": 1}], "function": "stop"})));
+            let _ = no_panic(s.execute("embroidery.deleteNeedlePoints", &json!({"needlePoints": [{"id": id, "index": 0}]})));
+        }
+        let _ = no_panic(s.execute("embroidery.convertToManual", &ask));
+        let _ = no_panic(s.execute("embroidery.restoreObject", &ask));
         plan_is_finite(&mut s);
         // Every embroidery command's junk on it.
         for (command, params) in embroidery_common::junk::structured() {

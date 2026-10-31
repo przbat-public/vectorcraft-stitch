@@ -17,7 +17,7 @@ pub(super) const LOCK: f64 = 1.0;
 /// Where a lock stitch, tie-in or tie-off at `at` steps to: [`LOCK`] along the stitch towards
 /// `toward`, or `min_stitch` when that is longer, so that the lock is no stitch the planner leaves
 /// out as too short; all of the stitch when it is shorter still. `None` when the two are one point.
-pub(super) fn lock_step(at: Point, toward: Point, min_stitch: f64) -> Option<Point> {
+pub fn lock_step(at: Point, toward: Point, min_stitch: f64) -> Option<Point> {
     unit(toward - at).map(|d| at + d * LOCK.max(min_stitch).min(at.distance(toward)))
 }
 
@@ -416,23 +416,47 @@ fn connect(out: &mut Vec<Stitch>, to: Point, d: f64, p: &Params, tie: bool) {
 /// before and in after when it is longer than [`Params::jump`] and [`Params::lock`] is on, and the
 /// thread cut first when it is longer than [`Params::trim`].
 pub fn join_cut(pieces: Vec<Vec<Stitch>>, p: &Params) -> Vec<Stitch> {
+    join_cut_carrying(pieces.into_iter().map(|piece| (piece, Carried::default())).collect(), p)
+}
+
+/// What the joint before a piece carries in [`join_cut_carrying`]: the cut and the stop a run of
+/// stitches named where a clipping path cut it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Carried {
+    pub cut: bool,
+    pub stop: bool,
+}
+
+/// [`join_cut`], each piece with what the joint before it carries: the cut, made there however
+/// short the joint (after the tie-off), and then the stop, before the needle lifts.
+pub fn join_cut_carrying(pieces: Vec<(Vec<Stitch>, Carried)>, p: &Params) -> Vec<Stitch> {
     let p = p.sane();
     let mut out: Vec<Stitch> = Vec::new();
-    for piece in pieces {
+    for (piece, carried) in pieces {
         // A piece starts where the needle goes down.
         let start = piece.iter().position(|s| s.command == Command::Stitch).unwrap_or(piece.len());
         let piece = piece.get(start..).unwrap_or_default();
         let Some(&first) = piece.first() else { continue };
         let mut tie = false;
-        if let Some(last) = out.iter().rev().find(|s| s.command == Command::Stitch).copied()
-            && let d = last.distance(first)
-            && d > SAME_POINT
-        {
-            if d <= p.jump {
+        if let Some(last) = out.iter().rev().find(|s| s.command == Command::Stitch).copied() {
+            // As `connect` joins: past the jump length tied off, past the trim length cut.
+            let d = last.distance(first);
+            let long = d > SAME_POINT && d > p.jump;
+            if long && p.lock {
+                tie_off(&mut out, p.min_stitch);
+                tie = true;
+            }
+            if let Some(end) = out.last().copied() {
+                if carried.cut || (long && d > p.trim) {
+                    out.push(Stitch::new(end.x, end.y, Command::Trim));
+                }
+                if carried.stop {
+                    out.push(Stitch::new(end.x, end.y, Command::Stop));
+                }
+            }
+            // After a cut or a stop the needle lifts to the next needle point, as a file's run does.
+            if d > SAME_POINT || carried.cut || carried.stop {
                 out.push(Stitch::jump(first.point()));
-            } else {
-                connect(&mut out, first.point(), d, &p, p.lock);
-                tie = p.lock;
             }
         }
         if tie && let Some(next) = piece.get(1).filter(|s| s.command == Command::Stitch) {

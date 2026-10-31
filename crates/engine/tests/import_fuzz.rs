@@ -4269,3 +4269,44 @@ proptest! {
         survive_metafile("embroidery records", &format!("x.{}", EMBROIDERY[which]), &bytes)?;
     }
 }
+
+// VectorCraft Stitch: designs with stops, from the fork's fixed seed.
+proptest! {
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
+
+    /// Designs with stops anywhere (at a block's start or end, several in a row, between blocks of
+    /// one thread, which open as one group with a stop), written in each format and opened: they
+    /// open, render and export, and every stop a writer writes is between two needle points.
+    #[test]
+    fn designs_with_stops_never_panic(
+        which in 0usize..EMBROIDERY.len(),
+        blocks in prop::collection::vec((0usize..3, prop::collection::vec((-50i32..50, -50i32..50), 1..20), prop::collection::vec(0usize..25, 0..5)), 1..5),
+    ) {
+        use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
+        use vectorcraft_stitch::format::{Format, written_stops};
+        // Three colours, so that neighbouring blocks are often in one thread.
+        const COLOURS: [[u8; 3]; 3] = [[200, 30, 30], [30, 30, 200], [30, 160, 40]];
+        let mut pattern = Pattern { name: "stops".into(), ..Pattern::default() };
+        for (colour, points, stops) in blocks {
+            let mut block = Block::new(Thread::rgb(COLOURS[colour % COLOURS.len()]));
+            block.stitches = points.iter().map(|&(x, y)| Stitch::new(f64::from(x) / 2.0, f64::from(y) / 2.0, Command::Stitch)).collect();
+            for at in stops {
+                let at = at.min(block.stitches.len());
+                let here = block.stitches.get(at.saturating_sub(1)).copied().unwrap_or(block.stitches[0]);
+                block.stitches.insert(at, Stitch::new(here.x, here.y, Command::Stop));
+            }
+            for &i in &written_stops(&block.stitches) {
+                let needle = |s: &[Stitch]| s.iter().any(|s| s.command == Command::Stitch);
+                prop_assert!(needle(&block.stitches[..i]) && needle(&block.stitches[i + 1..]), "a stop written between two needle points");
+            }
+            pattern.blocks.push(block);
+        }
+        let format = Format::from_id(EMBROIDERY[which]).unwrap();
+        let bytes = format.write(&pattern).unwrap();
+        // Every stop written is a colour change of the file: read back, a block for each block and
+        // each stop written in it.
+        let written: usize = pattern.blocks.iter().map(|b| written_stops(&b.stitches).len() + 1).sum();
+        prop_assert_eq!(format.read(&bytes).unwrap().blocks.len(), written);
+        survive_metafile("stops", &format!("x.{}", EMBROIDERY[which]), &bytes)?;
+    }
+}

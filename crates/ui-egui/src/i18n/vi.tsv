@@ -5061,7 +5061,7 @@ theme	Appearance	Giao diện
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Dựa trên VectorCraft của nhóm ArtCraft. MIT OR Apache-2.0. Phông chữ: Source Sans 3, Inter, JetBrains Mono (OFL). Biểu tượng: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC chứa tối đa {MAX_COLORS} màu, không phải {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC chứa tối đa {MAX_COLORS} màu (mỗi lần dừng tính là một màu), không phải {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 chứa tối đa {MAX_COLORS} khối màu
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	tệp DST có phần đầu {HEADER} byte và ít nhất một bản ghi 3 byte, nhưng tệp này có {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	phần đầu DST đếm tối đa {MAX_RECORDS} bản ghi, còn thiết kế cần {_1}
@@ -5475,6 +5475,7 @@ embroidery	Not sewn: it is hidden.	Không thêu: đang bị ẩn.
 embroidery	Not sewn: it is on a template or non-printing layer.	Không thêu: nằm trên lớp mẫu hoặc lớp không in.
 embroidery	Not sewn.	Không thêu.
 embroidery	Stitches from a file are sewn as the file has them.	Mũi thêu từ tệp được thêu đúng như trong tệp.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Mũi thêu thủ công được may đúng như cách chúng được đặt; đối tượng mà chúng được chuyển đổi từ đó không được giữ cùng.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Văn bản chưa được thêu: tạo đường bao để thêu.
 embroidery	Images aren't sewn.	Hình ảnh không được thêu.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Thiết lập nằm trên các đối tượng của ký hiệu: hãy sửa ký hiệu để đặt chúng.
@@ -5637,3 +5638,88 @@ embroidery	Auto (where the plan ends the part)	Tự động (nơi kế hoạch k
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 chuyển từ điểm này sang điểm khác, phím mũi tên dịch nó, Enter để nhập
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Điểm vào và điểm ra hiển thị cho {count} đối tượng được chọn đầu tiên
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Thêu: dừng sau
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Chuyển thành mũi thêu thủ công
+@msg	nothing selected can be converted to manual stitches: {_1}	không gì trong vùng chọn có thể chuyển thành mũi thêu thủ công: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	Khôi phục đối tượng
+@msg	nothing selected can be restored: {_1}	không có gì trong vùng chọn có thể khôi phục: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Mũi thêu thủ công hoặc mũi thêu từ tệp bị đổi tỷ lệ hơn {value}%
+embroidery	{name}: {value}% larger	{name}: phóng to {value}%
+embroidery	{name}: {value}% smaller	{name}: thu nhỏ {value}%
+embroidery	Largest change: {value}%	Thay đổi nhiều nhất: {value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	mũi thêu thủ công
+@plural	{count} stop|{count} stops	{count} lần dừng
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	hiệu ứng, cọ vẽ và các phần tô hoặc nét bổ sung trên mũi thêu thủ công hoặc mũi thêu từ tệp (hoặc trên nhóm chứa chúng) không được thêu: các mũi thêu được thêu nguyên như vậy
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Di chuyển điểm đâm kim
+@msg	select needle points of a path of stitches, or give needlePoints	chọn các điểm đâm kim của một đường dẫn mũi thêu, hoặc cung cấp needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Chèn điểm đâm kim
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Xóa điểm đâm kim
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Tách đoạn
+	Join Runs	Nối các đoạn
+@msg	these runs aren't sewn one right after another in one colour block	các đoạn này không được thêu liền nhau trong cùng một khối màu
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Chức năng máy
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Tách mũi thêu dài
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Danh sách mũi thêu
+	Select Needle Points	Chọn điểm đâm kim
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Mũi thêu thủ công
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Được thêu đúng như vị trí đã đặt: không còn thay đổi theo vải hay cài đặt của đối tượng.
+embroidery	Scaled to {value}% since converting	Đã đổi tỷ lệ thành {value}% kể từ khi chuyển
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Đưa đối tượng trở lại thay cho các mũi thêu thủ công của nó, được lên kế hoạch lại theo kích thước hiện tại.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Cố định các mũi thêu đã lên kế hoạch lúc này để có thể di chuyển từng điểm đâm kim; Khôi phục đối tượng đưa đối tượng trở lại.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Máy dừng sau các mũi thêu của đối tượng, như khi đính vải. Nơi tiếp theo là lần đổi chỉ hoặc cuối mẫu thêu, máy vẫn dừng ở đó, nên không ghi thêm điểm dừng.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Các thay đổi trên mũi thêu kể từ khi chuyển sẽ bị mất; Hoàn tác sẽ khôi phục chúng.
+@plural	Stop the machine after the object|Stop the machine after the objects	Dừng máy sau đối tượng
+@plural	Restore {count} object?|Restore {count} objects?	Khôi phục {count} đối tượng?
+@plural	{count} object restored|{count} objects restored	Đã khôi phục {count} đối tượng
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	Đã chuyển {count} đối tượng thành mũi thêu thủ công: có thể đưa trở lại bằng Khôi phục đối tượng
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	đã bỏ qua các lần cắt chỉ hoặc dừng của mũi thêu: một lệnh đường dẫn đã xóa hoặc di chuyển các điểm đâm kim mà chúng theo sau (đặt lại bằng Chức năng máy)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	các đường dẫn mũi thêu chỉ nối với các đường dẫn mũi thêu: chỉ chọn chúng
+@msg	select two or more paths of stitches sewn one right after another to join them	chọn hai đường dẫn mũi thêu trở lên được may nối tiếp nhau để nối chúng
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Cắt chỉ sau điểm đâm kim
+	Stop After Needle Point	Dừng sau điểm đâm kim
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	không được khi đang chỉnh sửa toàn cục: hãy dừng chỉnh sửa toàn cục trước
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} khối chỉ, tính cả lần dừng
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} lần đổi chỉ, tính cả lần dừng
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	mỗi lần dừng được ghi thành một lần đổi sang cùng sợi chỉ: máy một kim dừng ở đó, máy nhiều kim chỉ dừng ở nơi người vận hành đặt điểm dừng cho lần đổi đó
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Không thể khôi phục đối tượng bị khóa: hãy mở khóa chúng trước.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	mũi thêu từ tệp
+embroidery	manual stitches already	đã là mũi thêu thủ công
+embroidery	symbol instances	bản sao biểu tượng
+embroidery	clipping paths	đường cắt xén
+embroidery	parts of an object sewn whole	phần của đối tượng may nguyên khối
+embroidery	holding what isn't sewn	chứa thứ không may
+embroidery	locked	bị khóa
+embroidery	not sewn	không may
+embroidery	stitches a manual run can't hold	mũi thêu mà đoạn thủ công không chứa được
+embroidery	not converted	chưa chuyển đổi
+embroidery	the kept object doesn't read	không đọc được đối tượng đã lưu
+embroidery	its symbol is gone	thiếu biểu tượng của nó
+embroidery	would lie outside the document	sẽ nằm ngoài tài liệu
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	đã bỏ qua {count} đối tượng: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} đoạn
+@plural	{count} needle point|{count} needle points	{count} điểm đâm kim
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} đối tượng đã chọn là mũi thêu thủ công
+embroidery	Converting to manual stitches…	Đang chuyển thành mũi thêu thủ công…

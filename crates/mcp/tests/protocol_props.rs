@@ -578,6 +578,41 @@ proptest! {
     }
 }
 
+proptest! {
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(12))]
+
+    /// Random stitch edits (VectorCraft Stitch) on a design opened from a machine file, through
+    /// `run_command` and on a local session started from the same file: each succeeds or is
+    /// refused alike, never by an internal error (a caught panic on both sides isn't "refused
+    /// alike"), and the documents end the same. (`arb_ops` makes no paths of stitches.)
+    #[test]
+    fn stitch_edit_sequences_match_local_session(format in prop::sample::select(vec!["dst", "pes", "jef", "vp3"]), ops in vectorcraft_testkit::embroidery::arb_stitch_ops(1..10)) {
+        let mut built = vectorcraft_engine::Session::new();
+        vectorcraft_testkit::embroidery::opened_design(&mut |c, p| built.execute(c, &p).unwrap_or_else(|e| panic!("{c}: {e}")), format);
+        let file = built.execute("document.serialize", &json!({"format": "vectorcraft"})).unwrap()["dataBase64"].clone();
+        let open = json!({"name": "design.vectorcraft", "dataBase64": file});
+        let mut local = vectorcraft_engine::Session::new();
+        local.execute("document.open", &open).unwrap();
+        let mut srv = server();
+        let v = call(&mut srv, "run_command", json!({"command": "document.open", "params": open}));
+        prop_assert!(v["result"]["isError"] != json!(true), "{}", v);
+        for op in &ops {
+            let Some((id, params)) = op.command(&local.doc().unwrap().doc) else { continue };
+            let local_reply = local.execute(&id, &params);
+            prop_assert!(!matches!(local_reply, Err(vectorcraft_engine::EngineError::Internal { .. })), "`{}` {}: {:?}", id, params, local_reply);
+            let a = local_reply.is_ok();
+            let v = call(&mut srv, "run_command", json!({"command": id, "params": params}));
+            prop_assert!(!v.to_string().contains("internal error in `"), "`{}` {}: {}", id, params, v);
+            let b = v["result"]["isError"] != json!(true);
+            prop_assert_eq!(a, b, "`{}` {}: local ok={} mcp ok={} ({})", id, params, a, b, v);
+        }
+        let got = document(&mut srv);
+        check_document(&got).map_err(TestCaseError::fail)?;
+        let (g, l) = (doc_json(&got), doc_json(&local.doc().unwrap().doc));
+        prop_assert!(vectorcraft_testkit::invariants::json_approx_eq(&g, &l, 1e-12), "MCP and local sessions diverged: {}", vectorcraft_testkit::invariants::first_diff(&l, &g, "$"));
+    }
+}
+
 /// Tools driven directly against a Headless backend never leave an interaction open or corrupt
 /// the session, whatever the arguments. (A gesture that stops after `drag` legitimately stays open
 /// so an agent can continue it in the next call; that case is not listed.)

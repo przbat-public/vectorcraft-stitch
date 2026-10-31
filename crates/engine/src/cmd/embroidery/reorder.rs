@@ -10,7 +10,8 @@
 //! clip group or take it out of one (decision 11), move a clip group's clipping path, move a locked
 //! object or into a locked layer or group, or split an object's own stitches is refused, typed
 //! ([`Refusal`]), so the panel can say why before the drop. A run of an opened machine file moves
-//! with its block (its group), never alone.
+//! with its block (its group), never alone; an object converted to manual stitches moves as art
+//! does, whole.
 //!
 //! Sew Earlier, Later, First and Last ([`step_move`]) go where a drop at the gap past their
 //! neighbour goes, except Sew Earlier, which goes just below the object sewn just before them, in
@@ -76,8 +77,8 @@ pub enum Refusal {
     /// The move would put the object into a clip group, or take it out of one: what is sewn would
     /// change, not only when.
     ChangesClipping(NodeId),
-    /// The object is a run of an opened machine file: it moves with its block. Every literal run
-    /// is one today; manual stitches (FORK.md's step 8) will need a mark to be told apart.
+    /// The object is a run of an opened machine file: it moves with its block. A run of manual
+    /// stitches (`StitchRun::manual`) is placed as art is, and moves as art does.
     FromFile(NodeId),
     /// The object can't go where the gap is (a layer into a group).
     NotAccepted(NodeId),
@@ -246,11 +247,14 @@ fn beside(doc: &Document, moving: &Moving, target: NodeId, place: Place) -> std:
     Ok(RowMove { ids, target, place })
 }
 
-/// The movers of `ids` (objects of `doc`): the ids that cover a unit's mover, or lie inside one,
-/// once each, in sewing order — what a selection moves (a selected group moves as one). One walk of
-/// the ids' subtrees and ancestries, then one pass over the units.
+/// The movers of `ids` (objects of `doc`), once each, in sewing order — what a selection moves: the
+/// ids that cover a unit's mover (a selected group moves as one), and the movers the others lie
+/// inside (a run of an object converted to manual stitches, or a child of an expanded group, stands
+/// for the object it is part of, which moves whole). One walk of the ids' subtrees and ancestries,
+/// then one pass over the units.
 pub fn movers_of(doc: &Document, plan: &DesignPlan, ids: &[NodeId]) -> Vec<NodeId> {
-    // The given id each node belongs to: inside it, or above it (the first given wins).
+    // What each node moves as: the given id it lies inside (the first given wins), or itself when
+    // a given id lies inside it.
     let mut of: HashMap<NodeId, NodeId> = HashMap::new();
     for id in ids {
         of.entry(*id).or_insert(*id);
@@ -260,7 +264,7 @@ pub fn movers_of(doc: &Document, plan: &DesignPlan, ids: &[NodeId]) -> Vec<NodeI
             });
         }
         for above in doc.ancestry(*id).unwrap_or_default() {
-            of.entry(above).or_insert(*id);
+            of.entry(above).or_insert(above);
         }
     }
     let mut out: Vec<NodeId> = Vec::new();

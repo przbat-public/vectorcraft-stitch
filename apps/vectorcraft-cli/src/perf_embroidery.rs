@@ -26,6 +26,17 @@
 //! - the embroidery tool through the session: its handles found for 32 objects selected and for
 //!   Select All on 22,000 paths, a hover frame there, and an exit and a fill's rows' arrow dragged a
 //!   step at a time, the design planned again after each;
+//! - one needle point of a run of literal stitches moved as Direct Selection moves it
+//!   (`path.moveAnchors`) and the design planned again: on the 1,000-path document written as DST
+//!   and opened (a design of literal runs, about 90,000 needle points), and on the 22,000-path
+//!   document's plan built into literal runs here (about 2 million needle points, more records than
+//!   a machine file's reader takes);
+//! - every object of the 1,000- and 22,000-path documents converted to manual stitches (Select All,
+//!   then the command, which plans the design afresh as the export does), then all restored;
+//! - the stitch commands on the 22,000-path document's plan built into literal runs (about 2
+//!   million needle points): one needle point moved by `embroidery.moveNeedlePoints` and the design
+//!   planned again, a page of 1,000 of `embroidery.stitches` from its middle (the plan kept), and
+//!   100,000 needle points selected by their records (`embroidery.selectNeedlePoints`);
 //! - the Embroidery panel's Object tab's work on a new snapshot (each frame of a drag or a scrub):
 //!   its read of 1,000 selected objects' settings, and its footer's fabric and thread on the
 //!   22,000-path document;
@@ -81,7 +92,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 61] = [
+pub const ROWS: [&str; 75] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -143,6 +154,20 @@ pub const ROWS: [&str; 61] = [
     "tool: a hover frame, 22,000 paths",
     "tool: an exit dragged a step, 1,000 paths",
     "tool: an arrow turned a step, 1,000 paths",
+    "needle point: moved, opened 1,000 paths",
+    "needle point: moved, 2,000,000 points",
+    "manual stitches: convert, 1,000 paths",
+    "manual stitches: restore, 1,000 paths",
+    "manual stitches: convert, 22,000 paths",
+    "manual stitches: restore, 22,000 paths",
+    "stitch commands: move one of 2,000,000",
+    "stitch commands: page 1,000 of 2,000,000",
+    "stitch commands: select 100,000 points",
+    "stitch commands: move alone, 2,000,000",
+    "stitch commands: move, many-run paths",
+    "stitch commands: delete, many-run paths",
+    "manual stitches: convert 22,000, apply",
+    "object tab: read of 22,000 converted",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -162,7 +187,7 @@ pub const ROWS: [&str; 61] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 61] = [
+const BUDGETS: [f64; 75] = [
     400.0,
     100.0,
     100.0,
@@ -224,6 +249,20 @@ const BUDGETS: [f64; 61] = [
     TOOL_BUDGETS[2],
     TOOL_BUDGETS[3],
     TOOL_BUDGETS[4],
+    NEEDLE_MOVED_BUDGETS[0],
+    NEEDLE_MOVED_BUDGETS[1],
+    MANUAL_BUDGETS[0],
+    MANUAL_BUDGETS[1],
+    MANUAL_BUDGETS[2],
+    MANUAL_BUDGETS[3],
+    STITCH_COMMAND_BUDGETS[0],
+    STITCH_COMMAND_BUDGETS[1],
+    STITCH_COMMAND_BUDGETS[2],
+    EDIT_ALONE_BUDGETS[0],
+    EDIT_ALONE_BUDGETS[1],
+    EDIT_ALONE_BUDGETS[2],
+    CONVERT_PARTS_BUDGETS[0],
+    CONVERT_PARTS_BUDGETS[1],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -398,6 +437,14 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(point_moved(&rings_toward, "entry")?);
     ms.extend([p95, slowest]);
     ms.extend(tool(&doc, &largest)?);
+    ms.extend(needle_point_moved(&doc, &largest)?);
+    ms.extend(convert_and_restore(&doc, RUNS)?);
+    ms.extend(convert_and_restore(&largest, 1)?);
+    let literal = literal_runs(&largest)?;
+    let [moved, paged, selected, alone] = stitch_commands(&literal)?;
+    ms.extend([moved, paged, selected, alone]);
+    ms.extend(many_runs(&literal)?);
+    ms.extend(convert_parts(&largest)?);
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;
@@ -590,6 +637,284 @@ fn point_moved(doc: &Document, key: &str) -> Result<f64, String> {
         if k > 0 {
             samples.push(t.elapsed().as_secs_f64() * 1000.0);
         }
+    }
+    Ok(middle(samples))
+}
+
+/// The needle-point rows' budgets, milliseconds (estimates): about 2.5 times what they measured
+/// ([`NEEDLE_MOVED_MS`]): one needle point moved and the design planned again, on the opened
+/// 1,000-path document and on 2 million literal needle points. A literal run is sewn as its points
+/// are, never planned, but every run is walked and sequenced again at each plan.
+const NEEDLE_MOVED_BUDGETS: [f64; 2] = [NEEDLE_MOVED_MS[0] * 2.5, NEEDLE_MOVED_MS[1] * 2.5];
+/// What the needle-point rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6 to
+/// 3.2, the median of five, twice), milliseconds (see [`NEEDLE_MOVED_BUDGETS`]).
+const NEEDLE_MOVED_MS: [f64; 2] = [1.9, 50.0];
+/// The manual-stitches rows' budgets, milliseconds (estimates): about 2.5 times what they measured
+/// ([`MANUAL_MS`]): converting every object of the 1,000-path document and restoring them all, then
+/// of the 22,000-path document. A convert plans the design afresh, as the export does: over a
+/// second on 22,000 paths, so the Object tab converts off the interface thread.
+const MANUAL_BUDGETS: [f64; 4] = [MANUAL_MS[0] * 2.5, MANUAL_MS[1] * 2.5, MANUAL_MS[2] * 2.5, MANUAL_MS[3] * 2.5];
+/// What the manual-stitches rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6
+/// to 3.2, twice; the median of three on 1,000 paths, one run on 22,000), milliseconds (see
+/// [`MANUAL_BUDGETS`]).
+const MANUAL_MS: [f64; 4] = [78.0, 5.2, 1760.0, 120.0];
+
+/// Milliseconds to convert every object of `doc` to manual stitches (Select All, then the command)
+/// and to restore them all (Select All, then Restore Object), the medians of `runs`, each on a
+/// session that has never planned `doc`.
+fn convert_and_restore(doc: &Document, runs: usize) -> Result<[f64; 2], String> {
+    let (mut convert, mut restore) = (Vec::with_capacity(runs), Vec::with_capacity(runs));
+    for _ in 0..runs {
+        let mut s = fresh(doc);
+        s.execute("select.all", &json!({})).map_err(err)?;
+        let (ms, done) = timed(&mut s, "embroidery.convertToManual", &json!({}))?;
+        if done["convertedCount"].as_u64().unwrap_or(0) == 0 {
+            return Err("embroidery: nothing was converted to manual stitches".into());
+        }
+        convert.push(ms);
+        s.execute("select.all", &json!({})).map_err(err)?;
+        restore.push(timed(&mut s, "embroidery.restoreObject", &json!({}))?.0);
+    }
+    Ok([middle(convert), middle(restore)])
+}
+
+/// The stitch commands' rows' budgets, milliseconds (estimates): about 2.5 times what they measured
+/// ([`STITCH_COMMAND_MS`]): one needle point moved by the command and the design planned again, a
+/// page of the stitch list, 100,000 needle points selected, all on 2 million literal needle points.
+const STITCH_COMMAND_BUDGETS: [f64; 3] = [STITCH_COMMAND_MS[0] * 2.5, STITCH_COMMAND_MS[1] * 2.5, STITCH_COMMAND_MS[2] * 2.5];
+/// What the stitch commands' rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6
+/// to 3.2, the median of five, twice), milliseconds (see [`STITCH_COMMAND_BUDGETS`]): moving one
+/// needle point costs what Direct Selection's move does (`NEEDLE_MOVED_MS`), the plan again
+/// dominating.
+const STITCH_COMMAND_MS: [f64; 3] = [52.5, 37.0, 43.3];
+/// The needle points the selection row selects by their records.
+const SELECTED_POINTS: usize = 100_000;
+/// The records the list row lists a page of.
+const LIST_PAGE: usize = 1000;
+
+/// The stitch commands' rows on `doc` (literal runs, [`literal_runs`]): one needle point of its
+/// largest path moved a nudge by `embroidery.moveNeedlePoints`, back and forth, and the design
+/// planned again after each; a page of the stitch list from its middle, the plan kept; the first
+/// [`SELECTED_POINTS`] needle points selected by their records; and the move's command alone, the
+/// plan aside (what a copy of the whole design in the command would show, the plan's tens of
+/// milliseconds hiding it in the first row). Medians of [`DRAW_RUNS`].
+fn stitch_commands(doc: &Document) -> Result<[f64; 4], String> {
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let mut largest: Option<(u64, usize)> = None;
+    for l in &doc.layers {
+        l.walk(&mut |n| {
+            if let Some(path) = n.path_data() {
+                let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
+                if largest.is_none_or(|(_, most)| anchors > most) {
+                    largest = Some((n.id.0, anchors));
+                }
+            }
+        });
+    }
+    let Some((id, anchors)) = largest else { return Err("embroidery: the document has no run to edit".into()) };
+    let mut s = fresh(doc);
+    s.embroidery_plan(&opts).map_err(err)?;
+    let (mut moved, mut paged, mut selected, mut alone) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    let records = s.execute("embroidery.stitches", &json!({"limit": 0})).map_err(err)?["recordCount"].as_u64().unwrap_or(0) as usize;
+    for k in 0..DRAW_RUNS {
+        let dx = if k % 2 == 0 { NUDGE_MM } else { -NUDGE_MM };
+        let t = Instant::now();
+        s.execute("embroidery.moveNeedlePoints", &json!({"needlePoints": [{"id": id, "index": anchors / 2}], "dx": dx})).map_err(err)?;
+        alone.push(t.elapsed().as_secs_f64() * 1000.0);
+        s.embroidery_plan(&opts).map_err(err)?;
+        moved.push(t.elapsed().as_secs_f64() * 1000.0);
+        paged.push(timed(&mut s, "embroidery.stitches", &json!({"offset": records / 2, "limit": LIST_PAGE}))?.0);
+        selected.push(timed(&mut s, "embroidery.selectNeedlePoints", &json!({"records": [1, SELECTED_POINTS]}))?.0);
+    }
+    Ok([middle(moved), middle(paged), middle(selected), middle(alone)])
+}
+
+/// The rows of the commands alone on paths of many runs (budgets, milliseconds, estimates: about
+/// 2.5 times what they measured, [`EDIT_ALONE_MS`]): one needle point moved in 2 million literal
+/// needle points, the plan aside; one moved, and one deleted, in the largest of `doc`'s blocks made
+/// one path of all its runs (as a converted unit holds its runs), each command alone.
+const EDIT_ALONE_BUDGETS: [f64; 3] = [EDIT_ALONE_MS[0] * 2.5, EDIT_ALONE_MS[1] * 2.5, EDIT_ALONE_MS[2] * 2.5];
+/// What those rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6 to 3.2, the
+/// median of five, twice), milliseconds (see [`EDIT_ALONE_BUDGETS`]; recorded in
+/// `docs/embroidery.md`).
+const EDIT_ALONE_MS: [f64; 3] = [4.8, 1.9, 0.7];
+
+/// The commands alone on `doc`'s literal runs merged into paths of many runs ([`many_run_paths`]):
+/// one needle point of the largest path moved a nudge, back and forth, and one deleted (then put
+/// back by Undo, untimed), the medians of [`DRAW_RUNS`].
+fn many_runs(doc: &Document) -> Result<[f64; 2], String> {
+    let merged = many_run_paths(doc)?;
+    let mut largest: Option<(u64, usize)> = None;
+    for l in &merged.layers {
+        l.walk(&mut |n| {
+            if let Some(path) = n.path_data() {
+                let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
+                if largest.is_none_or(|(_, most)| anchors > most) {
+                    largest = Some((n.id.0, anchors));
+                }
+            }
+        });
+    }
+    let Some((id, anchors)) = largest else { return Err("embroidery: the document has no path of many runs".into()) };
+    let mut s = fresh(&merged);
+    let at = json!([{"id": id, "index": anchors / 4}]);
+    let (mut moved, mut deleted) = (Vec::with_capacity(DRAW_RUNS), Vec::with_capacity(DRAW_RUNS));
+    for k in 0..DRAW_RUNS {
+        let dx = if k % 2 == 0 { NUDGE_MM } else { -NUDGE_MM };
+        moved.push(timed(&mut s, "embroidery.moveNeedlePoints", &json!({"needlePoints": at, "dx": dx}))?.0);
+        deleted.push(timed(&mut s, "embroidery.deleteNeedlePoints", &json!({"needlePoints": at}))?.0);
+        s.execute("edit.undo", &json!({})).map_err(err)?;
+    }
+    Ok([middle(moved), middle(deleted)])
+}
+
+/// `doc` (literal runs, one path a run) with each group's runs made one path of as many subpaths,
+/// as a converted object's unit holds its runs: the needle jumping between them.
+fn many_run_paths(doc: &Document) -> Result<Document, String> {
+    use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+    let mut out = doc.clone();
+    let groups: Vec<std::sync::Arc<Node>> = out.layers.first().and_then(|l| l.children()).cloned().unwrap_or_default();
+    for g in groups {
+        let runs = g.children().cloned().unwrap_or_default();
+        let Some(first) = runs.first() else { continue };
+        let subpaths: Vec<vectorcraft_geom::SubPath> = runs.iter().filter_map(|r| r.path_data()).flat_map(|p| p.subpaths.iter().cloned()).collect();
+        let mut node = Node::path(out.alloc_id(), PathData::new(subpaths), Appearance::default());
+        node.appearance = first.appearance.clone();
+        node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(StitchRun::default()), ..Embroidery::default() }));
+        if let Some(slot) = out.node_mut(g.id) {
+            *slot = Node::group(g.id, vec![std::sync::Arc::new(node)]);
+        }
+    }
+    Ok(out)
+}
+
+/// The convert rows' budgets, milliseconds (estimates: about 2.5 times what they measured,
+/// [`CONVERT_PARTS_MS`]): converting every object of the 22,000-path document, the part on the
+/// interface thread alone (the job prepared and its plan applied, the plan itself aside, which the
+/// interface runs on a thread of its own); then the Object tab's read of all of them selected, after
+/// each nudge of one.
+const CONVERT_PARTS_BUDGETS: [f64; 2] = [CONVERT_PARTS_MS[0] * 2.5, CONVERT_PARTS_MS[1] * 2.5];
+/// What those rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6 to 3.2, twice;
+/// the convert once, the read the median of five), milliseconds (see [`CONVERT_PARTS_BUDGETS`];
+/// recorded in `docs/embroidery.md`): the read takes about 1 µs a converted object, where an object
+/// of art takes about 3 µs (the Object tab's re-read of 1,000, 3.1 to 3.6 ms in the same runs).
+const CONVERT_PARTS_MS: [f64; 2] = [167.0, 22.0];
+
+/// The convert's interface-thread part on `doc` (Select All; the job prepared, then its plan
+/// applied, the plan between them untimed), once; then the Object tab's read of every converted
+/// object selected after a nudge of one, the median of [`DRAW_RUNS`].
+fn convert_parts(doc: &Document) -> Result<[f64; 2], String> {
+    let mut s = fresh(doc);
+    s.execute("select.all", &json!({})).map_err(err)?;
+    let t = Instant::now();
+    let job = s.convert_to_manual_job(&json!({})).map_err(err)?;
+    let prepared = t.elapsed().as_secs_f64() * 1000.0;
+    let planned = job.plan().map_err(err)?;
+    let t = Instant::now();
+    let done = s.apply_convert_to_manual(planned).map_err(err)?;
+    let parts = prepared + t.elapsed().as_secs_f64() * 1000.0;
+    if done["convertedCount"].as_u64().unwrap_or(0) == 0 {
+        return Err("embroidery: nothing was converted to manual stitches".into());
+    }
+    s.execute("select.all", &json!({})).map_err(err)?;
+    let ids = s.doc().map_err(err)?.selection.objects.clone();
+    let first = *ids.first().ok_or("embroidery: nothing converted is selected")?;
+    let mut reads = Vec::with_capacity(DRAW_RUNS);
+    for k in 0..DRAW_RUNS {
+        let dx = if k % 2 == 0 { NUDGE_MM } else { -NUDGE_MM } * PT_PER_MM;
+        s.execute("object.move", &json!({"ids": [first.0], "dx": dx, "dy": 0})).map_err(err)?;
+        let t = Instant::now();
+        std::hint::black_box(s.embroidery_merged(&ids).map_err(err)?);
+        reads.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok([parts, middle(reads)])
+}
+
+/// The width of a literal run's line, points: a thread's 0.4 mm, as opening a machine file draws it.
+const THREAD_WIDTH_PT: f64 = 0.4 * PT_PER_MM;
+/// The page of the literal design when the document has no artboard: the synthetic documents'.
+const SYNTHETIC_PAGE: (f64, f64) = (1600.0, 1200.0);
+
+/// The needle-point rows ([`needle_moved`]): the 1,000-path document `doc` written as DST and
+/// opened, then `largest` (the 22,000-path document) built into literal runs ([`literal_runs`]).
+fn needle_point_moved(doc: &Document, largest: &Document) -> Result<[f64; 2], String> {
+    let mut s = fresh(doc);
+    let dst = s.execute("document.export", &json!({"format": "dst"})).map_err(err)?;
+    let mut opened = Session::new();
+    opened.execute("document.open", &json!({"name": "perf.dst", "dataBase64": dst["dataBase64"]})).map_err(err)?;
+    let opened = (*opened.doc().map_err(err)?.doc).clone();
+    Ok([needle_moved(&opened)?, needle_moved(&literal_runs(largest)?)?])
+}
+
+/// `doc`'s plan as literal stitch runs, as opening a machine file makes them: a group a block, a path
+/// a run (the needle-down stitches between two lifts), each stroked in its block's thread. Built here
+/// rather than opened, so that it can hold as many needle points as a design may.
+fn literal_runs(doc: &Document) -> Result<Document, String> {
+    use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
+    let mut s = fresh(doc);
+    let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
+    let page = doc.artboards.first().map_or(SYNTHETIC_PAGE, |a| (a.rect.width(), a.rect.height()));
+    let mut out = Document::new(page.0, page.1);
+    let layer = out.layers.first().map(|l| l.id);
+    for block in &plan.blocks {
+        let [r, g, b] = block.thread.art;
+        let paint = Paint::solid(Color::rgb8(r, g, b));
+        let mut runs: Vec<std::sync::Arc<Node>> = Vec::new();
+        let mut line: Vec<Point> = Vec::new();
+        let flush = |line: &mut Vec<Point>, out: &mut Document, runs: &mut Vec<std::sync::Arc<Node>>| {
+            let Some(&first) = line.first() else { return };
+            let mut bp = BezPath::new();
+            bp.move_to(first);
+            // A run of one needle point is a line from the point to itself, as a file opens it.
+            for &p in line.iter().skip(1).chain((line.len() == 1).then_some(&first)) {
+                bp.line_to(p);
+            }
+            let mut node = Node::path(out.alloc_id(), PathData::from_bezpath(&bp), Appearance::basic(Paint::None, paint.clone(), THREAD_WIDTH_PT));
+            node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(StitchRun::default()), ..Embroidery::default() }));
+            runs.push(std::sync::Arc::new(node));
+            line.clear();
+        };
+        for st in &block.stitches {
+            if st.command.needle_down() {
+                line.push(Point::new(st.x * PT_PER_MM, st.y * PT_PER_MM));
+            } else {
+                flush(&mut line, &mut out, &mut runs);
+            }
+        }
+        flush(&mut line, &mut out, &mut runs);
+        let group = Node::group(out.alloc_id(), runs);
+        out.insert(layer, usize::MAX, group).map_err(|e| format!("building the literal runs: {e}"))?;
+    }
+    Ok(out)
+}
+
+/// Milliseconds to move one needle point of `doc`'s largest run (its middle anchor, selected as
+/// Direct Selection selects it) a nudge ([`NUDGE_MM`]) with `path.moveAnchors`, back and forth, the
+/// design planned again after each move, the median of [`DRAW_RUNS`].
+fn needle_moved(doc: &Document) -> Result<f64, String> {
+    let opts = vectorcraft_engine::EmbroideryOptions::default();
+    let mut largest: Option<(u64, usize)> = None;
+    for l in &doc.layers {
+        l.walk(&mut |n| {
+            if let Some(path) = n.path_data() {
+                let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
+                if largest.is_none_or(|(_, most)| anchors > most) {
+                    largest = Some((n.id.0, anchors));
+                }
+            }
+        });
+    }
+    let Some((id, anchors)) = largest else { return Err("embroidery: the document has no run to edit".into()) };
+    let mut s = fresh(doc);
+    s.embroidery_plan(&opts).map_err(err)?;
+    s.execute("select.anchors", &json!({"id": id, "anchors": [[0, anchors / 2]]})).map_err(err)?;
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for k in 0..DRAW_RUNS {
+        let dx = if k % 2 == 0 { NUDGE_MM } else { -NUDGE_MM } * PT_PER_MM;
+        let t = Instant::now();
+        s.execute("path.moveAnchors", &json!({"dx": dx, "dy": 0})).map_err(err)?;
+        s.embroidery_plan(&opts).map_err(err)?;
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     Ok(middle(samples))
 }

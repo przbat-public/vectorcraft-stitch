@@ -6,7 +6,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use serde_json::Value;
-use vectorcraft_engine::cmd::embroidery::plan::{DesignPlan, FIRST_NUMBER};
+use vectorcraft_engine::cmd::embroidery::plan::{Choice, DesignPlan, FIRST_NUMBER};
 use vectorcraft_engine::{EmbroideryOptions, Session};
 use vectorcraft_testkit::embroidery as fx;
 
@@ -137,4 +137,71 @@ fn the_points_fixture_plans_and_holds_its_points() {
     assert_eq!(info(&mut s, p.both, "stroke", "exit"), serde_json::json!(p.both_stroke_exit));
     assert_eq!(info(&mut s, p.both, "fill", "exit"), Value::Null, "only the points given are set");
     assert_eq!(info(&mut s, p.compound, "fill", "entry"), serde_json::json!(p.compound_entry));
+}
+
+/// The manual fixture plans, the document holds together, every format writes it, and each of its
+/// runs is what it says: the designs opened from DST, PES, JEF and VP3 files hold the file's runs
+/// (three threads, sewn as their stitches are), the run of one needle point and the tack are two
+/// anchors at one spot (only the tack marked so), the cuts and stops are marked, the curved run has
+/// handles, the instance places a run, the locked run is on a locked layer and the hidden one isn't
+/// sewn; each converted object is a group of manual runs keeping its original, sewn as manual
+/// stitches (the clip member in its clip group).
+#[test]
+fn the_manual_fixture_holds_each_kind_of_run() {
+    use vectorcraft_doc::embroidery::StitchRun;
+    use vectorcraft_doc::{Node, NodeKind};
+    let mut s = Session::new();
+    let mut run = runner(&mut s);
+    let m = fx::manual(&mut run);
+    drop(run);
+    assert_eq!(s.documents().len(), 1, "the fixture is the one document left open");
+    vectorcraft_testkit::invariants::check_session(&s).unwrap();
+    let plan = checked_plan(&mut s);
+    let sewn: Vec<u64> = plan.units.iter().map(|u| u.origin.selected().0).collect();
+    for o in &m.opened {
+        assert!(!o.runs.is_empty(), "{}: runs pasted", o.format);
+        for r in &o.runs {
+            assert!(sewn.contains(r), "{}: run {r} is sewn", o.format);
+        }
+    }
+    for id in [m.one_point, m.double_point, m.trim_before, m.trim_after, m.curved, m.instance, m.locked, m.stopped] {
+        assert!(sewn.contains(&id), "{id} is sewn: {m:?}");
+    }
+    assert!(!sewn.contains(&m.hidden), "the hidden run isn't sewn");
+    assert!(plan.units.iter().all(|u| u.params.is_none()), "every unit is a run sewn as its stitches are");
+    let doc = s.doc().unwrap().doc.clone();
+    let node = |id: u64| -> &Node { doc.node(vectorcraft_doc::NodeId(id)).unwrap() };
+    let stitches = |id: u64| -> StitchRun { node(id).extras().embroidery.as_deref().and_then(|e| e.stitches.clone()).unwrap() };
+    let anchors = |id: u64| node(id).path_data().unwrap().subpaths[0].anchors.clone();
+    for id in [m.one_point, m.double_point] {
+        let a = anchors(id);
+        assert!(a.len() == 2 && a[0].p == a[1].p, "{id}: two anchors at one spot");
+    }
+    assert_eq!((stitches(m.one_point).double_point, stitches(m.double_point).double_point), (false, true));
+    assert!(stitches(m.trim_before).trim_before && stitches(m.trim_after).trim_after);
+    assert!(anchors(m.curved).iter().any(|a| a.h_in != a.p || a.h_out != a.p), "the curved run has handles");
+    assert!(matches!(node(m.instance).kind, NodeKind::SymbolInstance { .. }));
+    assert!(!node(m.hidden).visible);
+    assert!(!doc.is_editable(vectorcraft_doc::NodeId(m.locked)), "the locked run can't be edited");
+    let stopped = stitches(m.stopped);
+    let places: Vec<(usize, usize)> = stopped.stops.iter().map(|m| (m.subpath, m.anchor)).collect();
+    assert_eq!((places, stopped.stop_after), (vec![(0, 1)], true));
+    // Each converted object: a group keeping its id, holding runs marked manual, its original kept,
+    // sewn as manual stitches; the group given whole holds its two members converted.
+    let c = m.converted;
+    let members: Vec<u64> = node(c.group).children().unwrap().iter().map(|n| n.id.0).collect();
+    assert_eq!(members.len(), 2);
+    for id in [c.fill, c.stroke, c.both, c.compound, c.clip_member, c.expanded].into_iter().chain(members) {
+        let group = node(id);
+        let runs = group.children().unwrap_or_else(|| panic!("{id}: a group"));
+        assert!(!runs.is_empty() && runs.iter().all(|r| stitches(r.id.0).manual), "{id}: runs marked manual");
+        assert!(group.extras().embroidery.as_deref().is_some_and(|e| e.original.is_some()), "{id}: its original kept");
+        assert!(plan.units.iter().any(|u| u.origin.selected().0 == id && u.why == Choice::Manual), "{id}: sewn as manual stitches");
+    }
+    let parent = doc.parent_of(vectorcraft_doc::NodeId(c.clip_member)).and_then(|p| doc.node(p));
+    assert!(parent.is_some_and(Node::clips), "the clip member converted in its clip group");
+    for format in vectorcraft_stitch::format::Format::ALL {
+        let reply = s.execute("document.export", &serde_json::json!({"format": format.id()}));
+        assert!(reply.is_ok(), "{}: {reply:?}", format.id());
+    }
 }

@@ -48,6 +48,16 @@ pub fn mm_to_pt(v: f64) -> f64 {
     v / MM_PER_PT
 }
 
+/// Point `p` (document points) in millimetres, each coordinate by [`pt_to_mm`].
+pub fn point_to_mm(p: vectorcraft_geom::Point) -> vectorcraft_geom::Point {
+    vectorcraft_geom::Point::new(pt_to_mm(p.x), pt_to_mm(p.y))
+}
+
+/// Point `p` (millimetres) in document points, each coordinate by [`mm_to_pt`].
+pub fn point_to_pt(p: vectorcraft_geom::Point) -> vectorcraft_geom::Point {
+    vectorcraft_geom::Point::new(mm_to_pt(p.x), mm_to_pt(p.y))
+}
+
 /// The farthest a coordinate is written from a file's origin, tenths of a millimetre (±200 m): well
 /// within every format's 32-bit fields. [`quantize`] clamps to it; the writers refuse a design that
 /// reaches past it, or past what a format's header can state, instead of writing it clamped

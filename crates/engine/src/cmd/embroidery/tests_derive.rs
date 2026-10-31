@@ -612,3 +612,104 @@ fn the_plan_follows_a_turned_and_mirrored_exit() {
         assert!(unit["missedBy"]["exit"].as_f64().unwrap() <= POINT_MISS_MM, "{command}: {unit}");
     }
 }
+
+/// Stop After goes wherever Trim After goes when objects are made from others: on the last piece of
+/// an object cut into several (Divide, Split Into Grid), the last part of a compound path
+/// released, the last member of a group ungrouped, the group of type's outlines, a symbol's art
+/// placed by Break Link, and what stands for an object whose appearance is expanded. Each operation
+/// runs twice, its source marked once with the cut and once with the stop: the same objects end up
+/// marked.
+#[test]
+fn stop_after_goes_where_trim_after_goes() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
+    type Scenario = fn(&mut Session, &Embroidery) -> Vec<u64>;
+    let scenarios: [(&str, Scenario); 7] = [
+        ("divide", |s, mark| {
+            let a = rect(s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+            let b = rect(s, "#2233cc", 60.0, 30.0, 60.0, 40.0);
+            give(s, b, mark);
+            run(s, "select.set", json!({"ids": [a, b]}));
+            let group = ids(&run(s, "object.pathfinder.divide", json!({})))[0];
+            members(s, group)
+        }),
+        ("split into grid", |s, mark| {
+            let a = rect(s, "#cc2222", 20.0, 20.0, 90.0, 90.0);
+            give(s, a, mark);
+            run(s, "select.set", json!({"ids": [a]}));
+            ids(&run(s, "object.path.splitIntoGrid", json!({"rows": 2, "columns": 2})))
+        }),
+        ("release compound path", |s, mark| {
+            let back = rect(s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+            let front = rect(s, "#cc2222", 100.0, 20.0, 60.0, 40.0);
+            give(s, back, mark);
+            run(s, "select.set", json!({"ids": [back, front]}));
+            let compound = run(s, "object.compoundPath.make", json!({}))["id"].as_u64().unwrap();
+            run(s, "select.set", json!({"ids": [compound]}));
+            run(s, "object.compoundPath.release", json!({}));
+            s.doc().unwrap().selection.objects.iter().map(|id| id.0).collect()
+        }),
+        ("ungroup", |s, mark| {
+            let a = rect(s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+            let label = run(s, "text.create", json!({"x": 20, "y": 100, "text": "Hi"}))["id"].as_u64().unwrap();
+            let group = run(s, "object.group", json!({"ids": [a, label]}))["id"].as_u64().unwrap();
+            give(s, group, mark);
+            run(s, "select.set", json!({"ids": [group]}));
+            run(s, "object.ungroup", json!({}));
+            vec![a, label]
+        }),
+        ("create outlines", |s, mark| {
+            let text = run(s, "text.create", json!({"x": 20, "y": 100, "text": "Hi"}))["id"].as_u64().unwrap();
+            give(s, text, mark);
+            run(s, "select.set", json!({"ids": [text]}));
+            ids(&run(s, "type.createOutlines", json!({})))
+        }),
+        ("break link", |s, mark| {
+            let art = rect(s, "#cc2222", 200.0, 20.0, 40.0, 30.0);
+            run(s, "select.set", json!({"ids": [art]}));
+            let instance = run(s, "symbol.new", json!({"name": "Badge"}))["id"].as_u64().unwrap();
+            give(s, instance, mark);
+            ids(&run(s, "symbol.breakLink", json!({"ids": [instance]})))
+        }),
+        ("expand appearance", |s, mark| {
+            let a = rect(s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+            run(s, "appearance.addFill", json!({"ids": [a]}));
+            give(s, a, mark);
+            run(s, "effect.expandAppearance", json!({"ids": [a]}));
+            [a].into_iter().chain(members(s, a)).collect()
+        }),
+    ];
+    let mut cut = Embroidery::default();
+    cut.set_trim_after(true);
+    let mut stop = Embroidery::default();
+    stop.set_stop_after(true);
+    for (what, scenario) in scenarios {
+        let (mut a, mut b) = (blank(), blank());
+        let cuts: Vec<bool> = scenario(&mut a, &cut).into_iter().map(|id| embroidery(&a, id).trim_after).collect();
+        let stops: Vec<bool> = scenario(&mut b, &stop).into_iter().map(|id| embroidery(&b, id).stop_after).collect();
+        assert!(cuts.contains(&true), "{what}: the cut kept: {cuts:?}");
+        assert_eq!(stops, cuts, "{what}");
+    }
+}
+
+/// An object made from a converted object (Pathfinder, Offset Path) is art: it carries the cut and
+/// the stop after the object, never the original the manual object keeps to be restored.
+#[test]
+fn an_object_made_from_a_converted_one_keeps_no_original() {
+    let mut s = blank();
+    let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
+    let original = vectorcraft_doc::embroidery::Original {
+        frame: vectorcraft_geom::Affine::IDENTITY,
+        node: json!({"id": 1}).to_string().into(),
+        fingerprint: None,
+        extra: Default::default(),
+    };
+    let mut converted = settings(30.0, true);
+    converted.original = Some(original);
+    give(&mut s, a, &converted);
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    let offset = ids(&run(&mut s, "object.path.offsetPath", json!({"offset": 4})))[0];
+    let e = embroidery(&s, offset);
+    assert!(e.original.is_none() && e.trim_after && angle(&e) == Some(30.0), "{e:?}");
+}

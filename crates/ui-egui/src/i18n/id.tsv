@@ -5409,7 +5409,7 @@ swatch	Bright Violet	Violet cerah
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Berdasarkan VectorCraft dari tim ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikon: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC memuat paling banyak {MAX_COLORS} warna, bukan {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC memuat paling banyak {MAX_COLORS} warna (setiap pemberhentian dihitung satu), bukan {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 memuat paling banyak {MAX_COLORS} blok warna
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	file DST memiliki header {HEADER} byte dan setidaknya satu rekaman 3 byte, tetapi file ini berukuran {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	header DST menghitung paling banyak {MAX_RECORDS} rekaman, dan desain memerlukan {_1}
@@ -5835,6 +5835,7 @@ embroidery	Not sewn: it is hidden.	Tidak dijahit: tersembunyi.
 embroidery	Not sewn: it is on a template or non-printing layer.	Tidak dijahit: berada di lapisan templat atau lapisan yang tidak dicetak.
 embroidery	Not sewn.	Tidak dijahit.
 embroidery	Stitches from a file are sewn as the file has them.	Jahitan dari berkas dijahit seperti adanya di berkas.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Jahitan manual dijahit sebagaimana ditempatkan; objek asal konversinya tidak disimpan bersamanya.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Teks belum dijahit: buat garis luar untuk menjahitnya.
 embroidery	Images aren't sewn.	Gambar tidak dijahit.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Pengaturan ada pada objek simbol: edit simbol untuk mengaturnya.
@@ -5997,3 +5998,88 @@ embroidery	Auto (where the plan ends the part)	Otomatis (tempat rencana mengakhi
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 berpindah antartitik, tombol panah menggeser, Enter mengetikkannya
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Titik masuk dan keluar ditampilkan untuk {count} objek pertama yang dipilih
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Bordir: berhenti sesudahnya
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Ubah menjadi jahitan manual
+@msg	nothing selected can be converted to manual stitches: {_1}	tidak ada yang dipilih yang dapat diubah menjadi jahitan manual: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	Pulihkan objek
+@msg	nothing selected can be restored: {_1}	tidak ada yang dipilih yang dapat dipulihkan: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Jahitan manual atau jahitan dari berkas yang diskalakan lebih dari {value}%
+embroidery	{name}: {value}% larger	{name}: {value}% lebih besar
+embroidery	{name}: {value}% smaller	{name}: {value}% lebih kecil
+embroidery	Largest change: {value}%	Perubahan terbesar: {value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	jahitan manual
+@plural	{count} stop|{count} stops	{count} pemberhentian
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	efek, kuas, serta isian atau goresan tambahan pada jahitan manual atau jahitan dari berkas (atau pada grup yang memuatnya) tidak dibordir: jahitan dijahit apa adanya
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Pindahkan titik tusukan
+@msg	select needle points of a path of stitches, or give needlePoints	pilih titik tusukan dari jalur jahitan, atau berikan needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Sisipkan titik tusukan
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Hapus titik tusukan
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Pisahkan rangkaian
+	Join Runs	Gabungkan rangkaian
+@msg	these runs aren't sewn one right after another in one colour block	rangkaian ini tidak dijahit berurutan langsung dalam satu blok warna
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Fungsi mesin
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Pisahkan jahitan panjang
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Daftar jahitan
+	Select Needle Points	Pilih titik tusukan
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Jahitan manual
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Dijahit sesuai penempatannya: tidak lagi berubah mengikuti kain atau pengaturan objek.
+embroidery	Scaled to {value}% since converting	Diskalakan menjadi {value}% sejak diubah
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Mengembalikan objek menggantikan jahitan manualnya, direncanakan ulang pada ukurannya sekarang.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Membekukan jahitan yang direncanakan sekarang agar setiap titik tusukan bisa dipindahkan; Pulihkan objek mengembalikan objek.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Mesin berhenti setelah jahitan objek, seperti untuk aplikasi. Di tempat yang diikuti ganti benang atau akhir desain, mesin tetap berhenti di sana, jadi tidak ada pemberhentian tambahan yang ditulis.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Perubahan pada jahitan sejak diubah akan hilang; Urungkan mengembalikannya.
+@plural	Stop the machine after the object|Stop the machine after the objects	Hentikan mesin setelah objek
+@plural	Restore {count} object?|Restore {count} objects?	Pulihkan {count} objek?
+@plural	{count} object restored|{count} objects restored	{count} objek dipulihkan
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objek diubah menjadi jahitan manual: Pulihkan objek mengembalikannya
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	potongan atau pemberhentian jahitan dihilangkan: perintah jalur menghapus atau memindahkan titik tusukan yang mereka ikuti (atur lagi dengan Fungsi mesin)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	jalur jahitan hanya dapat digabung dengan jalur jahitan: pilih hanya itu
+@msg	select two or more paths of stitches sewn one right after another to join them	pilih dua jalur jahitan atau lebih yang dijahit tepat berurutan untuk menggabungkannya
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Potong setelah titik tusukan
+	Stop After Needle Point	Berhenti setelah titik tusukan
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	tidak selama edit global aktif: hentikan edit global dahulu
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} blok benang, termasuk pemberhentian
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} ganti benang, termasuk pemberhentian
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	setiap pemberhentian ditulis sebagai ganti ke benang yang sama: mesin satu jarum berhenti di sana, mesin multi-jarum hanya di tempat operatornya menetapkan pemberhentian pada ganti itu
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Objek yang terkunci tidak dapat dipulihkan: buka kuncinya terlebih dahulu.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	jahitan dari berkas
+embroidery	manual stitches already	sudah jahitan manual
+embroidery	symbol instances	instans simbol
+embroidery	clipping paths	jalur kliping
+embroidery	parts of an object sewn whole	bagian objek yang dijahit utuh
+embroidery	holding what isn't sewn	berisi yang tidak dijahit
+embroidery	locked	terkunci
+embroidery	not sewn	tidak dijahit
+embroidery	stitches a manual run can't hold	jahitan yang tidak muat dalam rangkaian manual
+embroidery	not converted	tidak dikonversi
+embroidery	the kept object doesn't read	objek yang disimpan tidak terbaca
+embroidery	its symbol is gone	simbolnya hilang
+embroidery	would lie outside the document	akan berada di luar dokumen
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objek dilewati: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} rangkaian
+@plural	{count} needle point|{count} needle points	{count} titik tusukan
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} objek terpilih berupa jahitan manual
+embroidery	Converting to manual stitches…	Mengonversi ke jahitan manual…

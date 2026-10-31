@@ -6068,9 +6068,7 @@ embroidery	manual stitches	kézi öltések
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Kézi öltések
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Úgy varródnak, ahogy el vannak helyezve: már nem változnak az anyaggal vagy az objektum beállításaival.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} öltéssor · tűszúrások: {needle}
 embroidery	Scaled to {value}% since converting	Az átalakítás óta {value}%-ra átméretezve
-embroidery	Restore Object…	Objektum visszaállítása…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Visszahelyezi az objektumot a kézi öltései helyére, jelenlegi méretében újratervezve.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Rögzíti a most tervezett öltéseket, hogy minden tűszúrás mozgatható legyen; az Objektum visszaállítása visszahozza az objektumot.
 embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	A gép megáll az objektum öltései után, mint az applikációnál. Ahol szálcsere vagy a minta vége következik, a gép ott amúgy is megáll, ezért nem íródik ki külön megállás.
@@ -6111,3 +6109,8 @@ embroidery	the kept object doesn't read	a megőrzött objektum nem olvasható
 embroidery	its symbol is gone	a szimbóluma hiányzik
 embroidery	would lie outside the document	a dokumentumon kívül lenne
 @plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objektum kimaradt: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} öltéssor
+@plural	{count} needle point|{count} needle points	{count} tűszúrás
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} kijelölt objektum kézi öltés
+embroidery	Converting to manual stitches…	Átalakítás kézi öltésekké…

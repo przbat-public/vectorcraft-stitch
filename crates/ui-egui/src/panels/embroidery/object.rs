@@ -250,11 +250,13 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {
         takes_none(ui, &info);
-        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next);
+        let restore = super::command_label(app, RESTORE);
+        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next, &restore);
         trim_after(ui, &info, &ids, &mut commands);
         stop_after(ui, &info, &ids, &mut commands);
     } else {
-        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next);
+        let restore = super::command_label(app, RESTORE);
+        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next, &restore);
         let chosen = app.ui.embroidery_panel.part;
         let shown = shown(chosen, &info);
         if let Some(part) = part_switch(ui, &info, shown) {
@@ -914,13 +916,27 @@ pub(crate) fn converted(reply: &Value) -> String {
 /// The manual stitches among the selection ([`ObjectSettings::manual`]): what they are, their runs
 /// and needle points, the scale since converting when there is one, and Restore Object (asking first
 /// when their stitches were edited since converting).
-fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, commands: &mut Vec<Command>, focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
+fn manual(
+    ui: &mut Ui,
+    info: &ObjectSettings,
+    ids: &[NodeId],
+    lang: Lang,
+    commands: &mut Vec<Command>,
+    focus: &mut Option<(FocusNext, Vec<NodeId>)>,
+    label: &str,
+) {
     let Some(m) = &info.manual else { return };
+    // Beside objects that take settings, how many of the selection the words below are about.
+    if info.object_count > 0 {
+        state_words(ui, &crate::etn!(m.objects as u64, "{count} selected object is manual stitches", "{count} selected objects are manual stitches"));
+    }
     state_words(ui, crate::et!("Sewn as they are placed: they no longer change with the fabric or the object's settings."));
     let t = Tokens::get(ui.ctx());
     let dim = crate::embroidery::marks::readable_text(t.text_dim, &[t.panel], t.dark);
-    let runs = crate::etn!(m.runs as u64, "{count} run · {needle} needle points", "{count} runs · {needle} needle points");
-    let counts = text::fill(&runs, &[("needle", &numbers::count(lang, m.needle_points as u64))]);
+    // Each count takes its own plural form: "1 run · 12 needle points", "3 runs · 1 needle point".
+    let runs = crate::etn!(m.runs as u64, "{count} run", "{count} runs");
+    let needle = crate::etn!(m.needle_points as u64, "{count} needle point", "{count} needle points");
+    let counts = format!("{runs} · {needle}");
     ui.add(egui::Label::new(egui::RichText::new(counts).size(SMALL_TEXT).color(dim)).wrap());
     // The axis scaled most, as a percent of the size converted at.
     if let Some([least, most]) = m.scale {
@@ -935,7 +951,8 @@ fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, comman
     let tip = crate::et!("Puts the object back in place of its manual stitches, planned again at its size now.");
     // Dimmed only as Restore refuses: every one locked, which it says.
     let locked = crate::et!("Locked objects can't be restored: unlock them first.");
-    let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(crate::et!("Restore Object…")));
+    // The command's label, no ellipsis: it asks first only when the stitches were edited.
+    let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(label));
     take_focus(&resp, FocusNext::Restore, ids, focus);
     rows::focus_ring(ui, &resp, resp.rect.expand(rows::FOCUS_GAP), t.panel);
     rows::keyboard_tip(ui, resp.id, tip);
@@ -1172,7 +1189,11 @@ pub(crate) fn inspect(app: &VectorcraftApp) -> Value {
                 .collect()
         })
         .unwrap_or_default();
-    json!({"ids": ids_json(&memo.ids), "part": part.map(Part::id), "rows": rows})
+    // Manual stitches among the selection, as the tab says them, and whether a convert is under way.
+    let manual =
+        info.manual.as_ref().map(|m| json!({"objects": m.objects, "restorable": m.restorable, "runs": m.runs, "needlePoints": m.needle_points}));
+    let converting = crate::embroidery::convert_job::running(app);
+    json!({"ids": ids_json(&memo.ids), "part": part.map(Part::id), "rows": rows, "manual": manual, "converting": converting})
 }
 
 #[cfg(test)]

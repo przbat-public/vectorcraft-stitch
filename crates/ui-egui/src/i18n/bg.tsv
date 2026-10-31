@@ -6021,9 +6021,7 @@ embroidery	manual stitches	ръчни бодове
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Ръчни бодове
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Шият се така, както са разположени: вече не се променят с плата или настройките на обекта.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} редица · точки на убождане: {needle}|{count} редици · точки на убождане: {needle}
 embroidery	Scaled to {value}% since converting	Мащабирано до {value}% след преобразуването
-embroidery	Restore Object…	Възстановяване на обекта…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Връща обекта на мястото на ръчните му бодове, планиран отново в сегашния си размер.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Замразява сега планираните бодове, за да може всяка точка на убождане да се мести; „Възстановяване на обекта“ връща обекта.
 embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Машината спира след бодовете на обекта, както при апликация. Където следва смяна на нишката или краят на дизайна, машината спира там така или иначе, затова не се записва допълнително спиране.
@@ -6064,3 +6062,8 @@ embroidery	the kept object doesn't read	запазеният обект не с�
 embroidery	its symbol is gone	символът му липсва
 embroidery	would lie outside the document	би излязъл извън документа
 @plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} обект е пропуснат: {reasons}|{count} обекта са пропуснати: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} редица|{count} редици
+@plural	{count} needle point|{count} needle points	{count} точка на убождане|{count} точки на убождане
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} избран обект е ръчни бодове|{count} избрани обекта са ръчни бодове
+embroidery	Converting to manual stitches…	Преобразуване в ръчни бодове…

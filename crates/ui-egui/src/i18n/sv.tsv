@@ -6038,9 +6038,7 @@ embroidery	manual stitches	manuella stygn
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Manuella stygn
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Sys som de är placerade: de ändras inte längre med tyget eller objektets inställningar.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} rad · {needle} nålstick|{count} rader · {needle} nålstick
 embroidery	Scaled to {value}% since converting	Skalat till {value} % sedan konverteringen
-embroidery	Restore Object…	Återställ objekt…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Sätter tillbaka objektet i stället för dess manuella stygn, planerat om i sin nuvarande storlek.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Fryser de stygn som planerats nu, så att varje nålstick kan flyttas; Återställ objekt tar tillbaka objektet.
 embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Maskinen stannar efter objektets stygn, som vid applikation. Där ett trådbyte eller mönstrets slut följer stannar maskinen där ändå, så inget extra stopp skrivs.
@@ -6081,3 +6079,8 @@ embroidery	the kept object doesn't read	det sparade objektet kan inte läsas
 embroidery	its symbol is gone	dess symbol saknas
 embroidery	would lie outside the document	skulle hamna utanför dokumentet
 @plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekt hoppades över: {reasons}|{count} objekt hoppades över: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} rad|{count} rader
+@plural	{count} needle point|{count} needle points	{count} nålstick|{count} nålstick
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} markerat objekt är manuella stygn|{count} markerade objekt är manuella stygn
+embroidery	Converting to manual stitches…	Konverterar till manuella stygn…

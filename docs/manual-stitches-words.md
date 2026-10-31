@@ -54,7 +54,7 @@ Function's, whose step is named by what it did.
 | Its scale since it was converted (the axis scaled most, shown from half a percent) | Scaled to {value}% since converting | Przeskalowano do {value}% od zamiany |
 | The button on a planned object | Convert to Manual Stitches | Zamień na ściegi ręczne |
 | Its tip (hover and keyboard focus) | Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back. | Zamraża zaplanowane teraz ściegi, aby można było przesuwać każde nakłucie; polecenie Przywróć obiekt przywraca obiekt. |
-| The button on a manual object | Restore Object… | Przywróć obiekt… |
+| The button on a manual object (the command's label: it asks first only after edits) | Restore Object | Przywróć obiekt |
 | Its tip | Puts the object back in place of its manual stitches, planned again at its size now. | Przywraca obiekt w miejsce jego ściegów ręcznych, zaplanowany od nowa w obecnym rozmiarze. |
 | The Stop After row | Stop the machine after the object (plural) | Zatrzymaj maszynę po obiekcie / po obiektach |
 | Its tip | The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written. | Maszyna zatrzymuje się po ściegach obiektu, jak przy aplikacji. Tam, gdzie dalej następuje zmiana nici albo koniec wzoru, maszyna i tak się zatrzymuje, więc dodatkowy stop nie jest zapisywany. |

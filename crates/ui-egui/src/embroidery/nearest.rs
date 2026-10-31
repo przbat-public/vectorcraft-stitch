@@ -111,7 +111,9 @@ fn spawn(job: NearestJob, stop: &CancelToken, passes: &Arc<AtomicU64>, pass: &Ar
 /// still running says how far it has got. One for another document than the active one stops.
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let Some(r) = app.embroidery.nearest.running.as_ref() else { return };
-    if app.session.active().map(|st| st.uid) != Some(r.uid) || ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+    // Escape is an open dialog's or a field's first (it closes or cancels that), then the search's.
+    let escape = app.ui.dialog.is_none() && !ctx.egui_wants_keyboard_input() && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape));
+    if app.session.active().map(|st| st.uid) != Some(r.uid) || escape {
         r.stop.cancel();
     }
     // Stopped is stopped, even when the search had just finished.

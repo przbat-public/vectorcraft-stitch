@@ -667,7 +667,8 @@ fn the_keyboards_focus_is_drawn_on_restore_and_the_checkbox() {
     select(&mut app, &[a]);
     let drawn = ready(&mut app, &ctx, &mut time);
     time += 0.05;
-    frame(&mut app, &ctx, time, vec![drawn.focus(crate::et!("Restore Object…"))]);
+    let restore = super::super::command_label(&app, RESTORE);
+    frame(&mut app, &ctx, time, vec![drawn.focus(&restore)]);
     time += 0.05;
     let focused = frame(&mut app, &ctx, time, vec![]);
     assert!(focused.outlines.iter().any(|(_, c)| *c == ring), "Restore Object: the focus's outline");
@@ -684,7 +685,7 @@ fn convert_and_restore_hand_the_keyboard_to_what_replaces_them() {
     select(&mut app, &[a]);
     let mut time = 0.0;
     let convert = super::super::command_label(&app, CONVERT);
-    let restore = crate::et!("Restore Object…");
+    let restore = super::super::command_label(&app, RESTORE);
     let enter = |pressed| Event::Key { key: Key::Enter, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
     let drawn = ready(&mut app, &ctx, &mut time);
     for events in [vec![drawn.focus(&convert)], vec![enter(true)], vec![enter(false)]] {
@@ -693,7 +694,7 @@ fn convert_and_restore_hand_the_keyboard_to_what_replaces_them() {
     }
     converted_now(&mut app, &ctx, &mut time);
     let drawn = ready(&mut app, &ctx, &mut time);
-    assert_eq!(drawn.focused(), Some(restore), "Restore Object has the keyboard");
+    assert_eq!(drawn.focused(), Some(restore.as_str()), "Restore Object has the keyboard");
     for events in [vec![enter(true)], vec![enter(false)]] {
         time += 0.05;
         frame(&mut app, &ctx, time, events);
@@ -706,7 +707,7 @@ fn convert_and_restore_hand_the_keyboard_to_what_replaces_them() {
     app.run("object.lock", json!({"ids": [a]})).unwrap();
     select(&mut app, &[a]);
     let drawn = ready(&mut app, &ctx, &mut time);
-    assert_eq!(drawn.node(restore).description(), Some(crate::et!("Locked objects can't be restored: unlock them first.")));
+    assert_eq!(drawn.node(&restore).description(), Some(crate::et!("Locked objects can't be restored: unlock them first.")));
 }
 
 /// Screen readers hear what a blank field shows (what Auto chose, as its placeholder), and two ↺
@@ -1227,7 +1228,7 @@ fn the_enter_that_opens_the_restore_question_is_not_its_answer() {
     select(&mut app, &[a]);
     let key = |key, pressed| Event::Key { key, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
     let asked = |app: &VectorcraftApp| app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND);
-    let restore = crate::et!("Restore Object…");
+    let restore = super::super::command_label(&app, RESTORE);
     let mut time = 0.0;
     let mut step = |app: &mut VectorcraftApp, events: Vec<Event>| {
         time += 0.05;
@@ -1240,7 +1241,7 @@ fn the_enter_that_opens_the_restore_question_is_not_its_answer() {
     let undo = steps(&app);
     // Escape, then Cancel: each closes the question, nothing restored.
     for close in ["escape", "cancel"] {
-        step(&mut app, vec![last.focus(restore)]);
+        step(&mut app, vec![last.focus(&restore)]);
         step(&mut app, vec![key(Key::Enter, true)]);
         assert!(asked(&app), "{close}: Enter opened the question");
         for _ in 0..3 {
@@ -1257,7 +1258,7 @@ fn the_enter_that_opens_the_restore_question_is_not_its_answer() {
         assert!(!asked(&app), "{close}: the button let the keyboard go, so Enter doesn't ask again");
     }
     // Enter let go, and pressed again: its answer.
-    step(&mut app, vec![last.focus(restore)]);
+    step(&mut app, vec![last.focus(&restore)]);
     step(&mut app, vec![key(Key::Enter, true)]);
     step(&mut app, vec![key(Key::Enter, false)]);
     assert!(asked(&app));
@@ -1283,7 +1284,7 @@ fn convert_restore_and_stop_after_describe_their_help() {
     app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
     select(&mut app, &[a]);
     let drawn = ready(&mut app, &ctx, &mut time);
-    assert!(described(&drawn, crate::et!("Restore Object…"), "Puts the object back"));
+    assert!(described(&drawn, &super::super::command_label(&app, RESTORE), "Puts the object back"));
 }
 
 /// A manual run outside the object it was converted from (Ungroup moved it out) is said to be sewn
@@ -1301,6 +1302,23 @@ fn a_manual_run_outside_its_object_promises_no_restore() {
     let drawn = ready(&mut app, &ctx, &mut time);
     assert!(drawn.has(vocabulary::takes_none("manual")), "{:?}", drawn.words);
     assert!(!drawn.has("Restore Object"), "{:?}", drawn.words);
+}
+
+/// `ui.inspect` reports the manual stitches among the selection as the tab says them, beside the
+/// counts of a mixed selection, each count in its own number: one needle point reads as one.
+#[test]
+fn inspect_reports_manual_stitches_and_counts_read_in_their_own_numbers() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a, b]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let seen = inspect(&app);
+    assert_eq!((seen["manual"]["objects"].clone(), seen["converting"].clone()), (json!(1), json!(false)), "{seen}");
+    assert!(seen["manual"]["needlePoints"].as_u64().is_some_and(|n| n > 1));
+    assert!(drawn.has("1 selected object is manual stitches"), "{:?}", drawn.words);
+    assert_eq!(crate::etn!(1, "{count} needle point", "{count} needle points"), "1 needle point");
 }
 
 /// A pointer click in the middle of the node screen readers call `name`.
@@ -1346,7 +1364,8 @@ fn manual_stitches_convert_and_restore_from_the_tab() {
     );
     click_on(&mut app, &ctx, &mut time, &stop);
     assert_eq!(info(&mut app, &[a])["stopAfter"]["value"], json!(true));
-    click_on(&mut app, &ctx, &mut time, crate::et!("Restore Object…"));
+    let restore = super::super::command_label(&app, RESTORE);
+    click_on(&mut app, &ctx, &mut time, &restore);
     assert!(app.ui.dialog.is_none(), "not edited: no question");
     assert_eq!(app.ui.status, crate::etn!(1, "{count} object restored", "{count} objects restored"));
     assert_eq!(info(&mut app, &[a])["manual"], json!(null), "the object is back");
@@ -1360,7 +1379,7 @@ fn manual_stitches_convert_and_restore_from_the_tab() {
 #[test]
 fn restore_asks_after_edits_and_the_buttons_work_from_the_keyboard() {
     let ctx = context();
-    let (mut app, a, b) = app_with_art();
+    let (mut app, a, _) = app_with_art();
     select(&mut app, &[a]);
     let mut time = 0.0;
     let convert = super::super::command_label(&app, CONVERT);
@@ -1384,11 +1403,11 @@ fn restore_asks_after_edits_and_the_buttons_work_from_the_keyboard() {
     let drawn = ready(&mut app, &ctx, &mut time);
     let scaled = text::fill(crate::et!("Scaled to {value}% since converting"), &[("value", "120")]);
     assert!(drawn.has(&scaled), "{scaled}");
-    click_on(&mut app, &ctx, &mut time, crate::et!("Restore Object…"));
+    let restore = super::super::command_label(&app, RESTORE);
+    click_on(&mut app, &ctx, &mut time, &restore);
     assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND), "edited: asked first");
     assert!(info(&mut app, &[a])["manual"].is_object(), "nothing restored yet");
     crate::dialogs::confirm(&mut app).unwrap();
     assert!(app.ui.dialog.is_none());
     assert_eq!(info(&mut app, &[a])["manual"], json!(null), "Restore put it back");
-    let _ = b;
 }

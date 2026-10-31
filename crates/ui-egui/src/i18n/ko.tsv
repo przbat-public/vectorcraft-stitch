@@ -5660,9 +5660,7 @@ embroidery	manual stitches	수동 스티치
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	수동 스티치
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	놓인 그대로 수놓아집니다. 이제 원단이나 개체 설정에 따라 바뀌지 않습니다.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	구간 {count}개 · 바늘 위치 {needle}개
 embroidery	Scaled to {value}% since converting	변환 후 {value}%로 크기 조정됨
-embroidery	Restore Object…	개체 복원…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	수동 스티치 자리에 개체를 되돌리고, 지금 크기로 다시 계획합니다.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	지금 계획된 스티치를 고정해 바늘 위치를 하나씩 옮길 수 있게 합니다. 개체 복원으로 개체를 되돌립니다.
 embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	개체의 스티치가 끝나면 아플리케처럼 기계가 멈춥니다. 그다음에 실 교체나 디자인의 끝이 오는 곳에서는 기계가 어차피 멈추므로 정지를 따로 기록하지 않습니다.
@@ -5703,3 +5701,8 @@ embroidery	the kept object doesn't read	보관된 개체를 읽을 수 없음
 embroidery	its symbol is gone	심볼이 없음
 embroidery	would lie outside the document	문서 밖에 놓임
 @plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	건너뛴 개체 {count}개: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	구간 {count}개
+@plural	{count} needle point|{count} needle points	바늘 위치 {count}개
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	선택한 개체 중 {count}개는 수동 스티치입니다
+embroidery	Converting to manual stitches…	수동 스티치로 변환 중…

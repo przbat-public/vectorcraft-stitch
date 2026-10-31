@@ -106,7 +106,9 @@ fn spawn(job: ConvertJob, stop: &CancelToken, done: &Arc<AtomicU64>) -> Pending 
 /// still planning says how far it has got. One for another document than the active one stops.
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let Some(r) = app.embroidery.converting.running.as_ref() else { return };
-    if app.session.active().map(|st| st.uid) != Some(r.uid) || ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+    // Escape is an open dialog's or a field's first (it closes or cancels that), then the convert's.
+    let escape = app.ui.dialog.is_none() && !ctx.egui_wants_keyboard_input() && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape));
+    if app.session.active().map(|st| st.uid) != Some(r.uid) || escape {
         r.stop.cancel();
     }
     // Stopped is stopped, even when the plan had just finished.
@@ -144,15 +146,19 @@ pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     app.status(said);
 }
 
-/// The status bar while it plans: how far it has got, and that Escape stops it.
+/// The status bar while it plans: how far it has got, and that Escape stops it (on the web, which
+/// plans in one go in a frame of its own, only that it has begun).
 fn say_progress(app: &mut VectorcraftApp) {
     let Some(r) = app.embroidery.converting.running.as_ref() else { return };
     let percent = (r.done.load(Ordering::Relaxed) * 100 / PER_MILLE).min(MOST_BEFORE_DONE);
-    let label = command_label(app, CONVERT);
+    let doing = crate::et!("Converting to manual stitches…");
+    if cfg!(target_arch = "wasm32") {
+        return app.status(doing.to_string());
+    }
     let lang = crate::i18n::current();
     let progress =
         crate::embroidery::text::fill(crate::et!("{percent}% · Esc stops it"), &[("percent", &crate::embroidery::numbers::count(lang, percent))]);
-    app.status(format!("{label}… {progress}"));
+    app.status(format!("{doing} {progress}"));
 }
 
 #[cfg(test)]
@@ -246,5 +252,19 @@ mod tests {
         in_line(&mut app);
         frame(&mut app, &ctx, vec![]);
         assert_eq!(undo_steps(&app), steps + 1, "{}", app.ui.status);
+    }
+
+    /// While a dialog is open (or a field has the keyboard), Escape is its: the convert goes on.
+    #[test]
+    fn escape_in_an_open_dialog_leaves_the_convert_running() {
+        let ctx = egui::Context::default();
+        let (mut app, a) = app();
+        start(&mut app, &json!({"ids": [a]}));
+        app.ui.dialog = Some(crate::state::Dialog::new(crate::embroidery::restore_dialog::KIND, json!({})));
+        let escape = Event::Key { key: Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
+        frame(&mut app, &ctx, vec![escape]);
+        app.ui.dialog = None;
+        until_done(&mut app, &ctx);
+        assert_eq!(app.ui.status, "1 object converted to manual stitches: Restore Object brings it back", "not stopped");
     }
 }

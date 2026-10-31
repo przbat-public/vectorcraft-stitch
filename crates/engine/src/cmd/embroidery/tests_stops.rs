@@ -123,6 +123,83 @@ fn a_stop_takes_a_record_number_and_is_counted() {
     assert_eq!((order["blocks"][0]["stops"].clone(), order["blocks"][0]["units"][0]["stops"].clone()), (json!(1), json!(1)));
 }
 
+/// Run `id` put in a clip group whose clipping path is the rectangles `keep` (millimetres, x0 to
+/// x1, y from -5 to 15), made one compound path when there are several.
+fn clipped(s: &mut Session, id: u64, keep: &[[f64; 2]]) {
+    run(s, "paint.setFill", json!({"none": true}));
+    run(s, "paint.setStroke", json!({"none": true}));
+    let mm = |v: f64| v * PT_PER_MM;
+    let rects: Vec<u64> = keep
+        .iter()
+        .map(|[x0, x1]| {
+            run(s, "shape.rectangle", json!({"x": mm(*x0), "y": mm(-5.0), "width": mm(x1 - x0), "height": mm(20.0)}))["id"].as_u64().unwrap()
+        })
+        .collect();
+    let clip = match rects.as_slice() {
+        [one] => *one,
+        _ => {
+            run(s, "select.set", json!({ "ids": rects }));
+            run(s, "object.compoundPath.make", json!({}))["id"].as_u64().unwrap()
+        }
+    };
+    run(s, "select.set", json!({"ids": [id, clip]}));
+    run(s, "object.clippingMask.make", json!({}));
+}
+
+/// The cuts, stops and jumps of the plan's only block, in order, with the x (tenths of a
+/// millimetre) each is at.
+fn lifts(s: &mut Session) -> Vec<(Command, i64)> {
+    let plan = plan_of(s);
+    records(&plan.blocks[0]).into_iter().filter(|(c, _, _)| *c != Command::Stitch).map(|(c, x, _)| (c, x)).collect()
+}
+
+/// Inside a clip group, a run read from a file keeps the stops and cuts it names where the clip
+/// cuts it, rather than losing them with the jumps there: those between two pieces left are made at
+/// their joint, the cut and then the stop before the needle lifts; a cut before the first piece is
+/// the cut before the run, and a stop there comes after its first needle point; one after the last
+/// piece comes after the run. The stats count each stop.
+#[test]
+fn a_clip_carries_a_runs_stops_and_cuts_across_its_edges() {
+    use Command::{Jump, Stop, Trim};
+    let line = |xs: std::ops::RangeInclusive<i32>| -> Vec<(f64, f64)> { xs.map(|x| (f64::from(x), 5.0)).collect() };
+    // A stop after the needle point at 3 mm and a cut before the subpath from 6 mm; the clip leaves
+    // 0 to 3 and 7 to 9.
+    let mut s = blank();
+    let marks = StitchRun { stops: vec![Mark::place(0, 3)], trims: vec![Mark::place(1, 0)], ..StitchRun::default() };
+    let id = add_run(&mut s, RED, &[&line(0..=5), &line(6..=9)], marks);
+    clipped(&mut s, id, &[[-5.0, 3.5], [6.5, 15.0]]);
+    let at = lifts(&mut s);
+    let joint: Vec<Command> = at.iter().map(|(c, _)| *c).collect();
+    assert_eq!(joint, [Trim, Stop, Jump], "the cut, the stop, then the needle lifted: {at:?}");
+    assert!(at.iter().take(2).all(|(_, x)| *x == 30), "at the last needle point before the edge: {at:?}");
+    assert_eq!(run(&mut s, "embroidery.stats", json!({}))["stops"], json!(1));
+    // A stop and a cut ending a subpath the clip takes away whole: the cut before the run (the move
+    // into it cut), the stop after its first needle point.
+    let mut s = blank();
+    let marks = StitchRun { stops: vec![Mark::place(0, 1)], trims: vec![Mark::place(1, 0)], ..StitchRun::default() };
+    let id = add_run(&mut s, RED, &[&line(0..=1), &line(3..=5)], marks);
+    clipped(&mut s, id, &[[2.5, 15.0]]);
+    assert_eq!(lifts(&mut s), [(Trim, 30), (Stop, 30), (Jump, 40)], "the cut before the run, the stop after its first needle point");
+    // The clip itself, on a run's records (millimetres): the cut before the run, as above; and a
+    // stop after a needle point past the edge, after the run.
+    let sew = |x: i32| Stitch::new(f64::from(x), 5.0, Command::Stitch);
+    let mark = |x: i32, c| Stitch::new(f64::from(x), 5.0, c);
+    let clip = |points: Vec<Stitch>, [x0, x1]: [f64; 2]| {
+        let mut keep = BezPath::new();
+        keep.move_to((x0, -5.0));
+        keep.line_to((x1, -5.0));
+        keep.line_to((x1, 15.0));
+        keep.line_to((x0, 15.0));
+        keep.close_path();
+        super::unit::cut_run_to(points, &(keep, vectorcraft_geom::FillRule::NonZero), &vectorcraft_stitch::plan::Params::default())
+    };
+    let before = clip(vec![sew(0), sew(1), mark(1, Trim), mark(1, Stop), Stitch::jump(Point::new(3.0, 5.0)), sew(3), sew(4), sew(5)], [2.5, 15.0]);
+    assert!(before.cut_before && before.after == vectorcraft_stitch::plan::Carried::default());
+    let after = clip(vec![sew(0), sew(1), sew(2), sew(3), mark(3, Stop), Stitch::jump(Point::new(4.0, 5.0)), sew(4), sew(5)], [-5.0, 2.5]);
+    assert!(after.after.stop && !after.after.cut && !after.cut_before);
+    assert!(after.stitches.iter().all(|s| s.command == Command::Stitch && s.x < 2.5), "{:?}", after.stitches);
+}
+
 /// Two rectangles of `color` 40 mm apart (sewn in one block, the thread cut between), the first
 /// marked with `first`: their ids.
 fn two_apart(s: &mut Session, first: Embroidery) -> [u64; 2] {

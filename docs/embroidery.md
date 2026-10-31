@@ -982,7 +982,12 @@ are left out. A clip group sews its clipped art only inside the clipping path: a
 to it exactly before it is planned (its rows then reach past the cut by their pull compensation,
 as past any edge: the fabric draws them in there too), and a stroke keeps the stitches whose needle points fall inside
 (so a running line can stop up to a stitch short of the edge), the needle lifted across each cut
-as between a shape's runs, with the thread tied off and in around a long jump. The clipping path's own fill is sewn
+as between a shape's runs, with the thread tied off and in around a long jump. A run of stitches
+read from a file is cut the same way, and the cuts and stops it names where the clip cuts it are
+carried, not lost with the jumps there: between two pieces left they are made where the needle
+lifts across (the cut, then the stop), before the first piece the cut is the run's cut before and
+a stop comes after its first needle point, and after the last piece they come after the run.
+Manual stitches are frozen as sewn and never cut again. The clipping path's own fill is sewn
 under the clipped art and its stroke over it, unclipped, as they paint.
 
 A shape that would need more than 4 million stitches, or a design of more than 2 million, is refused

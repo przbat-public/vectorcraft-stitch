@@ -21,7 +21,7 @@ use super::cache::{Shaped, Shared, UnitCache, UnitKey, clip_words, parts_key, pa
 use super::plan::{Asked, Choice, DesignPlan, ForcedBy, MAX_WARNED_OBJECTS, Origin, Part};
 use super::resolve::{DesignSettings, DocLayer, Found, PartLayer, UnitSettings};
 use super::sequence::{CLEARANCE, Facts, Planned, Sequence};
-use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_to, parted, plan_unit};
+use super::unit::{PlanError, ROUND_JOINS, UnitRequest, UnitStitches, cut_run_to, parted, plan_unit};
 
 const TEXT_LEFT_OUT: &str = "type is not stitched: outline it (Type › Create Outlines) and export again";
 const IMAGES_LEFT_OUT: &str = "images are not stitched: trace them (Object › Image Trace) first";
@@ -591,17 +591,23 @@ impl<'a> Digitizer<'a> {
             self.warn(MARKS_LEFT_OUT);
         }
         let (mut points, stop_at_end) = literal_stitches(&subpaths, run.double_point, &marks);
+        let (mut cut_before, mut trim_after, mut stop_after) = (run.trim_before, run.trim_after, run.stop_after || stop_at_end);
         // Manual stitches are frozen as sewn: a clip group already cut them (a fill's edge run lies
-        // on the cut, which a second cut would chop). A file's runs are cut, as its lines are drawn.
+        // on the cut, which a second cut would chop). A file's runs are cut, as its lines are drawn,
+        // their cuts and stops at the clip's edges carried.
         if let Some(clip) = self.clip.as_ref().filter(|_| !run.manual) {
-            points = cut_to(points, &clip.region, &self.design.connect);
+            let clipped = cut_run_to(points, &clip.region, &self.design.connect);
+            points = clipped.stitches;
+            cut_before |= clipped.cut_before;
+            trim_after |= clipped.after.cut;
+            stop_after |= clipped.after.stop;
         }
         // The cut and the stop after the run's last needle point, in that order.
         if let Some(&last) = points.iter().rev().find(|s| s.command == Command::Stitch) {
-            if run.trim_after {
+            if trim_after {
                 points.push(Stitch::new(last.x, last.y, Command::Trim));
             }
-            if run.stop_after || stop_at_end {
+            if stop_after {
                 points.push(Stitch::new(last.x, last.y, Command::Stop));
             }
         }
@@ -624,7 +630,7 @@ impl<'a> Digitizer<'a> {
         let scale = run.transformed.and_then(scale_factors);
         let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default() };
         // The cut before it: as its file had it, or one a stitch edit passed to a manual run.
-        self.seq.add(Planned { facts, block, literal, cut_before: run.trim_before });
+        self.seq.add(Planned { facts, block, literal, cut_before });
     }
 
     /// A clip group, as it paints: the clipping path (its first child) paints its fills behind the

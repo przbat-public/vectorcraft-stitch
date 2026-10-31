@@ -289,17 +289,15 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             crate::embroidery::convert_job::start(app, &params);
             continue;
         }
-        if cmd == RESTORE_DIALOG {
-            let count = params["count"].as_u64().unwrap_or(1) as usize;
+        if cmd == RESTORE {
+            // Asking first when their stitches were edited since converting.
             let ids = params.get_mut("ids").map(Value::take).unwrap_or_default();
-            crate::embroidery::restore_dialog::open(app, ids, count);
+            crate::embroidery::menu::restore_asking(app, ids);
             continue;
         }
         for_selection(&mut params, &ids, &selected);
-        match app.run(cmd, params) {
-            Ok(v) if cmd == RESTORE => app.status(crate::embroidery::restore_dialog::restored(&v)),
-            Ok(_) => {}
-            Err(e) => app.status(e),
+        if let Err(e) = app.run(cmd, params) {
+            app.status(e);
         }
     }
 }
@@ -848,7 +846,6 @@ fn stop_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
 /// The commands the tab runs that it says more of, and the Restore question's own.
 const CONVERT: &str = "embroidery.convertToManual";
 const RESTORE: &str = "embroidery.restoreObject";
-const RESTORE_DIALOG: &str = "embroidery-restore-dialog";
 /// How far from 100 % a scale since converting must be for the tab to say it, percent: what its
 /// words round to (a whole percent), so that a scale undone by rounding isn't said.
 const SCALE_SAID: f64 = 0.5;
@@ -906,14 +903,11 @@ fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, comman
     rows::keyboard_tip(ui, resp.id, tip);
     let resp = resp.on_hover_text(tip);
     if resp.clicked() {
-        // The question only when their stitches were edited since converting. It takes the
-        // keyboard: the button lets it go, or each Enter would press it again behind the question.
-        if m.edited == 0 {
-            commands.push((RESTORE, json!({"ids": ids_json(ids)})));
-        } else {
-            resp.surrender_focus();
-            commands.push((RESTORE_DIALOG, json!({"ids": ids_json(ids), "count": m.objects})));
-        }
+        // Restored at once, or asked first when their stitches were edited since converting: the
+        // question takes the keyboard, so the button lets it go (else each Enter would press it
+        // again behind the question).
+        resp.surrender_focus();
+        commands.push((RESTORE, json!({"ids": ids_json(ids)})));
     }
 }
 

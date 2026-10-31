@@ -26,25 +26,26 @@ pub fn invoked(app: &mut VectorcraftApp, id: &str) -> bool {
     match id {
         CONVERT => crate::embroidery::convert_job::start(app, &json!({})),
         NEAREST => crate::embroidery::nearest::start(app),
-        RESTORE => restore(app),
+        RESTORE => restore_asking(app, Value::Null),
         _ => return false,
     }
     true
 }
 
-/// Restore Object on the selection, as the Object tab's button runs it: asking first when the
-/// stitches of an object it would put back were edited since converting, else restoring at once.
-fn restore(app: &mut VectorcraftApp) {
-    let asked = match app.session.execute(RESTORE, &json!({"dryRun": true})) {
+/// Restore Object on objects `ids` (null: the selection), as the Object tab's button and the
+/// command palette run it: asking first when the stitches of an object it would put back were
+/// edited since converting (a dry run says), else restoring at once and saying what it restored.
+pub(crate) fn restore_asking(app: &mut VectorcraftApp, ids: Value) {
+    let asked = match app.session.execute(RESTORE, &json!({"ids": ids, "dryRun": true})) {
         Ok(v) if v["editedCount"].as_u64().is_some_and(|n| n > 0) => v["restoredCount"].as_u64(),
         _ => None,
     };
     if let Some(count) = asked {
-        // The question restores the selection: it can't change while the question is open.
+        // The question restores the same objects: the selection can't change while it is open.
         let count = usize::try_from(count).unwrap_or(usize::MAX);
-        return crate::embroidery::restore_dialog::open(app, Value::Null, count);
+        return crate::embroidery::restore_dialog::open(app, ids, count);
     }
-    match app.run(RESTORE, json!({})) {
+    match app.run(RESTORE, json!({ "ids": ids })) {
         Ok(v) => app.status(crate::embroidery::restore_dialog::restored(&v)),
         Err(e) => app.status(e),
     }

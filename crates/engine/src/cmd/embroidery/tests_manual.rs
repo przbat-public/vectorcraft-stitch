@@ -698,6 +698,25 @@ fn the_objects_restored_are_the_selection() {
     assert_eq!(s.doc().unwrap().selection.objects, [NodeId(b)]);
 }
 
+/// `embroidery.info` sums up converted objects with their runs and needle points and how many were
+/// edited since converting; the Object tab's read counts the same runs and needle points but leaves
+/// out whether they were edited (asked on Restore's click: it fingerprints every needle point).
+#[test]
+fn the_tabs_read_counts_without_asking_about_edits() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    let first_run = s.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": first_run, "index": 1}], "dx": 1}));
+    let info = run(&mut s, "embroidery.info", json!({"ids": [a]}))["manual"].clone();
+    let tab = s.embroidery_merged(&[NodeId(a)]).unwrap().manual.unwrap();
+    assert_eq!(info["edited"], json!(1));
+    assert_eq!(tab.edited, None, "not asked by the tab");
+    assert_eq!((json!(tab.runs), json!(tab.needle_points)), (info["runs"].clone(), info["needlePoints"].clone()));
+    assert!(tab.needle_points > 0);
+}
+
 /// The scale check on `s`: its one rule's reply.
 fn scale_rule(s: &mut Session) -> serde_json::Value {
     run(s, "embroidery.check", json!({"rules": ["stitchesScaled"]}))["rules"][0].clone()

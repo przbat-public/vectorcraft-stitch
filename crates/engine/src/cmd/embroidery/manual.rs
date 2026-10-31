@@ -713,9 +713,10 @@ fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec
 }
 
 /// The objects converted to manual stitches among `ids` of `doc` (a manual run standing for its
-/// object), summed up for `embroidery.info` ([`super::info::ManualInfo`]); `None` when there are
-/// none.
-pub(crate) fn summary(doc: &Document, ids: &[NodeId]) -> Option<super::info::ManualInfo> {
+/// object), summed up for `embroidery.info` ([`super::info::ManualInfo`]), their runs and needle
+/// points counted without reading their paths, and whether each was edited since converting asked
+/// only with `with_edited` (it fingerprints every needle point); `None` when there are none.
+pub(crate) fn summary(doc: &Document, ids: &[NodeId], with_edited: bool) -> Option<super::info::ManualInfo> {
     let mut groups = Vec::new();
     for id in &outermost_once(doc, ids.to_vec()) {
         if let Some(n) = doc.node(*id) {
@@ -727,17 +728,18 @@ pub(crate) fn summary(doc: &Document, ids: &[NodeId]) -> Option<super::info::Man
     if groups.is_empty() {
         return None;
     }
-    let mut out = super::info::ManualInfo { objects: groups.len(), restorable: 0, edited: 0, runs: 0, needle_points: 0, scale: None };
+    let mut out =
+        super::info::ManualInfo { objects: groups.len(), restorable: 0, edited: with_edited.then_some(0), runs: 0, needle_points: 0, scale: None };
     let mut scale: Option<[f64; 2]> = None;
     let mut known = true;
     for g in groups.iter().filter_map(|g| doc.node(*g)) {
         out.restorable += usize::from(doc.is_editable(g.id));
-        out.edited += usize::from(edited(g));
+        if let Some(n) = out.edited.as_mut() {
+            *n += usize::from(edited(g));
+        }
         for c in g.children().into_iter().flatten() {
-            if let Ok(st) = super::needles::read(c) {
-                out.runs += st.runs.iter().filter(|r| !r.needles.is_empty()).count();
-                out.needle_points += st.len();
-            }
+            out.runs += super::needles::runs(c).unwrap_or(0);
+            out.needle_points += super::needles::count(c).unwrap_or(0);
         }
         let frame = g.extras().embroidery.as_deref().and_then(|e| e.original.as_ref()).map(|o| o.frame);
         match frame.and_then(vectorcraft_doc::embroidery::scale_factors) {

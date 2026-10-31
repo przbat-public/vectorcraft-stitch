@@ -278,6 +278,14 @@ impl Index {
     }
 }
 
+/// How many runs path `n` holds (its subpaths with a needle point), counted without reading it;
+/// `None` when it isn't a path of stitches.
+pub(crate) fn runs(n: &Node) -> Option<usize> {
+    let NodeKind::Path { path, .. } = &n.kind else { return None };
+    n.extras().embroidery.as_deref()?.stitches.as_ref()?;
+    Some(path.subpaths.iter().filter(|sp| !sp.anchors.is_empty()).count())
+}
+
 /// How many needle points path `n` holds, counted as [`read`] reads them without reading them;
 /// `None` when it isn't a path of stitches.
 pub(crate) fn count(n: &Node) -> Option<usize> {

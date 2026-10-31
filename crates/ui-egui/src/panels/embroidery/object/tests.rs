@@ -1233,6 +1233,23 @@ fn convert_restore_and_stop_after_describe_their_help() {
     assert!(described(&drawn, crate::et!("Restore Object…"), "Puts the object back"));
 }
 
+/// A manual run outside the object it was converted from (Ungroup moved it out) is said to be sewn
+/// as it is placed, its object not kept with it: Restore Object is neither offered nor promised.
+#[test]
+fn a_manual_run_outside_its_object_promises_no_restore() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    app.run("object.ungroup", json!({})).unwrap();
+    let run = app.session.doc().unwrap().selection.objects[0].0;
+    select(&mut app, &[run]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(drawn.has(vocabulary::takes_none("manual")), "{:?}", drawn.words);
+    assert!(!drawn.has("Restore Object"), "{:?}", drawn.words);
+}
+
 /// A pointer click in the middle of the node screen readers call `name`.
 fn click_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str) {
     let drawn = ready(app, ctx, time);

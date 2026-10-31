@@ -5557,7 +5557,7 @@ embroidery	Not sewn: it is hidden.	縫いません：非表示です。
 embroidery	Not sewn: it is on a template or non-printing layer.	縫いません：テンプレートレイヤーか印刷しないレイヤーにあります。
 embroidery	Not sewn.	縫いません。
 embroidery	Stitches from a file are sewn as the file has them.	ファイルのステッチは、ファイルのとおりに縫います。
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	手動ステッチは配置されたとおりに縫われます。オブジェクトを復元すると、オブジェクトとその設定が戻ります。
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	手動ステッチは配置どおりに縫われます。変換元のオブジェクトは一緒に保持されていません。
 embroidery	Type isn't sewn yet: create outlines to sew it.	テキストはまだ縫えません。アウトラインを作成すると縫えます。
 embroidery	Images aren't sewn.	画像は縫いません。
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	設定はシンボル内のオブジェクトに付けます。シンボルを編集して設定してください。

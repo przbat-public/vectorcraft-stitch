@@ -5878,7 +5878,7 @@ embroidery	Not sewn: it is hidden.	Wordt niet geborduurd: het is verborgen.
 embroidery	Not sewn: it is on a template or non-printing layer.	Wordt niet geborduurd: het staat op een sjabloonlaag of een laag die niet wordt afgedrukt.
 embroidery	Not sewn.	Wordt niet geborduurd.
 embroidery	Stitches from a file are sewn as the file has them.	Steken uit een bestand worden geborduurd zoals het bestand ze bevat.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Handmatige steken worden genaaid zoals ze liggen: Object herstellen brengt het object en zijn instellingen terug.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Handmatige steken worden genaaid zoals ze liggen; het object waaruit ze zijn omgezet, wordt niet bij ze bewaard.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst wordt nog niet geborduurd: zet hem om in curven om hem te borduren.
 embroidery	Images aren't sewn.	Afbeeldingen worden niet geborduurd.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	De instellingen horen bij de objecten van het symbool: bewerk het symbool om ze in te stellen.

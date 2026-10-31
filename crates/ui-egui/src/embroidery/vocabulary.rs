@@ -166,7 +166,9 @@ pub fn not_sewn(reason: Option<&str>) -> &'static str {
 pub fn takes_none(reason: &str) -> &'static str {
     match reason {
         "literal" => crate::et!("Stitches from a file are sewn as the file has them."),
-        "manual" => crate::et!("Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings."),
+        // Said only of manual stitches outside the object they were converted from (ungrouped,
+        // moved out or pasted alone): those inside it are said with Restore Object.
+        "manual" => crate::et!("Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them."),
         "type" => crate::et!("Type isn't sewn yet: create outlines to sew it."),
         "image" => crate::et!("Images aren't sewn."),
         "symbolInstance" => crate::et!("A symbol's objects take its settings: edit the symbol to set them."),

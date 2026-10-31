@@ -5819,7 +5819,7 @@ embroidery	Not sewn: it is hidden.	Не се бродира: скрито е.
 embroidery	Not sewn: it is on a template or non-printing layer.	Не се бродира: в шаблонен или непечатаем слой е.
 embroidery	Not sewn.	Не се бродира.
 embroidery	Stitches from a file are sewn as the file has them.	Бодовете от файл се бродират така, както са във файла.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Ръчните бодове се шият така, както са разположени: „Възстановяване на обекта“ връща обекта и настройките му.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Ръчните бодове се шият така, както са разположени; обектът, от който са преобразувани, не се пази с тях.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Текстът още не се бродира: използвайте „Създаване на контур“, за да го бродирате.
 embroidery	Images aren't sewn.	Изображенията не се бродират.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Обектите на символа приемат настройките: редактирайте символа, за да ги зададете.

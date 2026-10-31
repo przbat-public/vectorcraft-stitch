@@ -5495,7 +5495,7 @@ embroidery	Not sewn: it is hidden.	Non ricamato: è nascosto.
 embroidery	Not sewn: it is on a template or non-printing layer.	Non ricamato: è su un livello modello o non stampabile.
 embroidery	Not sewn.	Non ricamato.
 embroidery	Stitches from a file are sewn as the file has them.	I punti di un file vengono ricamati così come sono nel file.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	I punti manuali si cuciono come sono disposti: Ripristina oggetto riporta l’oggetto e le sue impostazioni.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	I punti manuali vengono cuciti così come sono disposti; l’oggetto da cui sono stati convertiti non è conservato con essi.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Il testo non viene ancora ricamato: crea i contorni per ricamarlo.
 embroidery	Images aren't sewn.	Le immagini non vengono ricamate.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Le impostazioni vanno sugli oggetti del simbolo: modifica il simbolo per impostarle.

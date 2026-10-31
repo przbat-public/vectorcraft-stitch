@@ -5795,7 +5795,7 @@ embroidery	Not sewn: it is hidden.	არ იქარგება: დამა
 embroidery	Not sewn: it is on a template or non-printing layer.	არ იქარგება: შაბლონის ან დაუბეჭდავ შრეზეა.
 embroidery	Not sewn.	არ იქარგება.
 embroidery	Stitches from a file are sewn as the file has them.	ფაილის ნაკერები იქარგება ისე, როგორც ფაილშია.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	ხელით ნაკერები იკერება ისე, როგორც განლაგებულია: ობიექტის აღდგენა აბრუნებს ობიექტს და მის პარამეტრებს.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	ხელით ნაკერები იკერება ისე, როგორც არის განლაგებული; ობიექტი, საიდანაც ისინი გარდაიქმნა, მათთან ერთად არ ინახება.
 embroidery	Type isn't sewn yet: create outlines to sew it.	ტექსტი ჯერ არ იქარგება: გარდაქმენით კონტურებად, რომ ამოიქარგოს.
 embroidery	Images aren't sewn.	გამოსახულებები არ იქარგება.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	პარამეტრებს სიმბოლოს ობიექტები იღებს: დასაყენებლად შეცვალეთ სიმბოლო.

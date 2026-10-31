@@ -5461,7 +5461,7 @@ embroidery	Not sewn: it is hidden.	Wird nicht gestickt: ausgeblendet.
 embroidery	Not sewn: it is on a template or non-printing layer.	Wird nicht gestickt: auf einer Vorlagen- oder nicht druckenden Ebene.
 embroidery	Not sewn.	Wird nicht gestickt.
 embroidery	Stitches from a file are sewn as the file has them.	Stiche aus einer Datei werden so gestickt, wie die Datei sie enthält.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Manuelle Stiche werden so genäht, wie sie liegen: „Objekt wiederherstellen“ holt das Objekt und seine Einstellungen zurück.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Manuelle Stiche werden genäht, wie sie liegen; das Objekt, aus dem sie umgewandelt wurden, wird nicht mit ihnen aufbewahrt.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Text wird noch nicht gestickt: wandeln Sie ihn in Pfade um, um ihn zu sticken.
 embroidery	Images aren't sewn.	Bilder werden nicht gestickt.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Die Objekte eines Symbols tragen die Einstellungen: bearbeiten Sie das Symbol, um sie festzulegen.

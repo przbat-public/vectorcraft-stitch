@@ -5880,7 +5880,7 @@ embroidery	Not sewn: it is hidden.	Nevyšívá se: je skrytý.
 embroidery	Not sewn: it is on a template or non-printing layer.	Nevyšívá se: je ve vrstvě šablony nebo v netisknuté vrstvě.
 embroidery	Not sewn.	Nevyšívá se.
 embroidery	Stitches from a file are sewn as the file has them.	Stehy ze souboru se vyšijí tak, jak jsou v souboru.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Ruční stehy se šijí tak, jak jsou rozmístěné: Obnovit objekt vrátí objekt i jeho nastavení.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Ruční stehy se šijí tak, jak jsou rozmístěny; objekt, ze kterého byly převedeny, se s nimi neuchovává.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Text se zatím nevyšívá: převeďte ho na křivky (Převést na křivky).
 embroidery	Images aren't sewn.	Obrazy se nevyšívají.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Nastavení se zadávají objektům symbolu: upravte symbol a nastavte je tam.

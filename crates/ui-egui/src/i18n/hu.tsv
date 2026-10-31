@@ -5866,7 +5866,7 @@ embroidery	Not sewn: it is hidden.	Nem készül: rejtett.
 embroidery	Not sewn: it is on a template or non-printing layer.	Nem készül: sablon- vagy nem nyomtatandó rétegen van.
 embroidery	Not sewn.	Nem készül.
 embroidery	Stitches from a file are sewn as the file has them.	A fájlból származó öltések úgy készülnek, ahogy a fájlban vannak.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	A kézi öltések úgy varródnak, ahogy el vannak helyezve: az Objektum visszaállítása visszahozza az objektumot és a beállításait.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	A kézi öltéseket úgy varrja, ahogy el vannak helyezve; az objektum, amelyből átalakították őket, nincs velük megőrizve.
 embroidery	Type isn't sewn yet: create outlines to sew it.	A szöveg még nem készül: alakítsa útvonallá, hogy kihímezhesse.
 embroidery	Images aren't sewn.	Képek nem készülnek hímzésként.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	A beállításokat a szimbólum objektumai kapják: szerkessze a szimbólumot a beállításhoz.

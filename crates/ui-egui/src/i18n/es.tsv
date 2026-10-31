@@ -5821,7 +5821,7 @@ embroidery	Not sewn: it is hidden.	No se borda: está oculto.
 embroidery	Not sewn: it is on a template or non-printing layer.	No se borda: está en una capa de plantilla o que no se imprime.
 embroidery	Not sewn.	No se borda.
 embroidery	Stitches from a file are sewn as the file has them.	Las puntadas de un archivo se bordan tal como están en él.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Las puntadas manuales se cosen tal como están colocadas: Restaurar objeto devuelve el objeto y sus ajustes.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Las puntadas manuales se cosen tal como están colocadas; el objeto del que se convirtieron no se guarda con ellas.
 embroidery	Type isn't sewn yet: create outlines to sew it.	El texto aún no se borda: usa Crear contornos para bordarlo.
 embroidery	Images aren't sewn.	Las imágenes no se bordan.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Los ajustes van en los objetos del símbolo: edita el símbolo para definirlos.

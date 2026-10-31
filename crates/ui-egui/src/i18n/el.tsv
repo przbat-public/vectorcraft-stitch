@@ -5832,7 +5832,7 @@ embroidery	Not sewn: it is hidden.	Δεν κεντιέται: είναι κρυ�
 embroidery	Not sewn: it is on a template or non-printing layer.	Δεν κεντιέται: βρίσκεται σε επίπεδο προτύπου ή μη εκτυπώσιμο επίπεδο.
 embroidery	Not sewn.	Δεν κεντιέται.
 embroidery	Stitches from a file are sewn as the file has them.	Οι βελονιές από αρχείο κεντιούνται όπως είναι στο αρχείο.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Οι χειροκίνητες βελονιές ράβονται όπως είναι τοποθετημένες: η Επαναφορά αντικειμένου επαναφέρει το αντικείμενο και τις ρυθμίσεις του.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Οι χειροκίνητες βελονιές ράβονται όπως είναι τοποθετημένες· το αντικείμενο από το οποίο μετατράπηκαν δεν φυλάσσεται μαζί τους.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Το κείμενο δεν κεντιέται ακόμη: δημιουργήστε περιγράμματα για να κεντηθεί.
 embroidery	Images aren't sewn.	Οι εικόνες δεν κεντιούνται.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Τα αντικείμενα ενός συμβόλου παίρνουν τις ρυθμίσεις: επεξεργαστείτε το σύμβολο για να τις ορίσετε.

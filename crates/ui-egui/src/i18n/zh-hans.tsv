@@ -5719,7 +5719,7 @@ embroidery	Not sewn: it is hidden.	不绣：已隐藏。
 embroidery	Not sewn: it is on a template or non-printing layer.	不绣：位于模板图层或不打印的图层上。
 embroidery	Not sewn.	不绣。
 embroidery	Stitches from a file are sewn as the file has them.	文件中的针迹按文件原样绣出。
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	手动针迹按放置的样子缝制：恢复对象可找回对象及其设置。
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	手动针迹按放置的样子缝制；它们转换自的对象没有与它们一起保留。
 embroidery	Type isn't sewn yet: create outlines to sew it.	文本暂不刺绣：创建轮廓后即可刺绣。
 embroidery	Images aren't sewn.	图像不刺绣。
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	设置属于符号内的对象：请编辑符号来设置。

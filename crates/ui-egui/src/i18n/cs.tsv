@@ -6086,13 +6086,13 @@ embroidery	Sewn as they are placed: they no longer change with the fabric or the
 embroidery	Scaled to {value}% since converting	Od převodu změněno na {value} %
 embroidery	Restore Object…	Obnovit objekt…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Vrátí objekt místo jeho ručních stehů, naplánovaný znovu v nynější velikosti.
-embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Zmrazí teď naplánované stehy, aby šel každý vpich přesunout; Obnovit objekt vrátí objekt.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Zmrazí teď naplánované stehy, aby šel každý vpich přesunout; objekt vrátíte příkazem Obnovit objekt.
 embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Stroj se zastaví po stezích objektu, třeba kvůli aplikaci; zastavení při výměně nitě nebo na konci je právě ono.
-embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Změny stehů od převodu se ztratí; Zpět je vrátí.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Změny stehů od převodu se ztratí; vrátíte je příkazem Zpět.
 @plural	Stop the machine after the object|Stop the machine after the objects	Zastavit stroj po objektu|Zastavit stroj po objektech|Zastavit stroj po objektech
 @plural	Restore {count} object?|Restore {count} objects?	Obnovit {count} objekt?|Obnovit {count} objekty?|Obnovit {count} objektů?
 @plural	{count} object restored|{count} objects restored	Obnoven {count} objekt|Obnoveny {count} objekty|Obnoveno {count} objektů
-@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt převeden na ruční stehy: Obnovit objekt ho vrátí|{count} objekty převedeny na ruční stehy: Obnovit objekt je vrátí|{count} objektů převedeno na ruční stehy: Obnovit objekt je vrátí
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt převeden na ruční stehy: vrátíte ho příkazem Obnovit objekt|{count} objekty převedeny na ruční stehy: vrátíte je příkazem Obnovit objekt|{count} objektů převedeno na ruční stehy: vrátíte je příkazem Obnovit objekt
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	střihy nebo zastavení stehů byly vynechány: příkaz pro cestu smazal nebo posunul vpichy, po kterých následovaly (nastavte je znovu příkazem Funkce stroje)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone

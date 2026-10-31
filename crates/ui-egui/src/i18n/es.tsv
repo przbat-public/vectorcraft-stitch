@@ -6027,13 +6027,13 @@ embroidery	Sewn as they are placed: they no longer change with the fabric or the
 embroidery	Scaled to {value}% since converting	Escalado al {value} % desde la conversión
 embroidery	Restore Object…	Restaurar objeto…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Devuelve el objeto en lugar de sus puntadas manuales, planificado de nuevo a su tamaño actual.
-embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Congela las puntadas planificadas ahora para poder mover cada punto de aguja; Restaurar objeto devuelve el objeto.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Congela las puntadas planificadas ahora para poder mover cada punto de aguja; el objeto se recupera con Restaurar objeto.
 embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	La máquina se detiene tras las puntadas del objeto, como para un aplique; una parada en un cambio de hilo o al final es esa misma.
-embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Se perderán los cambios hechos a las puntadas desde la conversión; Deshacer los recupera.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Se perderán los cambios hechos a las puntadas desde la conversión; se recuperan con Deshacer.
 @plural	Stop the machine after the object|Stop the machine after the objects	Detener la máquina tras el objeto|Detener la máquina tras los objetos
 @plural	Restore {count} object?|Restore {count} objects?	¿Restaurar {count} objeto?|¿Restaurar {count} objetos?
 @plural	{count} object restored|{count} objects restored	{count} objeto restaurado|{count} objetos restaurados
-@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objeto convertido en puntadas manuales: Restaurar objeto lo devuelve|{count} objetos convertidos en puntadas manuales: Restaurar objeto los devuelve
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objeto convertido en puntadas manuales: se recupera con Restaurar objeto|{count} objetos convertidos en puntadas manuales: se recuperan con Restaurar objeto
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	se omitieron cortes o paradas de puntadas: un comando de trazado eliminó o movió los puntos de aguja a los que seguían (vuelva a definirlos con el comando Función de máquina)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone

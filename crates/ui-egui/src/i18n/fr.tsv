@@ -6085,13 +6085,13 @@ embroidery	Sewn as they are placed: they no longer change with the fabric or the
 embroidery	Scaled to {value}% since converting	Mis à l’échelle à {value} % depuis la conversion
 embroidery	Restore Object…	Restaurer l’objet…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Remet l’objet à la place de ses points manuels, planifié à nouveau à sa taille actuelle.
-embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Fige les points planifiés maintenant, pour pouvoir déplacer chaque point de piqûre ; Restaurer l’objet remet l’objet.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Fige les points planifiés maintenant, pour pouvoir déplacer chaque point de piqûre ; on remet l’objet avec Restaurer l’objet.
 embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	La machine s’arrête après les points de l’objet, comme pour une appliqué ; un arrêt à un changement de fil ou à la fin est celui-là.
-embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Les modifications apportées aux points depuis la conversion seront perdues ; Annuler les rétablit.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Les modifications apportées aux points depuis la conversion seront perdues ; on les rétablit avec Annuler.
 @plural	Stop the machine after the object|Stop the machine after the objects	Arrêter la machine après l’objet|Arrêter la machine après les objets
 @plural	Restore {count} object?|Restore {count} objects?	Restaurer {count} objet ?|Restaurer {count} objets ?
 @plural	{count} object restored|{count} objects restored	{count} objet restauré|{count} objets restaurés
-@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objet converti en points manuels : Restaurer l’objet le rétablit|{count} objets convertis en points manuels : Restaurer l’objet les rétablit
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objet converti en points manuels : on le rétablit avec Restaurer l’objet|{count} objets convertis en points manuels : on les rétablit avec Restaurer l’objet
 # VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
 @msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	des coupes ou des arrêts de points ont été omis : une commande de tracé a supprimé ou déplacé les points de piqûre qu’ils suivaient (définissez-les de nouveau avec la commande Fonction machine)
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone

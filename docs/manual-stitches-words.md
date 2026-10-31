@@ -16,7 +16,10 @@ row gives its forms as Polish writes them: one, a few (2–4), many.
 
 The owner's terms (2026-10-27): needle point „nakłucie", run „odcinek", manual stitches „ściegi
 ręczne", stop „stop", trim „cięcie", jump „przeskok"; the commands „Zamień na ściegi ręczne" and
-„Przywróć obiekt".
+„Przywróć obiekt". A command named inside a sentence is marked as upstream's Polish marks it
+(„polecenie Przywróć obiekt go przywróci", „poleceniem Funkcja maszyny"), so that its imperative
+name doesn't read as an order (the project owner's choice, 2026-10-30); French, Spanish and Czech
+name it as their upstream catalogues do (« avec Annuler », «con Deshacer», „příkazem Zpět").
 
 ## Commands: menus, the command palette and Undo
 
@@ -50,7 +53,7 @@ Function's, whose step is named by what it did.
 | Its runs and needle points | {count} run · {needle} needle points (plural) | {count} odcinek · nakłucia: {needle} / {count} odcinki · … / {count} odcinków · … |
 | Its scale since it was converted (the axis scaled most, shown from half a percent) | Scaled to {value}% since converting | Przeskalowano do {value}% od zamiany |
 | The button on a planned object | Convert to Manual Stitches | Zamień na ściegi ręczne |
-| Its tip (hover and keyboard focus) | Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back. | Zamraża zaplanowane teraz ściegi, aby można było przesuwać każde nakłucie; Przywróć obiekt przywraca obiekt. |
+| Its tip (hover and keyboard focus) | Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back. | Zamraża zaplanowane teraz ściegi, aby można było przesuwać każde nakłucie; polecenie Przywróć obiekt przywraca obiekt. |
 | The button on a manual object | Restore Object… | Przywróć obiekt… |
 | Its tip | Puts the object back in place of its manual stitches, planned again at its size now. | Przywraca obiekt w miejsce jego ściegów ręcznych, zaplanowany od nowa w obecnym rozmiarze. |
 | The Stop After row | Stop the machine after the object (plural) | Zatrzymaj maszynę po obiekcie / po obiektach |
@@ -63,10 +66,10 @@ Restore asks only when the stitches were edited since converting.
 
 | Where | English | Polish |
 |---|---|---|
-| The status bar after converting | {count} object converted to manual stitches: Restore Object brings it back (plural) | Zamieniono {count} obiekt na ściegi ręczne: Przywróć obiekt go przywróci / Zamieniono {count} obiekty… je przywróci / Zamieniono {count} obiektów… je przywróci |
+| The status bar after converting | {count} object converted to manual stitches: Restore Object brings it back (plural) | Zamieniono {count} obiekt na ściegi ręczne: polecenie Przywróć obiekt go przywróci / Zamieniono {count} obiekty… je przywróci / Zamieniono {count} obiektów… je przywróci |
 | The status bar after restoring | {count} object restored (plural) | Przywrócono {count} obiekt / obiekty / obiektów |
 | The dialog's title, stitches edited | Restore {count} object? (plural) | Przywrócić {count} obiekt? / obiekty? / obiektów? |
-| Its line | Changes made to the stitches since converting will be lost; Undo brings them back. | Zmiany wprowadzone w ściegach od zamiany przepadną; Cofnij je przywróci. |
+| Its line | Changes made to the stitches since converting will be lost; Undo brings them back. | Zmiany wprowadzone w ściegach od zamiany przepadną; polecenie Cofnij je przywróci. |
 | Its button | Restore | Przywróć |
 
 ## The Check tab
@@ -140,6 +143,6 @@ and manual stitches; Polish's are the project owner's. Upstream VectorCraft has 
 
 | Date | Change |
 |---|---|
-| 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved; Join's refusals of runs with art and of one run alone; Machine Function's undo steps; why Convert and Restore wait during Global Edit; a path of stitches called a path, not a run, in the stitch commands' refusals (a run is a subpath). |
+| 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved; Join's refusals of runs with art and of one run alone; Machine Function's undo steps; why Convert and Restore wait during Global Edit; a path of stitches called a path, not a run, in the stitch commands' refusals (a run is a subpath).; command names in sentences marked in Polish, French, Spanish and Czech; a manual run outside its object said without Restore; why Restore is dimmed. |
 | 2026-10-27 | Brought in step with what landed: the Check tab's, the Sewing order's and the plan's words, the scale with the catalogues' percent sign, the terms each language chose. |
 | 2026-10-27 | Written for the manual stitches' first pull request: the planned strings, in English and Polish. |

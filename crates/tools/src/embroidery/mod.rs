@@ -426,10 +426,14 @@ impl Tool for EmbroideryTool {
                     self.grab = None;
                     self.dialog(&h)
                 }
-                // On a stitch object: its needle points edited, in isolation, in the stitch view (the
-                // project owner's choice, 2026-10-27: editing stitches is the tool in isolation of a
-                // stitch object; entering it shows the stitches).
-                None => match Self::found(cx, ev.pos).and_then(|(id, _)| stitch_object(cx.doc, cx.isolation, id)) {
+                // On stitches: their object's needle points edited, in isolation, in the stitch view
+                // (the project owner's choice, 2026-10-27: editing stitches is the tool in isolation
+                // of a stitch object; entering it shows the stitches). Planned art beside them in a
+                // group enters nothing.
+                None => match Self::found(cx, ev.pos)
+                    .filter(|(id, _)| cx.doc.node(*id).is_some_and(holds_stitches))
+                    .and_then(|(id, _)| stitch_object(cx.doc, cx.isolation, id))
+                {
                     Some(object) => {
                         self.grab = None;
                         vec![

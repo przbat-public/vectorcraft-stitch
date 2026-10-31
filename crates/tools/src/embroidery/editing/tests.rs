@@ -481,8 +481,8 @@ fn a_double_click_selects_a_run_or_leaves() {
 }
 
 /// Outside editing, a double-click on a stitch object (found by its stitches) isolates it and shows
-/// the stitch view; on art that holds no stitches it does nothing; a press on it selects it (its
-/// cursor isn't Not Allowed).
+/// the stitch view; on planned art beside stitches in a group, or on empty canvas, it does
+/// nothing; a press on it selects it (its cursor isn't Not Allowed).
 #[test]
 fn a_double_click_on_a_stitch_object_starts_editing() {
     let (d, g, ids) = doc();
@@ -500,6 +500,14 @@ fn a_double_click_on_a_stitch_object_starts_editing() {
     let f = Editing { needles: None, under: None };
     let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
     assert_eq!(t.pointer(&c, &ev(PointerKind::DoubleClick, 550.0, 550.0)), vec![]);
+    // A planned square in the same group: the group holds stitches, the square doesn't.
+    let mut d = d.clone();
+    let plain = d.alloc_id();
+    let square = SubPath::polyline(&[Point::new(450.0, 450.0), Point::new(500.0, 450.0), Point::new(500.0, 500.0), Point::new(450.0, 500.0)], true);
+    d.insert(Some(g), 0, Node::path(plain, PathData::new(vec![square]), Appearance::default_art())).unwrap();
+    let f = Editing { needles: None, under: Some((plain, Some(vectorcraft_doc::embroidery::PartKind::Fill))) };
+    let c = ToolContext { embroidery: Some(&f), ..cx(&d, &s, &p) };
+    assert_eq!(t.pointer(&c, &ev(PointerKind::DoubleClick, 470.0, 460.0)), vec![], "planned art beside stitches");
 }
 
 /// The cursors while editing: the point cursor over a needle point or a stitch and while dragging,

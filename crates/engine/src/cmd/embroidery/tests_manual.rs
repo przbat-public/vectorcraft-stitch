@@ -667,6 +667,22 @@ fn restore_holds_what_it_puts_back_to_what_opening_a_file_does() {
     assert!(doc.layers.iter().all(|l| l.children().unwrap().iter().all(|c| !c.is_layer())));
 }
 
+/// The objects Restore puts back are the selection after it: a run selected stood for its object,
+/// which is selected in its place; restored by ids, those objects.
+#[test]
+fn the_objects_restored_are_the_selection() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let [a, b] = [5.0, 30.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a, b]}));
+    let first_run = s.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    run(&mut s, "select.set", json!({"ids": [first_run]}));
+    run(&mut s, "embroidery.restoreObject", json!({}));
+    assert_eq!(s.doc().unwrap().selection.objects, [NodeId(a)], "the object in its run's place");
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [b]}));
+    assert_eq!(s.doc().unwrap().selection.objects, [NodeId(b)]);
+}
+
 /// The scale check on `s`: its one rule's reply.
 fn scale_rule(s: &mut Session) -> serde_json::Value {
     run(s, "embroidery.check", json!({"rules": ["stitchesScaled"]}))["rules"][0].clone()

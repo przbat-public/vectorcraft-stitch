@@ -5168,8 +5168,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   spacing, tab stops, ruby and script proportions within their ranges, and its type measured again. It passes over,
   with `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read as an object, or reads as a
   layer), `missingSymbol`, `locked`, `outOfRange` (put back where its stitches are, it would lie outside the
-  document's coordinates, or at coordinates that aren't numbers: a damaged frame). One undo step; nothing restored is
-  an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
+  document's coordinates, or at coordinates that aren't numbers: a damaged frame). The objects put back are the
+  selection after it. One undo step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
   Edit is on ("not while Global Edit is on: stop Global Edit first").
 - **Editing stitches.** The stitch commands edit a path of literal stitches (a run opened from a machine file, or one

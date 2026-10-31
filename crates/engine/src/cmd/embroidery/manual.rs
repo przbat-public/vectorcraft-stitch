@@ -892,7 +892,6 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
                             d.insert(parent, at + 1 + k, art).map_err(|e| EngineError::Internal { cmd: RESTORE.into(), msg: e.to_string() })?;
                         }
                     }
-                    sel.anchors.remove(g);
                     restored_ids.push(g.0);
                 }
                 Err(why) => skipped.push((*g, why)),
@@ -904,6 +903,8 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
         d.fix_next_id();
         // Type put back measures its bounds again, as an opened file's does.
         Session::refresh_text_bounds(d);
+        // The objects put back are the selection (a run selected stood for its object).
+        sel.set(restored_ids.iter().map(|g| NodeId(*g)));
         Ok(())
     })?;
     let edited_ids: Vec<u64> = restored_ids.iter().copied().filter(is_edited).collect();

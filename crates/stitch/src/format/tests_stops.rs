@@ -2,7 +2,7 @@
 //! of one block ([`super::stretches`]), with the headers that list one thread a colour (PES, PEC
 //! and JEF) repeating the block's.
 
-use super::{Format, stops_written, stretches};
+use super::{Format, stretches, written_stops};
 use crate::thread::Palette;
 use crate::{Block, Command, Pattern, Stitch, Thread};
 
@@ -97,7 +97,7 @@ fn a_stop_not_between_two_needle_points_is_written_as_nothing() {
     for format in Format::ALL {
         assert_eq!(format.write(&extra).unwrap(), format.write(&plain).unwrap(), "{format:?}");
     }
-    assert_eq!(extra.blocks.iter().map(|b| stops_written(&b.stitches)).collect::<Vec<_>>(), [1, 0]);
+    assert_eq!(extra.blocks.iter().map(|b| written_stops(&b.stitches).len()).collect::<Vec<_>>(), [1, 0]);
 }
 
 /// A cut beside a stop is kept on its side: before it, at the stretch's end; after it, at the next

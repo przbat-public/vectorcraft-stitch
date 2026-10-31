@@ -116,8 +116,16 @@ pub(crate) struct Stitches {
 
 /// Whether two points (document points) lie at one spot, as the walk tells a line to its own
 /// start: within [`SAME_POINT`] millimetres.
-fn same(a: Point, b: Point) -> bool {
+pub(crate) fn same(a: Point, b: Point) -> bool {
     a.distance(b) * MM_PER_PT < SAME_POINT
+}
+
+/// Whether a run of two needle points `distance_mm` millimetres apart is one needle point: the rule
+/// every reader of a path of stitches keeps (the walk, the stitch commands, Convert, the importer).
+/// A line to its own start is a single stitch as a file stores it, unless it is the path's only
+/// run and the path marks it as two (a tack, `double_point`).
+pub(crate) fn one_needle_point(distance_mm: f64, alone: bool, double_point: bool) -> bool {
+    distance_mm < SAME_POINT && !(alone && double_point)
 }
 
 impl Needle {
@@ -163,7 +171,7 @@ pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, Unfit> {
     for (s, sp) in path.subpaths.iter().enumerate() {
         let points: Vec<Point> = match sp.anchors.as_slice() {
             // A line to its own start: one needle point, unless the path's only run is a tack.
-            [a, b] if same(a.p, b.p) && !(alone && marks.double_point) => vec![a.p],
+            [a, b] if one_needle_point(a.p.distance(b.p) * MM_PER_PT, alone, marks.double_point) => vec![a.p],
             all => all.iter().map(|a| a.p).collect(),
         };
         let last = points.len().saturating_sub(1);
@@ -271,7 +279,7 @@ pub(crate) fn count(n: &Node) -> Option<usize> {
     let NodeKind::Path { path, .. } = &n.kind else { return None };
     let marks = n.extras().embroidery.as_deref()?.stitches.as_ref()?;
     let alone = path.subpaths.len() == 1;
-    let one = |sp: &SubPath| matches!(sp.anchors.as_slice(), [a, b] if same(a.p, b.p) && !(alone && marks.double_point));
+    let one = |sp: &SubPath| matches!(sp.anchors.as_slice(), [a, b] if one_needle_point(a.p.distance(b.p) * MM_PER_PT, alone, marks.double_point));
     Some(path.subpaths.iter().map(|sp| if one(sp) { 1 } else { sp.anchors.len() }).sum())
 }
 

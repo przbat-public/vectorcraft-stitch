@@ -114,7 +114,7 @@ fn literal_stitches(subpaths: &[Vec<Point>], double_point: bool, marks: &Placed)
     let mut stop = false;
     for (k, sub) in subpaths.iter().enumerate() {
         let points: &[Point] = match sub.as_slice() {
-            [a, b] if a.distance(*b) < SAME_POINT && !(one && double_point) => &sub[..1],
+            [a, b] if super::needles::one_needle_point(a.distance(*b), one, double_point) => &sub[..1],
             _ => sub,
         };
         let Some(&first) = points.first() else { continue };

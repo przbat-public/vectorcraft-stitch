@@ -115,7 +115,7 @@ const MELCO_MACHINE: &str = "https://www.melco-service.com/docs/X/melco-os-ai-en
 const NEEDLE_BLADE: f64 = 0.75;
 /// A stitch shorter than this is short in a row of short stitches ([`MOST_SHORT_IN_A_ROW`]): the
 /// 1 mm Melco's machine manual keeps stitches above for most needles.
-const SHORT: f64 = 1.0;
+pub(crate) const SHORT: f64 = 1.0;
 /// Brother's embroidery machines delete stitches of the set pitch or less, 0.3 mm as they come
 /// (PRT23 manual, printed p. 108, p. 110 of the PDF): the source checked, so a stitch of 0.3 mm is
 /// flagged. Ricoma's digitizing tips advise deleting stitches under 0.3 mm while making a design
@@ -892,7 +892,7 @@ impl<'a> Checker<'a> {
         }
         // A stop is written as a change to the same thread: a colour of its own in the format's
         // header and a colour change on the machine.
-        let stops: usize = plan.blocks.iter().map(|b| vectorcraft_stitch::format::stops_written(&b.stitches)).sum();
+        let stops: usize = plan.blocks.iter().map(|b| vectorcraft_stitch::format::written_stops(&b.stitches).len()).sum();
         let blocks = plan.blocks.len() + stops;
         let needle: usize = plan.blocks.iter().map(|b| b.needle_points()).sum();
         let changes = blocks.saturating_sub(1);

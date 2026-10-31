@@ -10,7 +10,7 @@ use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::StitchRun;
 use vectorcraft_doc::{Document, NodeId, Selection};
 use vectorcraft_geom::{Point, Vec2};
-use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
+use vectorcraft_stitch::{mm_to_pt, point_to_mm, point_to_pt, pt_to_mm};
 
 use super::needles::{self, Index, LONGEST, Lengths, MAX_LISTED, MAX_NEEDLE_POINTS, NOTHING_ADDRESSED, Stitches, Targets};
 use super::{object, only};
@@ -19,7 +19,7 @@ use crate::{EngineError, Result, Session};
 
 /// What an edit leaves of one path: its stitches written back (removed when no needle point is
 /// left), the path removed, or only its run's marks changed (a cut or a stop passed to it).
-pub(super) enum Left {
+enum Left {
     Stitches(Stitches),
     Removed,
     Marks(StitchRun),
@@ -270,7 +270,7 @@ pub(super) fn move_points(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(MOVE, format!("`to` places one needle point: {} are addressed", t.count())));
     }
     let by = Vec2::new(mm_to_pt(dx.unwrap_or(0.0)), mm_to_pt(dy.unwrap_or(0.0)));
-    let to = to.map(|p| Point::new(mm_to_pt(p.x), mm_to_pt(p.y)));
+    let to = to.map(point_to_pt);
     let mut e = Edit::begin(s, MOVE, before, t.passed_over)?;
     let mut moved = 0usize;
     for (id, mut st, indices) in t.paths {
@@ -341,7 +341,7 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
             for item in items {
                 let one = Map::from_iter([("at".to_string(), item.clone())]);
                 let p = point_mm(&one, "at", INSERT)?.ok_or_else(|| bad(INSERT, "`at`: [x, y], millimetres"))?;
-                let p = Point::new(mm_to_pt(p.x), mm_to_pt(p.y));
+                let p = point_to_pt(p);
                 if !(p.x.abs() <= vectorcraft_doc::MAX_COORD && p.y.abs() <= vectorcraft_doc::MAX_COORD) {
                     return Err(bad(INSERT, format!("`at` {item}: outside the document's coordinates")));
                 }
@@ -553,17 +553,17 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
         for r in 0..st.runs.len() {
             let Some(run) = st.runs.get_mut(r) else { continue };
             let was = std::mem::take(&mut run.needles);
-            let mut needles: Vec<needles::Needle> = Vec::with_capacity(was.len());
+            let mut staying: Vec<needles::Needle> = Vec::with_capacity(was.len());
             for n in &was {
                 if indices.contains(&k) {
                     deleted += 1;
                     // The stitch from the needle point kept before it, in its run, now goes on.
-                    if !needles.is_empty() {
+                    if !staying.is_empty() {
                         merged.insert(kept.saturating_sub(1));
                     }
                     if n.stop {
                         let to = match last {
-                            Some((lr, li)) if lr == r => needles.get_mut(li),
+                            Some((lr, li)) if lr == r => staying.get_mut(li),
                             Some(at) => st.needle_mut(at),
                             None => None,
                         };
@@ -576,14 +576,14 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
                         }
                     }
                 } else {
-                    needles.push(*n);
-                    last = Some((r, needles.len() - 1));
+                    staying.push(*n);
+                    last = Some((r, staying.len() - 1));
                     kept += 1;
                 }
                 k += 1;
             }
             if let Some(run) = st.runs.get_mut(r) {
-                run.needles = needles;
+                run.needles = staying;
             }
         }
         if kept == 0 {
@@ -751,9 +751,8 @@ impl Rebuilt {
 /// [`vectorcraft_stitch::plan::lock_step`] on document points, `min` the shortest stitch in
 /// millimetres.
 fn lock_step(at: Point, toward: Point, min: f64) -> Option<Point> {
-    let mm = |p: Point| Point::new(pt_to_mm(p.x), pt_to_mm(p.y));
-    let step = vectorcraft_stitch::plan::lock_step(mm(at), mm(toward), min)?;
-    let back = Point::new(mm_to_pt(step.x), mm_to_pt(step.y));
+    let step = vectorcraft_stitch::plan::lock_step(point_to_mm(at), point_to_mm(toward), min)?;
+    let back = point_to_pt(step);
     (back.x.is_finite() && back.y.is_finite()).then_some(back)
 }
 
@@ -872,13 +871,7 @@ fn join_within(st: &Stitches, at: &BTreeSet<usize>) -> (Rebuilt, usize, usize) {
             out.run(run.cut_before);
         }
         for (i, n) in run.needles.iter().enumerate() {
-            let same_spot = joined
-                && i == 0
-                && out
-                    .runs
-                    .last()
-                    .and_then(|r| r.needles.last())
-                    .is_some_and(|last| last.p.distance(n.p) * vectorcraft_stitch::MM_PER_PT < vectorcraft_stitch::SAME_POINT);
+            let same_spot = joined && i == 0 && out.runs.last().and_then(|r| r.needles.last()).is_some_and(|last| needles::same(last.p, n.p));
             if same_spot {
                 // Kept once: the needle point it repeats takes its place.
                 if let Some(slot) = out.moved_to.get_mut(k) {
@@ -1171,7 +1164,7 @@ fn function_end(st: &Stitches, ix: &Index, k: usize) -> Option<usize> {
     if i + 1 == n {
         return Some(k);
     }
-    let tied = i + 3 == n && st.needle((r, i + 2)).zip(st.needle((r, i))).is_some_and(|(end, at)| same_spot(end.p, at.p));
+    let tied = i + 3 == n && st.needle((r, i + 2)).zip(st.needle((r, i))).is_some_and(|(end, at)| needles::same(end.p, at.p));
     tied.then_some(k + 2)
 }
 
@@ -1341,7 +1334,7 @@ pub(super) const SPLIT_LONG_LABEL: &str = "Split Long Stitches";
 /// The range `maxLength` is taken in, millimetres: from Melco's 1 mm, the shortest stitch it keeps
 /// for most needles (`check::SHORT`), to the 12.7 mm a machine sews well (`check::LONGEST_STITCH`),
 /// the default.
-const MAX_LENGTH_RANGE: (f64, f64) = (1.0, LONGEST);
+const MAX_LENGTH_RANGE: (f64, f64) = (super::check::SHORT, LONGEST);
 
 /// The needle points (document points) a stitch from `a` to `b` (millimetres, as the walk sews
 /// them) is split into, besides its ends: with `grid` (a format's, and its records' reach in
@@ -1356,7 +1349,7 @@ fn pieces(
     max: f64,
     room: usize,
 ) -> std::result::Result<Vec<Point>, String> {
-    let pt = |p: Point| Point::new(mm_to_pt(p.x), mm_to_pt(p.y));
+    let pt = point_to_pt;
     match grid {
         Some((grid, reach)) => {
             let ((ax, ay), (bx, by)) = (grid.units(a), grid.units(b));
@@ -1476,170 +1469,4 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
         None => json!({"length": max}),
     };
     e.finish(s, SPLIT_LONG_LABEL, split > 0, json!({"changedCount": split, "addedCount": added, "limit": limit, "needlePoints": addressed}))
-}
-
-/// Delete with needle points selected (the marked hook in `edit.clear`): when every object the
-/// selection holds is a path of stitches and it selects needle points of them (no segment), the
-/// needle points are deleted as stitches (`embroidery.deleteNeedlePoints`: the neighbours merge,
-/// the paths leave the selection); `None` otherwise, for upstream's Delete.
-pub(crate) fn delete_selected(s: &mut Session) -> Option<Result<Value>> {
-    let st = s.doc().ok()?;
-    let sel = &st.selection;
-    let stitches = |id: &NodeId| st.doc.node(*id).is_some_and(|n| needles::read(n).is_ok());
-    let all = !sel.anchors.is_empty() && sel.segments.is_empty() && sel.objects.iter().all(stitches) && sel.anchors.keys().all(stitches);
-    all.then(|| delete(s, &json!({})))
-}
-
-/// Join (the marked hook in `path.join`) of paths `ids` when any is a path of stitches: all of them
-/// joined as `embroidery.joinRuns {ids}` joins them, in the order they are sewn (their stacking
-/// order in their parent), never reversed; a path of stitches with art is refused. `None` when none
-/// is a path of stitches, for upstream's Join.
-pub(crate) fn join_paths(s: &mut Session, ids: &[NodeId]) -> Option<Result<Value>> {
-    let st = s.doc().ok()?;
-    let doc = st.doc.clone();
-    let stitches = |id: &NodeId| doc.node(*id).is_some_and(needles::is_stitches);
-    if !ids.iter().any(stitches) {
-        return None;
-    }
-    if !ids.iter().all(stitches) {
-        return Some(Err(EngineError::Other(RUNS_WITH_ART.to_string())));
-    }
-    if ids.len() < 2 {
-        return Some(Err(EngineError::Other(ONE_RUN.to_string())));
-    }
-    // Each one's place among its parent's children, each parent's read once.
-    let mut place: std::collections::HashMap<NodeId, usize> = std::collections::HashMap::new();
-    let mut parents = BTreeSet::new();
-    for &id in ids {
-        let Some(parent) = doc.parent_of(id).filter(|p| parents.insert(*p)).and_then(|p| doc.node(p)) else { continue };
-        place.extend(parent.children().into_iter().flatten().enumerate().map(|(i, c)| (c.id, i)));
-    }
-    let mut sorted = ids.to_vec();
-    sorted.sort_by_key(|id| place.get(id).copied().unwrap_or(usize::MAX));
-    Some(join_runs(s, &json!({ "ids": sorted.iter().map(|i| i.0).collect::<Vec<_>>() })))
-}
-
-/// A path of stitches `id` of `d` as it is before it is cut (the marked hooks in
-/// `draw2::replace_with_pieces`, `draw2::split` and `path::cut_at_anchors`), for [`run_cut`] and
-/// [`cut_in_place`]; `None` for anything else.
-pub(crate) fn before_cut(d: &Document, id: NodeId) -> Option<Stitches> {
-    d.node(id).and_then(|n| needles::read(n).ok())
-}
-
-/// Where each needle point of a run lay before it was cut, by its coordinates' bits: its place, its
-/// marks and whether a cut came before it, each taken once, in sewing order.
-struct Lay {
-    at: std::collections::HashMap<(u64, u64), std::collections::VecDeque<(needles::Needle, bool)>>,
-}
-
-impl Lay {
-    fn of(run: &Stitches) -> Self {
-        let mut at: std::collections::HashMap<(u64, u64), std::collections::VecDeque<(needles::Needle, bool)>> = Default::default();
-        for r in &run.runs {
-            for (i, n) in r.needles.iter().enumerate() {
-                at.entry((n.p.x.to_bits(), n.p.y.to_bits())).or_default().push_back((*n, i == 0 && r.cut_before));
-            }
-        }
-        Self { at }
-    }
-
-    /// The next needle point of the run before that lay at `p` and isn't taken yet.
-    fn take(&mut self, p: Point) -> Option<(needles::Needle, bool)> {
-        self.at.get_mut(&(p.x.to_bits(), p.y.to_bits()))?.pop_front()
-    }
-}
-
-/// Whether two points (document points) lie at one spot, as the walk tells.
-fn same_spot(a: Point, b: Point) -> bool {
-    a.distance(b) * vectorcraft_stitch::MM_PER_PT < vectorcraft_stitch::SAME_POINT
-}
-
-/// `pieces` (in sewing order) cut from the path of stitches `run` was: each piece's needle points
-/// take the stops and exact millimetres of the needle points of `run` they lie on, each taken once
-/// (a stop on the needle point a cut made twice stays on the first piece), each of its runs the cut
-/// before it that `run` had there; the first piece keeps the cut before the path, the last the cut
-/// and the stop after it (the object's own too), as they were once. A needle point made by the cut
-/// has none. A file's run's later piece starts after the needle point the cut made twice (the walk
-/// jumps onto a file's run's first needle point and would sew it again); a manual run's keeps it
-/// (art goes on from the hole the needle is in without sewing it twice).
-pub(crate) fn run_cut(run: Option<&Stitches>, pieces: &mut [&mut vectorcraft_doc::Node]) {
-    let Some(run) = run else { return };
-    let mut lay = Lay::of(run);
-    let count = pieces.len();
-    let mut before: Option<Point> = None;
-    for (p, piece) in pieces.iter_mut().enumerate() {
-        let Ok(mut st) = needles::read(piece) else { continue };
-        let more_than_one = st.len() > 1;
-        if p > 0
-            && !run.marks.manual
-            && more_than_one
-            && let Some(first) = st.runs.first_mut()
-            && first.needles.first().zip(before).is_some_and(|(n, b)| same_spot(n.p, b))
-        {
-            first.needles.remove(0);
-        }
-        for r in &mut st.runs {
-            r.cut_before = false;
-            for (i, n) in r.needles.iter_mut().enumerate() {
-                match lay.take(n.p) {
-                    Some((was, cut)) => {
-                        (n.stop, n.exact) = (was.stop, was.exact);
-                        if i == 0 && cut {
-                            r.cut_before = true;
-                        }
-                    }
-                    None => (n.stop, n.exact) = (false, [None, None]),
-                }
-            }
-        }
-        before = st.runs.iter().rev().find_map(|r| r.needles.last()).map(|n| n.p);
-        let (first, final_piece) = (p == 0, p + 1 == count);
-        st.marks.trim_before = first && run.marks.trim_before;
-        st.marks.trim_after = final_piece && run.marks.trim_after;
-        st.marks.stop_after = final_piece && run.marks.stop_after;
-        st.object_after = if final_piece { run.object_after } else { Default::default() };
-        needles::write(piece, st);
-    }
-}
-
-/// Path of stitches `id` of `d` (as `run` before) cut where it lies by a tool that keeps the pieces
-/// as its subpaths: a needle point the cut made twice, ending a run and starting the next at one
-/// spot where no run ended and started before, is kept once (the next run starts after it), as the
-/// walk would sew it twice; the marks follow their needle points as they always do.
-pub(crate) fn cut_in_place(d: &mut Document, id: NodeId, run: Option<&Stitches>) {
-    let Some(run) = run else { return };
-    let Some(n) = d.node_mut(id) else { return };
-    let Ok(mut st) = needles::read(n) else { return };
-    // Where runs met at one spot before, each spot as often as it was.
-    let mut met: std::collections::HashMap<(u64, u64), usize> = Default::default();
-    for w in run.runs.windows(2) {
-        if let [a, b] = w
-            && let (Some(end), Some(start)) = (a.needles.last(), b.needles.first())
-            && same_spot(end.p, start.p)
-        {
-            *met.entry((start.p.x.to_bits(), start.p.y.to_bits())).or_default() += 1;
-        }
-    }
-    let mut changed = false;
-    let mut end: Option<Point> = None;
-    for r in &mut st.runs {
-        if let (Some(e), Some(first)) = (end, r.needles.first().copied())
-            && same_spot(e, first.p)
-            && r.needles.len() > 1
-        {
-            match met.get_mut(&(first.p.x.to_bits(), first.p.y.to_bits())).filter(|c| **c > 0) {
-                Some(c) => *c -= 1,
-                None => {
-                    r.needles.remove(0);
-                    changed = true;
-                }
-            }
-        }
-        if let Some(last) = r.needles.last() {
-            end = Some(last.p);
-        }
-    }
-    if changed {
-        needles::write(n, st);
-    }
 }

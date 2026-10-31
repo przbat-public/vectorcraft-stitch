@@ -4278,7 +4278,7 @@ proptest! {
         blocks in prop::collection::vec((0usize..3, prop::collection::vec((-50i32..50, -50i32..50), 1..20), prop::collection::vec(0usize..25, 0..5)), 1..5),
     ) {
         use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
-        use vectorcraft_stitch::format::{Format, stops_written, written_stops};
+        use vectorcraft_stitch::format::{Format, written_stops};
         // Three colours, so that neighbouring blocks are often in one thread.
         const COLOURS: [[u8; 3]; 3] = [[200, 30, 30], [30, 30, 200], [30, 160, 40]];
         let mut pattern = Pattern { name: "stops".into(), ..Pattern::default() };
@@ -4294,11 +4294,14 @@ proptest! {
                 let needle = |s: &[Stitch]| s.iter().any(|s| s.command == Command::Stitch);
                 prop_assert!(needle(&block.stitches[..i]) && needle(&block.stitches[i + 1..]), "a stop written between two needle points");
             }
-            prop_assert_eq!(written_stops(&block.stitches).len(), stops_written(&block.stitches));
             pattern.blocks.push(block);
         }
         let format = Format::from_id(EMBROIDERY[which]).unwrap();
         let bytes = format.write(&pattern).unwrap();
+        // Every stop written is a colour change of the file: read back, a block for each block and
+        // each stop written in it.
+        let written: usize = pattern.blocks.iter().map(|b| written_stops(&b.stitches).len() + 1).sum();
+        prop_assert_eq!(format.read(&bytes).unwrap().blocks.len(), written);
         survive_metafile("stops", &format!("x.{}", EMBROIDERY[which]), &bytes)?;
     }
 }

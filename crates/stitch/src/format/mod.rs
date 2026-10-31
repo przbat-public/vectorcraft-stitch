@@ -557,12 +557,6 @@ pub(crate) fn stretches(stitches: &[Stitch]) -> Vec<std::ops::Range<usize>> {
     out
 }
 
-/// How many stops a block of `stitches` is written with: each a change to the same thread
-/// ([`stretches`]), which a machine counts as a colour change.
-pub fn stops_written(stitches: &[Stitch]) -> usize {
-    stretches(stitches).len().saturating_sub(1)
-}
-
 /// The stops (and thread changes) of a block of `stitches` that are written ([`stretches`]), by
 /// their index, in order: a stitch plan keeps these and leaves out the rest, so that it lists what
 /// the machine gets.

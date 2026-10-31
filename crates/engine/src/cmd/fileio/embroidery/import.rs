@@ -136,7 +136,8 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
             if let [only] = run.as_slice() {
                 bp.line_to(Point::new((only.x + MARGIN) * scale, (only.y + MARGIN) * scale));
             }
-            let double_point = matches!(run.as_slice(), [a, b] if a.distance(*b) < vectorcraft_stitch::SAME_POINT);
+            // Its only run: a tack unless marked so.
+            let double_point = matches!(run.as_slice(), [a, b] if crate::cmd::embroidery::one_needle_point(a.distance(*b), false, false));
             let path = PathData::from_bezpath(&bp);
             let mut node = Node::path(doc.alloc_id(), path, Appearance::default());
             node.appearance = stroke.clone();

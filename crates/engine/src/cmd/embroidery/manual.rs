@@ -124,7 +124,8 @@ fn frozen(own: &[Stitch]) -> Option<Frozen> {
     if cut || jump.is_some() || subpaths.iter().any(Vec::is_empty) {
         return None;
     }
-    let tack = |sub: &Vec<Point>| matches!(sub.as_slice(), [a, b] if a.distance(*b) < SAME_POINT);
+    // Two needle points at one spot: one needle point read back, among several runs.
+    let tack = |sub: &Vec<Point>| matches!(sub.as_slice(), [a, b] if super::needles::one_needle_point(a.distance(*b), false, false));
     let double_point = subpaths.len() == 1 && subpaths.first().is_some_and(tack);
     if subpaths.len() > 1 && subpaths.iter().any(tack) {
         return None;
@@ -136,7 +137,7 @@ fn frozen(own: &[Stitch]) -> Option<Frozen> {
 /// (document points); a run of one needle point a line from the point to itself, as a machine file
 /// opens one.
 fn run_path(f: &Frozen) -> PathData {
-    let corner = |p: &Point| Anchor::corner(Point::new(mm_to_pt(p.x), mm_to_pt(p.y)));
+    let corner = |p: &Point| Anchor::corner(vectorcraft_stitch::point_to_pt(*p));
     let subpaths = f
         .subpaths
         .iter()

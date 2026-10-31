@@ -291,10 +291,30 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
         }
         None => None,
     };
+    // The format too, before anything changes.
+    let format = match p.get("format") {
+        None => None,
+        Some(v) if v.is_null() => Some(None),
+        Some(v) => {
+            let ids: Vec<&'static str> = vectorcraft_engine::cmd::embroidery::check_formats().into_iter().map(|(id, _)| id).collect();
+            let id = v.as_str().and_then(|g| ids.iter().find(|id| **id == g)).ok_or_else(|| format!("`format` must be one of {}", ids.join(", ")))?;
+            Some(Some(*id))
+        }
+    };
+    let uid = app.session.active().map(|st| st.uid);
+    if format.is_some() && uid.is_none() {
+        return Err("no document".into());
+    }
     if let Some(scope) = scope {
         app.ui.embroidery_panel.stitches_scope = scope;
     }
     if let Some(filter) = filter {
+        // Back to the first page, as choosing a filter in the tab does.
+        if filter != app.ui.embroidery_panel.stitches_filter
+            && let Some(d) = uid.and_then(|u| app.embroidery.stitches.docs.get_mut(&u))
+        {
+            d.page = 0;
+        }
         app.ui.embroidery_panel.stitches_filter = filter;
     }
     if let Some(tab) = tab {
@@ -303,19 +323,11 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     if let Some(part) = part {
         app.ui.embroidery_panel.part = part;
     }
-    if let Some(format) = p.get("format") {
-        let uid = app.session.active().map(|st| st.uid).ok_or("no document")?;
-        match format.as_str() {
-            None if format.is_null() => {
-                app.embroidery.check.format.remove(&uid);
-            }
-            given => {
-                let ids: Vec<&'static str> = vectorcraft_engine::cmd::embroidery::check_formats().into_iter().map(|(id, _)| id).collect();
-                let key = "format";
-                let id = given.and_then(|g| ids.iter().find(|id| **id == g)).ok_or_else(|| format!("`{key}` must be one of {}", ids.join(", ")))?;
-                app.embroidery.check.format.insert(uid, id);
-            }
-        }
+    if let (Some(format), Some(uid)) = (format, uid) {
+        match format {
+            None => app.embroidery.check.format.remove(&uid),
+            Some(id) => app.embroidery.check.format.insert(uid, id),
+        };
     }
     show_panel(app)?;
     let format = app.session.active().and_then(|st| app.embroidery.check.format.get(&st.uid).copied());

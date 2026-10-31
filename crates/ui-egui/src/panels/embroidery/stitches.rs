@@ -207,7 +207,7 @@ type ListKey = (u64, u64, Option<Vec<NodeId>>, Filter, [u64; 3]);
 pub struct DocList {
     pub focus: Option<usize>,
     anchor: Option<usize>,
-    page: usize,
+    pub(crate) page: usize,
     pub shown: Option<usize>,
     move_by: [f64; 2],
     goto: String,
@@ -503,6 +503,9 @@ pub struct Shown {
 /// Draw the tab.
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     app.embroidery.stitches.drawn_pass = Some(ui.ctx().cumulative_pass_nr());
+    // A closed document's place in the list goes with it.
+    let open: std::collections::HashSet<u64> = app.session.documents().iter().map(|d| d.uid).collect();
+    app.embroidery.stitches.docs.retain(|uid, _| open.contains(uid));
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
@@ -950,7 +953,20 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, listed: &Listed, number: usize
             show_stitch(app, shown, number, false);
             return;
         }
-        app.status(crate::et!("This stitch can't be edited: it is planned from its object's shape."));
+        // Why: planned from its object's shape, or a run of the object that can't be edited.
+        use vectorcraft_engine::cmd::embroidery::plan::Part;
+        let planned = stitch_list::row(&shown.plan, number)
+            .and_then(|r| shown.plan.units.get(r.unit))
+            .is_some_and(|u| !matches!(u.origin.part, Part::Manual | Part::Literal));
+        if planned {
+            app.status(crate::et!("This stitch can't be edited: it is planned from its object's shape."));
+        } else {
+            app.status(crate::etn!(
+                1,
+                "{count} run can't be edited: locked, hidden or cut by a clipping mask",
+                "{count} runs can't be edited: locked, hidden or cut by a clipping mask"
+            ));
+        }
         return;
     }
     let mode = if mods.command || mods.ctrl { "toggle" } else { "set" };
@@ -1266,10 +1282,13 @@ fn foot_ui(
                 }
             }
             let mut chosen = None;
+            // Each action as the ≡ menu offers it: off when its command can't run now.
+            let on: Vec<bool> = items.iter().map(|(_, _, id, _)| crate::menus::enabled(app, id)).collect();
             for row in rows {
                 ui.horizontal(|ui| {
-                    for (label, _, id, params) in row.iter().filter_map(|k| items.get(*k)) {
-                        if ui.add(egui::Button::new(*label).wrap()).clicked() {
+                    for k in row {
+                        let (Some((label, _, id, params)), Some(&on)) = (items.get(k), on.get(k)) else { continue };
+                        if ui.add_enabled(on, egui::Button::new(*label).wrap()).clicked() {
                             chosen = Some((*id, params.clone()));
                         }
                     }

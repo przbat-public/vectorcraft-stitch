@@ -29,8 +29,9 @@ fn app() -> (VectorcraftApp, u64) {
     (app, id)
 }
 
-/// A node of the accessibility tree: its id, role, name, row index and whether it is selected.
-type Node = (egui::accesskit::NodeId, Role, String, Option<usize>, Option<bool>);
+/// A node of the accessibility tree: its id, role, name, row index, whether it is selected, and
+/// whether it is off.
+type Node = (egui::accesskit::NodeId, Role, String, Option<usize>, Option<bool>, bool);
 
 /// One frame: the shortcuts, the panel on the right and the canvas → the shapes drawn and the
 /// accessibility tree's nodes.
@@ -53,7 +54,12 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
     let nodes = out
         .platform_output
         .accesskit_update
-        .map(|t| t.nodes.iter().map(|(id, n)| (*id, n.role(), n.label().unwrap_or_default().to_string(), n.row_index(), n.is_selected())).collect())
+        .map(|t| {
+            t.nodes
+                .iter()
+                .map(|(id, n)| (*id, n.role(), n.label().unwrap_or_default().to_string(), n.row_index(), n.is_selected(), n.is_disabled()))
+                .collect()
+        })
         .unwrap_or_default();
     let mut all = vec![];
     let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
@@ -82,9 +88,10 @@ fn settle(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> (Vec
     last
 }
 
-/// Where the row of record `number` is drawn: its number's words.
+/// Where the row of record `number` is drawn: its number's words, as the language drawn writes them
+/// ("1,000" in English).
 fn row_at(shapes: &[Shape], number: usize) -> Pos2 {
-    let words = number.to_string();
+    let words = crate::embroidery::numbers::count(crate::i18n::current(), number as u64);
     shapes
         .iter()
         .find_map(|s| match s {
@@ -1076,4 +1083,68 @@ fn show_record_refuses_what_isnt_listed() {
     let uid = app.session.active().unwrap().uid;
     let d = app.embroidery.stitches.docs.get(&uid).unwrap();
     assert_eq!((d.focus, d.shown), (Some(number), Some(number)));
+}
+
+/// The tab's small rules: a bad `format` given to `ui.embroideryPanel` changes nothing (the filter
+/// given with it neither), and a filter given goes back to the first page as the chips do; a closed
+/// document's place in the list goes with it; a row of a locked run says why it can't be edited.
+#[test]
+fn the_tabs_small_rules() {
+    let (mut app, id) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    assert!(app.run("ui.embroideryPanel", json!({"filter": "trims", "format": "svg"})).is_err());
+    assert_eq!(app.ui.embroidery_panel.stitches_filter, Filter::All, "nothing changed");
+    app.embroidery.stitches.docs.get_mut(&uid).unwrap().page = 3;
+    app.run("ui.embroideryPanel", json!({"filter": "stops"})).unwrap();
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).unwrap().page, 0, "back to the first page");
+    app.run("ui.embroideryPanel", json!({"filter": "all"})).unwrap();
+    // A locked run of the object edited: its rows say so, not that it is planned from a shape.
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("object.lock", json!({"ids": [run.0]})).unwrap();
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let at = row_at(&shapes, list.record(4).unwrap());
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    assert_eq!(app.ui.status, "1 run can't be edited: locked, hidden or cut by a clipping mask");
+    // A document closed: its place goes.
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    app.run("document.switch", json!({"uid": uid})).ok();
+    let other = app.session.documents().iter().map(|d| d.uid).find(|u| *u != uid).unwrap();
+    assert!(app.embroidery.stitches.docs.contains_key(&uid));
+    app.run("file.close", json!({})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let open: Vec<u64> = app.session.documents().iter().map(|d| d.uid).collect();
+    assert!(app.embroidery.stitches.docs.keys().all(|u| open.contains(u)), "only open documents: {open:?}, {other}");
+}
+
+/// The foot's stitch actions are on and off as the ≡ menu's: as their commands can run (each needs
+/// only a document today, so all are on here; the test holds the wiring for a command that gains a
+/// condition).
+#[test]
+fn the_foots_actions_are_on_as_their_commands_can_run() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 3}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let items = crate::embroidery::task_bar::items(&mut app).unwrap();
+    for (label, _, command, _) in items {
+        let on = crate::menus::enabled(&app, command);
+        let button = nodes.iter().find(|n| n.1 == Role::Button && n.2 == label).unwrap_or_else(|| panic!("no {label} button"));
+        assert_eq!(!button.5, on, "{label}: as {command} can run");
+    }
 }

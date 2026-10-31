@@ -120,7 +120,7 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
             let last_run = runs.len().saturating_sub(1);
             runs.into_iter().enumerate().map(move |(i, r)| (r, k < last_block && i == last_run))
         });
-        for ((run, trim_before, trim_after, stopped), stop_between) in all {
+        for (FileRun { stitches: run, trim_before, trim_after, stopped }, stop_between) in all {
             let stop_after = stopped || stop_between;
             let mut bp = BezPath::new();
             for (i, s) in run.iter().enumerate() {
@@ -179,8 +179,17 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
 /// each with whether the thread was cut before it and, for the block's last run, after it, and
 /// whether the machine stops after it (a stop a reader gives: none does, a stop being a change to
 /// the same thread in every format).
-fn runs(block: &Block) -> Vec<(Vec<Stitch>, bool, bool, bool)> {
-    let mut out: Vec<(Vec<Stitch>, bool, bool, bool)> = Vec::new();
+/// One run of a block as a file sews it ([`runs`]): its needle points, and the cut before it, the
+/// cut after it and the stop after it.
+struct FileRun {
+    stitches: Vec<Stitch>,
+    trim_before: bool,
+    trim_after: bool,
+    stopped: bool,
+}
+
+fn runs(block: &Block) -> Vec<FileRun> {
+    let mut out: Vec<FileRun> = Vec::new();
     let mut cur: Vec<Stitch> = Vec::new();
     let mut trim = false;
     for s in &block.stitches {
@@ -189,23 +198,23 @@ fn runs(block: &Block) -> Vec<(Vec<Stitch>, bool, bool, bool)> {
             continue;
         }
         if !cur.is_empty() {
-            out.push((std::mem::take(&mut cur), std::mem::take(&mut trim), false, false));
+            out.push(FileRun { stitches: std::mem::take(&mut cur), trim_before: std::mem::take(&mut trim), trim_after: false, stopped: false });
         }
         match s.command {
             Command::Trim => trim = true,
             Command::Stop => {
                 if let Some(last) = out.last_mut() {
-                    last.3 = true;
+                    last.stopped = true;
                 }
             }
             _ => {}
         }
     }
     if !cur.is_empty() {
-        out.push((cur, trim, false, false));
+        out.push(FileRun { stitches: cur, trim_before: trim, trim_after: false, stopped: false });
     } else if trim && let Some(last) = out.last_mut() {
         // A cut after the block's last stitches (before the thread is changed).
-        last.2 = true;
+        last.trim_after = true;
     }
     out
 }

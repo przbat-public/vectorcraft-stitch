@@ -25,8 +25,42 @@ use crate::cmd::bad;
 /// The keys `embroidery.stitches` takes besides the embroidery options.
 pub(super) const KEYS: [&str; 8] = ["from", "to", "ids", "kinds", "shorterThan", "longerThan", Page::KEYS[0], Page::KEYS[1]];
 
-/// The kinds of record, as the reply names them.
-const KINDS: [&str; 4] = ["stitch", "jump", "trim", "stop"];
+/// A kind of record, as the reply names it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum RecordKind {
+    /// A needle point: the needle goes down.
+    Stitch,
+    /// The needle moves with it up.
+    Jump,
+    /// The thread is cut.
+    Trim,
+    /// The machine stops (a thread change, or a stop written as one).
+    Stop,
+}
+
+impl RecordKind {
+    const ALL: [Self; 4] = [Self::Stitch, Self::Jump, Self::Trim, Self::Stop];
+
+    /// As the reply and `kinds` name it.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Stitch => "stitch",
+            Self::Jump => "jump",
+            Self::Trim => "trim",
+            Self::Stop => "stop",
+        }
+    }
+
+    /// The kind of a record of command `c`.
+    fn of(c: Command) -> Self {
+        match c {
+            Command::Stitch => Self::Stitch,
+            Command::Jump => Self::Jump,
+            Command::Trim => Self::Trim,
+            Command::Stop | Command::ColorChange => Self::Stop,
+        }
+    }
+}
 
 /// What `embroidery.stitches` (and `selectNeedlePoints` by records) asks for.
 #[derive(Clone, Debug)]
@@ -37,7 +71,7 @@ pub(crate) struct Ask {
     /// The objects whose records it lists: the object a person selects, or the path sewn.
     pub(crate) ids: Option<BTreeSet<u64>>,
     /// The kinds it lists (none: all).
-    pub(crate) kinds: Option<BTreeSet<&'static str>>,
+    pub(crate) kinds: Option<BTreeSet<RecordKind>>,
     /// Only the records whose length (millimetres) is under `shorter`, or over `longer`; a record
     /// with no length is passed by when either is given.
     pub(crate) shorter: Option<f64>,
@@ -93,11 +127,12 @@ impl Ask {
         let kinds = match o.get("kinds") {
             None | Some(Value::Null) => None,
             Some(v) => {
-                let items = v.as_array().ok_or_else(|| bad(cmd, format!("`kinds` {v}: a list of {}", KINDS.join(", "))))?;
+                let names: Vec<&str> = RecordKind::ALL.iter().map(|k| k.name()).collect();
+                let items = v.as_array().ok_or_else(|| bad(cmd, format!("`kinds` {v}: a list of {}", names.join(", "))))?;
                 let kind = |i: &Value| {
                     i.as_str()
-                        .and_then(|k| KINDS.iter().find(|n| **n == k).copied())
-                        .ok_or_else(|| bad(cmd, format!("`kinds` entry {i}: one of {}", KINDS.join(", "))))
+                        .and_then(|k| RecordKind::ALL.into_iter().find(|n| n.name() == k))
+                        .ok_or_else(|| bad(cmd, format!("`kinds` entry {i}: one of {}", names.join(", "))))
                 };
                 Some(items.iter().map(kind).collect::<crate::Result<_>>()?)
             }
@@ -110,7 +145,7 @@ impl Ask {
 #[derive(Clone, Debug)]
 pub(crate) struct Row {
     pub(crate) record: usize,
-    pub(crate) kind: &'static str,
+    pub(crate) kind: RecordKind,
     pub(crate) at: [f64; 2],
     pub(crate) length: Option<f64>,
     pub(crate) id: NodeId,
@@ -173,12 +208,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
         total += 1;
         let Some(u) = plan.units.get(r.unit) else { return };
         let Some(block) = plan.blocks.get(u.block) else { return };
-        let kind = match r.stitch.command {
-            Command::Stitch => "stitch",
-            Command::Jump => "jump",
-            Command::Trim => "trim",
-            Command::Stop | Command::ColorChange => "stop",
-        };
+        let kind = RecordKind::of(r.stitch.command);
         // Its place in the path the unit sews, where the records number it.
         let at = r.number.checked_sub(block.first_number);
         let place = at.filter(|i| u.own.contains(i));
@@ -228,7 +258,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
         if ask.from.is_some_and(|from| r.number < from) || ask.to.is_some_and(|to| r.number > to) {
             return;
         }
-        if ask.kinds.as_ref().is_some_and(|k| !k.contains(kind)) {
+        if ask.kinds.as_ref().is_some_and(|k| !k.contains(&kind)) {
             return;
         }
         let id = u.origin.selected();
@@ -254,7 +284,7 @@ pub(crate) fn list(plan: &DesignPlan, doc: &Document, ask: &Ask) -> Value {
         if page.contains(&matched) {
             listed.push(json!({
                 "record": row.record,
-                "kind": row.kind,
+                "kind": row.kind.name(),
                 "at": row.at,
                 "length": row.length,
                 "id": row.id.0,
@@ -332,7 +362,7 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
         let (plan, doc) = super::planned(s, &opts, false, SELECT)?;
         let mut count = 0usize;
         rows(&plan, &doc, &ask, |row| match row.index {
-            Some(k) if row.kind != "trim" && row.kind != "stop" && count < needles::MAX_NEEDLE_POINTS => {
+            Some(k) if matches!(row.kind, RecordKind::Stitch | RecordKind::Jump) && count < needles::MAX_NEEDLE_POINTS => {
                 if picked.entry(row.node).or_default().insert(k) {
                     count += 1;
                 }

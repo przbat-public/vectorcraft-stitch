@@ -35,26 +35,43 @@ const CONVERT_LABEL: &str = "Convert to Manual Stitches";
 /// as the settings commands list.
 const MAX_LISTED: usize = 1000;
 
-/// Why an object given isn't converted, as the reply names it.
-mod reason {
+/// Why an object given isn't converted, as the reply names it ([`Skip::code`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Skip {
     /// Stitches read from a machine file (or an object holding some): edit them as they are.
-    pub(super) const LITERAL: &str = "literal";
+    Literal,
     /// Manual stitches already (a converted object, or a run of one).
-    pub(super) const MANUAL: &str = "manual";
+    Manual,
     /// A symbol's instance: every instance plans its symbol's art from where its needle is, so no
     /// one frozen plan stands for them all.
-    pub(super) const SYMBOL_INSTANCE: &str = "symbolInstance";
+    SymbolInstance,
     /// A clip group's clipping path: it clips, and converting it would change what is sewn.
-    pub(super) const CLIPPING_PATH: &str = "clippingPath";
+    ClippingPath,
     /// Part of an object the plan sews whole (a piece of an expanded appearance).
-    pub(super) const INSIDE_OBJECT: &str = "insideObject";
+    InsideObject,
     /// Locked, or on a locked layer or artboard.
-    pub(super) const LOCKED: &str = "locked";
+    Locked,
     /// Nothing of it is sewn (hidden, unpainted, type, an image, every part off).
-    pub(super) const NOT_SEWN: &str = "notSewn";
+    NotSewn,
     /// Its stitches hold what a run of manual stitches can't (two needle points at one spot in a run
     /// of several): converting would change them.
-    pub(super) const UNFREEZABLE: &str = "unfreezable";
+    Unfreezable,
+}
+
+impl Skip {
+    /// As the reply names it.
+    fn code(self) -> &'static str {
+        match self {
+            Self::Literal => "literal",
+            Self::Manual => "manual",
+            Self::SymbolInstance => "symbolInstance",
+            Self::ClippingPath => "clippingPath",
+            Self::InsideObject => "insideObject",
+            Self::Locked => "locked",
+            Self::NotSewn => "notSewn",
+            Self::Unfreezable => "unfreezable",
+        }
+    }
 }
 
 /// A unit's own stitches as a run of manual stitches holds them: its runs' needle points
@@ -234,28 +251,28 @@ fn collect(
     by_object: &HashMap<NodeId, Vec<usize>>,
     plan: &DesignPlan,
     out: &mut Vec<Target>,
-    skipped: &mut Vec<(NodeId, &'static str)>,
+    skipped: &mut Vec<(NodeId, Skip)>,
 ) {
     if converted(n) || is_manual_run(n) {
-        skipped.push((n.id, reason::MANUAL));
+        skipped.push((n.id, Skip::Manual));
         return;
     }
     if matches!(n.kind, NodeKind::SymbolInstance { .. }) {
-        skipped.push((n.id, reason::SYMBOL_INSTANCE));
+        skipped.push((n.id, Skip::SymbolInstance));
         return;
     }
     if matches!(n.kind, NodeKind::Path { clipping: true, .. }) {
-        skipped.push((n.id, reason::CLIPPING_PATH));
+        skipped.push((n.id, Skip::ClippingPath));
         return;
     }
     if let Some(units) = by_object.get(&n.id) {
         let part = |p: Part| units.iter().any(|&i| plan.units.get(i).is_some_and(|u| u.origin.part == p));
         let why = if part(Part::Literal) {
-            Some(reason::LITERAL)
+            Some(Skip::Literal)
         } else if part(Part::Manual) {
-            Some(reason::MANUAL)
+            Some(Skip::Manual)
         } else if !doc.is_editable(n.id) {
-            Some(reason::LOCKED)
+            Some(Skip::Locked)
         } else {
             None
         };
@@ -271,11 +288,11 @@ fn collect(
                 collect(doc, c, by_object, plan, out, skipped);
             }
         }
-        NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => skipped.push((n.id, reason::LITERAL)),
+        NodeKind::Path { .. } if n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) => skipped.push((n.id, Skip::Literal)),
         _ => {
             // Part of an object sewn whole, or not sewn at all.
             let inside = doc.ancestry(n.id).unwrap_or_default().iter().any(|a| *a != n.id && by_object.contains_key(a));
-            skipped.push((n.id, if inside { reason::INSIDE_OBJECT } else { reason::NOT_SEWN }));
+            skipped.push((n.id, if inside { Skip::InsideObject } else { Skip::NotSewn }));
         }
     }
 }
@@ -447,7 +464,7 @@ fn apply(s: &mut Session, planned: ConvertPlanned) -> Result<Value> {
         for t in &targets_found {
             let Some(n) = d.node(t.id).cloned() else { continue };
             let Some(m) = convert_one(d, &n, &t.units, &plan) else {
-                skipped.push((t.id, reason::UNFREEZABLE));
+                skipped.push((t.id, Skip::Unfreezable));
                 continue;
             };
             let Some(slot) = d.node_mut(t.id) else { continue };
@@ -464,7 +481,7 @@ fn apply(s: &mut Session, planned: ConvertPlanned) -> Result<Value> {
         }
         Ok(made)
     })?;
-    let listed: Vec<Value> = skipped.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect();
+    let listed: Vec<Value> = skipped.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect();
     Ok(json!({
         "converted": converted_list,
         "convertedCount": made,
@@ -476,8 +493,8 @@ fn apply(s: &mut Session, planned: ConvertPlanned) -> Result<Value> {
 
 /// The error when nothing given could be converted, naming each object and why (as many as a reply
 /// lists).
-fn nothing_converted(skipped: &[(NodeId, &'static str)]) -> EngineError {
-    let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({why})", id.0)).collect();
+fn nothing_converted(skipped: &[(NodeId, Skip)]) -> EngineError {
+    let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({})", id.0, why.code())).collect();
     EngineError::Other(format!("nothing selected can be converted to manual stitches: {}", named.join(", ")))
 }
 
@@ -485,23 +502,37 @@ const RESTORE: &str = "embroidery.restoreObject";
 /// The undo step's name, the command's label.
 const RESTORE_LABEL: &str = "Restore Object";
 
-/// Why a group given isn't restored, as the reply names it.
-mod restore_reason {
+/// Why a group given isn't restored, as the reply names it ([`NotRestored::code`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum NotRestored {
     /// Not an object converted to manual stitches (nothing kept to restore).
-    pub(super) const NOT_CONVERTED: &str = "notConverted";
+    NotConverted,
     /// Stitches read from a machine file: there is no object behind them.
-    pub(super) const LITERAL: &str = "literal";
+    Literal,
     /// The object kept doesn't read as an object (a damaged file, or a newer version's object).
-    pub(super) const UNREADABLE: &str = "unreadable";
+    Unreadable,
     /// The object places a symbol the document no longer has.
-    pub(super) const MISSING_SYMBOL: &str = "missingSymbol";
+    MissingSymbol,
     /// Locked, or in a locked group or layer.
-    pub(super) const LOCKED: &str = "locked";
+    Locked,
+}
+
+impl NotRestored {
+    /// As the reply names it.
+    fn code(self) -> &'static str {
+        match self {
+            Self::NotConverted => "notConverted",
+            Self::Literal => "literal",
+            Self::Unreadable => "unreadable",
+            Self::MissingSymbol => "missingSymbol",
+            Self::Locked => "locked",
+        }
+    }
 }
 
 /// The converted objects `n` stands for, to restore: itself when it is one, the one a manual run is
 /// in, those a group or a layer holds; what isn't one, with why, into `skipped`.
-fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec<(NodeId, &'static str)>) {
+fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec<(NodeId, NotRestored)>) {
     if converted(n) {
         out.push(n.id);
         return;
@@ -509,7 +540,7 @@ fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec
     if let Some(run) = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) {
         match doc.parent_of(n.id).and_then(|p| doc.node(p)).filter(|p| run.manual && converted(p)) {
             Some(group) => out.push(group.id),
-            None => skipped.push((n.id, if run.manual { restore_reason::NOT_CONVERTED } else { restore_reason::LITERAL })),
+            None => skipped.push((n.id, if run.manual { NotRestored::NotConverted } else { NotRestored::Literal })),
         }
         return;
     }
@@ -520,10 +551,10 @@ fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec
                 restorable(doc, c, out, &mut Vec::new());
             }
             if out.len() == found {
-                skipped.push((n.id, restore_reason::NOT_CONVERTED));
+                skipped.push((n.id, NotRestored::NotConverted));
             }
         }
-        _ => skipped.push((n.id, restore_reason::NOT_CONVERTED)),
+        _ => skipped.push((n.id, NotRestored::NotConverted)),
     }
 }
 
@@ -578,10 +609,10 @@ pub(crate) fn edited(group: &Node) -> bool {
 /// visibility and lock, and its Trim After and Stop After (the marks the manual object can change
 /// itself). Its members keep their ids where the document doesn't use them (they are free right
 /// after converting), else take new ones. Or why it can't be.
-fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling) -> std::result::Result<Node, &'static str> {
+fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling) -> std::result::Result<Node, NotRestored> {
     let e = group.extras().embroidery.as_deref();
-    let Some(o) = e.and_then(|e| e.original.as_ref()) else { return Err(restore_reason::NOT_CONVERTED) };
-    let mut n: Node = serde_json::from_value((*o.node).clone()).map_err(|_| restore_reason::UNREADABLE)?;
+    let Some(o) = e.and_then(|e| e.original.as_ref()) else { return Err(NotRestored::NotConverted) };
+    let mut n: Node = serde_json::from_value((*o.node).clone()).map_err(|_| NotRestored::Unreadable)?;
     let mut missing = false;
     n.walk(&mut |c| {
         if let NodeKind::SymbolInstance { symbol, .. } = &c.kind {
@@ -589,7 +620,7 @@ fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling)
         }
     });
     if missing {
-        return Err(restore_reason::MISSING_SYMBOL);
+        return Err(NotRestored::MissingSymbol);
     }
     if o.frame != Affine::IDENTITY {
         n.transform(o.frame, scaling);
@@ -651,10 +682,11 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
     groups.retain(|g| seen.insert(*g));
     let locked = |g: &NodeId| doc.ancestry(*g).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|n| n.locked));
     let (open, closed): (Vec<NodeId>, Vec<NodeId>) = groups.into_iter().partition(|g| !locked(g));
-    skipped.extend(closed.into_iter().map(|g| (g, restore_reason::LOCKED)));
+    skipped.extend(closed.into_iter().map(|g| (g, NotRestored::Locked)));
     let edited_ids: Vec<u64> = open.iter().filter(|g| doc.node(**g).is_some_and(edited)).map(|g| g.0).collect();
-    let listed =
-        |v: &[(NodeId, &'static str)]| -> Vec<Value> { v.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect() };
+    let listed = |v: &[(NodeId, NotRestored)]| -> Vec<Value> {
+        v.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect()
+    };
     if dry {
         let ids: Vec<u64> = open.iter().take(MAX_LISTED).map(|g| g.0).collect();
         return Ok(json!({
@@ -692,7 +724,7 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// The error when nothing given could be restored, naming each object and why.
-fn nothing_restored(skipped: &[(NodeId, &'static str)]) -> EngineError {
-    let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({why})", id.0)).collect();
+fn nothing_restored(skipped: &[(NodeId, NotRestored)]) -> EngineError {
+    let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({})", id.0, why.code())).collect();
     EngineError::Other(format!("nothing selected was converted to manual stitches: {}", named.join(", ")))
 }

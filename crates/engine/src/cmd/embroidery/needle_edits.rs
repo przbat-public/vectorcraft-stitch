@@ -142,7 +142,7 @@ struct Edit {
     max: f64,
     lengths: Lengths,
     edits: Vec<(NodeId, Left)>,
-    passed_over: Vec<(NodeId, &'static str)>,
+    passed_over: Vec<(NodeId, needles::Unfit)>,
     /// Runs of two needle points at one spot in a path of several, made one needle point
     /// ([`Stitches::collapse_tacks`]).
     collapsed: usize,
@@ -152,7 +152,7 @@ impl Edit {
     /// An edit of the active document's needle points by command `cmd`, the selection as it is
     /// `before` and what of it the command passed over `passed_over`; measured against the
     /// document's shortest stitch.
-    fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, &'static str)>) -> Result<Self> {
+    fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, needles::Unfit)>) -> Result<Self> {
         let min = needles::shortest_stitch(&s.doc()?.doc);
         Ok(Self { cmd, sel: before.clone(), before, min, max: LONGEST, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
     }
@@ -242,7 +242,7 @@ impl Edit {
         reply.insert("pathCount".into(), json!(count));
         reply.insert("lengths".into(), self.lengths.json(self.min, self.max));
         reply.insert("collapsedCount".into(), json!(self.collapsed));
-        let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect();
+        let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect();
         reply.insert("passedOver".into(), Value::Array(passed));
         if changed {
             apply(s, label, self.edits, self.sel)?;
@@ -364,9 +364,9 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
         let doc = &s.doc()?.doc;
         let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
         if !doc.is_editable(id) {
-            return Err(bad(INSERT, format!("object {}: {}", id.0, needles::said(needles::reason::LOCKED))));
+            return Err(bad(INSERT, format!("object {}: {}", id.0, needles::Unfit::Locked.words())));
         }
-        let mut st = needles::read(n).map_err(|why| bad(INSERT, format!("object {}: {}", id.0, needles::said(why))))?;
+        let mut st = needles::read(n).map_err(|why| bad(INSERT, format!("object {}: {}", id.0, why.words())))?;
         let ix = st.index();
         let len = ix.len();
         if index > len {
@@ -444,13 +444,53 @@ pub(super) const DELETE: &str = "embroidery.deleteNeedlePoints";
 /// The undo step's name, the command's label.
 pub(super) const DELETE_LABEL: &str = "Delete Needle Points";
 
-/// Where a cut or a stop went, or that it was dropped, as a reply lists it.
-fn function_json(function: &str, id: NodeId, index: Option<usize>, before: bool) -> Value {
-    match (index, before) {
-        (_, true) => json!({"function": function, "id": id.0, "before": true}),
-        (Some(k), false) => json!({"function": function, "id": id.0, "index": k}),
-        (None, false) => json!({"function": function, "id": id.0}),
+/// A machine function the stitch commands set, carry or drop after a needle point.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Function {
+    /// The thread is cut.
+    Trim,
+    /// The machine stops.
+    Stop,
+}
+
+impl Function {
+    /// As the params and replies name it.
+    fn name(self) -> &'static str {
+        match self {
+            Self::Trim => "trim",
+            Self::Stop => "stop",
+        }
     }
+
+    /// The function `name` names.
+    fn parse(name: &str) -> Option<Self> {
+        [Self::Trim, Self::Stop].into_iter().find(|f| f.name() == name)
+    }
+}
+
+/// Where a function went (or was dropped from), as a reply lists it.
+#[derive(Clone, Copy)]
+enum Went {
+    /// After needle point `k` of the path, as numbered after the edit.
+    After(usize),
+    /// Before the path (its cut before it).
+    Before,
+    /// Nowhere it can be numbered: dropped, or after the path.
+    Path,
+}
+
+/// Where function `f` went, or that it was dropped, as a reply lists it.
+fn function_json(f: Function, id: NodeId, went: Went) -> Value {
+    match went {
+        Went::Before => json!({"function": f.name(), "id": id.0, "before": true}),
+        Went::After(k) => json!({"function": f.name(), "id": id.0, "index": k}),
+        Went::Path => json!({"function": f.name(), "id": id.0}),
+    }
+}
+
+/// `Went::After` the needle point `k`, when there is one.
+fn after(k: Option<usize>) -> Went {
+    k.map_or(Went::Path, Went::After)
 }
 
 /// The paths of stitches sewn beside each of `gone` (paths an edit removes) in their parents, the
@@ -530,9 +570,9 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
                         match to {
                             Some(m) => {
                                 m.stop = true;
-                                stops_moved.push(function_json("stop", id, Some(kept.saturating_sub(1)), false));
+                                stops_moved.push(function_json(Function::Stop, id, Went::After(kept.saturating_sub(1))));
                             }
-                            None => stops_dropped.push(function_json("stop", id, None, false)),
+                            None => stops_dropped.push(function_json(Function::Stop, id, Went::Path)),
                         }
                     }
                 } else {
@@ -567,11 +607,11 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
         }
         if lead && !st.marks.trim_before {
             st.marks.trim_before = true;
-            moved.push(function_json("trim", id, None, true));
+            moved.push(function_json(Function::Trim, id, Went::Before));
         }
         if tail && !st.marks.trim_after {
             st.marks.trim_after = true;
-            moved.push(function_json("trim", id, kept.checked_sub(1), false));
+            moved.push(function_json(Function::Trim, id, after(kept.checked_sub(1))));
         }
         let ix = st.index();
         merged_listed.extend(merged.iter().take(MAX_LISTED.saturating_sub(merged_listed.len())).map(|k| json!({"id": id.0, "index": k})));
@@ -590,7 +630,7 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
         let stop = marks.is_some_and(|m| m.stop_after || !m.stops.is_empty()) || ext.is_some_and(|e| e.stop_after);
         let [before_it, after_it] = neighbours.get(&id).copied().unwrap_or_default();
         // Give neighbour `to` a mark, and say where it went: the needle point it follows now.
-        let mut give = |to: NodeId, f: fn(&mut StitchRun), function: &str, before: bool| {
+        let mut give = |to: NodeId, f: fn(&mut StitchRun), function: Function, before: bool| {
             let index = match edited.get(&to).and_then(|&i| e.edits.get_mut(i)) {
                 Some((_, Left::Stitches(st))) => {
                     f(&mut st.marks);
@@ -607,19 +647,19 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
                     n.and_then(needles::count).and_then(|c| c.checked_sub(1))
                 }
             };
-            function_json(function, to, if before { None } else { index }, before)
+            function_json(function, to, if before { Went::Before } else { after(index) })
         };
         if cut {
             match (before_it, after_it) {
-                (Some(to), _) => moved.push(give(to, |m| m.trim_after = true, "trim", false)),
-                (None, Some(to)) => moved.push(give(to, |m| m.trim_before = true, "trim", true)),
-                (None, None) => dropped.push(function_json("trim", id, None, false)),
+                (Some(to), _) => moved.push(give(to, |m| m.trim_after = true, Function::Trim, false)),
+                (None, Some(to)) => moved.push(give(to, |m| m.trim_before = true, Function::Trim, true)),
+                (None, None) => dropped.push(function_json(Function::Trim, id, Went::Path)),
             }
         }
         if stop {
             match before_it {
-                Some(to) => moved.push(give(to, |m| m.stop_after = true, "stop", false)),
-                None => dropped.push(function_json("stop", id, None, false)),
+                Some(to) => moved.push(give(to, |m| m.stop_after = true, Function::Stop, false)),
+                None => dropped.push(function_json(Function::Stop, id, Went::Path)),
             }
         }
     }
@@ -720,9 +760,10 @@ fn lock_step(at: Point, toward: Point, min: f64) -> Option<Point> {
 /// `st` split before each needle point in `at` (indices of `st`, none a run's first): the needle
 /// lifts there and comes down on it, a new run starting with it. With `ties` (the shortest stitch,
 /// millimetres), the run before is tied off and the new one tied in, as the planner ties a run
-/// around a cut. The thread is cut at the lift when `cut`, the machine stops there when `stop`.
-/// → the path rebuilt and each needle point's new index.
-fn split_before(st: &Stitches, at: &BTreeSet<usize>, ties: Option<f64>, cut: bool, stop: bool) -> Rebuilt {
+/// around a cut. With `then`, that function comes at the lift (the thread cut, or the machine
+/// stopped). → the path rebuilt and each needle point's new index.
+fn split_before(st: &Stitches, at: &BTreeSet<usize>, ties: Option<f64>, then: Option<Function>) -> Rebuilt {
+    let (cut, stop) = (then == Some(Function::Trim), then == Some(Function::Stop));
     let mut out = Rebuilt::new(st.len());
     let mut k = 0usize;
     for run in &st.runs {
@@ -782,7 +823,7 @@ pub(super) fn split_run(s: &mut Session, p: &Value) -> Result<Value> {
         }
         split += at.len();
         let selected = e.selected(id, &was);
-        let (out, moved_to) = split_before(&st, &at, ties, false, false).done(st);
+        let (out, moved_to) = split_before(&st, &at, ties, None).done(st);
         let ix = out.index();
         let landings: Vec<usize> = at.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
         for &landing in &landings {
@@ -895,9 +936,9 @@ pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
         for &id in &ids {
             let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
             if !editable(id) {
-                return Err(bad(JOIN, format!("object {}: {}", id.0, needles::said(needles::reason::LOCKED))));
+                return Err(bad(JOIN, format!("object {}: {}", id.0, needles::Unfit::Locked.words())));
             }
-            let st = needles::read(n).map_err(|why| bad(JOIN, format!("object {}: {}", id.0, needles::said(why))))?;
+            let st = needles::read(n).map_err(|why| bad(JOIN, format!("object {}: {}", id.0, why.words())))?;
             paths.push((id, stroke_colour(n), st));
         }
         // Next to one another in one parent, in the order given, in one colour, of one kind.
@@ -941,8 +982,8 @@ pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
                 continue;
             }
             joined += gaps;
-            dropped.extend(std::iter::repeat_n(json!({"function": "trim", "id": id.0}), cuts));
-            dropped.extend(std::iter::repeat_n(json!({"function": "stop", "id": id.0}), stops));
+            dropped.extend(std::iter::repeat_n(function_json(Function::Trim, id, Went::Path), cuts));
+            dropped.extend(std::iter::repeat_n(function_json(Function::Stop, id, Went::Path), stops));
             let (out, moved_to) = rebuilt.done(st);
             let ix = out.index();
             // The stitches joined: into each needle point that started a run.
@@ -1014,10 +1055,10 @@ fn join_into_first(e: &mut Edit, paths: Vec<ToJoin>, dropped: &mut Vec<Value>) -
     for ToJoin { id, st, .. } in paths {
         let after = whole.marks.after() | whole.object_after;
         if after.trim || st.marks.trim_before {
-            dropped.push(json!({"function": "trim", "id": id.0}));
+            dropped.push(function_json(Function::Trim, id, Went::Path));
         }
         if after.stop || whole.runs.last().and_then(|r| r.needles.last()).is_some_and(|n| n.stop) {
-            dropped.push(json!({"function": "stop", "id": id.0}));
+            dropped.push(function_json(Function::Stop, id, Went::Path));
         }
         if let Some(last) = whole.runs.last_mut().and_then(|r| r.needles.last_mut()) {
             last.stop = false;
@@ -1077,7 +1118,7 @@ fn join_into_first(e: &mut Edit, paths: Vec<ToJoin>, dropped: &mut Vec<Value>) -
 /// sewn right before it in its parent (the child just before it, a path of stitches that can be
 /// edited, in its colour and of its kind), as chains of paths sewn one right after another, in
 /// order; one with none such is passed over (`notJoinable`, into `passed`).
-fn chains(doc: &Document, firsts: &[NodeId], passed: &mut Vec<(NodeId, &'static str)>) -> Vec<Vec<NodeId>> {
+fn chains(doc: &Document, firsts: &[NodeId], passed: &mut Vec<(NodeId, needles::Unfit)>) -> Vec<Vec<NodeId>> {
     let editable = doc.editable();
     // Each path's place among its parent's children, each parent's read once.
     let mut place: std::collections::HashMap<NodeId, (NodeId, usize)> = Default::default();
@@ -1102,7 +1143,7 @@ fn chains(doc: &Document, firsts: &[NodeId], passed: &mut Vec<(NodeId, &'static 
             alike.then_some(b.id)
         });
         let Some(before) = before else {
-            passed.push((id, needles::reason::NOT_JOINABLE));
+            passed.push((id, needles::Unfit::NotJoinable));
             continue;
         };
         match out.last_mut() {
@@ -1116,15 +1157,6 @@ fn chains(doc: &Document, firsts: &[NodeId], passed: &mut Vec<(NodeId, &'static 
 pub(super) const FUNCTION: &str = "embroidery.setMachineFunction";
 /// The undo step's name, the command's label.
 pub(super) const FUNCTION_LABEL: &str = "Machine Function";
-
-/// A machine function the stitch commands set after a needle point.
-#[derive(Clone, Copy, PartialEq)]
-enum Function {
-    /// The thread is cut.
-    Trim,
-    /// The machine stops.
-    Stop,
-}
 
 /// The needle point a function after needle point `k` of `st` (`ix` its index) comes after: `k`
 /// itself when it ends its run; else, when all its run has after it is a tie-off back to its spot
@@ -1178,11 +1210,11 @@ fn next_cut(doc: &Document, id: NodeId) -> Option<NodeId> {
 /// runs stay split.
 pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, FUNCTION, &["function", "on", "ties"])?;
-    let f = match o.get("function").and_then(Value::as_str) {
-        Some("trim") => Function::Trim,
-        Some("stop") => Function::Stop,
-        _ => return Err(bad(FUNCTION, format!("`function` {}: \"trim\" or \"stop\"", o.get("function").unwrap_or(&Value::Null)))),
-    };
+    let f = o
+        .get("function")
+        .and_then(Value::as_str)
+        .and_then(Function::parse)
+        .ok_or_else(|| bad(FUNCTION, format!("`function` {}: \"trim\" or \"stop\"", o.get("function").unwrap_or(&Value::Null))))?;
     let on = match o.get("on") {
         None | Some(Value::Null) => None,
         Some(v) => Some(v.as_bool().ok_or_else(|| bad(FUNCTION, format!("`on` {v}: true or false")))?),
@@ -1268,7 +1300,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
             continue;
         }
         splits += inside.len();
-        let (out, moved_to) = split_before(&out, &inside, ties, f == Function::Trim, f == Function::Stop).done(out);
+        let (out, moved_to) = split_before(&out, &inside, ties, Some(f)).done(out);
         let ix = out.index();
         let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
         addressed.extend(touched.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
@@ -1287,7 +1319,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
         }
     }
     let own = json!({
-        "function": if f == Function::Trim { "trim" } else { "stop" },
+        "function": f.name(),
         "on": on,
         "changedCount": changed,
         "unchangedCount": unchanged,

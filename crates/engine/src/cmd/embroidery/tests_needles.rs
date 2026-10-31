@@ -7,7 +7,7 @@ use vectorcraft_doc::embroidery::{Mark, StitchRun};
 use vectorcraft_doc::{Node, NodeId};
 use vectorcraft_testkit::embroidery as fx;
 
-use super::needles::{self, reason};
+use super::needles::{self, Unfit};
 use super::test_support::{PT_PER_MM, blank, run};
 use crate::Session;
 
@@ -121,7 +121,7 @@ fn hostile_anchors_are_refused_before_any_arithmetic() {
             Ok(())
         })
         .unwrap();
-        assert_eq!(needles::read(&node(&s, id)).err(), Some(reason::OUT_OF_RANGE), "{bad}");
+        assert_eq!(needles::read(&node(&s, id)).err(), Some(Unfit::OutOfRange), "{bad}");
         let r = s.execute("embroidery.moveNeedlePoints", &json!({"needlePoints": [{"id": id, "index": 0}], "dx": 1}));
         assert!(matches!(r, Err(crate::EngineError::BadParams { .. })), "{bad}: {r:?}");
         run(&mut s, "select.set", json!({"ids": [id]}));

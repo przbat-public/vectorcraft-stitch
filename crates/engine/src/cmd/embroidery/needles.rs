@@ -42,19 +42,45 @@ pub(crate) const MAX_PATHS: usize = crate::cmd::layer::MAX_ROWS;
 /// The most entries a reply lists (its counts are never cut): enough to show what an edit did.
 pub(crate) const MAX_LISTED: usize = 1000;
 
-/// Why a path's stitches can't be edited needle point by needle point.
-pub(crate) mod reason {
+/// Why a path's stitches can't be edited needle point by needle point, or a path joined: each
+/// with the name a reply gives it ([`Unfit::code`]) and the words a refusal says ([`Unfit::words`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Unfit {
     /// Not a path holding a run of literal stitches.
-    pub(crate) const NOT_STITCHES: &str = "notStitches";
+    NotStitches,
     /// Locked or hidden, or in a locked layer or group, or on a locked artboard.
-    pub(crate) const LOCKED: &str = "locked";
+    Locked,
     /// Anchors that aren't numbers, or lie outside the document's coordinates.
-    pub(crate) const OUT_OF_RANGE: &str = "outOfRange";
+    OutOfRange,
     /// More needle points than a design may have.
-    pub(crate) const TOO_MANY: &str = "tooManyNeedlePoints";
-    /// A path whose first needle point Join Runs was given has no path of stitches sewn right before
-    /// it in its parent, in its colour and of its kind, to join it to.
-    pub(crate) const NOT_JOINABLE: &str = "notJoinable";
+    TooMany,
+    /// A path whose first needle point Join Runs was given has no path of stitches sewn right
+    /// before it in its parent, in its colour and of its kind, to join it to.
+    NotJoinable,
+}
+
+impl Unfit {
+    /// As a reply names it (`passedOver`).
+    pub(crate) fn code(self) -> &'static str {
+        match self {
+            Self::NotStitches => "notStitches",
+            Self::Locked => "locked",
+            Self::OutOfRange => "outOfRange",
+            Self::TooMany => "tooManyNeedlePoints",
+            Self::NotJoinable => "notJoinable",
+        }
+    }
+
+    /// In words, for a refusal.
+    pub(crate) fn words(self) -> &'static str {
+        match self {
+            Self::NotStitches => "it isn't a run of stitches",
+            Self::Locked => "it is locked or hidden, or in a locked layer, group or artboard",
+            Self::OutOfRange => "its anchors aren't numbers, or lie outside the document's coordinates",
+            Self::TooMany => "it holds more needle points than a design may have",
+            Self::NotJoinable => "no path of stitches in its colour and of its kind is sewn right before it",
+        }
+    }
 }
 
 /// One needle point: where it is (document points), whether the machine stops after it, and the
@@ -113,17 +139,17 @@ fn in_range(p: Point) -> bool {
 /// The path holding stitches `n` is, as the walk sews it; `Err` with the reason when `n` isn't
 /// one, or holds what can't be edited (anchors that aren't numbers or lie outside the document's
 /// coordinates, or more needle points than a design may have), checked before any arithmetic.
-pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
-    let NodeKind::Path { path, .. } = &n.kind else { return Err(reason::NOT_STITCHES) };
-    let Some(e) = n.extras().embroidery.as_deref() else { return Err(reason::NOT_STITCHES) };
-    let Some(marks) = e.stitches.clone() else { return Err(reason::NOT_STITCHES) };
+pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, Unfit> {
+    let NodeKind::Path { path, .. } = &n.kind else { return Err(Unfit::NotStitches) };
+    let Some(e) = n.extras().embroidery.as_deref() else { return Err(Unfit::NotStitches) };
+    let Some(marks) = e.stitches.clone() else { return Err(Unfit::NotStitches) };
     let object_after = e.own_after();
     let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
     if anchors > 2 * MAX_NEEDLE_POINTS {
-        return Err(reason::TOO_MANY);
+        return Err(Unfit::TooMany);
     }
     if !path.subpaths.iter().flat_map(|sp| &sp.anchors).all(|a| in_range(a.p)) {
-        return Err(reason::OUT_OF_RANGE);
+        return Err(Unfit::OutOfRange);
     }
     // The cuts and stops where their needle points are now (one whose needle point is gone left
     // out: the plan says so until an edit writes the path back without it).
@@ -154,7 +180,7 @@ pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
     }
     let st = Stitches { runs, marks, object_after };
     if st.len() > MAX_NEEDLE_POINTS {
-        return Err(reason::TOO_MANY);
+        return Err(Unfit::TooMany);
     }
     Ok(st)
 }
@@ -410,7 +436,7 @@ pub(crate) fn select_in(sel: &mut Selection, id: NodeId, ix: &Index, indices: &B
 #[derive(Debug, Default)]
 pub(crate) struct Targets {
     pub(crate) paths: Vec<(NodeId, Stitches, BTreeSet<usize>)>,
-    pub(crate) passed_over: Vec<(NodeId, &'static str)>,
+    pub(crate) passed_over: Vec<(NodeId, Unfit)>,
 }
 
 impl Targets {
@@ -507,9 +533,9 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
         for id in order {
             let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
             if !editable(id) {
-                return Err(bad(cmd, format!("object {}: {}", id.0, said(reason::LOCKED))));
+                return Err(bad(cmd, format!("object {}: {}", id.0, Unfit::Locked.words())));
             }
-            let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, said(why))))?;
+            let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, why.words())))?;
             let ranges = named.remove(&id).unwrap_or_default();
             let len = st.len();
             if let Some(of) = counted.get(&id).filter(|&&of| of != len as u64) {
@@ -537,7 +563,7 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             }
         });
         if found.is_empty() {
-            out.passed_over.push((id, reason::NOT_STITCHES));
+            out.passed_over.push((id, Unfit::NotStitches));
             continue;
         }
         for c in found {
@@ -545,7 +571,7 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
                 continue;
             }
             if !editable(c.id) {
-                out.passed_over.push((c.id, reason::LOCKED));
+                out.passed_over.push((c.id, Unfit::Locked));
                 continue;
             }
             match read(c) {
@@ -570,16 +596,6 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
 /// aside: [`read`] says).
 pub(crate) fn is_stitches(n: &Node) -> bool {
     matches!(n.kind, NodeKind::Path { .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some())
-}
-
-/// Reason `why` in words, for a refusal.
-pub(crate) fn said(why: &str) -> &'static str {
-    match why {
-        reason::LOCKED => "it is locked or hidden, or in a locked layer, group or artboard",
-        reason::OUT_OF_RANGE => "its anchors aren't numbers, or lie outside the document's coordinates",
-        reason::TOO_MANY => "it holds more needle points than a design may have",
-        _ => "it isn't a run of stitches",
-    }
 }
 
 /// The lengths of the needle-down stitches an edit made or changed, millimetres, against the

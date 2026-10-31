@@ -214,6 +214,9 @@ pub struct DocList {
     said: Option<String>,
     /// Scroll to the focus in the next frame, and give the list the keyboard (Go to's Enter).
     reveal: bool,
+    /// The generation of the plan the record numbers above (focus, anchor, shown) are of: a newer
+    /// plan finds them again ([`refind`]). `None` until the list is first drawn: of the plan drawn.
+    of: Option<u64>,
 }
 
 /// The tab's state: each document's place, the rows listed (built once a key, [`ListKey`]), and
@@ -340,6 +343,76 @@ fn edited_by(app: &mut VectorcraftApp, shown: &Shown, unit: usize, number: usize
     Some(Address { node, index, of })
 }
 
+/// The record numbers document `uid`'s list keeps (the focus, the Shift anchor, the stitch shown),
+/// of the plan `before`, for the plan `now`: while stitches are edited each found again by the needle
+/// point it is edited by, when that is still there; else, or without `before`, dropped. A plan's
+/// numbers are its own: after an edit, the same number is another stitch.
+fn refind(app: &mut VectorcraftApp, uid: u64, before: Option<&Shown>, now: &Shown) {
+    let editing = crate::embroidery::editing::editing(app).is_some();
+    let Some(d) = app.embroidery.stitches.docs.get_mut(&uid) else { return };
+    let Some(of) = d.of.filter(|g| *g != now.generation) else {
+        d.of = Some(now.generation);
+        return;
+    };
+    d.of = Some(now.generation);
+    let again = |n: Option<usize>| -> Option<usize> {
+        let before = before.filter(|b| b.generation == of && editing)?;
+        let (node, index) = address_in(&before.plan, &before.document, n?)?;
+        let (was, is) = (before.document.node(node)?, now.document.node(node)?);
+        let count = vectorcraft_engine::cmd::embroidery::needle_points_in;
+        // The same place while the path has as many needle points (a move keeps them in order);
+        // after an insert or a delete, the needle point where it lay.
+        let index = if count(was) == count(is) {
+            index
+        } else {
+            let at = needle_point(was, index)?;
+            (0..count(is)?).find(|k| needle_point(is, *k) == Some(at))?
+        };
+        record_in(&now.plan, &now.document, node, index)
+    };
+    (d.focus, d.anchor, d.shown) = (again(d.focus), again(d.anchor), again(d.shown));
+}
+
+/// Where needle point `index` of path `n` lies (document points).
+fn needle_point(n: &vectorcraft_doc::Node, index: usize) -> Option<Point> {
+    let path = n.path_data()?;
+    let alone = path.subpaths.len() == 1;
+    let double_point = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
+    let mut first = 0usize;
+    for sp in &path.subpaths {
+        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
+        if index < first + len {
+            return sp.anchors.get(index - first).map(|a| a.p);
+        }
+        first += len;
+    }
+    None
+}
+
+/// The needle point record `number` of `plan` (made from `doc`) is edited by, as a click names it.
+fn address_in(plan: &DesignPlan, doc: &Document, number: usize) -> Option<(NodeId, usize)> {
+    let row = stitch_list::row(plan, number)?;
+    let (node, first) = stitch_list::numbering(plan, doc, row.unit)?;
+    if let Some((_, at)) = stitch_list::leading(plan, doc, row.unit, first).into_iter().find(|(r, _)| *r == number) {
+        return Some(at);
+    }
+    let k = stitch_list::edited_by(plan, row.unit, first, &stitch_list::ordinals(plan, row.unit), number, row.kind)?;
+    Some((node, k))
+}
+
+/// The needle-down record of `plan` (made from `doc`) that needle point `index` of path `node` is.
+fn record_in(plan: &DesignPlan, doc: &Document, node: NodeId, index: usize) -> Option<usize> {
+    plan.units.iter().enumerate().filter(|(_, u)| u.origin.node == node).find_map(|(unit, u)| {
+        let (_, first) = stitch_list::numbering(plan, doc, unit)?;
+        let ordinals = stitch_list::ordinals(plan, unit);
+        let start = plan.blocks.get(u.block)?.first_number;
+        u.own.clone().map(|at| start + at).find(|&n| {
+            stitch_list::row(plan, n).is_some_and(|r| r.kind == RecordKind::Stitch)
+                && stitch_list::edited_by(plan, unit, first, &ordinals, n, RecordKind::Stitch) == Some(index)
+        })
+    })
+}
+
 /// Whether needle point `index` of path `node` is selected in the active document.
 fn is_selected(app: &VectorcraftApp, node: NodeId, index: usize) -> bool {
     let Some(st) = app.session.active() else { return false };
@@ -458,7 +531,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     }
     let shown = match (&shown.flags, kept.as_ref()) {
         (Some(_), _) => {
-            *kept = Some((uid, shown.clone()));
+            let before = kept.replace((uid, shown.clone())).map(|(_, s)| s);
+            refind(app, uid, before.as_ref(), &shown);
             shown
         }
         (None, Some((_, last))) => Shown { stale: true, ..last.clone() },

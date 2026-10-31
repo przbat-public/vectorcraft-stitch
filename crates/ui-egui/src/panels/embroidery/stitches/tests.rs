@@ -1016,3 +1016,40 @@ fn shift_and_cmd_keys_extend_and_toggle_from_the_keyboard() {
     frame(&mut app, &ctx, time, held(Modifiers::CTRL, Key::End));
     assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), list.record(list.len() - 1), "Ctrl+End: the last row");
 }
+
+/// A plan's record numbers are its own: after an edit, the row in focus (and the stitch shown) is
+/// the same stitch while stitches are edited, found again by its needle point (an insert before
+/// it moves its record on), and let go outside editing.
+#[test]
+fn the_focus_follows_its_needle_point_into_a_new_plan() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let plan = |app: &VectorcraftApp| app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let before = plan(&app);
+    let stitch = |n: &usize| stitch_list::row(&before, *n).is_some_and(|r| r.kind == stitch_list::RecordKind::Stitch);
+    let number = (0..list.len()).filter_map(|i| list.record(i)).filter(stitch).nth(8).unwrap();
+    let at = stitch_list::row(&before, number).unwrap().at;
+    super::reveal(&mut app, number);
+    settle(&mut app, &ctx, &mut time);
+    app.run("embroidery.insertNeedlePoints", json!({"id": run.0, "index": 1})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let d = app.embroidery.stitches.docs.get(&uid).unwrap();
+    let (focus, shown) = (d.focus.expect("found again"), d.shown.expect("found again"));
+    assert_eq!((focus, shown), (number + 1, number + 1), "its record moved on by the needle point inserted before it");
+    assert_eq!(stitch_list::row(&plan(&app), focus).unwrap().at, at, "the same stitch");
+    // Outside editing, an edit lets them go.
+    app.run("object.exitIsolation", json!({})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    app.run("object.move", json!({"ids": [id], "dx": 5, "dy": 0})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let d = app.embroidery.stitches.docs.get(&uid).unwrap();
+    assert_eq!((d.focus, d.shown), (None, None));
+}

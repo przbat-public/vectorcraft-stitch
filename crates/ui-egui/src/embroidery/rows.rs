@@ -644,7 +644,13 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32
 pub(crate) fn check_with_tip(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32, tip: &str) -> bool {
     let resp = check_response(ui, words, value, back);
     keyboard_tip(ui, resp.id, tip);
+    described(ui, resp.id, tip);
     resp.on_hover_text(tip).clicked()
+}
+
+/// Control `id`'s help `tip` given to screen readers too, which hear no tooltip.
+pub(crate) fn described(ui: &Ui, id: egui::Id, tip: &str) {
+    ui.ctx().accesskit_node_builder(id, |node| node.set_description(tip));
 }
 
 /// [`check`]'s box drawn, and its response.

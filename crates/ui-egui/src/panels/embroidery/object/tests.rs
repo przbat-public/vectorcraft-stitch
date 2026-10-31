@@ -1214,6 +1214,25 @@ fn the_enter_that_opens_the_restore_question_is_not_its_answer() {
     assert_eq!(info(&mut app, &[a])["manual"], json!(null), "put back");
 }
 
+/// Convert to Manual Stitches, Restore Object… and Stop After tell screen readers their help, which
+/// they don't hear as a tooltip.
+#[test]
+fn convert_restore_and_stop_after_describe_their_help() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let convert = super::super::command_label(&app, CONVERT);
+    let described = |drawn: &Drawn, name: &str, start: &str| drawn.node(name).description().is_some_and(|d| d.starts_with(start));
+    assert!(described(&drawn, &convert, "Freezes the stitches"));
+    assert!(described(&drawn, "Stop the machine after the object", "The machine stops"));
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(described(&drawn, crate::et!("Restore Object…"), "Puts the object back"));
+}
+
 /// A pointer click in the middle of the node screen readers call `name`.
 fn click_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str) {
     let drawn = ready(app, ctx, time);

@@ -857,6 +857,7 @@ fn convert(ui: &mut Ui, label: String, busy: bool, ids: &[NodeId], commands: &mu
     let tip = crate::et!("Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.");
     let resp = ui.add_enabled(!busy, egui::Button::new(label));
     rows::keyboard_tip(ui, resp.id, tip);
+    rows::described(ui, resp.id, tip);
     if resp.on_hover_text(tip).clicked() {
         commands.push((CONVERT, json!({"ids": ids_json(ids)})));
     }
@@ -901,6 +902,7 @@ fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, comman
     let tip = crate::et!("Puts the object back in place of its manual stitches, planned again at its size now.");
     let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(crate::et!("Restore Object…")));
     rows::keyboard_tip(ui, resp.id, tip);
+    rows::described(ui, resp.id, tip);
     let resp = resp.on_hover_text(tip);
     if resp.clicked() {
         // Restored at once, or asked first when their stitches were edited since converting: the

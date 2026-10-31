@@ -290,21 +290,29 @@ impl Runs {
                 return Travel::Sew;
             }
         }
-        self.cost += COST_LIFT + inside + if d > p.trim { COST_TRIM } else { 0.0 };
-        // Counted as [`Runs::join`] sews it: a lift shorter than the shortest stitch is none there.
-        self.moves.lifts += usize::from(d >= p.min_stitch);
-        self.moves.trims += usize::from(d > p.trim);
-        if lead {
-            // No way inside from where the needle goes in: it goes in there all the same, with a
-            // stitch to tie on to before the jump (a needle point alone can't be tied off): toward
-            // where it goes next, else the first of the eighths of a turn from there that stays
-            // inside.
+        // A lead with no way inside from where the needle goes in: it goes in there all the same,
+        // with a stitch to tie on to before the jump (a needle point alone can't be tied off): toward
+        // where it goes next, else the first of the eighths of a turn from there that stays inside.
+        let tie = if lead {
             let toward = to_inside - from;
-            let step = (0..TIE_TRIES)
+            (0..TIE_TRIES)
                 .map(|k| vectorcraft_geom::Affine::rotate(std::f64::consts::TAU * k as f64 / TIE_TRIES as f64) * toward.to_point())
                 .map(|v| v.to_vec2().normalize() * LEAD_TIE)
-                .find(|v| v.x.is_finite() && v.y.is_finite() && travels.area.contains_segment(from, from + *v));
-            self.push(step.map_or_else(|| vec![here], |v| vec![here, here + v]), Travel::Auto);
+                .find(|v| v.x.is_finite() && v.y.is_finite() && travels.area.contains_segment(from, from + *v))
+        } else {
+            None
+        };
+        // The jump starts where [`Runs::join`] leaves the needle: at the end of that stitch when it
+        // sews it (it leaves out one shorter than the shortest stitch), else where it went in. Turned
+        // away from `to`, the stitch can make a lift (or a cut) of a move from where the needle went
+        // in too short to be one.
+        let jump = tie.filter(|v| v.hypot() + SAME_POINT >= p.min_stitch).map_or(here, |v| here + v).distance(to);
+        self.cost += COST_LIFT + inside + if jump > p.trim { COST_TRIM } else { 0.0 };
+        // Counted as [`Runs::join`] sews it: a lift shorter than the shortest stitch is none there.
+        self.moves.lifts += usize::from(jump >= p.min_stitch);
+        self.moves.trims += usize::from(jump > p.trim);
+        if lead {
+            self.push(tie.map_or_else(|| vec![here], |v| vec![here, here + v]), Travel::Auto);
         }
         Travel::Lift
     }

@@ -469,6 +469,37 @@ proptest! {
     }
 }
 
+/// Two cases [`an_exit_never_makes_a_plan_worse`] found: fills without underlay whose outline
+/// crosses itself (the second in a small loop by its first corner), toward an exit, from nowhere.
+/// The aimed rows start where the plain ones do, and their first region starts 0.38 mm from there
+/// across a crossing of the outline (travels don't cross one), so the needle lifts. The stitch it
+/// ties on with first had to turn away from that region, and the needle jumped 1.31 mm from its
+/// end; the lift was counted from where it went in, shorter than the shortest stitch (0.4 mm) and
+/// so none, and the aimed rows passed the guard lifting the needle once more than the plain ones.
+#[test]
+fn a_lead_whose_tie_stitch_turns_away_lifts_no_more_toward_an_exit() {
+    let mut crossed = BezPath::new();
+    crossed.move_to((63.36266559615397, 185.33820763106368));
+    crossed.line_to((118.04835245024549, 47.30949329697991));
+    crossed.curve_to((118.04835245024549, 47.30949329697991), (148.5465550693259, 56.134504663611125), (125.18563732144057, 56.134504663611125));
+    crossed.line_to((159.63820341722754, 129.12404958621005));
+    crossed.curve_to((159.63820341722754, 129.12404958621005), (39.75410442147457, 4.8641282708484805), (68.0219208638132, 13.301219126152619));
+    crossed.curve_to((82.52915567621409, 31.67083694357511), (63.36266559615397, 185.33820763106368), (63.36266559615397, 185.33820763106368));
+    crossed.close_path();
+    let mut looped = BezPath::new();
+    looped.move_to((16.460968339368534, 76.52400440854944));
+    looped.curve_to((16.460968339368534, 83.31999079496487), (128.75683586839207, 72.38719493829879), (128.75683586839207, 72.38719493829879));
+    looped.line_to((96.01805626449706, 167.60918571206832));
+    looped.curve_to((92.15850251002615, 167.60918571206832), (25.565015044542825, 63.408316908392464), (16.460968339368534, 76.52400440854944));
+    looped.close_path();
+    let p = Params { width: 1.0, underlay: Underlay::None, ..Params::for_style(Style::Fill) };
+    let cases = [("crossed", &crossed, Point::new(131.35862004104277, 205.75044115805744)), ("looped", &looped, Point::new(139.04949637395313, 0.0))];
+    for (name, bp, exit) in cases {
+        let sew = |exit| try_stitches_aimed(bp, FillRule::NonZero, &p, Aim { start: Start::Nowhere, exit }).unwrap();
+        assert_eq!(no_worse(&sew(None), &sew(Some(exit)), exit), Ok(()), "{name}");
+    }
+}
+
 /// A case the property above found: the last row of a region keeps its last stitch, and the way
 /// on to the next region was judged from the stitch before it (2 mm back along the row) but sewn
 /// from the row's end, so it ran up to a millimetre outside the copy's edge.

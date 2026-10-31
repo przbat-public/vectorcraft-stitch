@@ -850,7 +850,9 @@ fn stop_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
     }
     let value = if info.stop_after.mixed { None } else { info.stop_after.value };
     let words = crate::etn!(ids.len() as u64, "Stop the machine after the object", "Stop the machine after the objects");
-    let tip = crate::et!("The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.");
+    let tip = crate::et!(
+        "The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written."
+    );
     if rows::check_with_tip(ui, &words, value, Tokens::get(ui.ctx()).panel, tip) {
         commands.push(("embroidery.setStopAfter", json!({"ids": ids_json(ids), "on": value != Some(true)})));
     }

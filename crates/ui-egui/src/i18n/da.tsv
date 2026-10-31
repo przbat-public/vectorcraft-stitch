@@ -6042,7 +6042,7 @@ embroidery	Scaled to {value}% since converting	Skaleret til {value} % siden konv
 embroidery	Restore Object…	Gendan objekt…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Sætter objektet tilbage i stedet for dets manuelle sting, planlagt igen i sin nuværende størrelse.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Fastfryser de sting, der er planlagt nu, så hvert nålestik kan flyttes; Gendan objekt bringer objektet tilbage.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Maskinen stopper efter objektets sting, som til applikation; et stop ved et trådskift eller til sidst er det samme.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Maskinen stopper efter objektets sting, som ved applikation. Hvor et trådskift eller designets slutning følger, stopper maskinen alligevel der, så der skrives ikke et ekstra stop.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Ændringer af stingene siden konverteringen går tabt; Fortryd bringer dem tilbage.
 @plural	Stop the machine after the object|Stop the machine after the objects	Stop maskinen efter objektet|Stop maskinen efter objekterne
 @plural	Restore {count} object?|Restore {count} objects?	Gendan {count} objekt?|Gendan {count} objekter?

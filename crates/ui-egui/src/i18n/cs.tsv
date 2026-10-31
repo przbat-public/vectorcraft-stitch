@@ -6087,7 +6087,7 @@ embroidery	Scaled to {value}% since converting	Od převodu změněno na {value} 
 embroidery	Restore Object…	Obnovit objekt…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Vrátí objekt místo jeho ručních stehů, naplánovaný znovu v nynější velikosti.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Zmrazí teď naplánované stehy, aby šel každý vpich přesunout; objekt vrátíte příkazem Obnovit objekt.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Stroj se zastaví po stezích objektu, třeba kvůli aplikaci; zastavení při výměně nitě nebo na konci je právě ono.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Stroj se zastaví po stezích objektu, jako u aplikace. Kde následuje výměna nitě nebo konec vzoru, stroj se tam zastaví tak jako tak, proto se žádné další zastavení nezapisuje.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Změny stehů od převodu se ztratí; vrátíte je příkazem Zpět.
 @plural	Stop the machine after the object|Stop the machine after the objects	Zastavit stroj po objektu|Zastavit stroj po objektech|Zastavit stroj po objektech
 @plural	Restore {count} object?|Restore {count} objects?	Obnovit {count} objekt?|Obnovit {count} objekty?|Obnovit {count} objektů?

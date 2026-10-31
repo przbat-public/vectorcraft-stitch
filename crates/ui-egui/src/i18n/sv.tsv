@@ -6043,7 +6043,7 @@ embroidery	Scaled to {value}% since converting	Skalat till {value} % sedan konve
 embroidery	Restore Object…	Återställ objekt…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Sätter tillbaka objektet i stället för dess manuella stygn, planerat om i sin nuvarande storlek.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Fryser de stygn som planerats nu, så att varje nålstick kan flyttas; Återställ objekt tar tillbaka objektet.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Maskinen stannar efter objektets stygn, som för applikation; ett stopp vid ett trådbyte eller i slutet är just det.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Maskinen stannar efter objektets stygn, som vid applikation. Där ett trådbyte eller mönstrets slut följer stannar maskinen där ändå, så inget extra stopp skrivs.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Ändringar i stygnen sedan konverteringen går förlorade; Ångra tar tillbaka dem.
 @plural	Stop the machine after the object|Stop the machine after the objects	Stoppa maskinen efter objektet|Stoppa maskinen efter objekten
 @plural	Restore {count} object?|Restore {count} objects?	Återställa {count} objekt?|Återställa {count} objekt?

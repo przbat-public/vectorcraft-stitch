@@ -5682,7 +5682,7 @@ embroidery	Scaled to {value}% since converting	Від перетворення �
 embroidery	Restore Object…	Відновити об’єкт…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Повертає об’єкт на місце його ручних стібків, заново спланований у теперішньому розмірі.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Заморожує щойно сплановані стібки, щоб кожен прокол можна було пересунути; «Відновити об’єкт» повертає об’єкт.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Машина зупиняється після стібків об’єкта, наприклад для аплікації; зупинка під час зміни нитки чи наприкінці — це вона ж.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Машина зупиняється після стібків об’єкта, як для аплікації. Там, де далі йде зміна нитки або кінець дизайну, машина й так зупиняється, тому зайва зупинка не записується.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Зміни стібків від перетворення буде втрачено; «Скасувати» їх поверне.
 @plural	Stop the machine after the object|Stop the machine after the objects	Зупинити машину після об’єкта|Зупинити машину після об’єктів|Зупинити машину після об’єктів
 @plural	Restore {count} object?|Restore {count} objects?	Відновити {count} об’єкт?|Відновити {count} об’єкти?|Відновити {count} об’єктів?

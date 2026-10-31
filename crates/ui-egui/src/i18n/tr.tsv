@@ -6048,7 +6048,7 @@ embroidery	Scaled to {value}% since converting	Dönüştürmeden bu yana %{value
 embroidery	Restore Object…	Nesneyi Geri Yükle…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Nesneyi manuel dikişlerinin yerine geri koyar; şimdiki boyutunda yeniden planlanır.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Şimdi planlanan dikişleri dondurur, böylece her iğne noktası taşınabilir; Nesneyi Geri Yükle nesneyi geri getirir.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Makine nesnenin dikişlerinden sonra durur, örneğin aplike için; iplik değişiminde ya da sonda durmak bu duruştur.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Makine, aplikede olduğu gibi nesnenin dikişlerinden sonra durur. Ardından iplik değişimi ya da tasarımın sonu geliyorsa makine orada zaten durur, bu yüzden fazladan durma yazılmaz.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Dönüştürmeden bu yana dikişlerde yapılan değişiklikler kaybolacak; Geri Al onları geri getirir.
 @plural	Stop the machine after the object|Stop the machine after the objects	Nesneden sonra makineyi durdur
 @plural	Restore {count} object?|Restore {count} objects?	{count} nesne geri yüklensin mi?

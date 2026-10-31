@@ -6026,7 +6026,7 @@ embroidery	Scaled to {value}% since converting	Мащабирано до {value}
 embroidery	Restore Object…	Възстановяване на обекта…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Връща обекта на мястото на ръчните му бодове, планиран отново в сегашния си размер.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Замразява сега планираните бодове, за да може всяка точка на убождане да се мести; „Възстановяване на обекта“ връща обекта.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Машината спира след бодовете на обекта, например за апликация; спиране при смяна на конеца или в края е самото то.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Машината спира след бодовете на обекта, както при апликация. Където следва смяна на нишката или краят на дизайна, машината спира там така или иначе, затова не се записва допълнително спиране.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Промените в бодовете след преобразуването ще се загубят; „Отмени“ ги връща.
 @plural	Stop the machine after the object|Stop the machine after the objects	Спиране на машината след обекта|Спиране на машината след обектите
 @plural	Restore {count} object?|Restore {count} objects?	Възстановяване на {count} обект?|Възстановяване на {count} обекта?

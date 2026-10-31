@@ -6039,7 +6039,7 @@ embroidery	Scaled to {value}% since converting	Κλιμακώθηκε στο {va
 embroidery	Restore Object…	Επαναφορά αντικειμένου…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Επαναφέρει το αντικείμενο στη θέση των χειροκίνητων βελονιών του, σχεδιασμένο ξανά στο τωρινό του μέγεθος.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Παγώνει τις βελονιές που σχεδιάστηκαν τώρα, ώστε να μετακινείται κάθε σημείο βελόνας· η Επαναφορά αντικειμένου επαναφέρει το αντικείμενο.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Η μηχανή σταματά μετά τις βελονιές του αντικειμένου, π.χ. για απλικέ· μια στάση σε αλλαγή κλωστής ή στο τέλος είναι η ίδια.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Η μηχανή σταματά μετά τις βελονιές του αντικειμένου, όπως στην απλικέ. Όπου ακολουθεί αλλαγή κλωστής ή το τέλος του σχεδίου, η μηχανή σταματά εκεί ούτως ή άλλως, οπότε δεν γράφεται επιπλέον διακοπή.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Οι αλλαγές στις βελονιές από τη μετατροπή θα χαθούν· η Αναίρεση τις επαναφέρει.
 @plural	Stop the machine after the object|Stop the machine after the objects	Διακοπή μηχανής μετά το αντικείμενο|Διακοπή μηχανής μετά τα αντικείμενα
 @plural	Restore {count} object?|Restore {count} objects?	Επαναφορά {count} αντικειμένου;|Επαναφορά {count} αντικειμένων;

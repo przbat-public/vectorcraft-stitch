@@ -57,7 +57,7 @@ Function's, whose step is named by what it did.
 | The button on a manual object | Restore Object… | Przywróć obiekt… |
 | Its tip | Puts the object back in place of its manual stitches, planned again at its size now. | Przywraca obiekt w miejsce jego ściegów ręcznych, zaplanowany od nowa w obecnym rozmiarze. |
 | The Stop After row | Stop the machine after the object (plural) | Zatrzymaj maszynę po obiekcie / po obiektach |
-| Its tip | The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one. | Maszyna zatrzymuje się po ściegach obiektu, np. do aplikacji; stop przy zmianie nici lub na końcu jest tym samym zatrzymaniem. |
+| Its tip | The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written. | Maszyna zatrzymuje się po ściegach obiektu, jak przy aplikacji. Tam, gdzie dalej następuje zmiana nici albo koniec wzoru, maszyna i tak się zatrzymuje, więc dodatkowy stop nie jest zapisywany. |
 
 ## Asking before Restore, and the status bar
 

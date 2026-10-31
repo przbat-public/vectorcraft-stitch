@@ -5721,7 +5721,7 @@ embroidery	Scaled to {value}% since converting	轉換後已縮放到 {value}%
 embroidery	Restore Object…	還原物件…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	以物件取代其手動針跡，並依目前尺寸重新規劃。
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	凍結目前規劃的針跡，以便移動每個落針點；還原物件可找回物件。
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	機器在物件的針跡之後停止（例如貼布繡）；換線時或結尾處的停止即為此停止。
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	機器在物件的針跡之後停下，如同貼布繡。若接下來是換線或圖案結束，機器無論如何都會在那裡停下，因此不會另外寫入停機。
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	轉換後對針跡所做的變更將遺失；復原可將其找回。
 @plural	Stop the machine after the object|Stop the machine after the objects	物件後停機
 @plural	Restore {count} object?|Restore {count} objects?	還原 {count} 個物件？

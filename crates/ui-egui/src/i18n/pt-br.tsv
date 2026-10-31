@@ -6003,7 +6003,7 @@ embroidery	Scaled to {value}% since converting	Redimensionado para {value}% desd
 embroidery	Restore Object…	Restaurar objeto…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Devolve o objeto no lugar dos seus pontos manuais, planejado de novo no tamanho atual.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Congela os pontos planejados agora para que cada ponto de agulha possa ser movido; Restaurar objeto traz o objeto de volta.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	A máquina para depois dos pontos do objeto, como para um aplique; uma parada numa troca de linha ou no fim é essa mesma.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	A máquina para depois dos pontos do objeto, como num aplique. Onde vem em seguida uma troca de linha ou o fim do desenho, a máquina para ali de qualquer forma, então nenhuma parada extra é gravada.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	As alterações feitas nos pontos desde a conversão serão perdidas; Desfazer as traz de volta.
 @plural	Stop the machine after the object|Stop the machine after the objects	Parar a máquina após o objeto|Parar a máquina após os objetos
 @plural	Restore {count} object?|Restore {count} objects?	Restaurar {count} objeto?|Restaurar {count} objetos?

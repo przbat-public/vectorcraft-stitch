@@ -375,6 +375,28 @@ fn a_stop_or_cut_after_a_run_is_an_edit() {
     }
 }
 
+/// An id given many times, or inside another id given, is walked once: Convert, Restore's dry run
+/// and the Object tab's summary count each object once, and say each one passed over once.
+#[test]
+fn repeated_and_nested_ids_are_walked_once() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    let b = red_square(&mut s, 40.0, 5.0, 10.0);
+    let layer = s.doc().unwrap().doc.layers[0].id.0;
+    let mut ids = vec![layer; 1000];
+    ids.extend([a, b, a]);
+    let r = run(&mut s, "embroidery.convertToManual", json!({ "ids": ids }));
+    assert_eq!((r["convertedCount"].clone(), r["skippedCount"].clone()), (json!(2), json!(0)), "{r}");
+    let info = run(&mut s, "embroidery.info", json!({ "ids": ids }));
+    assert_eq!(info["manual"]["objects"], json!(2), "{info}");
+    let dry = run(&mut s, "embroidery.restoreObject", json!({ "ids": ids, "dryRun": true }));
+    assert_eq!(dry["restoredCount"], json!(2), "{dry}");
+    // Converted already: each passed over once.
+    let again = s.execute("embroidery.convertToManual", &json!({ "ids": [a, a, b, a] }));
+    let said = again.err().map(|e| e.to_string()).unwrap_or_default();
+    assert_eq!(said.matches(&format!("{a} (manual)")).count(), 1, "{said}");
+}
+
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,
 /// an original that doesn't read as an object, one placing a symbol the document no longer has.
 #[test]

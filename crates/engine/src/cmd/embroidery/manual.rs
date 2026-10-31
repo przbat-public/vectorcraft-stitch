@@ -297,6 +297,15 @@ fn collect(
     }
 }
 
+/// `ids` each once, those inside another of them left out (it stands for them): what convert,
+/// restore and the Object tab's summary walk, so that an id given many times, or inside a layer also
+/// given, is walked once.
+fn outermost_once(doc: &Document, ids: Vec<NodeId>) -> Vec<NodeId> {
+    let mut seen = HashSet::new();
+    let once: Vec<NodeId> = ids.into_iter().filter(|id| seen.insert(*id)).collect();
+    crate::cmd::edit::outermost(doc, once)
+}
+
 /// Whether `n` is a run of manual stitches.
 fn is_manual_run(n: &Node) -> bool {
     n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|r| r.manual)
@@ -406,6 +415,7 @@ fn prepare(s: &mut Session, p: &Value) -> Result<ConvertJob> {
     if let Some(missing) = ids.iter().find(|id| st.doc.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
     }
+    let ids = outermost_once(&st.doc, ids);
     Ok(ConvertJob { uid: st.uid, original: st.doc.clone(), planned: to_plan(st, false)?, opts, ids })
 }
 
@@ -456,7 +466,9 @@ fn apply(s: &mut Session, planned: ConvertPlanned) -> Result<Value> {
         collect(&doc, n, &by_object, &plan, &mut found, &mut skipped);
         targets_found.extend(found.into_iter().filter(|t| seen.insert(t.id)));
     }
-    skipped.dedup();
+    // Each object passed over said once.
+    let mut once = HashSet::new();
+    skipped.retain(|(id, _)| once.insert(*id));
     let mut converted_list: Vec<Value> = Vec::new();
     let mut total_points = 0usize;
     let made = s.edit(CONVERT_LABEL, |d, sel| {
@@ -563,7 +575,7 @@ fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec
 /// none.
 pub(crate) fn summary(doc: &Document, ids: &[NodeId]) -> Option<super::info::ManualInfo> {
     let mut groups = Vec::new();
-    for id in ids {
+    for id in &outermost_once(doc, ids.to_vec()) {
         if let Some(n) = doc.node(*id) {
             restorable(doc, n, &mut groups, &mut Vec::new());
         }
@@ -672,6 +684,7 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
     if let Some(missing) = ids.iter().find(|id| doc.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
     }
+    let ids = outermost_once(&doc, ids);
     let (mut groups, mut skipped) = (Vec::new(), Vec::new());
     for id in &ids {
         if let Some(n) = doc.node(*id) {

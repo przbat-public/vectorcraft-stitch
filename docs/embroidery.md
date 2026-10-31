@@ -184,7 +184,7 @@ the object itself. Nothing sewn changes: the export right after converting is th
 (checked over every pinned export, the 11 artworks and a seeded corpus of random documents), as a
 converted object is placed in the sewing order as art is and never cut again by a clip group. Its
 stitches no longer follow the fabric or its settings; each needle point is an anchor to move. In a
-group each object is converted on its own; a group the plan sews whole (an effect or an appearance
+group each object is converted on its own, and a compound path's member stands for its compound path; a group the plan sews whole (an effect or an appearance
 of its own) is converted whole, its members' Trim After and Stop After carried onto the runs their
 units became (the project owner's choice, 2026-10-30). What can't be frozen exactly (a symbol's
 instances, a clipping path, a locked object, stitches from a file, a group sewn whole holding type,

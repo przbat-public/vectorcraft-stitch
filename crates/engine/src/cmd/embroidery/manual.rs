@@ -370,6 +370,18 @@ fn outermost_once(doc: &Document, ids: Vec<NodeId>) -> Vec<NodeId> {
     crate::cmd::edit::outermost(doc, once)
 }
 
+/// `ids` (in `doc`) with each compound path's member standing for its compound path: the plan sews
+/// a compound path as one object, so a member alone (selected with Direct Selection, say) has no
+/// stitches of its own to freeze.
+fn members_as_compounds(doc: &Document, ids: Vec<NodeId>) -> Vec<NodeId> {
+    let paths = doc.index_paths(ids.iter().copied());
+    let compound = |id: &NodeId| {
+        let (_, up) = paths.get(id)?.split_last()?;
+        doc.node_at(up).filter(|c| matches!(c.kind, NodeKind::Compound { .. })).map(|c| c.id)
+    };
+    ids.into_iter().map(|id| compound(&id).unwrap_or(id)).collect()
+}
+
 /// Whether `n` is a run of manual stitches.
 fn is_manual_run(n: &Node) -> bool {
     n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|r| r.manual)
@@ -489,7 +501,7 @@ fn prepare(s: &mut Session, p: &Value) -> Result<ConvertJob> {
     if let Some(missing) = ids.iter().find(|id| st.doc.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
     }
-    let ids = outermost_once(&st.doc, ids);
+    let ids = outermost_once(&st.doc, members_as_compounds(&st.doc, ids));
     Ok(ConvertJob { uid: st.uid, original: st.doc.clone(), planned: to_plan(st, false)?, opts, ids })
 }
 

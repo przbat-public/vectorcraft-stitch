@@ -251,6 +251,21 @@ fn converting_passes_over_what_it_cant_freeze() {
     assert!(e.contains("(literal)"), "{e}");
 }
 
+/// A compound path's member given to Convert stands for its compound path, which the plan sews as
+/// one object: the compound is converted, once, however many of its members are given.
+#[test]
+fn a_compound_paths_member_stands_for_its_compound() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let [a, b] = [5.0, 30.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let compound = run(&mut s, "object.compoundPath.make", json!({}))["id"].as_u64().unwrap();
+    let members: Vec<u64> = s.doc().unwrap().doc.node(NodeId(compound)).unwrap().children().unwrap().iter().map(|c| c.id.0).collect();
+    let r = run(&mut s, "embroidery.convertToManual", json!({ "ids": members }));
+    let converted: Vec<u64> = r["converted"].as_array().unwrap().iter().map(|c| c["id"].as_u64().unwrap()).collect();
+    assert_eq!((converted, r["skippedCount"].clone()), (vec![compound], json!(0)), "{r}");
+}
+
 /// Converting is one undo step, Undo gives the document back exactly, and nothing converted takes
 /// none: the error names each object and why. An id naming no object is refused before anything
 /// changes, as are params of another shape.

@@ -5142,7 +5142,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   design's end is that change, and nothing more is written. Opening a PES, PEC, JEF or VP3 file, a change to the same
   thread reads back as a stop.
 - `embroidery.convertToManual {ids?, …embroidery options}` converts each object given (else selected; a group or a layer
-  stands for the objects in it, each converted on its own) to manual stitches: its stitches frozen as the plan sews them
+  stands for the objects in it, each converted on its own, and a compound path's member for its compound path, which
+  the plan sews as one object) to manual stitches: its stitches frozen as the plan sews them
   now with the options (as the read commands take them; none: as the stitch preview plans), the object becoming a group
   of the same id and name holding one run of literal stitches marked manual for each of its sewing units in walk order
   (one subpath a run, the needle jumping between them), each in its thread's art colour, and keeping the object as it

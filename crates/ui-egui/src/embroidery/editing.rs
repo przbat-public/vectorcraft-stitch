@@ -174,9 +174,12 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) {
     }
 }
 
-/// Edit Stitches: object `id` (holding stitches) isolated, the Embroidery Tool taken up and the
-/// stitches shown, as a double-click on it with the tool does (the Object tab's button).
+/// Edit Stitches: the object holding stitches that `id` is or lies in isolated (a converted object
+/// for one of its runs, as a double-click on it with the tool picks it), the Embroidery Tool taken
+/// up and the stitches shown (the Object tab's button).
 pub fn start(app: &mut VectorcraftApp, id: NodeId) {
+    let Some(st) = app.session.active() else { return };
+    let id = vectorcraft_tools::embroidery::stitch_object(&st.doc, st.isolation, id).unwrap_or(id);
     for (command, params) in [
         ("object.isolate", json!({"id": id.0})),
         ("tool.select", json!({"tool": vectorcraft_tools::embroidery::ID})),

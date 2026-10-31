@@ -447,30 +447,37 @@ fn textured_quad(p: &egui::Painter, tex: egui::TextureId, quad: &[Pos2], tint: C
     p.add(Shape::mesh(mesh));
 }
 
-/// The units of `scene` outside isolation mode's group or layer `isolated` in `doc`, faded.
-fn outside(scene: &StitchScene, doc: &Document, isolated: NodeId) -> TagSet {
+/// Whether unit `u` lies inside `inside` (the ids under what is isolated): by the object a person
+/// selects for it, or by the path it sews (a converted object's run, isolated on its own).
+fn unit_inside(u: &vectorcraft_engine::cmd::embroidery::scene::SceneUnit, inside: &std::collections::HashSet<NodeId>) -> bool {
+    inside.contains(&u.object) || inside.contains(&u.node)
+}
+
+/// The ids under `isolated` in `doc`, itself included.
+fn ids_under(doc: &Document, isolated: NodeId) -> std::collections::HashSet<NodeId> {
     let mut inside = std::collections::HashSet::new();
     if let Some(n) = doc.node(isolated) {
         n.walk(&mut |c| {
             inside.insert(c.id);
         });
     }
-    TagSet::of(scene.units().iter().enumerate().filter(|(_, u)| !inside.contains(&u.object)).filter_map(|(i, _)| u32::try_from(i).ok()))
+    inside
+}
+
+/// The units of `scene` outside isolation mode's group or layer `isolated` in `doc`, faded.
+fn outside(scene: &StitchScene, doc: &Document, isolated: NodeId) -> TagSet {
+    let inside = ids_under(doc, isolated);
+    TagSet::of(scene.units().iter().enumerate().filter(|(_, u)| !unit_inside(u, &inside)).filter_map(|(i, _)| u32::try_from(i).ok()))
 }
 
 /// The units of `scene` inside object `isolated` of `doc` sewn as their points are (manual
 /// stitches, a machine file's runs): those stitch editing edits.
 fn edited_units(scene: &StitchScene, doc: &Document, isolated: NodeId) -> TagSet {
-    let mut inside = std::collections::HashSet::new();
-    if let Some(n) = doc.node(isolated) {
-        n.walk(&mut |c| {
-            inside.insert(c.id);
-        });
-    }
+    let inside = ids_under(doc, isolated);
     let literal = |u: &vectorcraft_engine::cmd::embroidery::scene::SceneUnit| {
         matches!(u.key.part, vectorcraft_engine::cmd::embroidery::plan::Part::Manual | vectorcraft_engine::cmd::embroidery::plan::Part::Literal)
     };
-    TagSet::of(scene.units().iter().enumerate().filter(|(_, u)| inside.contains(&u.object) && literal(u)).filter_map(|(i, _)| u32::try_from(i).ok()))
+    TagSet::of(scene.units().iter().enumerate().filter(|(_, u)| unit_inside(u, &inside) && literal(u)).filter_map(|(i, _)| u32::try_from(i).ok()))
 }
 
 /// The most needle-point circles that sit side by side on a canvas `w` × `h` device pixels at `ppp`

@@ -326,6 +326,36 @@ fn isolation_fades_the_rest() {
     assert!(app.embroidery.layer.key.as_ref().is_some_and(|k| k.isolated == Some(objects[0].0)), "drawn for the isolation");
 }
 
+/// A converted object's run isolated on its own (an agent's `object.isolate`, or a double-click
+/// inside the object's isolation) is a unit stitch editing edits, with the edit look, not faded;
+/// Edit Stitches on a selected run isolates the object holding it, as a double-click picks it.
+#[test]
+fn a_run_isolated_alone_has_the_edit_look() {
+    let mut app = app();
+    let ctx = egui::Context::default();
+    let first = app.session.doc().unwrap().doc.layers[0].children().unwrap()[0].id;
+    app.run("select.set", json!({"ids": [first.0]})).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    app.run("select.none", json!({})).unwrap();
+    let run = app.session.doc().unwrap().doc.node(first).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": run.0})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let time = until_stitches(&mut app, &ctx, 0.0);
+    frame(&mut app, &ctx, time + 0.1);
+    let uid = app.session.active().unwrap().uid;
+    let scene = app.embroidery.preview.shown(uid).unwrap().planned.scene();
+    let tag = scene.units().iter().position(|u| u.node == run).and_then(|i| u32::try_from(i).ok()).expect("the run's unit");
+    let edited = app.embroidery.layer.edited.as_ref().expect("the edit look").1.clone();
+    let faded = app.embroidery.layer.faded.as_ref().expect("faded outside isolation").1.clone();
+    assert!(edited.contains(tag), "edited");
+    assert!(!faded.contains(tag), "not faded");
+    app.run("object.exitIsolation", json!({})).unwrap();
+    app.run("select.set", json!({"ids": [run.0]})).unwrap();
+    crate::embroidery::editing::start(&mut app, run);
+    assert_eq!(app.session.active().unwrap().isolation, Some(first), "the object holding the run");
+}
+
 /// A design that fails keeps its last good stitches, faded.
 #[test]
 fn a_design_that_fails_shows_its_last_stitches_faded() {

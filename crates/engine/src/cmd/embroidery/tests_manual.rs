@@ -578,7 +578,8 @@ fn restoring_passes_over_what_it_cant_restore() {
     let junk = red_square(&mut s, 30.0, 5.0, 10.0);
     let lost = red_square(&mut s, 60.0, 5.0, 10.0);
     run(&mut s, "embroidery.convertToManual", json!({"ids": [junk, lost]}));
-    let instance = json!({"id": 9999, "kind": {"type": "symbolInstance", "symbol": "Gone", "xf": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]}});
+    let gone = vectorcraft_doc::NodeKind::SymbolInstance { symbol: "Gone".into(), xf: vectorcraft_geom::Affine::IDENTITY };
+    let instance = serde_json::to_value(vectorcraft_doc::Node::new(vectorcraft_doc::NodeId(9999), gone)).unwrap();
     s.edit("Damage", |d, _| {
         for (id, node) in [(junk, json!({"kind": 5})), (lost, instance.clone())] {
             let n = d.node_mut(vectorcraft_doc::NodeId(id)).ok_or(crate::EngineError::NoNode(vectorcraft_doc::NodeId(id)))?;
@@ -590,11 +591,16 @@ fn restoring_passes_over_what_it_cant_restore() {
         Ok(())
     })
     .unwrap();
+    // A dry run passes over what Restore would.
+    let dry = run(&mut s, "embroidery.restoreObject", json!({"ids": [plain, junk, lost], "dryRun": true}));
+    assert_eq!((dry["restored"].clone(), dry["restoredCount"].clone()), (json!([]), json!(0)), "{dry}");
+    let reasons: Vec<(u64, &str)> =
+        dry["skipped"].as_array().unwrap().iter().map(|k| (k["id"].as_u64().unwrap(), k["reason"].as_str().unwrap())).collect();
+    assert_eq!(reasons, [(plain, "notConverted"), (junk, "unreadable"), (lost, "missingSymbol")]);
     let r = s.execute("embroidery.restoreObject", &json!({"ids": [plain, junk, lost]})).unwrap_err().to_string();
-    for want in [format!("{plain} (notConverted)"), format!("{junk} (unreadable)")] {
+    for want in [format!("{plain} (notConverted)"), format!("{junk} (unreadable)"), format!("{lost} (missingSymbol)")] {
         assert!(r.contains(&want), "{want}: {r}");
     }
-    assert!(r.contains(&format!("{lost} (missingSymbol)")) || r.contains(&format!("{lost} (unreadable)")), "{r}");
     let mut s = Session::new();
     let mut run_fx = |c: &str, p: serde_json::Value| run(&mut s, c, p);
     vectorcraft_testkit::embroidery::opened_design(&mut run_fx, "dst");
@@ -645,7 +651,9 @@ fn restore_holds_what_it_puts_back_to_what_opening_a_file_does() {
         Ok(())
     })
     .unwrap();
+    let dry = run(&mut s, "embroidery.restoreObject", json!({"ids": [past, endless, layer, typed], "dryRun": true}));
     let r = run(&mut s, "embroidery.restoreObject", json!({"ids": [past, endless, layer, typed]}));
+    assert_eq!((&dry["restored"], &dry["skipped"]), (&r["restored"], &r["skipped"]), "a dry run passes over the same");
     let skipped: Vec<(u64, &str)> =
         r["skipped"].as_array().unwrap().iter().map(|k| (k["id"].as_u64().unwrap(), k["reason"].as_str().unwrap())).collect();
     assert_eq!(skipped, [(past, "outOfRange"), (endless, "outOfRange"), (layer, "unreadable")]);

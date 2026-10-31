@@ -747,14 +747,11 @@ pub(crate) fn edited(group: &Node) -> bool {
     o.fingerprint.is_none() || fingerprint(group, o.frame) != o.fingerprint || group.children().into_iter().flatten().any(|c| !is_manual_run(c))
 }
 
-/// The object converted group `group` (in `doc`) was converted from, as it is to be put back: read
-/// from the original kept, transformed by the original's frame (moved, turned and scaled as the
-/// stitches were since, strokes and corners as `scaling` says), taking the group's id, name,
-/// visibility and lock, and its Trim After and Stop After (the marks the manual object can change
-/// itself). Its members keep their ids where the document doesn't use them (`used`, the ids the
-/// document holds, gathered once for the whole restore; the ids it gives out are added) (they are
-/// free right after converting), else take new ones. Or why it can't be.
-fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling, used: &mut HashSet<u64>) -> std::result::Result<Node, NotRestored> {
+/// The object converted group `group` (in `doc`) was converted from, read from the original kept,
+/// transformed by the original's frame (moved, turned and scaled as the stitches were since,
+/// strokes and corners as `scaling` says) and cleaned as opening a file cleans an object; or why it
+/// can't be put back. A dry run asks this too, so it passes over what Restore would.
+fn put_back(doc: &Document, group: &Node, scaling: vectorcraft_doc::Scaling) -> std::result::Result<Node, NotRestored> {
     let e = group.extras().embroidery.as_deref();
     let Some(o) = e.and_then(|e| e.original.as_ref()) else { return Err(NotRestored::NotConverted) };
     let mut n: Node = serde_json::from_value((*o.node).clone()).map_err(|_| NotRestored::Unreadable)?;
@@ -778,6 +775,17 @@ fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling,
     if !in_range(&n) {
         return Err(NotRestored::OutOfRange);
     }
+    Ok(n)
+}
+
+/// The object converted group `group` (in `doc`) was converted from, as it is to be put back
+/// ([`put_back`]), taking the group's id, name, visibility and lock, and its Trim After and Stop
+/// After (the marks the manual object can change itself). Its members keep their ids where the
+/// document doesn't use them (`used`, the ids the document holds, gathered once for the whole
+/// restore; the ids it gives out are added) (they are free right after converting), else take new
+/// ones. Or why it can't be.
+fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling, used: &mut HashSet<u64>) -> std::result::Result<Node, NotRestored> {
+    let mut n = put_back(doc, group, scaling)?;
     n.id = group.id;
     n.name = group.name.clone();
     n.visible = group.visible;
@@ -794,7 +802,7 @@ fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling,
         }
     }
     renumber(&mut n, doc, issued, used, true);
-    let (cut, stop) = e.map_or((false, false), |e| (e.trim_after, e.stop_after));
+    let (cut, stop) = group.extras().embroidery.as_deref().map_or((false, false), |e| (e.trim_after, e.stop_after));
     let mut marks = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
     marks.set_trim_after(cut);
     marks.set_stop_after(stop);
@@ -837,18 +845,28 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
     let locked = |g: &NodeId| doc.ancestry(*g).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|n| n.locked));
     let (open, closed): (Vec<NodeId>, Vec<NodeId>) = groups.into_iter().partition(|g| !locked(g));
     skipped.extend(closed.into_iter().map(|g| (g, NotRestored::Locked)));
-    let edited_ids: Vec<u64> = open.iter().filter(|g| doc.node(**g).is_some_and(edited)).map(|g| g.0).collect();
+    let is_edited = |g: &u64| doc.node(NodeId(*g)).is_some_and(edited);
     let listed = |v: &[(NodeId, NotRestored)]| -> Vec<Value> {
         v.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect()
     };
+    let scaling = crate::cmd::object::scaling(s, p);
     if dry {
-        let ids: Vec<u64> = open.iter().take(MAX_LISTED).map(|g| g.0).collect();
+        // Each object read and placed as Restore would, so what it would pass over is passed over.
+        let mut would: Vec<u64> = Vec::new();
+        for g in &open {
+            match doc.node(*g).map(|n| put_back(&doc, n, scaling)) {
+                Some(Ok(_)) => would.push(g.0),
+                Some(Err(why)) => skipped.push((*g, why)),
+                None => {}
+            }
+        }
+        let edited_ids: Vec<u64> = would.iter().copied().filter(is_edited).collect();
+        let ids: Vec<u64> = would.iter().take(MAX_LISTED).copied().collect();
         return Ok(json!({
-            "restored": ids, "restoredCount": open.len(), "edited": edited_ids, "editedCount": edited_ids.len(),
+            "restored": ids, "restoredCount": would.len(), "edited": edited_ids, "editedCount": edited_ids.len(),
             "skippedCount": skipped.len(), "skipped": listed(&skipped), "dryRun": true,
         }));
     }
-    let scaling = crate::cmd::object::scaling(s, p);
     let mut restored_ids: Vec<u64> = Vec::new();
     s.edit(RESTORE_LABEL, |d, sel| {
         // Every id the document holds, gathered once: a member keeps its id only where none uses it.
@@ -888,6 +906,7 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
         Session::refresh_text_bounds(d);
         Ok(())
     })?;
+    let edited_ids: Vec<u64> = restored_ids.iter().copied().filter(is_edited).collect();
     let count = restored_ids.len();
     restored_ids.truncate(MAX_LISTED);
     Ok(json!({

@@ -6137,3 +6137,5 @@ embroidery	Planned from the shape: convert the object to manual stitches to edit
 embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Solo están seleccionadas las primeras {count} filas del intervalo: un clic no selecciona más.
 # VectorCraft Stitch: the Stitches tab's Too long filter, named with both lines when the format's records are the nearer
 embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	Más largas de {longest} mm, o en x o en y que un registro de {format} ({step} mm)
+# VectorCraft Stitch: the Stitches tab's Go to #, when the filter chosen leaves the record out
+embroidery	Record #{value} is left out by the filter chosen.	El filtro elegido deja fuera el registro n.º {value}.

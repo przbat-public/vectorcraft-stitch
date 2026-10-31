@@ -1017,7 +1017,7 @@ fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Listed) {
     let mut go = false;
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(crate::et!("Go to #")).size(TEXT));
-        let resp = ui.add(egui::TextEdit::singleline(&mut text).desired_width(90.0));
+        let resp = ui.add(egui::TextEdit::singleline(&mut text).desired_width(90.0).char_limit(GO_TO_CHARS));
         // Its name for screen readers (the words before it are only "Go to #").
         ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(crate::et!("Record number")));
         go = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
@@ -1030,25 +1030,58 @@ fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Listed) {
     if !go {
         return;
     }
+    // A range's first record (as the chip writes one), else the number alone.
     let first = text.split(['–', '-']).next().map(str::trim).unwrap_or_default();
-    let digits: String = first.chars().filter(char::is_ascii_digit).collect();
-    let number = digits.parse::<u64>().ok().and_then(|n| usize::try_from(n).ok());
-    match number.and_then(|n| listed.row_of(n).map(|r| (n, r))) {
-        Some((n, r)) => {
+    let number = record_number(first, lang);
+    let (a, b) = listed.span.unwrap_or((0, 0));
+    match number.map(|n| (n, listed.row_of(n))) {
+        Some((n, Some(r))) => {
             d.focus = Some(n);
             d.page = r / MAX_SCROLLED_ROWS;
             d.reveal = true;
             d.said = None;
         }
-        None => {
-            let (a, b) = listed.span.unwrap_or((0, 0));
+        // In the scope, but not among the rows the filter lists.
+        Some((n, None)) if (a..=b).contains(&n) => {
+            d.said = Some(crate::embroidery::text::fill(
+                crate::et!("Record #{value} is left out by the filter chosen."),
+                &[("value", &numbers::count(lang, n as u64))],
+            ));
+        }
+        _ => {
+            let typed: String = first.chars().take(GO_TO_CHARS).collect();
             d.said = Some(crate::embroidery::text::fill(
                 crate::et!("No record numbered {value} here: these are #{first}–{last}."),
-                &[("value", first), ("first", &numbers::count(lang, a as u64)), ("last", &numbers::count(lang, b as u64))],
+                &[("value", &typed), ("first", &numbers::count(lang, a as u64)), ("last", &numbers::count(lang, b as u64))],
             ));
         }
     }
 }
+
+/// The most characters Go to # takes, and so says back: a record number of the largest design,
+/// grouped, with a `#` before it and room to spare. An estimate.
+const GO_TO_CHARS: usize = 24;
+
+/// The record number Go to # was given as `text`: a whole number as `lang` writes one (its group
+/// mark or a space between threes), a `#` before it allowed; `None` for anything else ("1e9",
+/// "4.5", a group of two).
+fn record_number(text: &str, lang: Lang) -> Option<usize> {
+    let group = numbers::symbols(lang).group;
+    let t = text.trim().trim_start_matches('#').trim();
+    let parts: Vec<&str> = t.split(|c: char| c == group || c.is_whitespace()).collect();
+    let (head, rest) = parts.split_first()?;
+    let digits = |p: &str| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit());
+    // Grouped, each group after the first three digits, the first one to three.
+    let well_grouped = rest.is_empty() || (head.len() <= GROUP_DIGITS && rest.iter().all(|p| p.len() == GROUP_DIGITS));
+    if !(digits(head) && rest.iter().all(|p| digits(p)) && well_grouped) {
+        return None;
+    }
+    let whole: String = parts.concat();
+    whole.parse::<u64>().ok().and_then(|n| usize::try_from(n).ok())
+}
+
+/// How many digits a group of a number written grouped holds.
+const GROUP_DIGITS: usize = 3;
 
 /// How much the foot's height may change, points, before the next frame lays the list out again:
 /// less than a pixel.

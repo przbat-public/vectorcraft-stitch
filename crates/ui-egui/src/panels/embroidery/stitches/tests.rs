@@ -903,3 +903,51 @@ fn the_long_filter_says_its_lines() {
     assert_eq!(words("dst"), "Longer than 12.7 mm, or along x or y than one Tajima DST record (12.1 mm) 3");
     assert_eq!(words("pes"), "Longer than 12.7 mm 3");
 }
+
+/// Go to # reads a whole number as the language writes one (its group mark or a space between
+/// threes, a `#` before it), and nothing else: not "1e9" as #19, nor "4.5" as #45.
+#[test]
+fn go_to_reads_a_whole_number_only() {
+    use crate::i18n::Lang;
+    let (en, pl, de) = (Lang::EN, Lang::from_code("pl").unwrap(), Lang::from_code("de").unwrap());
+    for (text, lang, want) in [
+        ("4695", en, Some(4695)),
+        (" #4,695 ", en, Some(4695)),
+        ("14 752", pl, Some(14_752)),
+        ("4.695", de, Some(4695)),
+        ("1e9", en, None),
+        ("4.5", en, None),
+        ("4,69", en, None),
+        ("46,95", en, None),
+        ("#", en, None),
+        ("", en, None),
+        ("99999999999999999999", en, None),
+    ] {
+        assert_eq!(super::record_number(text, lang), want, "{text:?} in {}", lang.code());
+    }
+}
+
+/// A record in the scope that the filter chosen leaves out: Go to # says so, not that it isn't
+/// there.
+#[test]
+fn go_to_says_when_the_filter_leaves_the_record_out() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.setMachineFunction", json!({"needlePoints": [{"id": run.0, "index": 5}], "function": "trim"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let (a, _) = list.span.unwrap();
+    let hidden = (a..).find(|n| list.row_of(*n).is_none()).unwrap();
+    let field = nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0).expect("the field");
+    time += 0.05;
+    let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+    frame(&mut app, &ctx, time, vec![focus]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(hidden.to_string()), key(Key::Enter)]);
+    let said = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.said.clone());
+    assert_eq!(said.as_deref(), Some(format!("Record #{hidden} is left out by the filter chosen.").as_str()));
+}

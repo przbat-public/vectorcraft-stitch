@@ -5830,3 +5830,5 @@ embroidery	Planned from the shape: convert the object to manual stitches to edit
 embroidery	Only the first {count} rows of the range are selected: a click selects no more.	只選取了範圍的前 {count} 列：一次按一下不會選取更多。
 # VectorCraft Stitch: the Stitches tab's Too long filter, named with both lines when the format's records are the nearer
 embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	長於 {longest} 公釐，或在 x 或 y 方向長於一筆 {format} 記錄（{step} 公釐）
+# VectorCraft Stitch: the Stitches tab's Go to #, when the filter chosen leaves the record out
+embroidery	Record #{value} is left out by the filter chosen.	第 {value} 筆記錄被所選篩選條件排除了。

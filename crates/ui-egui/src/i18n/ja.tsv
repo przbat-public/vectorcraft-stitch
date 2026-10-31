@@ -5873,3 +5873,5 @@ embroidery	Planned from the shape: convert the object to manual stitches to edit
 embroidery	Only the first {count} rows of the range are selected: a click selects no more.	範囲の最初の {count} 行だけが選択されています。1 回のクリックではこれ以上選択されません。
 # VectorCraft Stitch: the Stitches tab's Too long filter, named with both lines when the format's records are the nearer
 embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	{longest} mm より長い、または x か y 方向に {format} の 1 レコードより長い ({step} mm)
+# VectorCraft Stitch: the Stitches tab's Go to #, when the filter chosen leaves the record out
+embroidery	Record #{value} is left out by the filter chosen.	レコード {value} は選んだフィルターで除かれています。

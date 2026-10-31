@@ -441,3 +441,33 @@ fn sew_earlier_stays_beside_its_neighbour() {
     assert_eq!(s.doc().unwrap().doc.parent_of(NodeId(m)), Some(NodeId(group)), "still in its group");
     assert_eq!(sewn(&plan_of(&mut s)), [w, m, x]);
 }
+
+/// An object converted to manual stitches moves as art does, whole: a file's runs' refusal doesn't
+/// apply, its group is the one mover of its runs, and a run of it selected stands for it (Sew Later
+/// on the run moves the object).
+#[test]
+fn a_converted_object_moves_as_art_does() {
+    let mut s = Session::new();
+    fx::blank(&mut runner(&mut s));
+    let mut ids = vec![];
+    // Three threads, so that no two join.
+    for (k, color) in [fx::RED, fx::BLUE, fx::GREEN].into_iter().enumerate() {
+        s.execute("select.none", &json!({})).unwrap();
+        ids.push(fx::rect(&mut runner(&mut s), color, 20.0 + 80.0 * k as f64, 20.0, 50.0, 50.0));
+    }
+    s.execute("embroidery.convertToManual", &json!({"ids": [ids[1]]})).unwrap();
+    let plan = plan_of(&mut s);
+    assert_eq!(sewn(&plan), ids, "sewn where it was, as one object");
+    let doc = doc_of(&s);
+    let runs: Vec<NodeId> = doc.node(NodeId(ids[1])).unwrap().children().unwrap().iter().map(|n| n.id).collect();
+    assert!(!runs.is_empty());
+    assert_eq!(movers_of(&doc, &plan, &runs[..1]), [NodeId(ids[1])], "a run stands for its object");
+    let first = place(&doc, &plan, &[NodeId(ids[1])], 0).unwrap();
+    s.execute("command.batch", &first.batch()).unwrap();
+    assert_eq!(sewn(&plan_of(&mut s)), [ids[1], ids[0], ids[2]]);
+    s.execute("select.set", &json!({"ids": [runs[0].0]})).unwrap();
+    s.execute("embroidery.sewLater", &json!({})).unwrap();
+    assert_eq!(sewn(&plan_of(&mut s)), ids, "the whole object a step later");
+    let doc = doc_of(&s);
+    assert_eq!(doc.node(NodeId(ids[1])).unwrap().children().unwrap().iter().map(|n| n.id).collect::<Vec<_>>(), runs, "its runs still in it");
+}

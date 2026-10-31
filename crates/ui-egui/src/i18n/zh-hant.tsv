@@ -5086,7 +5086,7 @@ lighting	Light	光源
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基於 ArtCraft 團隊的 VectorCraft。MIT OR Apache-2.0。字體：Source Sans 3、Inter、JetBrains Mono (OFL)。圖示：Lucide (ISC) + VectorCraft。
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC 最多容納 {MAX_COLORS} 種顏色，而不是 {colors} 種
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC 最多容納 {MAX_COLORS} 種顏色（每次停機算一種），而不是 {colors} 種
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 最多容納 {MAX_COLORS} 個顏色區塊
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST 檔案有 {HEADER} 位元組的檔頭與至少一筆 3 位元組的記錄，但此檔案只有 {_1} 位元組
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 檔頭最多計 {MAX_RECORDS} 筆記錄，而圖案需要 {_1} 筆
@@ -5514,6 +5514,7 @@ embroidery	Not sewn: it is hidden.	不繡：已隱藏。
 embroidery	Not sewn: it is on a template or non-printing layer.	不繡：位於範本圖層或不列印的圖層上。
 embroidery	Not sewn.	不繡。
 embroidery	Stitches from a file are sewn as the file has them.	檔案中的針跡按檔案原樣繡出。
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	手動針跡按放置的樣子縫製；它們轉換自的物件沒有與它們一起保留。
 embroidery	Type isn't sewn yet: create outlines to sew it.	文字暫不刺繡：建立外框後即可刺繡。
 embroidery	Images aren't sewn.	影像不刺繡。
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	設定屬於符號內的物件：請編輯符號來設定。
@@ -5676,3 +5677,88 @@ embroidery	Auto (where the plan ends the part)	自動（計畫結束該部分處
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	在點之間切換，方向鍵微移，Enter 鍵輸入
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	入口點和出口點僅顯示於所選的前 {count} 個物件
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	刺繡：之後停止
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	轉換為手動針跡
+@msg	nothing selected can be converted to manual stitches: {_1}	所選內容皆無法轉換為手動針跡：{_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	還原物件
+@msg	nothing selected can be restored: {_1}	所選內容都無法還原：{_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	縮放超過 {value}% 的手動針跡或檔案中的針跡
+embroidery	{name}: {value}% larger	{name}：放大 {value}%
+embroidery	{name}: {value}% smaller	{name}：縮小 {value}%
+embroidery	Largest change: {value}%	最大變化：{value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	手動針跡
+@plural	{count} stop|{count} stops	{count} 次停機
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	手動針跡或檔案中的針跡（或包含它們的群組）上的效果、筆刷以及額外的填色或筆畫不會刺繡：針跡依原樣縫製
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	移動落針點
+@msg	select needle points of a path of stitches, or give needlePoints	請選擇針跡路徑中的落針點，或提供 needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	插入落針點
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	刪除落針點
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	拆分針段
+	Join Runs	連接針段
+@msg	these runs aren't sewn one right after another in one colour block	這些針段沒有在同一色塊中緊接著縫製
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	機器功能
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	拆分長針跡
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	針跡清單
+	Select Needle Points	選取落針點
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	手動針跡
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	依放置的樣子縫製：不再隨布料或物件設定而改變。
+embroidery	Scaled to {value}% since converting	轉換後已縮放到 {value}%
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	以物件取代其手動針跡，並依目前尺寸重新規劃。
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	凍結目前規劃的針跡，以便移動每個落針點；還原物件可找回物件。
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	機器在物件的針跡之後停下，如同貼布繡。若接下來是換線或圖案結束，機器無論如何都會在那裡停下，因此不會另外寫入停機。
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	轉換後對針跡所做的變更將遺失；復原可將其找回。
+@plural	Stop the machine after the object|Stop the machine after the objects	物件後停機
+@plural	Restore {count} object?|Restore {count} objects?	還原 {count} 個物件？
+@plural	{count} object restored|{count} objects restored	已還原 {count} 個物件
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	已將 {count} 個物件轉換為手動針跡：還原物件可將其找回
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	已略去針跡的剪線或停機：某個路徑命令刪除或移動了它們所在的落針點（請用「機器功能」重新設定）
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	針跡路徑只能與針跡路徑連接：請只選擇它們
+@msg	select two or more paths of stitches sewn one right after another to join them	請選擇兩條或更多緊接著縫製的針跡路徑以連接它們
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	落針點後剪線
+	Stop After Needle Point	落針點後停機
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	整體編輯開啟時無法使用：請先停止整體編輯
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} 個線塊（含停機）
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} 次換線（含停機）
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	每次停機都寫成換到同一種線：單針機會在那裡停下，多針機只在操作員為該次換線設定了停機的地方停下
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	鎖定的物件無法還原：請先解鎖。
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	來自檔案的針跡
+embroidery	manual stitches already	已是手動針跡
+embroidery	symbol instances	符號實例
+embroidery	clipping paths	剪裁路徑
+embroidery	parts of an object sewn whole	整體縫製物件的一部分
+embroidery	holding what isn't sewn	含有不縫製的內容
+embroidery	locked	已鎖定
+embroidery	not sewn	不縫製
+embroidery	stitches a manual run can't hold	手動針段容納不了的針跡
+embroidery	not converted	未轉換
+embroidery	the kept object doesn't read	無法讀取保留的物件
+embroidery	its symbol is gone	其符號已不存在
+embroidery	would lie outside the document	會落在文件之外
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	略過了 {count} 個物件：{reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} 個針段
+@plural	{count} needle point|{count} needle points	{count} 個落針點
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	所選物件中有 {count} 個是手動針跡
+embroidery	Converting to manual stitches…	正在轉換為手動針跡…

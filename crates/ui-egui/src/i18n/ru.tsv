@@ -5077,7 +5077,7 @@ lighting	Light	Свет
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Основано на VectorCraft от команды ArtCraft. MIT OR Apache-2.0. Шрифты: Source Sans 3, Inter, JetBrains Mono (OFL). Значки: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC вмещает не более {MAX_COLORS} цветов, а не {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC вмещает не более {MAX_COLORS} цветов (каждая остановка считается за один), а не {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 вмещает не более {MAX_COLORS} цветовых блоков
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	у файла DST заголовок из {HEADER} байт и хотя бы одна 3-байтовая запись, но этот файл — {_1} байт
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заголовок DST считает не более {MAX_RECORDS} записей, а дизайну нужно {_1}
@@ -5491,6 +5491,7 @@ embroidery	Not sewn: it is hidden.	Не вышивается: он скрыт.
 embroidery	Not sewn: it is on a template or non-printing layer.	Не вышивается: он на слое-шаблоне или непечатаемом слое.
 embroidery	Not sewn.	Не вышивается.
 embroidery	Stitches from a file are sewn as the file has them.	Стежки из файла вышиваются так, как они записаны в файле.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Ручные стежки шьются так, как они расположены; объект, из которого они преобразованы, с ними не хранится.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Текст пока не вышивается: создайте контуры, чтобы вышить его.
 embroidery	Images aren't sewn.	Изображения не вышиваются.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Настройки задаются объектам символа: отредактируйте символ, чтобы задать их.
@@ -5653,3 +5654,88 @@ embroidery	Auto (where the plan ends the part)	Авто (там, где план
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 переход от точки к точке, стрелки сдвигают её, Enter вводит её
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Точки входа и выхода показаны для первого {count} выделенного объекта|Точки входа и выхода показаны для первых {count} выделенных объектов|Точки входа и выхода показаны для первых {count} выделенных объектов
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Вышивка: остановить после
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Преобразовать в ручные стежки
+@msg	nothing selected can be converted to manual stitches: {_1}	ничего из выделенного нельзя преобразовать в ручные стежки: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	Восстановить объект
+@msg	nothing selected can be restored: {_1}	ничего из выбранного нельзя восстановить: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ручные стежки или стежки из файла, масштабированные больше чем на {value} %
+embroidery	{name}: {value}% larger	{name}: увеличение на {value} %
+embroidery	{name}: {value}% smaller	{name}: уменьшение на {value} %
+embroidery	Largest change: {value}%	Наибольшее изменение: {value} %
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	ручные стежки
+@plural	{count} stop|{count} stops	{count} остановка|{count} остановки|{count} остановок
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	эффекты, кисти и дополнительные заливки или обводки на ручных стежках или стежках из файла (или на группе, которая их содержит) не вышиваются: стежки вышиваются как есть
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Переместить проколы
+@msg	select needle points of a path of stitches, or give needlePoints	выберите проколы в контуре стежков или укажите needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Вставить проколы
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Удалить проколы
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Разделить ряд
+	Join Runs	Соединить ряды
+@msg	these runs aren't sewn one right after another in one colour block	эти ряды не вышиваются один сразу за другим в одном цветовом блоке
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Функция машины
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Разделить длинные стежки
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Список стежков
+	Select Needle Points	Выбрать проколы
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Ручные стежки
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Вышиваются так, как расположены: больше не меняются вместе с тканью или настройками объекта.
+embroidery	Scaled to {value}% since converting	С момента преобразования масштабировано до {value} %
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Возвращает объект на место его ручных стежков, заново спланированный в текущем размере.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Замораживает спланированные сейчас стежки, чтобы каждый прокол можно было двигать; «Восстановить объект» возвращает объект.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Машина останавливается после стежков объекта, как при аппликации. Там, где дальше следует смена нити или конец дизайна, машина и так останавливается, поэтому лишняя остановка не записывается.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Изменения стежков после преобразования будут потеряны; «Отменить» их вернёт.
+@plural	Stop the machine after the object|Stop the machine after the objects	Остановить машину после объекта|Остановить машину после объектов|Остановить машину после объектов
+@plural	Restore {count} object?|Restore {count} objects?	Восстановить {count} объект?|Восстановить {count} объекта?|Восстановить {count} объектов?
+@plural	{count} object restored|{count} objects restored	Восстановлен {count} объект|Восстановлено {count} объекта|Восстановлено {count} объектов
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} объект преобразован в ручные стежки: «Восстановить объект» вернёт его|{count} объекта преобразованы в ручные стежки: «Восстановить объект» вернёт их|{count} объектов преобразовано в ручные стежки: «Восстановить объект» вернёт их
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	обрезки или остановки стежков пропущены: команда контура удалила или переместила проколы, за которыми они следовали (задайте их снова командой «Функция машины»)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	контуры стежков соединяются только с контурами стежков: выберите только их
+@msg	select two or more paths of stitches sewn one right after another to join them	выберите два или более контура стежков, которые шьются один сразу за другим, чтобы соединить их
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Обрезка после прокола
+	Stop After Needle Point	Остановка после прокола
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	не во время глобального редактирования: сначала завершите его
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} блок нити, включая остановки|{count} блока нити, включая остановки|{count} блоков нити, включая остановки
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} смена нити, включая остановки|{count} смены нити, включая остановки|{count} смен нити, включая остановки
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	каждая остановка записана как смена на ту же нить: одноигольная машина там останавливается, многоигольная — только там, где оператор задал остановку на этой смене
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Заблокированные объекты нельзя восстановить: сначала разблокируйте их.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	стежки из файла
+embroidery	manual stitches already	уже ручные стежки
+embroidery	symbol instances	экземпляры символов
+embroidery	clipping paths	обтравочные контуры
+embroidery	parts of an object sewn whole	части объекта, сшиваемого целиком
+embroidery	holding what isn't sewn	содержит то, что не шьётся
+embroidery	locked	заблокированы
+embroidery	not sewn	не шьются
+embroidery	stitches a manual run can't hold	стежки, которые ручной ряд не вмещает
+embroidery	not converted	не преобразованы
+embroidery	the kept object doesn't read	сохранённый объект не читается
+embroidery	its symbol is gone	его символа нет
+embroidery	would lie outside the document	оказался бы вне документа
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	пропущен {count} объект: {reasons}|пропущено {count} объекта: {reasons}|пропущено {count} объектов: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} ряд|{count} ряда|{count} рядов
+@plural	{count} needle point|{count} needle points	{count} прокол|{count} прокола|{count} проколов
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} выбранный объект — ручные стежки|{count} выбранных объекта — ручные стежки|{count} выбранных объектов — ручные стежки
+embroidery	Converting to manual stitches…	Преобразование в ручные стежки…

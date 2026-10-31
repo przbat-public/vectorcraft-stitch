@@ -5468,7 +5468,7 @@ mark-style	Japanese	Japonské
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Založeno na VectorCraft od týmu ArtCraft. MIT OR Apache-2.0. Písma: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikony: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC pojme nejvýše {MAX_COLORS} barev, ne {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC pojme nejvýše {MAX_COLORS} barev (každé zastavení se počítá jako jedna), ne {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 pojme nejvýše {MAX_COLORS} barevných bloků
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	soubor DST má hlavičku o {HEADER} bajtech a aspoň jeden 3bajtový záznam, ale tento soubor má {_1} bajtů
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	hlavička DST počítá nejvýše {MAX_RECORDS} záznamů a návrh jich potřebuje {_1}
@@ -5880,6 +5880,7 @@ embroidery	Not sewn: it is hidden.	Nevyšívá se: je skrytý.
 embroidery	Not sewn: it is on a template or non-printing layer.	Nevyšívá se: je ve vrstvě šablony nebo v netisknuté vrstvě.
 embroidery	Not sewn.	Nevyšívá se.
 embroidery	Stitches from a file are sewn as the file has them.	Stehy ze souboru se vyšijí tak, jak jsou v souboru.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Ruční stehy se šijí tak, jak jsou rozmístěny; objekt, ze kterého byly převedeny, se s nimi neuchovává.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Text se zatím nevyšívá: převeďte ho na křivky (Převést na křivky).
 embroidery	Images aren't sewn.	Obrazy se nevyšívají.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Nastavení se zadávají objektům symbolu: upravte symbol a nastavte je tam.
@@ -6042,3 +6043,88 @@ embroidery	Auto (where the plan ends the part)	Automaticky (kde plán část uko
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 krok z bodu na bod, šipky jej posunou, Enter zadá jeho souřadnice
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	Vstupní a výstupní body se zobrazují pro první {count} vybraný objekt|Vstupní a výstupní body se zobrazují pro první {count} vybrané objekty|Vstupní a výstupní body se zobrazují pro prvních {count} vybraných objektů
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Výšivka: zastavit po
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Převést na ruční stehy
+@msg	nothing selected can be converted to manual stitches: {_1}	nic z výběru nelze převést na ruční stehy: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	Obnovit objekt
+@msg	nothing selected can be restored: {_1}	nic z výběru nelze obnovit: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ruční stehy nebo stehy ze souboru se změnou velikosti o víc než {value} %
+embroidery	{name}: {value}% larger	{name}: zvětšení o {value} %
+embroidery	{name}: {value}% smaller	{name}: zmenšení o {value} %
+embroidery	Largest change: {value}%	Největší změna: {value} %
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	ruční stehy
+@plural	{count} stop|{count} stops	{count} zastavení|{count} zastavení|{count} zastavení
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	efekty, štětce a další výplně či tahy na ručních stezích nebo stezích ze souboru (či na skupině, která je obsahuje) se nevyšívají: stehy se šijí tak, jak jsou
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Přesunout vpichy
+@msg	select needle points of a path of stitches, or give needlePoints	vyberte vpichy cesty stehů nebo zadejte needlePoints
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Vložit vpichy
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Odstranit vpichy
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Rozdělit řadu
+	Join Runs	Spojit řady
+@msg	these runs aren't sewn one right after another in one colour block	tyto řady se nešijí jedna hned po druhé v jednom barevném bloku
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Funkce stroje
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Rozdělit dlouhé stehy
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Seznam stehů
+	Select Needle Points	Vybrat vpichy
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Ruční stehy
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Šijí se tak, jak jsou rozmístěné: už se nemění s látkou ani s nastavením objektu.
+embroidery	Scaled to {value}% since converting	Od převodu změněno na {value} %
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Vrátí objekt místo jeho ručních stehů, naplánovaný znovu v nynější velikosti.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Zmrazí teď naplánované stehy, aby šel každý vpich přesunout; objekt vrátíte příkazem Obnovit objekt.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Stroj se zastaví po stezích objektu, jako u aplikace. Kde následuje výměna nitě nebo konec vzoru, stroj se tam zastaví tak jako tak, proto se žádné další zastavení nezapisuje.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Změny stehů od převodu se ztratí; vrátíte je příkazem Zpět.
+@plural	Stop the machine after the object|Stop the machine after the objects	Zastavit stroj po objektu|Zastavit stroj po objektech|Zastavit stroj po objektech
+@plural	Restore {count} object?|Restore {count} objects?	Obnovit {count} objekt?|Obnovit {count} objekty?|Obnovit {count} objektů?
+@plural	{count} object restored|{count} objects restored	Obnoven {count} objekt|Obnoveny {count} objekty|Obnoveno {count} objektů
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt převeden na ruční stehy: vrátíte ho příkazem Obnovit objekt|{count} objekty převedeny na ruční stehy: vrátíte je příkazem Obnovit objekt|{count} objektů převedeno na ruční stehy: vrátíte je příkazem Obnovit objekt
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	střihy nebo zastavení stehů byly vynechány: příkaz pro cestu smazal nebo posunul vpichy, po kterých následovaly (nastavte je znovu příkazem Funkce stroje)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	cesty stehů se spojují jen s cestami stehů: vyberte jen je
+@msg	select two or more paths of stitches sewn one right after another to join them	vyberte dvě nebo více cest stehů šitých bezprostředně po sobě, abyste je spojili
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Střih po vpichu
+	Stop After Needle Point	Zastavení po vpichu
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	ne během globálních úprav: nejdřív je ukončete
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} blok nití, včetně zastavení|{count} bloky nití, včetně zastavení|{count} bloků nití, včetně zastavení
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} výměna nitě, včetně zastavení|{count} výměny nitě, včetně zastavení|{count} výměn nitě, včetně zastavení
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	každé zastavení je zapsáno jako výměna na tutéž nit: jednojehlový stroj se na ní zastaví, vícejehlový jen tam, kde obsluha na této výměně nastaví zastavení
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Zamčené objekty nelze obnovit: nejdřív je odemkněte.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	stehy ze souboru
+embroidery	manual stitches already	už ruční stehy
+embroidery	symbol instances	instance symbolů
+embroidery	clipping paths	ořezové cesty
+embroidery	parts of an object sewn whole	části objektu šitého vcelku
+embroidery	holding what isn't sewn	obsahuje nešité
+embroidery	locked	zamčené
+embroidery	not sewn	nešijí se
+embroidery	stitches a manual run can't hold	stehy, které ruční řada nepojme
+embroidery	not converted	nepřevedené
+embroidery	the kept object doesn't read	uchovaný objekt nejde přečíst
+embroidery	its symbol is gone	jeho symbol chybí
+embroidery	would lie outside the document	ležel by mimo dokument
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekt přeskočen: {reasons}|{count} objekty přeskočeny: {reasons}|{count} objektů přeskočeno: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} řada|{count} řady|{count} řad
+@plural	{count} needle point|{count} needle points	{count} vpich|{count} vpichy|{count} vpichů
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} vybraný objekt je z ručních stehů|{count} vybrané objekty jsou z ručních stehů|{count} vybraných objektů je z ručních stehů
+embroidery	Converting to manual stitches…	Převod na ruční stehy…

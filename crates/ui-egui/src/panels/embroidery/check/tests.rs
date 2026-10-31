@@ -166,8 +166,8 @@ fn findings_and_what_passed_rules_measured() {
     assert!(line("fillStitchShort").starts_with("Shortest: "), "{}", line("fillStitchShort"));
     assert_eq!(line("runStitchShort"), "No findings", "no stroke");
     assert_eq!(line("satinTooWide"), "No findings", "no satin column");
-    assert_eq!(line("formatColors"), "3 thread blocks");
-    assert_eq!(line("machineColorChanges"), "2 thread changes");
+    assert_eq!(line("formatColors"), "3 thread blocks, stops included");
+    assert_eq!(line("machineColorChanges"), "2 thread changes, stops included");
 }
 
 /// The tab drawn: the summary, the rules' words, the type left out as the plan says it, what isn't

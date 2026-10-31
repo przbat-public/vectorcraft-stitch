@@ -5454,7 +5454,7 @@ imageTrace	Outline	Körvonal
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikonok: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	a PEC legfeljebb {MAX_COLORS} színt tartalmazhat, ez a minta pedig {colors} színt használna
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	a PEC legfeljebb {MAX_COLORS} színt tartalmazhat (minden megállás egynek számít), ez a minta pedig {colors} színt használna
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	a VP3 legfeljebb {MAX_COLORS} színblokkot tartalmazhat
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	a DST-fájlnak {HEADER} bájtos fejléce és legalább egy 3 bájtos rekordja van, de ez a fájl {_1} bájtos
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	a DST-fejléc legfeljebb {MAX_RECORDS} rekordot számol, a mintához pedig {_1} kell
@@ -5866,6 +5866,7 @@ embroidery	Not sewn: it is hidden.	Nem készül: rejtett.
 embroidery	Not sewn: it is on a template or non-printing layer.	Nem készül: sablon- vagy nem nyomtatandó rétegen van.
 embroidery	Not sewn.	Nem készül.
 embroidery	Stitches from a file are sewn as the file has them.	A fájlból származó öltések úgy készülnek, ahogy a fájlban vannak.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	A kézi öltéseket úgy varrja, ahogy el vannak helyezve; az objektum, amelyből átalakították őket, nincs velük megőrizve.
 embroidery	Type isn't sewn yet: create outlines to sew it.	A szöveg még nem készül: alakítsa útvonallá, hogy kihímezhesse.
 embroidery	Images aren't sewn.	Képek nem készülnek hímzésként.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	A beállításokat a szimbólum objektumai kapják: szerkessze a szimbólumot a beállításhoz.
@@ -6028,3 +6029,88 @@ embroidery	Auto (where the plan ends the part)	Automatikus (ahol a terv befejezi
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	 pontról pontra lép, a nyilak elmozdítják, az Enter beírja
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	A belépési és kilépési pontok az első {count} kijelölt objektumnál látszanak
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	Hímzés: megállás utána
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	Átalakítás kézi öltésekké
+@msg	nothing selected can be converted to manual stitches: {_1}	a kijelölésből semmi sem alakítható kézi öltésekké: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	Objektum visszaállítása
+@msg	nothing selected can be restored: {_1}	a kijelölésből semmi sem állítható vissza: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Több mint {value}%-kal átméretezett kézi öltések vagy öltések fájlból
+embroidery	{name}: {value}% larger	{name}: {value}%-kal nagyobb
+embroidery	{name}: {value}% smaller	{name}: {value}%-kal kisebb
+embroidery	Largest change: {value}%	Legnagyobb változás: {value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	kézi öltések
+@plural	{count} stop|{count} stops	{count} megállás
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	a kézi öltéseken vagy fájlból származó öltéseken (vagy az őket tartalmazó csoporton) lévő effektusok, ecsetek és további kitöltések vagy körvonalak nem kerülnek kihímzésre: az öltések úgy varródnak, ahogy vannak
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	Tűszúrások áthelyezése
+@msg	select needle points of a path of stitches, or give needlePoints	jelöljön ki tűszúrásokat egy öltésútvonalból, vagy adja meg a needlePoints értéket
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	Tűszúrások beszúrása
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	Tűszúrások törlése
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	Öltéssor felosztása
+	Join Runs	Öltéssorok összekapcsolása
+@msg	these runs aren't sewn one right after another in one colour block	ezeket az öltéssorokat nem közvetlenül egymás után varrja egy színblokkban
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	Gépfunkció
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	Hosszú öltések felosztása
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	Öltéslista
+	Select Needle Points	Tűszúrások kijelölése
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	Kézi öltések
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Úgy varródnak, ahogy el vannak helyezve: már nem változnak az anyaggal vagy az objektum beállításaival.
+embroidery	Scaled to {value}% since converting	Az átalakítás óta {value}%-ra átméretezve
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Visszahelyezi az objektumot a kézi öltései helyére, jelenlegi méretében újratervezve.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Rögzíti a most tervezett öltéseket, hogy minden tűszúrás mozgatható legyen; az Objektum visszaállítása visszahozza az objektumot.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	A gép megáll az objektum öltései után, mint az applikációnál. Ahol szálcsere vagy a minta vége következik, a gép ott amúgy is megáll, ezért nem íródik ki külön megállás.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Az átalakítás óta az öltéseken végzett módosítások elvesznek; a Visszavonás visszahozza őket.
+@plural	Stop the machine after the object|Stop the machine after the objects	Gép megállítása az objektum után
+@plural	Restore {count} object?|Restore {count} objects?	Visszaállít {count} objektumot?
+@plural	{count} object restored|{count} objects restored	{count} objektum visszaállítva
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objektum kézi öltésekké alakítva: az Objektum visszaállítása visszahozza
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	öltések vágásai vagy megállásai kimaradtak: egy útvonalparancs törölte vagy áthelyezte a tűszúrásokat, amelyeket követtek (állítsa be őket újra a Gépfunkció paranccsal)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	öltésútvonalak csak öltésútvonalakkal egyesíthetők: csak azokat jelölje ki
+@msg	select two or more paths of stitches sewn one right after another to join them	jelöljön ki két vagy több, közvetlenül egymás után varrt öltésútvonalat az egyesítésükhöz
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Vágás a tűszúrás után
+	Stop After Needle Point	Megállás a tűszúrás után
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	nem, amíg a globális szerkesztés be van kapcsolva: először állítsa le
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} szálblokk, a megállásokkal együtt
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} szálcsere, a megállásokkal együtt
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	minden megállás ugyanarra a szálra való cseréként íródik ki: az egytűs gép ott megáll, a többtűs csak ott, ahol a kezelője megállást állít be erre a cserére
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	A zárolt objektumok nem állíthatók vissza: előbb oldja fel őket.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	öltések fájlból
+embroidery	manual stitches already	már kézi öltések
+embroidery	symbol instances	szimbólumpéldányok
+embroidery	clipping paths	vágóútvonalak
+embroidery	parts of an object sewn whole	egészben varrt objektum részei
+embroidery	holding what isn't sewn	varratlant tartalmaz
+embroidery	locked	zárolt
+embroidery	not sewn	nem varrja
+embroidery	stitches a manual run can't hold	öltések, amelyeket kézi öltéssor nem tud tartani
+embroidery	not converted	nincs átalakítva
+embroidery	the kept object doesn't read	a megőrzött objektum nem olvasható
+embroidery	its symbol is gone	a szimbóluma hiányzik
+embroidery	would lie outside the document	a dokumentumon kívül lenne
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objektum kimaradt: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} öltéssor
+@plural	{count} needle point|{count} needle points	{count} tűszúrás
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} kijelölt objektum kézi öltés
+embroidery	Converting to manual stitches…	Átalakítás kézi öltésekké…

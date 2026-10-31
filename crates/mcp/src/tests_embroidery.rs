@@ -16,7 +16,24 @@ fn the_embroidery_commands_are_reachable() {
     let mut h = Headless::with_document();
     let listed = text(&call_tool(&mut h, "list_commands", &json!({"filter": "embroidery."})));
     let ids: Vec<&str> = listed["commands"].as_array().unwrap().iter().filter_map(|c| c["id"].as_str()).collect();
-    for id in ["embroidery.setTrimAfter", "embroidery.setup", "embroidery.settings", "embroidery.threads"] {
+    for id in [
+        "embroidery.setTrimAfter",
+        "embroidery.setStopAfter",
+        "embroidery.convertToManual",
+        "embroidery.restoreObject",
+        "embroidery.moveNeedlePoints",
+        "embroidery.insertNeedlePoints",
+        "embroidery.deleteNeedlePoints",
+        "embroidery.splitRun",
+        "embroidery.joinRuns",
+        "embroidery.setMachineFunction",
+        "embroidery.splitLongStitches",
+        "embroidery.stitches",
+        "embroidery.selectNeedlePoints",
+        "embroidery.setup",
+        "embroidery.settings",
+        "embroidery.threads",
+    ] {
         assert!(ids.contains(&id), "{id} in {ids:?}");
     }
     let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.setup", "params": {"palette": "jef"}})));

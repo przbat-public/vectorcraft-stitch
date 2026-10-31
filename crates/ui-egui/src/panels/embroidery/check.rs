@@ -70,7 +70,7 @@ pub const SHOW_MIN_BOX_MM: f64 = 10.0;
 
 /// The rules this version words itself, in the engine's order: any other the engine lists shows
 /// its own English title.
-pub const WORDED: [&str; 16] = [
+pub const WORDED: [&str; 17] = [
     "satinTooWide",
     "stitchTooLong",
     "formatStep",
@@ -82,6 +82,7 @@ pub const WORDED: [&str; 16] = [
     "shortStitchesInARow",
     "layers",
     "pointMissed",
+    "stitchesScaled",
     "threadMismatch",
     "notSewn",
     "formatColors",
@@ -182,6 +183,7 @@ pub fn title(rule: &Value, format: &str, lang: Lang) -> String {
         ("shortStitchesInARow", true) => crate::et!("More than {value} short stitches in a row"),
         ("layers", true) => crate::et!("{value} or more layers of stitches on one spot"),
         ("pointMissed", true) => crate::et!("Entry or exit points missed by more than {value} mm"),
+        ("stitchesScaled", true) => crate::et!("Manual stitches or stitches from a file scaled by more than {value}%"),
         ("threadMismatch", true) => crate::et!("Threads unlike the art's color (over {value})"),
         ("notSewn", _) if hits == 0 => crate::et!("Everything is sewn"),
         ("notSewn", _) => crate::et!("Art that isn't sewn"),
@@ -215,9 +217,15 @@ pub fn found(rule: &Value, lang: Lang) -> String {
     let count = measured.as_u64().unwrap_or(0);
     // The design's own figures, against a format's or a machine's limit, found or not.
     match id {
-        "formatColors" if measured.is_u64() => return crate::etn!(count, "{count} thread block", "{count} thread blocks"),
+        // Counted as the file and the machine count them: each stop is a change to the same thread
+        // (the status bar's thread changes leave stops out).
+        "formatColors" if measured.is_u64() => {
+            return crate::etn!(count, "{count} thread block, stops included", "{count} thread blocks, stops included");
+        }
         "machineStitches" if measured.is_u64() => return crate::etn!(count, "{count} stitch", "{count} stitches"),
-        "machineColorChanges" if measured.is_u64() => return crate::etn!(count, "{count} thread change", "{count} thread changes"),
+        "machineColorChanges" if measured.is_u64() => {
+            return crate::etn!(count, "{count} thread change, stops included", "{count} thread changes, stops included");
+        }
         _ => {}
     }
     if hits == 0 {
@@ -231,6 +239,7 @@ pub fn found(rule: &Value, lang: Lang) -> String {
             "layers" => crate::et!("At most {value} on one spot"),
             "threadMismatch" => crate::et!("Largest difference: {value}"),
             "pointMissed" => crate::et!("Largest miss: {value} mm"),
+            "stitchesScaled" => crate::et!("Largest change: {value}%"),
             _ => crate::et!("No findings"),
         };
         let value = if id == "threadMismatch" { delta_e(&value) } else { value };
@@ -269,6 +278,10 @@ pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, h
         "pointMissed" => {
             let point = if hit["note"] == "exit" { crate::et!("Exit") } else { crate::et!("Entry") };
             fill(crate::et!("{name}, {point}: {value} mm"), &[("name", &name()?), ("point", point), ("value", &value)])
+        }
+        "stitchesScaled" => {
+            let template = if hit["note"] == "smaller" { crate::et!("{name}: {value}% smaller") } else { crate::et!("{name}: {value}% larger") };
+            fill(template, &[("name", &name()?), ("value", &value)])
         }
         "threadMismatch" => {
             let thread = &hit["thread"];

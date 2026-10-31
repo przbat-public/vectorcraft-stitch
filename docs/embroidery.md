@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-27 · **Change:** the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-10-31 · **Change:** manual stitches' review round: a run's cuts and stops kept by their needle points through upstream's path commands, a group sewn whole converted with its members' marks or passed over, Restore asking about foreign art and keeping it, range-checked and cleaned, the Global Edit wait, a clip group carrying a file's run's cuts and stops, the export's note on stops, the Object tab's states, focus and words, compatibility notes, new perf rows, everything measured again (Using it › Manual stitches, Editing stitches, Exporting what you read, Saved by upstream VectorCraft, What is not stitched; The formats › Stops; Validation; Architecture › Manual stitches and needle points; Files); earlier: manual stitches, first part: Convert to Manual Stitches and Restore Object, stops, editing stitches by command and Direct Selection, the scale warning (Using it › Stopping the machine after an object, Manual stitches, Editing stitches, Checks; What is not stitched; The formats › Stops; Changing the sewing order); earlier: the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -130,14 +130,23 @@ and `embroidery.setup {label}` changes or unsets it (unset, the export writes th
 title). Put inside a clip group, the lines are cut to the clipping path as any stroke is, and the
 needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
-stitches. Turning a design back into shapes that are stitched by the rules (what professional
+stitches, as Editing stitches (below) says. A document saved before manual stitches came (2026-10-30) may sew its runs otherwise now: a run
+whose handles were pulled out was sewn along its curve and is now sewn straight between its
+needle points, and a run that upstream's Delete Anchor Point left in pieces, as subpaths of one
+path, was stitched across each gap and now jumps there (untrimmed). Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.
 
 **Saved by upstream VectorCraft.** Upstream keeps the document's embroidery settings it doesn't
 know but drops every object's (its node format keeps no unknown keys): a design opened from a
 machine file, saved by upstream VectorCraft and opened here again is art, its lines stitched as
 thin strokes and its Trim After marks gone, and every object's fill and stroke settings and entry
-and exit points are gone too, with no warning (FORK.md › Keeping up with upstream). Both apps
+and exit points are gone too, with no warning (FORK.md › Keeping up with upstream). An object
+converted to manual stitches loses the object itself, kept only in `embroidery.original`, so it
+can no longer be restored; its runs lose their `manual` mark (stitched as thin strokes), their cuts,
+stops, Stop After and exact millimetres. An older version of this fork keeps every key it doesn't
+read and composes the kept frames as this one does, but sews a converted run as it sewed a file's
+run then: each subpath's start stitched to rather than jumped to, its inner cuts and stops ignored,
+placed by the file's rules, and cut again by a clip group. Both apps
 open `.vectorcraft` files, so a double-click may open one in upstream VectorCraft: save designs
 with object settings in this app.
 
@@ -166,6 +175,71 @@ saved in `.vectorcraft` files (`NodeExtras::embroidery`). The Embroidery panel's
 it on the selection (Trim the thread after the object, a dash where the objects differ), the
 command palette too (Embroidery Trim After), and MCP and the control channel with ids; an id that
 names no object is reported as a missing object.
+
+**Stopping the machine after an object.** `embroidery.setStopAfter` (`{on?, ids?}`) marks objects
+the machine stops after, as for an appliqué piece to be laid down, read and toggled as Trim After
+is, and goes where Trim After goes when objects are made from others; the Object tab shows it
+beside Trim After (Stop the machine after the object). The machine stops after the object's cut
+when it has one, and the move to the next object is cut no second time; with a stop alone, a move
+longer than `trimLength` is cut after the stop. How a stop is written is in The formats.
+
+**Manual stitches.** Convert to Manual Stitches (`embroidery.convertToManual`, the Object tab's
+button under a planned object's rows, the command palette) freezes the selected objects' stitches
+as the plan sews them now: each object becomes a group of the same id and name holding one path
+of literal stitches marked manual for each of its sewing units, in its thread's colour, and keeps
+the object itself. Nothing sewn changes: the export right after converting is the same bytes
+(checked over every pinned export, the 11 artworks and a seeded corpus of random documents, with
+how many objects each converts and why the rest are passed over pinned, so an object that stops
+converting can't hide as art that exports the same bytes), as a
+converted object is placed in the sewing order as art is and never cut again by a clip group. Its
+stitches no longer follow the fabric or its settings; each needle point is an anchor to move. In a
+group each object is converted on its own, and a compound path's member stands for its compound path; a group the plan sews whole (an effect or an appearance
+of its own) is converted whole, its members' Trim After and Stop After carried onto the runs their
+units became (the project owner's choice, 2026-10-30). What can't be frozen exactly (a symbol's
+instances, a clipping path, a locked object, stitches from a file, a group sewn whole holding type,
+images, placed files, symbol instances, or hidden, locked or unpainted objects) is passed over with
+the reason. A symbol's art lies outside the layers, so it is never converted in place: taken out by
+Edit Symbol, which breaks the link, it is art and converts, and Redefine Symbol then makes its runs
+the symbol's, each instance placing them.
+Converting asks nothing; the status bar says how to go back. A convert plans the whole design
+afresh, as the export does, so from the Object tab or the command palette it plans off the
+interface thread, the status bar saying how far it has got and Escape stopping it; it converts only
+if the document is as it was when the convert began. Restore Object
+(`embroidery.restoreObject`, the Object tab's button on manual stitches, the command palette) puts the object back,
+moved, turned and scaled as its stitches were since, planned again at its size now; it asks first
+only when the stitches were edited since converting (a run hidden or recoloured, or art pasted into
+the object, counts), as those edits are then lost (Undo brings them back); art pasted into the
+object stays, beside it, right above it (the project owner's choice, 2026-10-30). The Object tab says what manual stitches are, their runs and needle points and how much
+they were scaled since converting; the Check tab warns past ±10 % (`stitchesScaled`), for an
+opened design's stitches too, since stitches scaled keep their count, not their density.
+
+**Editing stitches.** A path of literal stitches (opened or manual) is sewn as its anchors, in
+order: handles are ignored (the curve the art then draws between two needle points is sewn as the
+straight stitch a machine makes), a closed path sews no closing stitch, and its subpaths are runs the
+needle jumps between (here, and in the stitch commands' words, a run is always such a subpath,
+and the object is a path of stitches). Direct Selection moves needle points as it moves anchors;
+its Delete merges the neighbouring stitches (it doesn't leave a gap the machine still sews), the
+cutting tools (Cut Path at Anchors, Scissors; the Knife cuts only closed paths) put a path's cut
+before on its first piece and its cut and stop after on its last, each stop on the piece holding
+its needle point, and sew the cut point once (an opened file's path's later piece starts after it;
+pieces kept as subpaths keep it once), and Join joins paths of stitches in sewing order, never
+reversed. A path's stops and cuts are kept by their needle points, where each
+lies (the project owner's choice, 2026-10-30): the other path commands (Reverse Path Direction, Add
+and Delete Anchor Point, Remove Anchor Points, Simplify, Join's merge of coincident anchors, Close
+Path) add, remove and reorder anchors as art, and each stop stays after its needle point, each cut
+before the run holding the needle point it was kept at; a needle point moved in place (Direct
+Selection) keeps its marks while the path has as many runs and anchors. A mark whose needle point
+is gone is left out, and the Check tab says so (set it again with `setMachineFunction`). A
+transform of the object moves the marks with their needle points. For agents and MCP, the stitch commands edit needle points addressed
+as `{id, index}` (the path and the needle point's place in it), in millimetres, without a plan:
+`embroidery.moveNeedlePoints`, `insertNeedlePoints`, `deleteNeedlePoints`, `splitRun` and
+`joinRuns` (a run boundary is a jump, tied off and in), `setMachineFunction` (a cut or a stop after
+a needle point, the run split and tied there), `splitLongStitches` (more needle points, cut where a
+format's writer would cut them), `embroidery.stitches` (the design's records, each naming the
+needle point the commands edit it by) and `selectNeedlePoints`. Each edit is one undo step and
+answers the lengths of the stitches it made or changed, against the document's shortest stitch
+and the 12.7 mm a machine sews well. The needle-point mode on the canvas and the Stitches tab come
+next ([mcp.md](mcp.md) › Editing stitches).
 
 **Settings on objects.** Each object keeps settings for its fills and for its strokes (one set
 for all of its fills, one for all its strokes), which beat an export's options, the document's
@@ -532,6 +606,7 @@ included.
 | `shortStitchesInARow` | more than 5 stitches in a row, each shorter than 1 mm (a jump, a cut or a thread change ends a row) | warning | five is an estimate: no source gives a limit for runs of tiny stitches; Wilcom's Shortening effect shortens up to five satin stitches in a row on a tight curve, a setting of that effect, not a quality limit ([help](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm)); 1 mm is Melco's machine manual's general minimum |
 | `layers` | three or more sewing units over one 1 mm square (the square an estimate; a stitch is counted at most at 64 points, every half millimetre along one up to 32 mm long, and at most 4 million squares are counted, bounds on the work a file can ask for) | warning | Brother's PRT51 manual: stitching sewn over three times or more can break the thread or the needle ([manual](https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf)); Melco's design checker names "too many layers" without a number ([user manual](http://www.melco-service.com/docs/DSv11_Manual.pdf), p. 38) |
 | `pointMissed` | an entry or exit point a unit's stitches miss by more than 1 mm (`POINT_MISS_MM`, an estimate: about two thread widths and the formats' 0.1 mm grid), at the point set, from where the needle goes in or out; a satin column's miss counted beyond its reach (half its width, its pull and, at an open column's end, its push compensation: its crossings end on a rail), a fill's narrow part's where the needle point lies in it, at its width there (none on a fill's rows) | info | the project owner's choice: the miss is shown, never hidden |
+| `stitchesScaled` | stitches sewn as they are (manual stitches, or a machine file's) scaled since they were converted or opened by more than 10 % either way, along the direction they changed most (the change rounded to a hundredth of a percent first, so exactly 90 % or 110 % passes; a turn or a mirror never fires it, nor does a symbol instance placing them at their size, while one scaling them counts); the hit says whether they grew or shrank. Their stitches keep their count, so their density follows the size: Restore Object plans a converted object again at its size now | warning | the project owner's choice (warn past ±10 %, for opened machine files too), from Wilcom ([Scale objects numerically](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Modifying/transform/transform-8.htm)), BERNINA ([Open machine files](https://softwarehelp.bernina.com/en/MainHelp/PART_Basics/manage_designs/manage_designs-5.htm)) and Hatch ([Machine file recognition](https://hatch.embroideryhelp.net/v3/en/OnlineHelp/Setup/assets/Machine_file_recognition.htm)), all ±10 %; Wilcom's warning options give about ±5 % ([Warning message options](https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Setup/settings/settings-25.htm)) |
 | `threadMismatch` | a thread past ΔE 10 as shown, as `embroidery.threads` flags it | warning | the project owner's choice (Threads, above) |
 | `notSewn` | what the plan leaves out or approximates: its warnings (type, images, live art, patterns, gradients) | warning | What is not stitched, below |
 | `formatColors` | more colour blocks than the format holds: PES and PEC 255 (the PEC header counts them in a byte), VP3 65,535 (a 16-bit word); DST, TAP, T01, EXP and JEF have no such limit | error | EduTechWiki's [PEC page](https://edutechwiki.unige.ch/en/Embroidery_format_PEC); for VP3 the KDE Community Wiki ([VP3](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff)) and Jason Weiler ([VP3 File Format](http://www.jasonweiler.com/VP3FileFormatInfo.html)), while EduTechWiki's [VP3 page](https://edutechwiki.unige.ch/en/Embroidery_format_VP3) gives the summary's count as a byte (a reader that takes it so would miscount a design of 256 blocks or more); `Format::max_colors` |
@@ -615,7 +690,8 @@ as Melco's checker reads it, on each object's settings, it flags none.
   it can't), or use a selected row's ↑ and ↓ and the panel's ≡ menu: Sew Earlier, Sew Later, Sew
   First and Sew Last (also the commands `embroidery.sewEarlier`, `sewLater`, `sewFirst` and
   `sewLast`, with no default shortcuts). The sewing order follows the stacking order, so each moves
-  the object in the stack, as one undo step. The ≡ menu's Nearest Connection sets the entry and
+  the object in the stack, as one undo step. The ≡ menu's Nearest Connection (the command palette
+  runs it the same way, off the interface thread) sets the entry and
   exit points of the selection, else of the whole design, for the shortest jumps between parts
   (`embroidery.nearestConnection`, below), and says in a line on the status bar how many parts it
   set and what it saved ("3 parts set · jumps 12.5 mm shorter · trims 1 → 0"). **Check** shows `embroidery.check` for the format chosen ("Checked for"), problems
@@ -916,7 +992,12 @@ are left out. A clip group sews its clipped art only inside the clipping path: a
 to it exactly before it is planned (its rows then reach past the cut by their pull compensation,
 as past any edge: the fabric draws them in there too), and a stroke keeps the stitches whose needle points fall inside
 (so a running line can stop up to a stitch short of the edge), the needle lifted across each cut
-as between a shape's runs, with the thread tied off and in around a long jump. The clipping path's own fill is sewn
+as between a shape's runs, with the thread tied off and in around a long jump. A run of stitches
+read from a file is cut the same way, and the cuts and stops it names where the clip cuts it are
+carried, not lost with the jumps there: between two pieces left they are made where the needle
+lifts across (the cut, then the stop), before the first piece the cut is the run's cut before and
+a stop comes after its first needle point, and after the last piece they come after the run.
+Manual stitches are frozen as sewn and never cut again. The clipping path's own fill is sewn
 under the clipped art and its stroke over it, unclipped, as they paint.
 
 A shape that would need more than 4 million stitches, or a design of more than 2 million, is refused
@@ -941,6 +1022,31 @@ Thread numbers: PES, PEC and JEF name each block's thread by its number in the m
 when it is of their palette, and otherwise match the blocks' art colours to their palette by the
 rule the plan follows (`Palette::assign`, through `Palette::numbers`), so the PES, PEC and JEF
 exports of one document follow one rule.
+
+Stops: no format has a stop of its own. EduTechWiki gives the stop and the colour change the same
+bytes in DST, EXP and JEF, and PEC and VP3 document none. So a stop (the machine stops, the needle
+up and the thread kept, as for an appliqué piece to be laid down) is written as a change to the
+same thread: a colour-change record in DST, TAP, T01 and EXP; in PES, PEC and JEF a colour-change
+record and the block's thread number listed again in the header, so the header names as many
+colours as the body sews; in VP3 a colour block in the same thread. A stop is written only between
+two needle points of one block (`format::stretches`): one at a block's start or end, at the
+design's end or right after another is written as nothing, since the thread change or the end
+already stops a machine there (the project owner's choice, 2026-10-27). Machines differ in what
+they do at it: a single-needle machine stops at every thread change (Brother's also cut the thread
+there); a multi-needle machine changes needle and stops only where its operator sets a stop on
+that change. So an export that writes a stop says both in its notes, which the status bar shows
+(the project owner's choice, 2026-10-30). The Check tab counts each stop among the format's colour
+blocks and the machine's thread changes, and says so ("stops included"); the status bar's thread
+changes leave stops out, and PEC's limit of 255 colours says each stop counts as one. Before this, a stop in a PES, PEC or JEF export left the header one colour short:
+pyembroidery 1.5.1, run as an outside reader, read the block after the stop in the next block's
+thread and could not read the JEF at all. Nothing planned a stop then, so no export was wrong.
+Opened again, a change to the same thread reads as a stop, and the file is written back to the
+same bytes in PES, PEC and JEF, with a cut on either side of the stop and runs around it
+(`a_same_thread_change_between_cuts_writes_back_unchanged`, and the pinned stops exports reopened).
+A cut right beside a change of thread reads back only from PES, PEC, JEF and EXP: DST, TAP and T01
+write it but read none there, and VP3 holds none (its cuts are long moves inside a colour's
+stitches), so such a design opened from VP3 has lost those cuts and is written the same from then
+on.
 
 Trims in JEF: the format has no trim record. EduTechWiki calls a jump of zero length the trim
 command (Janome machines set to cut at cutting commands obey it, and set to cut automatically they
@@ -1043,7 +1149,11 @@ can't follow its path, naming the object. A stroke dashed, aligned inside or out
 varying width or with arrowheads is sewn as the area it paints, as on the canvas, its narrow parts
 satin columns that follow it (`rule: strokeOutlined`). A symbol instance's art is stained as the
 instance shows it. Art at no opacity isn't sewn. The pieces an expanded object becomes are still
-the object a person selects (`id`).
+the object a person selects (`id`). A run of stitches (manual, or a machine file's) is never
+expanded, nor a group holding one (a converted object, an opened file's block) or a symbol
+instance placing one: expanding it would plan its stitches again as art. It is sewn as its points
+in its first stroke's colour; its effects, brush and extra fills or strokes are not sewn, said in
+the warnings, naming the objects (art beside a run in a group is still expanded as it needs).
 
 - Type, images and live art (blends, envelopes, meshes, repeats), placed documents and
   intertwines are left out: they would need their outlines. An export says so in its `warnings`,
@@ -1051,6 +1161,8 @@ the object a person selects (`id`).
 - Raster effects (drop shadows, glows, blurs, feathers, pixel effects) are left off, the art under
   them sewn, and an opacity mask isn't sewn, the masked art is, whole: both said in the warnings.
 - Symbols that place one another more than 100,000 times in all are left out past that, said.
+- A run's stop or cut whose needle point a path command deleted, or moved along with other edits
+  to the path, is left out, said (Using it › Editing stitches).
 - Gradients and patterns sew in one colour (a gradient in its first stop's; a pattern is left out).
 - Wide satin columns are split stitch by stitch (auto split), not into several narrower columns,
   and are at most 50 mm wide (wider strokes are warned about).
@@ -2285,7 +2397,9 @@ below the one sewn after it at the very start), the project owner's rule, as one
 never what: a drop that would put an object into a clip group or take it out of one, move a
 clipping path or a locked object, go into a locked layer or group, fall between two parts of one
 object, or move a run of an opened machine file alone is refused, and the hint under the list says
-why before the release (the drop line shows only where a drop goes). A drop where the dragged rows
+why before the release (the drop line shows only where a drop goes). An object converted to manual
+stitches moves as art does, whole: its row says "manual stitches", and a run of it selected moves
+the object it is part of (as a child of an expanded group moves its group). A drop where the dragged rows
 already are (on them, or at either edge of them) changes nothing, also when the stack isn't in the
 sewing order there: moved beside the next row's object instead, an object sewn first could go above
 another thread's lower in the stack, and be sewn after it. Near the list's edges a drag
@@ -2489,6 +2603,74 @@ Limits:
   design too heavy to plan shows only the points set. The arrow needs no plan.
 - The arrow is a fill's one angle; several directions in one fill (angle lines) come later.
 
+### Manual stitches and needle points
+
+- **What a converted object is** (`cmd/embroidery/manual.rs`): a group keeping the object's id, its
+  `embroidery.original` (`{frame, node, fingerprint}`: the object as the file saved it, kept in
+  memory as its compact JSON text, a fraction of a parsed tree's size, and parsed only at restore; the frame composed with every transform, by the convention for kept data; the
+  fingerprint of the stitches as converted, telling edits from moves), and one path of literal
+  stitches marked `manual` per sewing unit, in walk order. Each path's subpaths are runs the needle
+  jumps between; `trims` names the runs reached after a cut, `stops` the needle points followed by a
+  stop, each kept by its needle point (`[subpath, anchor, x, y]`, with the path's `shape`;
+  `doc::embroidery::Mark`, found on the path as it is now by `StitchRun::placed`: at its place while
+  its needle point lies there, else where that needle point lies, else at its place while the path
+  has as many subpaths and anchors, else left out and said), `stop_after` and `trim_after` the
+  path's end, `exact` the millimetres a document point can't
+  give back (applied while the needle point lies where they were kept for), `transformed` the
+  transforms since the stitches were made (for the scale warning).
+- **How a needle point is addressed** (`needles.rs`): `{id, index}`, the path and the needle point's
+  place across its runs; ids stay put across edits, an index shifts only inside the path an edit
+  changes. Record numbers (`embroidery.stitches`) are resolved to addresses once and never edited by.
+- **Read before arithmetic, written back straight:** a path is edited only when every anchor is a
+  finite number within the document's coordinates and it holds at most 2 million needle points; it
+  is written back as open subpaths of corner anchors (a run of one needle point a line to its own
+  start), its marks from the needle points carrying them, changing nothing sewn.
+- **A run boundary is a jump:** splitting a run lifts the needle before a needle point, joining
+  makes the jump a stitch; a cut or a stop inside a run splits it there first, tied off and in.
+  A cut after a path's last needle point is its run's `trim_after` or the object's Trim After
+  (Machine Function reads both and clears both when turned off); a file's cut before a path is
+  that path's `trim_before`.
+- **Upstream hooks:** Delete, the cutting tools and Join act on runs through three marked
+  statements (FORK.md › the stitch commands' hooks), and Restore's question is a row of the dialog
+  registry.
+- **Tests:** `tests_needles.rs` (every kind of path written back bit for bit, every command, hostile
+  anchors), `tests/embroidery_stitch_edits.rs` (junk on every kind of run, random edits keeping their
+  promises, the inverses), MCP parity (`protocol_props.rs`), `tests/embroidery_golden_corpus.rs` (the
+  convert's oracle at the merge base).
+
+Measured at the end of the review round (2026-10-31, release, 12-core Apple Silicon, twice at a
+load of 2.6 to 3.2; `perf --embroidery`: the medians of three on 1,000 paths and of five on 2
+million needle points, one run of Convert and of Restore on 22,000 paths; the two runs' figures as
+a range):
+
+| Row | Measured | Budget |
+|---|---:|---:|
+| A needle point moved by Direct Selection, the opened 1,000 paths, planned again (median) | 1.8–1.9 ms | 4.75 ms |
+| The same on 2 million literal needle points (median) | 49.8–50.3 ms | 125 ms |
+| Convert to Manual Stitches, every object of 1,000 paths (median) | 76.9–79.7 ms | 195 ms |
+| Restore Object, all of them (median) | 5.1–5.3 ms | 13 ms |
+| Convert, every object of 22,000 paths | 1.75–1.77 s | 4.4 s |
+| Of it, on the interface thread: the job prepared, then its plan applied | 166–168 ms | 418 ms |
+| Restore, all of them | 119–120 ms | 300 ms |
+| The Object tab's read of the 22,000 converted objects selected, after a nudge of one (median) | 21.3–22.5 ms | 55 ms |
+| `embroidery.moveNeedlePoints`: one of 2 million, the design planned again (median) | 52.1–53.1 ms | 131 ms |
+| The same command alone, the plan aside (median) | 4.7–4.9 ms | 12 ms |
+| `embroidery.stitches`: a page of 1,000 records of 2 million (median) | 36.8–37.0 ms | 92.5 ms |
+| `embroidery.selectNeedlePoints`: 100,000 by their records (median) | 43.3 ms | 108 ms |
+| `embroidery.moveNeedlePoints` alone in a path of many runs (each block's runs one path, as a converted object's unit holds them; median) | 1.8–1.9 ms | 4.75 ms |
+| `embroidery.deleteNeedlePoints` alone in the same (median) | 0.66–0.70 ms | 1.75 ms |
+
+A convert plans the whole design afresh, as the export does, so the Object tab and the command
+palette convert off the interface thread: it spends 167 ms of the 1.76 s on the largest design.
+A command alone copies only the paths it changes (one needle point of 2 million moved in 4.8 ms;
+the plan again after it takes the rest). The Object tab's read counts runs and needle points
+without reading them, and asks whether stitches were edited only when Restore is clicked: about
+1 µs a converted object, where an object of art takes about 3 µs (the re-read of 1,000 took 3.1 to
+3.6 ms in the same runs), so a drag of every one of 22,000 converted objects selected reads for
+more than a frame, as one of about 5,000 objects of art does. Before the review round (2026-10-27,
+load about 2.5): convert 77.5 ms and 1.78 s, restore 6.7 and 169 ms, the stitch commands 51, 38
+and 43.5 ms.
+
 ## References
 
 Public documentation, cited per claim in the crate:
@@ -2600,8 +2782,12 @@ Public documentation, cited per claim in the crate:
   it is no worse), `ends.rs` (where each shape can start and end, by the planner's own rules),
   `joins.rs` (the shortest joins of a chain of shapes in a fixed order), `tests.rs`,
   `tests_narrow.rs`, `tests_aim.rs` (entry and exit points met and sewn toward).
-- `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building), `dst.rs`,
-  `tap.rs` (TAP and T01), `exp.rs`, `pes.rs` (PES and PEC), `jef.rs`, `vp3.rs`.
+- `crates/stitch/src/format/` — `mod.rs` (shared frames, readers, block building, where a stop is
+  written: `stretches`, `written_stops`), `dst.rs`, `tap.rs` (TAP and T01), `exp.rs`, `pes.rs`
+  (PES and PEC), `jef.rs`, `vp3.rs`; `tests_stops.rs` (stops written as changes to the same thread,
+  and read back).
+- `crates/doc/src/embroidery/marks.rs` — a run's cuts and stops kept by their needle points
+  (`Mark`), and where each falls on the path as it is now (`StitchRun::placed`).
 - `crates/stitch/src/thread.rs` — the thread palettes (`Palette`), matching a colour to the nearest
   thread by CIEDE2000, a design's blocks to threads (`Palette::assign`), and the thread numbers a
   format writes (`Palette::numbers`).
@@ -2646,7 +2832,13 @@ Public documentation, cited per claim in the crate:
   `tests_matrix.rs` (the resolution order, every combination of layers), `tests_transform.rs`
   (settings under the transform commands), `tests_derive.rs` (settings kept by objects made from
   others), `tests_expanded.rs` (an expanded object's strokes, sewn along their path, nested in a
-  group too).
+  group too), `manual.rs` (Convert to Manual Stitches and Restore Object: what is frozen, the
+  original kept, the fingerprint telling edits from moves), `needles.rs` (a path of stitches read
+  as runs of needle points, addressed `{id, index}`, and written back), `needle_edits.rs` (the
+  stitch commands: move, insert, delete, split, join, machine functions, split long stitches),
+  `hooks.rs` (what upstream's Delete, cutting tools and Join do to runs of stitches), `records.rs`
+  (`embroidery.stitches` and `selectNeedlePoints`), `tests_manual.rs`, `tests_needles.rs`,
+  `tests_marks.rs` (cuts and stops through upstream's path commands), `tests_stops.rs`.
 - `crates/render/src/lines.rs` — line pictures and their renderer (`render::lines`), which the
   stitch view draws with, knowing nothing about stitches.
 - `crates/ui-egui/src/embroidery/` — the stitch preview in the app: `stitch_preview.rs` (when a
@@ -2658,7 +2850,9 @@ Public documentation, cited per claim in the crate:
   `numbers.rs` and `text.rs` (severity marks, numbers in the interface language, filled
   templates), `rows.rs`, `fields.rs` and `vocabulary.rs` (a settings row, its numbers, the settings'
   words), `setup_tab.rs` (Document Setup's Embroidery tab), `handles.rs` (the embroidery tool's
-  handles drawn on the canvas), `point_dialog.rs` (the Entry Point and Exit Point dialog);
+  handles drawn on the canvas), `point_dialog.rs` (the Entry Point and Exit Point dialog),
+  `convert_job.rs` (Convert to Manual Stitches off the interface thread), `restore_dialog.rs`
+  (Restore Object's question), `nearest.rs` (Nearest Connection off the interface thread);
   `tests_preview.rs` (the scheduler end to end), `tests_languages.rs` (every language),
   `tests_handles.rs` (the tool's handles headless with real pointer events, and their contrast),
   `tests_gate.rs` (the third gate, the Object tab's scrub and the tool's drag, by hand),
@@ -2705,6 +2899,8 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-31 | minor | Manual stitches' review round: a run's cuts and stops kept by their needle points through Reverse, Add and Delete Anchor Point, Simplify, Join's merge and Close Path, and the Check tab saying when one is lost; a group the plan sews whole converted with its members' Trim After and Stop After, or passed over when it holds what isn't sewn; Restore asking when foreign art or a run's look changed, keeping that art beside the object, range-checked and cleaned as an opened file's object, selecting what it put back; Convert and Restore waiting during Global Edit, from the command palette as from the panel; a clip group carrying a file's run's cuts and stops; the export saying how a stop was written; the Object tab's screen-reader help, focus and words; compatibility notes; the kept original held as JSON text; new perf rows, everything measured again. |
+| 2026-10-27 | minor | Manual stitches, first part: Convert to Manual Stitches (the export right after the same bytes) and Restore Object (at the size now, asking first only after edits); Stop After, and how a stop is written and read; a run sewn as its anchors and never expanded for sewing; the stitch commands and Direct Selection's Delete, cutting and Join on runs; the Check tab's `stitchesScaled`; the Sewing order moving a converted object whole. |
 | 2026-10-27 | minor | The embroidery tool's review round: the guard toward an exit strict (no more lifts, cuts or travel, the move in counted, at least 1 mm gained); Nearest Connection from the menu and the tool's bar off the interface thread, with progress and Escape; the handles, focus ring and lines readable on any fabric in every theme, 24 px targets; NotAllowed where a click selects nothing; a warning that documents saved before may sew otherwise; the words table (`embroidery-tool-words.md`); new perf rows, and everything measured again. |
 | 2026-10-26 | minor | The embroidery tool: entry and exit points on the canvas in both views, dragged (snapped to where the stitches can start or end, a ghost of the jump, a pause planning a heavy design), typed in the Entry Point and Exit Point dialog, reset with Alt-click or Delete, nudged with the arrows; a tatami fill's angle arrow; picking an object by its stitches; the planner meeting an entry exactly and sewing toward the exit, kept only where no worse; points kept on the piece nearest them; misses reported and checked; Nearest Connection; the Object tab's entry and exit rows and Set on Canvas; the One embroidery tool rules and limits; the in-app gate measured. |
 | 2026-10-25 | minor | The settings interface's review round: Document Setup's Embroidery tab's fields named by `embroidery.setup`'s paths, an agent's fabric choice taken as the tab's menu takes it and a field it can't take refused with the reason, changes marked against the document's copy of its preset, the built-in values keeping the fabric's colour, both layouts scrolling, a value OK would refuse said under its field; Copy taking a snapshot and Paste one batch in any document; Trim After marking and counting only what is sewn; the Object tab read without a listing and kept through a canvas drag, its footer from the document alone; the keyboard's focus drawn and a setting's help shown on it; the measurements taken again. |

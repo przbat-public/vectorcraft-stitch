@@ -5121,7 +5121,7 @@ lighting	Light	ライト
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft チームの VectorCraft をもとにしています。MIT OR Apache-2.0。フォント：Source Sans 3、Inter、JetBrains Mono (OFL)。アイコン：Lucide (ISC) + VectorCraft。
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC に入る色は最大 {MAX_COLORS} 色で、{colors} 色は入りません
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC に入る色は最大 {MAX_COLORS} 色で（停止も 1 色に数えます）、{colors} 色は入りません
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 に入る色ブロックは最大 {MAX_COLORS} 個です
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST ファイルには {HEADER} バイトのヘッダーと 3 バイトのレコードが 1 つ以上必要ですが、このファイルは {_1} バイトです
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST ヘッダーが数えられるレコードは最大 {MAX_RECORDS} 個ですが、デザインには {_1} 個必要です
@@ -5557,6 +5557,7 @@ embroidery	Not sewn: it is hidden.	縫いません：非表示です。
 embroidery	Not sewn: it is on a template or non-printing layer.	縫いません：テンプレートレイヤーか印刷しないレイヤーにあります。
 embroidery	Not sewn.	縫いません。
 embroidery	Stitches from a file are sewn as the file has them.	ファイルのステッチは、ファイルのとおりに縫います。
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	手動ステッチは配置どおりに縫われます。変換元のオブジェクトは一緒に保持されていません。
 embroidery	Type isn't sewn yet: create outlines to sew it.	テキストはまだ縫えません。アウトラインを作成すると縫えます。
 embroidery	Images aren't sewn.	画像は縫いません。
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	設定はシンボル内のオブジェクトに付けます。シンボルを編集して設定してください。
@@ -5719,3 +5720,88 @@ embroidery	Auto (where the plan ends the part)	自動（計画がパーツを終
 	[ ]	[ ]
 	 step from point to point, the arrows nudge it, Enter types it	：点から点へ移動、矢印キーで少し動かし、Enter キーで入力
 @plural	Entry and exit points show for the first {count} object selected|Entry and exit points show for the first {count} objects selected	入口点と出口点は選択した最初の {count} 個のオブジェクトに表示されます
+# VectorCraft Stitch: Stop After, the machine stopped after an object (as for appliqué), beside Trim After
+	Embroidery Stop After	刺繍: 後で停止
+# VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
+	Convert to Manual Stitches	手動ステッチに変換
+@msg	nothing selected can be converted to manual stitches: {_1}	選択したものは手動ステッチに変換できません: {_1}
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
+	Restore Object	オブジェクトを復元
+@msg	nothing selected can be restored: {_1}	選択したものはどれも復元できません: {_1}
+# VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
+embroidery	Manual stitches or stitches from a file scaled by more than {value}%	{value}% を超えて拡大縮小された手動ステッチまたはファイルのステッチ
+embroidery	{name}: {value}% larger	{name}: {value}% 拡大
+embroidery	{name}: {value}% smaller	{name}: {value}% 縮小
+embroidery	Largest change: {value}%	最大の変化: {value}%
+# VectorCraft Stitch: the Sewing order's words for a unit of manual stitches, and the machine stops a unit has
+embroidery	manual stitches	手動ステッチ
+@plural	{count} stop|{count} stops	{count} 回の停止
+# VectorCraft Stitch: the stitch plan's warning that a stitch run's effects, brushes and extra fills or strokes are not sewn (the run is sewn as its points)
+@msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	手動ステッチやファイルのステッチ（またはそれを含むグループ）に付けた効果、ブラシ、追加の塗りや線は刺繍されません: ステッチはそのまま縫われます
+# VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
+	Move Needle Points	針落ち点を移動
+@msg	select needle points of a path of stitches, or give needlePoints	ステッチのパスの針落ち点を選択するか、needlePoints を指定してください
+# VectorCraft Stitch: Insert Needle Points
+	Insert Needle Points	針落ち点を挿入
+# VectorCraft Stitch: Delete Needle Points
+	Delete Needle Points	針落ち点を削除
+# VectorCraft Stitch: Split Run and Join Runs, and what Join Runs says of runs it can't join
+	Split Run	区間を分割
+	Join Runs	区間を結合
+@msg	these runs aren't sewn one right after another in one colour block	これらの区間は 1 つの色ブロックで続けて縫われません
+# VectorCraft Stitch: Machine Function (a cut or a machine stop after a needle point)
+	Machine Function	マシン機能
+# VectorCraft Stitch: Split Long Stitches
+	Split Long Stitches	長いステッチを分割
+# VectorCraft Stitch: the Stitch List (the design's records) and Select Needle Points
+	Stitch List	ステッチリスト
+	Select Needle Points	針落ち点を選択
+# VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
+embroidery	Manual stitches	手動ステッチ
+embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	配置されたとおりに縫われます。生地やオブジェクトの設定では変わらなくなります。
+embroidery	Scaled to {value}% since converting	変換後に {value}% に拡大縮小
+embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	オブジェクトを手動ステッチの代わりに戻し、現在のサイズで計画し直します。
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	現在計画されているステッチを固定し、針落ち点を 1 つずつ動かせるようにします。オブジェクトを復元すると元に戻ります。
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	オブジェクトのステッチの後でミシンが停止します（アップリケのときのように）。次に糸替えやデザインの終わりが来る場所ではミシンはいずれにせよ止まるので、余分な停止は書き出しません。
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	変換後にステッチへ加えた変更は失われます。取り消しで元に戻せます。
+@plural	Stop the machine after the object|Stop the machine after the objects	オブジェクトの後で機械を止める
+@plural	Restore {count} object?|Restore {count} objects?	{count} 個のオブジェクトを復元しますか?
+@plural	{count} object restored|{count} objects restored	{count} 個のオブジェクトを復元しました
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} 個のオブジェクトを手動ステッチに変換しました。オブジェクトを復元で元に戻せます
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	ステッチの糸切りまたは停止が省かれました: パスのコマンドが、それらの直前の針落ち点を削除または移動しました（マシン機能で設定し直してください）
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	ステッチのパスはステッチのパスとだけ連結できます: それだけを選択してください
+@msg	select two or more paths of stitches sewn one right after another to join them	連結するには、続けて縫われるステッチのパスを2つ以上選択してください
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	針落ち点の後で糸切り
+	Stop After Needle Point	針落ち点の後で停止
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	グローバル編集中はできません: 先にグローバル編集を終了してください
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} 個の糸ブロック（停止を含む）
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} 回の糸替え（停止を含む）
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	停止はすべて同じ糸への糸替えとして書き出されます。単針機はそこで止まり、多針機はオペレーターがその糸替えに停止を設定した箇所でだけ止まります
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	ロックされたオブジェクトは復元できません。先にロックを解除してください。
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	ファイルのステッチ
+embroidery	manual stitches already	すでに手動ステッチ
+embroidery	symbol instances	シンボルインスタンス
+embroidery	clipping paths	クリッピングパス
+embroidery	parts of an object sewn whole	まとめて縫うオブジェクトの一部
+embroidery	holding what isn't sewn	縫わないものを含む
+embroidery	locked	ロック中
+embroidery	not sewn	縫われない
+embroidery	stitches a manual run can't hold	手動の区間に収まらないステッチ
+embroidery	not converted	変換されていない
+embroidery	the kept object doesn't read	保持されたオブジェクトを読めない
+embroidery	its symbol is gone	シンボルがない
+embroidery	would lie outside the document	ドキュメントの外に出る
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} 個のオブジェクトをスキップ: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} 区間
+@plural	{count} needle point|{count} needle points	{count} 個の針落ち点
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	選択中の {count} 個のオブジェクトは手動ステッチです
+embroidery	Converting to manual stitches…	手動ステッチに変換中…

@@ -888,6 +888,7 @@ fn how_sewn(unit: &OrderUnit, several: bool) -> String {
     let part = match unit.part.as_str() {
         "fill" => crate::et!("fill"),
         "stroke" => crate::et!("stroke"),
+        "manual" => crate::et!("manual stitches"),
         _ => crate::et!("from the file"),
     };
     let part = match unit.part_index.filter(|_| several) {
@@ -910,6 +911,9 @@ fn how_sewn(unit: &OrderUnit, several: bool) -> String {
     }
     if unit.trims > 0 {
         words.push(crate::etn!(unit.trims as u64, "{count} trim", "{count} trims"));
+    }
+    if unit.stops > 0 {
+        words.push(crate::etn!(unit.stops as u64, "{count} stop", "{count} stops"));
     }
     words.join(" · ")
 }

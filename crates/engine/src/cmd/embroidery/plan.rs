@@ -42,6 +42,9 @@ pub enum Part {
     Stroke(usize),
     /// Its points, sewn as they are: a run of stitches read from a machine file.
     Literal,
+    /// Its points, sewn as they are, placed in the sewing order as art is: a run of manual stitches
+    /// (an object converted to them, Convert to Manual Stitches).
+    Manual,
 }
 
 /// What a sewing unit sews: an object, and which part of it.
@@ -89,7 +92,7 @@ impl Part {
         match self {
             Part::Fill(_) => Some(PartKind::Fill),
             Part::Stroke(_) => Some(PartKind::Stroke),
-            Part::Literal => None,
+            Part::Literal | Part::Manual => None,
         }
     }
 }
@@ -136,6 +139,8 @@ pub enum Choice {
     SatinFilled(ForcedBy),
     /// Stitches read from a machine file, sewn as they are.
     Literal,
+    /// Manual stitches (an object converted to them), sewn as they are.
+    Manual,
 }
 
 pub use vectorcraft_stitch::thread::DELTA_E_HUNDREDTHS;
@@ -250,6 +255,11 @@ pub struct Unit {
     /// The narrowest and the widest satin column it sews, millimetres: a satin's width (both), the
     /// typical widths of a fill's narrowest and widest narrow parts; `None` when it sews none.
     pub satin_widths: Option<[f64; 2]>,
+    /// For a run sewn as its points are, the least and the most its stitches were stretched by
+    /// since they were made (read from a machine file, or converted): the singular values of its
+    /// transforms since (`StitchRun::since_made`), the walk's included (a symbol instance's).
+    /// `None` for planned art, and for a run only moved since.
+    pub scale: Option<[f64; 2]>,
     /// Why it is sewn the way it is.
     pub why: Choice,
     /// The box its stitches fall in as planned, millimetres (`None`: no finite point).
@@ -267,6 +277,18 @@ pub struct Unit {
     /// Its runs: each stretch of needle-down stitches one after another, sewn without lifting the
     /// needle, as a range of its block's stitches (within [`Unit::stitches`]).
     pub runs: Vec<Range<usize>>,
+    /// Its own stitches as it was planned to sew them, a range of its block's (within
+    /// [`Unit::stitches`]): without the move that reaches it (the jump, and the cut before it) and
+    /// without the cut or stop after it that its object (or a group it ends) asks for. What
+    /// converting the unit to manual stitches freezes ([`DesignPlan::own_stitches`]).
+    pub own: Range<usize>,
+    /// Whether it starts where the needle already was: its first needle point is then the block's
+    /// stitch before [`Unit::own`], left to the unit before (the needle is already in that hole).
+    pub met: bool,
+    /// Its place in walk order (document order, the order the units were planned in), from 0: the
+    /// order [`DesignPlan::units`] (sewing order, block by block) doesn't keep, as a unit can join an
+    /// earlier block.
+    pub walked: usize,
     /// The entry and exit points it was planned toward: its part's, when its object sets them.
     pub asked: Asked,
 }
@@ -450,6 +472,16 @@ impl DesignPlan {
         let miss = |a: Point, q: Point, reach: f64| (a.distance(q) - reach).max(0.0);
         let [entry_reach, exit_reach] = u.asked.reach;
         [u.asked.entry.zip(first).map(|(a, q)| miss(a, q, entry_reach)), u.asked.exit.zip(last).map(|(a, q)| miss(a, q, exit_reach))]
+    }
+
+    /// Unit `unit`'s own stitches as it was planned to sew them ([`Unit::own`]): its first needle
+    /// point put back where the plan left it to the unit before ([`Unit::met`]). Empty for a unit
+    /// that isn't there.
+    pub fn own_stitches(&self, unit: usize) -> Vec<Stitch> {
+        let Some(u) = self.units.get(unit) else { return Vec::new() };
+        let Some(block) = self.blocks.get(u.block) else { return Vec::new() };
+        let shared = u.own.start.checked_sub(1).and_then(|k| block.stitches.get(k)).filter(|_| u.met).map(|s| Stitch::sew(s.point()));
+        shared.into_iter().chain(block.stitches.get(u.own.clone()).unwrap_or_default().iter().copied()).collect()
     }
 
     /// The numbers of unit `unit`'s stitches ([`Unit::stitches`], numbered as

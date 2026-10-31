@@ -162,6 +162,62 @@ fn embroidery_object_settings_messages_are_translated() {
     assert!(untranslated.is_empty(), "untranslated messages:\n{}", untranslated.join("\n"));
 }
 
+/// What the manual-stitch commands say when they can't act (a person running them from the command
+/// palette, or the Object tab, meets it) is translated whole in every language.
+#[test]
+fn manual_stitch_messages_are_translated() {
+    use serde_json::json;
+    use vectorcraft_engine::{EngineError, Session};
+    let mut s = Session::new();
+    s.execute("file.new", &json!({})).unwrap();
+    let text = s.execute("text.create", &json!({"x": 10, "y": 300, "text": "Stitch"})).unwrap()["id"].as_u64().unwrap();
+    let message_of = |r: Result<serde_json::Value, EngineError>| match r {
+        Err(EngineError::Other(m)) => m,
+        r => panic!("{r:?}"),
+    };
+    let mut messages = vec![
+        message_of(s.execute("embroidery.convertToManual", &json!({ "ids": [text] }))),
+        message_of(s.execute("embroidery.restoreObject", &json!({ "ids": [text] }))),
+        message_of(s.execute("embroidery.moveNeedlePoints", &json!({ "dx": 1 }))),
+    ];
+    // Two runs of stitches and a rectangle, for Join's refusals: a run with art, a run alone.
+    let runs: Vec<u64> = (0..2)
+        .map(|k| {
+            let d = format!("M {} 100 L {} 100", 50 + 40 * k, 70 + 40 * k);
+            s.execute("path.create", &json!({ "d": d })).unwrap()["id"].as_u64().unwrap()
+        })
+        .collect();
+    s.edit("Runs", |d, _| {
+        for id in &runs {
+            let n = d.node_mut(vectorcraft_doc::NodeId(*id)).unwrap();
+            n.extras_mut().embroidery = Some(Box::new(vectorcraft_doc::embroidery::Embroidery {
+                stitches: Some(vectorcraft_doc::embroidery::StitchRun::default()),
+                ..Default::default()
+            }));
+        }
+        Ok(())
+    })
+    .unwrap();
+    let art = s.execute("shape.rectangle", &json!({"x": 300, "y": 300, "width": 20, "height": 20})).unwrap()["id"].as_u64().unwrap();
+    s.execute("select.set", &json!({ "ids": [runs[0], art] })).unwrap();
+    messages.push(message_of(s.execute("path.join", &json!({}))));
+    s.execute("select.set", &json!({ "ids": [runs[0]] })).unwrap();
+    messages.push(message_of(s.execute("path.join", &json!({}))));
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let lang = Lang::from_code(info.code).unwrap();
+        for m in &messages {
+            let shown = message(lang, m);
+            if shown == *m
+                || ["nothing selected", "manual stitches", "converted", "select needle points", "runs of stitches"].iter().any(|w| shown.contains(*w))
+            {
+                untranslated.push(format!("{}: {shown}", info.code));
+            }
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated messages:\n{}", untranslated.join("\n"));
+}
+
 /// What a plan says of a stroke an effect reshapes whose running or satin stitch can't follow its
 /// path is translated whole in every language.
 #[test]

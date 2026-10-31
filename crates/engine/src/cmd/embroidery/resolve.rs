@@ -334,6 +334,11 @@ fn within(v: f64, (lo, hi): (f64, f64), clamped: &mut bool) -> f64 {
 }
 
 impl DocLayer {
+    /// The shortest stitch the document's machine sews, millimetres, when it sets one.
+    pub(crate) fn min_stitch(&self) -> Option<f64> {
+        self.every.min_stitch
+    }
+
     /// The settings of `d` (none: the built-in defaults).
     pub(crate) fn of(d: &Document) -> Self {
         d.embroidery.as_deref().map_or_else(Self::default, Self::read)

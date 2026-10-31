@@ -6108,3 +6108,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} výměna nitě, včetně zastavení|{count} výměny nitě, včetně zastavení|{count} výměn nitě, včetně zastavení
 # VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	každé zastavení je zapsáno jako výměna na tutéž nit: jednojehlový stroj se na ní zastaví, vícejehlový jen tam, kde obsluha na této výměně nastaví zastavení
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Zamčené objekty nelze obnovit: nejdřív je odemkněte.

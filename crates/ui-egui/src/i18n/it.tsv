@@ -5723,3 +5723,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} cambio filo, arresti compresi|{count} cambi filo, arresti compresi
 # VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	ogni arresto è scritto come un cambio allo stesso filo: una macchina ad ago singolo vi si ferma, una multiago solo dove il suo operatore imposta un arresto su quel cambio
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Gli oggetti bloccati non si possono ripristinare: sbloccali prima.

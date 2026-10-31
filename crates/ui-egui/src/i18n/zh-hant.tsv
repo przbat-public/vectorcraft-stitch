@@ -5742,3 +5742,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} 次換線（含停機）
 # VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	每次停機都寫成換到同一種線：單針機會在那裡停下，多針機只在操作員為該次換線設定了停機的地方停下
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	鎖定的物件無法還原：請先解鎖。

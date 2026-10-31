@@ -733,7 +733,8 @@ pub(crate) fn summary(doc: &Document, ids: &[NodeId], with_edited: bool) -> Opti
     let mut scale: Option<[f64; 2]> = None;
     let mut known = true;
     for g in groups.iter().filter_map(|g| doc.node(*g)) {
-        out.restorable += usize::from(doc.is_editable(g.id));
+        // As Restore refuses: locked, or in a locked group or layer (hidden objects are restored).
+        out.restorable += usize::from(!doc.ancestry(g.id).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|n| n.locked)));
         if let Some(n) = out.edited.as_mut() {
             *n += usize::from(edited(g));
         }

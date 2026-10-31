@@ -6060,3 +6060,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} αλλαγή κλωστής, μαζί με τις διακοπές|{count} αλλαγές κλωστής, μαζί με τις διακοπές
 # VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	κάθε διακοπή γράφεται ως αλλαγή στην ίδια κλωστή: μια μονοβελονική μηχανή σταματά εκεί, μια πολυβελονική μόνο όπου ο χειριστής της ορίσει διακοπή σε αυτή την αλλαγή
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Τα κλειδωμένα αντικείμενα δεν μπορούν να επαναφερθούν: ξεκλειδώστε τα πρώτα.

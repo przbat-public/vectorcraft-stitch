@@ -6139,3 +6139,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} langanvaihto, pysäytykset mukaan lukien|{count} langanvaihtoa, pysäytykset mukaan lukien
 # VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	jokainen pysäytys kirjoitetaan vaihdoksi samaan lankaan: yksineulainen kone pysähtyy siinä, moneulainen vain siellä, missä käyttäjä asettaa vaihdolle pysäytyksen
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Lukittuja objekteja ei voi palauttaa: avaa niiden lukitus ensin.

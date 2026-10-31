@@ -157,7 +157,7 @@ pub struct ObjectSettings {
 }
 
 /// The objects converted to manual stitches among a selection: how many, how many can be restored
-/// (not locked), how many were edited since converting (Restore then asks first; `None` when not
+/// (not locked, nor in a locked group or layer, as Restore Object refuses them), how many were edited since converting (Restore then asks first; `None` when not
 /// asked: the Object tab asks on Restore's click, not at each change), their runs and needle points,
 /// and the least and the most their stitches were stretched by since converting (their originals'
 /// frames' singular values; `None` when one can't say).

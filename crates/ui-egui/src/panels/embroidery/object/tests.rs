@@ -38,11 +38,18 @@ struct Drawn {
     words: Vec<(String, Rect)>,
     outlines: Vec<(Rect, egui::Color32)>,
     nodes: Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>,
+    focus: Option<egui::accesskit::NodeId>,
 }
 
 impl Drawn {
     fn has(&self, what: &str) -> bool {
         self.words.iter().any(|(w, _)| w.contains(what))
+    }
+
+    /// The name of the node that has the keyboard, if any.
+    fn focused(&self) -> Option<&str> {
+        let focus = self.focus?;
+        self.nodes.iter().find(|(id, _)| *id == focus).and_then(|(_, n)| n.label())
     }
 
     fn node(&self, name: &str) -> &egui::accesskit::Node {
@@ -117,8 +124,8 @@ fn drawn(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
             _ => {}
         }
     }
-    let nodes = out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default();
-    Drawn { words, outlines, nodes }
+    let (nodes, focus) = out.platform_output.accesskit_update.map(|u| (u.nodes, Some(u.focus))).unwrap_or_default();
+    Drawn { words, outlines, nodes, focus }
 }
 
 /// A context with the app's fonts, screen readers on.
@@ -647,13 +654,59 @@ fn the_keyboards_focus_is_drawn_on_restore_and_the_checkbox() {
     assert!(!drawn.outlines.iter().any(|(_, c)| *c == ring), "no outline without the focus");
     let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::label("angle", Some("tatami")))]);
     let trim = crate::etn!(1, "Trim the thread after the object", "Trim the thread after the objects");
-    for name in [restore.as_str(), trim.as_str()] {
+    let convert = super::super::command_label(&app, CONVERT);
+    for name in [restore.as_str(), trim.as_str(), convert.as_str()] {
         time += 0.05;
         frame(&mut app, &ctx, time, vec![drawn.focus(name)]);
         time += 0.05;
         let focused = frame(&mut app, &ctx, time, vec![]);
         assert!(focused.outlines.iter().any(|(_, c)| *c == ring), "{name}: the focus's outline");
     }
+    // Restore Object, on manual stitches.
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![drawn.focus(crate::et!("Restore Object…"))]);
+    time += 0.05;
+    let focused = frame(&mut app, &ctx, time, vec![]);
+    assert!(focused.outlines.iter().any(|(_, c)| *c == ring), "Restore Object: the focus's outline");
+}
+
+/// Pressed from the keyboard, Convert hands the keyboard to Restore Object once the object is
+/// converted, and Restore Object hands it back to Convert once it is put back: the keyboard is
+/// never left with nothing, where the next Tab would hide the panels. Restore Object, dimmed
+/// because every object is locked, says why to screen readers.
+#[test]
+fn convert_and_restore_hand_the_keyboard_to_what_replaces_them() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let convert = super::super::command_label(&app, CONVERT);
+    let restore = crate::et!("Restore Object…");
+    let enter = |pressed| Event::Key { key: Key::Enter, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let drawn = ready(&mut app, &ctx, &mut time);
+    for events in [vec![drawn.focus(&convert)], vec![enter(true)], vec![enter(false)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    converted_now(&mut app, &ctx, &mut time);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(drawn.focused(), Some(restore), "Restore Object has the keyboard");
+    for events in [vec![enter(true)], vec![enter(false)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    assert_eq!(info(&mut app, &[a])["manual"], json!(null), "restored at once: its stitches unedited");
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(drawn.focused(), Some(convert.as_str()), "Convert has the keyboard again");
+    // Locked: dimmed, and said why.
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    app.run("object.lock", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(drawn.node(restore).description(), Some(crate::et!("Locked objects can't be restored: unlock them first.")));
 }
 
 /// Screen readers hear what a blank field shows (what Auto chose, as its placeholder), and two ↺

@@ -6049,3 +6049,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} cambio de hilo, paradas incluidas|{count} cambios de hilo, paradas incluidas
 # VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	cada parada se escribe como un cambio al mismo hilo: una máquina de una aguja se detiene ahí; una de varias agujas, solo donde su operador fije una parada en ese cambio
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Los objetos bloqueados no se pueden restaurar: desbloquéelos primero.

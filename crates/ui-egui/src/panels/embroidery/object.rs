@@ -126,9 +126,20 @@ pub(crate) struct ObjectState {
     sewn: Option<Sewn>,
     /// What Copy took (a snapshot, pasted as it was then, into any document).
     copied: Option<Copied>,
+    /// The button that takes the keyboard when it is drawn, for the objects it was asked for: the
+    /// one that replaces Convert or Restore Object once they have done their work, when the
+    /// keyboard pressed them (else nothing would have it, and the next Tab would hide the panels).
+    focus_next: Option<(FocusNext, Vec<NodeId>)>,
     /// How many times the selection's settings were read (the memo missed).
     #[cfg(test)]
     reads: usize,
+}
+
+/// Which of the tab's buttons takes the keyboard next ([`ObjectState::focus_next`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FocusNext {
+    Convert,
+    Restore,
 }
 
 /// What Copy Embroidery Settings took: each part's settings of the object copied, as they were
@@ -239,11 +250,11 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {
         takes_none(ui, &info);
-        manual(ui, &info, &ids, lang, &mut commands);
+        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next);
         trim_after(ui, &info, &ids, &mut commands);
         stop_after(ui, &info, &ids, &mut commands);
     } else {
-        manual(ui, &info, &ids, lang, &mut commands);
+        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next);
         let chosen = app.ui.embroidery_panel.part;
         let shown = shown(chosen, &info);
         if let Some(part) = part_switch(ui, &info, shown) {
@@ -264,12 +275,14 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             // The panel's width, measured outside the scrolled rows: what they are fitted to, so that
             // nothing wider in them can widen the next frame's.
             let width = ui.available_width();
+            let (label, busy) = (super::command_label(app, CONVERT), crate::embroidery::convert_job::running(app));
+            let focus = &mut app.embroidery.object.focus_next;
             egui::ScrollArea::vertical().id_salt("embroidery-object-rows").max_height(room).auto_shrink([false, true]).show(ui, |ui| {
                 ui.set_max_width(width);
                 part_rows(ui, part.0, part.1, &ids, width, lang, missed, planned, &mut commands);
                 trim_after(ui, &info, &ids, &mut commands);
                 stop_after(ui, &info, &ids, &mut commands);
-                convert(ui, app_label_convert(app), crate::embroidery::convert_job::running(app), &ids, &mut commands);
+                convert(ui, label, busy, &ids, &mut commands, focus);
             });
         }
     }
@@ -851,21 +864,38 @@ const RESTORE: &str = "embroidery.restoreObject";
 const SCALE_SAID: f64 = 0.5;
 
 /// Convert to Manual Stitches, the command's label (`label`), for the objects that take settings;
-/// waiting while a convert is `busy`.
-fn convert(ui: &mut Ui, label: String, busy: bool, ids: &[NodeId], commands: &mut Vec<Command>) {
+/// waiting while a convert is `busy`. It takes the keyboard when `focus` says so (Restore Object,
+/// pressed by the keyboard, put these objects back), and pressed by the keyboard, it hands the
+/// keyboard to Restore Object once the objects are converted.
+fn convert(ui: &mut Ui, label: String, busy: bool, ids: &[NodeId], commands: &mut Vec<Command>, focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
     ui.add_space(GAP);
     let tip = crate::et!("Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.");
     let resp = ui.add_enabled(!busy, egui::Button::new(label));
+    take_focus(&resp, FocusNext::Convert, ids, focus);
+    rows::focus_ring(ui, &resp, resp.rect.expand(rows::FOCUS_GAP), Tokens::get(ui.ctx()).panel);
     rows::keyboard_tip(ui, resp.id, tip);
     rows::described(ui, resp.id, tip);
-    if resp.on_hover_text(tip).clicked() {
+    let resp = resp.on_hover_text(tip);
+    if resp.clicked() {
+        hand_focus(&resp, FocusNext::Restore, ids, focus);
         commands.push((CONVERT, json!({"ids": ids_json(ids)})));
     }
 }
 
-/// Convert to Manual Stitches' label, in the interface's language.
-fn app_label_convert(app: &VectorcraftApp) -> String {
-    super::command_label(app, CONVERT)
+/// `resp` takes the keyboard when `focus` names its button (`which`) for objects `ids`.
+fn take_focus(resp: &egui::Response, which: FocusNext, ids: &[NodeId], focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
+    if focus.as_ref().is_some_and(|(f, at)| *f == which && at.as_slice() == ids) {
+        resp.request_focus();
+        *focus = None;
+    }
+}
+
+/// Pressed while it had the keyboard, `resp`'s button hands it to the button `next` that replaces
+/// it for objects `ids` once its work is done.
+fn hand_focus(resp: &egui::Response, next: FocusNext, ids: &[NodeId], focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
+    if resp.has_focus() {
+        *focus = Some((next, ids.to_vec()));
+    }
 }
 
 /// The status bar's words after converting, from the command's reply.
@@ -881,7 +911,7 @@ pub(crate) fn converted(reply: &Value) -> String {
 /// The manual stitches among the selection ([`ObjectSettings::manual`]): what they are, their runs
 /// and needle points, the scale since converting when there is one, and Restore Object (asking first
 /// when their stitches were edited since converting).
-fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, commands: &mut Vec<Command>) {
+fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, commands: &mut Vec<Command>, focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
     let Some(m) = &info.manual else { return };
     state_words(ui, crate::et!("Sewn as they are placed: they no longer change with the fabric or the object's settings."));
     let t = Tokens::get(ui.ctx());
@@ -900,11 +930,16 @@ fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, comman
     }
     ui.add_space(GAP / 2.0);
     let tip = crate::et!("Puts the object back in place of its manual stitches, planned again at its size now.");
+    // Dimmed only as Restore refuses: every one locked, which it says.
+    let locked = crate::et!("Locked objects can't be restored: unlock them first.");
     let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(crate::et!("Restore Object…")));
+    take_focus(&resp, FocusNext::Restore, ids, focus);
+    rows::focus_ring(ui, &resp, resp.rect.expand(rows::FOCUS_GAP), t.panel);
     rows::keyboard_tip(ui, resp.id, tip);
-    rows::described(ui, resp.id, tip);
-    let resp = resp.on_hover_text(tip);
+    rows::described(ui, resp.id, if m.restorable > 0 { tip } else { locked });
+    let resp = resp.on_hover_text(tip).on_disabled_hover_text(locked);
     if resp.clicked() {
+        hand_focus(&resp, FocusNext::Convert, ids, focus);
         // Restored at once, or asked first when their stitches were edited since converting: the
         // question takes the keyboard, so the button lets it go (else each Enter would press it
         // again behind the question).

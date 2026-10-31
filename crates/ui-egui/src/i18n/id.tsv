@@ -6063,3 +6063,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @plural	{count} thread change, stops included|{count} thread changes, stops included	{count} ganti benang, termasuk pemberhentian
 # VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	setiap pemberhentian ditulis sebagai ganti ke benang yang sama: mesin satu jarum berhenti di sana, mesin multi-jarum hanya di tempat operatornya menetapkan pemberhentian pada ganti itu
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Objek yang terkunci tidak dapat dipulihkan: buka kuncinya terlebih dahulu.

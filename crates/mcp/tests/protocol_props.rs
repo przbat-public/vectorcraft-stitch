@@ -579,11 +579,12 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 12, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(12))]
 
     /// Random stitch edits (VectorCraft Stitch) on a design opened from a machine file, through
     /// `run_command` and on a local session started from the same file: each succeeds or is
-    /// refused alike, and the documents end the same. (`arb_ops` makes no paths of stitches.)
+    /// refused alike, never by an internal error (a caught panic on both sides isn't "refused
+    /// alike"), and the documents end the same. (`arb_ops` makes no paths of stitches.)
     #[test]
     fn stitch_edit_sequences_match_local_session(format in prop::sample::select(vec!["dst", "pes", "jef", "vp3"]), ops in vectorcraft_testkit::embroidery::arb_stitch_ops(1..10)) {
         let mut built = vectorcraft_engine::Session::new();
@@ -597,8 +598,11 @@ proptest! {
         prop_assert!(v["result"]["isError"] != json!(true), "{}", v);
         for op in &ops {
             let Some((id, params)) = op.command(&local.doc().unwrap().doc) else { continue };
-            let a = local.execute(&id, &params).is_ok();
+            let local_reply = local.execute(&id, &params);
+            prop_assert!(!matches!(local_reply, Err(vectorcraft_engine::EngineError::Internal { .. })), "`{}` {}: {:?}", id, params, local_reply);
+            let a = local_reply.is_ok();
             let v = call(&mut srv, "run_command", json!({"command": id, "params": params}));
+            prop_assert!(!v.to_string().contains("internal error in `"), "`{}` {}: {}", id, params, v);
             let b = v["result"]["isError"] != json!(true);
             prop_assert_eq!(a, b, "`{}` {}: local ok={} mcp ok={} ({})", id, params, a, b, v);
         }

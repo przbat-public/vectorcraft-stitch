@@ -5452,7 +5452,7 @@ swatch	Bright Violet	Felviolet
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Gebaseerd op VectorCraft van het ArtCraft-team. MIT OR Apache-2.0. Lettertypen: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Pictogrammen: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC bevat hoogstens {MAX_COLORS} kleuren, niet {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC bevat hoogstens {MAX_COLORS} kleuren (elke stop telt als één), niet {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 bevat hoogstens {MAX_COLORS} kleurblokken
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	een DST-bestand heeft een header van {HEADER} bytes en ten minste één record van 3 bytes, maar dit bestand is {_1} bytes
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	een DST-header telt hoogstens {MAX_RECORDS} records, en het ontwerp heeft er {_1} nodig
@@ -5878,7 +5878,7 @@ embroidery	Not sewn: it is hidden.	Wordt niet geborduurd: het is verborgen.
 embroidery	Not sewn: it is on a template or non-printing layer.	Wordt niet geborduurd: het staat op een sjabloonlaag of een laag die niet wordt afgedrukt.
 embroidery	Not sewn.	Wordt niet geborduurd.
 embroidery	Stitches from a file are sewn as the file has them.	Steken uit een bestand worden geborduurd zoals het bestand ze bevat.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Handmatige steken worden genaaid zoals ze liggen: Object herstellen brengt het object en zijn instellingen terug.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Handmatige steken worden genaaid zoals ze liggen; het object waaruit ze zijn omgezet, wordt niet bij ze bewaard.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst wordt nog niet geborduurd: zet hem om in curven om hem te borduren.
 embroidery	Images aren't sewn.	Afbeeldingen worden niet geborduurd.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	De instellingen horen bij de objecten van het symbool: bewerk het symbool om ze in te stellen.
@@ -6046,9 +6046,9 @@ embroidery	Auto (where the plan ends the part)	Automatisch (waar het plan het de
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Omzetten naar handmatige steken
 @msg	nothing selected can be converted to manual stitches: {_1}	niets van de selectie kan worden omgezet naar handmatige steken: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Object herstellen
-@msg	nothing selected was converted to manual stitches: {_1}	niets van de selectie is omgezet naar handmatige steken: {_1}
+@msg	nothing selected can be restored: {_1}	niets van de selectie kan worden hersteld: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Handmatige steken of steken uit een bestand die meer dan {value}% geschaald zijn
 embroidery	{name}: {value}% larger	{name}: {value}% vergroot
@@ -6061,7 +6061,7 @@ embroidery	manual stitches	handmatige steken
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	effecten, penselen en extra vullingen of lijnen op handmatige steken of steken uit een bestand (of op een groep die ze bevat) worden niet geborduurd: de steken worden genaaid zoals ze zijn
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Insteekpunten verplaatsen
-@msg	select needle points of a run of stitches, or give needlePoints	selecteer insteekpunten van een reeks steken, of geef needlePoints op
+@msg	select needle points of a path of stitches, or give needlePoints	selecteer insteekpunten van een pad van steken, of geef needlePoints op
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Insteekpunten invoegen
 # VectorCraft Stitch: Delete Needle Points
@@ -6080,17 +6080,52 @@ embroidery	manual stitches	handmatige steken
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Handmatige steken
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Genaaid zoals ze liggen: ze veranderen niet meer met de stof of de instellingen van het object.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} reeks · {needle} insteekpunten|{count} reeksen · {needle} insteekpunten
 embroidery	Scaled to {value}% since converting	Sinds het omzetten geschaald naar {value}%
-embroidery	Restore Object…	Object herstellen…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Zet het object terug op de plaats van zijn handmatige steken, opnieuw gepland op zijn huidige grootte.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Bevriest de nu geplande steken, zodat elk insteekpunt te verplaatsen is; Object herstellen brengt het object terug.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	De machine stopt na de steken van het object, zoals voor applicatie; een stop bij een draadwissel of aan het eind is die stop.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	De machine stopt na de steken van het object, zoals bij applicatie. Waar een draadwissel of het einde van het ontwerp volgt, stopt de machine daar toch al, dus wordt er geen extra stop geschreven.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Wijzigingen in de steken sinds het omzetten gaan verloren; Ongedaan maken brengt ze terug.
 @plural	Stop the machine after the object|Stop the machine after the objects	Machine stoppen na het object|Machine stoppen na de objecten
 @plural	Restore {count} object?|Restore {count} objects?	{count} object herstellen?|{count} objecten herstellen?
 @plural	{count} object restored|{count} objects restored	{count} object hersteld|{count} objecten hersteld
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} object omgezet naar handmatige steken: Object herstellen brengt het terug|{count} objecten omgezet naar handmatige steken: Object herstellen brengt ze terug
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	knippen of stops van steken zijn weggelaten: een padopdracht heeft de insteekpunten waarop ze volgden verwijderd of verplaatst (stel ze opnieuw in met Machinefunctie)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	paden van steken worden alleen met paden van steken samengevoegd: selecteer alleen die
+@msg	select two or more paths of stitches sewn one right after another to join them	selecteer twee of meer paden van steken die direct na elkaar worden genaaid om ze samen te voegen
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Knip na insteekpunt
+	Stop After Needle Point	Stop na insteekpunt
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	niet tijdens globale bewerking: stop die eerst
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} draadblok, stops inbegrepen|{count} draadblokken, stops inbegrepen
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} draadwissel, stops inbegrepen|{count} draadwissels, stops inbegrepen
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	elke stop wordt geschreven als een wissel naar dezelfde draad: een machine met één naald stopt daar, een meernaaldsmachine alleen waar de bediener op die wissel een stop instelt
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Vergrendelde objecten kunnen niet worden hersteld: ontgrendel ze eerst.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	steken uit een bestand
+embroidery	manual stitches already	al handmatige steken
+embroidery	symbol instances	symboolinstanties
+embroidery	clipping paths	knippaden
+embroidery	parts of an object sewn whole	delen van een object dat als geheel wordt genaaid
+embroidery	holding what isn't sewn	bevat wat niet wordt genaaid
+embroidery	locked	vergrendeld
+embroidery	not sewn	niet genaaid
+embroidery	stitches a manual run can't hold	steken die een handmatige reeks niet kan bevatten
+embroidery	not converted	niet omgezet
+embroidery	the kept object doesn't read	het bewaarde object is onleesbaar
+embroidery	its symbol is gone	het symbool ontbreekt
+embroidery	would lie outside the document	zou buiten het document liggen
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} object overgeslagen: {reasons}|{count} objecten overgeslagen: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} reeks|{count} reeksen
+@plural	{count} needle point|{count} needle points	{count} insteekpunt|{count} insteekpunten
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} geselecteerd object bestaat uit handmatige steken|{count} geselecteerde objecten bestaan uit handmatige steken
+embroidery	Converting to manual stitches…	Omzetten naar handmatige steken…
 # VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
 embroidery	Editing stitches	Steken bewerken
 embroidery	Editing stitches: {name}	Steken bewerken: {name}
@@ -6099,7 +6134,6 @@ embroidery	Needle points are edited in the Stitches view.	Insteekpunten bewerk j
 embroidery	Show Stitches	Steken tonen
 embroidery	Edit Stitches	Steken wijzigen
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Verplaats, voeg in en verwijder deze insteekpunten op het canvas met het Borduur-gereedschap.
-@plural	{count} needle point|{count} needle points	{count} insteekpunt|{count} insteekpunten
 @plural	{count} selected|{count} selected	{count} geselecteerd|{count} geselecteerd
 @plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} reeks kan niet worden bewerkt: vergrendeld, verborgen of bijgesneden door een knipmasker|{count} reeksen kunnen niet worden bewerkt: vergrendeld, verborgen of bijgesneden door een knipmasker
 	 needle points, or a frame round them  |  	 insteekpunten, of een kader eromheen  |  

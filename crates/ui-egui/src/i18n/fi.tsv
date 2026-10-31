@@ -5432,7 +5432,7 @@ mark-style	Japanese	Japanilainen
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Perustuu ArtCraft-tiimin VectorCraftiin. MIT OR Apache-2.0. Fontit: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Kuvakkeet: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC mahduttaa enintään {MAX_COLORS} väriä, ei {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC mahduttaa enintään {MAX_COLORS} väriä (jokainen pysäytys lasketaan yhdeksi), ei {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 mahduttaa enintään {MAX_COLORS} värilohkoa
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST-tiedostossa on {HEADER} tavun otsake ja vähintään yksi 3 tavun tietue, mutta tämä tiedosto on {_1} tavua
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST-otsake laskee enintään {MAX_RECORDS} tietuetta, ja malli tarvitsee {_1}
@@ -5911,7 +5911,7 @@ embroidery	Not sewn: it is hidden.	Ei kirjota: se on piilotettu.
 embroidery	Not sewn: it is on a template or non-printing layer.	Ei kirjota: se on mallipohjatasolla tai tasolla, jota ei tulosteta.
 embroidery	Not sewn.	Ei kirjota.
 embroidery	Stitches from a file are sewn as the file has them.	Tiedoston pistot kirjotaan sellaisinaan.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Manuaaliset pistot ommellaan niin kuin ne on sijoitettu: Palauta objekti tuo objektin ja sen asetukset takaisin.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Manuaaliset pistot ommellaan niin kuin ne on sijoitettu; objektia, josta ne muunnettiin, ei säilytetä niiden mukana.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Tekstiä ei vielä kirjota: muunna se ääriviivoiksi, jotta se kirjotaan.
 embroidery	Images aren't sewn.	Kuvia ei kirjota.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Asetukset tehdään symbolin objekteille: muokkaa symbolia asettaaksesi ne.
@@ -6079,9 +6079,9 @@ embroidery	Auto (where the plan ends the part)	Automaattinen (missä suunnitelma
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Muunna manuaalisiksi pistoiksi
 @msg	nothing selected can be converted to manual stitches: {_1}	mitään valituista ei voi muuntaa manuaalisiksi pistoiksi: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Palauta objekti
-@msg	nothing selected was converted to manual stitches: {_1}	mitään valituista ei ole muunnettu manuaalisiksi pistoiksi: {_1}
+@msg	nothing selected can be restored: {_1}	mitään valituista ei voi palauttaa: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Manuaaliset pistot tai pistot tiedostosta, skaalattu yli {value} %
 embroidery	{name}: {value}% larger	{name}: suurennettu {value} %
@@ -6094,7 +6094,7 @@ embroidery	manual stitches	manuaaliset pistot
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	tehosteita, siveltimiä ja ylimääräisiä täyttöjä tai viivoja manuaalisissa pistoissa tai tiedoston pistoissa (tai niitä sisältävässä ryhmässä) ei kirjota: pistot ommellaan sellaisinaan
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Siirrä neulanpistoja
-@msg	select needle points of a run of stitches, or give needlePoints	valitse pistosarjan neulanpistoja tai anna needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	valitse pistopolun neulanpistoja tai anna needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Lisää neulanpistoja
 # VectorCraft Stitch: Delete Needle Points
@@ -6113,17 +6113,52 @@ embroidery	manual stitches	manuaaliset pistot
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Manuaaliset pistot
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Ommellaan niin kuin ne on sijoitettu: ne eivät enää muutu kankaan tai objektin asetusten mukana.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} pistosarja · neulanpistoja: {needle}|{count} pistosarjaa · neulanpistoja: {needle}
 embroidery	Scaled to {value}% since converting	Skaalattu {value} %:iin muuntamisen jälkeen
-embroidery	Restore Object…	Palauta objekti…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Palauttaa objektin sen manuaalisten pistojen tilalle, suunniteltuna uudelleen sen nykyisessä koossa.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Jäädyttää nyt suunnitellut pistot, jotta jokaista neulanpistoa voi siirtää; Palauta objekti tuo objektin takaisin.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Kone pysähtyy objektin pistojen jälkeen, esimerkiksi applikointia varten; pysähdys langanvaihdossa tai lopussa on se sama.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Kone pysähtyy objektin pistojen jälkeen, kuten applikoinnissa. Kun seuraavaksi tulee langanvaihto tai kuvion loppu, kone pysähtyy siinä joka tapauksessa, joten ylimääräistä pysäytystä ei kirjoiteta.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Pistoihin muuntamisen jälkeen tehdyt muutokset menetetään; Kumoa tuo ne takaisin.
 @plural	Stop the machine after the object|Stop the machine after the objects	Pysäytä kone objektin jälkeen|Pysäytä kone objektien jälkeen
 @plural	Restore {count} object?|Restore {count} objects?	Palautetaanko {count} objekti?|Palautetaanko {count} objektia?
 @plural	{count} object restored|{count} objects restored	{count} objekti palautettu|{count} objektia palautettu
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekti muunnettu manuaalisiksi pistoiksi: Palauta objekti tuo sen takaisin|{count} objektia muunnettu manuaalisiksi pistoiksi: Palauta objekti tuo ne takaisin
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	pistojen leikkauksia tai pysäytyksiä jätettiin pois: polkukomento poisti tai siirsi neulanpistot, joiden jälkeen ne tulivat (aseta ne uudelleen Konetoiminto-komennolla)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	pistopolut yhdistyvät vain pistopolkuihin: valitse vain ne
+@msg	select two or more paths of stitches sewn one right after another to join them	valitse kaksi tai useampia heti peräkkäin ommeltavia pistopolkuja yhdistääksesi ne
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Leikkaus neulanpiston jälkeen
+	Stop After Needle Point	Pysäytys neulanpiston jälkeen
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	ei yleismuokkauksen ollessa käytössä: lopeta se ensin
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} lankalohko, pysäytykset mukaan lukien|{count} lankalohkoa, pysäytykset mukaan lukien
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} langanvaihto, pysäytykset mukaan lukien|{count} langanvaihtoa, pysäytykset mukaan lukien
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	jokainen pysäytys kirjoitetaan vaihdoksi samaan lankaan: yksineulainen kone pysähtyy siinä, moneulainen vain siellä, missä käyttäjä asettaa vaihdolle pysäytyksen
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Lukittuja objekteja ei voi palauttaa: avaa niiden lukitus ensin.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	pistot tiedostosta
+embroidery	manual stitches already	jo manuaalisia pistoja
+embroidery	symbol instances	symbolien esiintymät
+embroidery	clipping paths	leikkauspolut
+embroidery	parts of an object sewn whole	kokonaan ommellun objektin osat
+embroidery	holding what isn't sewn	sisältää ompelematonta
+embroidery	locked	lukittu
+embroidery	not sewn	ei ommella
+embroidery	stitches a manual run can't hold	pistot, joita manuaalinen pistosarja ei mahduta
+embroidery	not converted	ei muunnettu
+embroidery	the kept object doesn't read	säilytettyä objektia ei voi lukea
+embroidery	its symbol is gone	sen symboli puuttuu
+embroidery	would lie outside the document	olisi asiakirjan ulkopuolella
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekti ohitettiin: {reasons}|{count} objektia ohitettiin: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} pistosarja|{count} pistosarjaa
+@plural	{count} needle point|{count} needle points	{count} neulanpisto|{count} neulanpistoa
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} valittu objekti on manuaalisia pistoja|{count} valittua objektia on manuaalisia pistoja
+embroidery	Converting to manual stitches…	Muunnetaan manuaalisiksi pistoiksi…
 # VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
 embroidery	Editing stitches	Pistojen muokkaus
 embroidery	Editing stitches: {name}	Pistojen muokkaus: {name}
@@ -6132,7 +6167,6 @@ embroidery	Needle points are edited in the Stitches view.	Neulanpistoja muokataa
 embroidery	Show Stitches	Näytä pistot
 embroidery	Edit Stitches	Muokkaa pistoja
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Siirrä, lisää ja poista näitä neulanpistoja piirtoalueella Kirjontatyökalulla.
-@plural	{count} needle point|{count} needle points	{count} neulanpisto|{count} neulanpistoa
 @plural	{count} selected|{count} selected	{count} valittu|{count} valittua
 @plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} pistosarjaa ei voi muokata: lukittu, piilotettu tai leikkausmaskin rajaama|{count} pistosarjaa ei voi muokata: lukittuja, piilotettuja tai leikkausmaskin rajaamia
 	 needle points, or a frame round them  |  	 neulanpistoja tai kehys niiden ympärille  |  

@@ -5339,7 +5339,7 @@ imageTrace	Outline	კონტური
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	დაფუძნებულია ArtCraft-ის გუნდის VectorCraft-ზე. MIT OR Apache-2.0. შრიფტები: Source Sans 3, Inter, JetBrains Mono (OFL). ხატულები: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC-ში ეტევა არაუმეტეს {MAX_COLORS} ფერი და არა {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC-ში ეტევა არაუმეტეს {MAX_COLORS} ფერი (ყოველი გაჩერება ერთად ითვლება) და არა {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3-ში ეტევა არაუმეტეს {MAX_COLORS} ფერის ბლოკი
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST ფაილს აქვს {HEADER}-ბაიტიანი სათაური და მინიმუმ ერთი 3-ბაიტიანი ჩანაწერი, მაგრამ ეს ფაილი {_1} ბაიტია
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST სათაური ითვლის არაუმეტეს {MAX_RECORDS} ჩანაწერს, დიზაინს კი {_1} სჭირდება
@@ -5795,7 +5795,7 @@ embroidery	Not sewn: it is hidden.	არ იქარგება: დამა
 embroidery	Not sewn: it is on a template or non-printing layer.	არ იქარგება: შაბლონის ან დაუბეჭდავ შრეზეა.
 embroidery	Not sewn.	არ იქარგება.
 embroidery	Stitches from a file are sewn as the file has them.	ფაილის ნაკერები იქარგება ისე, როგორც ფაილშია.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	ხელით ნაკერები იკერება ისე, როგორც განლაგებულია: ობიექტის აღდგენა აბრუნებს ობიექტს და მის პარამეტრებს.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	ხელით ნაკერები იკერება ისე, როგორც არის განლაგებული; ობიექტი, საიდანაც ისინი გარდაიქმნა, მათთან ერთად არ ინახება.
 embroidery	Type isn't sewn yet: create outlines to sew it.	ტექსტი ჯერ არ იქარგება: გარდაქმენით კონტურებად, რომ ამოიქარგოს.
 embroidery	Images aren't sewn.	გამოსახულებები არ იქარგება.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	პარამეტრებს სიმბოლოს ობიექტები იღებს: დასაყენებლად შეცვალეთ სიმბოლო.
@@ -5963,9 +5963,9 @@ embroidery	Auto (where the plan ends the part)	ავტომატური (�
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	ხელით ნაკერებად გარდაქმნა
 @msg	nothing selected can be converted to manual stitches: {_1}	მონიშნულიდან ვერაფერი გარდაიქმნება ხელით ნაკერებად: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	ობიექტის აღდგენა
-@msg	nothing selected was converted to manual stitches: {_1}	მონიშნულიდან არაფერი გარდაქმნილა ხელით ნაკერებად: {_1}
+@msg	nothing selected can be restored: {_1}	მონიშნულიდან ვერაფერი აღდგება: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	ხელით ნაკერები ან ნაკერები ფაილიდან, მასშტაბირებული {value}%-ზე მეტით
 embroidery	{name}: {value}% larger	{name}: {value}%-ით გადიდებული
@@ -5978,7 +5978,7 @@ embroidery	manual stitches	ხელით ნაკერები
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	ხელით ნაკერებზე ან ფაილიდან ნაკერებზე (ან მათ შემცველ ჯგუფზე) დამატებული ეფექტები, ფუნჯები და დამატებითი შევსებები ან კონტურები არ იქარგება: ნაკერები იკერება ისე, როგორც არის
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	ნემსის ჩხვლეტების გადატანა
-@msg	select needle points of a run of stitches, or give needlePoints	აირჩიეთ ნაკერების მწკრივის ნემსის ჩხვლეტები ან მიუთითეთ needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	აირჩიეთ ნაკერების ტრაექტორიის ნემსის ჩხვლეტები ან მიუთითეთ needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	ნემსის ჩხვლეტების ჩასმა
 # VectorCraft Stitch: Delete Needle Points
@@ -5997,17 +5997,52 @@ embroidery	manual stitches	ხელით ნაკერები
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	ხელით ნაკერები
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	იკერება ისე, როგორც განლაგებულია: აღარ იცვლება ქსოვილთან ან ობიექტის პარამეტრებთან ერთად.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	მწკრივები: {count} · ნემსის ჩხვლეტები: {needle}
 embroidery	Scaled to {value}% since converting	გარდაქმნის შემდეგ მასშტაბირებულია {value}%-მდე
-embroidery	Restore Object…	ობიექტის აღდგენა…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	აბრუნებს ობიექტს მისი ხელით ნაკერების ნაცვლად, ხელახლა დაგეგმილს ახლანდელ ზომაში.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	ყინავს ახლა დაგეგმილ ნაკერებს, რომ ყოველი ნემსის ჩხვლეტა გადაადგილდეს; ობიექტის აღდგენა აბრუნებს ობიექტს.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	მანქანა ჩერდება ობიექტის ნაკერების შემდეგ, მაგალითად აპლიკაციისთვის; გაჩერება ძაფის შეცვლისას ან ბოლოს იგივეა.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	მანქანა ჩერდება ობიექტის ნაკერების შემდეგ, როგორც აპლიკაციისას. სადაც შემდეგ ძაფის ცვლა ან დიზაინის დასასრულია, მანქანა იქ ისედაც ჩერდება, ამიტომ დამატებითი გაჩერება არ იწერება.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	გარდაქმნის შემდეგ ნაკერებში შეტანილი ცვლილებები დაიკარგება; დაბრუნება მათ აღადგენს.
 @plural	Stop the machine after the object|Stop the machine after the objects	მანქანის გაჩერება ობიექტის შემდეგ
 @plural	Restore {count} object?|Restore {count} objects?	აღდგეს {count} ობიექტი?
 @plural	{count} object restored|{count} objects restored	აღდგა {count} ობიექტი
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} ობიექტი გარდაიქმნა ხელით ნაკერებად: ობიექტის აღდგენა დააბრუნებს
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	ნაკერების ჭრები ან გაჩერებები გამოტოვებულია: კონტურის ბრძანებამ წაშალა ან გადაადგილა ნემსის ჩხვლეტები, რომლებსაც ისინი მოსდევდნენ (ხელახლა დააყენეთ „მანქანის ფუნქციით“)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	ნაკერების ტრაექტორიები მხოლოდ ნაკერების ტრაექტორიებს უერთდება: აირჩიეთ მხოლოდ ისინი
+@msg	select two or more paths of stitches sewn one right after another to join them	შესაერთებლად აირჩიეთ ორი ან მეტი ნაკერების ტრაექტორია, რომლებიც ერთმანეთის შემდეგ იკერება
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	ჭრა ნემსის ჩხვლეტის შემდეგ
+	Stop After Needle Point	გაჩერება ნემსის ჩხვლეტის შემდეგ
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	არა, სანამ გლობალური რედაქტირება ჩართულია: ჯერ შეაჩერეთ ის
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	ძაფის ბლოკები: {count} (გაჩერებების ჩათვლით)
+@plural	{count} thread change, stops included|{count} thread changes, stops included	ძაფის ცვლა: {count} (გაჩერებების ჩათვლით)
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	ყოველი გაჩერება იწერება იმავე ძაფზე გადართვად: ერთნემსიანი მანქანა იქ ჩერდება, მრავალნემსიანი — მხოლოდ იქ, სადაც ოპერატორი ამ გადართვაზე გაჩერებას დააყენებს
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	ჩაკეტილი ობიექტების აღდგენა შეუძლებელია: ჯერ განბლოკეთ ისინი.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	ნაკერები ფაილიდან
+embroidery	manual stitches already	უკვე ხელით ნაკერები
+embroidery	symbol instances	სიმბოლოს ასლები
+embroidery	clipping paths	ამოჭრის ტრაექტორიები
+embroidery	parts of an object sewn whole	მთლიანად ნაკერი ობიექტის ნაწილები
+embroidery	holding what isn't sewn	შეიცავს უკერავს
+embroidery	locked	ჩაკეტილი
+embroidery	not sewn	არ იკერება
+embroidery	stitches a manual run can't hold	ნაკერები, რომლებსაც ხელით მწკრივი ვერ იტევს
+embroidery	not converted	არ გარდაქმნილა
+embroidery	the kept object doesn't read	შენახული ობიექტი არ იკითხება
+embroidery	its symbol is gone	მისი სიმბოლო აღარ არის
+embroidery	would lie outside the document	დოკუმენტის გარეთ აღმოჩნდებოდა
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	გამოტოვებული ობიექტები: {count} — {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	მწკრივები: {count}
+@plural	{count} needle point|{count} needle points	ნემსის ჩხვლეტები: {count}
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	მონიშნული ობიექტებიდან ხელით ნაკერებია: {count}
+embroidery	Converting to manual stitches…	ხელით ნაკერებად გარდაქმნა…
 # VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
 embroidery	Editing stitches	ნაკერების რედაქტირება
 embroidery	Editing stitches: {name}	ნაკერების რედაქტირება: {name}
@@ -6016,7 +6051,6 @@ embroidery	Needle points are edited in the Stitches view.	ნემსის ჩ
 embroidery	Show Stitches	ნაკერების ჩვენება
 embroidery	Edit Stitches	ნაკერების შესწორება
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	გადაიტანეთ, ჩასვით და წაშალეთ ეს ნემსის ჩხვლეტები ტილოზე ნაქარგობის ხელსაწყოთი.
-@plural	{count} needle point|{count} needle points	ნემსის ჩხვლეტები: {count}
 @plural	{count} selected|{count} selected	მონიშნული: {count}
 @plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	შეუცვლელი მწკრივები: {count} — ჩაკეტილი, დამალული ან მომჭრელი ნიღბით მოჭრილი
 	 needle points, or a frame round them  |  	 ნემსის ჩხვლეტებზე ან მათ გარშემო ჩარჩო  |  

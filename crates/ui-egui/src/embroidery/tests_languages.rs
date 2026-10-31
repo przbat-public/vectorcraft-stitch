@@ -144,8 +144,16 @@ fn object_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Vec<
     let one = frames(app, ctx, Tab::Object, width).0;
     app.run("select.set", json!({ "ids": ids })).unwrap();
     let several = frames(app, ctx, Tab::Object, width).0;
+    // Manual stitches: one converted object alone, and beside the others.
+    let last = ids.last().copied().unwrap();
+    app.run("embroidery.convertToManual", json!({"ids": [last]})).unwrap();
+    app.run("select.set", json!({ "ids": [last] })).unwrap();
+    let manual = frames(app, ctx, Tab::Object, width).0;
+    app.run("select.set", json!({ "ids": ids })).unwrap();
+    let mixed = frames(app, ctx, Tab::Object, width).0;
+    app.run("edit.undo", json!({})).unwrap();
     app.run("select.set", json!({"ids": []})).unwrap();
-    vec![one, several]
+    vec![one, several, manual, mixed]
 }
 
 /// The Check tab with its layers rule shown (selected, zoomed to, focused) and opened.

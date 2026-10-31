@@ -561,10 +561,6 @@ fn clear(s: &mut Session, p: &Value) -> Result<Value> {
     let explicit = if p.get("ids").is_some() { Some(checked_ids_param(s, p, "ids", "edit.clear")?) } else { None };
     // Direct-selected anchors or segments: remove those, and any objects selected whole with them.
     if explicit.is_none() && !s.doc()?.selection.anchors.is_empty() {
-        // VectorCraft Stitch: needle points of runs of stitches are deleted as stitches (neighbours merge).
-        if let Some(done) = super::embroidery::delete_needle_points_selected(s) {
-            return done;
-        }
         return super::path::delete_anchors(s, p);
     }
     // Selected ruler guides (selected on their own).

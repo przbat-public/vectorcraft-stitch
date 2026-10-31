@@ -126,9 +126,20 @@ pub(crate) struct ObjectState {
     sewn: Option<Sewn>,
     /// What Copy took (a snapshot, pasted as it was then, into any document).
     copied: Option<Copied>,
+    /// The button that takes the keyboard when it is drawn, for the objects it was asked for: the
+    /// one that replaces Convert or Restore Object once they have done their work, when the
+    /// keyboard pressed them (else nothing would have it, and the next Tab would hide the panels).
+    focus_next: Option<(FocusNext, Vec<NodeId>)>,
     /// How many times the selection's settings were read (the memo missed).
     #[cfg(test)]
     reads: usize,
+}
+
+/// Which of the tab's buttons takes the keyboard next ([`ObjectState::focus_next`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FocusNext {
+    Convert,
+    Restore,
 }
 
 /// What Copy Embroidery Settings took: each part's settings of the object copied, as they were
@@ -244,12 +255,14 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {
         takes_none(ui, &info);
-        manual(ui, &info, &ids, lang, &mut commands);
+        let restore = super::command_label(app, RESTORE);
+        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next, &restore);
         edit_stitches(ui, stitches, &mut commands);
         trim_after(ui, &info, &ids, &mut commands);
         stop_after(ui, &info, &ids, &mut commands);
     } else {
-        manual(ui, &info, &ids, lang, &mut commands);
+        let restore = super::command_label(app, RESTORE);
+        manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next, &restore);
         edit_stitches(ui, stitches, &mut commands);
         let chosen = app.ui.embroidery_panel.part;
         let shown = shown(chosen, &info);
@@ -271,12 +284,14 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             // The panel's width, measured outside the scrolled rows: what they are fitted to, so that
             // nothing wider in them can widen the next frame's.
             let width = ui.available_width();
+            let (label, busy) = (super::command_label(app, CONVERT), crate::embroidery::convert_job::running(app));
+            let focus = &mut app.embroidery.object.focus_next;
             egui::ScrollArea::vertical().id_salt("embroidery-object-rows").max_height(room).auto_shrink([false, true]).show(ui, |ui| {
                 ui.set_max_width(width);
                 part_rows(ui, part.0, part.1, &ids, width, lang, missed, planned, &mut commands);
                 trim_after(ui, &info, &ids, &mut commands);
                 stop_after(ui, &info, &ids, &mut commands);
-                convert(ui, app_label_convert(app), crate::embroidery::convert_job::running(app), &ids, &mut commands);
+                convert(ui, label, busy, &ids, &mut commands, focus);
             });
         }
     }
@@ -302,16 +317,15 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             }
             continue;
         }
-        if cmd == RESTORE_DIALOG {
-            let count = params["count"].as_u64().unwrap_or(1) as usize;
-            crate::embroidery::restore_dialog::open(app, params["ids"].take(), count);
+        if cmd == RESTORE {
+            // Asking first when their stitches were edited since converting.
+            let ids = params.get_mut("ids").map(Value::take).unwrap_or_default();
+            crate::embroidery::menu::restore_asking(app, ids);
             continue;
         }
         for_selection(&mut params, &ids, &selected);
-        match app.run(cmd, params) {
-            Ok(v) if cmd == RESTORE => app.status(crate::embroidery::restore_dialog::restored(&v)),
-            Ok(_) => {}
-            Err(e) => app.status(e),
+        if let Err(e) = app.run(cmd, params) {
+            app.status(e);
         }
     }
 }
@@ -852,7 +866,9 @@ fn stop_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
     }
     let value = if info.stop_after.mixed { None } else { info.stop_after.value };
     let words = crate::etn!(ids.len() as u64, "Stop the machine after the object", "Stop the machine after the objects");
-    let tip = crate::et!("The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.");
+    let tip = crate::et!(
+        "The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written."
+    );
     if rows::check_with_tip(ui, &words, value, Tokens::get(ui.ctx()).panel, tip) {
         commands.push(("embroidery.setStopAfter", json!({"ids": ids_json(ids), "on": value != Some(true)})));
     }
@@ -861,7 +877,6 @@ fn stop_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
 /// The commands the tab runs that it says more of, and the Restore question's own.
 const CONVERT: &str = "embroidery.convertToManual";
 const RESTORE: &str = "embroidery.restoreObject";
-const RESTORE_DIALOG: &str = "embroidery-restore-dialog";
 /// Edit Stitches, which starts editing an object's needle points: no command (the mode is
 /// isolation), so it is the tab's own.
 const EDIT_STITCHES: &str = "embroidery-edit-stitches";
@@ -883,42 +898,75 @@ fn edit_stitches(ui: &mut Ui, id: Option<NodeId>, commands: &mut Vec<Command>) {
 const SCALE_SAID: f64 = 0.5;
 
 /// Convert to Manual Stitches, the command's label (`label`), for the objects that take settings;
-/// waiting while a convert is `busy`.
-fn convert(ui: &mut Ui, label: String, busy: bool, ids: &[NodeId], commands: &mut Vec<Command>) {
+/// waiting while a convert is `busy`. It takes the keyboard when `focus` says so (Restore Object,
+/// pressed by the keyboard, put these objects back), and pressed by the keyboard, it hands the
+/// keyboard to Restore Object once the objects are converted.
+fn convert(ui: &mut Ui, label: String, busy: bool, ids: &[NodeId], commands: &mut Vec<Command>, focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
     ui.add_space(GAP);
     let tip = crate::et!("Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.");
     let resp = ui.add_enabled(!busy, egui::Button::new(label));
+    take_focus(&resp, FocusNext::Convert, ids, focus);
+    rows::focus_ring(ui, &resp, resp.rect.expand(rows::FOCUS_GAP), Tokens::get(ui.ctx()).panel);
     rows::keyboard_tip(ui, resp.id, tip);
-    if resp.on_hover_text(tip).clicked() {
+    rows::described(ui, resp.id, tip);
+    let resp = resp.on_hover_text(tip);
+    if resp.clicked() {
+        hand_focus(&resp, FocusNext::Restore, ids, focus);
         commands.push((CONVERT, json!({"ids": ids_json(ids)})));
     }
 }
 
-/// Convert to Manual Stitches' label, in the interface's language.
-fn app_label_convert(app: &VectorcraftApp) -> String {
-    super::command_label(app, CONVERT)
+/// `resp` takes the keyboard when `focus` names its button (`which`) for objects `ids`.
+fn take_focus(resp: &egui::Response, which: FocusNext, ids: &[NodeId], focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
+    if focus.as_ref().is_some_and(|(f, at)| *f == which && at.as_slice() == ids) {
+        resp.request_focus();
+        *focus = None;
+    }
+}
+
+/// Pressed while it had the keyboard, `resp`'s button hands it to the button `next` that replaces
+/// it for objects `ids` once its work is done.
+fn hand_focus(resp: &egui::Response, next: FocusNext, ids: &[NodeId], focus: &mut Option<(FocusNext, Vec<NodeId>)>) {
+    if resp.has_focus() {
+        *focus = Some((next, ids.to_vec()));
+    }
 }
 
 /// The status bar's words after converting, from the command's reply.
 pub(crate) fn converted(reply: &Value) -> String {
     let count = reply["convertedCount"].as_u64().unwrap_or(0);
-    crate::etn!(
+    let done = crate::etn!(
         count,
         "{count} object converted to manual stitches: Restore Object brings it back",
         "{count} objects converted to manual stitches: Restore Object brings them back"
-    )
+    );
+    vocabulary::with_passed_over(&done, reply)
 }
 
 /// The manual stitches among the selection ([`ObjectSettings::manual`]): what they are, their runs
 /// and needle points, the scale since converting when there is one, and Restore Object (asking first
 /// when their stitches were edited since converting).
-fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, commands: &mut Vec<Command>) {
+fn manual(
+    ui: &mut Ui,
+    info: &ObjectSettings,
+    ids: &[NodeId],
+    lang: Lang,
+    commands: &mut Vec<Command>,
+    focus: &mut Option<(FocusNext, Vec<NodeId>)>,
+    label: &str,
+) {
     let Some(m) = &info.manual else { return };
+    // Beside objects that take settings, how many of the selection the words below are about.
+    if info.object_count > 0 {
+        state_words(ui, &crate::etn!(m.objects as u64, "{count} selected object is manual stitches", "{count} selected objects are manual stitches"));
+    }
     state_words(ui, crate::et!("Sewn as they are placed: they no longer change with the fabric or the object's settings."));
     let t = Tokens::get(ui.ctx());
     let dim = crate::embroidery::marks::readable_text(t.text_dim, &[t.panel], t.dark);
-    let runs = crate::etn!(m.runs as u64, "{count} run · {needle} needle points", "{count} runs · {needle} needle points");
-    let counts = text::fill(&runs, &[("needle", &numbers::count(lang, m.needle_points as u64))]);
+    // Each count takes its own plural form: "1 run · 12 needle points", "3 runs · 1 needle point".
+    let runs = crate::etn!(m.runs as u64, "{count} run", "{count} runs");
+    let needle = crate::etn!(m.needle_points as u64, "{count} needle point", "{count} needle points");
+    let counts = format!("{runs} · {needle}");
     ui.add(egui::Label::new(egui::RichText::new(counts).size(SMALL_TEXT).color(dim)).wrap());
     // The axis scaled most, as a percent of the size converted at.
     if let Some([least, most]) = m.scale {
@@ -931,14 +979,22 @@ fn manual(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], lang: Lang, comman
     }
     ui.add_space(GAP / 2.0);
     let tip = crate::et!("Puts the object back in place of its manual stitches, planned again at its size now.");
-    let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(crate::et!("Restore Object…")));
+    // Dimmed only as Restore refuses: every one locked, which it says.
+    let locked = crate::et!("Locked objects can't be restored: unlock them first.");
+    // The command's label, no ellipsis: it asks first only when the stitches were edited.
+    let resp = ui.add_enabled(m.restorable > 0, egui::Button::new(label));
+    take_focus(&resp, FocusNext::Restore, ids, focus);
+    rows::focus_ring(ui, &resp, resp.rect.expand(rows::FOCUS_GAP), t.panel);
     rows::keyboard_tip(ui, resp.id, tip);
-    if resp.on_hover_text(tip).clicked() {
-        // The question only when their stitches were edited since converting.
-        commands.push(match m.edited {
-            0 => (RESTORE, json!({"ids": ids_json(ids)})),
-            _ => (RESTORE_DIALOG, json!({"ids": ids_json(ids), "count": m.objects})),
-        });
+    rows::described(ui, resp.id, if m.restorable > 0 { tip } else { locked });
+    let resp = resp.on_hover_text(tip).on_disabled_hover_text(locked);
+    if resp.clicked() {
+        hand_focus(&resp, FocusNext::Convert, ids, focus);
+        // Restored at once, or asked first when their stitches were edited since converting: the
+        // question takes the keyboard, so the button lets it go (else each Enter would press it
+        // again behind the question).
+        resp.surrender_focus();
+        commands.push((RESTORE, json!({"ids": ids_json(ids)})));
     }
 }
 
@@ -1163,7 +1219,11 @@ pub(crate) fn inspect(app: &VectorcraftApp) -> Value {
                 .collect()
         })
         .unwrap_or_default();
-    json!({"ids": ids_json(&memo.ids), "part": part.map(Part::id), "rows": rows})
+    // Manual stitches among the selection, as the tab says them, and whether a convert is under way.
+    let manual =
+        info.manual.as_ref().map(|m| json!({"objects": m.objects, "restorable": m.restorable, "runs": m.runs, "needlePoints": m.needle_points}));
+    let converting = crate::embroidery::convert_job::running(app);
+    json!({"ids": ids_json(&memo.ids), "part": part.map(Part::id), "rows": rows, "manual": manual, "converting": converting})
 }
 
 #[cfg(test)]

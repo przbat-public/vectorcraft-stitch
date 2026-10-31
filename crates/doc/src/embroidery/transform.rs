@@ -58,27 +58,37 @@ impl Embroidery {
             part.transform(a);
         }
         // The original goes where its stitches go: its frame composed with the transform, as the
-        // convention for kept data composes any frame (so older versions move it the same).
+        // convention for kept data composes any frame (so older versions move it the same). An
+        // object holding a frame has nothing else in it moved: what a newer version keeps beside the
+        // frame is in the original's own coordinates, which the frame places.
         if let Some(o) = original {
             let composed = a * o.frame;
             if composed.as_coeffs().iter().all(|c| c.is_finite()) {
                 o.frame = composed;
             }
-            move_shared(&mut o.extra, a);
         }
         move_shared(extra, a);
         if let Some(run) = stitches {
-            // Every needle point moves: the exact millimetres kept for where they were no longer
-            // apply.
-            run.exact.clear();
+            // The exact millimetres kept for its needle points stay: each applies only while its
+            // needle point lies where it was kept for (`digitize::exact`), so a run moved and moved
+            // back sews as it did, as a needle point moved and moved back does.
+            // Each cut and stop is kept where its needle point lies: it moves with it (by the same
+            // arithmetic, so the two still agree to the bit), or, when that leaves the numbers, is
+            // found by its place alone.
+            for m in run.trims.iter_mut().chain(run.stops.iter_mut()) {
+                if let Some(at) = m.at {
+                    let moved = a * at;
+                    m.at = (moved.x.is_finite() && moved.y.is_finite()).then_some(moved);
+                }
+            }
             // How its stitches were turned and scaled since they were made: a move alone records
             // nothing (so moving a run leaves its saved form as it was), anything more starts the
             // record, and every transform after is composed with it.
             let [m0, m1, m2, m3, _, _] = a.as_coeffs();
-            if run.transformed.is_some() || [m0, m1, m2, m3] != [1.0, 0.0, 0.0, 1.0] {
-                let composed = a * run.transformed.unwrap_or(Affine::IDENTITY);
+            if run.since_made.is_some() || [m0, m1, m2, m3] != [1.0, 0.0, 0.0, 1.0] {
+                let composed = a * run.since_made.unwrap_or(Affine::IDENTITY);
                 if composed.as_coeffs().iter().all(|c| c.is_finite()) {
-                    run.transformed = Some(composed);
+                    run.since_made = Some(composed);
                 }
             }
             move_shared(&mut run.extra, a);
@@ -337,16 +347,22 @@ mod tests {
     }
 
     /// A converted object's kept original goes where its stitches go: its frame composed with each
-    /// transform (moved, turned, mirrored, scaled), its node left as it was until it is restored. A
-    /// transform that would leave the finite numbers leaves the frame as it was.
+    /// transform (moved, turned, mirrored, scaled), its node, and what a newer version keeps beside
+    /// the frame, left as they were until it is restored (the frame places them). A transform that
+    /// would leave the finite numbers leaves the frame as it was.
     #[test]
     fn an_original_goes_where_its_stitches_go() {
         let mut e = settings();
+        let hint = json!({"points": [[3.0, 4.0]], "anchor": {"position": [1.0, 2.0]}});
+        if let Some(o) = e.original.as_mut() {
+            std::sync::Arc::make_mut(&mut o.extra).insert("hint".into(), hint.clone());
+        }
         let a = Affine::translate((5.0, -2.0)) * turn(90.0) * Affine::scale_non_uniform(1.2, -0.5);
         e.transform(a);
         let o = e.original.as_ref().unwrap();
         assert_eq!(o.frame, a);
-        assert_eq!(*o.node, json!({"points": [[1.0, 1.0], [2.0, 2.0]]}), "the node isn't moved");
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&o.node).unwrap(), json!({"points": [[1.0, 1.0], [2.0, 2.0]]}), "the node isn't moved");
+        assert_eq!(o.extra.get("hint"), Some(&hint), "nor what it keeps beside its frame");
         e.transform(Affine::scale(f64::MAX));
         assert_eq!(e.original.as_ref().unwrap().frame, a, "a degenerate transform leaves the frame");
     }
@@ -357,7 +373,7 @@ mod tests {
     #[test]
     fn a_run_records_its_transforms_since_it_was_made() {
         let mut e = Embroidery { stitches: Some(super::super::StitchRun::default()), ..Embroidery::default() };
-        let recorded = |e: &Embroidery| e.stitches.as_ref().and_then(|r| r.transformed);
+        let recorded = |e: &Embroidery| e.stitches.as_ref().and_then(|r| r.since_made);
         e.transform(Affine::translate((5.0, -2.0)));
         assert_eq!(recorded(&e), None, "a move records nothing");
         let scale = Affine::scale_non_uniform(1.15, 1.0);
@@ -379,7 +395,7 @@ mod tests {
     #[test]
     fn a_runs_record_is_a_kept_frame() {
         let scale = Affine::scale(1.2);
-        let run = super::super::StitchRun { transformed: Some(scale), ..Default::default() };
+        let run = super::super::StitchRun { since_made: Some(scale), ..Default::default() };
         let saved = serde_json::Value::from(run.clone());
         assert_eq!(saved, json!({"transformed": {"frame": [1.2, 0.0, 0.0, 1.2, 0.0, 0.0]}}));
         let back = super::super::StitchRun::from(saved.as_object().unwrap().clone());
@@ -393,10 +409,10 @@ mod tests {
         assert_eq!(older.stitches.as_ref().unwrap().extra["transformed"], json!({"frame": [0.6, 0.0, 0.0, 0.6, 0.0, 0.0]}));
         let newer = json!({"transformed": {"frame": [1.2, 0.0, 0.0, 1.2, 0.0, 0.0], "by": "a newer version"}});
         let read = super::super::StitchRun::from(newer.as_object().unwrap().clone());
-        assert_eq!((read.transformed, serde_json::Value::from(read)), (None, newer), "kept as it was");
+        assert_eq!((read.since_made, serde_json::Value::from(read)), (None, newer), "kept as it was");
         for odd in [json!({"frame": [1.0, 0.0]}), json!({"frame": "x"}), json!([1.0, 0.0, 0.0, 1.0, 0.0, 0.0])] {
             let held = json!({ "transformed": odd });
-            assert_eq!(super::super::StitchRun::from(held.as_object().unwrap().clone()).transformed, None, "{held}");
+            assert_eq!(super::super::StitchRun::from(held.as_object().unwrap().clone()).since_made, None, "{held}");
         }
     }
 
@@ -485,10 +501,10 @@ mod tests {
                 p.set(PartKey::Entry, Some(PartValue::Point(Point::new(x, y))));
             });
             // A kept original, where it was converted (its frame the identity, as a convert leaves it).
-            let node = std::sync::Arc::new(json!({"id": 7}));
+            let node: std::sync::Arc<str> = json!({"id": 7}).to_string().into();
             e.original = Some(super::super::Original { frame: Affine::IDENTITY, node, fingerprint: None, extra: Default::default() });
             // A run already transformed once since it was made, so that its record is composed.
-            e.stitches = Some(super::super::StitchRun { transformed: Some(Affine::IDENTITY), ..Default::default() });
+            e.stitches = Some(super::super::StitchRun { since_made: Some(Affine::IDENTITY), ..Default::default() });
             e
         })
     }
@@ -517,7 +533,7 @@ mod tests {
             (Some(x), Some(y)) => near(x.frame, y.frame),
             (x, y) => x == y,
         };
-        let records = match (a.stitches.as_ref().and_then(|r| r.transformed), b.stitches.as_ref().and_then(|r| r.transformed)) {
+        let records = match (a.stitches.as_ref().and_then(|r| r.since_made), b.stitches.as_ref().and_then(|r| r.since_made)) {
             (Some(x), Some(y)) => near(x, y),
             (x, y) => x == y,
         };

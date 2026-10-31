@@ -166,7 +166,9 @@ pub fn not_sewn(reason: Option<&str>) -> &'static str {
 pub fn takes_none(reason: &str) -> &'static str {
     match reason {
         "literal" => crate::et!("Stitches from a file are sewn as the file has them."),
-        "manual" => crate::et!("Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings."),
+        // Said only of manual stitches outside the object they were converted from (ungrouped,
+        // moved out or pasted alone): those inside it are said with Restore Object.
+        "manual" => crate::et!("Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them."),
         "type" => crate::et!("Type isn't sewn yet: create outlines to sew it."),
         "image" => crate::et!("Images aren't sewn."),
         "symbolInstance" => crate::et!("A symbol's objects take its settings: edit the symbol to set them."),
@@ -261,4 +263,64 @@ pub fn information(id: &str) -> String {
         "none" => crate::et!("None").to_string(),
         other => shortened(other),
     }
+}
+
+/// Why Convert to Manual Stitches or Restore Object passed an object over, as the status bar says
+/// it: their `skipped` reasons (a later version's unknown one said as not converted or restored).
+pub fn passed_over(reason: &str) -> &'static str {
+    match reason {
+        "literal" => crate::et!("stitches from a file"),
+        "manual" => crate::et!("manual stitches already"),
+        "symbolInstance" => crate::et!("symbol instances"),
+        "clippingPath" => crate::et!("clipping paths"),
+        "insideObject" => crate::et!("parts of an object sewn whole"),
+        "holdsUnsewn" => crate::et!("holding what isn't sewn"),
+        "locked" => crate::et!("locked"),
+        "notSewn" => crate::et!("not sewn"),
+        "unfreezable" => crate::et!("stitches a manual run can't hold"),
+        "unreadable" => crate::et!("the kept object doesn't read"),
+        "missingSymbol" => crate::et!("its symbol is gone"),
+        "outOfRange" => crate::et!("would lie outside the document"),
+        _ => crate::et!("not converted"),
+    }
+}
+
+/// The reasons `reasons` worded ([`passed_over`]), each once with how many objects it passed over,
+/// in the order first given: "locked (2), stitches from a file (1)".
+pub fn passed_over_counted<'a>(reasons: impl IntoIterator<Item = &'a str>) -> String {
+    let mut counted: Vec<(&'static str, usize)> = Vec::new();
+    for words in reasons.into_iter().map(passed_over) {
+        match counted.iter_mut().find(|(w, _)| *w == words) {
+            Some((_, n)) => *n += 1,
+            None => counted.push((words, 1)),
+        }
+    }
+    counted.iter().map(|(w, n)| format!("{w} ({n})")).collect::<Vec<_>>().join(", ")
+}
+
+/// A message from the engine, translated: Convert's or Restore's refusal (its objects' ids and
+/// reasons, `…: 12 (locked), 14 (notSewn)`) with the reasons worded and counted instead, any other
+/// as it is.
+pub fn refusal(message: &str) -> String {
+    use vectorcraft_engine::cmd::embroidery::{CONVERT_REFUSED, RESTORE_REFUSED};
+    let Some((head, list)) = message.split_once(": ").filter(|(head, _)| *head == CONVERT_REFUSED || *head == RESTORE_REFUSED) else {
+        return crate::i18n::msg(message);
+    };
+    let reasons: Vec<&str> = list.split(", ").filter_map(|item| item.split_once(" (").and_then(|(_, r)| r.strip_suffix(')'))).collect();
+    crate::i18n::msg(&format!("{head}: {}", passed_over_counted(reasons)))
+}
+
+/// The status bar's words after Convert or Restore (`done`), with how many objects the command's
+/// reply `reply` passed over and why, when it passed any over.
+pub fn with_passed_over(done: &str, reply: &serde_json::Value) -> String {
+    let count = reply["skippedCount"].as_u64().unwrap_or(0);
+    if count == 0 {
+        return done.to_string();
+    }
+    let reasons = reply["skipped"].as_array().into_iter().flatten().filter_map(|k| k["reason"].as_str());
+    let words = crate::embroidery::text::fill(
+        &crate::etn!(count, "{count} object passed over: {reasons}", "{count} objects passed over: {reasons}"),
+        &[("reasons", &passed_over_counted(reasons))],
+    );
+    format!("{done} · {words}")
 }

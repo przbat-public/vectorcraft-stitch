@@ -5142,15 +5142,21 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   design's end is that change, and nothing more is written. Opening a PES, PEC, JEF or VP3 file, a change to the same
   thread reads back as a stop.
 - `embroidery.convertToManual {ids?, …embroidery options}` converts each object given (else selected; a group or a layer
-  stands for the objects in it, each converted on its own) to manual stitches: its stitches frozen as the plan sews them
+  stands for the objects in it, each converted on its own, and a compound path's member for its compound path, which
+  the plan sews as one object) to manual stitches: its stitches frozen as the plan sews them
   now with the options (as the read commands take them; none: as the stitch preview plans), the object becoming a group
   of the same id and name holding one run of literal stitches marked manual for each of its sewing units in walk order
   (one subpath a run, the needle jumping between them), each in its thread's art colour, and keeping the object as it
   was to restore it. A manual run is placed in the sewing order as art is and never cut again by a clip group, so the
-  export right after converting writes the same bytes. It passes over, with `reason`: `literal` (stitches from a file),
-  `manual`, `symbolInstance` (convert its art), `clippingPath`, `insideObject` (a piece of an object sewn whole),
-  `locked`, `notSewn`, `unfreezable` (stitches a manual run can't hold); with nothing converted it is an error naming
-  each object and why. One undo step. It answers `{converted: [{id, units, runs, needlePoints}], convertedCount,
+  export right after converting writes the same bytes. An object the plan sews whole (a group with an effect or an
+  appearance of its own) is converted whole, its members' Trim After and Stop After carried onto the runs their units
+  became. It passes over, with `reason`: `literal` (stitches from a file), `manual`, `symbolInstance` (each
+  instance plans its symbol's art from its own needle; a symbol's art, outside the layers, is never converted in
+  place, but taken out by Edit Symbol, which breaks the link, it converts), `clippingPath`, `insideObject` (a piece
+  of an object sewn whole), `holdsUnsewn` (an object sewn whole holding type,
+  an image, a placed file, a symbol's instance, or a hidden, locked or unpainted object), `locked`, `notSewn`,
+  `unfreezable` (stitches a manual run can't hold); with nothing converted it is an error naming each object and
+  why. One undo step. It answers `{converted: [{id, units, runs, needlePoints}], convertedCount,
   needlePoints, skippedCount, skipped: [{id, reason}]}`, each list at most 1,000 long.
 - `embroidery.restoreObject {ids?, strokes?, corners?, dryRun?}` puts back each object converted to manual stitches
   (given or selected; a manual run stands for the object it was converted from, a group or a layer for the converted
@@ -5158,28 +5164,46 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   Strokes & Effects and Scale Corners from `strokes` and `corners`, else the preferences), so it is planned again at
   its size now, with the group's id, name, visibility, lock, Trim After and Stop After; edits to its stitches are
   discarded. `edited` lists the objects whose stitches were edited since converting (not only moved, turned or scaled
-  with their object): with `dryRun: true` nothing changes, so an interface can ask first. It passes over, with
-  `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read), `missingSymbol`, `locked`. One undo
-  step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
-  skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run).
-- **Editing stitches.** The stitch commands edit a path of literal stitches (a run opened from a machine file, or one
-  an object was converted to) needle point by needle point, in millimetres, without a plan. A needle point is
+  with their object; a run hidden or recoloured, or art in the object that isn't one of its runs, counts): with
+  `dryRun: true` nothing changes, so an interface can ask first. Art in the object that isn't one of its runs (pasted
+  in while it was isolated) is kept, beside the restored object in its parent, right above it. The object kept is file
+  data, so it is cleaned as opening a file cleans each object: its type's sizes, leading, shifts, scales, indents,
+  spacing, tab stops, ruby and script proportions within their ranges, and its type measured again. It passes over,
+  with `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read as an object, or reads as a
+  layer), `missingSymbol`, `locked`, `outOfRange` (put back where its stitches are, it would lie outside the
+  document's coordinates, or at coordinates that aren't numbers: a damaged frame). The objects put back are the
+  selection after it. One undo step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
+  skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
+  Edit is on ("not while Global Edit is on: stop Global Edit first").
+- **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
+  object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
+  the needle points between two jumps. A needle point is
   addressed as `{id, index}`: the path and the needle point's place in it, from 0 across its runs (its anchors in
   order; a run stored as a line to its own start is one needle point); `ranges: [{id, from, to}]` addresses a stretch
-  (inclusive). With neither, a command takes the selection's needle points: the anchors selected of each path of
+  (inclusive). An entry may add `of`, the path's needle points as the caller last counted them (`paths[].needlePoints`
+  in a reply, or `embroidery.stitches`): a path that holds another number is refused, so an index made stale by an
+  edit since never moves another needle point; an entry with any other key is refused. Select first, then act, where
+  indices may be stale. With neither, a command takes the selection's needle points: the anchors selected of each path of
   stitches, all of one selected whole, all of those in a group selected whole (other objects are passed over and
-  listed in `passedOver` with why: `notStitches`, `locked`, `outOfRange`, `tooManyNeedlePoints`). An id stays put
+  listed in `passedOver` with why: `notStitches`, `locked`, `outOfRange`, `tooManyNeedlePoints`; Join Runs also
+  `notJoinable`). An id stays put
   across edits and an index shifts only inside the path an edit changes; record numbers are for showing, never for
   editing. Refused before anything changes: an id that isn't a path of stitches in the document's layers, a locked or
-  hidden one, an index past its needle points, anchors that aren't numbers or lie outside the document's coordinates,
-  more than 2,000,000 needle points or 100,000 paths addressed; nothing given and nothing selected is an error ("select
-  needle points of a run of stitches, or give needlePoints"). Each edit is one undo step (none when nothing changes),
-  leaves the selection on what it says, and answers `lengths: {count, shortest, longest, belowMin, aboveMax, min,
-  max}`: the needle-down stitches it made or changed, in millimetres, against the document's shortest stitch (`min`,
-  Document Setup's) and the 12.7 mm a machine sews well (`max`, the Check tab's).
+  hidden one, an index past its needle points (or past 1,999,999, whatever the path), anchors that aren't numbers or
+  lie outside the document's coordinates, more than 2,000,000 needle points or 100,000 paths addressed; nothing given
+  and nothing selected is an error ("select needle points of a path of stitches, or give needlePoints"). No edit leaves
+  a path of more than 2,000,000 needle points. Each edit is one undo step (none when nothing changes), leaves the
+  selection on what it says, and answers `paths: [{id, needlePoints}]` (the paths it changed or removed, with their
+  needle points now; at most 1,000), `pathCount` (how many), `passedOver: [{id, reason}]`, `collapsedCount` (runs of
+  two needle points an edit brought to one spot in a path of several runs, each made one needle point, as only a
+  path's only run can be a tack: the needle points after it move down by one) and `lengths: {count,
+  shortest, longest, belowMin, aboveMax, min, max}`: the needle-down stitches it made or changed, each counted once, in
+  millimetres, against the document's shortest stitch (`min`, Document Setup's) and the 12.7 mm a machine sews well
+  (`max`, the Check tab's; Split Long Stitches' own limit).
   - `embroidery.moveNeedlePoints {needlePoints?, ranges?, dx?, dy?, to?}` moves each needle point by `dx, dy`
     (millimetres, y down), or the one addressed to `to` (`[x, y]`, millimetres from the document's origin); a path
-    whose only run is two needle points brought to one spot sews both (a tack). The selection keeps its needle points.
+    whose only run is two needle points brought to one spot sews both (a tack); such a run among others is one needle
+    point (`collapsedCount`). The selection keeps its needle points.
     It answers `{changedCount, paths: [{id, needlePoints}], pathCount, lengths, passedOver}`.
   - `embroidery.insertNeedlePoints {id?, index?, at?, needlePoints?, ranges?}` adds needle points: with `id` and
     `index`, the points `at` (`[[x, y]…]`, millimetres, 1 to 10,000) put before needle point `index` of path `id`
@@ -5190,11 +5214,14 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     inserted: [{id, index}], paths, pathCount, lengths, passedOver}`.
   - `embroidery.deleteNeedlePoints {needlePoints?, ranges?}` deletes each needle point addressed: the stitches beside
     it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point
-    before it that stays. A run left empty goes, its cut passing to the run after it; a path left empty is removed,
+    before it that stays. A run left empty goes, its cut passing to the run after it (to the path's own cut before it
+    when no run with needle points is before, its cut after it when none is after); a path left empty is removed,
     its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when there is none, to the
-    one after it), else dropped. The paths it changed leave the selection. It answers `{changedCount, paths,
-    pathCount, removed: [id], removedCount, moved: [{function, id, index | before: true}], dropped: [{function, id}],
-    lengths, passedOver}`.
+    one after it), else dropped, each said once. The paths it changed leave the selection. `path.deleteAnchors` (the
+    Delete key, Edit › Clear and Cut with anchors selected) deletes needle points of runs of stitches this way. It answers `{changedCount, merged: [{id,
+    index}], paths, pathCount, removed: [id], removedCount, moved: [{function, id, index | before: true}], dropped:
+    [{function, id}], lengths, passedOver}` (`merged`: the needle point each merged stitch now leaves from, numbered as
+    after the edit; the needle points after a deleted one move down by one).
   - `embroidery.splitRun {needlePoints?, ranges?, ties?: true}` lifts the needle before each needle point addressed: a
     new run starts with it in the same path, the needle jumping onto it; a run's first is passed by
     (`unchangedCount`). With `ties` (on unless `false`) the run before is tied off and the new one tied in, as the
@@ -5204,31 +5231,41 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   - `embroidery.joinRuns {needlePoints?, ranges? | ids?}` joins each run whose first needle point is addressed to the
     run before it in its path, or (`ids`, 2 or more) the paths of stitches given into the first: they must be sewn
     one right after another (next to one another in one parent, in the order given, in one colour, all opened or all
-    manual), else it is refused ("these runs aren't sewn one right after another in one colour block"). The jump
+    manual), else it is refused ("these runs aren't sewn one right after another in one colour block"). A path's
+    first needle point addressed (given, or its anchor selected; not a path selected whole) joins the path to the
+    path of stitches sewn right before it in its parent (an opened design keeps each run a path), passed over as
+    `notJoinable` when that isn't one in its colour and of its kind. The jump
     becomes a stitch (a needle point lying where the run before ends is kept once), never reversed; a cut or a stop at
     a gap joined goes. It answers `{changedCount, paths, pathCount, removed: [id], dropped: [{function, id}],
-    lengths}`.
+    lengths, passedOver}`.
   - `embroidery.setMachineFunction {needlePoints?, ranges?, function: "trim"|"stop", on?, ties?: true}` cuts the
     thread, or stops the machine, after each needle point addressed, or (`on: false`) no longer; `on` left out is on
     unless every needle point has it already. Inside a run the run splits there first, tied off and in as
     `embroidery.splitRun` ties (on unless `ties: false`); at a run's last needle point it is the gap's (a cut before
     the next run, a stop after it), at the path's last the path's (its Trim After or Stop After, the object's own
-    included). Turned off, the runs stay split. It answers `{function, on, changedCount, unchangedCount, splitCount,
-    paths, pathCount, lengths, passedOver}`.
+    included, and the cut an opened design keeps before the path sewn right after it). A function set with ties comes after the tie-off that follows the needle point addressed, and is
+    found there again: the same call at the same index turns it off, and on again without a second split. Turned
+    off, the runs stay split. Its undo step is "Cut After Needle Point" or "Stop After Needle Point". It answers `{function, on, changedCount, unchangedCount, splitCount,
+    needlePoints: [{id, index}], paths, pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed,
+    numbered as after the edit, which splits and ties renumber).
   - `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?: 12.7 | format?}` splits each stitch arriving at
     a needle point addressed (a path or group selected whole: all of its stitches) that is longer than `maxLength`
     millimetres (1 to 12.7, its own length) into the fewest equal stitches within it, or, with `format` (one of the
     eight embroidery formats), longer along x or y than one of its records, where that format's writer would cut it:
-    each end on the 0.1 mm grid, the fewest equal steps (`vectorcraft_stitch::format::steps`), so that format's export
-    is the same bytes. More needle points, never jumps; the move between runs is never split. At most 100,000 added.
-    It answers `{changedCount, addedCount, limit: {length} | {format, step}, paths, pathCount, lengths, passedOver}`.
+    from the needle points as the walk sews them (exact millimetres included), each end on the 0.1 mm grid that
+    format's writer counts the design on (from where the design starts or its corner, or its centre: the design is
+    planned as the export plans it, for this only), the fewest equal steps (`vectorcraft_stitch::format::steps`), so
+    that format's export is the same bytes, a point halfway between two tenths too. More needle points, never jumps; the move between runs is never split. At most 100,000 added.
+    It answers `{changedCount, addedCount, limit: {length} | {format, step}, needlePoints: [{id, index}], paths,
+    pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed, numbered as after the edit).
   - `embroidery.stitches {…embroidery options, from?, to?, ids?, kinds?, shorterThan?, longerThan?, offset?, limit?}`
     (a read command, also served off the interface thread) lists the design's records, numbered as the Sewing order
     and the Check tab number them: `{recordCount, matchedCount, offset, truncated, records: [{record, kind:
-    "stitch"|"jump"|"trim"|"stop", at, length, id, node, block, unit, index, editable}], options}`. `length` is a
+    "stitch"|"jump"|"trim"|"stop", at, length, id, node, block, unit, index, editable}], warnings, options}`. `length` is a
     needle-down stitch's from the needle point before it, or a jump's move (null for the needle point a jump or a cut
     lands on, a cut, a stop). Where the stitch commands can edit a record, `index` is the needle point of `node` it is
-    (a jump: the one it lands on; a cut or a stop: the one before it): a run of literal stitches in the document's
+    (a jump: the one it lands on; a cut or a stop: the one before it, in the path before for the cut an opened
+    design's run starts with): a run of literal stitches in the document's
     layers that can be edited, not cut by a clip group, whose needle-down records are as many as its needle points;
     else `null` (planned art, a symbol's art, a run cut by a clip group, a locked one). `from`/`to` pick record
     numbers, `ids` objects (the one a person selects, or the path sewn), `kinds` kinds, `shorterThan`/`longerThan` a
@@ -5236,14 +5273,15 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   - `embroidery.selectNeedlePoints {records?: [from, to], ids?, kinds?, shorterThan?, longerThan? | needlePoints?,
     ranges? | rect?: [x0, y0, x1, y1] or polygon?: [[x, y]…], ids?, mode?: "set"|"add"|"toggle"|"subtract",
     …embroidery options}` selects needle points (their anchors, as Direct Selection does) by the records that sew
-    them, planning the design (a record that can't be edited is passed over and counted; cuts and stops select
-    nothing), by their addresses, planning nothing, or by a shape: those inside a rectangle or a polygon of 3 to
-    4,096 points (millimetres from the document's origin, y down; inside by the even-odd rule, as the Lasso tool
-    selects anchors), of the paths of stitches inside `ids`, else inside the object isolated, else in the whole
-    document, planning nothing (the paths that can't be edited, locked or hidden or a file's run cut by a clip
-    group, passed over and counted). The Embroidery Tool's marquee, while it edits stitches, is this command with
-    `rect`. A selection, not an undo step: `{selectedCount, pathCount, passedOver}`. Selecting the needle points that
-    end stitches shorter than a length, then `embroidery.deleteNeedlePoints {}`, deletes them.
+    them, planning the design (a jump selects the needle point it lands on, a cut or a stop the one it follows; a
+    record that can't be edited is passed over and counted), by their addresses, planning nothing, or by a shape:
+    those inside a rectangle or a polygon of 3 to 4,096 points (millimetres from the document's origin, y down;
+    inside by the even-odd rule, as the Lasso tool selects anchors), of the paths of stitches inside `ids`, else
+    inside the object isolated, else in the whole document, planning nothing (the paths that can't be edited,
+    locked or hidden or a file's run cut by a clip group, passed over and counted). The Embroidery Tool's marquee,
+    while it edits stitches, is this command with `rect`. A selection, not an undo step:
+    `{selectedCount, pathCount, passedOver}`. Selecting the needle points that end stitches shorter than a length,
+    then `embroidery.deleteNeedlePoints {}`, deletes them.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`
   answers `{part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount,
   skipped: [{id, reason}]}`; `embroidery.reset {ids?, part?, keys?}` and `embroidery.copyFrom {source, ids?, part?,
@@ -5262,8 +5300,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   what the design then sews) (lengths in millimetres, the
   points in document points; `reason` also `notSewn`, `pieces`, `symbolInstance`, `clipped`, `unmodelled` or `locked`). They take the
   vocabulary's names only: the session refuses any other key before the command runs, and run in-process the command
-  names the one to use (`density` → `spacing`). `reason` is `literal`, `guide`, `type`, `image`, `symbolInstance`,
-  `live`, `placed`, `intertwine` or `noPart`; a client must accept others later.
+  names the one to use (`density` → `spacing`). `reason` is `literal`, `manual` (manual stitches, sewn as they are
+  placed), `guide`, `type`, `image`, `symbolInstance`, `live`, `placed`, `intertwine` or `noPart`; a client must accept
+  others later.
 - `embroidery.info {ids?, plan?, offset?, limit?, …embroidery options}` reads the objects' settings (a query, no undo
   step; nothing selected and no `ids`: an empty answer): `{objectCount, offset, truncated, objects: [{id, kind, fills,
   strokes, expanded, settings: {fill, stroke}, kept}], skippedCount, skipped, trimAfter: {value, setCount, mixed},

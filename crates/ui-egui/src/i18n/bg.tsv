@@ -5422,7 +5422,7 @@ theme	Appearance	Външен вид
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Базирано на VectorCraft от екипа на ArtCraft. MIT ИЛИ Apache-2.0. Шрифтове: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Икони: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC побира най-много {MAX_COLORS} цвята, а не {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC побира най-много {MAX_COLORS} цвята (всяко спиране се брои за един), а не {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 побира най-много {MAX_COLORS} цветни блока
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	DST файлът има заглавка от {HEADER} байта и поне един 3-байтов запис, но този файл е {_1} байта
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заглавката на DST брои най-много {MAX_RECORDS} записа, а дизайнът изисква {_1}
@@ -5819,7 +5819,7 @@ embroidery	Not sewn: it is hidden.	Не се бродира: скрито е.
 embroidery	Not sewn: it is on a template or non-printing layer.	Не се бродира: в шаблонен или непечатаем слой е.
 embroidery	Not sewn.	Не се бродира.
 embroidery	Stitches from a file are sewn as the file has them.	Бодовете от файл се бродират така, както са във файла.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Ръчните бодове се шият така, както са разположени: „Възстановяване на обекта“ връща обекта и настройките му.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Ръчните бодове се шият така, както са разположени; обектът, от който са преобразувани, не се пази с тях.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Текстът още не се бродира: използвайте „Създаване на контур“, за да го бродирате.
 embroidery	Images aren't sewn.	Изображенията не се бродират.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Обектите на символа приемат настройките: редактирайте символа, за да ги зададете.
@@ -5987,9 +5987,9 @@ embroidery	Auto (where the plan ends the part)	Автоматично (къде�
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Преобразуване в ръчни бодове
 @msg	nothing selected can be converted to manual stitches: {_1}	нищо от избраното не може да се преобразува в ръчни бодове: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Възстановяване на обекта
-@msg	nothing selected was converted to manual stitches: {_1}	нищо от избраното не е преобразувано в ръчни бодове: {_1}
+@msg	nothing selected can be restored: {_1}	нищо от избраното не може да се възстанови: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ръчни бодове или бодове от файл, мащабирани с над {value}%
 embroidery	{name}: {value}% larger	{name}: увеличение с {value}%
@@ -6002,7 +6002,7 @@ embroidery	manual stitches	ръчни бодове
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	ефектите, четките и допълнителните запълвания или контури на ръчни бодове или бодове от файл (или на група, която ги съдържа) не се бродират: бодовете се шият такива, каквито са
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Преместване на точките на убождане
-@msg	select needle points of a run of stitches, or give needlePoints	изберете точки на убождане от редица бодове или подайте needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	изберете точки на убождане от път от бодове или подайте needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Вмъкване на точки на убождане
 # VectorCraft Stitch: Delete Needle Points
@@ -6021,17 +6021,52 @@ embroidery	manual stitches	ръчни бодове
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Ръчни бодове
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Шият се така, както са разположени: вече не се променят с плата или настройките на обекта.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} редица · точки на убождане: {needle}|{count} редици · точки на убождане: {needle}
 embroidery	Scaled to {value}% since converting	Мащабирано до {value}% след преобразуването
-embroidery	Restore Object…	Възстановяване на обекта…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Връща обекта на мястото на ръчните му бодове, планиран отново в сегашния си размер.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Замразява сега планираните бодове, за да може всяка точка на убождане да се мести; „Възстановяване на обекта“ връща обекта.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Машината спира след бодовете на обекта, например за апликация; спиране при смяна на конеца или в края е самото то.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Машината спира след бодовете на обекта, както при апликация. Където следва смяна на нишката или краят на дизайна, машината спира там така или иначе, затова не се записва допълнително спиране.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Промените в бодовете след преобразуването ще се загубят; „Отмени“ ги връща.
 @plural	Stop the machine after the object|Stop the machine after the objects	Спиране на машината след обекта|Спиране на машината след обектите
 @plural	Restore {count} object?|Restore {count} objects?	Възстановяване на {count} обект?|Възстановяване на {count} обекта?
 @plural	{count} object restored|{count} objects restored	Възстановен е {count} обект|Възстановени са {count} обекта
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} обект е преобразуван в ръчни бодове: „Възстановяване на обекта“ го връща|{count} обекта са преобразувани в ръчни бодове: „Възстановяване на обекта“ ги връща
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	срязвания или спирания на бодове бяха пропуснати: команда за контур изтри или премести точките на убождане, след които идваха (задайте ги отново с „Функция на машината“)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	пътищата от бодове се съединяват само с пътища от бодове: изберете само тях
+@msg	select two or more paths of stitches sewn one right after another to join them	изберете два или повече пътя от бодове, шити един непосредствено след друг, за да ги съедините
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Срязване след точка на убождане
+	Stop After Needle Point	Спиране след точка на убождане
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	не и докато е включено глобалното редактиране: първо го спрете
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} блок нишки, включително спиранията|{count} блока нишки, включително спиранията
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} смяна на нишката, включително спиранията|{count} смени на нишката, включително спиранията
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	всяко спиране е записано като смяна към същата нишка: едноиглена машина спира там, а многоиглена — само където операторът е задал спиране на тази смяна
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Заключени обекти не могат да се възстановят: първо ги отключете.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	бодове от файл
+embroidery	manual stitches already	вече ръчни бодове
+embroidery	symbol instances	копия на символи
+embroidery	clipping paths	изрязващи пътища
+embroidery	parts of an object sewn whole	части от обект, шит изцяло
+embroidery	holding what isn't sewn	съдържа нешито
+embroidery	locked	заключени
+embroidery	not sewn	не се шият
+embroidery	stitches a manual run can't hold	бодове, които ръчна редица не побира
+embroidery	not converted	не са преобразувани
+embroidery	the kept object doesn't read	запазеният обект не се чете
+embroidery	its symbol is gone	символът му липсва
+embroidery	would lie outside the document	би излязъл извън документа
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} обект е пропуснат: {reasons}|{count} обекта са пропуснати: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} редица|{count} редици
+@plural	{count} needle point|{count} needle points	{count} точка на убождане|{count} точки на убождане
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} избран обект е ръчни бодове|{count} избрани обекта са ръчни бодове
+embroidery	Converting to manual stitches…	Преобразуване в ръчни бодове…
 # VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
 embroidery	Editing stitches	Редактиране на бодове
 embroidery	Editing stitches: {name}	Редактиране на бодове: {name}
@@ -6040,7 +6075,6 @@ embroidery	Needle points are edited in the Stitches view.	Точките на у
 embroidery	Show Stitches	Показване на бодовете
 embroidery	Edit Stitches	Редактиране на бодовете
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Премествайте, вмъквайте и изтривайте тези точки на убождане в платното с инструмента „Бродерия“.
-@plural	{count} needle point|{count} needle points	{count} точка на убождане|{count} точки на убождане
 @plural	{count} selected|{count} selected	{count} избрана|{count} избрани
 @plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} редица не може да се редактира: заключена, скрита или изрязана от маска за изрязване|{count} редици не могат да се редактират: заключени, скрити или изрязани от маска за изрязване
 	 needle points, or a frame round them  |  	 точки на убождане или рамка около тях  |  

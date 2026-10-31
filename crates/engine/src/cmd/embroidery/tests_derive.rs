@@ -621,6 +621,9 @@ fn the_plan_follows_a_turned_and_mirrored_exit() {
 /// marked.
 #[test]
 fn stop_after_goes_where_trim_after_goes() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
     type Scenario = fn(&mut Session, &Embroidery) -> Vec<u64>;
     let scenarios: [(&str, Scenario); 7] = [
         ("divide", |s, mark| {
@@ -698,7 +701,7 @@ fn an_object_made_from_a_converted_one_keeps_no_original() {
     let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
     let original = vectorcraft_doc::embroidery::Original {
         frame: vectorcraft_geom::Affine::IDENTITY,
-        node: std::sync::Arc::new(json!({"id": 1})),
+        node: json!({"id": 1}).to_string().into(),
         fingerprint: None,
         extra: Default::default(),
     };

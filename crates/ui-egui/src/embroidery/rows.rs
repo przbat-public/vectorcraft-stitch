@@ -65,7 +65,7 @@ const RESTORE_INSET: f32 = 3.0;
 /// The keyboard focus's outline on ↺ and a checkbox: its weight and how far it stands off the box,
 /// points (the accent's, as the Art | Stitches switch draws it: the coral is the focus alone).
 const FOCUS_WIDTH: f32 = 1.0;
-const FOCUS_GAP: f32 = 2.0;
+pub(crate) const FOCUS_GAP: f32 = 2.0;
 /// A checkbox's box, the room between it and its words, the least height of its row and its mark's
 /// weight, points: as the app's checkboxes draw them (upstream's `widgets::check_row_named`, whose
 /// drawing [`check`] follows, its words wrapped and its colours read on what it lies on; keep the
@@ -644,7 +644,13 @@ pub(crate) fn check(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32
 pub(crate) fn check_with_tip(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32, tip: &str) -> bool {
     let resp = check_response(ui, words, value, back);
     keyboard_tip(ui, resp.id, tip);
+    described(ui, resp.id, tip);
     resp.on_hover_text(tip).clicked()
+}
+
+/// Control `id`'s help `tip` given to screen readers too, which hear no tooltip.
+pub(crate) fn described(ui: &Ui, id: egui::Id, tip: &str) {
+    ui.ctx().accesskit_node_builder(id, |node| node.set_description(tip));
 }
 
 /// [`check`]'s box drawn, and its response.
@@ -725,7 +731,7 @@ pub(crate) fn keyboard_tip(ui: &Ui, id: egui::Id, tip: &str) {
 
 /// The keyboard focus's outline around `rect` while `resp` has it (the memory's focus, as the
 /// fields take it), in the accent, read by 3:1 on `back`.
-fn focus_ring(ui: &Ui, resp: &egui::Response, rect: Rect, back: Color32) {
+pub(crate) fn focus_ring(ui: &Ui, resp: &egui::Response, rect: Rect, back: Color32) {
     if !ui.memory(|m| m.has_focus(resp.id)) {
         return;
     }

@@ -217,12 +217,14 @@ pub struct StitchesState {
     foot: [f32; 2],
 }
 
-/// A unit's numbering: the path, its first needle point's place, and each record's ordinal.
+/// A unit's numbering: the path, its first needle point's place, each record's ordinal, and the
+/// needle points its records before its own are edited by ([`stitch_list::leading`]).
 #[derive(Clone)]
 struct Numbered {
     node: NodeId,
     first: usize,
     ordinals: Arc<Vec<u32>>,
+    leading: Arc<Vec<(usize, (NodeId, usize))>>,
 }
 
 /// The limits the tab, the canvas and the Check tab's format judge by, for the active document.
@@ -282,9 +284,13 @@ fn edited_by(app: &mut VectorcraftApp, plan: &DesignPlan, generation: u64, unit:
                 node,
                 first,
                 ordinals: Arc::new(stitch_list::ordinals(plan, unit)),
+                leading: Arc::new(stitch_list::leading(plan, &doc, unit, first)),
             })
         })
         .clone()?;
+    if let Some((_, at)) = n.leading.iter().find(|(r, _)| *r == number) {
+        return Some(*at);
+    }
     stitch_list::edited_by(plan, unit, n.first, &n.ordinals, number, kind).map(|k| (n.node, k))
 }
 
@@ -293,10 +299,11 @@ fn is_selected(app: &VectorcraftApp, node: NodeId, index: usize) -> bool {
     let Some(st) = app.session.active() else { return false };
     let Some(n) = st.doc.node(node) else { return false };
     let Some(path) = n.path_data() else { return false };
-    let tack = path.subpaths.len() == 1 && n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
+    let alone = path.subpaths.len() == 1;
+    let double_point = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
     let mut first = 0usize;
     for (s, sp) in path.subpaths.iter().enumerate() {
-        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, tack);
+        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
         if index < first + len {
             return match st.selection.anchors.get(&node) {
                 Some(anchors) => anchors.contains(&(s, index - first)) || (len == 1 && anchors.contains(&(s, 1))),

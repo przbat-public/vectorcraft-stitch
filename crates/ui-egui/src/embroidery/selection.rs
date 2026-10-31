@@ -156,10 +156,10 @@ fn build(doc: &Document, sel: &Selection, scope: NodeId, limits: &StitchLimits) 
         if k.count == 0 {
             k.color = doc.layer_color(id);
         }
-        let tack = path.subpaths.len() == 1 && marks.double_point;
+        let (alone, double_point) = (path.subpaths.len() == 1, marks.double_point);
         let chosen = sel.anchors.get(&id);
         for (s, sp) in path.subpaths.iter().enumerate() {
-            let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, tack);
+            let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
             let picked = |a: usize| match chosen {
                 Some(set) => set.contains(&(s, a)) || (len == 1 && sp.anchors.len() == 2 && set.contains(&(s, 1))),
                 None => true,
@@ -315,10 +315,11 @@ fn needle_at(doc: &Document, v: &serde_json::Value) -> Option<Point> {
     let index = usize::try_from(v.get("index")?.as_u64()?).ok()?;
     let n = doc.node(id)?;
     let path = n.path_data()?;
-    let tack = path.subpaths.len() == 1 && n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
+    let alone = path.subpaths.len() == 1;
+    let double_point = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
     let mut first = 0usize;
     for sp in &path.subpaths {
-        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, tack);
+        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
         if index < first + len {
             return sp.anchors.get(index - first).map(|a| a.p);
         }

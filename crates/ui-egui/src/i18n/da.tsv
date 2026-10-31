@@ -5409,7 +5409,7 @@ swatch	Bright Violet	Kraftig violet
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Baseret på VectorCraft fra ArtCraft-teamet. MIT OR Apache-2.0. Skrifttyper: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Ikoner: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC rummer højst {MAX_COLORS} farver, ikke {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC rummer højst {MAX_COLORS} farver (hvert stop tæller som én), ikke {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 rummer højst {MAX_COLORS} farveblokke
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	en DST-fil har en header på {HEADER} byte og mindst én post på 3 byte, men denne fil er på {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	en DST-header tæller højst {MAX_RECORDS} poster, og designet kræver {_1}
@@ -5835,7 +5835,7 @@ embroidery	Not sewn: it is hidden.	Sys ikke: den er skjult.
 embroidery	Not sewn: it is on a template or non-printing layer.	Sys ikke: den ligger på et skabelonlag eller et lag, der ikke udskrives.
 embroidery	Not sewn.	Sys ikke.
 embroidery	Stitches from a file are sewn as the file has them.	Sting fra en fil sys, som filen har dem.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Manuelle sting sys, som de er placeret: Gendan objekt bringer objektet og dets indstillinger tilbage.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Manuelle sting sys, som de er placeret; objektet, de blev konverteret fra, gemmes ikke sammen med dem.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst sys endnu ikke: brug Opret konturer for at sy den.
 embroidery	Images aren't sewn.	Billeder sys ikke.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Et symbols objekter har indstillingerne: rediger symbolet for at angive dem.
@@ -6003,9 +6003,9 @@ embroidery	Auto (where the plan ends the part)	Auto (hvor planen afslutter delen
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Konvertér til manuelle sting
 @msg	nothing selected can be converted to manual stitches: {_1}	intet af det valgte kan konverteres til manuelle sting: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Gendan objekt
-@msg	nothing selected was converted to manual stitches: {_1}	intet af det valgte er konverteret til manuelle sting: {_1}
+@msg	nothing selected can be restored: {_1}	intet af det valgte kan gendannes: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Manuelle sting eller sting fra en fil skaleret med mere end {value} %
 embroidery	{name}: {value}% larger	{name}: forstørret {value} %
@@ -6018,7 +6018,7 @@ embroidery	manual stitches	manuelle sting
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	effekter, pensler og ekstra fyld eller streger på manuelle sting eller sting fra en fil (eller på en gruppe med dem) broderes ikke: stingene sys, som de er
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Flyt nålestik
-@msg	select needle points of a run of stitches, or give needlePoints	vælg nålestik i en række sting, eller angiv needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	vælg nålestik i en kurve af sting, eller angiv needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Indsæt nålestik
 # VectorCraft Stitch: Delete Needle Points
@@ -6037,17 +6037,52 @@ embroidery	manual stitches	manuelle sting
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Manuelle sting
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Sys, som de er placeret: de ændrer sig ikke længere med stoffet eller objektets indstillinger.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} række · {needle} nålestik|{count} rækker · {needle} nålestik
 embroidery	Scaled to {value}% since converting	Skaleret til {value} % siden konverteringen
-embroidery	Restore Object…	Gendan objekt…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Sætter objektet tilbage i stedet for dets manuelle sting, planlagt igen i sin nuværende størrelse.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Fastfryser de sting, der er planlagt nu, så hvert nålestik kan flyttes; Gendan objekt bringer objektet tilbage.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Maskinen stopper efter objektets sting, som til applikation; et stop ved et trådskift eller til sidst er det samme.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Maskinen stopper efter objektets sting, som ved applikation. Hvor et trådskift eller designets slutning følger, stopper maskinen alligevel der, så der skrives ikke et ekstra stop.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Ændringer af stingene siden konverteringen går tabt; Fortryd bringer dem tilbage.
 @plural	Stop the machine after the object|Stop the machine after the objects	Stop maskinen efter objektet|Stop maskinen efter objekterne
 @plural	Restore {count} object?|Restore {count} objects?	Gendan {count} objekt?|Gendan {count} objekter?
 @plural	{count} object restored|{count} objects restored	{count} objekt gendannet|{count} objekter gendannet
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} objekt konverteret til manuelle sting: Gendan objekt bringer det tilbage|{count} objekter konverteret til manuelle sting: Gendan objekt bringer dem tilbage
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	klip eller stop i sting blev udeladt: en stikommando slettede eller flyttede de nålestik, de fulgte efter (sæt dem igen med Maskinfunktion)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	kurver af sting samles kun med kurver af sting: vælg kun dem
+@msg	select two or more paths of stitches sewn one right after another to join them	vælg to eller flere kurver af sting, der sys lige efter hinanden, for at samle dem
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Klip efter nålestik
+	Stop After Needle Point	Stop efter nålestik
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	ikke mens global redigering er slået til: stop global redigering først
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} trådblok, stop medregnet|{count} trådblokke, stop medregnet
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} trådskift, stop medregnet|{count} trådskift, stop medregnet
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	hvert stop skrives som et skift til samme tråd: en enkeltnålsmaskine stopper der, en flernålsmaskine kun hvor operatøren sætter et stop på det skift
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Låste objekter kan ikke gendannes: lås dem op først.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	sting fra en fil
+embroidery	manual stitches already	allerede manuelle sting
+embroidery	symbol instances	symbolforekomster
+embroidery	clipping paths	beskæringskurver
+embroidery	parts of an object sewn whole	dele af et objekt syet samlet
+embroidery	holding what isn't sewn	indeholder det, der ikke sys
+embroidery	locked	låste
+embroidery	not sewn	sys ikke
+embroidery	stitches a manual run can't hold	sting en manuel række ikke kan rumme
+embroidery	not converted	ikke konverteret
+embroidery	the kept object doesn't read	det gemte objekt kan ikke læses
+embroidery	its symbol is gone	dets symbol mangler
+embroidery	would lie outside the document	ville ligge uden for dokumentet
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekt sprunget over: {reasons}|{count} objekter sprunget over: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} række|{count} rækker
+@plural	{count} needle point|{count} needle points	{count} nålestik|{count} nålestik
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} valgt objekt er manuelle sting|{count} valgte objekter er manuelle sting
+embroidery	Converting to manual stitches…	Konverterer til manuelle sting…
 # VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
 embroidery	Editing stitches	Redigering af sting
 embroidery	Editing stitches: {name}	Redigering af sting: {name}
@@ -6056,7 +6091,6 @@ embroidery	Needle points are edited in the Stitches view.	Nålestik redigeres i 
 embroidery	Show Stitches	Vis sting
 embroidery	Edit Stitches	Rediger sting
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Flyt, indsæt og slet disse nålestik på lærredet med Broderiværktøjet.
-@plural	{count} needle point|{count} needle points	{count} nålestik|{count} nålestik
 @plural	{count} selected|{count} selected	{count} valgt|{count} valgte
 @plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} række kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske|{count} rækker kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske
 	 needle points, or a frame round them  |  	 nålestik eller en ramme om dem  |  

@@ -38,11 +38,18 @@ struct Drawn {
     words: Vec<(String, Rect)>,
     outlines: Vec<(Rect, egui::Color32)>,
     nodes: Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>,
+    focus: Option<egui::accesskit::NodeId>,
 }
 
 impl Drawn {
     fn has(&self, what: &str) -> bool {
         self.words.iter().any(|(w, _)| w.contains(what))
+    }
+
+    /// The name of the node that has the keyboard, if any.
+    fn focused(&self) -> Option<&str> {
+        let focus = self.focus?;
+        self.nodes.iter().find(|(id, _)| *id == focus).and_then(|(_, n)| n.label())
     }
 
     fn node(&self, name: &str) -> &egui::accesskit::Node {
@@ -77,6 +84,16 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
 
 /// [`frame`] in a panel `width` points wide.
 fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>, width: f32) -> Drawn {
+    drawn(app, ctx, time, events, width, false)
+}
+
+/// [`frame`] as the app draws one: its keys handled first, then the panel, then the open dialog.
+fn frame_with_dialogs(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> Drawn {
+    drawn(app, ctx, time, events, WIDTH, true)
+}
+
+/// One frame of the panel `width` points wide, with the app's keys and dialogs when `dialogs`.
+fn drawn(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>, width: f32, dialogs: bool) -> Drawn {
     let raw = egui::RawInput {
         time: Some(time),
         focused: true,
@@ -86,7 +103,13 @@ fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Ve
     };
     crate::scrub::begin_frame(app, ctx);
     let mut out = ctx.run_ui(raw, |ui| {
+        if dialogs {
+            crate::shortcuts::handle(app, ui.ctx());
+        }
         crate::panels::embroidery::show(app, ui);
+        if dialogs {
+            crate::dialogs::show(app, ui.ctx());
+        }
         stitch_preview::schedule(app, ui.ctx());
     });
     crate::scrub::end_frame(app, ctx);
@@ -101,8 +124,8 @@ fn frame_in(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Ve
             _ => {}
         }
     }
-    let nodes = out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default();
-    Drawn { words, outlines, nodes }
+    let (nodes, focus) = out.platform_output.accesskit_update.map(|u| (u.nodes, Some(u.focus))).unwrap_or_default();
+    Drawn { words, outlines, nodes, focus }
 }
 
 /// A context with the app's fonts, screen readers on.
@@ -631,13 +654,60 @@ fn the_keyboards_focus_is_drawn_on_restore_and_the_checkbox() {
     assert!(!drawn.outlines.iter().any(|(_, c)| *c == ring), "no outline without the focus");
     let restore = text::fill(crate::et!("Restore {setting}"), &[("setting", vocabulary::label("angle", Some("tatami")))]);
     let trim = crate::etn!(1, "Trim the thread after the object", "Trim the thread after the objects");
-    for name in [restore.as_str(), trim.as_str()] {
+    let convert = super::super::command_label(&app, CONVERT);
+    for name in [restore.as_str(), trim.as_str(), convert.as_str()] {
         time += 0.05;
         frame(&mut app, &ctx, time, vec![drawn.focus(name)]);
         time += 0.05;
         let focused = frame(&mut app, &ctx, time, vec![]);
         assert!(focused.outlines.iter().any(|(_, c)| *c == ring), "{name}: the focus's outline");
     }
+    // Restore Object, on manual stitches.
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    time += 0.05;
+    let restore = super::super::command_label(&app, RESTORE);
+    frame(&mut app, &ctx, time, vec![drawn.focus(&restore)]);
+    time += 0.05;
+    let focused = frame(&mut app, &ctx, time, vec![]);
+    assert!(focused.outlines.iter().any(|(_, c)| *c == ring), "Restore Object: the focus's outline");
+}
+
+/// Pressed from the keyboard, Convert hands the keyboard to Restore Object once the object is
+/// converted, and Restore Object hands it back to Convert once it is put back: the keyboard is
+/// never left with nothing, where the next Tab would hide the panels. Restore Object, dimmed
+/// because every object is locked, says why to screen readers.
+#[test]
+fn convert_and_restore_hand_the_keyboard_to_what_replaces_them() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let convert = super::super::command_label(&app, CONVERT);
+    let restore = super::super::command_label(&app, RESTORE);
+    let enter = |pressed| Event::Key { key: Key::Enter, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let drawn = ready(&mut app, &ctx, &mut time);
+    for events in [vec![drawn.focus(&convert)], vec![enter(true)], vec![enter(false)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    converted_now(&mut app, &ctx, &mut time);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(drawn.focused(), Some(restore.as_str()), "Restore Object has the keyboard");
+    for events in [vec![enter(true)], vec![enter(false)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, events);
+    }
+    assert_eq!(info(&mut app, &[a])["manual"], json!(null), "restored at once: its stitches unedited");
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(drawn.focused(), Some(convert.as_str()), "Convert has the keyboard again");
+    // Locked: dimmed, and said why.
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    app.run("object.lock", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert_eq!(drawn.node(&restore).description(), Some(crate::et!("Locked objects can't be restored: unlock them first.")));
 }
 
 /// Screen readers hear what a blank field shows (what Auto chose, as its placeholder), and two ↺
@@ -1131,17 +1201,151 @@ fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
 
 /// The app's per-frame work until a convert under way (off the interface thread) has finished.
 fn converted_now(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) {
-    for _ in 0..2000 {
-        if !crate::embroidery::convert_job::running(app) {
-            return;
-        }
+    // A deadline generous for a busy machine, not a count of frames.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+    while crate::embroidery::convert_job::running(app) {
+        assert!(std::time::Instant::now() < deadline, "still converting");
         *time += 0.001;
         let raw = egui::RawInput { time: Some(*time), ..Default::default() };
         let mut out = ctx.run_ui(raw, |ui| crate::embroidery::convert_job::poll(app, ui.ctx()));
         out.textures_delta.clear();
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
-    panic!("still converting");
+}
+
+/// Enter on a focused Restore Object… opens its question and isn't the question's answer: held
+/// over frames, the question stays. Escape closes it and Cancel too, nothing restored, and the
+/// button has let the keyboard go, so another Enter doesn't ask again; Enter let go and pressed
+/// again restores. Drawn as the app draws a frame: keys, then the panel, then the dialog.
+#[test]
+fn the_enter_that_opens_the_restore_question_is_not_its_answer() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    let run = app.session.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    app.run("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run, "index": 1}], "dx": 1})).unwrap();
+    select(&mut app, &[a]);
+    let key = |key, pressed| Event::Key { key, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE };
+    let asked = |app: &VectorcraftApp| app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND);
+    let restore = super::super::command_label(&app, RESTORE);
+    let mut time = 0.0;
+    let mut step = |app: &mut VectorcraftApp, events: Vec<Event>| {
+        time += 0.05;
+        frame_with_dialogs(app, &ctx, time, events)
+    };
+    let mut last = step(&mut app, vec![]);
+    for _ in 0..4 {
+        last = step(&mut app, vec![]);
+    }
+    let undo = steps(&app);
+    // Escape, then Cancel: each closes the question, nothing restored.
+    for close in ["escape", "cancel"] {
+        step(&mut app, vec![last.focus(&restore)]);
+        step(&mut app, vec![key(Key::Enter, true)]);
+        assert!(asked(&app), "{close}: Enter opened the question");
+        for _ in 0..3 {
+            last = step(&mut app, vec![]);
+        }
+        assert!(asked(&app), "{close}: the Enter still held isn't its answer");
+        step(&mut app, vec![key(Key::Enter, false)]);
+        let events = if close == "escape" { vec![key(Key::Escape, true), key(Key::Escape, false)] } else { vec![last.click("Cancel")] };
+        step(&mut app, events);
+        assert!(!asked(&app), "{close} closed it");
+        assert_eq!(steps(&app), undo, "{close}: nothing restored");
+        step(&mut app, vec![key(Key::Enter, true), key(Key::Enter, false)]);
+        last = step(&mut app, vec![]);
+        assert!(!asked(&app), "{close}: the button let the keyboard go, so Enter doesn't ask again");
+    }
+    // Enter let go, and pressed again: its answer.
+    step(&mut app, vec![last.focus(&restore)]);
+    step(&mut app, vec![key(Key::Enter, true)]);
+    step(&mut app, vec![key(Key::Enter, false)]);
+    assert!(asked(&app));
+    step(&mut app, vec![key(Key::Enter, true), key(Key::Enter, false)]);
+    assert!(!asked(&app), "Enter, pressed again, restores");
+    assert_eq!(steps(&app), undo + 1);
+    assert_eq!(info(&mut app, &[a])["manual"], json!(null), "put back");
+}
+
+/// Convert to Manual Stitches, Restore Object… and Stop After tell screen readers their help, which
+/// they don't hear as a tooltip.
+#[test]
+fn convert_restore_and_stop_after_describe_their_help() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let convert = super::super::command_label(&app, CONVERT);
+    let described = |drawn: &Drawn, name: &str, start: &str| drawn.node(name).description().is_some_and(|d| d.starts_with(start));
+    assert!(described(&drawn, &convert, "Freezes the stitches"));
+    assert!(described(&drawn, "Stop the machine after the object", "The machine stops"));
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(described(&drawn, &super::super::command_label(&app, RESTORE), "Puts the object back"));
+}
+
+/// A manual run outside the object it was converted from (Ungroup moved it out) is said to be sewn
+/// as it is placed, its object not kept with it: Restore Object is neither offered nor promised.
+#[test]
+fn a_manual_run_outside_its_object_promises_no_restore() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a]);
+    app.run("object.ungroup", json!({})).unwrap();
+    let run = app.session.doc().unwrap().selection.objects[0].0;
+    select(&mut app, &[run]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(drawn.has(vocabulary::takes_none("manual")), "{:?}", drawn.words);
+    assert!(!drawn.has("Restore Object"), "{:?}", drawn.words);
+}
+
+/// `ui.inspect` reports the manual stitches among the selection as the tab says them, beside the
+/// counts of a mixed selection, each count in its own number: one needle point reads as one.
+#[test]
+fn inspect_reports_manual_stitches_and_counts_read_in_their_own_numbers() {
+    let ctx = context();
+    let (mut app, a, b) = app_with_art();
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    select(&mut app, &[a, b]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    let seen = inspect(&app);
+    assert_eq!((seen["manual"]["objects"].clone(), seen["converting"].clone()), (json!(1), json!(false)), "{seen}");
+    assert!(seen["manual"]["needlePoints"].as_u64().is_some_and(|n| n > 1));
+    assert!(drawn.has("1 selected object is manual stitches"), "{:?}", drawn.words);
+    assert_eq!(crate::etn!(1, "{count} needle point", "{count} needle points"), "1 needle point");
+}
+
+/// While a convert is under way, Convert waits (dimmed); and Restore Object's question, its
+/// document no longer the active one, closes as Cancel, nothing restored.
+#[test]
+fn convert_waits_while_busy_and_the_question_closes_with_its_document() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let convert = super::super::command_label(&app, CONVERT);
+    click_on(&mut app, &ctx, &mut time, &convert);
+    assert!(crate::embroidery::convert_job::running(&app));
+    time += 0.05;
+    let drawn = frame(&mut app, &ctx, time, vec![]);
+    assert!(drawn.node(&convert).is_disabled(), "Convert waits while converting");
+    converted_now(&mut app, &ctx, &mut time);
+    // Edited, so Restore asks; then another document is made the active one.
+    let run = app.session.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    app.run("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run, "index": 1}], "dx": 1})).unwrap();
+    select(&mut app, &[a]);
+    crate::embroidery::menu::restore_asking(&mut app, json!([a]));
+    assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND));
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    time += 0.05;
+    frame_with_dialogs(&mut app, &ctx, time, vec![]);
+    assert!(app.ui.dialog.is_none(), "closed as Cancel");
+    app.run("document.activate", json!({"index": 0})).ok();
 }
 
 /// A pointer click in the middle of the node screen readers call `name`.
@@ -1187,7 +1391,8 @@ fn manual_stitches_convert_and_restore_from_the_tab() {
     );
     click_on(&mut app, &ctx, &mut time, &stop);
     assert_eq!(info(&mut app, &[a])["stopAfter"]["value"], json!(true));
-    click_on(&mut app, &ctx, &mut time, crate::et!("Restore Object…"));
+    let restore = super::super::command_label(&app, RESTORE);
+    click_on(&mut app, &ctx, &mut time, &restore);
     assert!(app.ui.dialog.is_none(), "not edited: no question");
     assert_eq!(app.ui.status, crate::etn!(1, "{count} object restored", "{count} objects restored"));
     assert_eq!(info(&mut app, &[a])["manual"], json!(null), "the object is back");
@@ -1201,7 +1406,7 @@ fn manual_stitches_convert_and_restore_from_the_tab() {
 #[test]
 fn restore_asks_after_edits_and_the_buttons_work_from_the_keyboard() {
     let ctx = context();
-    let (mut app, a, b) = app_with_art();
+    let (mut app, a, _) = app_with_art();
     select(&mut app, &[a]);
     let mut time = 0.0;
     let convert = super::super::command_label(&app, CONVERT);
@@ -1225,11 +1430,11 @@ fn restore_asks_after_edits_and_the_buttons_work_from_the_keyboard() {
     let drawn = ready(&mut app, &ctx, &mut time);
     let scaled = text::fill(crate::et!("Scaled to {value}% since converting"), &[("value", "120")]);
     assert!(drawn.has(&scaled), "{scaled}");
-    click_on(&mut app, &ctx, &mut time, crate::et!("Restore Object…"));
+    let restore = super::super::command_label(&app, RESTORE);
+    click_on(&mut app, &ctx, &mut time, &restore);
     assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND), "edited: asked first");
     assert!(info(&mut app, &[a])["manual"].is_object(), "nothing restored yet");
     crate::dialogs::confirm(&mut app).unwrap();
     assert!(app.ui.dialog.is_none());
     assert_eq!(info(&mut app, &[a])["manual"], json!(null), "Restore put it back");
-    let _ = b;
 }

@@ -26,7 +26,7 @@ use vectorcraft_doc::{Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_tools::embroidery::{NeedleHit, NeedleRef, NeedleScope, ThreadHit};
 
-use super::needles::{self, MAX_NEEDLE_POINTS};
+use super::needles::{self, MAX_NEEDLE_POINTS, Unfit};
 
 /// The most needle points a chunk of a path's index holds: as many as a line of the stitch scene
 /// (`vectorcraft_render::lines::MAX_LINE_POINTS`), so that a query tests as many points a box as a
@@ -86,20 +86,12 @@ pub struct PathIndex {
 }
 
 impl PathIndex {
-    /// The index of path `node`; `Err` with the reason it can't be edited needle point by needle
-    /// point ([`needles::reason`]), checked before any arithmetic.
-    fn of(node: &Arc<Node>) -> Result<Self, &'static str> {
-        let NodeKind::Path { path, .. } = &node.kind else { return Err(needles::reason::NOT_STITCHES) };
-        let Some(marks) = node.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) else {
-            return Err(needles::reason::NOT_STITCHES);
-        };
-        let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
-        if anchors > 2 * MAX_NEEDLE_POINTS {
-            return Err(needles::reason::TOO_MANY);
-        }
-        if !path.subpaths.iter().flat_map(|sp| &sp.anchors).all(|a| needles::in_range(a.p)) {
-            return Err(needles::reason::OUT_OF_RANGE);
-        }
+    /// The index of path `node`; `Err` with why it can't be edited needle point by needle point,
+    /// as the stitch commands judge it ([`needles::check`]: before any arithmetic).
+    fn of(node: &Arc<Node>) -> Result<Self, Unfit> {
+        needles::check(node)?;
+        let NodeKind::Path { path, .. } = &node.kind else { return Err(Unfit::NotStitches) };
+        let Some(marks) = node.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) else { return Err(Unfit::NotStitches) };
         BUILT.with(|b| b.set(b.get().saturating_add(1)));
         let alone = path.subpaths.len() == 1;
         let mut subs = Vec::with_capacity(path.subpaths.len());
@@ -107,8 +99,9 @@ impl PathIndex {
         let mut needles = 0usize;
         let mut bounds: Option<Rect> = None;
         for (s, sp) in path.subpaths.iter().enumerate() {
-            let collapsed = matches!(sp.anchors.as_slice(), [a, b] if needles::same(a.p, b.p) && !(alone && marks.double_point));
-            let count = if collapsed { 1 } else { sp.anchors.len() };
+            // A line to its own start is one needle point, as every reader counts it.
+            let count = needles::needle_count(&sp.anchors, alone, marks.double_point);
+            let collapsed = count < sp.anchors.len();
             subs.push(Sub { first: needles, needles: count, collapsed });
             let mut from = 0;
             while from < count {
@@ -125,7 +118,7 @@ impl PathIndex {
             needles += count;
         }
         if needles > MAX_NEEDLE_POINTS {
-            return Err(needles::reason::TOO_MANY);
+            return Err(Unfit::TooMany);
         }
         Ok(Self { node: node.clone(), subs, chunks, needles, bounds })
     }

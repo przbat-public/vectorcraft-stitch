@@ -10,7 +10,7 @@
 //! can be edited, not cut by a clip group (manual stitches never are), and whose needle-down records
 //! are as many as its needle points. Elsewhere `index` is `null` and `editable` false.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::{Document, NodeId};
@@ -18,15 +18,49 @@ use vectorcraft_stitch::Command;
 
 use super::measure;
 use super::needles;
-use super::plan::{DesignPlan, Part};
+use super::plan::{DesignPlan, Part, Unit};
 use super::stats::Page;
 use crate::cmd::bad;
 
 /// The keys `embroidery.stitches` takes besides the embroidery options.
 pub(super) const KEYS: [&str; 8] = ["from", "to", "ids", "kinds", "shorterThan", "longerThan", Page::KEYS[0], Page::KEYS[1]];
 
-/// The kinds of record, as the reply names them.
-const KINDS: [&str; 4] = ["stitch", "jump", "trim", "stop"];
+/// A kind of record, as the reply names it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum RecordKind {
+    /// A needle point: the needle goes down.
+    Stitch,
+    /// The needle moves with it up.
+    Jump,
+    /// The thread is cut.
+    Trim,
+    /// The machine stops (a thread change, or a stop written as one).
+    Stop,
+}
+
+impl RecordKind {
+    const ALL: [Self; 4] = [Self::Stitch, Self::Jump, Self::Trim, Self::Stop];
+
+    /// As the reply and `kinds` name it.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Stitch => "stitch",
+            Self::Jump => "jump",
+            Self::Trim => "trim",
+            Self::Stop => "stop",
+        }
+    }
+
+    /// The kind of a record of command `c`.
+    fn of(c: Command) -> Self {
+        match c {
+            Command::Stitch => Self::Stitch,
+            Command::Jump => Self::Jump,
+            Command::Trim => Self::Trim,
+            Command::Stop | Command::ColorChange => Self::Stop,
+        }
+    }
+}
 
 /// What `embroidery.stitches` (and `selectNeedlePoints` by records) asks for.
 #[derive(Clone, Debug)]
@@ -37,7 +71,7 @@ pub(crate) struct Ask {
     /// The objects whose records it lists: the object a person selects, or the path sewn.
     pub(crate) ids: Option<BTreeSet<u64>>,
     /// The kinds it lists (none: all).
-    pub(crate) kinds: Option<BTreeSet<&'static str>>,
+    pub(crate) kinds: Option<BTreeSet<RecordKind>>,
     /// Only the records whose length (millimetres) is under `shorter`, or over `longer`; a record
     /// with no length is passed by when either is given.
     pub(crate) shorter: Option<f64>,
@@ -93,11 +127,12 @@ impl Ask {
         let kinds = match o.get("kinds") {
             None | Some(Value::Null) => None,
             Some(v) => {
-                let items = v.as_array().ok_or_else(|| bad(cmd, format!("`kinds` {v}: a list of {}", KINDS.join(", "))))?;
+                let names: Vec<&str> = RecordKind::ALL.iter().map(|k| k.name()).collect();
+                let items = v.as_array().ok_or_else(|| bad(cmd, format!("`kinds` {v}: a list of {}", names.join(", "))))?;
                 let kind = |i: &Value| {
                     i.as_str()
-                        .and_then(|k| KINDS.iter().find(|n| **n == k).copied())
-                        .ok_or_else(|| bad(cmd, format!("`kinds` entry {i}: one of {}", KINDS.join(", "))))
+                        .and_then(|k| RecordKind::ALL.into_iter().find(|n| n.name() == k))
+                        .ok_or_else(|| bad(cmd, format!("`kinds` entry {i}: one of {}", names.join(", "))))
                 };
                 Some(items.iter().map(kind).collect::<crate::Result<_>>()?)
             }
@@ -110,7 +145,7 @@ impl Ask {
 #[derive(Clone, Debug)]
 pub(crate) struct Row {
     pub(crate) record: usize,
-    pub(crate) kind: &'static str,
+    pub(crate) kind: RecordKind,
     pub(crate) at: [f64; 2],
     pub(crate) length: Option<f64>,
     pub(crate) id: NodeId,
@@ -136,22 +171,30 @@ fn numbered(plan: &DesignPlan, doc: &Document) -> Vec<Option<(NodeId, usize)>> {
             }
         }
     }
+    // The units a path of stitches the commands can edit sews, and those paths found in one walk:
+    // what can be edited measured once for them all, each path counted without reading it.
+    let literal = |u: &Unit| {
+        let node = u.origin.node;
+        (matches!(u.origin.part, Part::Manual | Part::Literal)
+            && !u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted)))
+        .then_some(node)
+    };
+    let nodes: HashSet<NodeId> = plan.units.iter().filter_map(literal).collect();
+    let paths = doc.index_paths(nodes.iter().copied());
+    let editable = doc.editable();
     let mut lengths: HashMap<NodeId, Option<usize>> = HashMap::new();
     plan.units
         .iter()
         .zip(sewn)
         .map(|(u, sewn)| {
-            let node = u.origin.node;
+            let node = literal(u)?;
             let manual = matches!(u.origin.part, Part::Manual);
-            if !(manual || matches!(u.origin.part, Part::Literal))
-                || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::converted))
-            {
-                return None;
-            }
             let len = *lengths.entry(node).or_insert_with(|| {
-                let n = doc.node(node)?;
-                let clipped = !manual && doc.ancestry(node).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|a| a.clips()));
-                (doc.is_editable(node) && !clipped).then(|| needles::read(n).ok().map(|st| st.len())).flatten()
+                let path = paths.get(&node)?;
+                let n = doc.node_at(path)?;
+                let ancestors = doc.ancestry_at(path).unwrap_or_default();
+                let clipped = !manual && ancestors.iter().any(|a| doc.node(*a).is_some_and(|a| a.clips()));
+                (editable(node) && !clipped).then(|| needles::check(n).ok()).flatten()
             });
             let first = usize::from(u.met);
             (len == Some(sewn + first)).then_some((node, first))
@@ -166,18 +209,22 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
     // Each unit's needle-down records so far among its own.
     let mut counts = vec![0usize; plan.units.len()];
     let mut total = 0usize;
+    // The needle point the last needle-down record numbered is, in its block: a cut before the next
+    // unit's own records (an opened design's run's) follows it.
+    let mut last_needle: Option<(usize, NodeId, usize)> = None;
     measure::each_until_cancelled(plan, |r| {
         total += 1;
         let Some(u) = plan.units.get(r.unit) else { return };
         let Some(block) = plan.blocks.get(u.block) else { return };
-        let kind = match r.stitch.command {
-            Command::Stitch => "stitch",
-            Command::Jump => "jump",
-            Command::Trim => "trim",
-            Command::Stop | Command::ColorChange => "stop",
-        };
+        let kind = RecordKind::of(r.stitch.command);
         // Its place in the path the unit sews, where the records number it.
-        let place = r.number.checked_sub(block.first_number).filter(|i| u.own.contains(i));
+        let at = r.number.checked_sub(block.first_number);
+        let place = at.filter(|i| u.own.contains(i));
+        // Before the unit's own records (an opened design's run, which the cut and the jump onto it
+        // the file had come before): the jump lands on its first needle point, a cut follows the
+        // needle point numbered last in the block.
+        let leading = at.is_some_and(|i| i < u.own.start);
+        let mut node = u.origin.node;
         let index = match (numbered.get(r.unit).copied().flatten(), place) {
             (Some((_, first)), Some(_)) => {
                 let count = counts.get(r.unit).copied().unwrap_or(0);
@@ -186,6 +233,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
                         if let Some(c) = counts.get_mut(r.unit) {
                             *c += 1;
                         }
+                        last_needle = Some((u.block, node, first + count));
                         Some(first + count)
                     }
                     // A jump: the needle point it lands on.
@@ -194,8 +242,22 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
                     _ => (first + count).checked_sub(1),
                 }
             }
+            (Some((_, first)), None) if leading => match r.stitch.command {
+                Command::Jump => Some(first),
+                Command::Trim | Command::Stop => match last_needle.filter(|(b, ..)| *b == u.block) {
+                    Some((_, before, k)) => {
+                        node = before;
+                        Some(k)
+                    }
+                    None => None,
+                },
+                _ => None,
+            },
             _ => None,
         };
+        if index.is_none() && r.stitch.command == Command::Stitch {
+            last_needle = None;
+        }
         let length = match r.stitch.command {
             Command::Stitch => r.sewn(),
             Command::Jump => Some(r.moved()),
@@ -204,7 +266,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
         if ask.from.is_some_and(|from| r.number < from) || ask.to.is_some_and(|to| r.number > to) {
             return;
         }
-        if ask.kinds.as_ref().is_some_and(|k| !k.contains(kind)) {
+        if ask.kinds.as_ref().is_some_and(|k| !k.contains(&kind)) {
             return;
         }
         let id = u.origin.selected();
@@ -216,7 +278,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
         {
             return;
         }
-        f(Row { record: r.number, kind, at: [r.stitch.x, r.stitch.y], length, id, node: u.origin.node, block: u.block + 1, unit: r.unit + 1, index });
+        f(Row { record: r.number, kind, at: [r.stitch.x, r.stitch.y], length, id, node, block: u.block + 1, unit: r.unit + 1, index });
     });
     total
 }
@@ -230,7 +292,7 @@ pub(crate) fn list(plan: &DesignPlan, doc: &Document, ask: &Ask) -> Value {
         if page.contains(&matched) {
             listed.push(json!({
                 "record": row.record,
-                "kind": row.kind,
+                "kind": row.kind.name(),
                 "at": row.at,
                 "length": row.length,
                 "id": row.id.0,
@@ -249,6 +311,7 @@ pub(crate) fn list(plan: &DesignPlan, doc: &Document, ask: &Ask) -> Value {
         "offset": ask.page.offset,
         "truncated": ask.page.truncated(matched),
         "records": listed,
+        "warnings": plan.messages(),
     })
 }
 
@@ -263,12 +326,13 @@ const BY_SHAPE: [&str; 2] = ["rect", "polygon"];
 /// `embroidery.selectNeedlePoints {records?, ids?, kinds?, shorterThan?, longerThan? | needlePoints?,
 /// ranges? | rect?, polygon?, ids?, mode?, …the embroidery options}`: needle points selected
 /// (`Selection.anchors`, as Direct Selection selects anchors) by the records that sew them
-/// (planning the design, as `embroidery.stitches` lists them; a record the stitch commands can't
-/// edit passed over and counted), by their addresses (planning nothing), or by a shape: those
-/// inside a rectangle or a polygon (a marquee, a lasso), of the paths of stitches inside `ids`, else
-/// inside the object isolated, else in the whole document (planning nothing; the paths that can't be
-/// edited passed over and counted). `mode`: set (the default), add, toggle or subtract. A
-/// selection, not an undo step.
+/// (planning the design, as `embroidery.stitches` lists them: a needle point itself, a jump the one
+/// it lands on, a cut or a stop the one it follows; a record the stitch commands can't edit passed
+/// over and counted), by their addresses (planning nothing), or by a shape: those inside a rectangle
+/// or a polygon (a marquee, a lasso), of the paths of stitches inside `ids`, else inside the object
+/// isolated, else in the whole document (planning nothing; the paths that can't be edited passed
+/// over and counted). `mode`: set (the default), add, toggle or subtract. A selection, not an undo
+/// step.
 pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> {
     let o = super::object(p, SELECT)?;
     let mode = match o.get("mode") {
@@ -341,7 +405,7 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
         let (plan, doc) = super::planned(s, &opts, false, SELECT)?;
         let mut count = 0usize;
         rows(&plan, &doc, &ask, |row| match row.index {
-            Some(k) if row.kind != "trim" && row.kind != "stop" && count < needles::MAX_NEEDLE_POINTS => {
+            Some(k) if count < needles::MAX_NEEDLE_POINTS => {
                 if picked.entry(row.node).or_default().insert(k) {
                     count += 1;
                 }
@@ -358,14 +422,15 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
         }
         for (id, k) in &picked {
             let Some(st) = d.node(*id).and_then(|n| needles::read(n).ok()) else { continue };
-            let now = needles::selected_in(sel, *id, &st);
+            let ix = st.index();
+            let now = needles::selected_in(sel, *id, &ix);
             let next: BTreeSet<usize> = match mode {
                 "toggle" => now.symmetric_difference(k).copied().collect(),
                 "subtract" => now.difference(k).copied().collect(),
                 _ => now.union(k).copied().collect(),
             };
             selected += next.len();
-            needles::select_in(sel, *id, &st, &next);
+            needles::select_in(sel, *id, &ix, &next);
         }
     })?;
     Ok(json!({"selectedCount": selected, "pathCount": picked.len(), "passedOver": passed}))

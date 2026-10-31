@@ -232,3 +232,74 @@ fn the_embroidery_ui_commands_and_control_keys_answer_junk_without_a_panic() {
         frame(&mut app, &ctx, 1.0);
     }
 }
+
+/// Frames until no convert or Nearest Connection is under way, or a deadline generous for a busy
+/// machine has passed.
+fn until_done(app: &mut VectorcraftApp, ctx: &egui::Context) {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+    while super::convert_job::running(app) || super::nearest::running(app) {
+        assert!(std::time::Instant::now() < deadline, "still working");
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            super::convert_job::poll(app, ui.ctx());
+            super::nearest::poll(app, ui.ctx());
+        });
+        out.textures_delta.clear();
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+}
+
+/// A person's Convert to Manual Stitches, Restore Object and Nearest Connection from the command
+/// palette run as the Embroidery panel runs them: Convert and Nearest Connection off the interface
+/// thread, the status bar saying what they did; Restore at once while the stitches are as
+/// converted, saying so, and asking first once they were edited.
+#[test]
+fn the_palette_runs_convert_restore_and_nearest_connection_as_the_panel_does() {
+    let ctx = egui::Context::default();
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    app.run("paint.setFill", json!({"color": "#cc2222"})).unwrap();
+    let a = app.run("shape.rectangle", json!({"x": 20, "y": 20, "width": 60, "height": 40})).unwrap()["id"].as_u64().unwrap();
+    app.run("shape.rectangle", json!({"x": 120, "y": 20, "width": 60, "height": 40})).unwrap();
+    app.run("select.set", json!({"ids": [a]})).unwrap();
+    let manual = |app: &mut VectorcraftApp| app.run("embroidery.info", json!({"ids": [a]})).unwrap()["manual"].is_object();
+    crate::menus::invoke(&mut app, "embroidery.convertToManual", json!({}));
+    assert!(super::convert_job::running(&app), "converting off the interface thread");
+    until_done(&mut app, &ctx);
+    assert_eq!(app.ui.status, "1 object converted to manual stitches: Restore Object brings it back");
+    assert!(manual(&mut app));
+    crate::menus::invoke(&mut app, "embroidery.restoreObject", json!({}));
+    assert!(app.ui.dialog.is_none(), "as converted: restored without a question");
+    assert_eq!(app.ui.status, "1 object restored");
+    assert!(!manual(&mut app));
+    // Edited since converting: asked first.
+    app.run("embroidery.convertToManual", json!({"ids": [a]})).unwrap();
+    let run = app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    app.run("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run, "index": 1}], "dx": 1})).unwrap();
+    app.run("select.set", json!({"ids": [a]})).unwrap();
+    crate::menus::invoke(&mut app, "embroidery.restoreObject", json!({}));
+    assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == super::restore_dialog::KIND), "edited: asked first");
+    assert!(manual(&mut app), "nothing restored yet");
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert!(!manual(&mut app), "the question's Restore put it back");
+    crate::menus::invoke(&mut app, "embroidery.nearestConnection", json!({}));
+    assert!(super::nearest::running(&app), "searching off the interface thread");
+    until_done(&mut app, &ctx);
+    assert!(app.ui.status.starts_with("Nearest Connection · "), "{}", app.ui.status);
+}
+
+/// Convert's and Restore's refusals and what they passed over are said with their reasons worded
+/// and counted, never as ids and codes; any other message is left as it is.
+#[test]
+fn passed_over_objects_are_said_with_their_reasons_in_words() {
+    let refused = format!("{}: 7 (locked), 9 (locked), 12 (literal)", vectorcraft_engine::cmd::embroidery::CONVERT_REFUSED);
+    assert_eq!(super::vocabulary::refusal(&refused), "nothing selected can be converted to manual stitches: locked (2), stitches from a file (1)");
+    let refused = format!("{}: 4 (outOfRange)", vectorcraft_engine::cmd::embroidery::RESTORE_REFUSED);
+    assert_eq!(super::vocabulary::refusal(&refused), "nothing selected can be restored: would lie outside the document (1)");
+    assert_eq!(super::vocabulary::refusal("something else: 3 (locked)"), "something else: 3 (locked)");
+    let reply = json!({"convertedCount": 1, "skippedCount": 2, "skipped": [{"id": 3, "reason": "locked"}, {"id": 4, "reason": "notSewn"}]});
+    assert_eq!(
+        crate::panels::embroidery::object::converted(&reply),
+        "1 object converted to manual stitches: Restore Object brings it back · 2 objects passed over: locked (1), not sewn (1)"
+    );
+}

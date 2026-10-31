@@ -181,18 +181,23 @@ const KEPT_REACH: i32 = 98;
 /// 256 blocks or more).
 pub(crate) const MAX_COLORS: usize = u16::MAX as usize;
 
-pub fn write(p: &Pattern) -> Result<Vec<u8>> {
+/// The frame VP3 counts `p`'s points in: from the centre of where the needle goes down (every jump
+/// is written as a move to the next stitch, see the module doc, so a jump's own point is never
+/// reached and doesn't count in the extents, the hoop or the centre), snapped to the 0.1 mm grid;
+/// y downwards, as the stitches count it (the packets' positions negate it).
+pub(crate) fn frame(p: &Pattern) -> Result<super::Frame> {
     let segments = segments(p);
-    // The design is where the needle goes down: every jump is written as a move to the next
-    // stitch (see the module doc), so a jump's own point is never reached and doesn't count in the
-    // extents, the hoop or the centre.
     let needle = segments.iter().flat_map(|(_, s)| s.iter().copied()).filter(|s| s.command == Command::Stitch);
     let Some(b) = crate::bounds_of(needle) else {
         return Err(Error::Format("the design has no stitches to write".into()));
     };
-    // Positions from the design's centre, snapped to the 0.1 mm grid; y downwards, as the stitches
-    // count it (the packets' positions negate it).
-    let frame = super::Frame::centered_on(b, false);
+    Ok(super::Frame::centered_on(b, false))
+}
+
+pub fn write(p: &Pattern) -> Result<Vec<u8>> {
+    let segments = segments(p);
+    let frame = frame(p)?;
+    let b = frame.bounds;
     let (x0, y0, x1, y1) = (frame.x(b.x0), frame.y(b.y0), frame.x(b.x1), frame.y(b.y1));
     let colors = u16::try_from(segments.len()).map_err(|_| Error::TooLarge(format!("VP3 holds at most {MAX_COLORS} colour blocks")))?;
     // Written in one buffer, in file order: each packet's length is filled in when it ends.

@@ -1,22 +1,25 @@
 //! The stitch commands that edit needle points ([`super::needles`] reads and writes them): each
 //! takes millimetres, addresses needle points by `{id, index}` (else the selection's), is one undo
 //! step (none when nothing changes), leaves the selection on what it says, and answers the lengths
-//! of the stitches it made or changed (`lengths`), without a plan.
+//! of the stitches it made or changed (`lengths`), without a plan. Each goes through one [`Edit`],
+//! which holds what they share.
+
+use std::collections::BTreeSet;
 
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::StitchRun;
 use vectorcraft_doc::{Document, NodeId, Selection};
 use vectorcraft_geom::{Point, Vec2};
-use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
+use vectorcraft_stitch::{mm_to_pt, point_to_mm, point_to_pt, pt_to_mm};
 
-use super::needles::{self, LONGEST, Lengths, MAX_LISTED, NOTHING_ADDRESSED, Stitches, Targets};
+use super::needles::{self, Index, LONGEST, Lengths, MAX_LISTED, MAX_NEEDLE_POINTS, NOTHING_ADDRESSED, Stitches, Targets};
 use super::{object, only};
 use crate::cmd::bad;
 use crate::{EngineError, Result, Session};
 
 /// What an edit leaves of one path: its stitches written back (removed when no needle point is
 /// left), the path removed, or only its run's marks changed (a cut or a stop passed to it).
-pub(super) enum Left {
+enum Left {
     Stitches(Stitches),
     Removed,
     Marks(StitchRun),
@@ -65,20 +68,20 @@ fn point_mm(o: &Map<String, Value>, key: &str, cmd: &str) -> Result<Option<Point
 }
 
 /// Write `edits` into the active document and set the selection to `sel`, as one undo step named
-/// `label`.
+/// `label`: the paths removed (and those left with no needle point) removed together, in one pass
+/// over each parent.
 fn apply(s: &mut Session, label: &str, edits: Vec<(NodeId, Left)>, sel: Selection) -> Result<()> {
     s.edit(label, |d, selection| {
+        let mut gone = Vec::new();
         for (id, left) in edits {
             match left {
                 Left::Stitches(st) => {
                     let n = d.node_mut(id).ok_or(EngineError::NoNode(id))?;
-                    if !needles::write(n, &st) {
-                        d.remove(id).map_err(|e| EngineError::Other(e.to_string()))?;
+                    if !needles::write(n, st) {
+                        gone.push(id);
                     }
                 }
-                Left::Removed => {
-                    d.remove(id).map_err(|e| EngineError::Other(e.to_string()))?;
-                }
+                Left::Removed => gone.push(id),
                 Left::Marks(marks) => {
                     let n = d.node_mut(id).ok_or(EngineError::NoNode(id))?;
                     if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
@@ -87,31 +90,164 @@ fn apply(s: &mut Session, label: &str, edits: Vec<(NodeId, Left)>, sel: Selectio
                 }
             }
         }
+        if !gone.is_empty() {
+            // Every id is an edited path the document holds, each once: a failure is a bug.
+            d.remove_many(&gone).map_err(|e| EngineError::Internal { cmd: label.to_string(), msg: e.to_string() })?;
+        }
         *selection = sel;
         Ok(())
     })
 }
 
-/// The paths an edit changed, as a reply lists them: each id with its needle points now (none:
-/// removed), at most [`MAX_LISTED`].
+/// The paths an edit changed or removed, as a reply lists them: each id with its needle points now
+/// (none: removed), at most [`MAX_LISTED`] (a path only given a cut or a stop isn't one).
 fn listed(edits: &[(NodeId, Left)]) -> Vec<Value> {
     edits
         .iter()
-        .take(MAX_LISTED)
         .filter_map(|(id, left)| match left {
             Left::Stitches(st) => Some(json!({"id": id.0, "needlePoints": st.len()})),
             Left::Removed => Some(json!({"id": id.0, "needlePoints": 0})),
             Left::Marks(_) => None,
         })
+        .take(MAX_LISTED)
         .collect()
 }
 
-/// The selection `sel` with path `id`'s needle points kept as they were (an edit that moves no
-/// needle point to another place in the path), written as `st` now lays them out.
-fn kept_selection(sel: &mut Selection, before: &Selection, id: NodeId, was: &Stitches, st: &Stitches) {
-    if before.anchors.contains_key(&id) {
-        let k = needles::selected_in(before, id, was);
-        needles::select_in(sel, id, st, &k);
+/// Where an edit leaves the needle points of a path that the selection selected.
+enum Kept<'a> {
+    /// Where they were: no needle point moved to another place in the path.
+    Same,
+    /// Each to its new index ([`Rebuilt::moved_to`]; `None`: no longer there).
+    Moved(&'a [Option<usize>]),
+    /// Only these needle points of the path, whatever was selected of it.
+    Only(BTreeSet<usize>),
+    /// None of it: the path leaves the selection.
+    Left,
+    /// The path whole.
+    Whole,
+}
+
+/// One edit of needle points under way, from [`Edit::begin`] to [`Edit::finish`]: the selection as
+/// it was and as the edit leaves it, the live check's limits and what it measured, the paths it
+/// changed and what of the selection it passed over. Every command that edits needle points goes
+/// through it, so that they keep to one set of rules: no path past [`MAX_NEEDLE_POINTS`], the
+/// selection carried to where its needle points went, the same reply keys, and an undo step only
+/// when something changed.
+struct Edit {
+    /// The command's id, which its refusals name.
+    cmd: &'static str,
+    before: Selection,
+    sel: Selection,
+    min: f64,
+    max: f64,
+    lengths: Lengths,
+    edits: Vec<(NodeId, Left)>,
+    passed_over: Vec<(NodeId, needles::Unfit)>,
+    /// Runs of two needle points at one spot in a path of several, made one needle point
+    /// ([`Stitches::collapse_tacks`]).
+    collapsed: usize,
+}
+
+impl Edit {
+    /// An edit of the active document's needle points by command `cmd`, the selection as it is
+    /// `before` and what of it the command passed over `passed_over`; measured against the
+    /// document's shortest stitch.
+    fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, needles::Unfit)>) -> Result<Self> {
+        let min = needles::shortest_stitch(&s.doc()?.doc);
+        Ok(Self { cmd, sel: before.clone(), before, min, max: LONGEST, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
+    }
+
+    /// The needle points of path `id` (read from it, `ix` its index) that the selection selected
+    /// before the edit, when it selected some of them by their anchors (`None`: the path whole or
+    /// not at all, which the edit leaves as it is).
+    fn selected(&self, id: NodeId, ix: &Index) -> Option<BTreeSet<usize>> {
+        self.before.anchors.contains_key(&id).then(|| needles::selected_in(&self.before, id, ix))
+    }
+
+    /// Path `id` as the edit leaves it, `out` (`ix` its index): refused past
+    /// [`MAX_NEEDLE_POINTS`]; the stitches into and out of its needle points `touched` measured; its
+    /// needle points the selection selected (`selected`, of the path before) kept as `kept` says.
+    fn rebuilt(
+        &mut self,
+        id: NodeId,
+        mut out: Stitches,
+        ix: &Index,
+        selected: Option<BTreeSet<usize>>,
+        kept: Kept,
+        touched: impl IntoIterator<Item = usize>,
+    ) -> Result<()> {
+        if ix.len() > MAX_NEEDLE_POINTS {
+            return Err(bad(self.cmd, format!("object {}: more than {MAX_NEEDLE_POINTS} needle points", id.0)));
+        }
+        // A run of two needle points brought to one spot is one needle point when written: made so
+        // now, the selection and the stitches measured taken along.
+        let collapse = out.collapse_tacks();
+        self.collapsed += collapse.as_ref().map_or(0, |map| map.iter().filter(|k| k.is_none()).count());
+        let index = collapse.as_ref().map(|_| out.index());
+        let ix = index.as_ref().unwrap_or(ix);
+        let after = |k: usize| match &collapse {
+            Some(map) => map.get(k).copied().flatten(),
+            None => Some(k),
+        };
+        self.lengths.around(&out, ix, touched.into_iter().filter_map(&after), self.min, self.max);
+        let carried = |k: BTreeSet<usize>| -> BTreeSet<usize> { k.into_iter().filter_map(&after).collect() };
+        match kept {
+            Kept::Same => {
+                if let Some(k) = selected {
+                    needles::select_in(&mut self.sel, id, ix, &carried(k));
+                }
+            }
+            Kept::Moved(moved_to) => {
+                if let Some(k) = selected {
+                    let k = k.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()).collect();
+                    needles::select_in(&mut self.sel, id, ix, &carried(k));
+                }
+            }
+            Kept::Only(k) => needles::select_in(&mut self.sel, id, ix, &carried(k)),
+            Kept::Left => self.leave(id),
+            Kept::Whole => {
+                self.sel.anchors.remove(&id);
+                if !self.sel.objects.contains(&id) {
+                    self.sel.objects.push(id);
+                }
+            }
+        }
+        self.edits.push((id, Left::Stitches(out)));
+        Ok(())
+    }
+
+    /// Path `id` removed, and out of the selection.
+    fn removed(&mut self, id: NodeId) {
+        self.leave(id);
+        self.edits.push((id, Left::Removed));
+    }
+
+    /// Path `id` out of the selection.
+    fn leave(&mut self, id: NodeId) {
+        self.sel.remove(id);
+        self.sel.anchors.remove(&id);
+    }
+
+    /// The reply: `own`'s keys and what every edit answers (the paths changed or removed and how
+    /// many, the lengths measured, what was passed over), the edit applied as one undo step named
+    /// `label` only when `changed`.
+    fn finish(self, s: &mut Session, label: &str, changed: bool, own: Value) -> Result<Value> {
+        let mut reply = match own {
+            Value::Object(o) => o,
+            _ => Map::new(),
+        };
+        let paths = listed(&self.edits);
+        let count = self.edits.iter().filter(|(_, l)| !matches!(l, Left::Marks(_))).count();
+        reply.insert("paths".into(), Value::Array(paths));
+        reply.insert("pathCount".into(), json!(count));
+        reply.insert("lengths".into(), self.lengths.json(self.min, self.max));
+        reply.insert("collapsedCount".into(), json!(self.collapsed));
+        let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect();
+        reply.insert("passedOver".into(), Value::Array(passed));
+        if changed {
+            apply(s, label, self.edits, self.sel)?;
+        }
+        Ok(Value::Object(reply))
     }
 }
 
@@ -134,16 +270,16 @@ pub(super) fn move_points(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(MOVE, format!("`to` places one needle point: {} are addressed", t.count())));
     }
     let by = Vec2::new(mm_to_pt(dx.unwrap_or(0.0)), mm_to_pt(dy.unwrap_or(0.0)));
-    let to = to.map(|p| Point::new(mm_to_pt(p.x), mm_to_pt(p.y)));
-    let (min, max) = (needles::shortest_stitch(&s.doc()?.doc), LONGEST);
-    let mut lengths = Lengths::default();
-    let (mut edits, mut moved) = (Vec::new(), 0usize);
-    let mut sel = before.clone();
-    for (id, was, indices) in t.paths {
-        let mut st = was.clone();
+    let to = to.map(point_to_pt);
+    let mut e = Edit::begin(s, MOVE, before, t.passed_over)?;
+    let mut moved = 0usize;
+    for (id, mut st, indices) in t.paths {
+        // A move adds and removes no needle point: one index serves before and after.
+        let ix = st.index();
+        let selected = e.selected(id, &ix);
         let mut changed = false;
         for &k in &indices {
-            let Some(n) = st.needle_mut(k) else { continue };
+            let Some(n) = ix.locate(k).and_then(|at| st.needle_mut(at)) else { continue };
             let p = to.unwrap_or(n.p + by);
             if !(p.x.is_finite() && p.y.is_finite() && p.x.abs() <= vectorcraft_doc::MAX_COORD && p.y.abs() <= vectorcraft_doc::MAX_COORD) {
                 return Err(bad(MOVE, format!("object {}: needle point {k} would leave the document's coordinates", id.0)));
@@ -156,26 +292,11 @@ pub(super) fn move_points(s: &mut Session, p: &Value) -> Result<Value> {
                 moved += 1;
             }
         }
-        if !changed {
-            continue;
+        if changed {
+            e.rebuilt(id, st, &ix, selected, Kept::Same, indices)?;
         }
-        for &k in &indices {
-            lengths.around(&st, k, min, max);
-        }
-        kept_selection(&mut sel, &before, id, &was, &st);
-        edits.push((id, Left::Stitches(st)));
     }
-    let reply = json!({
-        "changedCount": moved,
-        "paths": listed(&edits),
-        "pathCount": edits.len(),
-        "lengths": lengths.json(min, max),
-        "passedOver": t.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
-    });
-    if !edits.is_empty() {
-        apply(s, MOVE_LABEL, edits, sel)?;
-    }
-    Ok(reply)
+    e.finish(s, MOVE_LABEL, moved > 0, json!({"changedCount": moved}))
 }
 
 pub(super) const INSERT: &str = "embroidery.insertNeedlePoints";
@@ -220,7 +341,7 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
             for item in items {
                 let one = Map::from_iter([("at".to_string(), item.clone())]);
                 let p = point_mm(&one, "at", INSERT)?.ok_or_else(|| bad(INSERT, "`at`: [x, y], millimetres"))?;
-                let p = Point::new(mm_to_pt(p.x), mm_to_pt(p.y));
+                let p = point_to_pt(p);
                 if !(p.x.abs() <= vectorcraft_doc::MAX_COORD && p.y.abs() <= vectorcraft_doc::MAX_COORD) {
                     return Err(bad(INSERT, format!("`at` {item}: outside the document's coordinates")));
                 }
@@ -232,20 +353,22 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
     if at.is_some() && place.is_none() {
         return Err(bad(INSERT, "`at` places needle points before `index` of path `id`: give them"));
     }
-    let doc = s.doc()?.doc.clone();
-    let before = s.doc()?.selection.clone();
-    let (min, max) = (needles::shortest_stitch(&doc), LONGEST);
-    let mut lengths = Lengths::default();
-    let mut sel = before.clone();
-    let (mut edits, mut inserted, mut passed_over) = (Vec::new(), Vec::new(), Vec::new());
-    let mut added_all = 0usize;
+    let (mut inserted, mut added_all) = (Vec::new(), 0usize);
+    let mut listed_added = |id: NodeId, added: &BTreeSet<usize>| {
+        inserted.extend(added.iter().take(MAX_LISTED.saturating_sub(inserted.len())).map(|k| json!({"id": id.0, "index": k})));
+    };
+    let mut e;
     if let Some((id, index)) = place {
+        let before = s.doc()?.selection.clone();
+        e = Edit::begin(s, INSERT, before, Vec::new())?;
+        let doc = &s.doc()?.doc;
         let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
-        let mut st = needles::read(n).map_err(|why| bad(INSERT, format!("object {}: {}", id.0, needles::said(why))))?;
         if !doc.is_editable(id) {
-            return Err(bad(INSERT, format!("object {}: {}", id.0, needles::said(needles::reason::LOCKED))));
+            return Err(bad(INSERT, format!("object {}: {}", id.0, needles::Unfit::Locked.words())));
         }
-        let len = st.len();
+        let mut st = needles::read(n).map_err(|why| bad(INSERT, format!("object {}: {}", id.0, why.words())))?;
+        let ix = st.index();
+        let len = ix.len();
         if index > len {
             return Err(bad(INSERT, format!("object {}: index {index}, past its {len} needle points (at most {len}: after the last)", id.0)));
         }
@@ -253,267 +376,318 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
             Some(points) => points,
             // The middle of the stitch arriving at it: a stitch, not the jump onto a run's first.
             None => {
-                let (r, i) = st.locate(index).filter(|&(_, i)| i > 0).ok_or_else(|| {
+                let (r, i) = ix.locate(index).filter(|&(_, i)| i > 0).ok_or_else(|| {
                     bad(
                         INSERT,
                         format!("object {}: no stitch arrives at needle point {index} (a run starts there, or the path ends): give `at`", id.0),
                     )
                 })?;
-                let run = st.runs.get(r).ok_or_else(|| bad(INSERT, "no such run"))?;
-                let (Some(a), Some(b)) = (run.needles.get(i - 1), run.needles.get(i)) else { return Err(bad(INSERT, "no such needle point")) };
+                let (Some(a), Some(b)) = (st.needle((r, i - 1)), st.needle((r, i))) else { return Err(bad(INSERT, "no such needle point")) };
                 vec![a.p.midpoint(b.p)]
             }
         };
-        if len + points.len() > needles::MAX_NEEDLE_POINTS {
-            return Err(bad(INSERT, format!("object {}: more than {} needle points", id.0, needles::MAX_NEEDLE_POINTS)));
+        if len + points.len() > MAX_NEEDLE_POINTS {
+            return Err(bad(INSERT, format!("object {}: more than {MAX_NEEDLE_POINTS} needle points", id.0)));
         }
         // Before needle point `index`, in its run; after the last, in the last run.
-        let (r, i) = st.locate(index).unwrap_or_else(|| (st.runs.len().saturating_sub(1), st.runs.last().map_or(0, |r| r.needles.len())));
+        let (r, i) = ix.locate(index).unwrap_or_else(|| (st.runs.len().saturating_sub(1), st.runs.last().map_or(0, |last| last.needles.len())));
         if st.runs.is_empty() {
             st.runs.push(needles::Run::default());
         }
         let Some(run) = st.runs.get_mut(r) else { return Err(bad(INSERT, "no such run")) };
-        let new = points.iter().map(|&p| needles::Needle { p, stop: false, exact: [None, None] });
-        run.needles.splice(i..i, new);
-        let first = st.index_of(r, i);
-        let added: std::collections::BTreeSet<usize> = (first..first + points.len()).collect();
+        run.needles.splice(i..i, points.iter().map(|&p| needles::Needle::at(p)));
+        // The runs before it are as they were: its place among the path's needle points is too.
+        let first = ix.index_of(r, i);
+        let added: BTreeSet<usize> = (first..first + points.len()).collect();
         added_all = added.len();
-        for &k in &added {
-            lengths.around(&st, k, min, max);
-            if inserted.len() < MAX_LISTED {
-                inserted.push(json!({"id": id.0, "index": k}));
-            }
-        }
-        needles::select_in(&mut sel, id, &st, &added);
-        edits.push((id, Left::Stitches(st)));
+        listed_added(id, &added);
+        let ix = st.index();
+        e.rebuilt(id, st, &ix, None, Kept::Only(added.clone()), added)?;
     } else {
-        let (t, _) = targets(s, &o, INSERT)?;
-        passed_over = t.passed_over;
-        for (id, st, indices) in t.paths {
-            let mut out = st.clone();
-            let mut added = std::collections::BTreeSet::new();
-            let mut k = 0usize;
-            let mut at_now = 0usize;
-            for (r, run) in st.runs.iter().enumerate() {
-                let mut needles: Vec<needles::Needle> = Vec::with_capacity(run.needles.len());
-                for (i, n) in run.needles.iter().enumerate() {
-                    needles.push(*n);
+        let (t, before) = targets(s, &o, INSERT)?;
+        e = Edit::begin(s, INSERT, before, t.passed_over)?;
+        for (id, mut st, indices) in t.paths {
+            let mut added = BTreeSet::new();
+            let (mut k, mut at_now) = (0usize, 0usize);
+            for run in &mut st.runs {
+                let was = std::mem::take(&mut run.needles);
+                run.needles.reserve(was.len());
+                for (i, n) in was.iter().enumerate() {
+                    run.needles.push(*n);
                     at_now += 1;
                     if indices.contains(&k)
-                        && let Some(next) = run.needles.get(i + 1)
+                        && let Some(next) = was.get(i + 1)
                     {
-                        needles.push(needles::Needle { p: n.p.midpoint(next.p), stop: false, exact: [None, None] });
+                        run.needles.push(needles::Needle::at(n.p.midpoint(next.p)));
                         added.insert(at_now);
                         at_now += 1;
                     }
                     k += 1;
-                }
-                if let Some(slot) = out.runs.get_mut(r) {
-                    slot.needles = needles;
                 }
             }
             if added.is_empty() {
                 continue;
             }
             added_all += added.len();
-            if added_all > MAX_ADDED || out.len() > needles::MAX_NEEDLE_POINTS {
-                return Err(bad(INSERT, format!("more than {MAX_ADDED} needle points added, or a path past {}", needles::MAX_NEEDLE_POINTS)));
+            if added_all > MAX_ADDED {
+                return Err(bad(INSERT, format!("more than {MAX_ADDED} needle points added")));
             }
-            for &k in &added {
-                lengths.around(&out, k, min, max);
-                if inserted.len() < MAX_LISTED {
-                    inserted.push(json!({"id": id.0, "index": k}));
-                }
-            }
-            needles::select_in(&mut sel, id, &out, &added);
-            edits.push((id, Left::Stitches(out)));
+            listed_added(id, &added);
+            let ix = st.index();
+            e.rebuilt(id, st, &ix, None, Kept::Only(added.clone()), added)?;
         }
     }
-    let reply = json!({
-        "changedCount": added_all,
-        "inserted": inserted,
-        "paths": listed(&edits),
-        "pathCount": edits.len(),
-        "lengths": lengths.json(min, max),
-        "passedOver": passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
-    });
-    if !edits.is_empty() {
-        apply(s, INSERT_LABEL, edits, sel)?;
-    }
-    Ok(reply)
+    e.finish(s, INSERT_LABEL, added_all > 0, json!({"changedCount": added_all, "inserted": inserted}))
 }
 
 pub(super) const DELETE: &str = "embroidery.deleteNeedlePoints";
 /// The undo step's name, the command's label.
 pub(super) const DELETE_LABEL: &str = "Delete Needle Points";
 
-/// Where a cut or a stop went, or that it was dropped, as a reply lists it.
-fn function_json(function: &str, id: NodeId, index: Option<usize>, before: bool) -> Value {
-    match (index, before) {
-        (_, true) => json!({"function": function, "id": id.0, "before": true}),
-        (Some(k), false) => json!({"function": function, "id": id.0, "index": k}),
-        (None, false) => json!({"function": function, "id": id.0}),
+/// A machine function the stitch commands set, carry or drop after a needle point.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Function {
+    /// The thread is cut.
+    Trim,
+    /// The machine stops.
+    Stop,
+}
+
+impl Function {
+    /// As the params and replies name it.
+    fn name(self) -> &'static str {
+        match self {
+            Self::Trim => "trim",
+            Self::Stop => "stop",
+        }
+    }
+
+    /// The function `name` names.
+    fn parse(name: &str) -> Option<Self> {
+        [Self::Trim, Self::Stop].into_iter().find(|f| f.name() == name)
     }
 }
 
-/// The path of stitches sewn beside `id` in its parent, the one before it when `before`, else the
-/// one after, passing over those in `gone` (removed by the same edit).
-fn sibling(doc: &Document, id: NodeId, before: bool, gone: &std::collections::BTreeSet<NodeId>) -> Option<NodeId> {
-    let parent = doc.parent_of(id).and_then(|p| doc.node(p))?;
-    let children = parent.children()?;
-    let at = children.iter().position(|c| c.id == id)?;
-    let stitches = |c: &&std::sync::Arc<vectorcraft_doc::Node>| !gone.contains(&c.id) && needles::read(c).is_ok() && doc.is_editable(c.id);
-    if before { children.get(..at)?.iter().rev().find(stitches).map(|c| c.id) } else { children.get(at + 1..)?.iter().find(stitches).map(|c| c.id) }
+/// Where a function went (or was dropped from), as a reply lists it.
+#[derive(Clone, Copy)]
+enum Went {
+    /// After needle point `k` of the path, as numbered after the edit.
+    After(usize),
+    /// Before the path (its cut before it).
+    Before,
+    /// Nowhere it can be numbered: dropped, or after the path.
+    Path,
+}
+
+/// Where function `f` went, or that it was dropped, as a reply lists it.
+fn function_json(f: Function, id: NodeId, went: Went) -> Value {
+    match went {
+        Went::Before => json!({"function": f.name(), "id": id.0, "before": true}),
+        Went::After(k) => json!({"function": f.name(), "id": id.0, "index": k}),
+        Went::Path => json!({"function": f.name(), "id": id.0}),
+    }
+}
+
+/// `Went::After` the needle point `k`, when there is one.
+fn after(k: Option<usize>) -> Went {
+    k.map_or(Went::Path, Went::After)
+}
+
+/// The paths of stitches sewn beside each of `gone` (paths an edit removes) in their parents, the
+/// one before it and the one after it, passing over those also gone and those that can't be
+/// edited: one walk of each parent's children.
+fn beside(doc: &Document, gone: &BTreeSet<NodeId>) -> std::collections::HashMap<NodeId, [Option<NodeId>; 2]> {
+    let editable = doc.editable();
+    let mut out: std::collections::HashMap<NodeId, [Option<NodeId>; 2]> = std::collections::HashMap::new();
+    let mut parents = BTreeSet::new();
+    for &id in gone {
+        let Some(parent) = doc.parent_of(id).filter(|p| parents.insert(*p)).and_then(|p| doc.node(p)) else { continue };
+        let children = parent.children().map(Vec::as_slice).unwrap_or_default();
+        let open = |c: &std::sync::Arc<vectorcraft_doc::Node>| !gone.contains(&c.id) && needles::is_stitches(c) && editable(c.id);
+        let mut last = None;
+        for c in children {
+            if gone.contains(&c.id) {
+                out.entry(c.id).or_default()[0] = last;
+            } else if open(c) {
+                last = Some(c.id);
+            }
+        }
+        let mut next = None;
+        for c in children.iter().rev() {
+            if gone.contains(&c.id) {
+                out.entry(c.id).or_default()[1] = next;
+            } else if open(c) {
+                next = Some(c.id);
+            }
+        }
+    }
+    out
 }
 
 /// `embroidery.deleteNeedlePoints {needlePoints?, ranges?}`: each needle point addressed (or
 /// selected) deleted, the stitches beside it becoming one (neighbours merge); a stop after one
-/// passes to the needle point before it that stays. A path left with no needle point is removed:
-/// its cut and stop pass to the path of stitches sewn before it in its parent (a cut, else to the
-/// one after), or are dropped, and the reply says which. The paths it changed leave the selection,
-/// so a second Delete deletes nothing.
+/// passes to the needle point before it that stays. A run left with no needle point goes, its cut
+/// passing to the run after it: to the path's own cut before it when no run with needle points is
+/// before, to its cut after it when none is after. A path left with no needle point is removed: its
+/// cut and stop pass to the path of stitches sewn before it in its parent (a cut, else to the one
+/// after), or are dropped, and the reply says which, once each. The paths it changed leave the
+/// selection, so a second Delete deletes nothing.
 pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, DELETE, &[])?;
     let (t, before) = targets(s, &o, DELETE)?;
     let doc = s.doc()?.doc.clone();
-    let (min, max) = (needles::shortest_stitch(&doc), LONGEST);
-    let mut lengths = Lengths::default();
-    let mut sel = before.clone();
-    let (mut edits, mut moved, mut dropped, mut removed) = (Vec::new(), Vec::new(), Vec::new(), std::collections::BTreeSet::new());
+    let mut e = Edit::begin(s, DELETE, before, t.passed_over)?;
+    let (mut moved, mut dropped, mut removed) = (Vec::new(), Vec::new(), BTreeSet::new());
+    // Each needle point a merged stitch now leaves from, as numbered after the edit.
+    let mut merged_listed = Vec::new();
     let mut deleted = 0usize;
-    for (id, st, indices) in t.paths {
-        let mut out = st.clone();
+    for (id, mut st, indices) in t.paths {
         // Each kept needle point a deleted one followed (its stitch merged), by its new index.
-        let mut merged = std::collections::BTreeSet::new();
+        let mut merged = BTreeSet::new();
         let (mut k, mut kept) = (0usize, 0usize);
         // The last needle point kept, by run and place: a stop of one deleted after it passes to it.
         let mut last: Option<(usize, usize)> = None;
-        for (r, run) in st.runs.iter().enumerate() {
-            let mut needles: Vec<needles::Needle> = Vec::with_capacity(run.needles.len());
-            for n in &run.needles {
+        // What happened to the stops of the needle points deleted, said only if the path stays (a
+        // path removed passes its stop on once, below).
+        let (mut stops_moved, mut stops_dropped) = (Vec::new(), Vec::new());
+        for r in 0..st.runs.len() {
+            let Some(run) = st.runs.get_mut(r) else { continue };
+            let was = std::mem::take(&mut run.needles);
+            let mut staying: Vec<needles::Needle> = Vec::with_capacity(was.len());
+            for n in &was {
                 if indices.contains(&k) {
                     deleted += 1;
                     // The stitch from the needle point kept before it, in its run, now goes on.
-                    if !needles.is_empty() {
+                    if !staying.is_empty() {
                         merged.insert(kept.saturating_sub(1));
                     }
                     if n.stop {
                         let to = match last {
-                            Some((lr, li)) if lr == r => needles.get_mut(li),
-                            Some((lr, li)) => out.runs.get_mut(lr).and_then(|run| run.needles.get_mut(li)),
+                            Some((lr, li)) if lr == r => staying.get_mut(li),
+                            Some(at) => st.needle_mut(at),
                             None => None,
                         };
                         match to {
                             Some(m) => {
                                 m.stop = true;
-                                moved.push(function_json("stop", id, Some(kept.saturating_sub(1)), false));
+                                stops_moved.push(function_json(Function::Stop, id, Went::After(kept.saturating_sub(1))));
                             }
-                            None => dropped.push(function_json("stop", id, None, false)),
+                            None => stops_dropped.push(function_json(Function::Stop, id, Went::Path)),
                         }
                     }
                 } else {
-                    needles.push(*n);
-                    last = Some((r, needles.len() - 1));
+                    staying.push(*n);
+                    last = Some((r, staying.len() - 1));
                     kept += 1;
                 }
                 k += 1;
             }
-            if let Some(slot) = out.runs.get_mut(r) {
-                slot.needles = needles;
+            if let Some(run) = st.runs.get_mut(r) {
+                run.needles = staying;
             }
         }
-        sel.remove(id);
-        sel.anchors.remove(&id);
-        if out.len() > 0 {
-            for &m in &merged {
-                lengths.around(&out, m, min, max);
-            }
-            edits.push((id, Left::Stitches(out)));
+        if kept == 0 {
+            removed.insert(id);
+            e.removed(id);
             continue;
         }
-        removed.insert(id);
-        edits.push((id, Left::Removed));
+        moved.extend(stops_moved);
+        dropped.extend(stops_dropped);
+        // A cut before a run left empty at the path's start or end has no run after it in the path
+        // to go before: the path's own cut before it, or after it.
+        let first = st.runs.iter().position(|r| !r.needles.is_empty()).unwrap_or(0);
+        let last_run = st.runs.iter().rposition(|r| !r.needles.is_empty()).unwrap_or(0);
+        // Every such cut taken (none written where no run follows it), whether any was there.
+        let (mut lead, mut tail) = (false, false);
+        for r in st.runs.iter_mut().take(first + 1).skip(1) {
+            lead |= std::mem::take(&mut r.cut_before);
+        }
+        for r in st.runs.iter_mut().skip(last_run + 1) {
+            tail |= std::mem::take(&mut r.cut_before);
+        }
+        if lead && !st.marks.trim_before {
+            st.marks.trim_before = true;
+            moved.push(function_json(Function::Trim, id, Went::Before));
+        }
+        if tail && !st.marks.trim_after {
+            st.marks.trim_after = true;
+            moved.push(function_json(Function::Trim, id, after(kept.checked_sub(1))));
+        }
+        let ix = st.index();
+        merged_listed.extend(merged.iter().take(MAX_LISTED.saturating_sub(merged_listed.len())).map(|k| json!({"id": id.0, "index": k})));
+        e.rebuilt(id, st, &ix, None, Kept::Left, merged)?;
     }
-    // A path removed: its cut and its stop pass to its neighbour, as the gap it leaves.
-    let mut passed: Vec<(NodeId, StitchRun)> = Vec::new();
+    // A path removed: its cut and its stop pass to its neighbour, as the gap it leaves. Each
+    // neighbour is found once, and its edit (or its marks, given only a cut or a stop) by its id.
+    let neighbours = beside(&doc, &removed);
+    let edited: std::collections::HashMap<NodeId, usize> = e.edits.iter().enumerate().map(|(i, (id, _))| (*id, i)).collect();
+    let mut passed: std::collections::BTreeMap<NodeId, StitchRun> = std::collections::BTreeMap::new();
     for &id in &removed {
         let Some(n) = doc.node(id) else { continue };
-        let e = n.extras().embroidery.as_deref();
-        let marks = e.and_then(|e| e.stitches.as_ref());
-        let cut = marks.is_some_and(|m| m.trim_before || m.trim_after) || e.is_some_and(|e| e.trim_after);
-        let stop = marks.is_some_and(|m| m.stop_after || !m.stops.is_empty()) || e.is_some_and(|e| e.stop_after);
-        let mut give = |to: NodeId, f: &dyn Fn(&mut StitchRun), edits: &mut Vec<(NodeId, Left)>| {
-            if let Some((_, Left::Stitches(st))) = edits.iter_mut().find(|(e, _)| *e == to) {
-                f(&mut st.marks);
-                return;
-            }
-            let slot = passed.iter_mut().find(|(p, _)| *p == to);
-            match slot {
-                Some((_, m)) => f(m),
-                None => {
-                    if let Some(mut m) = doc.node(to).and_then(|n| n.extras().embroidery.as_deref()).and_then(|e| e.stitches.clone()) {
-                        f(&mut m);
-                        passed.push((to, m));
-                    }
+        let ext = n.extras().embroidery.as_deref();
+        let marks = ext.and_then(|e| e.stitches.as_ref());
+        let cut = marks.is_some_and(|m| m.trim_before || m.trim_after) || ext.is_some_and(|e| e.trim_after);
+        let stop = marks.is_some_and(|m| m.stop_after || !m.stops.is_empty()) || ext.is_some_and(|e| e.stop_after);
+        let [before_it, after_it] = neighbours.get(&id).copied().unwrap_or_default();
+        // Give neighbour `to` a mark, and say where it went: the needle point it follows now.
+        let mut give = |to: NodeId, f: fn(&mut StitchRun), function: Function, before: bool| {
+            let index = match edited.get(&to).and_then(|&i| e.edits.get_mut(i)) {
+                Some((_, Left::Stitches(st))) => {
+                    f(&mut st.marks);
+                    st.len().checked_sub(1)
                 }
-            }
+                _ => {
+                    let n = doc.node(to);
+                    if let Some(m) = passed.get_mut(&to) {
+                        f(m);
+                    } else if let Some(mut m) = n.and_then(|n| n.extras().embroidery.as_deref()).and_then(|e| e.stitches.clone()) {
+                        f(&mut m);
+                        passed.insert(to, m);
+                    }
+                    n.and_then(needles::count).and_then(|c| c.checked_sub(1))
+                }
+            };
+            function_json(function, to, if before { Went::Before } else { after(index) })
         };
-        let before_it = sibling(&doc, id, true, &removed);
-        let after_it = sibling(&doc, id, false, &removed);
-        let last_of = |to: NodeId| doc.node(to).and_then(|n| needles::read(n).ok()).map(|st| st.len().saturating_sub(1));
         if cut {
             match (before_it, after_it) {
-                (Some(to), _) => {
-                    give(to, &|m| m.trim_after = true, &mut edits);
-                    moved.push(function_json("trim", to, last_of(to), false));
-                }
-                (None, Some(to)) => {
-                    give(to, &|m| m.trim_before = true, &mut edits);
-                    moved.push(function_json("trim", to, None, true));
-                }
-                (None, None) => dropped.push(function_json("trim", id, None, false)),
+                (Some(to), _) => moved.push(give(to, |m| m.trim_after = true, Function::Trim, false)),
+                (None, Some(to)) => moved.push(give(to, |m| m.trim_before = true, Function::Trim, true)),
+                (None, None) => dropped.push(function_json(Function::Trim, id, Went::Path)),
             }
         }
         if stop {
             match before_it {
-                Some(to) => {
-                    give(to, &|m| m.stop_after = true, &mut edits);
-                    moved.push(function_json("stop", to, last_of(to), false));
-                }
-                None => dropped.push(function_json("stop", id, None, false)),
+                Some(to) => moved.push(give(to, |m| m.stop_after = true, Function::Stop, false)),
+                None => dropped.push(function_json(Function::Stop, id, Went::Path)),
             }
         }
     }
-    edits.extend(passed.into_iter().map(|(id, m)| (id, Left::Marks(m))));
-    let reply = json!({
+    e.edits.extend(passed.into_iter().map(|(id, m)| (id, Left::Marks(m))));
+    let own = json!({
         "changedCount": deleted,
-        "paths": listed(&edits),
-        "pathCount": edits.iter().filter(|(_, l)| !matches!(l, Left::Marks(_))).count(),
+        "merged": merged_listed,
         "removed": removed.iter().take(MAX_LISTED).map(|id| id.0).collect::<Vec<_>>(),
         "removedCount": removed.len(),
         "moved": moved.into_iter().take(MAX_LISTED).collect::<Vec<_>>(),
         "dropped": dropped.into_iter().take(MAX_LISTED).collect::<Vec<_>>(),
-        "lengths": lengths.json(min, max),
-        "passedOver": t.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
     });
-    if deleted > 0 {
-        apply(s, DELETE_LABEL, edits, sel)?;
-    }
-    Ok(reply)
+    e.finish(s, DELETE_LABEL, deleted > 0, own)
 }
 
 /// A path's runs rebuilt needle point by needle point, each needle point of the path it was rebuilt
 /// from given its new index.
 struct Rebuilt {
     runs: Vec<needles::Run>,
-    /// The new index of each needle point of the path before, by its index there.
-    moved_to: Vec<usize>,
+    /// The new index of each needle point of the path before, by its index there (`None`: not
+    /// carried over).
+    moved_to: Vec<Option<usize>>,
     count: usize,
 }
 
 impl Rebuilt {
     fn new(before: usize) -> Self {
-        Self { runs: Vec::new(), moved_to: vec![0; before], count: 0 }
+        Self { runs: Vec::new(), moved_to: vec![None; before], count: 0 }
     }
 
     /// Start a new run, the thread cut before it when `cut_before`.
@@ -530,7 +704,7 @@ impl Rebuilt {
             r.needles.push(n);
         }
         if let Some(slot) = old.and_then(|o| self.moved_to.get_mut(o)) {
-            *slot = self.count;
+            *slot = Some(self.count);
         }
         self.count += 1;
     }
@@ -551,7 +725,7 @@ impl Rebuilt {
         if let Some(last) = self.last_mut() {
             last.stop = false;
         }
-        self.push(needles::Needle { p: step, stop: false, exact: [None, None] }, None);
+        self.push(needles::Needle::at(step), None);
         self.push(b, None);
     }
 
@@ -563,31 +737,32 @@ impl Rebuilt {
         let Some(step) = next.and_then(|next| lock_step(first.p, next, min)) else { return };
         // The first needle point is sewn again after the step: a stop after it goes after that.
         let stop = self.last_mut().is_some_and(|n| std::mem::take(&mut n.stop));
-        self.push(needles::Needle { p: step, stop: false, exact: [None, None] }, None);
+        self.push(needles::Needle::at(step), None);
         self.push(needles::Needle { stop, ..first }, None);
     }
 
-    /// The path rebuilt, with the marks of `from`.
-    fn done(self, from: &Stitches) -> Stitches {
-        Stitches { runs: self.runs, marks: from.marks.clone(), object_after: from.object_after }
+    /// The path rebuilt, with the marks of `from` (which it takes), and each needle point of `from`'s
+    /// new index.
+    fn done(self, from: Stitches) -> (Stitches, Vec<Option<usize>>) {
+        (Stitches { runs: self.runs, marks: from.marks, object_after: from.object_after }, self.moved_to)
     }
 }
 
 /// [`vectorcraft_stitch::plan::lock_step`] on document points, `min` the shortest stitch in
 /// millimetres.
 fn lock_step(at: Point, toward: Point, min: f64) -> Option<Point> {
-    let mm = |p: Point| Point::new(pt_to_mm(p.x), pt_to_mm(p.y));
-    let step = vectorcraft_stitch::plan::lock_step(mm(at), mm(toward), min)?;
-    let back = Point::new(mm_to_pt(step.x), mm_to_pt(step.y));
+    let step = vectorcraft_stitch::plan::lock_step(point_to_mm(at), point_to_mm(toward), min)?;
+    let back = point_to_pt(step);
     (back.x.is_finite() && back.y.is_finite()).then_some(back)
 }
 
 /// `st` split before each needle point in `at` (indices of `st`, none a run's first): the needle
 /// lifts there and comes down on it, a new run starting with it. With `ties` (the shortest stitch,
 /// millimetres), the run before is tied off and the new one tied in, as the planner ties a run
-/// around a cut. The thread is cut at the lift when `cut`, the machine stops there when `stop`.
-/// → the path rebuilt and each needle point's new index.
-fn split_before(st: &Stitches, at: &std::collections::BTreeSet<usize>, ties: Option<f64>, cut: bool, stop: bool) -> Rebuilt {
+/// around a cut. With `then`, that function comes at the lift (the thread cut, or the machine
+/// stopped). → the path rebuilt and each needle point's new index.
+fn split_before(st: &Stitches, at: &BTreeSet<usize>, ties: Option<f64>, then: Option<Function>) -> Rebuilt {
+    let (cut, stop) = (then == Some(Function::Trim), then == Some(Function::Stop));
     let mut out = Rebuilt::new(st.len());
     let mut k = 0usize;
     for run in &st.runs {
@@ -624,15 +799,6 @@ fn ties(o: &Map<String, Value>, cmd: &str, min: f64) -> Result<Option<f64>> {
     }
 }
 
-/// The selection `sel` with path `id`'s needle points (as `before` selected them, of `was`) taken to
-/// their new places `moved_to` in `st`.
-fn moved_selection(sel: &mut Selection, before: &Selection, id: NodeId, was: &Stitches, st: &Stitches, moved_to: &[usize]) {
-    if before.anchors.contains_key(&id) {
-        let k = needles::selected_in(before, id, was).into_iter().filter_map(|k| moved_to.get(k).copied()).collect();
-        needles::select_in(sel, id, st, &k);
-    }
-}
-
 pub(super) const SPLIT: &str = "embroidery.splitRun";
 /// The undo step's name, the command's label.
 pub(super) const SPLIT_LABEL: &str = "Split Run";
@@ -643,64 +809,38 @@ pub(super) const SPLIT_LABEL: &str = "Split Run";
 pub(super) fn split_run(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, SPLIT, &["ties"])?;
     let (t, before) = targets(s, &o, SPLIT)?;
-    let doc = s.doc()?.doc.clone();
-    let (min, max) = (needles::shortest_stitch(&doc), LONGEST);
-    let ties = ties(&o, SPLIT, min)?;
-    let mut lengths = Lengths::default();
-    let mut sel = before.clone();
-    let (mut edits, mut jumps, mut split, mut unchanged) = (Vec::new(), Vec::new(), 0usize, 0usize);
+    let mut e = Edit::begin(s, SPLIT, before, t.passed_over)?;
+    let ties = ties(&o, SPLIT, e.min)?;
+    let (mut jumps, mut split, mut unchanged) = (Vec::new(), 0usize, 0usize);
     for (id, st, indices) in t.paths {
+        let was = st.index();
         // A run's first already follows a lift.
-        let firsts: std::collections::BTreeSet<usize> = st
-            .runs
-            .iter()
-            .scan(0usize, |at, r| {
-                let first = *at;
-                *at += r.needles.len();
-                Some(first)
-            })
-            .collect();
-        let at: std::collections::BTreeSet<usize> = indices.iter().copied().filter(|k| !firsts.contains(k)).collect();
+        let at: BTreeSet<usize> = indices.iter().copied().filter(|&k| was.locate(k).is_some_and(|(_, i)| i > 0)).collect();
         unchanged += indices.len() - at.len();
         if at.is_empty() {
             continue;
         }
         split += at.len();
-        let rebuilt = split_before(&st, &at, ties, false, false);
-        let moved_to = rebuilt.moved_to.clone();
-        let out = rebuilt.done(&st);
-        for &k in &at {
-            let Some(&landing) = moved_to.get(k) else { continue };
-            lengths.around(&out, landing, min, max);
-            let from = landing.checked_sub(1).and_then(|b| needle_at(&out, b));
-            if let (Some(a), Some(b)) = (from, needle_at(&out, landing))
+        let selected = e.selected(id, &was);
+        let (out, moved_to) = split_before(&st, &at, ties, None).done(st);
+        let ix = out.index();
+        let landings: Vec<usize> = at.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
+        for &landing in &landings {
+            let from = landing.checked_sub(1).and_then(|b| needle_at(&out, &ix, b));
+            if let (Some(a), Some(b)) = (from, needle_at(&out, &ix, landing))
                 && jumps.len() < MAX_LISTED
             {
                 jumps.push(json!({"id": id.0, "index": landing, "length": pt_to_mm(a.distance(b))}));
             }
         }
-        moved_selection(&mut sel, &before, id, &st, &out, &moved_to);
-        edits.push((id, Left::Stitches(out)));
+        e.rebuilt(id, out, &ix, selected, Kept::Moved(&moved_to), landings)?;
     }
-    let reply = json!({
-        "changedCount": split,
-        "unchangedCount": unchanged,
-        "paths": listed(&edits),
-        "pathCount": edits.len(),
-        "jumps": jumps,
-        "lengths": lengths.json(min, max),
-        "passedOver": t.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
-    });
-    if !edits.is_empty() {
-        apply(s, SPLIT_LABEL, edits, sel)?;
-    }
-    Ok(reply)
+    e.finish(s, SPLIT_LABEL, split > 0, json!({"changedCount": split, "unchangedCount": unchanged, "jumps": jumps}))
 }
 
-/// Needle point `index` of `st`, where it is.
-fn needle_at(st: &Stitches, index: usize) -> Option<Point> {
-    let (r, i) = st.locate(index)?;
-    st.runs.get(r)?.needles.get(i).map(|n| n.p)
+/// Needle point `index` of `st` (`ix` its index), where it is.
+fn needle_at(st: &Stitches, ix: &Index, index: usize) -> Option<Point> {
+    st.needle(ix.locate(index)?).map(|n| n.p)
 }
 
 pub(super) const JOIN: &str = "embroidery.joinRuns";
@@ -708,11 +848,15 @@ pub(super) const JOIN: &str = "embroidery.joinRuns";
 pub(super) const JOIN_LABEL: &str = "Join Runs";
 /// The message Join Runs gives for paths it can't join: translated (the interface shows it).
 pub(super) const NOT_JOINABLE: &str = "these runs aren't sewn one right after another in one colour block";
+/// What Join (⌘J) says of runs of stitches selected with art: translated.
+pub(super) const RUNS_WITH_ART: &str = "paths of stitches join only with paths of stitches: select only them";
+/// What Join (⌘J) says of one run of stitches selected alone: translated.
+pub(super) const ONE_RUN: &str = "select two or more paths of stitches sewn one right after another to join them";
 
 /// `st` with each run whose first needle point is in `at` joined to the run before it: the jump
 /// onto it becomes a stitch (a first needle point lying where the run before ends is kept once), a
 /// cut before it and a stop after the run before go; how many of each went.
-fn join_within(st: &Stitches, at: &std::collections::BTreeSet<usize>) -> (Rebuilt, usize, usize) {
+fn join_within(st: &Stitches, at: &BTreeSet<usize>) -> (Rebuilt, usize, usize) {
     let mut out = Rebuilt::new(st.len());
     let (mut cuts, mut stops) = (0usize, 0usize);
     let mut k = 0usize;
@@ -727,17 +871,11 @@ fn join_within(st: &Stitches, at: &std::collections::BTreeSet<usize>) -> (Rebuil
             out.run(run.cut_before);
         }
         for (i, n) in run.needles.iter().enumerate() {
-            let same_spot = joined
-                && i == 0
-                && out
-                    .runs
-                    .last()
-                    .and_then(|r| r.needles.last())
-                    .is_some_and(|last| last.p.distance(n.p) * vectorcraft_stitch::MM_PER_PT < vectorcraft_stitch::SAME_POINT);
+            let same_spot = joined && i == 0 && out.runs.last().and_then(|r| r.needles.last()).is_some_and(|last| needles::same(last.p, n.p));
             if same_spot {
                 // Kept once: the needle point it repeats takes its place.
                 if let Some(slot) = out.moved_to.get_mut(k) {
-                    *slot = out.count.saturating_sub(1);
+                    *slot = out.count.checked_sub(1);
                 }
             } else {
                 out.push(*n, Some(k));
@@ -750,7 +888,7 @@ fn join_within(st: &Stitches, at: &std::collections::BTreeSet<usize>) -> (Rebuil
 
 /// The colour a path of stitches is sewn in, as the walk reads it: its first visible stroke's
 /// solid colour, in 8-bit RGB.
-fn stroke_colour(n: &vectorcraft_doc::Node) -> Option<[u8; 3]> {
+pub(super) fn stroke_colour(n: &vectorcraft_doc::Node) -> Option<[u8; 3]> {
     n.appearance.items.iter().filter(|i| i.visible()).find_map(|i| match i {
         vectorcraft_doc::AppearanceItem::Stroke(s) => match &s.paint {
             vectorcraft_color::Paint::Solid { color, .. } => {
@@ -770,14 +908,8 @@ fn stroke_colour(n: &vectorcraft_doc::Node) -> Option<[u8; 3]> {
 /// A cut or a stop at a gap joined goes, and the reply says so. Never reversed.
 pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, JOIN, &["ids"])?;
-    let doc = s.doc()?.doc.clone();
-    let before = s.doc()?.selection.clone();
-    let (min, max) = (needles::shortest_stitch(&doc), LONGEST);
-    let mut lengths = Lengths::default();
-    let mut sel = before.clone();
-    let (mut edits, mut dropped, mut joined) = (Vec::new(), Vec::new(), 0usize);
-    let mut removed = Vec::new();
-    if let Some(ids) = o.get("ids") {
+    let mut dropped = Vec::new();
+    let (e, joined, removed) = if let Some(ids) = o.get("ids") {
         if o.contains_key("needlePoints") || o.contains_key("ranges") {
             return Err(bad(JOIN, "give the paths to join (`ids`), or the runs' first needle points, not both"));
         }
@@ -789,14 +921,18 @@ pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
             .iter()
             .map(|v| v.as_u64().map(NodeId).ok_or_else(|| bad(JOIN, format!("`ids` entry {v}: an object's id"))))
             .collect::<Result<_>>()?;
+        let before = s.doc()?.selection.clone();
+        let mut e = Edit::begin(s, JOIN, before, Vec::new())?;
+        let doc = s.doc()?.doc.clone();
+        let editable = doc.editable();
         let mut paths = Vec::with_capacity(ids.len());
         for &id in &ids {
             let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
-            let st = needles::read(n).map_err(|why| bad(JOIN, format!("object {}: {}", id.0, needles::said(why))))?;
-            if !doc.is_editable(id) {
-                return Err(bad(JOIN, format!("object {}: {}", id.0, needles::said(needles::reason::LOCKED))));
+            if !editable(id) {
+                return Err(bad(JOIN, format!("object {}: {}", id.0, needles::Unfit::Locked.words())));
             }
-            paths.push((id, n, st));
+            let st = needles::read(n).map_err(|why| bad(JOIN, format!("object {}: {}", id.0, why.words())))?;
+            paths.push((id, stroke_colour(n), st));
         }
         // Next to one another in one parent, in the order given, in one colour, of one kind.
         let parent = doc.parent_of(ids.first().copied().unwrap_or(NodeId(0)));
@@ -804,120 +940,261 @@ pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
             parent.and_then(|p| doc.node(p)).and_then(|p| p.children()).map(|c| c.iter().map(|n| n.id).collect()).unwrap_or_default();
         let first_at = children.iter().position(|c| Some(c) == ids.first());
         let next_to = first_at.is_some_and(|at| children.get(at..at + ids.len()).is_some_and(|run| run == ids.as_slice()));
-        let colour = paths.first().and_then(|(_, n, _)| stroke_colour(n));
+        let colour = paths.first().and_then(|(_, c, _)| *c);
         let kind = paths.first().map(|(_, _, st)| st.marks.manual);
-        let alike = paths.iter().all(|(_, n, st)| stroke_colour(n) == colour && colour.is_some() && Some(st.marks.manual) == kind);
+        let alike = paths.iter().all(|(_, c, st)| *c == colour && colour.is_some() && Some(st.marks.manual) == kind);
         if !next_to || !alike {
             return Err(EngineError::Other(NOT_JOINABLE.to_string()));
         }
-        let mut whole = paths.first().map(|(_, _, st)| st.clone()).ok_or_else(|| bad(JOIN, "no path"))?;
-        let first_id = ids.first().copied().unwrap_or(NodeId(0));
-        // Each path's needle points, by the index they take in the joined path.
-        let mut offsets = vec![0usize];
-        for (id, _, st) in paths.iter().skip(1) {
-            // The gap: the cut and stop after the path before, the cut before this one.
-            let [trim_after, stop_after] = whole.object_after;
-            if whole.marks.trim_after || trim_after || st.marks.trim_before {
-                dropped.push(json!({"function": "trim", "id": id.0}));
-            }
-            if whole.marks.stop_after || stop_after || whole.runs.last().and_then(|r| r.needles.last()).is_some_and(|n| n.stop) {
-                dropped.push(json!({"function": "stop", "id": id.0}));
-            }
-            if let Some(last) = whole.runs.last_mut().and_then(|r| r.needles.last_mut()) {
-                last.stop = false;
-            }
-            let at = whole.len();
-            offsets.push(at);
-            whole.runs.extend(st.runs.iter().cloned());
-            let (rebuilt, _, _) = join_within(&whole, &[at].into_iter().collect());
-            whole = rebuilt.done(&whole);
-            // The joined path ends as the last one did.
-            (whole.marks.trim_after, whole.marks.stop_after) = (st.marks.trim_after, st.marks.stop_after);
-            whole.object_after = st.object_after;
-            for (k, v) in st.marks.extra.iter() {
-                if !whole.marks.extra.contains_key(k) {
-                    std::sync::Arc::make_mut(&mut whole.marks.extra).insert(k.clone(), v.clone());
-                }
-            }
-            removed.push(*id);
-            joined += 1;
-            lengths.around(&whole, at.saturating_sub(1), min, max);
-        }
-        // The selection: each path's needle points at their places in the joined one.
-        let mut selected = std::collections::BTreeSet::new();
-        for ((id, _, st), offset) in paths.iter().zip(&offsets) {
-            selected.extend(needles::selected_in(&before, *id, st).into_iter().map(|k| (k + offset).min(whole.len().saturating_sub(1))));
-            sel.remove(*id);
-            sel.anchors.remove(id);
-        }
-        if !selected.is_empty() {
-            needles::select_in(&mut sel, first_id, &whole, &selected);
-        }
-        edits.push((first_id, Left::Stitches(whole)));
-        edits.extend(removed.iter().map(|id| (*id, Left::Removed)));
+        // What the selection selected of each path, before anything moves.
+        let paths: Vec<ToJoin> =
+            paths.into_iter().map(|(id, _, st)| ToJoin { picked: e.selected(id, &st.index()), whole: e.before.contains(id), id, st }).collect();
+        let removed = join_into_first(&mut e, paths, &mut dropped)?;
+        (e, removed.len(), removed)
     } else {
-        let (t, _) = targets(s, &o, JOIN)?;
+        let (t, before) = targets(s, &o, JOIN)?;
+        let mut e = Edit::begin(s, JOIN, before, t.passed_over)?;
+        let doc = s.doc()?.doc.clone();
+        let mut joined = 0usize;
+        // Each path's runs joined within it (their first needle points addressed), kept by id until
+        // the paths whose first needle point is addressed are joined to the path before them.
+        let mut within: std::collections::BTreeMap<NodeId, (Stitches, Option<BTreeSet<usize>>, bool)> = Default::default();
+        let mut firsts = Vec::new();
+        // A path's first needle point addressed (given, or its anchor selected), not a path selected
+        // whole, joins the path to the one before it.
+        let by_address = o.contains_key("needlePoints") || o.contains_key("ranges");
         for (id, st, indices) in t.paths {
+            let selected = e.selected(id, &st.index());
+            if indices.contains(&0) && (by_address || selected.is_some()) {
+                firsts.push(id);
+            }
             let (rebuilt, cuts, stops) = join_within(&st, &indices);
             let gaps = st.runs.len() - rebuilt.runs.len();
             if gaps == 0 {
+                within.insert(id, (st, selected, false));
                 continue;
             }
             joined += gaps;
-            dropped.extend(std::iter::repeat_n(json!({"function": "trim", "id": id.0}), cuts));
-            dropped.extend(std::iter::repeat_n(json!({"function": "stop", "id": id.0}), stops));
-            let moved_to = rebuilt.moved_to.clone();
-            let out = rebuilt.done(&st);
-            for &k in &indices {
-                if let Some(&at) = moved_to.get(k) {
-                    lengths.around(&out, at, min, max);
-                }
-            }
-            moved_selection(&mut sel, &before, id, &st, &out, &moved_to);
-            edits.push((id, Left::Stitches(out)));
+            dropped.extend(std::iter::repeat_n(function_json(Function::Trim, id, Went::Path), cuts));
+            dropped.extend(std::iter::repeat_n(function_json(Function::Stop, id, Went::Path), stops));
+            let (out, moved_to) = rebuilt.done(st);
+            let ix = out.index();
+            // The stitches joined: into each needle point that started a run.
+            let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
+            e.lengths.around(&out, &ix, touched, e.min, e.max);
+            let selected = selected.map(|k| k.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()).collect());
+            within.insert(id, (out, selected, true));
         }
-    }
-    let reply = json!({
+        // A path's first needle point addressed: the path joined to the path of stitches sewn right
+        // before it in its parent (an opened design keeps each run a path), one chain of paths
+        // sewn one after another joined into its first.
+        let mut removed = Vec::new();
+        for chain in chains(&doc, &firsts, &mut e.passed_over) {
+            let mut paths = Vec::with_capacity(chain.len());
+            for id in chain {
+                let (st, picked) = match within.remove(&id) {
+                    Some((st, picked, _)) => (st, picked),
+                    None => {
+                        let Some(st) = doc.node(id).and_then(|n| needles::read(n).ok()) else { continue };
+                        let picked = e.selected(id, &st.index());
+                        (st, picked)
+                    }
+                };
+                paths.push(ToJoin { whole: e.before.contains(id), id, st, picked });
+            }
+            if paths.len() > 1 {
+                let taken = join_into_first(&mut e, paths, &mut dropped)?;
+                joined += taken.len();
+                removed.extend(taken);
+            }
+        }
+        // The paths joined within only.
+        for (id, (out, selected, changed)) in within {
+            if changed {
+                let ix = out.index();
+                e.rebuilt(id, out, &ix, selected, Kept::Same, std::iter::empty())?;
+            }
+        }
+        (e, joined, removed)
+    };
+    let own = json!({
         "changedCount": joined,
-        "paths": listed(&edits),
-        "pathCount": edits.iter().filter(|(_, l)| matches!(l, Left::Stitches(_))).count(),
         "removed": removed.iter().take(MAX_LISTED).map(|id| id.0).collect::<Vec<_>>(),
         "dropped": dropped.into_iter().take(MAX_LISTED).collect::<Vec<_>>(),
-        "lengths": lengths.json(min, max),
     });
-    if joined > 0 {
-        apply(s, JOIN_LABEL, edits, sel)?;
+    e.finish(s, JOIN_LABEL, joined > 0, own)
+}
+
+/// A path of stitches to join ([`join_into_first`]): its id, its stitches (as an edit may have
+/// left them), the needle points the selection selected of it by their anchors (of these
+/// stitches), and whether it selected it whole.
+struct ToJoin {
+    id: NodeId,
+    st: Stitches,
+    picked: Option<BTreeSet<usize>>,
+    whole: bool,
+}
+
+/// `paths` (sewn one right after another, in order) joined into the first in one pass: their runs
+/// one after another, joined at every seam; the gaps' cuts and stops dropped into `dropped`; the
+/// selection carried to where its needle points went (a path selected only whole leaves the joined
+/// one selected whole). → the paths taken in, removed.
+fn join_into_first(e: &mut Edit, paths: Vec<ToJoin>, dropped: &mut Vec<Value>) -> Result<Vec<NodeId>> {
+    let picked: Vec<(Option<BTreeSet<usize>>, bool)> = paths.iter().map(|p| (p.picked.clone(), p.whole)).collect();
+    let mut paths = paths.into_iter();
+    let Some(ToJoin { id: first_id, st: mut whole, .. }) = paths.next() else { return Ok(Vec::new()) };
+    let (mut offsets, mut removed) = (vec![0usize], Vec::new());
+    let mut count = whole.len();
+    for ToJoin { id, st, .. } in paths {
+        let after = whole.marks.after() | whole.object_after;
+        if after.trim || st.marks.trim_before {
+            dropped.push(function_json(Function::Trim, id, Went::Path));
+        }
+        if after.stop || whole.runs.last().and_then(|r| r.needles.last()).is_some_and(|n| n.stop) {
+            dropped.push(function_json(Function::Stop, id, Went::Path));
+        }
+        if let Some(last) = whole.runs.last_mut().and_then(|r| r.needles.last_mut()) {
+            last.stop = false;
+        }
+        let Stitches { runs, marks, object_after } = st;
+        offsets.push(count);
+        count += runs.iter().map(|r| r.needles.len()).sum::<usize>();
+        whole.runs.extend(runs);
+        // The joined path ends as the last one did, and keeps what any of them kept unread.
+        (whole.marks.trim_after, whole.marks.stop_after) = (marks.trim_after, marks.stop_after);
+        whole.object_after = object_after;
+        for (k, v) in marks.extra.iter() {
+            if !whole.marks.extra.contains_key(k) {
+                std::sync::Arc::make_mut(&mut whole.marks.extra).insert(k.clone(), v.clone());
+            }
+        }
+        removed.push(id);
     }
-    Ok(reply)
+    let seams: BTreeSet<usize> = offsets.iter().skip(1).copied().collect();
+    let (out, moved_to) = join_within(&whole, &seams).0.done(whole);
+    let ix = out.index();
+    // Each path's selected needle points at their places in the joined one (all of a path selected
+    // whole among paths selected by needle points); paths selected only whole leave it selected
+    // whole.
+    let ends = offsets.iter().skip(1).copied().chain([count]);
+    let kept = if picked.iter().any(|(k, _)| k.is_some()) {
+        let mut kept = BTreeSet::new();
+        for (((k, whole), &from), to) in picked.iter().zip(&offsets).zip(ends) {
+            let mine: Vec<usize> = match k {
+                Some(k) => k.iter().map(|k| k + from).collect(),
+                None if *whole => (from..to).collect(),
+                None => Vec::new(),
+            };
+            kept.extend(mine.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()));
+        }
+        Kept::Only(kept)
+    } else if picked.iter().any(|(_, whole)| *whole) {
+        Kept::Whole
+    } else {
+        Kept::Same
+    };
+    // The stitches that join them: out of the last needle point before each seam.
+    let touched: Vec<usize> = seams.iter().filter_map(|&at| at.checked_sub(1).and_then(|k| moved_to.get(k).copied().flatten())).collect();
+    for &id in &removed {
+        e.removed(id);
+    }
+    e.rebuilt(first_id, out, &ix, None, kept, touched)?;
+    // The joined path before the paths it took in, among the edits.
+    let n = e.edits.len();
+    if let Some(tail) = e.edits.get_mut(n.saturating_sub(removed.len() + 1)..) {
+        tail.rotate_right(1);
+    }
+    Ok(removed)
+}
+
+/// The paths `firsts` (whose first needle points were addressed) each with the path of stitches
+/// sewn right before it in its parent (the child just before it, a path of stitches that can be
+/// edited, in its colour and of its kind), as chains of paths sewn one right after another, in
+/// order; one with none such is passed over (`notJoinable`, into `passed`).
+fn chains(doc: &Document, firsts: &[NodeId], passed: &mut Vec<(NodeId, needles::Unfit)>) -> Vec<Vec<NodeId>> {
+    let editable = doc.editable();
+    // Each path's place among its parent's children, each parent's read once.
+    let mut place: std::collections::HashMap<NodeId, (NodeId, usize)> = Default::default();
+    let mut parents = BTreeSet::new();
+    for &id in firsts {
+        let Some(parent) = doc.parent_of(id).filter(|p| parents.insert(*p)) else { continue };
+        let children = doc.node(parent).and_then(|p| p.children()).map(Vec::as_slice).unwrap_or_default();
+        place.extend(children.iter().enumerate().map(|(i, c)| (c.id, (parent, i))));
+    }
+    let mut ordered: Vec<NodeId> = firsts.to_vec();
+    ordered.sort_by_key(|id| place.get(id).copied().map(|(p, i)| (p.0, i)));
+    let mut out: Vec<Vec<NodeId>> = Vec::new();
+    for id in ordered {
+        let before = place.get(&id).and_then(|&(parent, i)| {
+            let children = doc.node(parent)?.children()?;
+            let (b, n) = (children.get(i.checked_sub(1)?)?, children.get(i)?);
+            let alike = needles::is_stitches(b)
+                && editable(b.id)
+                && stroke_colour(b).is_some_and(|c| Some(c) == stroke_colour(n))
+                && b.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).map(|m| m.manual)
+                    == n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).map(|m| m.manual);
+            alike.then_some(b.id)
+        });
+        let Some(before) = before else {
+            passed.push((id, needles::Unfit::NotJoinable));
+            continue;
+        };
+        match out.last_mut() {
+            Some(chain) if chain.last() == Some(&before) => chain.push(id),
+            _ => out.push(vec![before, id]),
+        }
+    }
+    out
 }
 
 pub(super) const FUNCTION: &str = "embroidery.setMachineFunction";
-/// The undo step's name, the command's label.
-pub(super) const FUNCTION_LABEL: &str = "Machine Function";
+/// The undo step's name for a cut, and for a stop: what the step did (the command's label, Machine
+/// Function, names both).
+const TRIM_LABEL: &str = "Cut After Needle Point";
+const STOP_LABEL: &str = "Stop After Needle Point";
 
-/// A machine function the stitch commands set after a needle point.
-#[derive(Clone, Copy, PartialEq)]
-enum Function {
-    /// The thread is cut.
-    Trim,
-    /// The machine stops.
-    Stop,
+/// The needle point a function after needle point `k` of `st` (`ix` its index) comes after: `k`
+/// itself when it ends its run; else, when all its run has after it is a tie-off back to its spot
+/// (as Machine Function ties a run off after the needle point addressed), the tie's end, so that a
+/// function set with ties is found again, and turned off, at the needle point it was set at;
+/// `None` inside a run.
+fn function_end(st: &Stitches, ix: &Index, k: usize) -> Option<usize> {
+    let (r, i) = ix.locate(k)?;
+    let n = ix.run_len(r);
+    if i + 1 == n {
+        return Some(k);
+    }
+    let tied = i + 3 == n && st.needle((r, i + 2)).zip(st.needle((r, i))).is_some_and(|(end, at)| needles::same(end.p, at.p));
+    tied.then_some(k + 2)
 }
 
-/// Whether `st` has function `f` after needle point `k`: a cut before the next run (or after the
-/// path), a stop after it (or after the path).
-fn has(st: &Stitches, k: usize, f: Function) -> bool {
-    let Some((r, i)) = st.locate(k) else { return false };
-    let Some(run) = st.runs.get(r) else { return false };
-    let last_of_run = i + 1 == run.needles.len();
-    let last = last_of_run && st.runs.iter().skip(r + 1).all(|r| r.needles.is_empty());
-    let [trim_after, stop_after] = st.object_after;
-    match f {
-        Function::Trim if last => st.marks.trim_after || trim_after,
-        Function::Trim if last_of_run => st.runs.iter().skip(r + 1).find(|r| !r.needles.is_empty()).is_some_and(|r| r.cut_before),
-        Function::Trim => false,
-        Function::Stop => run.needles.get(i).is_some_and(|n| n.stop) || (last && (st.marks.stop_after || stop_after)),
+/// Whether `st` (`ix` its index) has function `f` after needle point `k`: a cut before the next run
+/// (or after the path, the path's own or kept before the path sewn after it, `cut_next`, as an
+/// opened design keeps the cut between two of its runs) where `k`'s run ends ([`function_end`]), a
+/// stop after it, after the tie that follows it, or after the path.
+fn has(st: &Stitches, ix: &Index, k: usize, f: Function, cut_next: bool) -> bool {
+    let end = function_end(st, ix, k);
+    let last = end.is_some_and(|e| e + 1 == ix.len());
+    let mut after = st.marks.after() | st.object_after;
+    after.trim |= cut_next;
+    let stop_at = |k: usize| ix.locate(k).and_then(|at| st.needle(at)).is_some_and(|n| n.stop);
+    match (f, end) {
+        (Function::Trim, Some(_)) if last => after.trim,
+        // The run the next needle point is in, past any run with none.
+        (Function::Trim, Some(e)) => ix.locate(e + 1).and_then(|(next, _)| st.runs.get(next)).is_some_and(|r| r.cut_before),
+        (Function::Trim, None) => false,
+        (Function::Stop, end) => stop_at(k) || end.is_some_and(|e| e != k && stop_at(e)) || (last && after.stop),
     }
+}
+
+/// The path of stitches sewn right after path `id` in its parent (the child just after it), when it
+/// keeps a cut before it, as an opened design keeps the cut between two of its runs.
+fn next_cut(doc: &Document, id: NodeId) -> Option<NodeId> {
+    let parent = doc.node(doc.parent_of(id)?)?;
+    let children = parent.children()?;
+    let at = children.iter().position(|c| c.id == id)?;
+    let next = children.get(at + 1)?;
+    next.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).filter(|m| m.trim_before).map(|_| next.id)
 }
 
 /// `embroidery.setMachineFunction {needlePoints?, ranges?, function, on?, ties?}`: the thread cut
@@ -928,43 +1205,58 @@ fn has(st: &Stitches, k: usize, f: Function) -> bool {
 /// runs stay split.
 pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, FUNCTION, &["function", "on", "ties"])?;
-    let f = match o.get("function").and_then(Value::as_str) {
-        Some("trim") => Function::Trim,
-        Some("stop") => Function::Stop,
-        _ => return Err(bad(FUNCTION, format!("`function` {}: \"trim\" or \"stop\"", o.get("function").unwrap_or(&Value::Null)))),
-    };
+    let f = o
+        .get("function")
+        .and_then(Value::as_str)
+        .and_then(Function::parse)
+        .ok_or_else(|| bad(FUNCTION, format!("`function` {}: \"trim\" or \"stop\"", o.get("function").unwrap_or(&Value::Null))))?;
     let on = match o.get("on") {
         None | Some(Value::Null) => None,
         Some(v) => Some(v.as_bool().ok_or_else(|| bad(FUNCTION, format!("`on` {v}: true or false")))?),
     };
     let (t, before) = targets(s, &o, FUNCTION)?;
+    let mut e = Edit::begin(s, FUNCTION, before, t.passed_over)?;
+    let ties = ties(&o, FUNCTION, e.min)?;
+    // The path of stitches sewn right after each path addressed that keeps a cut before it (an
+    // opened design keeps the cut between two of its runs so): the cut after the path's end.
     let doc = s.doc()?.doc.clone();
-    let (min, max) = (needles::shortest_stitch(&doc), LONGEST);
-    let ties = ties(&o, FUNCTION, min)?;
-    let on = on.unwrap_or_else(|| !t.paths.iter().all(|(_, st, k)| k.iter().all(|&k| has(st, k, f))));
-    let mut lengths = Lengths::default();
-    let mut sel = before.clone();
-    let (mut edits, mut changed, mut unchanged, mut splits) = (Vec::new(), 0usize, 0usize, 0usize);
-    for (id, st, indices) in t.paths {
-        let mut out = st.clone();
-        let mut inside = std::collections::BTreeSet::new();
+    let cut_next: std::collections::HashMap<NodeId, NodeId> = t.paths.iter().filter_map(|(id, ..)| Some((*id, next_cut(&doc, *id)?))).collect();
+    let on = on.unwrap_or_else(|| {
+        !t.paths.iter().all(|(id, st, k)| {
+            let ix = st.index();
+            k.iter().all(|&k| has(st, &ix, k, f, cut_next.contains_key(id)))
+        })
+    });
+    // The paths whose cut before them is turned off.
+    let mut uncut = BTreeSet::new();
+    let (mut changed, mut unchanged, mut splits) = (0usize, 0usize, 0usize);
+    // Each needle point addressed, as numbered after the edit.
+    let mut addressed = Vec::new();
+    for (id, mut out, indices) in t.paths {
+        // Setting a function moves no needle point: one index serves throughout.
+        let ix = out.index();
+        let selected = e.selected(id, &ix);
+        let mut inside = BTreeSet::new();
         let mut any = false;
         for &k in &indices {
-            if has(&out, k, f) == on {
+            if has(&out, &ix, k, f, cut_next.get(&id).is_some_and(|next| !uncut.contains(next))) == on {
                 unchanged += 1;
                 continue;
             }
-            let Some((r, i)) = out.locate(k) else { continue };
-            let run_len = out.runs.get(r).map_or(0, |r| r.needles.len());
-            let next = out.runs.iter().skip(r + 1).position(|r| !r.needles.is_empty()).map(|d| r + 1 + d);
-            let last_of_run = i + 1 == run_len;
             changed += 1;
             any = true;
-            // Inside a run, on: the run splits after it, below. Off, only a stop can be there.
-            if !last_of_run && on {
-                inside.insert(k + 1);
+            let Some(end) = function_end(&out, &ix, k) else {
+                // Inside a run, on: the run splits after it, below. Off, only a stop can be there.
+                if on {
+                    inside.insert(k + 1);
+                } else if let Some(n) = ix.locate(k).and_then(|at| out.needle_mut(at)) {
+                    n.stop = false;
+                }
                 continue;
-            }
+            };
+            let Some((r, _)) = ix.locate(end) else { continue };
+            // The run the next needle point is in, past any run with none.
+            let next = ix.locate(end + 1).map(|(n, _)| n).filter(|&n| n > r);
             match (f, next) {
                 (Function::Trim, Some(n)) => {
                     if let Some(next) = out.runs.get_mut(n) {
@@ -973,54 +1265,67 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
                 }
                 (Function::Trim, None) => {
                     out.marks.trim_after = on;
-                    out.object_after[0] = on;
+                    out.object_after.trim = on;
+                    // Off: the cut kept before the path sewn after it too.
+                    if let Some(next) = cut_next.get(&id).filter(|_| !on) {
+                        uncut.insert(*next);
+                    }
                 }
                 (Function::Stop, next) => {
-                    if let Some(n) = out.needle_mut(k) {
-                        n.stop = on;
+                    // On: after the run's end (the tie's, when one follows it); off: wherever it is.
+                    for at in if on { vec![end] } else { vec![k, end] } {
+                        if let Some(n) = ix.locate(at).and_then(|at| out.needle_mut(at)) {
+                            n.stop = on;
+                        }
                     }
-                    if next.is_none() && last_of_run && !on {
+                    if next.is_none() && !on {
                         out.marks.stop_after = false;
-                        out.object_after[1] = false;
+                        out.object_after.stop = false;
                     }
                 }
             }
         }
         if !any {
+            addressed.extend(indices.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
             continue;
         }
-        let (out, moved_to) = if inside.is_empty() {
-            let moved_to: Vec<usize> = (0..out.len()).collect();
-            (out, moved_to)
-        } else {
-            splits += inside.len();
-            let rebuilt = split_before(&out, &inside, ties, f == Function::Trim, f == Function::Stop);
-            let moved_to = rebuilt.moved_to.clone();
-            (rebuilt.done(&out), moved_to)
-        };
-        for &k in &indices {
-            if let Some(&at) = moved_to.get(k) {
-                lengths.around(&out, at, min, max);
+        if inside.is_empty() {
+            addressed.extend(indices.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
+            e.rebuilt(id, out, &ix, selected, Kept::Same, indices)?;
+            continue;
+        }
+        splits += inside.len();
+        let (out, moved_to) = split_before(&out, &inside, ties, Some(f)).done(out);
+        let ix = out.index();
+        let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
+        addressed.extend(touched.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
+        e.rebuilt(id, out, &ix, selected, Kept::Moved(&moved_to), touched)?;
+    }
+    // The cuts kept before the paths sewn after, turned off: in the path's own edit, or its marks.
+    for next in uncut {
+        match e.edits.iter_mut().find(|(id, _)| *id == next) {
+            Some((_, Left::Stitches(st))) => st.marks.trim_before = false,
+            _ => {
+                if let Some(mut m) = doc.node(next).and_then(|n| n.extras().embroidery.as_deref()).and_then(|e| e.stitches.clone()) {
+                    m.trim_before = false;
+                    e.edits.push((next, Left::Marks(m)));
+                }
             }
         }
-        moved_selection(&mut sel, &before, id, &st, &out, &moved_to);
-        edits.push((id, Left::Stitches(out)));
     }
-    let reply = json!({
-        "function": if f == Function::Trim { "trim" } else { "stop" },
+    let own = json!({
+        "function": f.name(),
         "on": on,
         "changedCount": changed,
         "unchangedCount": unchanged,
         "splitCount": splits,
-        "paths": listed(&edits),
-        "pathCount": edits.len(),
-        "lengths": lengths.json(min, max),
-        "passedOver": t.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
+        "needlePoints": addressed,
     });
-    if !edits.is_empty() {
-        apply(s, FUNCTION_LABEL, edits, sel)?;
-    }
-    Ok(reply)
+    let label = match f {
+        Function::Trim => TRIM_LABEL,
+        Function::Stop => STOP_LABEL,
+    };
+    e.finish(s, label, changed > 0, own)
 }
 
 pub(super) const SPLIT_LONG: &str = "embroidery.splitLongStitches";
@@ -1029,20 +1334,26 @@ pub(super) const SPLIT_LONG_LABEL: &str = "Split Long Stitches";
 /// The range `maxLength` is taken in, millimetres: from Melco's 1 mm, the shortest stitch it keeps
 /// for most needles (`check::SHORT`), to the 12.7 mm a machine sews well (`check::LONGEST_STITCH`),
 /// the default.
-const MAX_LENGTH_RANGE: (f64, f64) = (1.0, LONGEST);
+const MAX_LENGTH_RANGE: std::ops::RangeInclusive<f64> = super::check::SHORT..=LONGEST;
 
-/// The needle points a stitch from `a` to `b` (document points) is split into, besides its ends:
-/// with `format`, where that format's writer would cut it (each end on the 0.1 mm grid, the fewest
-/// equal steps of at most one record's reach along x and along y, `format::steps`); else the
-/// fewest equal stitches no longer than `max` millimetres. Refused past `room` new needle points.
-fn pieces(a: Point, b: Point, format: Option<vectorcraft_stitch::format::Format>, max: f64, room: usize) -> std::result::Result<Vec<Point>, String> {
-    let mm = |p: Point| Point::new(pt_to_mm(p.x), pt_to_mm(p.y));
-    let (am, bm) = (mm(a), mm(b));
-    match format {
-        Some(f) => {
-            let reach = vectorcraft_stitch::quantize(f.max_step());
-            let (ax, ay) = (vectorcraft_stitch::quantize(am.x), vectorcraft_stitch::quantize(am.y));
-            let (dx, dy) = (vectorcraft_stitch::quantize(bm.x) - ax, vectorcraft_stitch::quantize(bm.y) - ay);
+/// The needle points (document points) a stitch from `a` to `b` (millimetres, as the walk sews
+/// them) is split into, besides its ends: with `grid` (a format's, and its records' reach in
+/// tenths), where that format's writer would cut it (each end on the grid the writer counts the
+/// design on, the fewest equal steps of at most one record's reach along x and along y,
+/// `format::steps`); else the fewest equal stitches no longer than `max` millimetres. Refused past
+/// `room` new needle points.
+fn pieces(
+    a: Point,
+    b: Point,
+    grid: Option<(&vectorcraft_stitch::format::Grid, i32)>,
+    max: f64,
+    room: usize,
+) -> std::result::Result<Vec<Point>, String> {
+    let pt = point_to_pt;
+    match grid {
+        Some((grid, reach)) => {
+            let ((ax, ay), (bx, by)) = (grid.units(a), grid.units(b));
+            let (dx, dy) = (bx - ax, by - ay);
             let span = dx.unsigned_abs().max(dy.unsigned_abs());
             if span <= reach.unsigned_abs() {
                 return Ok(Vec::new());
@@ -1055,15 +1366,14 @@ fn pieces(a: Point, b: Point, format: Option<vectorcraft_stitch::format::Format>
             let (mut x, mut y) = (ax, ay);
             for (sx, sy) in vectorcraft_stitch::format::steps(dx, dy, reach) {
                 (x, y) = (x + sx, y + sy);
-                let at = |u: i32| mm_to_pt(f64::from(u) / vectorcraft_stitch::UNITS_PER_MM);
-                out.push(Point::new(at(x), at(y)));
+                out.push(pt(grid.point((x, y))));
             }
             // The last step ends on the stitch's own end.
             out.pop();
             Ok(out)
         }
         None => {
-            let length = am.distance(bm);
+            let length = a.distance(b);
             // Within the limit, or no number (no split).
             if !length.is_finite() || length <= max {
                 return Ok(Vec::new());
@@ -1073,7 +1383,7 @@ fn pieces(a: Point, b: Point, format: Option<vectorcraft_stitch::format::Format>
                 return Err(format!("a stitch {length:.1} mm long would take more needle points than one edit adds"));
             }
             let n = n as usize;
-            Ok((1..n).map(|i| a.lerp(b, i as f64 / n as f64)).collect())
+            Ok((1..n).map(|i| pt(a.lerp(b, i as f64 / n as f64))).collect())
         }
     }
 }
@@ -1098,33 +1408,44 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
     if format.is_some() && max.is_some() {
         return Err(bad(SPLIT_LONG, "give `maxLength` or `format`, not both"));
     }
-    let (lo, hi) = MAX_LENGTH_RANGE;
+    let (lo, hi) = (*MAX_LENGTH_RANGE.start(), *MAX_LENGTH_RANGE.end());
     let max = max.unwrap_or(hi);
-    if !(lo..=hi).contains(&max) {
+    if !MAX_LENGTH_RANGE.contains(&max) {
         return Err(bad(SPLIT_LONG, format!("`maxLength` {max}: {lo} to {hi} millimetres")));
     }
     let (t, before) = targets(s, &o, SPLIT_LONG)?;
-    let doc = s.doc()?.doc.clone();
-    let min = needles::shortest_stitch(&doc);
-    let mut lengths = Lengths::default();
-    let mut sel = before.clone();
-    let (mut edits, mut split, mut added) = (Vec::new(), 0usize, 0usize);
+    // With a format, the grid its writer counts the design on: the design planned as the export
+    // plans it (splitting a stitch on its segment changes neither where it starts nor its extent).
+    let grid = match format {
+        Some(f) => {
+            let (plan, _) = super::planned(s, &super::Options::default(), false, SPLIT_LONG)?;
+            let grid = f.grid(&plan.to_pattern()).map_err(|e| EngineError::Other(e.to_string()))?;
+            Some((grid, vectorcraft_stitch::quantize(f.max_step())))
+        }
+        None => None,
+    };
+    let mut e = Edit::begin(s, SPLIT_LONG, before, t.passed_over)?;
+    // The live check measures against the limit asked for.
+    e.max = max;
+    let (mut split, mut added) = (0usize, 0usize);
+    // Each needle point addressed, as numbered after the edit.
+    let mut addressed = Vec::new();
     for (id, st, indices) in t.paths {
         let mut out = Rebuilt::new(st.len());
-        let mut k = 0usize;
-        let mut here = 0usize;
+        let (mut k, mut here) = (0usize, 0usize);
         for run in &st.runs {
             out.run(run.cut_before);
             for (i, n) in run.needles.iter().enumerate() {
                 if let (true, Some(prev)) = (indices.contains(&k), i.checked_sub(1).and_then(|j| run.needles.get(j))) {
                     let room = MAX_ADDED.saturating_sub(added);
-                    let new = pieces(prev.p, n.p, format, max, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
+                    let grid = grid.as_ref().map(|(g, reach)| (g, *reach));
+                    let new = pieces(prev.mm(), n.mm(), grid, max, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
                     if !new.is_empty() {
                         split += 1;
                         added += new.len();
                         here += new.len();
                         for p in new {
-                            out.push(needles::Needle { p, stop: false, exact: [None, None] }, None);
+                            out.push(needles::Needle::at(p), None);
                         }
                     }
                 }
@@ -1133,124 +1454,19 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
         if here == 0 {
+            addressed.extend(indices.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
             continue;
         }
-        if st.len() + here > needles::MAX_NEEDLE_POINTS {
-            return Err(bad(SPLIT_LONG, format!("object {}: more than {} needle points", id.0, needles::MAX_NEEDLE_POINTS)));
-        }
-        let moved_to = out.moved_to.clone();
-        let rebuilt = out.done(&st);
-        for &k in &indices {
-            if let Some(&at) = moved_to.get(k) {
-                lengths.around(&rebuilt, at, min, max);
-            }
-        }
-        moved_selection(&mut sel, &before, id, &st, &rebuilt, &moved_to);
-        edits.push((id, Left::Stitches(rebuilt)));
+        let selected = e.selected(id, &st.index());
+        let (out, moved_to) = out.done(st);
+        let ix = out.index();
+        let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
+        addressed.extend(touched.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
+        e.rebuilt(id, out, &ix, selected, Kept::Moved(&moved_to), touched)?;
     }
     let limit = match format {
         Some(f) => json!({"format": f.id(), "step": f.max_step()}),
         None => json!({"length": max}),
     };
-    let reply = json!({
-        "changedCount": split,
-        "addedCount": added,
-        "limit": limit,
-        "paths": listed(&edits),
-        "pathCount": edits.len(),
-        "lengths": lengths.json(min, max),
-        "passedOver": t.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why})).collect::<Vec<_>>(),
-    });
-    if !edits.is_empty() {
-        apply(s, SPLIT_LONG_LABEL, edits, sel)?;
-    }
-    Ok(reply)
-}
-
-/// Delete with needle points selected (the marked hook in `edit.clear`): when every object the
-/// selection holds is a path of stitches and it selects needle points of them (no segment), the
-/// needle points are deleted as stitches (`embroidery.deleteNeedlePoints`: the neighbours merge,
-/// the paths leave the selection); `None` otherwise, for upstream's Delete.
-pub(crate) fn delete_selected(s: &mut Session) -> Option<Result<Value>> {
-    let st = s.doc().ok()?;
-    let sel = &st.selection;
-    let stitches = |id: &NodeId| st.doc.node(*id).is_some_and(|n| needles::read(n).is_ok());
-    let all = !sel.anchors.is_empty() && sel.segments.is_empty() && sel.objects.iter().all(stitches) && sel.anchors.keys().all(stitches);
-    all.then(|| delete(s, &json!({})))
-}
-
-/// Join (the marked hook in `path.join`) of paths `ids` when any is a path of stitches: all of them
-/// joined as `embroidery.joinRuns {ids}` joins them, in the order they are sewn (their stacking
-/// order in their parent), never reversed; a path of stitches with art is refused. `None` when none
-/// is a path of stitches, for upstream's Join.
-pub(crate) fn join_paths(s: &mut Session, ids: &[NodeId]) -> Option<Result<Value>> {
-    let st = s.doc().ok()?;
-    let doc = st.doc.clone();
-    let stitches = |id: &NodeId| doc.node(*id).is_some_and(|n| needles::read(n).is_ok());
-    if !ids.iter().any(stitches) {
-        return None;
-    }
-    if !ids.iter().all(stitches) {
-        return Some(Err(bad(JOIN, "a run of stitches joins only runs of stitches (Join Runs): select only them")));
-    }
-    let place = |id: &NodeId| {
-        let parent = doc.parent_of(*id).and_then(|p| doc.node(p));
-        parent.and_then(|p| p.children()).and_then(|c| c.iter().position(|n| n.id == *id)).unwrap_or(usize::MAX)
-    };
-    let mut sorted = ids.to_vec();
-    sorted.sort_by_key(place);
-    Some(join_runs(s, &json!({ "ids": sorted.iter().map(|i| i.0).collect::<Vec<_>>() })))
-}
-
-/// A path of stitches `id` of `d` as it is before it is cut into pieces (the marked hook in
-/// `draw2::replace_with_pieces`), for [`run_cut`]; `None` for anything else.
-pub(crate) fn before_cut(d: &Document, id: NodeId) -> Option<Stitches> {
-    d.node(id).and_then(|n| needles::read(n).ok())
-}
-
-/// `pieces` (in sewing order) cut from the path of stitches `run` was: each piece's needle points
-/// take the stops and exact millimetres of the needle points of `run` they lie on (in order), each
-/// of its runs the cut before it that `run` had there; the first piece keeps the cut before the
-/// path, the last the cut and the stop after it (the object's own too), as they were once. A
-/// needle point made by the cut has none.
-pub(crate) fn run_cut(run: Option<&Stitches>, pieces: &mut [vectorcraft_doc::Node]) {
-    let Some(run) = run else { return };
-    // Where each needle point of the run was (by its coordinates' bits), with its place, its marks
-    // and whether a cut came before it.
-    type Was = (usize, needles::Needle, bool);
-    let mut at: std::collections::HashMap<(u64, u64), Vec<Was>> = Default::default();
-    let mut k = 0usize;
-    for r in &run.runs {
-        for (i, n) in r.needles.iter().enumerate() {
-            at.entry((n.p.x.to_bits(), n.p.y.to_bits())).or_default().push((k, *n, i == 0 && r.cut_before));
-            k += 1;
-        }
-    }
-    let count = pieces.len();
-    for (p, piece) in pieces.iter_mut().enumerate() {
-        let Ok(mut st) = needles::read(piece) else { continue };
-        let mut last: Option<usize> = None;
-        for r in &mut st.runs {
-            r.cut_before = false;
-            for (i, n) in r.needles.iter_mut().enumerate() {
-                let found = at.get(&(n.p.x.to_bits(), n.p.y.to_bits())).and_then(|c| c.iter().find(|(k, ..)| last.is_none_or(|l| *k > l)).copied());
-                match found {
-                    Some((k, was, cut)) => {
-                        last = Some(k);
-                        (n.stop, n.exact) = (was.stop, was.exact);
-                        if i == 0 && cut {
-                            r.cut_before = true;
-                        }
-                    }
-                    None => (n.stop, n.exact) = (false, [None, None]),
-                }
-            }
-        }
-        let (first, final_piece) = (p == 0, p + 1 == count);
-        st.marks.trim_before = first && run.marks.trim_before;
-        st.marks.trim_after = final_piece && run.marks.trim_after;
-        st.marks.stop_after = final_piece && run.marks.stop_after;
-        st.object_after = if final_piece { run.object_after } else { [false, false] };
-        needles::write(piece, &st);
-    }
+    e.finish(s, SPLIT_LONG_LABEL, split > 0, json!({"changedCount": split, "addedCount": added, "limit": limit, "needlePoints": addressed}))
 }

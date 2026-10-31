@@ -38,6 +38,23 @@ pub const BLUE: &str = "#1830c8";
 pub const GREEN: &str = "#20a030";
 
 /// The id in a command's reply.
+/// The seed the fork's property suites run with unless `PROPTEST_RNG_SEED` is set: any fixed one.
+const PROPTEST_SEED: u64 = 0x5717_c4ed;
+
+/// A property suite's config, as upstream's pathops suites take theirs: `cases` cases from a fixed
+/// seed, so that a CI run never fails at random. Explore further locally with `PROPTEST_CASES=5000
+/// PROPTEST_RNG_SEED=<n>`, and keep a minimal failure found that way as a test of its own.
+pub fn proptest_config(cases: u32) -> proptest::test_runner::Config {
+    let mut c = proptest::test_runner::Config { failure_persistence: None, ..proptest::test_runner::Config::default() };
+    if std::env::var_os("PROPTEST_CASES").is_none() {
+        c.cases = cases;
+    }
+    if std::env::var_os("PROPTEST_RNG_SEED").is_none() {
+        c.rng_seed = proptest::test_runner::RngSeed::Fixed(PROPTEST_SEED);
+    }
+    c
+}
+
 pub fn id(reply: &Value) -> u64 {
     reply["id"].as_u64().unwrap_or_else(|| panic!("no id in {reply}"))
 }
@@ -480,7 +497,12 @@ pub fn manual(run: Run) -> Manual {
     edit_node(&mut file, trim_before, |n| n["embroidery"]["stitches"]["trim_before"] = json!(true));
     edit_node(&mut file, trim_after, |n| n["embroidery"]["stitches"]["trim_after"] = json!(true));
     edit_node(&mut file, stopped, |n| {
-        n["embroidery"]["stitches"]["stops"] = json!([[0, 1]]);
+        // As this version writes a stop: its needle point's place and where it lies, with how many
+        // subpaths and anchors the path has.
+        let anchors = n["kind"]["path"]["subpaths"][0]["anchors"].as_array().map_or(0, Vec::len);
+        let p = n["kind"]["path"]["subpaths"][0]["anchors"][1]["p"].clone();
+        n["embroidery"]["stitches"]["stops"] = json!([[0, 1, p[0], p[1]]]);
+        n["embroidery"]["stitches"]["shape"] = json!([1, anchors]);
         n["embroidery"]["stitches"]["stop_after"] = json!(true);
     });
     edit_node(&mut file, curved, |n| {
@@ -603,7 +625,7 @@ fn edit_node(v: &mut Value, id: u64, f: impl FnOnce(&mut Value) + Copy) {
 
 /// The keys an object's embroidery and the document's are read by: those this version reads, so
 /// that random JSON holds them, with any value, often enough to test what they read as.
-const EMBROIDERY_KEYS: [&str; 50] = [
+const EMBROIDERY_KEYS: [&str; 51] = [
     "stitches",
     "trim_after",
     "trim_before",
@@ -611,6 +633,7 @@ const EMBROIDERY_KEYS: [&str; 50] = [
     "manual",
     "trims",
     "stops",
+    "shape",
     "original",
     "frame",
     "node",

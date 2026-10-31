@@ -5319,7 +5319,7 @@ mark-style	Japanese	Japońskie
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Na podstawie VectorCraft zespołu ArtCraft. MIT LUB Apache-2.0. Czcionki: Source Sans 3, Inter, JetBrains Mono (OFL). Ikony: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	PEC mieści najwyżej {MAX_COLORS} kolorów, a nie {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC mieści najwyżej {MAX_COLORS} kolorów (każdy stop liczy się jako jeden), a nie {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 mieści najwyżej {MAX_COLORS} bloków kolorów
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	plik DST ma {HEADER}-bajtowy nagłówek i co najmniej jeden 3-bajtowy rekord, a ten plik ma {_1} bajtów
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	nagłówek DST liczy najwyżej {MAX_RECORDS} rekordów, a wzór wymaga {_1}
@@ -5731,7 +5731,7 @@ embroidery	Not sewn: it is hidden.	Nie jest szyte: jest ukryte.
 embroidery	Not sewn: it is on a template or non-printing layer.	Nie jest szyte: leży na warstwie szablonu albo niedrukowanej.
 embroidery	Not sewn.	Nie jest szyte.
 embroidery	Stitches from a file are sewn as the file has them.	Ściegi z pliku są szyte tak, jak zapisano je w pliku.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Ściegi ręczne są szyte tak, jak są ułożone: Przywróć obiekt przywraca obiekt i jego ustawienia.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Ściegi ręczne są szyte tak, jak są ułożone; obiekt, z którego je zamieniono, nie jest z nimi przechowywany.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Tekst nie jest jeszcze szyty: utwórz kontury, aby go wyszyć.
 embroidery	Images aren't sewn.	Obrazy nie są szyte.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Ustawienia przyjmują obiekty symbolu: edytuj symbol, aby je ustawić.
@@ -5899,9 +5899,9 @@ embroidery	Auto (where the plan ends the part)	Auto (tam, gdzie plan kończy cz�
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Zamień na ściegi ręczne
 @msg	nothing selected can be converted to manual stitches: {_1}	nic z zaznaczenia nie da się zamienić na ściegi ręczne: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Przywróć obiekt
-@msg	nothing selected was converted to manual stitches: {_1}	nic z zaznaczenia nie zostało zamienione na ściegi ręczne: {_1}
+@msg	nothing selected can be restored: {_1}	nic z zaznaczenia nie da się przywrócić: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ściegi ręczne lub z pliku przeskalowane o więcej niż {value}%
 embroidery	{name}: {value}% larger	{name}: powiększenie o {value}%
@@ -5914,7 +5914,7 @@ embroidery	manual stitches	ściegi ręczne
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	efekty, pędzle oraz dodatkowe wypełnienia lub obrysy na ściegach ręcznych lub z pliku (albo na grupie, która je zawiera) nie są haftowane: ściegi są szyte tak, jak są
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Przesuń nakłucia
-@msg	select needle points of a run of stitches, or give needlePoints	zaznacz nakłucia odcinka ściegów lub podaj needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	zaznacz nakłucia ścieżki ściegów lub podaj needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Wstaw nakłucia
 # VectorCraft Stitch: Delete Needle Points
@@ -5933,17 +5933,52 @@ embroidery	manual stitches	ściegi ręczne
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Ściegi ręczne
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Szyte tak, jak są ułożone: nie zmieniają się już z tkaniną ani ustawieniami obiektu.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} odcinek · nakłucia: {needle}|{count} odcinki · nakłucia: {needle}|{count} odcinków · nakłucia: {needle}
 embroidery	Scaled to {value}% since converting	Przeskalowano do {value}% od zamiany
-embroidery	Restore Object…	Przywróć obiekt…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Przywraca obiekt w miejsce jego ściegów ręcznych, zaplanowany od nowa w obecnym rozmiarze.
-embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Zamraża zaplanowane teraz ściegi, aby można było przesuwać każde nakłucie; Przywróć obiekt przywraca obiekt.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Maszyna zatrzymuje się po ściegach obiektu, np. do aplikacji; stop przy zmianie nici lub na końcu jest tym samym zatrzymaniem.
-embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Zmiany wprowadzone w ściegach od zamiany przepadną; Cofnij je przywróci.
+embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Zamraża zaplanowane teraz ściegi, aby można było przesuwać każde nakłucie; polecenie Przywróć obiekt przywraca obiekt.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Maszyna zatrzymuje się po ściegach obiektu, jak przy aplikacji. Tam, gdzie dalej następuje zmiana nici albo koniec wzoru, maszyna i tak się zatrzymuje, więc dodatkowy stop nie jest zapisywany.
+embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Zmiany wprowadzone w ściegach od zamiany przepadną; polecenie Cofnij je przywróci.
 @plural	Stop the machine after the object|Stop the machine after the objects	Zatrzymaj maszynę po obiekcie|Zatrzymaj maszynę po obiektach|Zatrzymaj maszynę po obiektach
 @plural	Restore {count} object?|Restore {count} objects?	Przywrócić {count} obiekt?|Przywrócić {count} obiekty?|Przywrócić {count} obiektów?
 @plural	{count} object restored|{count} objects restored	Przywrócono {count} obiekt|Przywrócono {count} obiekty|Przywrócono {count} obiektów
-@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	Zamieniono {count} obiekt na ściegi ręczne: Przywróć obiekt go przywróci|Zamieniono {count} obiekty na ściegi ręczne: Przywróć obiekt je przywróci|Zamieniono {count} obiektów na ściegi ręczne: Przywróć obiekt je przywróci
+@plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	Zamieniono {count} obiekt na ściegi ręczne: polecenie Przywróć obiekt go przywróci|Zamieniono {count} obiekty na ściegi ręczne: polecenie Przywróć obiekt je przywróci|Zamieniono {count} obiektów na ściegi ręczne: polecenie Przywróć obiekt je przywróci
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	pominięto cięcia lub stopy ściegów: polecenie ścieżki usunęło lub przesunęło nakłucia, po których następowały (ustaw je ponownie poleceniem Funkcja maszyny)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	ścieżki ściegów łączą się tylko ze ścieżkami ściegów: zaznacz tylko je
+@msg	select two or more paths of stitches sewn one right after another to join them	zaznacz dwie lub więcej ścieżek ściegów szytych bezpośrednio jedna po drugiej, aby je połączyć
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Cięcie po nakłuciu
+	Stop After Needle Point	Stop po nakłuciu
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	nie podczas edycji globalnej: najpierw ją zakończ
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} blok nici, wliczając stopy|{count} bloki nici, wliczając stopy|{count} bloków nici, wliczając stopy
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} zmiana nici, wliczając stopy|{count} zmiany nici, wliczając stopy|{count} zmian nici, wliczając stopy
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	każdy stop jest zapisany jako zmiana na tę samą nić: maszyna jednoigłowa zatrzymuje się na niej, a wieloigłowa tylko tam, gdzie operator ustawi stop na tej zmianie
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Zablokowanych obiektów nie można przywrócić: najpierw je odblokuj.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	ściegi z pliku
+embroidery	manual stitches already	już ściegi ręczne
+embroidery	symbol instances	wystąpienia symboli
+embroidery	clipping paths	ścieżki przycinające
+embroidery	parts of an object sewn whole	części obiektu szytego w całości
+embroidery	holding what isn't sewn	zawiera to, co nie jest szyte
+embroidery	locked	zablokowane
+embroidery	not sewn	nieszyte
+embroidery	stitches a manual run can't hold	ściegi, których odcinek ręczny nie pomieści
+embroidery	not converted	niezamienione
+embroidery	the kept object doesn't read	zachowanego obiektu nie da się odczytać
+embroidery	its symbol is gone	brak jego symbolu
+embroidery	would lie outside the document	znalazłby się poza dokumentem
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	pominięto {count} obiekt: {reasons}|pominięto {count} obiekty: {reasons}|pominięto {count} obiektów: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} odcinek|{count} odcinki|{count} odcinków
+@plural	{count} needle point|{count} needle points	{count} nakłucie|{count} nakłucia|{count} nakłuć
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} zaznaczony obiekt to ściegi ręczne|{count} zaznaczone obiekty to ściegi ręczne|{count} zaznaczonych obiektów to ściegi ręczne
+embroidery	Converting to manual stitches…	Zamiana na ściegi ręczne…
 # VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
 embroidery	Editing stitches	Edycja ściegów
 embroidery	Editing stitches: {name}	Edycja ściegów: {name}
@@ -5952,7 +5987,6 @@ embroidery	Needle points are edited in the Stitches view.	Nakłucia edytuje się
 embroidery	Show Stitches	Pokaż ściegi
 embroidery	Edit Stitches	Edytuj ściegi
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Przesuwaj, wstawiaj i usuwaj te nakłucia na płótnie narzędziem Haft.
-@plural	{count} needle point|{count} needle points	{count} nakłucie|{count} nakłucia|{count} nakłuć
 @plural	{count} selected|{count} selected	{count} zaznaczone|{count} zaznaczone|{count} zaznaczonych
 @plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} odcinek bez możliwości edycji: zablokowany, ukryty lub przycięty maską przycinającą|{count} odcinki bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą|{count} odcinków bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą
 	 needle points, or a frame round them  |  	 nakłucia albo ramkę wokół nich  |  

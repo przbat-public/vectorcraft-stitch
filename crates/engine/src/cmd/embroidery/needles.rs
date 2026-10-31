@@ -24,7 +24,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::embroidery::{Exact, StitchRun};
+use vectorcraft_doc::embroidery::{After, Exact, Mark, StitchRun, shape_of};
 use vectorcraft_doc::{Document, MAX_COORD, Node, NodeId, NodeKind, Selection};
 use vectorcraft_geom::{Anchor, PathData, Point, SubPath};
 use vectorcraft_stitch::{MM_PER_PT, SAME_POINT, pt_to_mm};
@@ -39,19 +39,50 @@ pub(crate) const MAX_NEEDLE_POINTS: usize = 2_000_000;
 /// The most paths one command edits: the Layers panel's and the settings commands' bound on the
 /// objects a call names (`layer::MAX_ROWS`).
 pub(crate) const MAX_PATHS: usize = crate::cmd::layer::MAX_ROWS;
-/// The most entries a reply lists (its counts are never cut): enough to show what an edit did.
+/// The most entries a reply lists (its counts are never cut): enough to show what an edit did, in a
+/// reply of a few hundred kilobytes at most, as the settings commands list their objects. An
+/// estimate.
 pub(crate) const MAX_LISTED: usize = 1000;
 
-/// Why a path's stitches can't be edited needle point by needle point.
-pub(crate) mod reason {
+/// Why a path's stitches can't be edited needle point by needle point, or a path joined: each
+/// with the name a reply gives it ([`Unfit::code`]) and the words a refusal says ([`Unfit::words`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Unfit {
     /// Not a path holding a run of literal stitches.
-    pub(crate) const NOT_STITCHES: &str = "notStitches";
+    NotStitches,
     /// Locked or hidden, or in a locked layer or group, or on a locked artboard.
-    pub(crate) const LOCKED: &str = "locked";
+    Locked,
     /// Anchors that aren't numbers, or lie outside the document's coordinates.
-    pub(crate) const OUT_OF_RANGE: &str = "outOfRange";
+    OutOfRange,
     /// More needle points than a design may have.
-    pub(crate) const TOO_MANY: &str = "tooManyNeedlePoints";
+    TooMany,
+    /// A path whose first needle point Join Runs was given has no path of stitches sewn right
+    /// before it in its parent, in its colour and of its kind, to join it to.
+    NotJoinable,
+}
+
+impl Unfit {
+    /// As a reply names it (`passedOver`).
+    pub(crate) fn code(self) -> &'static str {
+        match self {
+            Self::NotStitches => "notStitches",
+            Self::Locked => "locked",
+            Self::OutOfRange => "outOfRange",
+            Self::TooMany => "tooManyNeedlePoints",
+            Self::NotJoinable => "notJoinable",
+        }
+    }
+
+    /// In words, for a refusal.
+    pub(crate) fn words(self) -> &'static str {
+        match self {
+            Self::NotStitches => "it isn't a path of stitches",
+            Self::Locked => "it is locked or hidden, or in a locked layer, group or artboard",
+            Self::OutOfRange => "its anchors aren't numbers, or lie outside the document's coordinates",
+            Self::TooMany => "it holds more needle points than a design may have",
+            Self::NotJoinable => "no path of stitches in its colour and of its kind is sewn right before it",
+        }
+    }
 }
 
 /// One needle point: where it is (document points), whether the machine stops after it, and the
@@ -79,8 +110,8 @@ pub(crate) struct Stitches {
     pub(crate) runs: Vec<Run>,
     pub(crate) marks: StitchRun,
     /// The object's own Trim After and Stop After ([`vectorcraft_doc::embroidery::Embroidery`]'s
-    /// `trim_after`, `stop_after`): a cut and a stop after its last needle point, as the run's are.
-    pub(crate) object_after: [bool; 2],
+    /// `own_after`): a cut and a stop after its last needle point, as the run's are.
+    pub(crate) object_after: After,
 }
 
 /// Whether two points (document points) lie at one spot, as the walk tells a line to its own
@@ -89,12 +120,39 @@ pub(crate) fn same(a: Point, b: Point) -> bool {
     a.distance(b) * MM_PER_PT < SAME_POINT
 }
 
-/// How many needle points a subpath of a path of stitches holds: one an anchor, but one for a line
-/// to its own start, unless `tack` (the path's only run, marked as two needle points at one spot).
-pub fn needle_count(anchors: &[Anchor], tack: bool) -> usize {
+/// Whether a run of two needle points `distance_mm` millimetres apart is one needle point: the rule
+/// every reader of a path of stitches keeps (the walk, the stitch commands, Convert, the importer).
+/// A line to its own start is a single stitch as a file stores it, unless it is the path's only
+/// run and the path marks it as two (a tack, `double_point`).
+pub(crate) fn one_needle_point(distance_mm: f64, alone: bool, double_point: bool) -> bool {
+    distance_mm < SAME_POINT && !(alone && double_point)
+}
+
+/// How many needle points a subpath of a path of stitches holds, as every reader counts them
+/// ([`one_needle_point`]): one an anchor, but one for a line to its own start, unless it is the
+/// path's only run (`alone`) and the path marks it as two (`double_point`, a tack).
+pub fn needle_count(anchors: &[Anchor], alone: bool, double_point: bool) -> usize {
     match anchors {
-        [a, b] if same(a.p, b.p) && !tack => 1,
+        [a, b] if one_needle_point(a.p.distance(b.p) * MM_PER_PT, alone, double_point) => 1,
         all => all.len(),
+    }
+}
+
+impl Needle {
+    /// A needle point at `p` (document points), with no stop after it and no exact millimetres.
+    pub(crate) fn at(p: Point) -> Self {
+        Self { p, stop: false, exact: [None, None] }
+    }
+
+    /// Where the walk sews it, millimetres: its document point in millimetres, or its exact
+    /// millimetres while it lies where they were kept for ([`StitchRun::exact`]), as
+    /// `digitize::exact` applies them.
+    pub(crate) fn mm(&self) -> Point {
+        let at = Point::new(pt_to_mm(self.p.x), pt_to_mm(self.p.y));
+        let [x, y] = self.exact;
+        let (x, y) = (x.unwrap_or(at.x), y.unwrap_or(at.y));
+        let near = |kept: f64, now: f64| (kept - now).abs() <= SAME_POINT;
+        if near(x, at.x) && near(y, at.y) { Point::new(x, y) } else { at }
     }
 }
 
@@ -103,30 +161,53 @@ pub(crate) fn in_range(p: Point) -> bool {
     p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD
 }
 
+/// What [`read`] answers of `n`, without reading it: how many needle points the path of stitches
+/// holds, or why it can't be edited.
+pub(crate) fn check(n: &Node) -> std::result::Result<usize, Unfit> {
+    let NodeKind::Path { path, .. } = &n.kind else { return Err(Unfit::NotStitches) };
+    if !is_stitches(n) {
+        return Err(Unfit::NotStitches);
+    }
+    let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
+    if anchors > 2 * MAX_NEEDLE_POINTS {
+        return Err(Unfit::TooMany);
+    }
+    if !path.subpaths.iter().flat_map(|sp| &sp.anchors).all(|a| in_range(a.p)) {
+        return Err(Unfit::OutOfRange);
+    }
+    match count(n) {
+        Some(len) if len <= MAX_NEEDLE_POINTS => Ok(len),
+        Some(_) => Err(Unfit::TooMany),
+        None => Err(Unfit::NotStitches),
+    }
+}
+
 /// The path holding stitches `n` is, as the walk sews it; `Err` with the reason when `n` isn't
 /// one, or holds what can't be edited (anchors that aren't numbers or lie outside the document's
 /// coordinates, or more needle points than a design may have), checked before any arithmetic.
-pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
-    let NodeKind::Path { path, .. } = &n.kind else { return Err(reason::NOT_STITCHES) };
-    let Some(e) = n.extras().embroidery.as_deref() else { return Err(reason::NOT_STITCHES) };
-    let Some(marks) = e.stitches.clone() else { return Err(reason::NOT_STITCHES) };
-    let object_after = [e.trim_after, e.stop_after];
+pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, Unfit> {
+    let NodeKind::Path { path, .. } = &n.kind else { return Err(Unfit::NotStitches) };
+    let Some(e) = n.extras().embroidery.as_deref() else { return Err(Unfit::NotStitches) };
+    let Some(marks) = e.stitches.clone() else { return Err(Unfit::NotStitches) };
+    let object_after = e.own_after();
     let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
     if anchors > 2 * MAX_NEEDLE_POINTS {
-        return Err(reason::TOO_MANY);
+        return Err(Unfit::TooMany);
     }
     if !path.subpaths.iter().flat_map(|sp| &sp.anchors).all(|a| in_range(a.p)) {
-        return Err(reason::OUT_OF_RANGE);
+        return Err(Unfit::OutOfRange);
     }
-    let trims: BTreeSet<usize> = marks.trims.iter().copied().collect();
-    let stops: BTreeSet<(usize, usize)> = marks.stops.iter().copied().collect();
+    // The cuts and stops where their needle points are now (one whose needle point is gone left
+    // out: the plan says so until an edit writes the path back without it).
+    let placed = marks.placed(path);
+    let (trims, stops) = (placed.cuts, placed.stops);
     let exact: BTreeMap<(usize, usize), &Exact> = marks.exact.iter().map(|e| ((e.subpath, e.anchor), e)).collect();
     let alone = path.subpaths.len() == 1;
     let mut runs = Vec::with_capacity(path.subpaths.len());
     for (s, sp) in path.subpaths.iter().enumerate() {
         let points: Vec<Point> = match sp.anchors.as_slice() {
             // A line to its own start: one needle point, unless the path's only run is a tack.
-            [a, b] if same(a.p, b.p) && !(alone && marks.double_point) => vec![a.p],
+            [a, b] if one_needle_point(a.p.distance(b.p) * MM_PER_PT, alone, marks.double_point) => vec![a.p],
             all => all.iter().map(|a| a.p).collect(),
         };
         let last = points.len().saturating_sub(1);
@@ -145,9 +226,105 @@ pub(crate) fn read(n: &Node) -> std::result::Result<Stitches, &'static str> {
     }
     let st = Stitches { runs, marks, object_after };
     if st.len() > MAX_NEEDLE_POINTS {
-        return Err(reason::TOO_MANY);
+        return Err(Unfit::TooMany);
     }
     Ok(st)
+}
+
+/// Where a path's needle points lie among its runs, so that one is found by its index without
+/// walking the runs before it (a path may hold as many runs as needle points): the index of each
+/// run's first needle point, and the subpath each run is written as (a run with no needle point
+/// isn't written). Made from the stitches as they are: an edit that adds or removes a needle point,
+/// or a run, makes the stitches another index.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Index {
+    /// Run `r`'s first needle point's index, and one past the last needle point at the end.
+    starts: Vec<usize>,
+    /// The subpath run `r` is written as: its place among the runs holding needle points.
+    subpaths: Vec<usize>,
+}
+
+impl Index {
+    /// The index of `st` as it is.
+    pub(crate) fn of(st: &Stitches) -> Self {
+        let mut starts = Vec::with_capacity(st.runs.len() + 1);
+        let mut subpaths = Vec::with_capacity(st.runs.len());
+        let (mut at, mut written) = (0usize, 0usize);
+        for r in &st.runs {
+            starts.push(at);
+            subpaths.push(written);
+            at += r.needles.len();
+            written += usize::from(!r.needles.is_empty());
+        }
+        starts.push(at);
+        Self { starts, subpaths }
+    }
+
+    /// How many needle points the path holds.
+    pub(crate) fn len(&self) -> usize {
+        self.starts.last().copied().unwrap_or(0)
+    }
+
+    /// Needle point `index`'s run and place in it: the run whose needle points start at or before
+    /// it and end after it (a run with no needle point never holds one).
+    pub(crate) fn locate(&self, index: usize) -> Option<(usize, usize)> {
+        if index >= self.len() {
+            return None;
+        }
+        let r = self.starts.partition_point(|&start| start <= index).checked_sub(1)?;
+        Some((r, index - self.starts.get(r)?))
+    }
+
+    /// The index of needle point `i` of run `r` (one past the run's last, for `i` its length).
+    pub(crate) fn index_of(&self, r: usize, i: usize) -> usize {
+        self.starts.get(r).map_or(self.len(), |start| start + i)
+    }
+
+    /// How many needle points run `r` holds.
+    pub(crate) fn run_len(&self, r: usize) -> usize {
+        match (self.starts.get(r), self.starts.get(r + 1)) {
+            (Some(a), Some(b)) => b - a,
+            _ => 0,
+        }
+    }
+
+    /// The anchors needle point `index` is written as ([`Stitches::written`]): one, or both of a run
+    /// of one needle point.
+    pub(crate) fn anchors_of(&self, index: usize) -> Vec<(usize, usize)> {
+        let Some((r, i)) = self.locate(index) else { return Vec::new() };
+        let Some(&s) = self.subpaths.get(r) else { return Vec::new() };
+        match self.run_len(r) {
+            1 => vec![(s, 0), (s, 1)],
+            _ => vec![(s, i)],
+        }
+    }
+
+    /// The needle point anchor `(subpath, anchor)` is, of stitches read from a path (a run a
+    /// subpath): the second anchor of a line to its own start is its one needle point; an anchor
+    /// past a run's needle points otherwise (one an edit since left stale) is none.
+    fn needle_of_anchor(&self, (s, a): (usize, usize)) -> Option<usize> {
+        let len = self.run_len(s);
+        let i = if len == 1 { 0 } else { a };
+        (i < len).then(|| self.index_of(s, i))
+    }
+}
+
+/// How many runs path `n` holds (its subpaths with a needle point), counted without reading it;
+/// `None` when it isn't a path of stitches.
+pub(crate) fn runs(n: &Node) -> Option<usize> {
+    let NodeKind::Path { path, .. } = &n.kind else { return None };
+    n.extras().embroidery.as_deref()?.stitches.as_ref()?;
+    Some(path.subpaths.iter().filter(|sp| !sp.anchors.is_empty()).count())
+}
+
+/// How many needle points path `n` holds, counted as [`read`] reads them without reading them;
+/// `None` when it isn't a path of stitches.
+pub(crate) fn count(n: &Node) -> Option<usize> {
+    let NodeKind::Path { path, .. } = &n.kind else { return None };
+    let marks = n.extras().embroidery.as_deref()?.stitches.as_ref()?;
+    let alone = path.subpaths.len() == 1;
+    let one = |sp: &SubPath| matches!(sp.anchors.as_slice(), [a, b] if one_needle_point(a.p.distance(b.p) * MM_PER_PT, alone, marks.double_point));
+    Some(path.subpaths.iter().map(|sp| if one(sp) { 1 } else { sp.anchors.len() }).sum())
 }
 
 impl Stitches {
@@ -156,27 +333,48 @@ impl Stitches {
         self.runs.iter().map(|r| r.needles.len()).sum()
     }
 
-    /// Needle point `index`'s run and place in it.
-    pub(crate) fn locate(&self, index: usize) -> Option<(usize, usize)> {
-        let mut start = 0usize;
-        for (s, r) in self.runs.iter().enumerate() {
-            if index < start + r.needles.len() {
-                return Some((s, index - start));
-            }
-            start += r.needles.len();
+    /// The path's [`Index`], as it is now.
+    pub(crate) fn index(&self) -> Index {
+        Index::of(self)
+    }
+
+    /// Needle point `i` of run `r`.
+    pub(crate) fn needle(&self, (r, i): (usize, usize)) -> Option<&Needle> {
+        self.runs.get(r)?.needles.get(i)
+    }
+
+    /// Needle point `i` of run `r`, to change.
+    pub(crate) fn needle_mut(&mut self, (r, i): (usize, usize)) -> Option<&mut Needle> {
+        self.runs.get_mut(r)?.needles.get_mut(i)
+    }
+
+    /// Each run of two needle points at one spot, in a path of several runs, made one needle point:
+    /// only a path's only run can be a tack (two needle points stored at one spot read back as one,
+    /// [`read`]), so the edit says what is written. A stop after either is kept. Each needle point's
+    /// new index (`None`: the second of such a run), or `None` when no run was such.
+    pub(crate) fn collapse_tacks(&mut self) -> Option<Vec<Option<usize>>> {
+        let tack = |r: &Run| matches!(r.needles.as_slice(), [a, b] if same(a.p, b.p));
+        if self.runs.iter().filter(|r| !r.needles.is_empty()).count() < 2 || !self.runs.iter().any(tack) {
+            return None;
         }
-        None
-    }
-
-    /// The index of needle point `i` of run `s` (one past the last, for `i` its length).
-    pub(crate) fn index_of(&self, s: usize, i: usize) -> usize {
-        self.runs.iter().take(s).map(|r| r.needles.len()).sum::<usize>() + i
-    }
-
-    /// Needle point `index`, to change.
-    pub(crate) fn needle_mut(&mut self, index: usize) -> Option<&mut Needle> {
-        let (s, i) = self.locate(index)?;
-        self.runs.get_mut(s)?.needles.get_mut(i)
+        let mut moved_to = Vec::with_capacity(self.len());
+        let mut at = 0usize;
+        for r in &mut self.runs {
+            if tack(r)
+                && let Some(second) = r.needles.pop()
+                && let Some(first) = r.needles.first_mut()
+            {
+                first.stop |= second.stop;
+                moved_to.extend([Some(at), None]);
+                at += 1;
+                continue;
+            }
+            for _ in &r.needles {
+                moved_to.push(Some(at));
+                at += 1;
+            }
+        }
+        Some(moved_to)
     }
 
     /// Runs left with no needle point dropped: a cut before one passes to the run after it.
@@ -197,20 +395,30 @@ impl Stitches {
     /// The path and the marks to write back: each run one open subpath of corner anchors (a run of
     /// one needle point a line to its own start), the cuts between runs, the stops after needle
     /// points and the exact millimetres from the needle points that carry them; the tack mark set
-    /// when the path's only run is two needle points at one spot. `None` when no needle point is
-    /// left.
-    pub(crate) fn written(&self) -> Option<(PathData, StitchRun)> {
-        let mut runs = self.clone();
-        runs.drop_empty_runs();
-        if runs.runs.is_empty() {
+    /// when the path's only run is two needle points at one spot. A stop after the last needle
+    /// point is the run's stop after it, where Stop After shows and clears it. `None` when no
+    /// needle point is left.
+    pub(crate) fn written(mut self) -> Option<(PathData, StitchRun)> {
+        self.drop_empty_runs();
+        if let Some(last) = self.runs.last_mut().and_then(|r| r.needles.last_mut())
+            && std::mem::take(&mut last.stop)
+        {
+            self.marks.stop_after = true;
+        }
+        let Self { runs, mut marks, .. } = self;
+        if runs.is_empty() {
             return None;
         }
-        let mut marks = runs.marks.clone();
         let (mut trims, mut stops, mut exact) = (Vec::new(), Vec::new(), Vec::new());
-        let mut subpaths = Vec::with_capacity(runs.runs.len());
-        for (s, r) in runs.runs.iter().enumerate() {
-            if s > 0 && r.cut_before {
-                trims.push(s);
+        let mut subpaths = Vec::with_capacity(runs.len());
+        for (s, r) in runs.iter().enumerate() {
+            // A cut is kept at the first needle point of the run it comes before, a stop at the
+            // needle point it follows, each where it lies.
+            if s > 0
+                && r.cut_before
+                && let Some(first) = r.needles.first()
+            {
+                trims.push(Mark::at(s, 0, first.p));
             }
             let mut anchors: Vec<Anchor> = r.needles.iter().map(|n| Anchor::corner(n.p)).collect();
             if let [only] = anchors.as_slice() {
@@ -218,7 +426,7 @@ impl Stitches {
             }
             for (i, n) in r.needles.iter().enumerate() {
                 if n.stop {
-                    stops.push((s, i));
+                    stops.push(Mark::at(s, i, n.p));
                 }
                 if let [x, y] = n.exact
                     && (x.is_some() || y.is_some())
@@ -230,68 +438,44 @@ impl Stitches {
             }
             subpaths.push(SubPath { anchors, closed: false });
         }
-        marks.double_point = matches!(runs.runs.as_slice(), [r] if matches!(r.needles.as_slice(), [a, b] if same(a.p, b.p)));
+        marks.double_point = matches!(runs.as_slice(), [r] if matches!(r.needles.as_slice(), [a, b] if same(a.p, b.p)));
+        let path = PathData::new(subpaths);
+        marks.shape = (!trims.is_empty() || !stops.is_empty()).then(|| shape_of(&path));
         (marks.trims, marks.stops, marks.exact) = (trims, stops, exact);
-        Some((PathData::new(subpaths), marks))
+        Some((path, marks))
     }
 }
 
 /// Write `st` back into path `n` (its path and its run's marks); `false` when no needle point is
 /// left, and nothing is written.
-pub(crate) fn write(n: &mut Node, st: &Stitches) -> bool {
+pub(crate) fn write(n: &mut Node, st: Stitches) -> bool {
+    let object_after = st.object_after;
     let Some((path, marks)) = st.written() else { return false };
     if let NodeKind::Path { path: p, .. } = &mut n.kind {
         *p = path;
     }
     if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
         e.stitches = Some(marks);
-        let [trim, stop] = st.object_after;
-        if e.trim_after != trim {
-            e.set_trim_after(trim);
-        }
-        if e.stop_after != stop {
-            e.set_stop_after(stop);
-        }
+        e.set_own_after(object_after);
     }
     true
 }
 
-/// The needle point anchor `(subpath, anchor)` of a path is, among `st`'s (read from that path):
-/// the second anchor of a line to its own start is its one needle point.
-fn needle_of_anchor(st: &Stitches, (s, a): (usize, usize)) -> Option<usize> {
-    let r = st.runs.get(s)?;
-    let i = a.min(r.needles.len().checked_sub(1)?);
-    Some(st.index_of(s, i))
-}
-
-/// The anchors needle point `index` of `st` is written as ([`Stitches::written`]): one, or both
-/// of a run of one needle point.
-pub(crate) fn anchors_of(st: &Stitches, index: usize) -> Vec<(usize, usize)> {
-    let Some((s, i)) = st.locate(index) else { return Vec::new() };
-    // Runs with no needle point aren't written: the subpath is the run's place among the others.
-    let s = st.runs.iter().take(s).filter(|r| !r.needles.is_empty()).count();
-    match st.runs.iter().filter(|r| !r.needles.is_empty()).nth(s).map(|r| r.needles.len()) {
-        Some(1) => vec![(s, 0), (s, 1)],
-        Some(_) => vec![(s, i)],
-        None => Vec::new(),
-    }
-}
-
-/// The needle points of path `id` (read as `st`) that `sel` selects: those whose anchors it
-/// selects, or all of them when it selects the path whole.
-pub(crate) fn selected_in(sel: &Selection, id: NodeId, st: &Stitches) -> BTreeSet<usize> {
+/// The needle points of path `id` (read from it, `ix` its index) that `sel` selects: those whose
+/// anchors it selects, or all of them when it selects the path whole.
+pub(crate) fn selected_in(sel: &Selection, id: NodeId, ix: &Index) -> BTreeSet<usize> {
     match sel.anchors.get(&id) {
-        Some(anchors) => anchors.iter().filter_map(|&a| needle_of_anchor(st, a)).collect(),
-        None if sel.objects.contains(&id) => (0..st.len()).collect(),
+        Some(anchors) => anchors.iter().filter_map(|&a| ix.needle_of_anchor(a)).collect(),
+        None if sel.objects.contains(&id) => (0..ix.len()).collect(),
         None => BTreeSet::new(),
     }
 }
 
-/// Select needle points `indices` of path `id` (read as `st`, as it will be written) in `sel`,
-/// in place of what it selected of the path: their anchors, the path among the objects. None:
-/// the path leaves the selection.
-pub(crate) fn select_in(sel: &mut Selection, id: NodeId, st: &Stitches, indices: &BTreeSet<usize>) {
-    let anchors: BTreeSet<(usize, usize)> = indices.iter().flat_map(|&k| anchors_of(st, k)).collect();
+/// Select needle points `indices` of path `id` (`ix` the index of its stitches as they will be
+/// written) in `sel`, in place of what it selected of the path: their anchors, the path among the
+/// objects. None: the path leaves the selection.
+pub(crate) fn select_in(sel: &mut Selection, id: NodeId, ix: &Index, indices: &BTreeSet<usize>) {
+    let anchors: BTreeSet<(usize, usize)> = indices.iter().flat_map(|&k| ix.anchors_of(k)).collect();
     if anchors.is_empty() {
         sel.remove(id);
         sel.anchors.remove(&id);
@@ -308,7 +492,7 @@ pub(crate) fn select_in(sel: &mut Selection, id: NodeId, st: &Stitches, indices:
 #[derive(Debug, Default)]
 pub(crate) struct Targets {
     pub(crate) paths: Vec<(NodeId, Stitches, BTreeSet<usize>)>,
-    pub(crate) passed_over: Vec<(NodeId, &'static str)>,
+    pub(crate) passed_over: Vec<(NodeId, Unfit)>,
 }
 
 impl Targets {
@@ -320,7 +504,7 @@ impl Targets {
 
 /// The message a command gives when nothing it could edit was given or selected: translated
 /// (the interface shows it).
-pub(crate) const NOTHING_ADDRESSED: &str = "select needle points of a run of stitches, or give needlePoints";
+pub(crate) const NOTHING_ADDRESSED: &str = "select needle points of a path of stitches, or give needlePoints";
 
 /// A non-negative whole number `v` (an id or an index), refused by command `cmd` as `what`
 /// otherwise.
@@ -328,14 +512,25 @@ fn whole(v: Option<&Value>, what: &str, cmd: &str) -> Result<u64> {
     v.and_then(Value::as_u64).ok_or_else(|| bad(cmd, format!("{what} {}: a whole number, 0 or more", v.unwrap_or(&Value::Null))))
 }
 
-/// The paths named in `o`'s `needlePoints` (`[{id, index}…]`) and `ranges` (`[{id, from, to}…]`,
-/// inclusive), each refused by `cmd` when it isn't one that can be edited; with neither, the
+/// The keys an entry of `needlePoints` takes, and one of `ranges`: `of`, the path's needle points
+/// as the caller last counted them, refuses an address made stale by an edit since.
+const NEEDLE_POINT_KEYS: [&str; 3] = ["id", "index", "of"];
+const RANGE_KEYS: [&str; 4] = ["id", "from", "to", "of"];
+
+/// The paths named in `o`'s `needlePoints` (`[{id, index, of?}…]`) and `ranges` (`[{id, from, to,
+/// of?}…]`, inclusive), each refused by `cmd` when it isn't one that can be edited, or holds another
+/// number of needle points than an entry's `of` says; with neither, the
 /// selection's needle points (`sel`: of each path of stitches it selects, the needle points whose
 /// anchors it selects, or all when it selects the path whole; a group selected whole stands for
-/// the paths of stitches in it), the other objects passed over. Checked before anything changes:
-/// at most [`MAX_PATHS`] paths and [`MAX_NEEDLE_POINTS`] needle points.
+/// the paths of stitches in it), the other objects passed over. Checked before anything changes or
+/// is counted: no index past what a path can hold, at most [`MAX_PATHS`] paths and
+/// [`MAX_NEEDLE_POINTS`] needle points, and a path's needle points listed only once every index
+/// given is known to be one of them.
 pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, cmd: &str) -> Result<Targets> {
-    let mut named: BTreeMap<NodeId, BTreeSet<usize>> = BTreeMap::new();
+    // Each path's ranges as given (inclusive), listed one by one only once the path is read.
+    let mut named: BTreeMap<NodeId, Vec<(usize, usize)>> = BTreeMap::new();
+    // The needle points each path held as the caller counted them, where an entry says.
+    let mut counted: BTreeMap<NodeId, u64> = BTreeMap::new();
     let mut order: Vec<NodeId> = Vec::new();
     let mut given = false;
     let mut count = 0usize;
@@ -348,7 +543,17 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
         }
         for item in items {
             let item = item.as_object().ok_or_else(|| bad(cmd, format!("`{key}` entry {item}: an object")))?;
+            let keys: &[&str] = if key == "needlePoints" { &NEEDLE_POINT_KEYS } else { &RANGE_KEYS };
+            if let Some(other) = item.keys().find(|k| !keys.contains(&k.as_str())) {
+                return Err(bad(cmd, format!("`{key}` entry {}: no key `{other}` (it takes {})", Value::Object(item.clone()), keys.join(", "))));
+            }
             let id = NodeId(whole(item.get("id"), "`id`", cmd)?);
+            if let Some(of) = item.get("of").filter(|v| !v.is_null()) {
+                let of = whole(Some(of), "`of`", cmd)?;
+                if *counted.entry(id).or_insert(of) != of {
+                    return Err(bad(cmd, format!("object {}: `of` given as two numbers of needle points", id.0)));
+                }
+            }
             let (from, to) = match key {
                 "needlePoints" => {
                     let k = whole(item.get("index"), "`index`", cmd)?;
@@ -359,8 +564,10 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             if from > to {
                 return Err(bad(cmd, format!("`ranges` entry from {from} to {to}: `from` after `to`")));
             }
-            let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
-                return Err(bad(cmd, format!("index {to}: past any path's needle points")));
+            // No path holds more needle points than a design may have: an index past that is refused
+            // before it is counted (the count of a range from 0 to the largest number overflows).
+            let (Some(from), Some(to)) = (usize::try_from(from).ok(), usize::try_from(to).ok().filter(|to| *to < MAX_NEEDLE_POINTS)) else {
+                return Err(bad(cmd, format!("index {to}: past any path's needle points (a path holds at most {MAX_NEEDLE_POINTS})")));
             };
             count = count.saturating_add(to - from + 1);
             if count > MAX_NEEDLE_POINTS {
@@ -369,24 +576,34 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             if !named.contains_key(&id) {
                 order.push(id);
             }
-            named.entry(id).or_default().extend(from..=to);
+            named.entry(id).or_default().push((from, to));
             if named.len() > MAX_PATHS {
                 return Err(bad(cmd, format!("more than {MAX_PATHS} paths of stitches addressed")));
             }
         }
     }
     let mut out = Targets::default();
+    // The locked artboards measured once for all the paths.
+    let editable = doc.editable();
     if given {
         for id in order {
             let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
-            let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, said(why))))?;
-            if !doc.is_editable(id) {
-                return Err(bad(cmd, format!("object {}: {}", id.0, said(reason::LOCKED))));
+            if !editable(id) {
+                return Err(bad(cmd, format!("object {}: {}", id.0, Unfit::Locked.words())));
             }
-            let k = named.remove(&id).unwrap_or_default();
-            if let Some(past) = k.iter().next_back().filter(|&&k| k >= st.len()) {
-                return Err(bad(cmd, format!("object {}: needle point {past}, of {} (from 0)", id.0, st.len())));
+            let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, why.words())))?;
+            let ranges = named.remove(&id).unwrap_or_default();
+            let len = st.len();
+            if let Some(of) = counted.get(&id).filter(|&&of| of != len as u64) {
+                return Err(bad(
+                    cmd,
+                    format!("object {}: counted as {of} needle points, it holds {len}: an edit since moved them, list it again", id.0),
+                ));
             }
+            if let Some(past) = ranges.iter().map(|&(_, to)| to).filter(|&to| to >= len).max() {
+                return Err(bad(cmd, format!("object {}: needle point {past}, of {len} (from 0)", id.0)));
+            }
+            let k = ranges.into_iter().flat_map(|(from, to)| from..=to).collect();
             out.paths.push((id, st, k));
         }
         return Ok(out);
@@ -397,25 +614,25 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
         let Some(n) = doc.node(id) else { continue };
         let mut found: Vec<&Node> = Vec::new();
         n.walk(&mut |c| {
-            if read_marks(c) {
+            if is_stitches(c) {
                 found.push(c);
             }
         });
         if found.is_empty() {
-            out.passed_over.push((id, reason::NOT_STITCHES));
+            out.passed_over.push((id, Unfit::NotStitches));
             continue;
         }
         for c in found {
             if !seen.insert(c.id) {
                 continue;
             }
-            if !doc.is_editable(c.id) {
-                out.passed_over.push((c.id, reason::LOCKED));
+            if !editable(c.id) {
+                out.passed_over.push((c.id, Unfit::Locked));
                 continue;
             }
             match read(c) {
                 Ok(st) => {
-                    let k = if c.id == id { selected_in(sel, id, &st) } else { (0..st.len()).collect() };
+                    let k = if c.id == id { selected_in(sel, id, &st.index()) } else { (0..st.len()).collect() };
                     count = count.saturating_add(k.len());
                     if count > MAX_NEEDLE_POINTS || out.paths.len() >= MAX_PATHS {
                         return Err(bad(cmd, format!("more than {MAX_NEEDLE_POINTS} needle points or {MAX_PATHS} paths of stitches selected")));
@@ -431,19 +648,10 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
     Ok(out)
 }
 
-/// Whether `n` is a path holding a run of literal stitches.
-fn read_marks(n: &Node) -> bool {
+/// Whether `n` is a path holding a run of literal stitches (whether its stitches can be edited
+/// aside: [`read`] says).
+pub(crate) fn is_stitches(n: &Node) -> bool {
     matches!(n.kind, NodeKind::Path { .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some())
-}
-
-/// Reason `why` in words, for a refusal.
-pub(crate) fn said(why: &str) -> &'static str {
-    match why {
-        reason::LOCKED => "it is locked or hidden, or in a locked layer, group or artboard",
-        reason::OUT_OF_RANGE => "its anchors aren't numbers, or lie outside the document's coordinates",
-        reason::TOO_MANY => "it holds more needle points than a design may have",
-        _ => "it isn't a run of stitches",
-    }
 }
 
 /// The lengths of the needle-down stitches an edit made or changed, millimetres, against the
@@ -472,16 +680,25 @@ impl Lengths {
         self.above += usize::from(mm > max);
     }
 
-    /// Count the stitches into and out of needle point `index` of `st` (within its run).
-    pub(crate) fn around(&mut self, st: &Stitches, index: usize, min: f64, max: f64) {
-        let Some((s, i)) = st.locate(index) else { return };
-        let Some(r) = st.runs.get(s) else { return };
-        let p = |i: usize| r.needles.get(i).map(|n| n.p);
-        if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(p), p(i)) {
-            self.add(a, b, min, max);
+    /// Count the stitches into and out of needle points `around` of `st` (within their runs; `ix`
+    /// its index), each stitch once however many of its ends are among them.
+    pub(crate) fn around(&mut self, st: &Stitches, ix: &Index, around: impl IntoIterator<Item = usize>, min: f64, max: f64) {
+        // Each stitch by the needle point it arrives at.
+        let mut arriving = BTreeSet::new();
+        for k in around {
+            let Some((r, i)) = ix.locate(k) else { continue };
+            if i > 0 {
+                arriving.insert(k);
+            }
+            if i + 1 < ix.run_len(r) {
+                arriving.insert(k + 1);
+            }
         }
-        if let (Some(a), Some(b)) = (p(i), p(i + 1)) {
-            self.add(a, b, min, max);
+        for k in arriving {
+            let Some((r, i)) = ix.locate(k) else { continue };
+            if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(|h| st.needle((r, h))), st.needle((r, i))) {
+                self.add(a.p, b.p, min, max);
+            }
         }
     }
 

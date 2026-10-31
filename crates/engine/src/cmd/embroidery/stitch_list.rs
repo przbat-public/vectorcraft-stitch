@@ -297,7 +297,7 @@ pub fn numbering(plan: &DesignPlan, doc: &Document, unit: usize) -> Option<(Node
     let node = u.origin.node;
     let manual = matches!(u.origin.part, Part::Manual);
     if !(manual || matches!(u.origin.part, Part::Literal))
-        || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::converted))
+        || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted))
     {
         return None;
     }
@@ -306,9 +306,7 @@ pub fn numbering(plan: &DesignPlan, doc: &Document, unit: usize) -> Option<(Node
     if !doc.is_editable(node) || clipped {
         return None;
     }
-    let path = n.path_data()?;
-    let tack = path.subpaths.len() == 1 && n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
-    let needles: usize = path.subpaths.iter().map(|sp| super::needles::needle_count(&sp.anchors, tack)).sum();
+    let needles = super::needles::check(n).ok()?;
     let block = plan.blocks.get(u.block)?;
     let sewn = block.stitches.get(u.own.clone()).map_or(0, |s| s.iter().filter(|s| s.command == Command::Stitch).count());
     let first = usize::from(u.met);
@@ -350,6 +348,47 @@ pub fn edited_by(plan: &DesignPlan, unit: usize, first: usize, ordinals: &[u32],
         RecordKind::Trim | RecordKind::Stop => k.checked_sub(1),
         RecordKind::Stitch | RecordKind::Jump => Some(k),
     }
+}
+
+/// The needle points unit `unit`'s records before its own are edited by, as `embroidery.stitches`
+/// names them, for a unit numbered from needle point `first` ([`numbering`]): an opened design's
+/// run, which the cut and the jump onto it the file had come before. The jump lands on the unit's
+/// first needle point; a cut or a stop follows the needle point the last needle-down record before
+/// it in its block is, where that record is numbered (a needle-down record that isn't ends it) →
+/// (record number, the path and its needle point), in order, for those that have one. Walks back to
+/// the needle-down record before the unit's records once: a cut follows its stitches at once.
+pub fn leading(plan: &DesignPlan, doc: &Document, unit: usize, first: usize) -> Vec<(usize, (NodeId, usize))> {
+    let Some(u) = plan.units.get(unit) else { return Vec::new() };
+    let Some(block) = plan.blocks.get(u.block) else { return Vec::new() };
+    if u.stitches.start >= u.own.start {
+        return Vec::new();
+    }
+    let mut last = block.stitches.get(..u.stitches.start).and_then(|before| {
+        let i = before.iter().rposition(|s| s.command == Command::Stitch)?;
+        needle_of(plan, doc, block.first_number + i)
+    });
+    let mut out = Vec::new();
+    for at in u.stitches.start..u.own.start {
+        let Some(s) = block.stitches.get(at) else { break };
+        let number = block.first_number + at;
+        match s.command {
+            Command::Jump => out.push((number, (u.origin.node, first))),
+            Command::Trim | Command::Stop => out.extend(last.map(|l| (number, l))),
+            // A needle-down record that isn't numbered: nothing after it follows a needle point.
+            Command::Stitch => last = None,
+            Command::ColorChange => {}
+        }
+    }
+    out
+}
+
+/// The needle point needle-down record `number` is, where its unit numbers its path's needle
+/// points: the path and the needle point.
+fn needle_of(plan: &DesignPlan, doc: &Document, number: usize) -> Option<(NodeId, usize)> {
+    let unit = plan.unit_at(number)?;
+    let (node, first) = numbering(plan, doc, unit)?;
+    let k = edited_by(plan, unit, first, &ordinals(plan, unit), number, RecordKind::Stitch)?;
+    Some((node, k))
 }
 
 #[cfg(test)]

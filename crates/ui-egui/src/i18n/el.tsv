@@ -5420,7 +5420,7 @@ effect	Points	Σημεία
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Icons: Lucide (ISC) + VectorCraft.	Βασίζεται στο VectorCraft της ομάδας ArtCraft. MIT ή Apache-2.0. Γραμματοσειρές: Source Sans 3, Inter, JetBrains Mono, Noto Sans SC (OFL). Εικονίδια: Lucide (ISC) + VectorCraft.
 
 # Machine embroidery: errors opening and writing machine files, and the size limits.
-@msg	PEC carries at most {MAX_COLORS} colours, not {colors}	Το PEC χωράει το πολύ {MAX_COLORS} χρώματα, όχι {colors}
+@msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	Το PEC χωράει το πολύ {MAX_COLORS} χρώματα (κάθε διακοπή μετράει ως ένα), όχι {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	Το VP3 χωράει το πολύ {MAX_COLORS} μπλοκ χρώματος
 @msg	a DST file has a {HEADER}-byte header and at least one 3-byte record, but this file is {_1} bytes	ένα αρχείο DST έχει κεφαλίδα {HEADER} byte και τουλάχιστον μία εγγραφή 3 byte, αλλά αυτό το αρχείο έχει {_1} byte
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	μια κεφαλίδα DST μετρά το πολύ {MAX_RECORDS} εγγραφές και το σχέδιο χρειάζεται {_1}
@@ -5832,7 +5832,7 @@ embroidery	Not sewn: it is hidden.	Δεν κεντιέται: είναι κρυ�
 embroidery	Not sewn: it is on a template or non-printing layer.	Δεν κεντιέται: βρίσκεται σε επίπεδο προτύπου ή μη εκτυπώσιμο επίπεδο.
 embroidery	Not sewn.	Δεν κεντιέται.
 embroidery	Stitches from a file are sewn as the file has them.	Οι βελονιές από αρχείο κεντιούνται όπως είναι στο αρχείο.
-embroidery	Manual stitches are sewn as they are placed: Restore Object brings back the object and its settings.	Οι χειροκίνητες βελονιές ράβονται όπως είναι τοποθετημένες: η Επαναφορά αντικειμένου επαναφέρει το αντικείμενο και τις ρυθμίσεις του.
+embroidery	Manual stitches are sewn as they are placed; the object they were converted from isn't kept with them.	Οι χειροκίνητες βελονιές ράβονται όπως είναι τοποθετημένες· το αντικείμενο από το οποίο μετατράπηκαν δεν φυλάσσεται μαζί τους.
 embroidery	Type isn't sewn yet: create outlines to sew it.	Το κείμενο δεν κεντιέται ακόμη: δημιουργήστε περιγράμματα για να κεντηθεί.
 embroidery	Images aren't sewn.	Οι εικόνες δεν κεντιούνται.
 embroidery	A symbol's objects take its settings: edit the symbol to set them.	Τα αντικείμενα ενός συμβόλου παίρνουν τις ρυθμίσεις: επεξεργαστείτε το σύμβολο για να τις ορίσετε.
@@ -6000,9 +6000,9 @@ embroidery	Auto (where the plan ends the part)	Αυτόματα (όπου το �
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Μετατροπή σε χειροκίνητες βελονιές
 @msg	nothing selected can be converted to manual stitches: {_1}	τίποτα από την επιλογή δεν μετατρέπεται σε χειροκίνητες βελονιές: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Επαναφορά αντικειμένου
-@msg	nothing selected was converted to manual stitches: {_1}	τίποτα από την επιλογή δεν έχει μετατραπεί σε χειροκίνητες βελονιές: {_1}
+@msg	nothing selected can be restored: {_1}	τίποτα από την επιλογή δεν μπορεί να επαναφερθεί: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Χειροκίνητες βελονιές ή βελονιές από αρχείο με κλιμάκωση πάνω από {value}%
 embroidery	{name}: {value}% larger	{name}: μεγέθυνση κατά {value}%
@@ -6015,7 +6015,7 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 @msg	effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are	τα εφέ, τα πινέλα και οι επιπλέον γεμίσεις ή πινελιές σε χειροκίνητες βελονιές ή βελονιές από αρχείο (ή σε ομάδα που τις περιέχει) δεν κεντιούνται: οι βελονιές ράβονται όπως είναι
 # VectorCraft Stitch: Move Needle Points (the stitch commands edit needle points by their address), and what the stitch commands say when nothing they can edit is given or selected
 	Move Needle Points	Μετακίνηση σημείων βελόνας
-@msg	select needle points of a run of stitches, or give needlePoints	επιλέξτε σημεία βελόνας μιας σειράς βελονιών ή δώστε needlePoints
+@msg	select needle points of a path of stitches, or give needlePoints	επιλέξτε σημεία βελόνας μιας διαδρομής βελονιών ή δώστε needlePoints
 # VectorCraft Stitch: Insert Needle Points
 	Insert Needle Points	Εισαγωγή σημείων βελόνας
 # VectorCraft Stitch: Delete Needle Points
@@ -6034,17 +6034,52 @@ embroidery	manual stitches	χειροκίνητες βελονιές
 # VectorCraft Stitch: the Object tab on manual stitches (what they are, their runs and needle points, the scale since converting, Restore Object and its question), Stop After beside Trim After, Convert to Manual Stitches, and what the status bar says after converting and restoring
 embroidery	Manual stitches	Χειροκίνητες βελονιές
 embroidery	Sewn as they are placed: they no longer change with the fabric or the object's settings.	Ράβονται όπως είναι τοποθετημένες: δεν αλλάζουν πια με το ύφασμα ή τις ρυθμίσεις του αντικειμένου.
-@plural	{count} run · {needle} needle points|{count} runs · {needle} needle points	{count} σειρά · σημεία βελόνας: {needle}|{count} σειρές · σημεία βελόνας: {needle}
 embroidery	Scaled to {value}% since converting	Κλιμακώθηκε στο {value}% από τη μετατροπή
-embroidery	Restore Object…	Επαναφορά αντικειμένου…
 embroidery	Puts the object back in place of its manual stitches, planned again at its size now.	Επαναφέρει το αντικείμενο στη θέση των χειροκίνητων βελονιών του, σχεδιασμένο ξανά στο τωρινό του μέγεθος.
 embroidery	Freezes the stitches planned now, so each needle point can be moved; Restore Object brings the object back.	Παγώνει τις βελονιές που σχεδιάστηκαν τώρα, ώστε να μετακινείται κάθε σημείο βελόνας· η Επαναφορά αντικειμένου επαναφέρει το αντικείμενο.
-embroidery	The machine stops after the object's stitches, as for appliqué; a stop at a thread change or at the end is that one.	Η μηχανή σταματά μετά τις βελονιές του αντικειμένου, π.χ. για απλικέ· μια στάση σε αλλαγή κλωστής ή στο τέλος είναι η ίδια.
+embroidery	The machine stops after the object's stitches, as for appliqué. Where a thread change or the design's end comes next, the machine stops there anyway, so no extra stop is written.	Η μηχανή σταματά μετά τις βελονιές του αντικειμένου, όπως στην απλικέ. Όπου ακολουθεί αλλαγή κλωστής ή το τέλος του σχεδίου, η μηχανή σταματά εκεί ούτως ή άλλως, οπότε δεν γράφεται επιπλέον διακοπή.
 embroidery	Changes made to the stitches since converting will be lost; Undo brings them back.	Οι αλλαγές στις βελονιές από τη μετατροπή θα χαθούν· η Αναίρεση τις επαναφέρει.
 @plural	Stop the machine after the object|Stop the machine after the objects	Διακοπή μηχανής μετά το αντικείμενο|Διακοπή μηχανής μετά τα αντικείμενα
 @plural	Restore {count} object?|Restore {count} objects?	Επαναφορά {count} αντικειμένου;|Επαναφορά {count} αντικειμένων;
 @plural	{count} object restored|{count} objects restored	Επαναφέρθηκε {count} αντικείμενο|Επαναφέρθηκαν {count} αντικείμενα
 @plural	{count} object converted to manual stitches: Restore Object brings it back|{count} objects converted to manual stitches: Restore Object brings them back	{count} αντικείμενο μετατράπηκε σε χειροκίνητες βελονιές: η Επαναφορά αντικειμένου το επαναφέρει|{count} αντικείμενα μετατράπηκαν σε χειροκίνητες βελονιές: η Επαναφορά αντικειμένου τα επαναφέρει
+# VectorCraft Stitch: the stitch plan's warning that a run's cut or stop was left out because a path command deleted or moved its needle point
+@msg	cuts or stops of stitches were left out: a path command deleted or moved the needle points they followed (set them again with Machine Function)	κοψίματα ή διακοπές βελονιών παραλείφθηκαν: μια εντολή διαδρομής διέγραψε ή μετακίνησε τα σημεία βελόνας μετά τα οποία έρχονταν (ορίστε τα ξανά με τη «Λειτουργία μηχανής»)
+# VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
+@msg	paths of stitches join only with paths of stitches: select only them	οι διαδρομές βελονιών ενώνονται μόνο με διαδρομές βελονιών: επιλέξτε μόνο αυτές
+@msg	select two or more paths of stitches sewn one right after another to join them	επιλέξτε δύο ή περισσότερες διαδρομές βελονιών που ράβονται η μία αμέσως μετά την άλλη για να τις ενώσετε
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Κόψιμο μετά το σημείο βελόνας
+	Stop After Needle Point	Διακοπή μετά το σημείο βελόνας
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	όχι όσο είναι ενεργή η καθολική επεξεργασία: σταματήστε την πρώτα
+# The Check tab counts stops among the thread blocks and thread changes; the status bar does not.
+@plural	{count} thread block, stops included|{count} thread blocks, stops included	{count} μπλοκ κλωστής, μαζί με τις διακοπές|{count} μπλοκ κλωστής, μαζί με τις διακοπές
+@plural	{count} thread change, stops included|{count} thread changes, stops included	{count} αλλαγή κλωστής, μαζί με τις διακοπές|{count} αλλαγές κλωστής, μαζί με τις διακοπές
+# VectorCraft Stitch: the export's note when it writes stops, as changes to the same thread
+@msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	κάθε διακοπή γράφεται ως αλλαγή στην ίδια κλωστή: μια μονοβελονική μηχανή σταματά εκεί, μια πολυβελονική μόνο όπου ο χειριστής της ορίσει διακοπή σε αυτή την αλλαγή
+# VectorCraft Stitch: why Restore Object is dimmed
+embroidery	Locked objects can't be restored: unlock them first.	Τα κλειδωμένα αντικείμενα δεν μπορούν να επαναφερθούν: ξεκλειδώστε τα πρώτα.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	βελονιές από αρχείο
+embroidery	manual stitches already	ήδη χειροκίνητες βελονιές
+embroidery	symbol instances	παρουσίες συμβόλων
+embroidery	clipping paths	διαδρομές αποκοπής
+embroidery	parts of an object sewn whole	μέρη αντικειμένου που ράβεται ολόκληρο
+embroidery	holding what isn't sewn	περιέχει ό,τι δεν ράβεται
+embroidery	locked	κλειδωμένα
+embroidery	not sewn	δεν ράβονται
+embroidery	stitches a manual run can't hold	βελονιές που δεν χωρούν σε χειροκίνητη σειρά
+embroidery	not converted	δεν μετατράπηκαν
+embroidery	the kept object doesn't read	το φυλαγμένο αντικείμενο δεν διαβάζεται
+embroidery	its symbol is gone	λείπει το σύμβολό του
+embroidery	would lie outside the document	θα βρισκόταν έξω από το έγγραφο
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} αντικείμενο παραλείφθηκε: {reasons}|{count} αντικείμενα παραλείφθηκαν: {reasons}
+# VectorCraft Stitch: the Object tab's runs and needle points counted apart, how many of a mixed selection are manual stitches, and the convert's progress
+@plural	{count} run|{count} runs	{count} σειρά|{count} σειρές
+@plural	{count} needle point|{count} needle points	{count} σημείο βελόνας|{count} σημεία βελόνας
+@plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} επιλεγμένο αντικείμενο είναι χειροκίνητες βελονιές|{count} επιλεγμένα αντικείμενα είναι χειροκίνητες βελονιές
+embroidery	Converting to manual stitches…	Μετατροπή σε χειροκίνητες βελονιές…
 # VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
 embroidery	Editing stitches	Επεξεργασία βελονιών
 embroidery	Editing stitches: {name}	Επεξεργασία βελονιών: {name}
@@ -6053,7 +6088,6 @@ embroidery	Needle points are edited in the Stitches view.	Τα σημεία βε
 embroidery	Show Stitches	Εμφάνιση βελονιών
 embroidery	Edit Stitches	Επεξεργασία των βελονιών
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Μετακινήστε, εισαγάγετε και διαγράψτε αυτά τα σημεία βελόνας στον καμβά με το Εργαλείο κεντήματος.
-@plural	{count} needle point|{count} needle points	{count} σημείο βελόνας|{count} σημεία βελόνας
 @plural	{count} selected|{count} selected	{count} επιλεγμένο|{count} επιλεγμένα
 @plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} σειρά δεν μπορεί να επεξεργαστεί: κλειδωμένη, κρυφή ή αποκομμένη από μάσκα αποκοπής|{count} σειρές δεν μπορούν να επεξεργαστούν: κλειδωμένες, κρυφές ή αποκομμένες από μάσκα αποκοπής
 	 needle points, or a frame round them  |  	 σημεία βελόνας ή ένα πλαίσιο γύρω τους  |  

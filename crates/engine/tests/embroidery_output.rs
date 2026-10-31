@@ -1118,6 +1118,7 @@ fn the_real_designs_artwork_exports_unchanged() {
 /// with every machine value at its default.
 #[test]
 fn settings_that_change_nothing_change_no_export() {
+    let mut summaries: Vec<(String, String)> = Vec::new();
     for how in [Unchanging::Kept, Unchanging::SetAndReset, Unchanging::DefaultFabric, Unchanging::Converted, Unchanging::ConvertedAndRestored] {
         let mut now = Vec::new();
         for (name, s, options) in documents() {
@@ -1125,8 +1126,12 @@ fn settings_that_change_nothing_change_no_export() {
             // converted to manual stitches as any other.
             let set_on_purpose = matches!(name, "settings" | "expanded-strokes" | "exits");
             let mut s = match how {
-                Unchanging::Converted => converted(s, &options),
-                Unchanging::ConvertedAndRestored => restored(converted(s, &options)),
+                Unchanging::Converted => {
+                    let (s, summary) = converted(s, &options);
+                    summaries.push((name.to_string(), summary));
+                    s
+                }
+                Unchanging::ConvertedAndRestored => restored(converted(s, &options).0),
                 _ if set_on_purpose => s,
                 _ => unchanging(s, how),
             };
@@ -1140,12 +1145,16 @@ fn settings_that_change_nothing_change_no_export() {
         let Some(dir) = corpus() else { continue };
         let mut now = Vec::new();
         for &(art, theirs) in DESIGNS {
+            let stem = art.trim_end_matches(".svg");
             let mut s = match how {
-                Unchanging::Converted => converted(artwork(&dir, art, theirs), &json!({})),
-                Unchanging::ConvertedAndRestored => restored(converted(artwork(&dir, art, theirs), &json!({}))),
+                Unchanging::Converted => {
+                    let (s, summary) = converted(artwork(&dir, art, theirs), &json!({}));
+                    summaries.push((stem.to_string(), summary));
+                    s
+                }
+                Unchanging::ConvertedAndRestored => restored(converted(artwork(&dir, art, theirs), &json!({})).0),
                 _ => unchanging(artwork(&dir, art, theirs), how),
             };
-            let stem = art.trim_end_matches(".svg");
             run(&mut s, "file.info", json!({"title": stem}));
             for format in Format::ALL {
                 let bytes = export(&mut s, format, &json!({})).unwrap_or_else(|e| panic!("{art} ({how:?}) as {}: {e}", format.id()));
@@ -1154,6 +1163,7 @@ fn settings_that_change_nothing_change_no_export() {
         }
         check(ARTWORK, ARTWORK_THREADS, ARTWORK_SUMMARIES, &now);
     }
+    check_converted(&summaries);
 }
 
 /// Settings that set nothing a plan reads ([`settings_that_change_nothing_change_no_export`]).
@@ -1185,7 +1195,7 @@ fn restored(mut s: Session) -> Session {
     run(&mut s, "select.all", json!({}));
     match s.execute("embroidery.restoreObject", &json!({})) {
         Ok(r) => assert!(r["restoredCount"].as_u64().unwrap() > 0 && r["editedCount"] == json!(0), "{r}"),
-        Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("nothing selected was converted"), "{e}"),
+        Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("nothing selected can be restored"), "{e}"),
         Err(e) => panic!("{e}"),
     }
     run(&mut s, "select.none", json!({}));
@@ -1194,16 +1204,83 @@ fn restored(mut s: Session) -> Session {
 
 /// `s`'s document with every object converted to manual stitches, planned with `options` (the
 /// options it is exported with): what the convert passes over (stitches from a file, a symbol's
-/// instance, type) stays as it is, and a document with nothing to convert is left as it was.
-fn converted(mut s: Session, options: &Value) -> Session {
+/// instance, type) stays as it is, and a document with nothing to convert is left as it was. Also
+/// what it converted and passed over, as [`CONVERTED`] lists it.
+fn converted(mut s: Session, options: &Value) -> (Session, String) {
     run(&mut s, "select.all", json!({}));
-    match s.execute("embroidery.convertToManual", options) {
-        Ok(r) => assert!(r["convertedCount"].as_u64().unwrap() > 0, "{r}"),
-        Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("nothing selected can be converted"), "{e}"),
+    let (count, reasons): (u64, Vec<String>) = match s.execute("embroidery.convertToManual", options) {
+        Ok(r) => (
+            r["convertedCount"].as_u64().unwrap(),
+            r["skipped"].as_array().unwrap().iter().map(|k| k["reason"].as_str().unwrap().to_string()).collect(),
+        ),
+        Err(vectorcraft_engine::EngineError::Other(e)) => {
+            assert!(e.starts_with("nothing selected can be converted"), "{e}");
+            // Each object named with its reason: "12 (literal), 14 (notSewn)".
+            (0, e.split('(').skip(1).filter_map(|r| r.split_once(')')).map(|(r, _)| r.to_string()).collect())
+        }
         Err(e) => panic!("{e}"),
-    }
+    };
     run(&mut s, "select.none", json!({}));
-    s
+    let mut counted: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for r in reasons {
+        *counted.entry(r).or_default() += 1;
+    }
+    let skipped: Vec<String> = counted.iter().map(|(r, n)| format!("{r} {n}")).collect();
+    let summary = if skipped.is_empty() { format!("converted {count}") } else { format!("converted {count} · {}", skipped.join(", ")) };
+    (s, summary)
+}
+
+/// What converting every object of each document converts and passes over, with why: pinned,
+/// since an object that stops being converted (passed over as `unfreezable` or `insideObject`,
+/// say) stays art that exports the same bytes, which no hash would show. The artwork's rows are
+/// checked where its corpus is.
+const CONVERTED: &str = "
+fills  converted 5
+strokes  converted 6
+compound-path-with-a-hole  converted 2
+clip-groups  converted 3 · clippingPath 2
+symbols  converted 0 · symbolInstance 3
+trim-after  converted 4
+opened-design  converted 0 · literal 3
+opened-design-clipped  converted 0 · clippingPath 1, literal 3
+opened-design-cut-at-block-ends  converted 0 · literal 4
+mixed-stitch-style-fill  converted 5
+mixed-stitch-style-satin  converted 5
+mixed-stitch-style-running  converted 5
+mixed-every-option  converted 5
+mixed-shrunk  converted 5
+settings  converted 5
+expanded-strokes  converted 3
+exits  converted 4
+stops  converted 3 · literal 4
+bullseye-twemoji  converted 7
+fox-twemoji.clipart  converted 7
+heart-suit-twemoji.clipart  converted 1
+joystick-twemoji  converted 7
+pool-8-ball-twemoji  converted 3
+puzzle-piece-twemoji  converted 1
+smiling-face-with-smiling-eyes-twemoji.clipart  converted 6
+sos-button-fluent.clipart  converted 2
+video-game-twemoji  converted 14
+watermelon-twemoji.clipart  converted 4
+zebra-twemoji.clipart  converted 19
+";
+
+/// Each document's convert summary `now` (its name, then [`converted`]'s words) checked against
+/// [`CONVERTED`]: a change lists each document that changed and prints the listing to paste.
+/// Nothing pinned is passed over as `unfreezable` or `insideObject`.
+fn check_converted(now: &[(String, String)]) {
+    let recorded: Vec<(&str, &str)> = CONVERTED.lines().map(str::trim).filter_map(|l| l.split_once("  ")).collect();
+    let changed: Vec<String> = now
+        .iter()
+        .filter(|(name, summary)| recorded.iter().find(|(n, _)| n == name).map(|(_, s)| *s) != Some(summary.as_str()))
+        .map(|(name, summary)| format!("{name}: {summary}"))
+        .collect();
+    let listing: Vec<String> = now.iter().map(|(name, summary)| format!("{name}  {summary}")).collect();
+    assert!(changed.is_empty(), "converted differently:\n{}\n\nlisting now:\n{}", changed.join("\n"), listing.join("\n"));
+    for (name, summary) in now {
+        assert!(!summary.contains("unfreezable") && !summary.contains("insideObject"), "{name}: {summary}");
+    }
 }
 
 /// `s`'s document given `how`'s settings: a session holding it.
@@ -1280,8 +1357,8 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
             assert!(before == after, "set and reset: the file is not the one it was");
             s
         }
-        Unchanging::Converted => converted(s, &json!({})),
-        Unchanging::ConvertedAndRestored => restored(converted(s, &json!({}))),
+        Unchanging::Converted => converted(s, &json!({})).0,
+        Unchanging::ConvertedAndRestored => restored(converted(s, &json!({})).0),
         Unchanging::DefaultFabric => {
             let fill = vectorcraft_stitch::plan::Params::for_style(vectorcraft_stitch::plan::Style::Fill);
             let setup = json!({
@@ -1602,6 +1679,31 @@ fn opened_with_cuts() -> Session {
     s
 }
 
+/// The pinned stops document's exports open again with each stop, in each format that names its
+/// threads (the stops a file writes as changes to the same thread read back as stops), and are
+/// written back to the same bytes in PES, PEC and JEF. VP3 holds no cut beside a change of thread,
+/// so it reads those as nothing and is written the same from its first writing back on.
+#[test]
+fn the_stops_exports_open_and_write_back_unchanged() {
+    let mut s = stops();
+    let planned = run(&mut s, "embroidery.stats", json!({}))["stops"].clone();
+    assert!(planned.as_u64().is_some_and(|n| n > 0));
+    let reopened = |format: Format, bytes: &[u8]| {
+        let mut back = Session::new();
+        open(&mut back, &format!("stops.{}", format.extension()), bytes);
+        assert_eq!(run(&mut back, "embroidery.stats", json!({}))["stops"], planned, "{format:?}: its stops");
+        export(&mut back, format, &json!({})).unwrap()
+    };
+    for format in [Format::Pes, Format::Pec, Format::Jef, Format::Vp3] {
+        let bytes = export(&mut s, format, &json!({})).unwrap();
+        let again = reopened(format, &bytes);
+        match format {
+            Format::Vp3 => assert!(reopened(format, &again) == again, "VP3: written the same from its first writing back"),
+            _ => assert!(again == bytes, "{format:?}: written back to the same bytes"),
+        }
+    }
+}
+
 /// Stops, each written as a change to the same thread: a design written in code with a stop
 /// between two needle points of its first block and one at that block's end (the thread change's,
 /// written as nothing), opened from PES, so that the stop reads back as one; two squares of one
@@ -1645,7 +1747,8 @@ fn stops() -> Session {
             vectorcraft_geom::PathData::from_bezpath(&bp),
             vectorcraft_doc::Appearance::basic(vectorcraft_color::Paint::None, paint, 1.0),
         );
-        let marks = StitchRun { trims: vec![2], stops: vec![(0, 2), (1, 4)], ..StitchRun::default() };
+        let place = vectorcraft_doc::embroidery::Mark::place;
+        let marks = StitchRun { trims: vec![place(2, 0)], stops: vec![place(0, 2), place(1, 4)], ..StitchRun::default() };
         node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(marks), ..Embroidery::default() }));
         d.insert(layer, usize::MAX, node).map_err(|e| vectorcraft_engine::EngineError::Other(e.to_string()))?;
         Ok(())

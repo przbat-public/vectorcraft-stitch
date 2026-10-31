@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vectorcraft_geom::Point;
 
+mod marks;
 mod mem;
 pub mod outline;
 mod part;
@@ -33,6 +34,7 @@ pub(crate) fn unkeep(kept: &mut Kept, key: &str) {
 /// file put there. Changed through [`Arc::make_mut`].
 pub type Kept = std::sync::Arc<serde_json::Map<String, serde_json::Value>>;
 
+pub use marks::{Mark, Placed, SAME_SPOT, shape_of};
 pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
 pub use setup::{FabricPreset, FabricSettings, FabricValues, MachineSettings, StitchValues};
 pub use transform::scale_factors;
@@ -82,8 +84,9 @@ pub struct Embroidery {
 /// [`StitchRun::extra`].
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct StitchRun {
-    /// The thread was cut before the run, as the file had it; otherwise the needle jumped to the
-    /// run's first point with the thread still on.
+    /// The thread is cut before the run, as the file had it (or, for manual stitches, as a stitch
+    /// edit passed a cut to it); otherwise the needle jumps to the run's first point with the thread
+    /// still on, cut only when the move is long.
     pub trim_before: bool,
     /// The thread was cut after the run, at the end of its colour block, as the file had it
     /// (machines and digitizers often cut before the thread is changed).
@@ -98,29 +101,33 @@ pub struct StitchRun {
     /// long), and never cut again by a clip group. Absent: a file's run, whose blocks stay as the
     /// file had them. Opening a machine file never sets it.
     pub manual: bool,
-    /// The subpaths (counted from 0, so from 1 here) the needle reaches after the thread is cut;
-    /// it jumps to every other subpath with the thread kept. In the order a file gives them; read
-    /// as a set, an index past the run's subpaths left out.
-    pub trims: Vec<usize>,
-    /// The needle points (subpath, anchor, from 0) after which the machine stops, the needle then
-    /// lifted to the next. In the order a file gives them; read as a set, one past the run's
-    /// needle points left out.
-    pub stops: Vec<(usize, usize)>,
+    /// The needle points the needle reaches after the thread is cut, each the first of a subpath
+    /// after the first; it jumps to every other subpath with the thread kept. Kept by where each
+    /// lies ([`Mark`]; [`StitchRun::placed`] finds them on the path as it is now). In the order a
+    /// file gives them; a bare subpath number (an earlier form) is that subpath's first anchor.
+    pub trims: Vec<Mark>,
+    /// The needle points after which the machine stops, the needle then lifted to the next. Kept
+    /// by where each lies ([`Mark`]), in the order a file gives them.
+    pub stops: Vec<Mark>,
+    /// How many subpaths and anchors the path had when its cuts and stops were written
+    /// ([`shape_of`]): while it has as many, a mark whose needle point was moved stays at its place.
+    /// Saved as `[subpaths, anchors]`, with the marks.
+    pub shape: Option<[usize; 2]>,
     /// The machine stops after the run's last needle point (and after its cut, when it has one).
     pub stop_after: bool,
     /// The exact millimetres of needle points that the document points they are stored in can't give
     /// back (a manual run's, as the plan it was frozen from sewed them): a point stored in document
     /// points and read in millimetres may come back a unit in the last place off, and one exactly
     /// halfway between two tenths of a millimetre would then be written a tenth off. Each applies
-    /// while its needle point lies where it was stored (within a nanometre); a transform of the
-    /// object, which moves every point, drops them.
+    /// while its needle point lies where it was stored (within a picometre): a transform of the
+    /// object keeps them, so moved and moved back, the run sews as it did.
     pub exact: Vec<Exact>,
     /// The transforms of the run since its stitches were made (read from a machine file, or
     /// converted), composed: recorded from the first one that does more than move it, so that
     /// how much its stitches were scaled is known ([`scale_factors`]). `None`: only moved since,
     /// if at all. Saved as `{"frame": [...]}`, which every version of the fork composes with each
     /// transform by the convention for kept data, so an older version keeps it right.
-    pub transformed: Option<vectorcraft_geom::Affine>,
+    pub since_made: Option<vectorcraft_geom::Affine>,
     /// The thread the file recorded for the run's colour block beside its colour (a VP3 thread
     /// record), written back by a format that has one. `None`: the file recorded none.
     pub thread: Option<ThreadRecord>,
@@ -133,9 +140,13 @@ pub struct StitchRun {
 /// coordinate that comes back as it was `null`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Exact {
+    /// The needle point's subpath, from 0.
     pub subpath: usize,
+    /// The needle point's anchor in its subpath, from 0.
     pub anchor: usize,
+    /// Its x in millimetres, as the plan sewed it; `None`: its document point gives it back.
     pub x: Option<f64>,
+    /// Its y in millimetres, likewise.
     pub y: Option<f64>,
 }
 
@@ -168,10 +179,11 @@ pub struct Original {
     /// The original's own coordinates to the document's: the identity when converted, composed
     /// with every transform of the manual object since (moved, turned, scaled with it).
     pub frame: vectorcraft_geom::Affine,
-    /// The object as the file saved it when it was converted: parsed only when it is restored, so
-    /// that what a newer version wrote in it is kept, whatever it is; shared, not copied, by the
+    /// The object as the file saved it when it was converted, as compact JSON text: parsed only
+    /// when it is restored, so that what a newer version wrote in it is kept, whatever it is, at the
+    /// size of its text (a parsed tree takes several times as much); shared, not copied, by the
     /// copies of the manual object.
-    pub node: std::sync::Arc<serde_json::Value>,
+    pub node: std::sync::Arc<str>,
     /// The stitches as converted, summed up (their needle points in the original's coordinates,
     /// their cuts and stops): what tells stitches edited since converting from stitches only moved
     /// with their object. `None`: unknown (a file that kept none), so read as edited.
@@ -185,19 +197,16 @@ impl Original {
     /// object with a frame of six finite numbers and a node that is an object (a fingerprint that
     /// isn't sixteen hexadecimal digits is kept, unread). `None` otherwise (kept as it is).
     fn read(v: &serde_json::Value) -> Option<Self> {
-        let mut map = v.as_object()?.clone();
+        let map = v.as_object()?;
         let frame = map.get(FRAME).and_then(frame)?;
-        if !map.get(NODE).is_some_and(serde_json::Value::is_object) {
-            return None;
-        }
-        map.remove(FRAME);
-        let node = std::sync::Arc::new(map.remove(NODE).unwrap_or_default());
+        let node = map.get(NODE).filter(|n| n.is_object())?;
+        let node: std::sync::Arc<str> = serde_json::to_string(node).ok()?.into();
         let fingerprint =
             map.get(FINGERPRINT).and_then(|f| f.as_str()).filter(|f| f.len() == FINGERPRINT_DIGITS).and_then(|f| u64::from_str_radix(f, 16).ok());
-        if fingerprint.is_some() {
-            map.remove(FINGERPRINT);
-        }
-        Some(Self { frame, node, fingerprint, extra: map.into() })
+        // The keys read are taken out; the node isn't copied as a tree.
+        let read = |k: &str| k == FRAME || k == NODE || (k == FINGERPRINT && fingerprint.is_some());
+        let extra: serde_json::Map<String, serde_json::Value> = map.iter().filter(|(k, _)| !read(k)).map(|(k, v)| (k.clone(), v.clone())).collect();
+        Some(Self { frame, node, fingerprint, extra: extra.into() })
     }
 }
 
@@ -205,7 +214,8 @@ impl From<Original> for serde_json::Value {
     fn from(o: Original) -> Self {
         let set = [
             Some((FRAME, serde_json::json!(o.frame.as_coeffs()))),
-            Some((NODE, std::sync::Arc::unwrap_or_clone(o.node))),
+            // Text this version wrote from a parsed object, so it parses again.
+            Some((NODE, serde_json::from_str(&o.node).unwrap_or_default())),
             o.fingerprint.map(|f| (FINGERPRINT, serde_json::Value::String(format!("{f:016x}")))),
         ];
         with_kept(set.into_iter().flatten(), std::sync::Arc::unwrap_or_clone(o.extra))
@@ -272,6 +282,36 @@ impl From<ThreadRecord> for serde_json::Value {
     }
 }
 
+/// What comes after an object's stitches: the thread cut, the machine stopped, each or both
+/// ([`Embroidery::after`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct After {
+    pub trim: bool,
+    pub stop: bool,
+}
+
+impl After {
+    /// Whether anything comes after.
+    pub fn any(self) -> bool {
+        self.trim || self.stop
+    }
+}
+
+impl std::ops::BitOr for After {
+    type Output = Self;
+    fn bitor(self, other: Self) -> Self {
+        Self { trim: self.trim || other.trim, stop: self.stop || other.stop }
+    }
+}
+
+impl StitchRun {
+    /// The cut and the stop after the run, as its file had them (or as an edit wrote them: a stop
+    /// after its last needle point is written as its stop after it).
+    pub fn after(&self) -> After {
+        After { trim: self.trim_after, stop: self.stop_after }
+    }
+}
+
 impl Embroidery {
     /// Set whether the thread is cut after the object. This replaces whatever a newer version wrote
     /// under that key in a form this version can't read.
@@ -284,6 +324,28 @@ impl Embroidery {
     pub fn set_stop_after(&mut self, on: bool) {
         self.stop_after = on;
         unkeep(&mut self.extra, STOP_AFTER);
+    }
+
+    /// The object's own Trim After and Stop After.
+    pub fn own_after(&self) -> After {
+        After { trim: self.trim_after, stop: self.stop_after }
+    }
+
+    /// Set the object's own Trim After and Stop After to `after`, each only where it differs.
+    pub fn set_own_after(&mut self, after: After) {
+        if self.trim_after != after.trim {
+            self.set_trim_after(after.trim);
+        }
+        if self.stop_after != after.stop {
+            self.set_stop_after(after.stop);
+        }
+    }
+
+    /// What comes after the object's stitches, wherever it is kept: its own Trim After and Stop
+    /// After, and its run's cut and stop after it (a file's, or an edit's). What the Object tab
+    /// shows and Restore's fingerprint reads.
+    pub fn after(&self) -> After {
+        self.own_after() | self.stitches.as_ref().map(StitchRun::after).unwrap_or_default()
     }
 
     /// The settings of the object's part `kind`, when it keeps any.
@@ -360,6 +422,7 @@ const DOUBLE_POINT: &str = "double_point";
 const MANUAL: &str = "manual";
 const TRIMS: &str = "trims";
 const STOPS: &str = "stops";
+const SHAPE: &str = "shape";
 const EXACT: &str = "exact";
 const TRANSFORMED: &str = "transformed";
 const THREAD: &str = "thread";
@@ -454,16 +517,21 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
         let double_point = take_flag(&mut map, DOUBLE_POINT);
         let manual = take_flag(&mut map, MANUAL);
         let stop_after = take_flag(&mut map, STOP_AFTER);
-        let trims = take_list(&mut map, TRIMS, index);
-        let stops = take_list(&mut map, STOPS, |v| match v.as_array()?.as_slice() {
-            [subpath, anchor] => Some((index(subpath)?, index(anchor)?)),
+        // A bare subpath number (an earlier form) is a cut before that subpath's first anchor.
+        let trims = take_list(&mut map, TRIMS, |v| index(v).map(|s| Mark::place(s, 0)).or_else(|| Mark::read(v)));
+        let stops = take_list(&mut map, STOPS, Mark::read);
+        let shape = match map.get(SHAPE).and_then(|v| v.as_array()).map(Vec::as_slice) {
+            Some([subpaths, anchors]) => index(subpaths).zip(index(anchors)).map(|(s, a)| [s, a]),
             _ => None,
-        });
+        };
+        if shape.is_some() || map.get(SHAPE).is_some_and(serde_json::Value::is_null) {
+            map.remove(SHAPE);
+        }
         let exact = take_list(&mut map, EXACT, Exact::read);
         // An object holding only a frame; anything else a newer version wrote there is kept as it
         // is, unread (and composed with each transform all the same, by the convention).
-        let transformed = map.get(TRANSFORMED).and_then(|v| v.as_object()).filter(|m| m.len() == 1).and_then(|m| m.get(FRAME)).and_then(frame);
-        if transformed.is_some() {
+        let since_made = map.get(TRANSFORMED).and_then(|v| v.as_object()).filter(|m| m.len() == 1).and_then(|m| m.get(FRAME)).and_then(frame);
+        if since_made.is_some() {
             map.remove(TRANSFORMED);
         }
         // A record of another shape is kept as it is, unread.
@@ -471,7 +539,7 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
         if thread.is_some() {
             map.remove(THREAD);
         }
-        Self { trim_before, trim_after, double_point, manual, trims, stops, stop_after, exact, transformed, thread, extra: map.into() }
+        Self { trim_before, trim_after, double_point, manual, trims, stops, shape, stop_after, exact, since_made, thread, extra: map.into() }
     }
 }
 
@@ -485,13 +553,16 @@ impl From<StitchRun> for serde_json::Value {
             .chain(flag(DOUBLE_POINT, r.double_point))
             .chain(flag(MANUAL, r.manual))
             .chain(flag(STOP_AFTER, r.stop_after));
-        let trims = (!r.trims.is_empty()).then(|| (TRIMS, serde_json::json!(r.trims)));
-        let stops = (!r.stops.is_empty()).then(|| (STOPS, serde_json::json!(r.stops.iter().map(|&(s, a)| [s, a]).collect::<Vec<_>>())));
+        let marks =
+            |key: &'static str, list: &[Mark]| (!list.is_empty()).then(|| (key, serde_json::Value::Array(list.iter().map(|m| m.json()).collect())));
+        let trims = marks(TRIMS, &r.trims);
+        let stops = marks(STOPS, &r.stops);
+        let shape = r.shape.map(|shape| (SHAPE, serde_json::json!(shape)));
         let exact = (!r.exact.is_empty())
             .then(|| (EXACT, serde_json::Value::Array(r.exact.iter().map(|e| serde_json::json!([e.subpath, e.anchor, e.x, e.y])).collect())));
-        let transformed = r.transformed.map(|f| (TRANSFORMED, serde_json::json!({ FRAME: f.as_coeffs() })));
+        let since_made = r.since_made.map(|f| (TRANSFORMED, serde_json::json!({ FRAME: f.as_coeffs() })));
         let thread = r.thread.map(|t| (THREAD, serde_json::Value::from(t)));
-        with_kept(flags.chain(trims).chain(stops).chain(exact).chain(transformed).chain(thread), std::sync::Arc::unwrap_or_clone(r.extra))
+        with_kept(flags.chain(trims).chain(stops).chain(shape).chain(exact).chain(since_made).chain(thread), std::sync::Arc::unwrap_or_clone(r.extra))
     }
 }
 
@@ -933,8 +1004,9 @@ mod tests {
     fn marks_stops_and_originals_round_trip() {
         let original = json!({"frame": [1.0, 0.0, 0.0, 1.0, 10.0, -5.5], "node": {"id": 7, "kind": {"type": "path"}}, "fingerprint": "00000000deadbeef", "made": "x"});
         for written in [
-            json!({"stitches": {"manual": true, "trims": [2, 1], "stops": [[0, 3], [1, 0]], "stop_after": true}}),
+            json!({"stitches": {"manual": true, "trims": [[2, 0, 1.5, -2.0], [1, 0]], "stops": [[0, 3, 4.0, 5.0], [1, 0]], "shape": [3, 12], "stop_after": true}}),
             json!({ "stop_after": true, "original": original.clone() }),
+            json!({"stitches": {"stops": [[0, 3, 4.0]], "shape": [3], "trims": [[1, 0, "x", 2.0]]}}),
             json!({"stitches": {"manual": "yes", "trims": "all", "stops": [[1]], "stop_after": 1}}),
             json!({"stitches": {"trims": [1, -2], "stops": [[0, 1.5]]}}),
             json!({"original": 7, "stop_after": "after"}),
@@ -947,10 +1019,16 @@ mod tests {
             let read: Embroidery = serde_json::from_value(written.clone()).unwrap();
             assert_eq!(serde_json::to_value(&read).unwrap(), written, "{written}");
         }
-        let read: Embroidery =
-            serde_json::from_value(json!({"stitches": {"manual": true, "trims": [2, 1], "stops": [[0, 3]], "stop_after": true}})).unwrap();
+        let read: Embroidery = serde_json::from_value(
+            json!({"stitches": {"manual": true, "trims": [[2, 0, 1.5, -2.0]], "stops": [[0, 3, 4.0, 5.0], [1, 0]], "shape": [3, 12], "stop_after": true}}),
+        )
+        .unwrap();
         let run = read.stitches.unwrap();
-        assert_eq!((run.manual, run.trims, run.stops, run.stop_after, run.extra.len()), (true, vec![2, 1], vec![(0, 3)], true, 0));
+        let (trims, stops) = (vec![Mark::at(2, 0, Point::new(1.5, -2.0))], vec![Mark::at(0, 3, Point::new(4.0, 5.0)), Mark::place(1, 0)]);
+        assert_eq!((run.manual, run.trims, run.stops, run.shape, run.stop_after, run.extra.len()), (true, trims, stops, Some([3, 12]), true, 0));
+        // A bare subpath number, as an earlier form wrote a cut: that subpath's first anchor.
+        let earlier: Embroidery = serde_json::from_value(json!({"stitches": {"trims": [2, 1]}})).unwrap();
+        assert_eq!(earlier.stitches.unwrap().trims, [Mark::place(2, 0), Mark::place(1, 0)]);
         let junk: Embroidery =
             serde_json::from_value(json!({"stitches": {"manual": "yes", "trims": [1, -2], "stops": [[1]], "stop_after": 1}})).unwrap();
         let run = junk.stitches.unwrap();

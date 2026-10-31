@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use vectorcraft_stitch::plan::Style;
 use vectorcraft_stitch::{Command, Stitch};
 
+use super::needles;
 use super::plan::{Choice, DesignPlan, Part};
 use super::test_support::{PT_PER_MM, blank, plan, run, unit};
 use super::*;
@@ -136,7 +137,8 @@ fn a_manual_run_in_a_clip_group_is_not_cut_again() {
 }
 
 /// The exact millimetres a manual run keeps are sewn where its document points can't give them
-/// back, while the needle point lies where it was stored; moved with its object, the run drops them.
+/// back, while the needle point lies where it was stored: moved with its object, the run sews where
+/// it lies now; moved back, as it did (a nudge right then left changes nothing sewn).
 #[test]
 fn a_manual_runs_exact_millimetres_hold_while_its_points_stay() {
     use vectorcraft_doc::embroidery::{Exact, StitchRun};
@@ -160,8 +162,10 @@ fn a_manual_runs_exact_millimetres_hold_while_its_points_stay() {
     let first = |s: &mut Session| s.embroidery_plan(&Options::default()).unwrap().blocks[0].stitches[0].x;
     assert_eq!(first(&mut s), lost, "the exact millimetres");
     run(&mut s, "object.move", json!({"ids": [id], "dx": 10, "dy": 0}));
-    let moved = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).and_then(|n| n.extras().embroidery.as_deref()?.stitches.clone()).unwrap();
-    assert!(moved.exact.is_empty(), "a transform drops them");
+    assert!((first(&mut s) - (lost + 10.0 * MM_PER_PT)).abs() < 1e-6, "moved: where it lies now");
+    run(&mut s, "object.move", json!({"ids": [id], "dx": -10, "dy": 0}));
+    assert_eq!(first(&mut s), lost, "moved back: the exact millimetres again");
+    run(&mut s, "edit.undo", json!({}));
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(first(&mut s), lost, "undone: back");
 }
@@ -190,7 +194,7 @@ fn converting_freezes_an_object_in_place() {
     run(&mut s, "embroidery.setStopAfter", json!({"ids": [red]}));
     run(&mut s, "embroidery.set", json!({"ids": [red], "part": "fill", "angle": 30}));
     let before = exports(&mut s);
-    let saved = serde_json::to_value(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(red)).unwrap()).unwrap();
+    let saved = serde_json::to_string(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(red)).unwrap()).unwrap();
     let r = run(&mut s, "embroidery.convertToManual", json!({"ids": [red, blue]}));
     assert_eq!((r["convertedCount"].clone(), r["skippedCount"].clone()), (json!(2), json!(0)), "{r}");
     assert_eq!(exports(&mut s), before, "the same bytes in every format");
@@ -199,7 +203,7 @@ fn converting_freezes_an_object_in_place() {
     assert!(matches!(group.kind, vectorcraft_doc::NodeKind::Group { .. }), "the object is a group");
     let e: &Embroidery = group.extras().embroidery.as_deref().unwrap();
     let original = e.original.as_ref().unwrap();
-    assert_eq!((e.trim_after, e.stop_after, *original.node == saved), (true, true, true));
+    assert_eq!((e.trim_after, e.stop_after, *original.node == *saved), (true, true, true), "the object kept as its saved text");
     assert!(original.fingerprint.is_some() && original.frame == vectorcraft_geom::Affine::IDENTITY);
     let runs: Vec<_> = group.children().unwrap().iter().map(|c| c.extras().embroidery.as_deref().and_then(|e| e.stitches.clone()).unwrap()).collect();
     assert_eq!(runs.len(), 2, "its fill and its stroke");
@@ -247,11 +251,46 @@ fn converting_passes_over_what_it_cant_freeze() {
     assert!(e.contains("(literal)"), "{e}");
 }
 
+/// A compound path's member given to Convert stands for its compound path, which the plan sews as
+/// one object: the compound is converted, once, however many of its members are given.
+#[test]
+fn a_compound_paths_member_stands_for_its_compound() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let [a, b] = [5.0, 30.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let compound = run(&mut s, "object.compoundPath.make", json!({}))["id"].as_u64().unwrap();
+    let members: Vec<u64> = s.doc().unwrap().doc.node(NodeId(compound)).unwrap().children().unwrap().iter().map(|c| c.id.0).collect();
+    let r = run(&mut s, "embroidery.convertToManual", json!({ "ids": members }));
+    let converted: Vec<u64> = r["converted"].as_array().unwrap().iter().map(|c| c["id"].as_u64().unwrap()).collect();
+    assert_eq!((converted, r["skippedCount"].clone()), (vec![compound], json!(0)), "{r}");
+}
+
+/// Objects passed over for reasons that need no plan (a lone locked object, say) are refused at
+/// once, with the same words, before the design is planned; one that may convert is planned.
+#[test]
+fn what_needs_no_plan_to_refuse_is_refused_before_planning() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    let b = red_square(&mut s, 30.0, 5.0, 10.0);
+    run(&mut s, "object.lock", json!({"ids": [a]}));
+    let e = s.execute("embroidery.convertToManual", &json!({"ids": [a]})).unwrap_err().to_string();
+    assert_eq!(e, format!("{CONVERT_REFUSED}: {a} (locked)"));
+    // Refused as the job is prepared, before the plan the interface makes on another thread.
+    assert!(s.convert_to_manual_job(&json!({"ids": [a]})).is_err(), "refused before planning");
+    assert!(s.convert_to_manual_job(&json!({"ids": [a, b]})).is_ok(), "one may convert: planned");
+    let r = run(&mut s, "embroidery.convertToManual", json!({"ids": [a, b]}));
+    assert_eq!((r["convertedCount"].clone(), r["skipped"].clone()), (json!(1), json!([{"id": a, "reason": "locked"}])));
+}
+
 /// Converting is one undo step, Undo gives the document back exactly, and nothing converted takes
 /// none: the error names each object and why. An id naming no object is refused before anything
 /// changes, as are params of another shape.
 #[test]
 fn converting_is_one_step_and_refuses_before_changing_anything() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
     let mut s = blank();
     let square = red_square(&mut s, 5.0, 5.0, 10.0);
     let text = run(&mut s, "text.create", json!({"x": 20, "y": 200, "text": "Hi"}))["id"].as_u64().unwrap();
@@ -348,6 +387,225 @@ fn the_dry_run_tells_edited_stitches_from_moved_ones() {
     );
 }
 
+/// What comes after a run is part of its stitches wherever it is kept: Stop After set on one run of
+/// a converted object (the run's own, the object-level flag), or a stop or a cut at a run's end by
+/// Machine Function, is an edit the dry run names, so Restore asks before dropping it.
+#[test]
+fn a_stop_or_cut_after_a_run_is_an_edit() {
+    for edit in ["setStopAfter", "setTrimAfter", "stopAtTheEnd", "cutAtAGap"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+        let group = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(a)).unwrap().clone();
+        let first = group.children().unwrap()[0].id.0;
+        let last = needles::read(&group.children().unwrap()[0]).unwrap().len() - 1;
+        let fresh = run(&mut s, "embroidery.restoreObject", json!({"ids": [a], "dryRun": true}));
+        assert_eq!(fresh["edited"], json!([]), "{edit}: nothing edited yet");
+        match edit {
+            "setStopAfter" | "setTrimAfter" => run(&mut s, &format!("embroidery.{edit}"), json!({"ids": [first], "on": true})),
+            "stopAtTheEnd" => {
+                run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": first, "index": last}], "function": "stop"}))
+            }
+            _ => run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": first, "index": last}], "function": "trim"})),
+        };
+        let dry = run(&mut s, "embroidery.restoreObject", json!({"ids": [a], "dryRun": true}));
+        assert_eq!(dry["edited"], json!([a]), "{edit}: {dry}");
+    }
+}
+
+/// An id given many times, or inside another id given, is walked once: Convert, Restore's dry run
+/// and the Object tab's summary count each object once, and say each one passed over once.
+#[test]
+fn repeated_and_nested_ids_are_walked_once() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    let b = red_square(&mut s, 40.0, 5.0, 10.0);
+    let layer = s.doc().unwrap().doc.layers[0].id.0;
+    let mut ids = vec![layer; 1000];
+    ids.extend([a, b, a]);
+    let r = run(&mut s, "embroidery.convertToManual", json!({ "ids": ids }));
+    assert_eq!((r["convertedCount"].clone(), r["skippedCount"].clone()), (json!(2), json!(0)), "{r}");
+    let info = run(&mut s, "embroidery.info", json!({ "ids": ids }));
+    assert_eq!(info["manual"]["objects"], json!(2), "{info}");
+    let dry = run(&mut s, "embroidery.restoreObject", json!({ "ids": ids, "dryRun": true }));
+    assert_eq!(dry["restoredCount"], json!(2), "{dry}");
+    // Converted already: each passed over once.
+    let again = s.execute("embroidery.convertToManual", &json!({ "ids": [a, a, b, a] }));
+    let said = again.err().map(|e| e.to_string()).unwrap_or_default();
+    assert_eq!(said.matches(&format!("{a} (manual)")).count(), 1, "{said}");
+}
+
+/// While Global Edit is on, Convert to Manual Stitches and Restore Object wait (Global Edit would copy
+/// a converted object's runs onto the other members without their originals), whether the objects
+/// are selected or given; stopped, they work.
+#[test]
+fn convert_and_restore_wait_while_global_edit_is_on() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    red_square(&mut s, 40.0, 5.0, 10.0);
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    run(&mut s, "select.globalEdit", json!({"artboards": "all", "includeCanvas": true}));
+    assert!(s.doc().unwrap().global_edit.is_some());
+    let steps = s.doc().unwrap().history.undo.len();
+    for (command, p) in [
+        ("embroidery.convertToManual", json!({})),
+        ("embroidery.convertToManual", json!({"ids": [a]})),
+        ("embroidery.restoreObject", json!({"ids": [a]})),
+    ] {
+        match s.execute(command, &p) {
+            Err(crate::EngineError::Disabled(_, why)) => assert_eq!(why, super::GLOBAL_EDIT_ON, "{command}"),
+            r => panic!("{command} {p}: {r:?}"),
+        }
+    }
+    assert_eq!(s.doc().unwrap().history.undo.len(), steps, "nothing changed");
+    run(&mut s, "select.globalEdit", json!({}));
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    assert_eq!(run(&mut s, "embroidery.convertToManual", json!({}))["convertedCount"], json!(1));
+}
+
+/// A converted compound path and its duplicate, restored in one step, give every node an id of its
+/// own: the second original's members, which hold the same ids as the first's, take new ones.
+#[test]
+fn restored_duplicates_keep_every_id_unique() {
+    let mut s = blank();
+    let outer = red_square(&mut s, 5.0, 5.0, 20.0);
+    let inner = red_square(&mut s, 10.0, 10.0, 8.0);
+    run(&mut s, "select.set", json!({"ids": [outer, inner]}));
+    let compound = run(&mut s, "object.compoundPath.make", json!({}))["id"].as_u64().unwrap();
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [compound]}));
+    run(&mut s, "select.set", json!({"ids": [compound]}));
+    let copy = run(&mut s, "edit.duplicate", json!({}))["ids"][0].as_u64().unwrap();
+    let r = run(&mut s, "embroidery.restoreObject", json!({"ids": [compound, copy]}));
+    assert_eq!(r["restoredCount"], json!(2), "{r}");
+    let mut ids = Vec::new();
+    for l in &s.doc().unwrap().doc.layers {
+        l.walk(&mut |n| ids.push(n.id.0));
+    }
+    let count = ids.len();
+    ids.sort_unstable();
+    ids.dedup();
+    assert_eq!(ids.len(), count, "every id once");
+    let members = |id: u64| s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().children().map_or(0, |c| c.len());
+    assert_eq!((members(compound), members(copy)), (2, 2), "both compounds back, each with its two members");
+}
+
+/// A cut before a manual run is sewn, whatever the move into it: the first run of two deleted, its
+/// cut after it passes to the second as the cut before it, and the export still cuts there (the
+/// runs lie near a square of their colour, so no move is long enough to be cut for its length).
+#[test]
+fn a_cut_before_a_manual_run_is_sewn() {
+    use vectorcraft_doc::embroidery::StitchRun;
+    let mut s = blank();
+    red_square(&mut s, 10.0, 6.0, 3.0);
+    let a = literal_path(
+        &mut s,
+        None,
+        [200, 30, 30],
+        &[(10.0, 5.0), (12.0, 5.0), (14.0, 5.0)],
+        StitchRun { manual: true, trim_after: true, ..StitchRun::default() },
+    );
+    let b = literal_path(&mut s, None, [200, 30, 30], &[(16.0, 5.0), (18.0, 5.0)], StitchRun { manual: true, ..StitchRun::default() });
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    run(&mut s, "object.group", json!({}));
+    let trims = |s: &mut Session| run(s, "embroidery.stats", json!({}))["trims"].as_u64().unwrap();
+    assert_eq!(trims(&mut s), 1, "a's cut after it");
+    let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"ranges": [{"id": a, "from": 0, "to": 2}]}));
+    assert_eq!(r["moved"], json!([{"function": "trim", "id": b, "before": true}]), "{r}");
+    assert_eq!(trims(&mut s), 1, "b's cut before it, sewn");
+}
+
+/// A group the plan sews whole (a drop shadow on it) of two near squares of one colour: Trim After,
+/// then Stop After, on the first square carried onto the run its last unit became, so the export
+/// right after converting is the same bytes in every format and the run says so (the project
+/// owner's choice, 2026-10-30).
+#[test]
+fn a_members_trim_and_stop_after_in_an_object_sewn_whole_are_carried() {
+    for mark in ["setTrimAfter", "setStopAfter"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        let b = red_square(&mut s, 18.0, 5.0, 10.0);
+        let group = run(&mut s, "object.group", json!({"ids": [a, b]}))["id"].as_u64().unwrap();
+        run(&mut s, "effect.apply", json!({"effect": "stylize.dropShadow", "ids": [group]}));
+        run(&mut s, &format!("embroidery.{mark}"), json!({"ids": [a], "on": true}));
+        let before = exports(&mut s);
+        let records = |s: &mut Session| run(s, "embroidery.stats", json!({}));
+        let (trims, stops) = (records(&mut s)["trims"].clone(), records(&mut s)["stops"].clone());
+        let r = run(&mut s, "embroidery.convertToManual", json!({"ids": [group]}));
+        assert_eq!(r["convertedCount"], json!(1), "{mark}: {r}");
+        assert!(exports(&mut s) == before, "{mark}: the same bytes right after converting");
+        assert_eq!((records(&mut s)["trims"].clone(), records(&mut s)["stops"].clone()), (trims, stops), "{mark}");
+        let runs = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(group)).unwrap().children().unwrap().clone();
+        let carried = runs.iter().filter_map(|c| c.extras().embroidery.as_deref()?.stitches.as_ref()).any(|r| r.trim_after || r.stop_after);
+        assert!(carried, "{mark}: on a run");
+    }
+}
+
+/// A group the plan sews whole holding what isn't sewn (type, a hidden or a locked object) is passed
+/// over as `holdsUnsewn`: converting would hide it inside the object kept.
+#[test]
+fn an_object_sewn_whole_holding_what_isnt_sewn_is_passed_over() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
+    for what in ["type", "hidden", "locked"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        let other = match what {
+            "type" => run(&mut s, "text.create", json!({"x": 60, "y": 60, "text": "Label"}))["id"].as_u64().unwrap(),
+            _ => red_square(&mut s, 30.0, 5.0, 10.0),
+        };
+        let group = run(&mut s, "object.group", json!({"ids": [a, other]}))["id"].as_u64().unwrap();
+        run(&mut s, "effect.apply", json!({"effect": "stylize.dropShadow", "ids": [group]}));
+        match what {
+            "hidden" => run(&mut s, "object.hide", json!({"ids": [other]})),
+            "locked" => run(&mut s, "object.lock", json!({"ids": [other]})),
+            _ => json!({}),
+        };
+        let r = s.execute("embroidery.convertToManual", &json!({"ids": [group]}));
+        let said = r.as_ref().err().map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains(&format!("{group} (holdsUnsewn)")), "{what}: {r:?}");
+    }
+}
+
+/// Art in a converted object that isn't one of its runs (pasted in while it was isolated), and a run
+/// hidden or recoloured, are edits Restore asks before; restoring keeps that art, beside the
+/// restored object in its parent, right above it (the project owner's choice, 2026-10-30).
+#[test]
+fn restore_asks_before_foreign_art_and_keeps_it_beside_the_object() {
+    let edited = |s: &mut Session, g: u64| run(s, "embroidery.restoreObject", json!({"ids": [g], "dryRun": true}))["edited"].clone();
+    for edit in ["hide", "recolour"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+        let first = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(a)).unwrap().children().unwrap()[0].id.0;
+        assert_eq!(edited(&mut s, a), json!([]));
+        match edit {
+            "hide" => run(&mut s, "object.hide", json!({"ids": [first]})),
+            _ => {
+                run(&mut s, "select.set", json!({"ids": [first]}));
+                run(&mut s, "paint.setStroke", json!({"color": "#1e1ec8"}))
+            }
+        };
+        assert_eq!(edited(&mut s, a), json!([a]), "{edit}");
+    }
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    let art = red_square(&mut s, 40.0, 40.0, 5.0);
+    s.edit("Into the converted object", |d, _| {
+        let n = d.remove(vectorcraft_doc::NodeId(art)).unwrap();
+        d.insert(Some(vectorcraft_doc::NodeId(a)), usize::MAX, (*n).clone()).map(|_| ()).map_err(|e| crate::EngineError::Other(e.to_string()))
+    })
+    .unwrap();
+    assert_eq!(edited(&mut s, a), json!([a]), "foreign art in it");
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [a]}));
+    let doc = s.doc().unwrap().doc.clone();
+    let (parent, at, _) = doc.position(vectorcraft_doc::NodeId(art)).expect("the art kept");
+    let (object_parent, object_at, _) = doc.position(vectorcraft_doc::NodeId(a)).unwrap();
+    assert_eq!((parent, at), (object_parent, object_at + 1), "beside the restored object, right above it");
+    assert!(matches!(doc.node(vectorcraft_doc::NodeId(a)).unwrap().kind, vectorcraft_doc::NodeKind::Path { .. }), "the object back");
+}
+
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,
 /// an original that doesn't read as an object, one placing a symbol the document no longer has.
 #[test]
@@ -358,28 +616,177 @@ fn restoring_passes_over_what_it_cant_restore() {
     let junk = red_square(&mut s, 30.0, 5.0, 10.0);
     let lost = red_square(&mut s, 60.0, 5.0, 10.0);
     run(&mut s, "embroidery.convertToManual", json!({"ids": [junk, lost]}));
-    let instance = json!({"id": 9999, "kind": {"type": "symbolInstance", "symbol": "Gone", "xf": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]}});
+    let gone = vectorcraft_doc::NodeKind::SymbolInstance { symbol: "Gone".into(), xf: vectorcraft_geom::Affine::IDENTITY };
+    let instance = serde_json::to_value(vectorcraft_doc::Node::new(vectorcraft_doc::NodeId(9999), gone)).unwrap();
     s.edit("Damage", |d, _| {
         for (id, node) in [(junk, json!({"kind": 5})), (lost, instance.clone())] {
             let n = d.node_mut(vectorcraft_doc::NodeId(id)).ok_or(crate::EngineError::NoNode(vectorcraft_doc::NodeId(id)))?;
             if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
                 let o = e.original.clone().unwrap();
-                e.original = Some(Original { node: std::sync::Arc::new(node), ..o });
+                e.original = Some(Original { node: node.to_string().into(), ..o });
             }
         }
         Ok(())
     })
     .unwrap();
+    // A dry run passes over what Restore would.
+    let dry = run(&mut s, "embroidery.restoreObject", json!({"ids": [plain, junk, lost], "dryRun": true}));
+    assert_eq!((dry["restored"].clone(), dry["restoredCount"].clone()), (json!([]), json!(0)), "{dry}");
+    let reasons: Vec<(u64, &str)> =
+        dry["skipped"].as_array().unwrap().iter().map(|k| (k["id"].as_u64().unwrap(), k["reason"].as_str().unwrap())).collect();
+    assert_eq!(reasons, [(plain, "notConverted"), (junk, "unreadable"), (lost, "missingSymbol")]);
     let r = s.execute("embroidery.restoreObject", &json!({"ids": [plain, junk, lost]})).unwrap_err().to_string();
-    for want in [format!("{plain} (notConverted)"), format!("{junk} (unreadable)")] {
+    for want in [format!("{plain} (notConverted)"), format!("{junk} (unreadable)"), format!("{lost} (missingSymbol)")] {
         assert!(r.contains(&want), "{want}: {r}");
     }
-    assert!(r.contains(&format!("{lost} (missingSymbol)")) || r.contains(&format!("{lost} (unreadable)")), "{r}");
     let mut s = Session::new();
     let mut run_fx = |c: &str, p: serde_json::Value| run(&mut s, c, p);
     vectorcraft_testkit::embroidery::opened_design(&mut run_fx, "dst");
     run(&mut s, "select.all", json!({}));
     assert!(s.execute("embroidery.restoreObject", &json!({})).unwrap_err().to_string().contains("notConverted"));
+}
+
+/// What Restore puts back is file data, so it is held to what opening a file holds an object to.
+/// Put back where its stitches are, an object that would lie past the document's coordinates is
+/// passed over as outOfRange: a frame of six finite numbers can still scale it past them, or past
+/// any number (which no file could hold again). One kept as a layer is unreadable. Type comes back
+/// with its values in range and measured.
+#[test]
+fn restore_holds_what_it_puts_back_to_what_opening_a_file_does() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
+    use vectorcraft_doc::embroidery::Original;
+    use vectorcraft_doc::text::{CharPosition, CharStyle, RubySpan, ScriptMetrics};
+    use vectorcraft_doc::{NodeId, NodeKind};
+    use vectorcraft_geom::Affine;
+    let mut s = blank();
+    let [past, endless, layer, typed] = [5.0, 30.0, 60.0, 90.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    let t = run(&mut s, "text.create", json!({"x": 0, "y": 0, "text": "Ab"}))["id"].as_u64().unwrap();
+    let mut text = s.doc().unwrap().doc.node(NodeId(t)).unwrap().clone();
+    if let NodeKind::Text(tx) = &mut text.kind {
+        tx.runs[0].style.size = -5.0;
+        tx.runs[0].style.position = CharPosition::Superscript(ScriptMetrics { size: 9000.0, position: -9000.0 });
+        tx.ruby = vec![RubySpan::new(9, 1, " x ")];
+    }
+    run(&mut s, "edit.clear", json!({"ids": [t]}));
+    let mut emptied = (*s.doc().unwrap().doc.layers[0]).clone();
+    emptied.children_mut().unwrap().clear();
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [past, endless, layer, typed]}));
+    // A frame scaling the square past the coordinates, one past any number, a layer, the type.
+    let kept = [
+        (past, Affine::scale(1e6), None),
+        (endless, Affine::scale(1e308), None),
+        (layer, Affine::IDENTITY, Some(serde_json::to_value(&emptied).unwrap())),
+        (typed, Affine::IDENTITY, Some(serde_json::to_value(&text).unwrap())),
+    ];
+    s.edit("Damage", |d, _| {
+        for (id, frame, node) in &kept {
+            let n = d.node_mut(NodeId(*id)).unwrap();
+            if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
+                let o = e.original.clone().unwrap();
+                let node = node.as_ref().map_or(o.node.clone(), |n| n.to_string().into());
+                e.original = Some(Original { frame: *frame, node, ..o });
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+    let dry = run(&mut s, "embroidery.restoreObject", json!({"ids": [past, endless, layer, typed], "dryRun": true}));
+    let r = run(&mut s, "embroidery.restoreObject", json!({"ids": [past, endless, layer, typed]}));
+    assert_eq!((&dry["restored"], &dry["skipped"]), (&r["restored"], &r["skipped"]), "a dry run passes over the same");
+    let skipped: Vec<(u64, &str)> =
+        r["skipped"].as_array().unwrap().iter().map(|k| (k["id"].as_u64().unwrap(), k["reason"].as_str().unwrap())).collect();
+    assert_eq!(skipped, [(past, "outOfRange"), (endless, "outOfRange"), (layer, "unreadable")]);
+    assert_eq!(r["restored"], json!([typed]));
+    let doc = &s.doc().unwrap().doc;
+    let NodeKind::Text(tx) = &doc.node(NodeId(typed)).unwrap().kind else { panic!("the type put back") };
+    assert_eq!(tx.runs[0].style.size, CharStyle::default().size, "a size that isn't one: the default");
+    assert_eq!(tx.runs[0].style.position, CharPosition::Superscript(ScriptMetrics { size: 500.0, position: -500.0 }));
+    assert_eq!(tx.ruby, [RubySpan::new(1, 2, "x")], "the reading's range within the text, ordered, trimmed");
+    assert!(tx.cached_bounds.is_some(), "measured, as an opened file's type is");
+    assert!(doc.layers.iter().all(|l| l.children().unwrap().iter().all(|c| !c.is_layer())));
+}
+
+/// The objects Restore puts back are the selection after it: a run selected stood for its object,
+/// which is selected in its place; restored by ids, those objects.
+#[test]
+fn the_objects_restored_are_the_selection() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let [a, b] = [5.0, 30.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a, b]}));
+    let first_run = s.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    run(&mut s, "select.set", json!({"ids": [first_run]}));
+    run(&mut s, "embroidery.restoreObject", json!({}));
+    assert_eq!(s.doc().unwrap().selection.objects, [NodeId(a)], "the object in its run's place");
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [b]}));
+    assert_eq!(s.doc().unwrap().selection.objects, [NodeId(b)]);
+}
+
+/// `embroidery.info` sums up converted objects with their runs and needle points and how many were
+/// edited since converting; the Object tab's read counts the same runs and needle points but leaves
+/// out whether they were edited (asked on Restore's click: it fingerprints every needle point).
+#[test]
+fn the_tabs_read_counts_without_asking_about_edits() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    let first_run = s.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": first_run, "index": 1}], "dx": 1}));
+    let info = run(&mut s, "embroidery.info", json!({"ids": [a]}))["manual"].clone();
+    let tab = s.embroidery_merged(&[NodeId(a)]).unwrap().manual.unwrap();
+    assert_eq!(info["edited"], json!(1));
+    assert_eq!(tab.edited, None, "not asked by the tab");
+    assert_eq!((json!(tab.runs), json!(tab.needle_points)), (info["runs"].clone(), info["needlePoints"].clone()));
+    assert!(tab.needle_points > 0);
+}
+
+/// Pathfinder on a converted object makes art, as on an opened file's runs (the project owner's
+/// choice): what it makes keeps no original and holds no manual stitches.
+#[test]
+fn pathfinder_on_a_converted_object_makes_art() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let [a, b] = [5.0, 10.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let made = run(&mut s, "object.pathfinder.unite", json!({}));
+    let ids: Vec<u64> = made["ids"].as_array().unwrap().iter().filter_map(|v| v.as_u64()).collect();
+    assert!(!ids.is_empty(), "{made}");
+    let doc = &s.doc().unwrap().doc;
+    for id in ids {
+        doc.node(NodeId(id)).unwrap().walk(&mut |n| {
+            let e = n.extras().embroidery.as_deref();
+            assert!(e.is_none_or(|e| e.original.is_none() && e.stitches.as_ref().is_none_or(|r| !r.manual)), "{id}: art, not manual stitches");
+        });
+    }
+}
+
+/// Restore after one of a converted object's runs was cut into pieces puts the object back, the
+/// pieces gone with the rest of its runs; Undo of Restore gives the converted object back exactly.
+#[test]
+fn restore_after_a_cut_and_its_undo() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    let first = s.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    let before = s.doc().unwrap().doc.clone();
+    run(&mut s, "select.anchors", json!({"id": first, "anchors": [[0, 2]]}));
+    run(&mut s, "path.cutAtAnchors", json!({}));
+    let cut = s.doc().unwrap().doc.clone();
+    assert!(*cut != *before, "the run cut (into pieces, or into subpaths of its path)");
+    let r = run(&mut s, "embroidery.restoreObject", json!({"ids": [a], "dryRun": true}));
+    assert_eq!(r["edited"], json!([a]), "cut since converting: edited");
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [a]}));
+    let restored = s.doc().unwrap().doc.node(NodeId(a)).unwrap().clone();
+    assert!(matches!(restored.kind, vectorcraft_doc::NodeKind::Path { .. }), "the square back");
+    let mut ids = std::collections::HashSet::new();
+    s.doc().unwrap().doc.walk(|n| assert!(ids.insert(n.id), "{:?} twice", n.id));
+    run(&mut s, "edit.undo", json!({}));
+    assert!(*s.doc().unwrap().doc == *cut, "Undo gives the converted object back, its pieces as they were");
 }
 
 /// The scale check on `s`: its one rule's reply.
@@ -557,7 +964,13 @@ fn a_run_sews_its_anchors_whatever_its_handles() {
     use vectorcraft_doc::embroidery::StitchRun;
     let points = [(10.0, 10.0), (20.0, 10.0), (30.0, 15.0), (40.0, 10.0)];
     let mut s = blank();
-    let id = literal_path(&mut s, None, [200, 30, 30], &points, StitchRun { stops: vec![(2, 0)], ..StitchRun::default() });
+    let id = literal_path(
+        &mut s,
+        None,
+        [200, 30, 30],
+        &points,
+        StitchRun { stops: vec![vectorcraft_doc::embroidery::Mark::place(2, 0)], ..StitchRun::default() },
+    );
     let before = sewn_by(&export_plan(&mut s), id).0;
     assert_eq!(before.len(), points.len());
     s.edit("Curves", |d, _| {

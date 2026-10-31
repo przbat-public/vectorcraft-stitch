@@ -8,7 +8,7 @@ use vectorcraft_testkit::embroidery as fx;
 
 use super::super::check::StitchLimits;
 use super::super::test_support::run;
-use super::{Filter, Flags, edited_by, numbering, ordinals, row, scope};
+use super::{Filter, Flags, edited_by, leading, numbering, ordinals, row, scope};
 use crate::Session;
 
 fn runner(s: &mut Session) -> impl FnMut(&str, Value) -> Value + '_ {
@@ -46,12 +46,19 @@ fn rows_are_what_the_stitch_list_lists() {
             (Some(a), Some(b)) => assert!((a - b).abs() < 1e-9, "record {n}: {a} {b}"),
             (a, b) => assert_eq!(a, b, "record {n}"),
         }
-        assert_eq!((row.object.0, row.node.0), (r["id"].as_u64().unwrap(), r["node"].as_u64().unwrap()), "record {n}");
-        // The needle point it is edited by, from the unit's numbering and ordinals.
+        // The needle point it is edited by, from the unit's numbering and ordinals; before the
+        // unit's own records (an opened design's run), from the needle points they lead from, and
+        // a cut there is the path's whose needle point it follows.
         let unit = row.unit;
-        let edited = numbered.entry(unit).or_insert_with(|| numbering(&plan, &doc, unit));
-        let index = edited.and_then(|(_, first)| edited_by(&plan, unit, first, &ordinals(&plan, unit), n, row.kind));
-        assert_eq!(index.map(|k| k as u64), r["index"].as_u64(), "record {n}: {r}");
+        let edited = *numbered.entry(unit).or_insert_with(|| numbering(&plan, &doc, unit));
+        let lead = edited.map(|(_, first)| leading(&plan, &doc, unit, first)).unwrap_or_default();
+        let address = match lead.iter().find(|(at, _)| *at == n) {
+            Some((_, a)) => Some(*a),
+            None => edited.and_then(|(node, first)| edited_by(&plan, unit, first, &ordinals(&plan, unit), n, row.kind).map(|k| (node, k))),
+        };
+        let node = address.map_or(row.node, |(node, _)| node);
+        assert_eq!((row.object.0, node.0), (r["id"].as_u64().unwrap(), r["node"].as_u64().unwrap()), "record {n}");
+        assert_eq!(address.map(|(_, k)| k as u64), r["index"].as_u64(), "record {n}: {r}");
     }
     assert_eq!(row(&plan, 0), None);
     assert_eq!(row(&plan, usize::MAX), None);

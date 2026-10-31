@@ -125,7 +125,8 @@ impl Session {
         if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
             return Err(EngineError::NoNode(*missing));
         }
-        Ok(reply(d, ids, &Options::default(), None, Page { offset: 0, limit: 0 }, Vec::new()))
+        // Whether stitches were edited is asked when Restore is clicked, not at every change.
+        Ok(reply_asking(d, ids, &Options::default(), None, Page { offset: 0, limit: 0 }, Vec::new(), false))
     }
 }
 
@@ -156,15 +157,16 @@ pub struct ObjectSettings {
 }
 
 /// The objects converted to manual stitches among a selection: how many, how many can be restored
-/// (not locked), how many were edited since converting (Restore then asks first), their runs and
-/// needle points, and the least and the most their stitches were stretched by since converting
-/// (their originals' frames' singular values; `None` when one can't say).
+/// (not locked, nor in a locked group or layer, as Restore Object refuses them), how many were edited since converting (Restore then asks first; `None` when not
+/// asked: the Object tab asks on Restore's click, not at each change), their runs and needle points,
+/// and the least and the most their stitches were stretched by since converting (their originals'
+/// frames' singular values; `None` when one can't say).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManualInfo {
     pub objects: usize,
     pub restorable: usize,
-    pub edited: usize,
+    pub edited: Option<usize>,
     pub runs: usize,
     pub needle_points: usize,
     pub scale: Option<[f64; 2]>,
@@ -275,6 +277,20 @@ pub struct Sewing {
 /// The reply for objects `ids` of `doc` with the call's options `opts`, with what `plan` (the
 /// design's, when planned) sews of each part.
 pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option<&DesignPlan>, page: Page, warnings: Vec<String>) -> ObjectSettings {
+    reply_asking(doc, ids, opts, plan, page, warnings, true)
+}
+
+/// [`reply`], whether converted objects' stitches were edited since converting asked only when
+/// `edited` (each one's needle points fingerprinted).
+fn reply_asking(
+    doc: &Document,
+    ids: &[NodeId],
+    opts: &Options,
+    plan: Option<&DesignPlan>,
+    page: Page,
+    warnings: Vec<String>,
+    edited: bool,
+) -> ObjectSettings {
     let (take, skipped) = takers(doc, ids);
     let nodes: Vec<&Node> = take.iter().filter_map(|id| doc.node(*id)).collect();
     let layer = DocLayer::of(doc);
@@ -290,7 +306,7 @@ pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option
         skipped: skipped.iter().take(MAX_SKIPPED).map(|(id, why)| SkippedObject { id: id.0, reason: why.id().to_string() }).collect(),
         trim_after: trim_after(doc, ids),
         stop_after: stop_after(doc, ids),
-        manual: super::manual::summary(doc, ids),
+        manual: super::manual::summary(doc, ids, edited),
         planned: plan.is_some(),
         warnings: warnings.into_iter().chain(found.notes().map(String::from)).collect(),
         fill,
@@ -346,23 +362,23 @@ fn stored(p: &PartSettings) -> Map<String, Value> {
 /// out, as the command passes them over): whether they ask for it, how many do, and whether they
 /// differ.
 fn trim_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
-    let mut seen = HashSet::new();
-    let (mut given, mut set) = (0usize, 0usize);
-    for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
-        given += 1;
-        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after)));
-    }
-    let mixed = set > 0 && set < given;
-    Merged { value: (!mixed).then_some(set > 0), set_count: set, mixed }
+    after(doc, ids, |a| a.trim)
 }
 
 /// The stop after the objects as given that are sewn, read as [`trim_after`] reads the cut.
 fn stop_after(doc: &Document, ids: &[NodeId]) -> Merged<bool> {
+    after(doc, ids, |a| a.stop)
+}
+
+/// What `which` picks of what comes after the objects as given that are sewn
+/// ([`vectorcraft_doc::embroidery::Embroidery::after`], wherever it is kept): whether they ask for
+/// it, how many do, and whether they differ.
+fn after(doc: &Document, ids: &[NodeId], which: fn(vectorcraft_doc::embroidery::After) -> bool) -> Merged<bool> {
     let mut seen = HashSet::new();
     let (mut given, mut set) = (0usize, 0usize);
     for n in ids.iter().filter(|id| seen.insert(**id)).filter_map(|id| doc.node(*id)).filter(|n| super::objects::cut_after_sewn(n)) {
         given += 1;
-        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| e.stop_after || e.stitches.as_ref().is_some_and(|r| r.stop_after)));
+        set += usize::from(n.extras().embroidery.as_deref().is_some_and(|e| which(e.after())));
     }
     let mixed = set > 0 && set < given;
     Merged { value: (!mixed).then_some(set > 0), set_count: set, mixed }

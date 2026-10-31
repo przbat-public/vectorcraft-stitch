@@ -18,13 +18,17 @@
 //! design's figures: counts, size, thread, time), [`order`] (the sewing order as
 //! `embroidery.sequence` lists it), [`check`] (the design checks, each rule with its source),
 //! [`scene`] (the plan as the stitch preview draws it) and [`render`] (that drawing as a picture,
-//! `embroidery.render`).
+//! `embroidery.render`). Manual stitches: `manual` (Convert to Manual Stitches and Restore Object),
+//! `needles` (a path of stitches read as runs of needle points, and written back), `needle_edits`
+//! (the stitch commands), `hooks` (what upstream's Delete, cutting tools and Join do to runs of
+//! stitches, reached through the marked wrappers below) and `records` (`embroidery.stitches`).
 
 mod cache;
 mod check;
 pub(crate) mod derive;
 pub(crate) mod digitize;
 mod fabrics;
+mod hooks;
 pub mod info;
 mod manual;
 mod measure;
@@ -32,7 +36,7 @@ mod nearest;
 mod needle_edits;
 pub mod needle_index;
 pub(crate) mod needles;
-pub use manual::{ConvertJob, ConvertPlanned};
+pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
 pub(crate) mod options;
@@ -66,6 +70,8 @@ mod tests_expanded;
 mod tests_info;
 #[cfg(test)]
 mod tests_manual;
+#[cfg(test)]
+mod tests_marks;
 #[cfg(test)]
 mod tests_matrix;
 #[cfg(test)]
@@ -117,30 +123,6 @@ use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
 pub use self::objects::skip_reasons;
-
-/// The marked upstream hooks of the stitch commands: Delete with needle points selected
-/// (`edit.clear`), a run of stitches cut into pieces (`draw2::replace_with_pieces`), and Join of
-/// runs of stitches (`path.join`).
-pub(crate) fn delete_needle_points_selected(s: &mut Session) -> Option<Result<Value>> {
-    needle_edits::delete_selected(s)
-}
-
-/// See [`delete_needle_points_selected`].
-pub(crate) fn stitches_before_cut(d: &Document, id: vectorcraft_doc::NodeId) -> Option<needles::Stitches> {
-    needle_edits::before_cut(d, id)
-}
-
-/// See [`delete_needle_points_selected`]: the object's embroidery cut once
-/// ([`derive::cut_once`]), then a run's marks on its pieces.
-pub(crate) fn cut_into_pieces(run: Option<&needles::Stitches>, pieces: &mut [vectorcraft_doc::Node]) {
-    derive::cut_once(pieces.iter_mut());
-    needle_edits::run_cut(run, pieces);
-}
-
-/// See [`delete_needle_points_selected`].
-pub(crate) fn join_runs_of_stitches(s: &mut Session, ids: &[vectorcraft_doc::NodeId]) -> Option<Result<Value>> {
-    needle_edits::join_paths(s, ids)
-}
 pub use self::options::{SettingField, distinct_underlays, fabric_field, part_field, setting_field};
 use self::stats::Page;
 use super::*;
@@ -154,6 +136,51 @@ pub use service::Planned;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
 pub use vectorcraft_stitch::mm_to_pt;
+
+/// The marked upstream hooks of the stitch commands: Delete with needle points selected
+/// (`path::delete_anchors`, which the Delete key, Edit › Clear, Edit › Cut and `path.deleteAnchors`
+/// all reach), a run of stitches cut into pieces (`draw2::replace_with_pieces`), and Join of runs of
+/// stitches (`path.join`).
+pub(crate) fn delete_needle_points_selected(s: &mut Session) -> Option<Result<Value>> {
+    hooks::delete_selected(s)
+}
+
+/// Whether a run of two needle points so far apart is one needle point ([`needles::one_needle_point`]),
+/// for the importer.
+pub(crate) fn one_needle_point(distance_mm: f64, alone: bool, double_point: bool) -> bool {
+    needles::one_needle_point(distance_mm, alone, double_point)
+}
+
+/// See [`delete_needle_points_selected`].
+pub(crate) fn stitches_before_cut(d: &Document, id: vectorcraft_doc::NodeId) -> Option<needles::Stitches> {
+    hooks::before_cut(d, id)
+}
+
+/// See [`delete_needle_points_selected`]: the object's embroidery cut once
+/// ([`derive::cut_once`]), then a run's marks on its pieces.
+pub(crate) fn cut_into_pieces(run: Option<&needles::Stitches>, pieces: &mut [vectorcraft_doc::Node]) {
+    derive::cut_once(pieces.iter_mut());
+    hooks::run_cut(run, &mut pieces.iter_mut().collect::<Vec<_>>());
+}
+
+/// See [`delete_needle_points_selected`]: [`cut_into_pieces`] of the two halves Scissors makes of a
+/// path of one subpath (`draw2::split`).
+pub(crate) fn cut_in_two(run: Option<&needles::Stitches>, first: &mut vectorcraft_doc::Node, second: &mut vectorcraft_doc::Node) {
+    derive::cut_once([&mut *first, &mut *second].into_iter());
+    hooks::run_cut(run, &mut [first, second]);
+}
+
+/// See [`delete_needle_points_selected`]: a run of stitches cut into pieces kept as its subpaths
+/// (Scissors and Cut Path at Anchors on a path of several), the needle point a cut makes twice kept
+/// once.
+pub(crate) fn runs_cut_in_place(d: &mut Document, id: vectorcraft_doc::NodeId, run: Option<&needles::Stitches>) {
+    hooks::cut_in_place(d, id, run);
+}
+
+/// See [`delete_needle_points_selected`].
+pub(crate) fn join_runs_of_stitches(s: &mut Session, ids: &[vectorcraft_doc::NodeId]) -> Option<Result<Value>> {
+    hooks::join_paths(s, ids)
+}
 
 /// The machine formats `embroidery.check {format}` checks for, as (id, the name the export lists
 /// it by), in the export's order: the Check tab's choice of format.
@@ -291,8 +318,8 @@ pub fn specs() -> Vec<CommandSpec> {
             "Convert to Manual Stitches",
             [],
             None,
-            "{ids?: [id…] (default: the selection; a group or layer stands for the objects in it, each converted on its own; at most 100,000), …the embroidery options (as the read commands take them; default: none, as the stitch preview plans)} freezes each object's stitches, as the plan sews them now, into manual stitches: a group keeping the object's id, name and place, holding a run of literal stitches marked manual for each of its sewing units in walk order (its own stitches: ties, underlay, top stitching, travels, its jumps and cuts; one subpath a run of needle points, the needle jumping between them), each in its thread's art colour, and the object as it was, to restore (embroidery.restoreObject). A manual run is placed in the sewing order as art is (joining a block of its colour where the stacking allows, the move into it cut when long) and never cut again by a clip group, so the export right after converting writes the same bytes. Passed over, with why: stitches from a file (literal), manual stitches (manual), a symbol's instance (symbolInstance: every instance plans the art from its own needle), a clipping path (clippingPath), a piece of an object sewn whole (insideObject), a locked object (locked), what isn't sewn (notSewn), stitches a manual run can't hold (unfreezable). One undo step \"Convert to Manual Stitches\"; nothing converted is an error naming each object and why → {converted: [{id, units, runs, needlePoints}] (at most 1000), convertedCount, needlePoints, skippedCount, skipped: [{id, reason}] (at most 1000)}",
-            has_selection,
+            "{ids?: [id…] (default: the selection; a group or layer stands for the objects in it, each converted on its own, and a compound path's member for its compound path; at most 100,000), …the embroidery options (as the read commands take them; default: none, as the stitch preview plans)} freezes each object's stitches, as the plan sews them now, into manual stitches: a group keeping the object's id, name and place, holding a run of literal stitches marked manual for each of its sewing units in walk order (its own stitches: ties, underlay, top stitching, travels, its jumps and cuts; one subpath a run of needle points, the needle jumping between them), each in its thread's art colour, and the object as it was, to restore (embroidery.restoreObject). A manual run is placed in the sewing order as art is (joining a block of its colour where the stacking allows, the move into it cut when long) and never cut again by a clip group, so the export right after converting writes the same bytes. Passed over, with why: stitches from a file (literal), manual stitches (manual), a symbol's instance (symbolInstance: every instance plans the art from its own needle), a clipping path (clippingPath), a piece of an object sewn whole (insideObject), an object sewn whole holding type, an image, a placed file, a symbol's instance or a hidden, locked or unpainted object (holdsUnsewn; an object sewn whole otherwise converted whole, its members' Trim After and Stop After carried onto their runs), a locked object (locked), what isn't sewn (notSewn), stitches a manual run can't hold (unfreezable). One undo step \"Convert to Manual Stitches\"; nothing converted is an error naming each object and why → {converted: [{id, units, runs, needlePoints}] (at most 1000), convertedCount, needlePoints, skippedCount, skipped: [{id, reason}] (at most 1000)}",
+            selected_outside_global_edit,
             manual::convert
         ),
         cmd!(
@@ -300,8 +327,8 @@ pub fn specs() -> Vec<CommandSpec> {
             "Restore Object",
             [],
             None,
-            "{ids?: [id…] (default: the selection; a manual run stands for the object it was converted from, a group or layer for the converted objects in it; at most 100,000), strokes?: bool, corners?: bool (Scale Strokes & Effects, Scale Corners for the scaling since converting; default: the preferences), dryRun?: false (true: answer what would be restored, change nothing)} puts back each object converted to manual stitches (embroidery.convertToManual) in place of its stitches: the object as it was when converted, moved, turned and scaled as its stitches were since (planned again at its size now), keeping the group's id, name, visibility and lock, Trim After and Stop After; edits to its stitches are discarded (edited lists the objects whose stitches were edited since converting, so an interface can ask first). Passed over, with why: notConverted (nothing kept to restore), literal (stitches from a file), unreadable (the object kept doesn't read), missingSymbol (it places a symbol the document no longer has), locked. One undo step \"Restore Object\"; nothing restored is an error naming each object and why → {restored: [id] (at most 1000), restoredCount, edited: [id], editedCount, skippedCount, skipped: [{id, reason}] (at most 1000)}",
-            has_selection,
+            "{ids?: [id…] (default: the selection; a manual run stands for the object it was converted from, a group or layer for the converted objects in it; at most 100,000), strokes?: bool, corners?: bool (Scale Strokes & Effects, Scale Corners for the scaling since converting; default: the preferences), dryRun?: false (true: answer what would be restored, change nothing)} puts back each object converted to manual stitches (embroidery.convertToManual) in place of its stitches: the object as it was when converted, moved, turned and scaled as its stitches were since (planned again at its size now), keeping the group's id, name, visibility and lock, Trim After and Stop After; edits to its stitches are discarded (edited lists the objects whose stitches were edited since converting, a run hidden or recoloured or art in it that isn't one of its runs included, so an interface can ask first); art in it that isn't one of its runs is kept, beside the restored object, right above it; the object kept is cleaned as opening a file cleans each object (its type's values, ruby and script proportions within range, its type measured again). Passed over, with why: notConverted (nothing kept to restore), literal (stitches from a file), unreadable (the object kept doesn't read as an object, or reads as a layer), missingSymbol (it places a symbol the document no longer has), locked, outOfRange (put back where its stitches are, it would lie outside the document's coordinates: a damaged frame). The objects put back are the selection after it. One undo step \"Restore Object\"; nothing restored is an error naming each object and why → {restored: [id] (at most 1000), restoredCount, edited: [id], editedCount, skippedCount, skipped: [{id, reason}] (at most 1000)}",
+            selected_outside_global_edit,
             manual::restore
         ),
         cmd!(
@@ -309,7 +336,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Move Needle Points",
             [],
             None,
-            "{needlePoints?: [{id, index}…] (a path of literal stitches, opened from a machine file or converted to manual stitches, and a needle point's place in it, from 0 across its runs: its anchors in order, a line to its own start one needle point), ranges?: [{id, from, to}…] (inclusive) (default: the selection's needle points: of each path of stitches selected, its anchors selected, or all of it selected whole, and all of those in a group selected whole; at most 2,000,000 needle points in 100,000 paths), dx?: 0, dy?: 0 (millimetres, y down) | to?: [x, y] (millimetres from the document's origin, y down; one needle point)} moves each needle point addressed, nothing else; a path whose only run is two needle points brought to one spot sews both (a tack). Refused before anything changes: an id that isn't a path of stitches (or isn't in the document's layers), one locked or hidden, an index past its needle points, a needle point taken outside the document's coordinates. One undo step \"Move Needle Points\", none when nothing moves; the selection keeps its needle points → {changedCount: the needle points moved, paths: [{id, needlePoints}] (at most 1000), pathCount, lengths: {count, shortest, longest, belowMin, aboveMax, min, max} (the stitches into and out of each needle point moved, millimetres, against the document's shortest stitch, min, and the 12.7 mm a machine sews well, max), passedOver: [{id, reason}] (selected objects that aren't paths of stitches, at most 1000: notStitches, locked, outOfRange, tooManyNeedlePoints)}",
+            "{needlePoints?: [{id, index, of?}…] (a path of literal stitches, opened from a machine file or converted to manual stitches, and a needle point's place in it, from 0 across its runs: its anchors in order, a line to its own start one needle point; of: the path's needle points as last counted, refused when it holds another number, so a stale index moves nothing; no other key), ranges?: [{id, from, to, of?}…] (inclusive) (default: the selection's needle points: of each path of stitches selected, its anchors selected, or all of it selected whole, and all of those in a group selected whole; at most 2,000,000 needle points in 100,000 paths), dx?: 0, dy?: 0 (millimetres, y down) | to?: [x, y] (millimetres from the document's origin, y down; one needle point)} moves each needle point addressed, nothing else; a path whose only run is two needle points brought to one spot sews both (a tack), and such a run among others is one needle point (collapsedCount, in every edit's reply). Refused before anything changes: an id that isn't a path of stitches (or isn't in the document's layers), one locked or hidden, an index past its needle points, a needle point taken outside the document's coordinates. No edit leaves a path past 2,000,000 needle points. One undo step \"Move Needle Points\", none when nothing moves; the selection keeps its needle points → {changedCount: the needle points moved, paths: [{id, needlePoints}] (the paths changed or removed, at most 1000), pathCount, collapsedCount: runs of two needle points brought to one spot in a path of several, each made one needle point (the ones after it move down by one), lengths: {count, shortest, longest, belowMin, aboveMax, min, max} (the stitches into and out of each needle point moved, each once, millimetres, against the document's shortest stitch, min, and the 12.7 mm a machine sews well, max), passedOver: [{id, reason}] (selected objects that aren't paths of stitches, at most 1000: notStitches, locked, outOfRange, tooManyNeedlePoints)}",
             has_doc,
             needle_edits::move_points
         ),
@@ -327,7 +354,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Delete Needle Points",
             [],
             None,
-            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's)} deletes each needle point addressed: the stitches beside it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point before it that stays (dropped when none). A run left with no needle point goes, its cut passing to the run after it; a path left with none is removed, its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when none, to the one after it, as a cut before it), else dropped. The paths it changed leave the selection, so a second Delete deletes nothing. One undo step \"Delete Needle Points\" → {changedCount: the needle points deleted, paths: [{id, needlePoints}] (0: removed), pathCount, removed: [id], removedCount, moved: [{function: \"trim\"|\"stop\", id, index (the needle point it follows now) | before: true (a cut before the path)}], dropped: [{function, id}], lengths (the stitches merged), passedOver}",
+            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's)} deletes each needle point addressed: the stitches beside it become one (neighbours merge), the others stay where they are, and a stop after it passes to the needle point before it that stays (dropped when none). A run left with no needle point goes, its cut passing to the run after it (to the path's own cut before it when no run with needle points is before, its cut after it when none is after); a path left with none is removed, its cut and stop passing to the path of stitches sewn before it in its parent (a cut, when none, to the one after it, as a cut before it), else dropped, each said once. The paths it changed leave the selection, so a second Delete deletes nothing. One undo step \"Delete Needle Points\" → {changedCount: the needle points deleted, merged: [{id, index}] (the needle point each merged stitch now leaves from, numbered as after the edit), paths: [{id, needlePoints}] (0: removed), pathCount, removed: [id], removedCount, moved: [{function: \"trim\"|\"stop\", id, index (the needle point it follows now) | before: true (a cut before the path)}], dropped: [{function, id}], lengths (the stitches merged), passedOver}",
             has_doc,
             needle_edits::delete
         ),
@@ -345,7 +372,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Join Runs",
             [],
             None,
-            "{needlePoints?, ranges? (the first needle points of the runs to join to the run before them, in their paths; default the selection's) | ids?: [id…] (2 to 100,000 paths of stitches to join into the first: sewn one right after another, next to one another in one parent in the order given, in one colour, all opened from a file or all manual)} joins runs: the jump between them becomes a stitch (a needle point lying where the run before ends is kept once), never reversed; a cut or a stop at a gap joined goes (dropped says so). Joined paths keep the first's id and cut before it, and the last's cut and stop after it. Paths that aren't sewn one right after another in one colour block are refused (translated). One undo step \"Join Runs\", none when nothing is joined → {changedCount: the gaps joined, paths: [{id, needlePoints}], pathCount, removed: [id] (the paths joined into the first), dropped: [{function: \"trim\"|\"stop\", id}], lengths}",
+            "{needlePoints?, ranges? (the first needle points of the runs to join to the run before them, in their paths; default the selection's) | ids?: [id…] (2 to 100,000 paths of stitches to join into the first: sewn one right after another, next to one another in one parent in the order given, in one colour, all opened from a file or all manual)} joins runs (a path's first needle point addressed, given or its anchor selected: the path joined to the path of stitches sewn right before it in its parent, passed over as notJoinable when that isn't one in its colour and of its kind): the jump between them becomes a stitch (a needle point lying where the run before ends is kept once), never reversed; a cut or a stop at a gap joined goes (dropped says so). Joined paths keep the first's id and cut before it, and the last's cut and stop after it. Paths that aren't sewn one right after another in one colour block are refused (translated). One undo step \"Join Runs\", none when nothing is joined → {changedCount: the gaps joined, paths: [{id, needlePoints}], pathCount, removed: [id] (the paths joined into the first), dropped: [{function: \"trim\"|\"stop\", id}], lengths, passedOver}",
             has_doc,
             needle_edits::join_runs
         ),
@@ -354,7 +381,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Machine Function",
             [],
             None,
-            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's), function: \"trim\"|\"stop\", on?: bool (default: on, unless every needle point addressed has it already), ties?: true} cuts the thread (trim), or stops the machine (stop), after each needle point addressed, or (on: false) no longer. Inside a run, the run splits there first (the needle lifts to the next needle point, as after any cut or stop), the run before tied off and the next tied in as embroidery.splitRun ties them (on unless ties: false, the project owner's choice); at a run's last needle point it is the gap's own (a cut before the next run, a stop after it), at the path's last the path's (its Trim After or Stop After). Turned off, the runs stay split (embroidery.joinRuns joins them). One undo step \"Machine Function\", none when nothing changes → {function, on, changedCount, unchangedCount, splitCount, paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
+            "{needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them; default the selection's), function: \"trim\"|\"stop\", on?: bool (default: on, unless every needle point addressed has it already), ties?: true} cuts the thread (trim), or stops the machine (stop), after each needle point addressed, or (on: false) no longer. Inside a run, the run splits there first (the needle lifts to the next needle point, as after any cut or stop), the run before tied off and the next tied in as embroidery.splitRun ties them (on unless ties: false, the project owner's choice); at a run's last needle point it is the gap's own (a cut before the next run, a stop after it), at the path's last the path's (its Trim After or Stop After, and the cut an opened design keeps before the path sewn right after it). A function set with ties comes after the tie-off that follows the needle point addressed and is found there again, so the same call turns it off, and on again without a second split. Turned off, the runs stay split (embroidery.joinRuns joins them). One undo step \"Cut After Needle Point\" or \"Stop After Needle Point\", none when nothing changes → {function, on, changedCount, unchangedCount, splitCount, needlePoints: [{id, index}] (each needle point addressed, numbered as after the edit), paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
             has_doc,
             needle_edits::machine_function
         ),
@@ -363,7 +390,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Split Long Stitches",
             [],
             None,
-            "{needlePoints?, ranges? (the needle points the stitches to split arrive at; default the selection's: a path or a group selected whole, all of its stitches), maxLength?: 12.7 (millimetres, 1 to 12.7: a stitch's own length; the Check tab's stitchTooLong line by default) | format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (a stitch longer along x or y than one of its records)} splits each stitch arriving at a needle point addressed that is longer than the limit: into the fewest equal stitches within it, or with format where that format's writer would cut it (each end on the 0.1 mm grid, the fewest equal steps of at most one record, so that format's export is the same bytes). More needle points, never jumps; the move between runs is never split (the writers split long moves themselves). The new needle points aren't selected; the selected ones keep their places. At most 100,000 added. One undo step \"Split Long Stitches\", none when nothing is split → {changedCount: the stitches split, addedCount, limit: {length} | {format, step}, paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
+            "{needlePoints?, ranges? (the needle points the stitches to split arrive at; default the selection's: a path or a group selected whole, all of its stitches), maxLength?: 12.7 (millimetres, 1 to 12.7: a stitch's own length; the Check tab's stitchTooLong line by default) | format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (a stitch longer along x or y than one of its records)} splits each stitch arriving at a needle point addressed that is longer than the limit: into the fewest equal stitches within it, or with format where that format's writer would cut it (from the needle points as the walk sews them, exact millimetres included, each end on the 0.1 mm grid that format's writer counts the design on, the design planned as the export plans it for this; the fewest equal steps of at most one record, so that format's export is the same bytes). More needle points, never jumps; the move between runs is never split (the writers split long moves themselves). The new needle points aren't selected; the selected ones keep their places. At most 100,000 added. One undo step \"Split Long Stitches\", none when nothing is split → {changedCount: the stitches split, addedCount, limit: {length} | {format, step}, needlePoints: [{id, index}] (each needle point addressed, numbered as after the edit), paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
             has_doc,
             needle_edits::split_long
         ),
@@ -381,7 +408,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Embroidery Object Settings",
             [],
             None,
-            "{ids?: [id…] (default: the selection; a group or layer stands for the paths and compound paths in it, a compound path's member for its compound path), part: \"fill\"|\"stroke\" (all of the objects' fills, or all their strokes), stitch?: \"auto\"|\"tatami\"|\"fill\"|\"satin\"|\"running\"|\"none\" (auto: chosen by the shape, even where document.export's stitch forces one; fill is tatami, and kept so; satin on a fill fills it as auto does; none: the part is not sewn), spacing?: mm (0.05 to 5), length?: mm (0.2 to 12), angle?: degrees counter-clockwise on the page, pull?: mm (0 to 2; or [left, right] of a satin, [start, end] of a fill's rows), pullPercent?: percent (0 to 50; one or two as pull), push?: mm (0 to 5; one or two: [start, end] of a satin as its path is drawn), expand?: mm (-2 to 2), narrowAsSatin?: mm (0 to 12), underlay?: true|false|\"auto\"|\"none\"|\"center\"|\"edge\"|\"edgeZigzag\"|\"edgeTatami\", splitLength?: mm (2 to 12)} set embroidery settings on the objects' fills or strokes, each as document.formats describes the option of that name: kept with the object (moved and turned with it), they beat document.export's options, the document's settings (embroidery.setup) and the defaults; null unsets one; a value out of its range is refused, not clamped, and so is document.export's earlier name of a setting, naming the one to use. Objects that take none (type, a symbol instance, whose art takes them, a run of stitches opened from a machine file…) and those without the part are skipped and listed. One undo step, none when nothing changes; saved with the document → {part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount, skipped: [{id, reason: \"literal\"|\"guide\"|\"type\"|\"image\"|\"symbolInstance\"|\"live\"|\"placed\"|\"intertwine\"|\"noPart\"}] (at most 1000)}",
+            "{ids?: [id…] (default: the selection; a group or layer stands for the paths and compound paths in it, a compound path's member for its compound path), part: \"fill\"|\"stroke\" (all of the objects' fills, or all their strokes), stitch?: \"auto\"|\"tatami\"|\"fill\"|\"satin\"|\"running\"|\"none\" (auto: chosen by the shape, even where document.export's stitch forces one; fill is tatami, and kept so; satin on a fill fills it as auto does; none: the part is not sewn), spacing?: mm (0.05 to 5), length?: mm (0.2 to 12), angle?: degrees counter-clockwise on the page, pull?: mm (0 to 2; or [left, right] of a satin, [start, end] of a fill's rows), pullPercent?: percent (0 to 50; one or two as pull), push?: mm (0 to 5; one or two: [start, end] of a satin as its path is drawn), expand?: mm (-2 to 2), narrowAsSatin?: mm (0 to 12), underlay?: true|false|\"auto\"|\"none\"|\"center\"|\"edge\"|\"edgeZigzag\"|\"edgeTatami\", splitLength?: mm (2 to 12)} set embroidery settings on the objects' fills or strokes, each as document.formats describes the option of that name: kept with the object (moved and turned with it), they beat document.export's options, the document's settings (embroidery.setup) and the defaults; null unsets one; a value out of its range is refused, not clamped, and so is document.export's earlier name of a setting, naming the one to use. Objects that take none (type, a symbol instance, whose art takes them, a run of stitches opened from a machine file…) and those without the part are skipped and listed. One undo step, none when nothing changes; saved with the document → {part, settings: {each key given: as stored, or null}, changedCount, unchangedCount, skippedCount, skipped: [{id, reason: \"literal\"|\"manual\"|\"guide\"|\"type\"|\"image\"|\"symbolInstance\"|\"live\"|\"placed\"|\"intertwine\"|\"noPart\"}] (at most 1000)}",
             has_selection,
             objects::set
         ),
@@ -507,7 +534,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Select Needle Points",
             [],
             None,
-            "{records?: [from, to] (record numbers, from 1, inclusive), ids?, kinds?, shorterThan?, longerThan? (as embroidery.stitches filters them), …the embroidery options | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them) | rect?: [x0, y0, x1, y1] or polygon?: [[x, y]…] (3 to 4,096 points; millimetres from the document's origin, y down), ids? (the objects whose paths of stitches it looks in; default: the object isolated, else the whole document), mode?: \"set\"|\"add\"|\"toggle\"|\"subtract\" (default set)} selects needle points (their anchors, as Direct Selection selects them), by the records that sew them (planning the design as embroidery.stitches lists it: a needle point, or the one a jump lands on; a record the stitch commands can't edit is passed over and counted; cuts and stops select nothing), by their addresses (planning nothing), or by a shape: those inside a rectangle or a polygon (by the even-odd rule, as the Lasso tool selects anchors), as the Embroidery Tool's marquee selects them while editing stitches (planning nothing; paths of stitches that can't be edited are passed over and counted). A selection, not an undo step → {selectedCount: the needle points selected in the paths it touched, pathCount, passedOver}",
+            "{records?: [from, to] (record numbers, from 1, inclusive), ids?, kinds?, shorterThan?, longerThan? (as embroidery.stitches filters them), …the embroidery options | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them) | rect?: [x0, y0, x1, y1] or polygon?: [[x, y]…] (3 to 4,096 points; millimetres from the document's origin, y down), ids? (the objects whose paths of stitches it looks in; default: the object isolated, else the whole document), mode?: \"set\"|\"add\"|\"toggle\"|\"subtract\" (default set)} selects needle points (their anchors, as Direct Selection selects them), by the records that sew them (planning the design as embroidery.stitches lists it: a needle point, or the one a jump lands on, or the one a cut or a stop follows; a record the stitch commands can't edit is passed over and counted), by their addresses (planning nothing), or by a shape: those inside a rectangle or a polygon (by the even-odd rule, as the Lasso tool selects anchors), as the Embroidery Tool's marquee selects them while editing stitches (planning nothing; paths of stitches that can't be edited are passed over and counted). A selection, not an undo step → {selectedCount: the needle points selected in the paths it touched, pathCount, passedOver}",
             has_doc,
             records::select
         ),
@@ -536,75 +563,99 @@ pub fn specs() -> Vec<CommandSpec> {
 }
 
 fn set_trim_after(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setTrimAfter";
-    let o = object(p, C)?;
-    let on = match o.get("on") {
-        None | Some(Value::Null) => None,
-        Some(v) => Some(v.as_bool().ok_or_else(|| bad(C, format!("`on` {v}: true or false")))?),
-    };
-    let ids = targets(s, p)?;
-    if ids.is_empty() {
-        return Err(bad(C, "select the objects whose thread is cut after them, or give ids"));
-    }
-    // Every id names an object, before anything changes.
-    let d = &s.doc()?.doc;
-    if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
-        return Err(EngineError::NoNode(*missing));
-    }
-    // Only what is sewn is cut after: type, images and the like are passed over.
-    let ids: Vec<NodeId> = ids.into_iter().filter(|id| d.node(*id).is_some_and(objects::cut_after_sewn)).collect();
-    if ids.is_empty() {
-        return Err(bad(C, "none of the objects given is sewn (type, images, placed files and guides aren't), so none is cut after"));
-    }
-    // Marked: asked for a cut after it, or a run of stitches whose file had one.
-    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.trim_after || e.stitches.as_ref().is_some_and(|r| r.trim_after));
-    let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
-    let changed = edit_counted(s, "Embroidery Trim After", |d| {
-        objects::edit_each(d, &ids, |e| {
-            e.set_trim_after(on);
-            // Off: no cut after it, the one its file had included.
-            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
-                run.trim_after = false;
-            }
-        })
-    })?;
-    Ok(json!({ "on": on, "changed": changed }))
+    set_after(s, p, AfterSet::TRIM)
 }
 
 fn set_stop_after(s: &mut Session, p: &Value) -> Result<Value> {
-    const C: &str = "embroidery.setStopAfter";
-    let o = object(p, C)?;
+    set_after(s, p, AfterSet::STOP)
+}
+
+/// What one of Trim After and Stop After sets ([`set_after`]): its command, its undo step, what it
+/// says when nothing can take it, and the flag it reads and sets.
+struct AfterSet {
+    cmd: &'static str,
+    label: &'static str,
+    none_given: &'static str,
+    none_sewn: &'static str,
+    of: fn(vectorcraft_doc::embroidery::After) -> bool,
+    set: fn(&mut Embroidery, bool),
+}
+
+impl AfterSet {
+    const TRIM: Self = Self {
+        cmd: "embroidery.setTrimAfter",
+        label: "Embroidery Trim After",
+        none_given: "select the objects whose thread is cut after them, or give ids",
+        none_sewn: "none of the objects given is sewn (type, images, placed files and guides aren't), so none is cut after",
+        of: |a| a.trim,
+        // Off: no cut after it, the one its file had included.
+        set: |e, on| {
+            e.set_trim_after(on);
+            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
+                run.trim_after = false;
+            }
+        },
+    };
+    const STOP: Self = Self {
+        cmd: "embroidery.setStopAfter",
+        label: "Embroidery Stop After",
+        none_given: "select the objects the machine stops after, or give ids",
+        none_sewn: "none of the objects given is sewn (type, images, placed files and guides aren't), so the machine stops after none",
+        of: |a| a.stop,
+        // Off: no stop after it, the run's own included.
+        set: |e, on| {
+            e.set_stop_after(on);
+            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
+                run.stop_after = false;
+            }
+        },
+    };
+}
+
+/// `embroidery.setTrimAfter` and `embroidery.setStopAfter {ids?, on?}`: the thread cut, or the
+/// machine stopped, after each object given (else selected) that is sewn, or (`on: false`) no
+/// longer, wherever it is kept (a run's file's included); `on` left out is on unless every object
+/// has it already. One undo step.
+fn set_after(s: &mut Session, p: &Value, what: AfterSet) -> Result<Value> {
+    let c = what.cmd;
+    let o = object(p, c)?;
     let on = match o.get("on") {
         None | Some(Value::Null) => None,
-        Some(v) => Some(v.as_bool().ok_or_else(|| bad(C, format!("`on` {v}: true or false")))?),
+        Some(v) => Some(v.as_bool().ok_or_else(|| bad(c, format!("`on` {v}: true or false")))?),
     };
     let ids = targets(s, p)?;
     if ids.is_empty() {
-        return Err(bad(C, "select the objects the machine stops after, or give ids"));
+        return Err(bad(c, what.none_given));
     }
     // Every id names an object, before anything changes.
     let d = &s.doc()?.doc;
     if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
         return Err(EngineError::NoNode(*missing));
     }
-    // Only what is sewn is stopped after, as only what is sewn is cut after.
+    // Only what is sewn is cut or stopped after: type, images and the like are passed over.
     let ids: Vec<NodeId> = ids.into_iter().filter(|id| d.node(*id).is_some_and(objects::cut_after_sewn)).collect();
     if ids.is_empty() {
-        return Err(bad(C, "none of the objects given is sewn (type, images, placed files and guides aren't), so the machine stops after none"));
+        return Err(bad(c, what.none_sewn));
     }
-    // Marked: asked for a stop after it, or a run of stitches with one.
-    let marked = |e: Option<&Embroidery>| e.is_some_and(|e| e.stop_after || e.stitches.as_ref().is_some_and(|r| r.stop_after));
-    let on = on.unwrap_or_else(|| !ids.iter().all(|id| marked(d.node(*id).and_then(|n| n.extras().embroidery.as_deref()))));
-    let changed = edit_counted(s, "Embroidery Stop After", |d| {
-        objects::edit_each(d, &ids, |e| {
-            e.set_stop_after(on);
-            // Off: no stop after it, the run's own included.
-            if let Some(run) = e.stitches.as_mut().filter(|_| !on) {
-                run.stop_after = false;
-            }
-        })
-    })?;
+    let marked = |id: &NodeId| d.node(*id).and_then(|n| n.extras().embroidery.as_deref()).is_some_and(|e| (what.of)(e.after()));
+    let on = on.unwrap_or_else(|| !ids.iter().all(marked));
+    let changed = edit_counted(s, what.label, |d| objects::edit_each(d, &ids, |e| (what.set)(e, on)))?;
     Ok(json!({ "on": on, "changed": changed }))
+}
+
+/// Why Convert to Manual Stitches and Restore Object wait while Global Edit is on: translated (the
+/// interface says it).
+pub(crate) const GLOBAL_EDIT_ON: &str = "not while Global Edit is on: stop Global Edit first";
+
+/// Objects are selected and Global Edit is off: Convert to Manual Stitches and Restore Object
+/// replace an object with a group and back, which Global Edit would copy onto the other members
+/// without what each keeps to be restored.
+fn selected_outside_global_edit(s: &Session) -> std::result::Result<(), String> {
+    has_selection(s)?;
+    if s.active().is_some_and(|st| st.global_edit.is_some()) {
+        return Err(GLOBAL_EDIT_ON.into());
+    }
+    Ok(())
 }
 
 /// The keys of command `cmd`'s params `o` other than `own`, refused, naming the nearest of `own`.

@@ -257,7 +257,7 @@ pub struct Unit {
     pub satin_widths: Option<[f64; 2]>,
     /// For a run sewn as its points are, the least and the most its stitches were stretched by
     /// since they were made (read from a machine file, or converted): the singular values of its
-    /// transforms since (`StitchRun::transformed`), the walk's included (a symbol instance's).
+    /// transforms since (`StitchRun::since_made`), the walk's included (a symbol instance's).
     /// `None` for planned art, and for a run only moved since.
     pub scale: Option<[f64; 2]>,
     /// Why it is sewn the way it is.

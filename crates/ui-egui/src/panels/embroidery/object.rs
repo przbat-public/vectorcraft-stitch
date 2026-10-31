@@ -250,7 +250,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let stitches = app
         .session
         .active()
-        .and_then(|st| ids.iter().copied().find(|id| st.doc.node(*id).is_some_and(vectorcraft_tools::embroidery::holds_stitches)));
+        .and_then(|st| ids.iter().copied().find(|id| st.doc.node(*id).is_some_and(vectorcraft_tools::embroidery::contains_stitches)));
     if ids.is_empty() {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {

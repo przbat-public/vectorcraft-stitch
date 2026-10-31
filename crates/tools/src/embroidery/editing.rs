@@ -160,13 +160,12 @@ fn first_selected(sel: &Selection, needles: &dyn NeedlePoints) -> Option<NeedleR
     Some(NeedleRef { id, index })
 }
 
-/// Whether `n`'s subtree holds a path of stitches: the object a double-click starts editing.
-pub fn holds_stitches(n: &vectorcraft_doc::Node) -> bool {
-    let mut found = false;
-    n.walk(&mut |c| {
-        found |= matches!(c.kind, vectorcraft_doc::NodeKind::Path { .. }) && c.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some());
-    });
-    found
+/// Whether `n` is or holds a path of stitches: the object a double-click starts editing. It stops
+/// at the first one found (asked of the selection every frame, by the chip, the Object tab and the
+/// Stitches tab's foot).
+pub fn contains_stitches(n: &vectorcraft_doc::Node) -> bool {
+    let run = matches!(n.kind, vectorcraft_doc::NodeKind::Path { .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some());
+    run || n.children().is_some_and(|c| c.iter().any(|c| contains_stitches(c)))
 }
 
 /// The object a double-click on `id` isolates: the one just inside the isolation (or the layer)
@@ -178,7 +177,7 @@ pub fn stitch_object(doc: &Document, isolation: Option<NodeId>, id: NodeId) -> O
         None => 1,
     };
     let top = *ancestry.get(inside).or(ancestry.last())?;
-    doc.node(top).filter(|n| holds_stitches(n)).map(|_| top)
+    doc.node(top).filter(|n| contains_stitches(n)).map(|_| top)
 }
 
 impl Editing {

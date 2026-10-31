@@ -85,7 +85,7 @@ fn in_art_view(app: &VectorcraftApp) -> Option<NodeId> {
     let scope = st.isolation?;
     (app.session.tool_id() == vectorcraft_tools::embroidery::ID
         && !app.session.stitch_view_of(st.uid).on
-        && st.doc.node(scope).is_some_and(vectorcraft_tools::embroidery::holds_stitches))
+        && st.doc.node(scope).is_some_and(vectorcraft_tools::embroidery::contains_stitches))
     .then_some(scope)
 }
 

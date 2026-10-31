@@ -29,7 +29,7 @@ use vectorcraft_doc::hit::{HitKind, hit_test};
 use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
 pub use editing::{
-    Editing, Hover, LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, SHIFT_STEPS, holds_stitches, is_selected, selected_count,
+    Editing, Hover, LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, SHIFT_STEPS, contains_stitches, is_selected, selected_count,
     stitch_object,
 };
 pub use facts::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, ThreadHit};
@@ -245,7 +245,7 @@ impl EmbroideryTool {
         let instance = matches!(cx.doc.node(id).map(|n| &n.kind), Some(vectorcraft_doc::NodeKind::SymbolInstance { .. }));
         // Stitch objects (manual stitches, an opened design's runs) are selected too: a double-click
         // on them starts editing their needle points.
-        instance || takers(cx.doc, &[id]).0 == [id] || cx.doc.node(id).is_some_and(holds_stitches)
+        instance || takers(cx.doc, &[id]).0 == [id] || cx.doc.node(id).is_some_and(contains_stitches)
     }
 
     /// A press away from every handle: the object under the pointer selected ([`Self::under`]) and
@@ -431,7 +431,7 @@ impl Tool for EmbroideryTool {
                 // of a stitch object; entering it shows the stitches). Planned art beside them in a
                 // group enters nothing.
                 None => match Self::found(cx, ev.pos)
-                    .filter(|(id, _)| cx.doc.node(*id).is_some_and(holds_stitches))
+                    .filter(|(id, _)| cx.doc.node(*id).is_some_and(contains_stitches))
                     .and_then(|(id, _)| stitch_object(cx.doc, cx.isolation, id))
                 {
                     Some(object) => {

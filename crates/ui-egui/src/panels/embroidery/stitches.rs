@@ -1304,8 +1304,8 @@ fn foot_ui(
     }
     let ids = scope_ids(app);
     let Some(st) = app.session.active() else { return };
-    let stitches = ids.iter().copied().find(|id| st.doc.node(*id).is_some_and(vectorcraft_tools::embroidery::holds_stitches));
-    let planned = ids.iter().any(|id| st.doc.node(*id).is_some_and(|n| !vectorcraft_tools::embroidery::holds_stitches(n)));
+    let stitches = ids.iter().copied().find(|id| st.doc.node(*id).is_some_and(vectorcraft_tools::embroidery::contains_stitches));
+    let planned = ids.iter().any(|id| st.doc.node(*id).is_some_and(|n| !vectorcraft_tools::embroidery::contains_stitches(n)));
     if let Some(id) = stitches {
         if ui.add(egui::Button::new(crate::et!("Edit Stitches")).wrap()).clicked() {
             crate::embroidery::editing::start(app, id);

@@ -734,6 +734,52 @@ fn the_tabs_read_counts_without_asking_about_edits() {
     assert!(tab.needle_points > 0);
 }
 
+/// Pathfinder on a converted object makes art, as on an opened file's runs (the project owner's
+/// choice): what it makes keeps no original and holds no manual stitches.
+#[test]
+fn pathfinder_on_a_converted_object_makes_art() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let [a, b] = [5.0, 10.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    let made = run(&mut s, "object.pathfinder.unite", json!({}));
+    let ids: Vec<u64> = made["ids"].as_array().unwrap().iter().filter_map(|v| v.as_u64()).collect();
+    assert!(!ids.is_empty(), "{made}");
+    let doc = &s.doc().unwrap().doc;
+    for id in ids {
+        doc.node(NodeId(id)).unwrap().walk(&mut |n| {
+            let e = n.extras().embroidery.as_deref();
+            assert!(e.is_none_or(|e| e.original.is_none() && e.stitches.as_ref().is_none_or(|r| !r.manual)), "{id}: art, not manual stitches");
+        });
+    }
+}
+
+/// Restore after one of a converted object's runs was cut into pieces puts the object back, the
+/// pieces gone with the rest of its runs; Undo of Restore gives the converted object back exactly.
+#[test]
+fn restore_after_a_cut_and_its_undo() {
+    use vectorcraft_doc::NodeId;
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    let first = s.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    let before = s.doc().unwrap().doc.clone();
+    run(&mut s, "select.anchors", json!({"id": first, "anchors": [[0, 2]]}));
+    run(&mut s, "path.cutAtAnchors", json!({}));
+    let cut = s.doc().unwrap().doc.clone();
+    assert!(*cut != *before, "the run cut (into pieces, or into subpaths of its path)");
+    let r = run(&mut s, "embroidery.restoreObject", json!({"ids": [a], "dryRun": true}));
+    assert_eq!(r["edited"], json!([a]), "cut since converting: edited");
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [a]}));
+    let restored = s.doc().unwrap().doc.node(NodeId(a)).unwrap().clone();
+    assert!(matches!(restored.kind, vectorcraft_doc::NodeKind::Path { .. }), "the square back");
+    let mut ids = std::collections::HashSet::new();
+    s.doc().unwrap().doc.walk(|n| assert!(ids.insert(n.id), "{:?} twice", n.id));
+    run(&mut s, "edit.undo", json!({}));
+    assert!(*s.doc().unwrap().doc == *cut, "Undo gives the converted object back, its pieces as they were");
+}
+
 /// The scale check on `s`: its one rule's reply.
 fn scale_rule(s: &mut Session) -> serde_json::Value {
     run(s, "embroidery.check", json!({"rules": ["stitchesScaled"]}))["rules"][0].clone()

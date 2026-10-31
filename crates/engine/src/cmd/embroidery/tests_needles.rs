@@ -274,6 +274,24 @@ fn the_edits_name_their_undo_steps_as_their_commands() {
     }
 }
 
+/// One set of thresholds everywhere (the project owner's choice): an edit's live check measures
+/// its stitches against Document Setup's shortest stitch and the 12.7 mm a machine sews well, the
+/// Check tab's lines, and counts those below and above them.
+#[test]
+fn an_edits_lengths_are_judged_by_the_documents_own_lines() {
+    let mut s = blank();
+    run(&mut s, "embroidery.setup", json!({"machine": {"minStitch": 1.0}}));
+    let id = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0), (18.0, 10.0)], StitchRun::default());
+    // The middle needle point moved to 0.5 mm from the first: one stitch below the line, and one
+    // past 12.7 mm when the last is moved far off.
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 1}], "to": [10.5, 10.0]}));
+    let l = &r["lengths"];
+    assert_eq!((l["min"].clone(), l["max"].clone()), (json!(1.0), json!(super::check::LONGEST_STITCH)), "{r}");
+    assert_eq!((l["belowMin"].clone(), l["aboveMax"].clone()), (json!(1), json!(0)), "{r}");
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "to": [40.0, 10.0]}));
+    assert_eq!((r["lengths"]["belowMin"].clone(), r["lengths"]["aboveMax"].clone()), (json!(0), json!(1)), "{r}");
+}
+
 /// Move Needle Points moves the needle points addressed by millimetres, or one to a point, one undo
 /// step that undo takes back with the selection; nothing moved is no step; the live check measures
 /// the stitches into and out of each; a two-point run brought to one spot sews both (a tack), and

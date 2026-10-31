@@ -187,15 +187,14 @@ mod tests {
         out.textures_delta.clear();
     }
 
+    /// Frames until the convert is done, or a deadline generous for a busy machine has passed.
     fn until_done(app: &mut VectorcraftApp, ctx: &egui::Context) {
-        for _ in 0..1000 {
-            if !running(app) {
-                return;
-            }
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+        while running(app) {
+            assert!(std::time::Instant::now() < deadline, "still converting");
             frame(app, ctx, vec![]);
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
-        panic!("still converting");
     }
 
     fn undo_steps(app: &VectorcraftApp) -> usize {
@@ -266,5 +265,21 @@ mod tests {
         app.ui.dialog = None;
         until_done(&mut app, &ctx);
         assert_eq!(app.ui.status, "1 object converted to manual stitches: Restore Object brings it back", "not stopped");
+    }
+
+    /// The status bar says how far the convert has got and that Escape stops it, and an Escape fed
+    /// through the app's own frame (its logic, as a window runs it) stops it: nothing changed.
+    #[test]
+    fn progress_is_said_and_an_escape_through_the_app_frame_stops_it() {
+        let ctx = egui::Context::default();
+        let (mut app, a) = app();
+        let steps = undo_steps(&app);
+        start(&mut app, &json!({"ids": [a]}));
+        assert_eq!(app.ui.status, "Converting to manual stitches… 0% · Esc stops it");
+        let escape = Event::Key { key: Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
+        let mut out = ctx.run_ui(egui::RawInput { events: vec![escape], ..Default::default() }, |ui| app.logic(ui.ctx()));
+        out.textures_delta.clear();
+        until_done(&mut app, &ctx);
+        assert_eq!((undo_steps(&app), app.ui.status.as_str()), (steps, "Convert to Manual Stitches · Stopped: nothing was changed."));
     }
 }

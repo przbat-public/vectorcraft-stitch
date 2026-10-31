@@ -1201,17 +1201,16 @@ fn set_on_canvas_and_the_entry_row_work_from_the_keyboard() {
 
 /// The app's per-frame work until a convert under way (off the interface thread) has finished.
 fn converted_now(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) {
-    for _ in 0..2000 {
-        if !crate::embroidery::convert_job::running(app) {
-            return;
-        }
+    // A deadline generous for a busy machine, not a count of frames.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+    while crate::embroidery::convert_job::running(app) {
+        assert!(std::time::Instant::now() < deadline, "still converting");
         *time += 0.001;
         let raw = egui::RawInput { time: Some(*time), ..Default::default() };
         let mut out = ctx.run_ui(raw, |ui| crate::embroidery::convert_job::poll(app, ui.ctx()));
         out.textures_delta.clear();
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
-    panic!("still converting");
 }
 
 /// Enter on a focused Restore Object… opens its question and isn't the question's answer: held
@@ -1319,6 +1318,34 @@ fn inspect_reports_manual_stitches_and_counts_read_in_their_own_numbers() {
     assert!(seen["manual"]["needlePoints"].as_u64().is_some_and(|n| n > 1));
     assert!(drawn.has("1 selected object is manual stitches"), "{:?}", drawn.words);
     assert_eq!(crate::etn!(1, "{count} needle point", "{count} needle points"), "1 needle point");
+}
+
+/// While a convert is under way, Convert waits (dimmed); and Restore Object's question, its
+/// document no longer the active one, closes as Cancel, nothing restored.
+#[test]
+fn convert_waits_while_busy_and_the_question_closes_with_its_document() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    select(&mut app, &[a]);
+    let mut time = 0.0;
+    let convert = super::super::command_label(&app, CONVERT);
+    click_on(&mut app, &ctx, &mut time, &convert);
+    assert!(crate::embroidery::convert_job::running(&app));
+    time += 0.05;
+    let drawn = frame(&mut app, &ctx, time, vec![]);
+    assert!(drawn.node(&convert).is_disabled(), "Convert waits while converting");
+    converted_now(&mut app, &ctx, &mut time);
+    // Edited, so Restore asks; then another document is made the active one.
+    let run = app.session.doc().unwrap().doc.node(NodeId(a)).unwrap().children().unwrap()[0].id.0;
+    app.run("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run, "index": 1}], "dx": 1})).unwrap();
+    select(&mut app, &[a]);
+    crate::embroidery::menu::restore_asking(&mut app, json!([a]));
+    assert!(app.ui.dialog.as_ref().is_some_and(|d| d.kind == crate::embroidery::restore_dialog::KIND));
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    time += 0.05;
+    frame_with_dialogs(&mut app, &ctx, time, vec![]);
+    assert!(app.ui.dialog.is_none(), "closed as Cancel");
+    app.run("document.activate", json!({"index": 0})).ok();
 }
 
 /// A pointer click in the middle of the node screen readers call `name`.

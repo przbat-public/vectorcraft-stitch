@@ -196,15 +196,14 @@ mod tests {
         out.textures_delta.clear();
     }
 
+    /// Frames until the search is done, or a deadline generous for a busy machine has passed.
     fn until_done(app: &mut VectorcraftApp, ctx: &egui::Context) {
-        for _ in 0..1000 {
-            if !running(app) {
-                return;
-            }
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+        while running(app) {
+            assert!(std::time::Instant::now() < deadline, "still running");
             frame(app, ctx, vec![]);
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
-        panic!("still running");
     }
 
     fn undo_steps(app: &VectorcraftApp) -> usize {

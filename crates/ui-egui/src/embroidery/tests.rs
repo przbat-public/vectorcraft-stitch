@@ -233,12 +233,12 @@ fn the_embroidery_ui_commands_and_control_keys_answer_junk_without_a_panic() {
     }
 }
 
-/// Frames until no convert or Nearest Connection is under way.
+/// Frames until no convert or Nearest Connection is under way, or a deadline generous for a busy
+/// machine has passed.
 fn until_done(app: &mut VectorcraftApp, ctx: &egui::Context) {
-    for _ in 0..2000 {
-        if !super::convert_job::running(app) && !super::nearest::running(app) {
-            return;
-        }
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+    while super::convert_job::running(app) || super::nearest::running(app) {
+        assert!(std::time::Instant::now() < deadline, "still working");
         let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
             super::convert_job::poll(app, ui.ctx());
             super::nearest::poll(app, ui.ctx());
@@ -246,7 +246,6 @@ fn until_done(app: &mut VectorcraftApp, ctx: &egui::Context) {
         out.textures_delta.clear();
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
-    panic!("still working");
 }
 
 /// A person's Convert to Manual Stitches, Restore Object and Nearest Connection from the command

@@ -589,7 +589,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
             };
             let circles = (v.zoom >= NEEDLE_CIRCLES_MIN_ZOOM).then(|| circles_that_fit(w, h, ppp));
             // Picture units are millimetres, as the limits.
-            EditLook { tags: (*tags).clone(), circles, shortest: l.shortest, longest: l.longest, step: Some(l.step) }
+            EditLook { tags: (*tags).clone(), circles, rule: l.rule() }
         });
         let style = LineStyle {
             faded: faded.map(|f| (*f).clone()),

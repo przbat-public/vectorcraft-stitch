@@ -485,4 +485,9 @@ fn one_set_of_limits_judges_a_stitch() {
     s.execute("embroidery.setup", &json!({"machine": {"minStitch": 0.6}})).unwrap();
     let set = check::stitch_limits(&s.doc().unwrap().doc, None);
     assert!(set.short(0.55) && !set.short(0.6), "{set:?}");
+    // On a line within the tolerance passes, and a grid step past it breaks it.
+    let tol = vectorcraft_doc::embroidery::LIMIT_TOLERANCE_MM;
+    assert!(!limits.short(0.4 - tol / 2.0) && limits.short(0.4 - 2.0 * tol) && limits.short(0.3));
+    assert!(!limits.long(12.7 + tol / 2.0, 0.0) && limits.long(12.7 + 2.0 * tol, 0.0) && limits.long(12.8, 0.0));
+    assert!(!dst.long(dst.step + tol / 2.0, 0.0) && dst.long(0.0, dst.step + 2.0 * tol) && dst.long(dst.step + 0.1, 0.0));
 }

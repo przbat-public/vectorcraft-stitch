@@ -26,6 +26,11 @@ fn picture(lines: &[HandLine]) -> LinePicture {
     b.build()
 }
 
+/// A rule of `shortest`, `longest` and `step` (picture units).
+fn rule(shortest: f64, longest: f64, step: f64) -> vectorcraft_doc::embroidery::StitchRule {
+    vectorcraft_doc::embroidery::StitchRule { shortest, longest, step }
+}
+
 fn style(colors: &[[u8; 3]]) -> LineStyle {
     LineStyle { colors: colors.to_vec(), ..LineStyle::default() }
 }
@@ -464,7 +469,7 @@ fn the_edit_look_draws_its_units_thin_on_top_with_circles() {
     let img = draw(&p, 80, 60, &plain);
     assert_eq!(rgb(at(&img, 55, 30)), BLUE, "the later line on top");
     assert_eq!(rgb(at(&img, 25, 33)), RED, "laid wide");
-    let edit = EditLook { tags: TagSet::of([0]), circles: Some(100), shortest: 0.0, longest: f64::INFINITY, step: None };
+    let edit = EditLook { tags: TagSet::of([0]), circles: Some(100), rule: rule(0.0, f64::INFINITY, f64::INFINITY) };
     // Four pixels a point: the line 4 px wide, a circle 10 px across its radius in a 4 px edge.
     let look = LineStyle { edit: Some(edit.clone()), px_per_pt: 4.0, ..plain.clone() };
     let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
@@ -490,7 +495,7 @@ fn a_run_cut_into_pieces_gets_a_circle_a_needle_point() {
     let p = picture(&[(0, 0, 1.0, &points)]);
     assert!(p.lines().len() > 2, "cut into pieces");
     let look = LineStyle {
-        edit: Some(EditLook { tags: TagSet::of([0]), circles: Some(10_000), shortest: 0.0, longest: f64::INFINITY, step: None }),
+        edit: Some(EditLook { tags: TagSet::of([0]), circles: Some(10_000), rule: rule(0.0, f64::INFINITY, f64::INFINITY) }),
         ..style(&[RED])
     };
     let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
@@ -509,11 +514,11 @@ fn the_edit_look_marks_the_stitches_that_break_a_rule() {
         (0, 0, 1.0, &[(5.0, 5.0, 1), (15.0, 5.0, 2), (17.0, 5.0, 3), (27.0, 5.0, 4), (57.0, 5.0, 5), (71.0, 19.0, 6)]),
         (0, 1, 1.0, &[(5.0, 40.0, 7), (6.0, 40.0, 8)]),
     ]);
-    let edit = EditLook { tags: TagSet::of([0]), circles: None, shortest: 5.0, longest: 25.0, step: None };
+    let edit = EditLook { tags: TagSet::of([0]), circles: None, rule: rule(5.0, 25.0, f64::INFINITY) };
     let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
     r.render(&p, 80, 50, Affine::IDENTITY, &LineStyle { edit: Some(edit.clone()), ..style(&[RED]) });
     assert_eq!(r.stats.flagged, 2, "the short and the long one");
-    r.render(&p, 80, 50, Affine::IDENTITY, &LineStyle { edit: Some(EditLook { step: Some(12.0), ..edit.clone() }), ..style(&[RED]) });
+    r.render(&p, 80, 50, Affine::IDENTITY, &LineStyle { edit: Some(EditLook { rule: rule(5.0, 25.0, 12.0), ..edit.clone() }), ..style(&[RED]) });
     assert_eq!(r.stats.flagged, 3, "and the one longer than the step along x and y");
     assert!(edit.breaks(Point::new(0.0, 0.0), Point::new(1.0, 0.0)) && !edit.breaks(Point::new(0.0, 0.0), Point::new(10.0, 0.0)));
 }
@@ -525,8 +530,34 @@ fn without_the_edit_look_nothing_changes() {
     let p = picture(&[(0, 0, 4.0, &[(10.5, 10.5, 1), (60.5, 10.5, 2)])]);
     let plain = style(&[RED]);
     let empty = LineStyle {
-        edit: Some(EditLook { tags: TagSet::default(), circles: Some(10), shortest: 0.0, longest: f64::INFINITY, step: None }),
+        edit: Some(EditLook { tags: TagSet::default(), circles: Some(10), rule: rule(0.0, f64::INFINITY, f64::INFINITY) }),
         ..plain.clone()
     };
     assert_eq!(draw(&p, 80, 20, &plain).pixels, draw(&p, 80, 20, &empty).pixels, "an edit look of no tags draws the same pixels");
+}
+
+proptest! {
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(256))]
+
+    /// A stitch on the formats' 0.1 mm grid, on a limit, a step under it or a step past it,
+    /// anywhere on a design up to 2 m across: the canvas's picture (`f32` offsets from its origin)
+    /// judges it as its millimetres are judged.
+    #[test]
+    fn a_stitch_on_the_grid_is_judged_as_in_millimetres(
+        at in (0i32..20_000, 0i32..20_000),
+        origin in (-5_000i32..5_000, -5_000i32..5_000),
+        along in prop::sample::select(vec![3i32, 4, 5, 120, 121, 122, 126, 127, 128]),
+        across in prop::sample::select(vec![0i32, 1, 89, 90, 91]),
+        step in prop::sample::select(vec![12.1, 204.7]),
+    ) {
+        // Tenths of a millimetre, the grid most formats write.
+        let grid = |v: i32| f64::from(v) / 10.0;
+        let rule = rule(0.4, 12.7, step);
+        let (a, b) = ((grid(at.0), grid(at.1)), (grid(at.0 + along), grid(at.1 + across)));
+        let o = (grid(origin.0), grid(origin.1));
+        let held = |v: f64, from: f64| f64::from((v - from) as f32);
+        let edit = EditLook { tags: TagSet::default(), circles: None, rule };
+        let canvas = edit.breaks(Point::new(held(a.0, o.0), held(a.1, o.1)), Point::new(held(b.0, o.0), held(b.1, o.1)));
+        prop_assert_eq!(canvas, rule.breaks(b.0 - a.0, b.1 - a.1));
+    }
 }

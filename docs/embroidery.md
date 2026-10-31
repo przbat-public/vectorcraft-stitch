@@ -253,7 +253,10 @@ Alt-click on a stitch inserts a needle point there; Delete merges the stitches e
 Escape cancels a drag, then deselects, then leaves. A stitch shorter than the document's shortest
 stitch (Document Setup's `minStitch`, else 0.4 mm) or longer than the format's longest record (or
 12.7 mm) is marked as the Check tab marks it, and beside the selection a bubble gives the lengths
-of the stitches either side. The actions on the selection (Insert, Delete, Split Run, Join Runs,
+of the stitches either side. The canvas, the bubble, the Stitches tab and the stitch commands judge
+a stitch by one rule, a thousandth of a millimetre past each line: a stitch exactly on a limit
+(0.4 mm, one DST record of 12.1 mm) passes everywhere, and one a 0.1 mm grid step past it is marked
+everywhere. The actions on the selection (Insert, Delete, Split Run, Join Runs,
 Trim, Stop, Split Long Stitches) are in the Contextual Task Bar under it, in the Embroidery panel's
 ≡ menu and in the Stitches tab. A limit: on a design near the 2 million needle points a design may
 hold, dragging a single needle point runs at about 46 ms a frame, as the canvas measures the whole

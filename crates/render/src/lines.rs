@@ -582,23 +582,20 @@ pub struct LineStyle {
 /// The edit look: the lines of `tags` (the units being edited) drawn [`EDIT_LINE_PT`] wide after
 /// every other line, so nothing sewn later buries them; their needle points as two-tone circles
 /// when `circles` says how many may show (none past it: more can't sit side by side); and each of
-/// their stitches that breaks a rule dashed in two tones with a mark at its middle: shorter than
-/// `shortest`, longer than `longest`, or longer along x or y than `step` (picture units).
+/// their stitches that breaks `rule` dashed in two tones with a mark at its middle (picture units
+/// are its millimetres).
 #[derive(Clone, Debug, PartialEq)]
 pub struct EditLook {
     pub tags: TagSet,
     pub circles: Option<usize>,
-    pub shortest: f64,
-    pub longest: f64,
-    pub step: Option<f64>,
+    pub rule: vectorcraft_doc::embroidery::StitchRule,
 }
 
 impl EditLook {
-    /// Whether the stitch from `a` to `b` (picture units) breaks a rule.
+    /// Whether the stitch from `a` to `b` (picture units) breaks the rule, judged as everywhere
+    /// else ([`vectorcraft_doc::embroidery::StitchRule`]).
     pub fn breaks(&self, a: Point, b: Point) -> bool {
-        let (dx, dy) = ((b.x - a.x).abs(), (b.y - a.y).abs());
-        let length = dx.hypot(dy);
-        length < self.shortest || length > self.longest || self.step.is_some_and(|s| dx > s || dy > s)
+        self.rule.breaks(b.x - a.x, b.y - a.y)
     }
 }
 

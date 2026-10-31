@@ -436,6 +436,41 @@ const FINGERPRINT_DIGITS: usize = 16;
 /// the largest design (2 million stitches, as a machine file's reader takes); a longer list is
 /// kept as it is, unread, a bound on what a hostile file makes this version hold.
 pub const MAX_MARKS: usize = 2_000_000;
+/// How far past a limit a stitch has to be to break it, millimetres: a thousandth of a millimetre,
+/// far above the noise of the ways a stitch is measured (about 1e-5 mm in the canvas's picture, in
+/// `f32`; 1e-15 in millimetres or points) and a hundredth of the formats' 0.1 mm grid. A stitch
+/// exactly on a limit (0.4 mm; DST's 121 units) then passes wherever it is measured, and one a
+/// grid step past it breaks it everywhere.
+pub const LIMIT_TOLERANCE_MM: f64 = 1e-3;
+
+/// The lines a stitch is judged by, millimetres: shorter than `shortest`, longer than `longest`, or
+/// longer along x or y than `step` (one record of a format). The one judgement the canvas, the live
+/// check, the Stitches tab and the stitch commands make, [`LIMIT_TOLERANCE_MM`] past each line.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StitchRule {
+    pub shortest: f64,
+    pub longest: f64,
+    pub step: f64,
+}
+
+impl StitchRule {
+    /// Whether a stitch `length` millimetres long is too short.
+    pub fn short(&self, length: f64) -> bool {
+        length < self.shortest - LIMIT_TOLERANCE_MM
+    }
+
+    /// Whether a stitch moving `dx`, `dy` millimetres is too long.
+    pub fn long(&self, dx: f64, dy: f64) -> bool {
+        let past = |v: f64, limit: f64| v > limit + LIMIT_TOLERANCE_MM;
+        past(dx.hypot(dy), self.longest) || past(dx.abs(), self.step) || past(dy.abs(), self.step)
+    }
+
+    /// Whether a stitch moving `dx`, `dy` millimetres breaks a line.
+    pub fn breaks(&self, dx: f64, dy: f64) -> bool {
+        self.short(dx.hypot(dy)) || self.long(dx, dy)
+    }
+}
+
 /// The keys of a thread record ([`ThreadRecord`]).
 const CATALOGUE: &str = "catalogue";
 const DESCRIPTION: &str = "description";

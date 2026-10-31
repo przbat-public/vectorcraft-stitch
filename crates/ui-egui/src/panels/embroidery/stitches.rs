@@ -221,7 +221,7 @@ pub struct DocList {
 #[derive(Default)]
 pub struct StitchesState {
     pub(crate) docs: HashMap<u64, DocList>,
-    list: Option<(ListKey, Arc<Listed>)>,
+    pub(crate) list: Option<(ListKey, Arc<Listed>)>,
     numbering: Option<(u64, u64, Numberings)>,
     /// The last plan drawn with its flags, of document (uid): drawn dimmed while a newer plan's
     /// flags are being built, so the list, Go to and the foot stay (a field typed into keeps the

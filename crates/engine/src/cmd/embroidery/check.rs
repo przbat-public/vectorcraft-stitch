@@ -148,14 +148,23 @@ impl StitchLimits {
         Self { shortest: super::needles::shortest_stitch(doc), longest: LONGEST_STITCH, step: format.max_step(), format }
     }
 
-    /// Whether a stitch `length` millimetres long is too short.
-    pub fn short(&self, length: f64) -> bool {
-        length < self.shortest
+    /// The lines themselves, as the canvas judges by them too.
+    pub fn rule(&self) -> vectorcraft_doc::embroidery::StitchRule {
+        vectorcraft_doc::embroidery::StitchRule { shortest: self.shortest, longest: self.longest, step: self.step }
     }
 
-    /// Whether a stitch moving `dx`, `dy` millimetres is too long.
+    /// Whether a stitch `length` millimetres long is too short ([`StitchRule::short`]).
+    ///
+    /// [`StitchRule::short`]: vectorcraft_doc::embroidery::StitchRule::short
+    pub fn short(&self, length: f64) -> bool {
+        self.rule().short(length)
+    }
+
+    /// Whether a stitch moving `dx`, `dy` millimetres is too long ([`StitchRule::long`]).
+    ///
+    /// [`StitchRule::long`]: vectorcraft_doc::embroidery::StitchRule::long
     pub fn long(&self, dx: f64, dy: f64) -> bool {
-        dx.hypot(dy) > self.longest || dx.abs() > self.step || dy.abs() > self.step
+        self.rule().long(dx, dy)
     }
 }
 

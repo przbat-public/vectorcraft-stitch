@@ -340,6 +340,72 @@ fn the_edit_look_shows_circles_from_250_percent_and_marks_rule_breakers() {
     assert!(app.embroidery.layer.stats().flagged > 0, "a stitch longer than the limit is marked");
 }
 
+/// Stitches exactly on a limit pass and those a grid step past it break it, alike on the canvas, in
+/// the live check and in the Stitches tab: with DST checked, runs of 0.4 mm (the shortest stitch),
+/// 0.3 mm, 12.1 mm (one DST record) and 12.2 mm, six times over at shifting places.
+#[test]
+fn a_stitch_on_a_limit_is_judged_alike_everywhere() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.embroidery.preview.pin_light();
+    app.run("file.new", json!({"width": 600, "height": 300, "artboards": 1})).unwrap();
+    app.run("paint.setFill", json!({"none": true})).unwrap();
+    app.run("paint.setStroke", json!({"color": "#1e50c8"})).unwrap();
+    let line = app.run("path.create", json!({"d": "M 30 100 L 90 100"})).unwrap()["id"].as_u64().unwrap();
+    app.run("select.set", json!({"ids": [line]})).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    let run = app.session.active().unwrap().doc.node(NodeId(line)).unwrap().children().unwrap()[0].id;
+    let count = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors.len();
+    // The run made of exact places: its first needle point, then each stitch's length in turn.
+    let (x0, y) = (10.0, 30.0);
+    let mut at = vec![];
+    let mut x = x0;
+    for r in 0..6 {
+        for length in [0.4, 0.3, 12.1, 12.2, 2.0 + 0.1 * f64::from(r)] {
+            x += length;
+            at.push(json!([x, y]));
+        }
+    }
+    let original = count(&app);
+    app.run("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 0}], "to": [x0, y]})).unwrap();
+    app.run("embroidery.insertNeedlePoints", json!({"id": run.0, "index": 1, "at": at})).unwrap();
+    let last = count(&app) - 1;
+    app.run("embroidery.deleteNeedlePoints", json!({"ranges": [{"id": run.0, "from": at.len() + 1, "to": last}]})).unwrap();
+    assert_eq!(count(&app), at.len() + 1, "the run as made (from {original} needle points)");
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": line})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "selection", "filter": "all"})).unwrap();
+    let uid = app.session.active().unwrap().uid;
+    app.embroidery.check.format.insert(uid, "dst");
+    let centre = (x0 + x) / 2.0 * super::PT_PER_MM;
+    app.run("view.setZoom", json!({"zoom": 100, "center": [centre, y * super::PT_PER_MM]})).unwrap();
+    app.run("select.all", json!({})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    for _ in 0..3 {
+        settle(&mut app, &ctx, &mut time);
+        let raw = egui::RawInput {
+            time: Some(time),
+            screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(1000.0, 700.0))),
+            ..Default::default()
+        };
+        let mut out = ctx.run_ui(raw, |ui| {
+            egui::Panel::right("embroidery-test").exact_size(300.0).resizable(false).show(ui, |ui| crate::panels::embroidery::show(&mut app, ui));
+        });
+        out.textures_delta.clear();
+    }
+    // The tab.
+    let (_, listed) = app.embroidery.stitches.list.as_ref().expect("the rows listed");
+    let (short, long) = (listed.counts[4], listed.counts[5]);
+    assert_eq!((short, long), (6, 6), "the tab's Too short and Too long");
+    // The live check, every needle point selected.
+    let k = &app.embroidery.selection;
+    assert_eq!((k.fixed.short, k.fixed.long), (6, 6), "the live check");
+    // The canvas, every stitch on it.
+    assert_eq!(app.embroidery.layer.stats().flagged, 12, "the canvas's marks");
+}
+
 /// `]` makes a needle point the current one: a two-tone ring round it (dark, light, its colour).
 #[test]
 fn the_current_needle_point_has_a_two_tone_ring() {

@@ -340,6 +340,42 @@ fn a_click_while_the_plan_lags_an_edit_only_shows_the_stitch() {
     assert!(p.distance(shown) < 1e-6, "the needle point the row shows: {p:?} vs {shown:?}");
 }
 
+/// While stitches are edited, a row of another object (the Whole design scope lists it) only shows
+/// its stitch, as outside editing: its needle points aren't the ones being edited.
+#[test]
+fn while_editing_a_row_of_another_object_only_shows_its_stitch() {
+    let (mut app, id) = app();
+    let other = app.run("shape.rectangle", json!({"x": 200, "y": 200, "width": 60, "height": 50})).unwrap()["id"].as_u64().unwrap();
+    app.run("select.set", json!({"ids": [other]})).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    // Sewn first, so its rows come first in the list.
+    app.run("embroidery.sewFirst", json!({"ids": [other]})).unwrap();
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let of_other = |n: &usize| {
+        stitch_list::row(&plan, *n).is_some_and(|r| r.kind == stitch_list::RecordKind::Stitch && r.length.is_some() && r.object == NodeId(other))
+    };
+    let number = (0..list.len()).filter_map(|i| list.record(i)).filter(of_other).nth(4).expect("a stitch of the other object");
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let selection = &app.session.active().unwrap().selection;
+    assert!(selection.anchors.is_empty() && selection.objects.is_empty(), "nothing selected: {selection:?}");
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.shown), Some(number), "the stitch shown");
+    assert_eq!(app.ui.status, "", "no word that it can't be edited");
+}
+
 /// Go to takes a number in the scope (the focus moves to it), and says so when one isn't there;
 /// junk and huge numbers are refused without a panic.
 #[test]

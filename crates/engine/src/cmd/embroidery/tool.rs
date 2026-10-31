@@ -204,6 +204,17 @@ impl crate::Session {
         self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| n.selected_paths(cx.selection)))
     }
 
+    /// Which of `ids` stitch editing edits now (the needle index holds them), in order; all `false`
+    /// while it isn't editing. The Stitches tab selects only these from its rows.
+    pub fn stitch_edits(&mut self, view: crate::ViewInfo, ids: &[NodeId]) -> Vec<bool> {
+        let held = if self.tool_id() == vectorcraft_tools::embroidery::ID {
+            self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| ids.iter().map(|id| n.holds(*id)).collect()))
+        } else {
+            None
+        };
+        held.unwrap_or_else(|| vec![false; ids.len()])
+    }
+
     /// The embroidery tool's handles as the canvas draws them, while it is the active tool (else
     /// none), in `view`: the list the tool catches ([`vectorcraft_tools::embroidery::handles`]), of
     /// the part its options show, and its options (`hover`, `focus`, `drag`). Never plans.

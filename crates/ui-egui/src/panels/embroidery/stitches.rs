@@ -756,13 +756,13 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
             d.anchor = Some(number);
         }
     }
-    let editing = crate::embroidery::editing::editing(app).is_some();
+    let editing = crate::embroidery::editing::editing(app);
     // Outside editing, a double-click, or while the plan shown lags an edit (its rows may name
     // needle points the edit moved): the stitch shown.
-    if !editing || double || shown.stale {
+    let Some(editing) = editing.filter(|_| !double && !shown.stale) else {
         show_stitch(app, shown, number, double);
         return;
-    }
+    };
     let range = match (mods.shift, anchor) {
         (true, Some(a)) => a.min(number)..a.max(number) + 1,
         _ => number..number + 1,
@@ -776,8 +776,22 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
             picked.insert((a.node.0, a.index, a.of));
         }
     }
+    // Only needle points being edited: what lies outside the object edited (the Whole design scope
+    // lists it) is left as it is.
+    let ids: Vec<NodeId> = picked.iter().map(|(id, ..)| NodeId(*id)).collect::<std::collections::BTreeSet<_>>().into_iter().collect();
+    let view = app.view_info();
+    let held: std::collections::HashSet<u64> = ids.iter().zip(app.session.stitch_edits(view, &ids)).filter(|(_, h)| *h).map(|(id, _)| id.0).collect();
+    picked.retain(|(id, ..)| held.contains(id));
     let points: Vec<serde_json::Value> = picked.into_iter().map(|(id, k, of)| json!({"id": id, "index": k, "of": of})).collect();
     if points.is_empty() {
+        // A row of another object: its stitch shown, as outside editing.
+        let inside = stitch_list::row(&shown.plan, number)
+            .and_then(|r| app.session.active().and_then(|st| st.doc.ancestry(r.node)))
+            .is_some_and(|a| a.contains(&editing.scope.object));
+        if !inside {
+            show_stitch(app, shown, number, false);
+            return;
+        }
         app.status(crate::et!("This stitch can't be edited: it is planned from its object's shape."));
         return;
     }

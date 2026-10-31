@@ -288,6 +288,9 @@ fn what_needs_no_plan_to_refuse_is_refused_before_planning() {
 /// changes, as are params of another shape.
 #[test]
 fn converting_is_one_step_and_refuses_before_changing_anything() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
     let mut s = blank();
     let square = red_square(&mut s, 5.0, 5.0, 10.0);
     let text = run(&mut s, "text.create", json!({"x": 20, "y": 200, "text": "Hi"}))["id"].as_u64().unwrap();
@@ -541,6 +544,9 @@ fn a_members_trim_and_stop_after_in_an_object_sewn_whole_are_carried() {
 /// over as `holdsUnsewn`: converting would hide it inside the object kept.
 #[test]
 fn an_object_sewn_whole_holding_what_isnt_sewn_is_passed_over() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
     for what in ["type", "hidden", "locked"] {
         let mut s = blank();
         let a = red_square(&mut s, 5.0, 5.0, 10.0);
@@ -647,6 +653,9 @@ fn restoring_passes_over_what_it_cant_restore() {
 /// with its values in range and measured.
 #[test]
 fn restore_holds_what_it_puts_back_to_what_opening_a_file_does() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
     use vectorcraft_doc::embroidery::Original;
     use vectorcraft_doc::text::{CharPosition, CharStyle, RubySpan, ScriptMetrics};
     use vectorcraft_doc::{NodeId, NodeKind};

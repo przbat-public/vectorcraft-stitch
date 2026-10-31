@@ -376,6 +376,9 @@ fn an_export_with_stops_says_how_they_were_written() {
 /// clears a run's own stop when off, takes one undo step, and refuses what isn't sewn.
 #[test]
 fn set_stop_after_marks_toggles_and_refuses() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
     let mut s = blank();
     let [a, b] = two_apart(&mut s, Embroidery::default());
     let stopped =

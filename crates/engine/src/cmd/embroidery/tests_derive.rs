@@ -621,6 +621,9 @@ fn the_plan_follows_a_turned_and_mirrored_exit() {
 /// marked.
 #[test]
 fn stop_after_goes_where_trim_after_goes() {
+    // It lays out type, which may load fonts into the shared font database: held as the tests
+    // that add fonts hold it, so as not to clear their caches mid-test.
+    let _fonts = crate::adding_fonts();
     type Scenario = fn(&mut Session, &Embroidery) -> Vec<u64>;
     let scenarios: [(&str, Scenario); 7] = [
         ("divide", |s, mark| {

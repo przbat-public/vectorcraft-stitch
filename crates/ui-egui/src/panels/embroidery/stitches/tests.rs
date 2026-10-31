@@ -242,6 +242,51 @@ fn page_down_moves_a_screenful() {
     assert!(focus.is_some_and(|r| r + 2 >= rows && r <= rows), "{focus:?} of {rows} drawn");
 }
 
+/// While stitches are edited a click on a cut's row selects the needle point the cut follows, as
+/// `embroidery.selectNeedlePoints` selects it by that record (and once: Cmd takes it away again).
+#[test]
+fn a_click_on_a_cuts_row_selects_the_needle_point_it_follows() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.setMachineFunction", json!({"needlePoints": [{"id": run.0, "index": 5}], "function": "trim"})).unwrap();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let cuts = app.run("embroidery.stitches", json!({"ids": [id], "kinds": ["trim"]})).unwrap();
+    let cut = cuts["records"].as_array().unwrap().iter().find(|r| r["index"].is_u64()).expect("a cut the commands edit by a needle point").clone();
+    let number = cut["record"].as_u64().unwrap() as usize;
+    // What the command selects by that record.
+    app.run("embroidery.selectNeedlePoints", json!({"records": [number, number]})).unwrap();
+    let wanted = app.session.active().unwrap().selection.anchors.clone();
+    assert_eq!(wanted.values().map(std::collections::BTreeSet::len).sum::<usize>(), 1, "{wanted:?}");
+    app.run("select.set", json!({"ids": []})).unwrap();
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 0}]})).unwrap();
+    // The cut's row, clicked.
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    assert_eq!(app.session.active().unwrap().selection.anchors, wanted);
+    // Cmd on it again, a second later (not a double-click), takes it away.
+    time += 1.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let at = row_at(&shapes, number);
+    // Cmd held as a keyboard says it (egui reads the keys held from these).
+    let cmd = [Event::ModifiersChanged(Modifiers::COMMAND), Event::PointerMoved(at), press(at, true, Modifiers::COMMAND)];
+    for e in [cmd.to_vec(), vec![press(at, false, Modifiers::COMMAND)], vec![Event::ModifiersChanged(Modifiers::NONE)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+    }
+    let left: usize = app.session.active().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum();
+    assert_eq!(left, 0);
+}
+
 /// Go to takes a number in the scope (the focus moves to it), and says so when one isn't there;
 /// junk and huge numbers are refused without a panic.
 #[test]

@@ -15,8 +15,9 @@
 //!   drawn; past [`MAX_SCROLLED_ROWS`] the list is split into pages, as egui places rows in `f32`.
 //! - **A click:** outside stitch editing it shows the stitch (a mark on the canvas, the view panned
 //!   to it when it is out of view: the project owner's choice); while stitches are edited it selects
-//!   the needle point (Shift a range, Cmd or Ctrl one more), the list lit from the document's
-//!   selection. A double-click or Enter zooms to it, as the Check tab's Show does.
+//!   the needle point the record is edited by, as `embroidery.selectNeedlePoints` by records does (a
+//!   cut's or a stop's the one it follows; Shift a range, Cmd or Ctrl one more), the list lit from
+//!   the document's selection. A double-click or Enter zooms to it, as the Check tab's Show does.
 //! - **Go to #**, and at the foot, while editing: the selection, Move by X and Y (the project
 //!   owner's choice) and the stitch actions; outside it Edit Stitches, or for planned stitches,
 //!   read only, Convert to Manual Stitches.
@@ -712,9 +713,11 @@ fn draw_row(
     name
 }
 
-/// A click on record `number`'s row: the row in focus; while stitches are edited its needle point
-/// selected (Shift: the range from the last clicked; Cmd or Ctrl: one more or one less), else the
-/// stitch shown on the canvas (a double-click: zoomed to).
+/// A click on record `number`'s row: the row in focus; while stitches are edited the needle point
+/// it is edited by selected, as `embroidery.selectNeedlePoints` selects it by its record (a jump's
+/// the one it lands on, a cut's or a stop's the one it follows; Shift: the range from the last
+/// clicked; Cmd or Ctrl: one more or one less), else the stitch shown on the canvas (a
+/// double-click: zoomed to).
 fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Modifiers, double: bool) {
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
     let anchor = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.anchor);
@@ -734,16 +737,16 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
         (true, Some(a)) => a.min(number)..a.max(number) + 1,
         _ => number..number + 1,
     };
-    let mut points: Vec<serde_json::Value> = Vec::new();
+    // Each needle point once: a cut follows the needle point the stitch before it is, and Cmd
+    // would otherwise take it away again.
+    let mut picked: std::collections::BTreeSet<(u64, usize)> = std::collections::BTreeSet::new();
     for n in range.take(RANGE_MAX) {
         let Some(row) = stitch_list::row(&shown.plan, n) else { continue };
-        if matches!(row.kind, RecordKind::Trim | RecordKind::Stop) {
-            continue;
-        }
         if let Some((node, k)) = edited_by(app, &shown.plan, shown.generation, row.unit, n, row.kind) {
-            points.push(json!({"id": node.0, "index": k}));
+            picked.insert((node.0, k));
         }
     }
+    let points: Vec<serde_json::Value> = picked.into_iter().map(|(id, k)| json!({"id": id, "index": k})).collect();
     if points.is_empty() {
         app.status(crate::et!("This stitch can't be edited: it is planned from its object's shape."));
         return;

@@ -361,7 +361,7 @@ mod tests {
         e.transform(a);
         let o = e.original.as_ref().unwrap();
         assert_eq!(o.frame, a);
-        assert_eq!(*o.node, json!({"points": [[1.0, 1.0], [2.0, 2.0]]}), "the node isn't moved");
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&o.node).unwrap(), json!({"points": [[1.0, 1.0], [2.0, 2.0]]}), "the node isn't moved");
         assert_eq!(o.extra.get("hint"), Some(&hint), "nor what it keeps beside its frame");
         e.transform(Affine::scale(f64::MAX));
         assert_eq!(e.original.as_ref().unwrap().frame, a, "a degenerate transform leaves the frame");
@@ -501,7 +501,7 @@ mod tests {
                 p.set(PartKey::Entry, Some(PartValue::Point(Point::new(x, y))));
             });
             // A kept original, where it was converted (its frame the identity, as a convert leaves it).
-            let node = std::sync::Arc::new(json!({"id": 7}));
+            let node: std::sync::Arc<str> = json!({"id": 7}).to_string().into();
             e.original = Some(super::super::Original { frame: Affine::IDENTITY, node, fingerprint: None, extra: Default::default() });
             // A run already transformed once since it was made, so that its record is composed.
             e.stitches = Some(super::super::StitchRun { since_made: Some(Affine::IDENTITY), ..Default::default() });

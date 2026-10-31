@@ -2606,8 +2606,8 @@ Limits:
 ### Manual stitches and needle points
 
 - **What a converted object is** (`cmd/embroidery/manual.rs`): a group keeping the object's id, its
-  `embroidery.original` (`{frame, node, fingerprint}`: the object as the file saved it, parsed only
-  at restore; the frame composed with every transform, by the convention for kept data; the
+  `embroidery.original` (`{frame, node, fingerprint}`: the object as the file saved it, kept in
+  memory as its compact JSON text, a fraction of a parsed tree's size, and parsed only at restore; the frame composed with every transform, by the convention for kept data; the
   fingerprint of the stitches as converted, telling edits from moves), and one path of literal
   stitches marked `manual` per sewing unit, in walk order. Each path's subpaths are runs the needle
   jumps between; `trims` names the runs reached after a cut, `stops` the needle points followed by a

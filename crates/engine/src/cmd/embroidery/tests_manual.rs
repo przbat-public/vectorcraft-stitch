@@ -194,7 +194,7 @@ fn converting_freezes_an_object_in_place() {
     run(&mut s, "embroidery.setStopAfter", json!({"ids": [red]}));
     run(&mut s, "embroidery.set", json!({"ids": [red], "part": "fill", "angle": 30}));
     let before = exports(&mut s);
-    let saved = serde_json::to_value(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(red)).unwrap()).unwrap();
+    let saved = serde_json::to_string(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(red)).unwrap()).unwrap();
     let r = run(&mut s, "embroidery.convertToManual", json!({"ids": [red, blue]}));
     assert_eq!((r["convertedCount"].clone(), r["skippedCount"].clone()), (json!(2), json!(0)), "{r}");
     assert_eq!(exports(&mut s), before, "the same bytes in every format");
@@ -203,7 +203,7 @@ fn converting_freezes_an_object_in_place() {
     assert!(matches!(group.kind, vectorcraft_doc::NodeKind::Group { .. }), "the object is a group");
     let e: &Embroidery = group.extras().embroidery.as_deref().unwrap();
     let original = e.original.as_ref().unwrap();
-    assert_eq!((e.trim_after, e.stop_after, *original.node == saved), (true, true, true));
+    assert_eq!((e.trim_after, e.stop_after, *original.node == *saved), (true, true, true), "the object kept as its saved text");
     assert!(original.fingerprint.is_some() && original.frame == vectorcraft_geom::Affine::IDENTITY);
     let runs: Vec<_> = group.children().unwrap().iter().map(|c| c.extras().embroidery.as_deref().and_then(|e| e.stitches.clone()).unwrap()).collect();
     assert_eq!(runs.len(), 2, "its fill and its stroke");
@@ -600,7 +600,7 @@ fn restoring_passes_over_what_it_cant_restore() {
             let n = d.node_mut(vectorcraft_doc::NodeId(id)).ok_or(crate::EngineError::NoNode(vectorcraft_doc::NodeId(id)))?;
             if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
                 let o = e.original.clone().unwrap();
-                e.original = Some(Original { node: std::sync::Arc::new(node), ..o });
+                e.original = Some(Original { node: node.to_string().into(), ..o });
             }
         }
         Ok(())
@@ -659,7 +659,7 @@ fn restore_holds_what_it_puts_back_to_what_opening_a_file_does() {
             let n = d.node_mut(NodeId(*id)).unwrap();
             if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
                 let o = e.original.clone().unwrap();
-                let node = node.clone().map_or(o.node.clone(), std::sync::Arc::new);
+                let node = node.as_ref().map_or(o.node.clone(), |n| n.to_string().into());
                 e.original = Some(Original { frame: *frame, node, ..o });
             }
         }

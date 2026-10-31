@@ -179,10 +179,11 @@ pub struct Original {
     /// The original's own coordinates to the document's: the identity when converted, composed
     /// with every transform of the manual object since (moved, turned, scaled with it).
     pub frame: vectorcraft_geom::Affine,
-    /// The object as the file saved it when it was converted: parsed only when it is restored, so
-    /// that what a newer version wrote in it is kept, whatever it is; shared, not copied, by the
+    /// The object as the file saved it when it was converted, as compact JSON text: parsed only
+    /// when it is restored, so that what a newer version wrote in it is kept, whatever it is, at the
+    /// size of its text (a parsed tree takes several times as much); shared, not copied, by the
     /// copies of the manual object.
-    pub node: std::sync::Arc<serde_json::Value>,
+    pub node: std::sync::Arc<str>,
     /// The stitches as converted, summed up (their needle points in the original's coordinates,
     /// their cuts and stops): what tells stitches edited since converting from stitches only moved
     /// with their object. `None`: unknown (a file that kept none), so read as edited.
@@ -196,19 +197,16 @@ impl Original {
     /// object with a frame of six finite numbers and a node that is an object (a fingerprint that
     /// isn't sixteen hexadecimal digits is kept, unread). `None` otherwise (kept as it is).
     fn read(v: &serde_json::Value) -> Option<Self> {
-        let mut map = v.as_object()?.clone();
+        let map = v.as_object()?;
         let frame = map.get(FRAME).and_then(frame)?;
-        if !map.get(NODE).is_some_and(serde_json::Value::is_object) {
-            return None;
-        }
-        map.remove(FRAME);
-        let node = std::sync::Arc::new(map.remove(NODE).unwrap_or_default());
+        let node = map.get(NODE).filter(|n| n.is_object())?;
+        let node: std::sync::Arc<str> = serde_json::to_string(node).ok()?.into();
         let fingerprint =
             map.get(FINGERPRINT).and_then(|f| f.as_str()).filter(|f| f.len() == FINGERPRINT_DIGITS).and_then(|f| u64::from_str_radix(f, 16).ok());
-        if fingerprint.is_some() {
-            map.remove(FINGERPRINT);
-        }
-        Some(Self { frame, node, fingerprint, extra: map.into() })
+        // The keys read are taken out; the node isn't copied as a tree.
+        let read = |k: &str| k == FRAME || k == NODE || (k == FINGERPRINT && fingerprint.is_some());
+        let extra: serde_json::Map<String, serde_json::Value> = map.iter().filter(|(k, _)| !read(k)).map(|(k, v)| (k.clone(), v.clone())).collect();
+        Some(Self { frame, node, fingerprint, extra: extra.into() })
     }
 }
 
@@ -216,7 +214,8 @@ impl From<Original> for serde_json::Value {
     fn from(o: Original) -> Self {
         let set = [
             Some((FRAME, serde_json::json!(o.frame.as_coeffs()))),
-            Some((NODE, std::sync::Arc::unwrap_or_clone(o.node))),
+            // Text this version wrote from a parsed object, so it parses again.
+            Some((NODE, serde_json::from_str(&o.node).unwrap_or_default())),
             o.fingerprint.map(|f| (FINGERPRINT, serde_json::Value::String(format!("{f:016x}")))),
         ];
         with_kept(set.into_iter().flatten(), std::sync::Arc::unwrap_or_clone(o.extra))

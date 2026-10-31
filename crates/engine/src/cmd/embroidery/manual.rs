@@ -439,7 +439,7 @@ fn convert_one(doc: &mut Document, n: &Node, units: &[usize], plan: &DesignPlan)
     group.name = n.name.clone();
     group.visible = n.visible;
     group.locked = n.locked;
-    let original = Original { frame: Affine::IDENTITY, node: Arc::new(serde_json::to_value(n).ok()?), fingerprint: None, extra: Default::default() };
+    let original = Original { frame: Affine::IDENTITY, node: serde_json::to_string(n).ok()?.into(), fingerprint: None, extra: Default::default() };
     let mut marks = Embroidery { trim_after: e.is_some_and(|e| e.trim_after), stop_after: e.is_some_and(|e| e.stop_after), ..Embroidery::default() };
     marks.original = Some(Original { fingerprint: fingerprint(&group, Affine::IDENTITY), ..original });
     group.extras_mut().embroidery = Some(Box::new(marks));
@@ -768,7 +768,7 @@ pub(crate) fn edited(group: &Node) -> bool {
 fn put_back(doc: &Document, group: &Node, scaling: vectorcraft_doc::Scaling) -> std::result::Result<Node, NotRestored> {
     let e = group.extras().embroidery.as_deref();
     let Some(o) = e.and_then(|e| e.original.as_ref()) else { return Err(NotRestored::NotConverted) };
-    let mut n: Node = serde_json::from_value((*o.node).clone()).map_err(|_| NotRestored::Unreadable)?;
+    let mut n: Node = serde_json::from_str(&o.node).map_err(|_| NotRestored::Unreadable)?;
     // Converting takes objects from inside layers, never a layer: one kept is damaged data.
     if n.is_layer() {
         return Err(NotRestored::Unreadable);

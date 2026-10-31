@@ -698,7 +698,7 @@ fn an_object_made_from_a_converted_one_keeps_no_original() {
     let a = rect(&mut s, "#cc2222", 20.0, 20.0, 60.0, 40.0);
     let original = vectorcraft_doc::embroidery::Original {
         frame: vectorcraft_geom::Affine::IDENTITY,
-        node: std::sync::Arc::new(json!({"id": 1})),
+        node: json!({"id": 1}).to_string().into(),
         fingerprint: None,
         extra: Default::default(),
     };

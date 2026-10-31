@@ -50,7 +50,7 @@ pub(crate) fn object_bytes(e: &Embroidery) -> usize {
     };
     // The original's node, as the file saved it: shared by the copies of the object, counted with
     // each (an estimate errs high rather than low).
-    let original = |o: &super::Original| ALLOC + json_bytes(&o.node) + map_bytes(&o.extra);
+    let original = |o: &super::Original| ALLOC + o.node.len() + map_bytes(&o.extra);
     let text = |t: &Option<String>| t.as_ref().map_or(0, String::capacity);
     let part = |p: &super::PartSettings| {
         ALLOC
@@ -121,7 +121,7 @@ mod tests {
         let mut after = before.clone();
         let same = after.retained_bytes(&before);
         let id = after.layers[0].children().and_then(|c| c.first()).map(|n| n.id).unwrap();
-        let node = std::sync::Arc::new(serde_json::json!({"name": "x".repeat(10_000)}));
+        let node: std::sync::Arc<str> = serde_json::json!({"name": "x".repeat(10_000)}).to_string().into();
         let original = crate::embroidery::Original { frame: vectorcraft_geom::Affine::IDENTITY, node, fingerprint: None, extra: Default::default() };
         let e = Embroidery { original: Some(original), ..Embroidery::default() };
         after.node_mut(id).unwrap().extras_mut().embroidery = Some(Box::new(e));

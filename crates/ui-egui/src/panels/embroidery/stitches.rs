@@ -1130,11 +1130,17 @@ fn foot_ui(
                     ui.label(axis);
                     let name = format!("{} {axis}", crate::et!("Move by"));
                     let look = crate::embroidery::fields::Look { name: Some(&name), ..Default::default() };
+                    // Enter in the field moves them, by the value typed or, unchanged, by the one
+                    // shown again.
+                    let field = ui.id().with(("embroidery-move-by", k));
+                    apply |= ui.memory(|m| m.has_focus(field)) && ui.input(|i| i.key_pressed(egui::Key::Enter));
                     if let Some(v) =
                         crate::embroidery::fields::number_field(ui, ("embroidery-move-by", k), Some(by[k]), &format, &look, MOVE_BY_FIELD, &bounds)
+                        && v.is_finite()
                     {
-                        by[k] = v;
-                        apply |= ui.input(|i| i.key_pressed(egui::Key::Enter));
+                        // A value typed past the range is held to it, as the arrows and the scrub
+                        // hold theirs.
+                        by[k] = v.clamp(*bounds.start(), *bounds.end());
                     }
                 }
                 if one_row {

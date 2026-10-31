@@ -718,6 +718,27 @@ fn move_by_moves_the_selected_needle_points() {
     let after = app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[2].p;
     assert!((after.x - before.x - vectorcraft_engine::cmd::embroidery::mm_to_pt(0.3)).abs() < 1e-6, "{before:?} → {after:?}");
     assert_eq!(app.session.active().unwrap().history.undo.len(), steps + 1);
+    // Enter again, the value unchanged: the move again.
+    let enter_in = |app: &mut VectorcraftApp, time: &mut f64, events: Vec<Event>| {
+        *time += 0.05;
+        frame(
+            app,
+            &ctx,
+            *time,
+            vec![Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None })],
+        );
+        *time += 0.05;
+        frame(app, &ctx, *time, events);
+        settle(app, &ctx, time);
+    };
+    enter_in(&mut app, &mut time, vec![key(Key::Enter)]);
+    let again = app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[2].p;
+    assert!((again.x - after.x - vectorcraft_engine::cmd::embroidery::mm_to_pt(0.3)).abs() < 1e-6, "{after:?} → {again:?}");
+    assert_eq!(app.session.active().unwrap().history.undo.len(), steps + 2);
+    // A value typed past the range is held to it.
+    enter_in(&mut app, &mut time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text("5000".into()), key(Key::Enter)]);
+    let uid = app.session.active().unwrap().uid;
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).unwrap().move_by[0], super::MOVE_BY_MAX_MM);
 }
 
 /// One pass over the scope gives every filter's count; a filter's rows are its matches.

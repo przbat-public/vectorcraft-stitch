@@ -229,6 +229,26 @@ fn addresses_are_strict_and_replies_give_new_ones() {
     assert_eq!(r["merged"], json!([{"id": id, "index": 7}]), "{r}");
 }
 
+/// An edit copies only the paths it changes: the path a needle point moved in is a new node, every
+/// other keeps the very node it had, shared with the document before it.
+#[test]
+fn an_edit_copies_only_the_paths_it_changes() {
+    let mut s = blank();
+    let a = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0), (18.0, 10.0)], StitchRun::default());
+    let b = path_mm(&mut s, &[(10.0, 20.0), (14.0, 20.0), (18.0, 20.0)], StitchRun::default());
+    let shared = |s: &Session, id: u64| -> std::sync::Arc<vectorcraft_doc::Node> {
+        let doc = &s.doc().unwrap().doc;
+        let path = doc.index_path(NodeId(id)).unwrap();
+        let (last, up) = path.split_last().unwrap();
+        let siblings = if up.is_empty() { doc.layers.clone() } else { doc.node_at(up).unwrap().children().unwrap().clone() };
+        siblings[*last].clone()
+    };
+    let (a0, b0) = (shared(&s, a), shared(&s, b));
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": a, "index": 1}], "dx": 1}));
+    assert!(!std::sync::Arc::ptr_eq(&shared(&s, a), &a0), "the path changed is a new node");
+    assert!(std::sync::Arc::ptr_eq(&shared(&s, b), &b0), "the other keeps its node");
+}
+
 /// Each edit's label constant (its undo step's name) is the command's own label, as the command
 /// table gives it; Machine Function names its step by what it did, a cut or a stop.
 #[test]

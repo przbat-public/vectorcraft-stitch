@@ -5828,3 +5828,5 @@ embroidery	Planned from the shape: convert the object to manual stitches to edit
 @plural	{count} needle point selected|{count} needle points selected	已選取 {count} 個落針點
 # VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
 embroidery	Only the first {count} rows of the range are selected: a click selects no more.	只選取了範圍的前 {count} 列：一次按一下不會選取更多。
+# VectorCraft Stitch: the Stitches tab's Too long filter, named with both lines when the format's records are the nearer
+embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	長於 {longest} 公釐，或在 x 或 y 方向長於一筆 {format} 記錄（{step} 公釐）

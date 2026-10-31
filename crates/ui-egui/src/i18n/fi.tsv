@@ -6225,3 +6225,5 @@ embroidery	Planned from the shape: convert the object to manual stitches to edit
 @plural	{count} needle point selected|{count} needle points selected	{count} neulanpisto valittu|{count} neulanpistoa valittu
 # VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
 embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Valittuna on vain alueen {count} ensimmäistä riviä: yksi napsautus ei valitse enempää.
+# VectorCraft Stitch: the Stitches tab's Too long filter, named with both lines when the format's records are the nearer
+embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	Pidemmät kuin {longest} mm tai x- tai y-suunnassa pidemmät kuin yksi {format}-tietue ({step} mm)

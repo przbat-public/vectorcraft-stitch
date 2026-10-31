@@ -850,3 +850,18 @@ fn random_input_never_breaks_the_tab() {
         assert_eq!(got, Some(want), "seed {seed}");
     }
 }
+
+/// The Too long filter names its rule: with DST's records the nearer line, both lines (a diagonal
+/// within DST's records can still be past 12.7 mm); else the longest stitch alone.
+#[test]
+fn the_long_filter_says_its_lines() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let words = |format: &str| {
+        let limits = vectorcraft_engine::cmd::embroidery::stitch_limits(&doc, Some(format));
+        super::chip_words(Filter::Long, 3, &limits, crate::i18n::Lang::EN).1
+    };
+    assert_eq!(words("dst"), "Longer than 12.7 mm, or along x or y than one Tajima DST record (12.1 mm) 3");
+    assert_eq!(words("pes"), "Longer than 12.7 mm 3");
+}

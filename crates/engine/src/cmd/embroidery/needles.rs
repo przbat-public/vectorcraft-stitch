@@ -698,22 +698,24 @@ pub(crate) struct Lengths {
 }
 
 impl Lengths {
-    /// Count the stitch from `a` to `b` (document points).
-    pub(crate) fn add(&mut self, a: Point, b: Point, min: f64, max: f64) {
-        let mm = pt_to_mm(a.distance(b));
+    /// Count the stitch from `a` to `b` (document points), judged by `limits` as the canvas, the live
+    /// check and the Stitches tab judge it.
+    pub(crate) fn add(&mut self, a: Point, b: Point, limits: &super::check::StitchLimits) {
+        let (dx, dy) = (pt_to_mm(b.x - a.x), pt_to_mm(b.y - a.y));
+        let mm = dx.hypot(dy);
         if !mm.is_finite() {
             return;
         }
         self.count += 1;
         self.shortest = Some(self.shortest.map_or(mm, |s| s.min(mm)));
         self.longest = Some(self.longest.map_or(mm, |l| l.max(mm)));
-        self.below += usize::from(mm < min);
-        self.above += usize::from(mm > max);
+        self.below += usize::from(limits.short(mm));
+        self.above += usize::from(limits.long(dx, dy));
     }
 
     /// Count the stitches into and out of needle points `around` of `st` (within their runs; `ix`
     /// its index), each stitch once however many of its ends are among them.
-    pub(crate) fn around(&mut self, st: &Stitches, ix: &Index, around: impl IntoIterator<Item = usize>, min: f64, max: f64) {
+    pub(crate) fn around(&mut self, st: &Stitches, ix: &Index, around: impl IntoIterator<Item = usize>, limits: &super::check::StitchLimits) {
         // Each stitch by the needle point it arrives at.
         let mut arriving = BTreeSet::new();
         for k in around {
@@ -728,21 +730,24 @@ impl Lengths {
         for k in arriving {
             let Some((r, i)) = ix.locate(k) else { continue };
             if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(|h| st.needle((r, h))), st.needle((r, i))) {
-                self.add(a.p, b.p, min, max);
+                self.add(a.p, b.p, limits);
             }
         }
     }
 
-    /// As a reply gives it.
-    pub(crate) fn json(&self, min: f64, max: f64) -> Value {
+    /// As a reply gives it, with the lines judged by: `min`, `max`, and the format whose records'
+    /// `step` along x or y a stitch is also too long past.
+    pub(crate) fn json(&self, limits: &super::check::StitchLimits) -> Value {
         json!({
             "count": self.count,
             "shortest": self.shortest,
             "longest": self.longest,
             "belowMin": self.below,
             "aboveMax": self.above,
-            "min": min,
-            "max": max,
+            "min": limits.shortest,
+            "max": limits.longest,
+            "format": limits.format.id(),
+            "step": limits.step,
         })
     }
 }

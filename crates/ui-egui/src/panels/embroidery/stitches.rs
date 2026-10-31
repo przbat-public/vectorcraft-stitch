@@ -383,12 +383,25 @@ fn chip_words(filter: Filter, count: usize, limits: &StitchLimits, lang: Lang) -
                 &[("value", &numbers::decimal(lang, limits.shortest, LENGTH_DECIMALS))],
             )),
         ),
+        // Both lines, when the format's records are the nearer: a diagonal within them can still be
+        // past the longest stitch.
         Filter::Long => (
             crate::et!("Too long").to_string(),
-            Some(crate::embroidery::text::fill(
-                crate::et!("Longer than {value} mm"),
-                &[("value", &numbers::decimal(lang, limits.longest.min(limits.step), LENGTH_DECIMALS))],
-            )),
+            Some(if limits.step < limits.longest {
+                crate::embroidery::text::fill(
+                    crate::et!("Longer than {longest} mm, or along x or y than one {format} record ({step} mm)"),
+                    &[
+                        ("longest", &numbers::decimal(lang, limits.longest, LENGTH_DECIMALS)),
+                        ("format", limits.format.label()),
+                        ("step", &numbers::decimal(lang, limits.step, LENGTH_DECIMALS)),
+                    ],
+                )
+            } else {
+                crate::embroidery::text::fill(
+                    crate::et!("Longer than {value} mm"),
+                    &[("value", &numbers::decimal(lang, limits.longest, LENGTH_DECIMALS))],
+                )
+            }),
         ),
     };
     let shown = crate::embroidery::text::fill(crate::et!("{filter} {count}"), &[("filter", &word), ("count", &n)]);

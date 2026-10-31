@@ -298,6 +298,22 @@ fn an_edits_lengths_are_judged_by_the_documents_own_lines() {
     assert_eq!((l["belowMin"].clone(), l["aboveMax"].clone()), (json!(1), json!(0)), "{r}");
     let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "to": [40.0, 10.0]}));
     assert_eq!((r["lengths"]["belowMin"].clone(), r["lengths"]["aboveMax"].clone()), (json!(0), json!(1)), "{r}");
+    // Exactly on each line, as the canvas and the Stitches tab judge it: none counted; the format
+    // whose records are judged named (the thread palette's).
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 1}], "to": [11.0, 10.0]}));
+    assert_eq!(r["lengths"]["belowMin"], json!(0), "1 mm on the shortest stitch's line: {r}");
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "to": [23.7, 10.0]}));
+    let l = &r["lengths"];
+    assert_eq!(l["aboveMax"], json!(0), "12.7 mm on the longest stitch's line: {r}");
+    assert_eq!((l["format"].clone(), l["step"].as_f64().is_some()), (json!("jef"), true), "{r}");
+    // Split Long Stitches with DST measures against DST's records too.
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "to": [25.0, 10.0]}));
+    let r = run(&mut s, "embroidery.splitLongStitches", json!({"needlePoints": [{"id": id, "index": 2}], "format": "dst"}));
+    assert_eq!(
+        (r["lengths"]["format"].clone(), r["lengths"]["step"].clone(), r["lengths"]["aboveMax"].clone()),
+        (json!("dst"), json!(12.1), json!(0)),
+        "{r}"
+    );
 }
 
 /// Move Needle Points moves the needle points addressed by millimetres, or one to a point, one undo

@@ -12,6 +12,7 @@ use vectorcraft_doc::{Document, NodeId, Selection};
 use vectorcraft_geom::{Point, Vec2};
 use vectorcraft_stitch::{mm_to_pt, point_to_mm, point_to_pt, pt_to_mm};
 
+use super::check::StitchLimits;
 use super::needles::{self, Index, LONGEST, Lengths, MAX_LISTED, MAX_NEEDLE_POINTS, NOTHING_ADDRESSED, Stitches, Targets};
 use super::{object, only};
 use crate::cmd::bad;
@@ -138,8 +139,9 @@ struct Edit {
     cmd: &'static str,
     before: Selection,
     sel: Selection,
-    min: f64,
-    max: f64,
+    /// The one set of limits the stitches around the edit are measured against: the document's
+    /// (its shortest stitch, 12.7 mm and its thread palette's format), or Split Long Stitches'.
+    limits: StitchLimits,
     lengths: Lengths,
     edits: Vec<(NodeId, Left)>,
     passed_over: Vec<(NodeId, needles::Unfit)>,
@@ -151,10 +153,10 @@ struct Edit {
 impl Edit {
     /// An edit of the active document's needle points by command `cmd`, the selection as it is
     /// `before` and what of it the command passed over `passed_over`; measured against the
-    /// document's shortest stitch.
+    /// document's limits.
     fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, needles::Unfit)>) -> Result<Self> {
-        let min = needles::shortest_stitch(&s.doc()?.doc);
-        Ok(Self { cmd, sel: before.clone(), before, min, max: LONGEST, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
+        let limits = StitchLimits::of(&s.doc()?.doc, None);
+        Ok(Self { cmd, sel: before.clone(), before, limits, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
     }
 
     /// The needle points of path `id` (read from it, `ix` its index) that the selection selected
@@ -189,7 +191,7 @@ impl Edit {
             Some(map) => map.get(k).copied().flatten(),
             None => Some(k),
         };
-        self.lengths.around(&out, ix, touched.into_iter().filter_map(&after), self.min, self.max);
+        self.lengths.around(&out, ix, touched.into_iter().filter_map(&after), &self.limits);
         let carried = |k: BTreeSet<usize>| -> BTreeSet<usize> { k.into_iter().filter_map(&after).collect() };
         match kept {
             Kept::Same => {
@@ -240,7 +242,7 @@ impl Edit {
         let count = self.edits.iter().filter(|(_, l)| !matches!(l, Left::Marks(_))).count();
         reply.insert("paths".into(), Value::Array(paths));
         reply.insert("pathCount".into(), json!(count));
-        reply.insert("lengths".into(), self.lengths.json(self.min, self.max));
+        reply.insert("lengths".into(), self.lengths.json(&self.limits));
         reply.insert("collapsedCount".into(), json!(self.collapsed));
         let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect();
         reply.insert("passedOver".into(), Value::Array(passed));
@@ -810,7 +812,7 @@ pub(super) fn split_run(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, SPLIT, &["ties"])?;
     let (t, before) = targets(s, &o, SPLIT)?;
     let mut e = Edit::begin(s, SPLIT, before, t.passed_over)?;
-    let ties = ties(&o, SPLIT, e.min)?;
+    let ties = ties(&o, SPLIT, e.limits.shortest)?;
     let (mut jumps, mut split, mut unchanged) = (Vec::new(), 0usize, 0usize);
     for (id, st, indices) in t.paths {
         let was = st.index();
@@ -981,7 +983,7 @@ pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
             let ix = out.index();
             // The stitches joined: into each needle point that started a run.
             let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
-            e.lengths.around(&out, &ix, touched, e.min, e.max);
+            e.lengths.around(&out, &ix, touched, &e.limits);
             let selected = selected.map(|k| k.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()).collect());
             within.insert(id, (out, selected, true));
         }
@@ -1216,7 +1218,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let (t, before) = targets(s, &o, FUNCTION)?;
     let mut e = Edit::begin(s, FUNCTION, before, t.passed_over)?;
-    let ties = ties(&o, FUNCTION, e.min)?;
+    let ties = ties(&o, FUNCTION, e.limits.shortest)?;
     // The path of stitches sewn right after each path addressed that keeps a cut before it (an
     // opened design keeps the cut between two of its runs so): the cut after the path's end.
     let doc = s.doc()?.doc.clone();
@@ -1432,8 +1434,11 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
         None => None,
     };
     let mut e = Edit::begin(s, SPLIT_LONG, before, t.passed_over)?;
-    // The live check measures against the limit asked for.
-    e.max = max;
+    // The live check measures against the lines asked for: the length, and the format's records.
+    e.limits.longest = max;
+    if let Some(f) = format {
+        (e.limits.step, e.limits.format) = (f.max_step(), f);
+    }
     let (mut split, mut added) = (0usize, 0usize);
     // Each needle point addressed, as numbered after the edit.
     let mut addressed = Vec::new();

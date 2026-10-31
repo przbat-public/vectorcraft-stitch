@@ -6133,3 +6133,5 @@ embroidery	Planned from the shape: convert the object to manual stitches to edit
 @plural	{count} needle point selected|{count} needle points selected	{count} избрана точка на убождане|{count} избрани точки на убождане
 # VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
 embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Избрани са само първите {count} реда от диапазона: едно щракване не избира повече.
+# VectorCraft Stitch: the Stitches tab's Too long filter, named with both lines when the format's records are the nearer
+embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	По-дълги от {longest} mm или по x или y от един запис на {format} ({step} мм)

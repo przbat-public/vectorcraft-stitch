@@ -6180,3 +6180,5 @@ embroidery	Planned from the shape: convert the object to manual stitches to edit
 @plural	{count} needle point selected|{count} needle points selected	{count} tűszúrás kijelölve
 # VectorCraft Stitch: the Stitches tab's status line when a Shift-click's range is longer than a click selects
 embroidery	Only the first {count} rows of the range are selected: a click selects no more.	Csak a tartomány első {count} sora van kijelölve: egy kattintás ennél többet nem jelöl ki.
+# VectorCraft Stitch: the Stitches tab's Too long filter, named with both lines when the format's records are the nearer
+embroidery	Longer than {longest} mm, or along x or y than one {format} record ({step} mm)	{longest} mm-nél vagy x, illetve y irányban egy {format}-rekordnál hosszabb ({step} mm)

@@ -5198,9 +5198,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   needle points now; at most 1,000), `pathCount` (how many), `passedOver: [{id, reason}]`, `collapsedCount` (runs of
   two needle points an edit brought to one spot in a path of several runs, each made one needle point, as only a
   path's only run can be a tack: the needle points after it move down by one) and `lengths: {count,
-  shortest, longest, belowMin, aboveMax, min, max}`: the needle-down stitches it made or changed, each counted once, in
-  millimetres, against the document's shortest stitch (`min`, Document Setup's) and the 12.7 mm a machine sews well
-  (`max`, the Check tab's; Split Long Stitches' own limit).
+  shortest, longest, belowMin, aboveMax, min, max, format, step}`: the needle-down stitches it made or changed, each
+  counted once, in millimetres, judged as the canvas, the live check and the Stitches tab judge them (a thousandth of a
+  millimetre past each line): shorter than the document's shortest stitch (`min`, Document Setup's), or longer than the
+  12.7 mm a machine sews well (`max`, the Check tab's; Split Long Stitches' own limit) or, along x or y, than one
+  record of the thread palette's format (`format`, `step`; Split Long Stitches' `format` when given).
   - `embroidery.moveNeedlePoints {needlePoints?, ranges?, dx?, dy?, to?}` moves each needle point by `dx, dy`
     (millimetres, y down), or the one addressed to `to` (`[x, y]`, millimetres from the document's origin); a path
     whose only run is two needle points brought to one spot sews both (a tack); such a run among others is one needle

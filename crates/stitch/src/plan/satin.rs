@@ -79,7 +79,7 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
     let spacing = p.column_spacing(p.width);
     // The crossings go to one rail and the other in turn: half the spacing apart.
     let pitch = spacing / CROSSINGS_PER_SPACING;
-    let mut runs = Runs::from(aim.start.point());
+    let mut runs = Runs::from(aim.start.point(), &p);
     // An open column whose underlay goes to its far end comes back with its top stitching: it ends
     // where it starts. Toward an exit, a pass along its middle under the top stitching ends it at its
     // other end, and a ring travels along its middle to the exit before its top stitching; both are
@@ -195,7 +195,7 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
         }
     }
     let connectors = runs.connectors(&p);
-    (runs.join(&p), connectors)
+    (runs.join(), connectors)
 }
 
 /// A pass's or a travel's points beyond its stitches ([`TRAVEL_STITCH`] apart along it), at most:

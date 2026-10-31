@@ -972,3 +972,47 @@ fn go_to_says_when_the_filter_leaves_the_record_out() {
     let said = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.said.clone());
     assert_eq!(said.as_deref(), Some(format!("Record #{hidden} is left out by the filter chosen.").as_str()));
 }
+
+/// The list's keys while editing, as the design note set them: Shift+↓ extends the selection from
+/// the row clicked, Cmd+Space takes the row in focus out, Ctrl+End goes to the last row.
+#[test]
+fn shift_and_cmd_keys_extend_and_toggle_from_the_keyboard() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    // A run of stitch rows: each its own needle point.
+    let stitch = |r: usize| list.record(r).and_then(|n| stitch_list::row(&plan, n)).is_some_and(|row| row.kind == stitch_list::RecordKind::Stitch);
+    let start = (2..list.len()).find(|r| (*r..r + 4).all(stitch)).expect("four stitch rows in a row");
+    let at = row_at(&shapes, list.record(start).unwrap());
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let selected =
+        |app: &VectorcraftApp| -> usize { app.session.active().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum() };
+    assert_eq!(selected(&app), 1);
+    let held = |m: Modifiers, k: Key| vec![Event::ModifiersChanged(m), key_with(k, m)];
+    for _ in 0..3 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, held(Modifiers::SHIFT, Key::ArrowDown));
+    }
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::ModifiersChanged(Modifiers::NONE)]);
+    assert_eq!(selected(&app), 4, "Shift+↓ three times: four rows");
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), list.record(start + 3));
+    time += 0.05;
+    frame(&mut app, &ctx, time, held(Modifiers::COMMAND, Key::Space));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::ModifiersChanged(Modifiers::NONE)]);
+    assert_eq!(selected(&app), 3, "Cmd+Space takes the row in focus out");
+    time += 0.05;
+    frame(&mut app, &ctx, time, held(Modifiers::CTRL, Key::End));
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), list.record(list.len() - 1), "Ctrl+End: the last row");
+}

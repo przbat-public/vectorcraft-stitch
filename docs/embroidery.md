@@ -281,7 +281,9 @@ while the list waits for the plan of an edit a click only shows the stitch: the 
 rows number may have moved. Go to # takes a record's number; under the list, while
 needle points are selected, Move by X and Y moves them in one undo step. The list takes the
 keyboard when a row is clicked or Go to # finds its record: ↑ ↓, Page Up and Down, Home and End
-move through it, Space selects, Escape gives the keyboard back to the canvas. The row in focus is
+(and Cmd or Ctrl with ↑ ↓) move through it, with Shift while stitches are edited extending the
+selection; Space selects (Shift extends, Cmd or Ctrl takes in or out); Escape gives the keyboard
+back to the canvas. The row in focus is
 ringed while the list has the keyboard and marked quietly while the keys reach the canvas. While a
 newer plan's records are being judged (after an edit, or the Check tab's format changed), the rows
 drawn last stay, dimmed, with Go to and the foot. The tab strip's names are short so that four tabs

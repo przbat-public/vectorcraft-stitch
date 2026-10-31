@@ -951,15 +951,24 @@ pub(crate) fn reveal(app: &mut VectorcraftApp, number: usize) {
 
 /// The keys while the list has the keyboard's focus (a row clicked gives it; Escape gives it
 /// back to the canvas, whose keys then act on the canvas again): ↑ ↓ the row in focus, Page Up/Down
-/// a screenful, Home and End the first and last; Space as a click on it; Enter shows it, zoomed to.
-/// Keys taken from egui, so neither the canvas's arrows nor upstream's shortcuts see them.
+/// a screenful, Home and End (and Cmd or Ctrl with ↑ ↓) the first and last, with Shift while
+/// stitches are edited the selection extended to it; Space as a click on it (Shift extends, Cmd or
+/// Ctrl takes it in or out); Enter shows it, zoomed to. Keys taken from egui, so neither the
+/// canvas's arrows nor upstream's shortcuts see them.
 fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Listed, shown: &Shown, screenful: usize) {
     if !ui.memory(|m| m.has_focus(list)) {
         return;
     }
-    let pressed = |key: egui::Key| ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, key));
+    // egui matches a key ignoring Shift and Alt: they, and Cmd or Ctrl, are read apart.
+    let mods = ui.input(|i| i.modifiers);
+    let jump = mods.command || mods.ctrl;
+    let pressed = |key: egui::Key| {
+        ui.input_mut(|i| {
+            i.consume_key(egui::Modifiers::NONE, key) || i.consume_key(egui::Modifiers::COMMAND, key) || i.consume_key(egui::Modifiers::CTRL, key)
+        })
+    };
     // Escape first: the list keeps the focus otherwise (its keys are locked to it).
-    if pressed(egui::Key::Escape) {
+    if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
         ui.memory_mut(|m| m.surrender_focus(list));
         return;
     }
@@ -978,14 +987,17 @@ fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Li
         show_stitch(app, shown, focus, true);
         return;
     }
+    // Space as a click on the row: Shift extends the range from the last clicked, Cmd or Ctrl
+    // takes it in or out.
     if pressed(egui::Key::Space) {
-        click(app, shown, listed, focus, egui::Modifiers::NONE, false);
+        let as_click = egui::Modifiers { shift: mods.shift, command: mods.command, ctrl: mods.ctrl, ..egui::Modifiers::NONE };
+        click(app, shown, listed, focus, as_click, false);
         return;
     }
     let target = if pressed(egui::Key::ArrowDown) {
-        Some((row + 1).min(last))
+        Some(if jump { last } else { (row + 1).min(last) })
     } else if pressed(egui::Key::ArrowUp) {
-        Some(row.saturating_sub(1))
+        Some(if jump { 0 } else { row.saturating_sub(1) })
     } else if pressed(egui::Key::PageDown) {
         Some((row + screenful).min(last))
     } else if pressed(egui::Key::PageUp) {
@@ -997,10 +1009,13 @@ fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Li
     } else {
         None
     };
-    if let Some(r) = target
-        && let Some(n) = listed.record(r)
-        && let Some(d) = app.embroidery.stitches.docs.get_mut(&uid)
-    {
+    let Some(n) = target.and_then(|r| listed.record(r)) else { return };
+    // With Shift while stitches are edited, the selection extends from the last clicked to it, as
+    // a Shift-click does.
+    if mods.shift && crate::embroidery::editing::editing(app).is_some() {
+        click(app, shown, listed, n, egui::Modifiers::SHIFT, false);
+    }
+    if let (Some(r), Some(d)) = (listed.row_of(n), app.embroidery.stitches.docs.get_mut(&uid)) {
         d.focus = Some(n);
         d.page = r / MAX_SCROLLED_ROWS;
         d.reveal = true;

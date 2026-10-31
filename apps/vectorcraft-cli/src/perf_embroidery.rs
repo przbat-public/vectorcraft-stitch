@@ -641,23 +641,23 @@ fn point_moved(doc: &Document, key: &str) -> Result<f64, String> {
     Ok(middle(samples))
 }
 
-/// The needle-point rows' budgets, milliseconds (estimates): about 2.5 times what they measured on
-/// 2026-10-27 (release, 12-core Apple Silicon, load about 2, the median of five): one needle point
-/// moved and the design planned again, on the opened 1,000-path document and on 2 million literal
-/// needle points. A literal run is sewn as its points are, never planned, but every run is walked
-/// and sequenced again at each plan.
+/// The needle-point rows' budgets, milliseconds (estimates): about 2.5 times what they measured
+/// ([`NEEDLE_MOVED_MS`]): one needle point moved and the design planned again, on the opened
+/// 1,000-path document and on 2 million literal needle points. A literal run is sewn as its points
+/// are, never planned, but every run is walked and sequenced again at each plan.
 const NEEDLE_MOVED_BUDGETS: [f64; 2] = [NEEDLE_MOVED_MS[0] * 2.5, NEEDLE_MOVED_MS[1] * 2.5];
-/// What the needle-point rows measured on 2026-10-27, milliseconds (see [`NEEDLE_MOVED_BUDGETS`]).
-const NEEDLE_MOVED_MS: [f64; 2] = [2.0, 55.0];
+/// What the needle-point rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6 to
+/// 3.2, the median of five, twice), milliseconds (see [`NEEDLE_MOVED_BUDGETS`]).
+const NEEDLE_MOVED_MS: [f64; 2] = [1.9, 50.0];
 /// The manual-stitches rows' budgets, milliseconds (estimates): about 2.5 times what they measured
 /// ([`MANUAL_MS`]): converting every object of the 1,000-path document and restoring them all, then
 /// of the 22,000-path document. A convert plans the design afresh, as the export does: over a
 /// second on 22,000 paths, so the Object tab converts off the interface thread.
 const MANUAL_BUDGETS: [f64; 4] = [MANUAL_MS[0] * 2.5, MANUAL_MS[1] * 2.5, MANUAL_MS[2] * 2.5, MANUAL_MS[3] * 2.5];
-/// What the manual-stitches rows measured on 2026-10-27 (release, 12-core Apple Silicon, load about
-/// 2.5, twice; the median of three on 1,000 paths, one run on 22,000), milliseconds (see
+/// What the manual-stitches rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6
+/// to 3.2, twice; the median of three on 1,000 paths, one run on 22,000), milliseconds (see
 /// [`MANUAL_BUDGETS`]).
-const MANUAL_MS: [f64; 4] = [77.5, 6.7, 1775.0, 169.5];
+const MANUAL_MS: [f64; 4] = [78.0, 5.2, 1760.0, 120.0];
 
 /// Milliseconds to convert every object of `doc` to manual stitches (Select All, then the command)
 /// and to restore them all (Select All, then Restore Object), the medians of `runs`, each on a
@@ -682,10 +682,11 @@ fn convert_and_restore(doc: &Document, runs: usize) -> Result<[f64; 2], String> 
 /// ([`STITCH_COMMAND_MS`]): one needle point moved by the command and the design planned again, a
 /// page of the stitch list, 100,000 needle points selected, all on 2 million literal needle points.
 const STITCH_COMMAND_BUDGETS: [f64; 3] = [STITCH_COMMAND_MS[0] * 2.5, STITCH_COMMAND_MS[1] * 2.5, STITCH_COMMAND_MS[2] * 2.5];
-/// What the stitch commands' rows measured on 2026-10-27 (release, 12-core Apple Silicon, load about
-/// 2.5, the median of five, twice), milliseconds (see [`STITCH_COMMAND_BUDGETS`]): moving one needle
-/// point costs what Direct Selection's move does (`NEEDLE_MOVED_MS`), the plan again dominating.
-const STITCH_COMMAND_MS: [f64; 3] = [51.0, 38.0, 43.5];
+/// What the stitch commands' rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6
+/// to 3.2, the median of five, twice), milliseconds (see [`STITCH_COMMAND_BUDGETS`]): moving one
+/// needle point costs what Direct Selection's move does (`NEEDLE_MOVED_MS`), the plan again
+/// dominating.
+const STITCH_COMMAND_MS: [f64; 3] = [52.5, 37.0, 43.3];
 /// The needle points the selection row selects by their records.
 const SELECTED_POINTS: usize = 100_000;
 /// The records the list row lists a page of.
@@ -733,8 +734,10 @@ fn stitch_commands(doc: &Document) -> Result<[f64; 4], String> {
 /// needle points, the plan aside; one moved, and one deleted, in the largest of `doc`'s blocks made
 /// one path of all its runs (as a converted unit holds its runs), each command alone.
 const EDIT_ALONE_BUDGETS: [f64; 3] = [EDIT_ALONE_MS[0] * 2.5, EDIT_ALONE_MS[1] * 2.5, EDIT_ALONE_MS[2] * 2.5];
-/// What those rows measured, milliseconds (see [`EDIT_ALONE_BUDGETS`]; recorded in `docs/embroidery.md`).
-const EDIT_ALONE_MS: [f64; 3] = [4.0, 20.0, 20.0];
+/// What those rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6 to 3.2, the
+/// median of five, twice), milliseconds (see [`EDIT_ALONE_BUDGETS`]; recorded in
+/// `docs/embroidery.md`).
+const EDIT_ALONE_MS: [f64; 3] = [4.8, 1.9, 0.7];
 
 /// The commands alone on `doc`'s literal runs merged into paths of many runs ([`many_run_paths`]):
 /// one needle point of the largest path moved a nudge, back and forth, and one deleted (then put
@@ -791,8 +794,11 @@ fn many_run_paths(doc: &Document) -> Result<Document, String> {
 /// interface runs on a thread of its own); then the Object tab's read of all of them selected, after
 /// each nudge of one.
 const CONVERT_PARTS_BUDGETS: [f64; 2] = [CONVERT_PARTS_MS[0] * 2.5, CONVERT_PARTS_MS[1] * 2.5];
-/// What those rows measured, milliseconds (see [`CONVERT_PARTS_BUDGETS`]; recorded in `docs/embroidery.md`).
-const CONVERT_PARTS_MS: [f64; 2] = [300.0, 6.0];
+/// What those rows measured on 2026-10-31 (release, 12-core Apple Silicon, load 2.6 to 3.2, twice;
+/// the convert once, the read the median of five), milliseconds (see [`CONVERT_PARTS_BUDGETS`];
+/// recorded in `docs/embroidery.md`): the read takes about 1 µs a converted object, where an object
+/// of art takes about 3 µs (the Object tab's re-read of 1,000, 3.1 to 3.6 ms in the same runs).
+const CONVERT_PARTS_MS: [f64; 2] = [167.0, 22.0];
 
 /// The convert's interface-thread part on `doc` (Select All; the job prepared, then its plan
 /// applied, the plan between them untimed), once; then the Object tab's read of every converted

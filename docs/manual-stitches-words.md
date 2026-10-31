@@ -1,6 +1,6 @@
 # Manual stitches: the words
 
-> **Last updated:** 2026-10-30 · **Change:** the review's fixes: the plan's warning for a cut or a
+> **Last updated:** 2026-10-31 · **Change:** the review round's words: command names in sentences marked, Stop After's help, a lone manual run's note, why Restore is dimmed, what Convert and Restore passed over and why, the convert's progress, a path of stitches called a path; earlier: the review's fixes: the plan's warning for a cut or a
 > stop left out; earlier: written for the manual stitches' first pull request (converting an object
 > to manual stitches, restoring it, stops, and editing needle points by command): every interface
 > string it adds, in English and Polish.

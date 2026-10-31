@@ -5249,15 +5249,18 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     off, the runs stay split. Its undo step is "Cut After Needle Point" or "Stop After Needle Point". It answers `{function, on, changedCount, unchangedCount, splitCount,
     needlePoints: [{id, index}], paths, pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed,
     numbered as after the edit, which splits and ties renumber).
-  - `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?: 12.7 | format?}` splits each stitch arriving at
+  - `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?: 12.7, format?}` splits each stitch arriving at
     a needle point addressed (a path or group selected whole: all of its stitches) that is longer than `maxLength`
     millimetres (1 to 12.7, its own length) into the fewest equal stitches within it, or, with `format` (one of the
     eight embroidery formats), longer along x or y than one of its records, where that format's writer would cut it:
     from the needle points as the walk sews them (exact millimetres included), each end on the 0.1 mm grid that
     format's writer counts the design on (from where the design starts or its corner, or its centre: the design is
     planned as the export plans it, for this only), the fewest equal steps (`vectorcraft_stitch::format::steps`), so
-    that format's export is the same bytes, a point halfway between two tenths too. More needle points, never jumps; the move between runs is never split. At most 100,000 added.
-    It answers `{changedCount, addedCount, limit: {length} | {format, step}, needlePoints: [{id, index}], paths,
+    that format's export is the same bytes, a point halfway between two tenths too; with both, the format's cut, then
+    each stitch still longer than `maxLength` split within it (as the Contextual Task Bar asks when the format's
+    records are shorter than 12.7 mm). More needle points, never jumps; the move between runs is never split. At most
+    100,000 added. It answers `{changedCount, addedCount, limit: {length} | {format, step} | {format, step, length},
+    needlePoints: [{id, index}], paths,
     pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed, numbered as after the edit).
   - `embroidery.stitches {…embroidery options, from?, to?, ids?, kinds?, shorterThan?, longerThan?, offset?, limit?}`
     (a read command, also served off the interface thread) lists the design's records, numbered as the Sewing order

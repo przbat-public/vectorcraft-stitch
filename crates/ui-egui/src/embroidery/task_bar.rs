@@ -19,16 +19,17 @@ pub fn shows(app: &mut VectorcraftApp) -> bool {
 }
 
 /// The bar's items in place of upstream's while stitches are edited with needle points selected:
-/// Insert, Delete, Split Run, Join Runs, Trim, Stop and Split Long Stitches (long as the format the
-/// Check tab checks for writes them, when its records are shorter than the longest stitch); `None`
-/// otherwise (upstream's items).
+/// Insert, Delete, Split Run, Join Runs, Trim, Stop and Split Long Stitches (by both lines of the
+/// one set of limits when the format the Check tab checks for has records shorter than the longest
+/// stitch: as its writer cuts them, and within the longest stitch; else within the longest stitch);
+/// `None` otherwise (upstream's items).
 pub fn items(app: &mut VectorcraftApp) -> Option<Vec<Item>> {
     if !shows(app) {
         return None;
     }
     let st = app.session.active()?;
     let limits = vectorcraft_engine::cmd::embroidery::stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
-    let split_long = if limits.step < limits.longest { json!({"format": limits.format.id()}) } else { json!({}) };
+    let split_long = if limits.step < limits.longest { json!({"format": limits.format.id(), "maxLength": limits.longest}) } else { json!({}) };
     Some(vec![
         (crate::et!("Insert"), "pen-tool-add", "embroidery.insertNeedlePoints", json!({})),
         (crate::et!("Delete"), "pen-tool-delete", "embroidery.deleteNeedlePoints", json!({})),

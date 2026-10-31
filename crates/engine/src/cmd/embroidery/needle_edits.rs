@@ -1336,64 +1336,74 @@ pub(super) const SPLIT_LONG_LABEL: &str = "Split Long Stitches";
 /// the default.
 const MAX_LENGTH_RANGE: std::ops::RangeInclusive<f64> = super::check::SHORT..=LONGEST;
 
+/// How a stitch is split: where a format's writer would cut it (its grid, and its records' reach in
+/// tenths), into stitches no longer than a length (millimetres), or both, the format's cut first.
+#[derive(Clone, Copy)]
+struct Split<'a> {
+    grid: Option<(&'a vectorcraft_stitch::format::Grid, i32)>,
+    max: Option<f64>,
+}
+
 /// The needle points (document points) a stitch from `a` to `b` (millimetres, as the walk sews
-/// them) is split into, besides its ends: with `grid` (a format's, and its records' reach in
-/// tenths), where that format's writer would cut it (each end on the grid the writer counts the
-/// design on, the fewest equal steps of at most one record's reach along x and along y,
-/// `format::steps`); else the fewest equal stitches no longer than `max` millimetres. Refused past
-/// `room` new needle points.
-fn pieces(
-    a: Point,
-    b: Point,
-    grid: Option<(&vectorcraft_stitch::format::Grid, i32)>,
-    max: f64,
-    room: usize,
-) -> std::result::Result<Vec<Point>, String> {
-    let pt = point_to_pt;
-    match grid {
-        Some((grid, reach)) => {
-            let ((ax, ay), (bx, by)) = (grid.units(a), grid.units(b));
-            let (dx, dy) = (bx - ax, by - ay);
-            let span = dx.unsigned_abs().max(dy.unsigned_abs());
-            if span <= reach.unsigned_abs() {
-                return Ok(Vec::new());
-            }
+/// them) is split into by `split`, besides its ends: with a grid, where that format's writer would
+/// cut it (each end on the grid the writer counts the design on, the fewest equal steps of at most
+/// one record's reach along x and along y, `format::steps`); then, with a length, each stitch still
+/// longer than it into the fewest equal stitches within it. Refused past `room` new needle points.
+fn pieces(a: Point, b: Point, split: Split<'_>, room: usize) -> std::result::Result<Vec<Point>, String> {
+    // The writer's cut, millimetres.
+    let mut cut = vec![a];
+    if let Some((grid, reach)) = split.grid {
+        let ((ax, ay), (bx, by)) = (grid.units(a), grid.units(b));
+        let (dx, dy) = (bx - ax, by - ay);
+        let span = dx.unsigned_abs().max(dy.unsigned_abs());
+        if span > reach.unsigned_abs() {
             let n = span.div_ceil(reach.unsigned_abs().max(1)) as usize;
             if n > room {
                 return Err(format!("a stitch would take {n} needle points"));
             }
-            let mut out = Vec::with_capacity(n);
             let (mut x, mut y) = (ax, ay);
             for (sx, sy) in vectorcraft_stitch::format::steps(dx, dy, reach) {
                 (x, y) = (x + sx, y + sy);
-                out.push(pt(grid.point((x, y))));
+                cut.push(grid.point((x, y)));
             }
             // The last step ends on the stitch's own end.
-            out.pop();
-            Ok(out)
-        }
-        None => {
-            let length = a.distance(b);
-            // Within the limit, or no number (no split).
-            if !length.is_finite() || length <= max {
-                return Ok(Vec::new());
-            }
-            let n = (length / max).ceil();
-            if !n.is_finite() || n > room as f64 {
-                return Err(format!("a stitch {length:.1} mm long would take more needle points than one edit adds"));
-            }
-            let n = n as usize;
-            Ok((1..n).map(|i| pt(a.lerp(b, i as f64 / n as f64))).collect())
+            cut.pop();
         }
     }
+    cut.push(b);
+    let mut out: Vec<Point> = Vec::new();
+    for (k, w) in cut.windows(2).enumerate() {
+        let [p, q] = w else { continue };
+        if k > 0 {
+            out.push(*p);
+        }
+        let Some(max) = split.max else { continue };
+        let length = p.distance(*q);
+        // Within the limit, or no number (no split).
+        if !length.is_finite() || length <= max {
+            continue;
+        }
+        let n = (length / max).ceil();
+        if !n.is_finite() || n > room.saturating_sub(out.len()) as f64 {
+            return Err(format!("a stitch {length:.1} mm long would take more needle points than one edit adds"));
+        }
+        let n = n as usize;
+        out.extend((1..n).map(|i| p.lerp(*q, i as f64 / n as f64)));
+    }
+    if out.len() > room {
+        return Err(format!("a stitch would take {} needle points", out.len()));
+    }
+    Ok(out.into_iter().map(point_to_pt).collect())
 }
 
 /// `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?, format?}`: each stitch arriving
 /// at a needle point addressed (or selected; a path or group selected whole: all of its stitches)
 /// longer than `maxLength` (millimetres, its own length; default 12.7) split into the fewest equal
 /// stitches within it, or, with `format`, longer along x or y than one of that format's records, cut
-/// where its writer would cut it (that format's export unchanged). More needle points, never jumps;
-/// a jump between runs is never split (the writers split long moves themselves).
+/// where its writer would cut it (that format's export unchanged); with both, the format's cut, then
+/// each stitch still longer than `maxLength` split within it (the one set of limits' two lines).
+/// More needle points, never jumps; a jump between runs is never split (the writers split long moves
+/// themselves).
 pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, SPLIT_LONG, &["maxLength", "format"])?;
     let format = match o.get("format").filter(|v| !v.is_null()) {
@@ -1404,12 +1414,9 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
                 .ok_or_else(|| bad(SPLIT_LONG, format!("`format` {v}: one of dst, tap, t01, exp, pes, pec, jef, vp3")))?,
         ),
     };
-    let max = millimetres(&o, "maxLength", SPLIT_LONG)?;
-    if format.is_some() && max.is_some() {
-        return Err(bad(SPLIT_LONG, "give `maxLength` or `format`, not both"));
-    }
+    let given = millimetres(&o, "maxLength", SPLIT_LONG)?;
     let (lo, hi) = (*MAX_LENGTH_RANGE.start(), *MAX_LENGTH_RANGE.end());
-    let max = max.unwrap_or(hi);
+    let max = given.unwrap_or(hi);
     if !MAX_LENGTH_RANGE.contains(&max) {
         return Err(bad(SPLIT_LONG, format!("`maxLength` {max}: {lo} to {hi} millimetres")));
     }
@@ -1438,8 +1445,9 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
             for (i, n) in run.needles.iter().enumerate() {
                 if let (true, Some(prev)) = (indices.contains(&k), i.checked_sub(1).and_then(|j| run.needles.get(j))) {
                     let room = MAX_ADDED.saturating_sub(added);
-                    let grid = grid.as_ref().map(|(g, reach)| (g, *reach));
-                    let new = pieces(prev.mm(), n.mm(), grid, max, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
+                    // A format alone cuts as its writer does; a length, alone or with it, too.
+                    let how = Split { grid: grid.as_ref().map(|(g, reach)| (g, *reach)), max: (grid.is_none() || given.is_some()).then_some(max) };
+                    let new = pieces(prev.mm(), n.mm(), how, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
                     if !new.is_empty() {
                         split += 1;
                         added += new.len();
@@ -1464,9 +1472,10 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
         addressed.extend(touched.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
         e.rebuilt(id, out, &ix, selected, Kept::Moved(&moved_to), touched)?;
     }
-    let limit = match format {
-        Some(f) => json!({"format": f.id(), "step": f.max_step()}),
-        None => json!({"length": max}),
+    let limit = match (format, given) {
+        (Some(f), Some(_)) => json!({"format": f.id(), "step": f.max_step(), "length": max}),
+        (Some(f), None) => json!({"format": f.id(), "step": f.max_step()}),
+        (None, _) => json!({"length": max}),
     };
     e.finish(s, SPLIT_LONG_LABEL, split > 0, json!({"changedCount": split, "addedCount": added, "limit": limit, "needlePoints": addressed}))
 }

@@ -1,6 +1,6 @@
 //! The Contextual Task Bar's stitch actions: only while stitches are edited with needle points
-//! selected; Split Long Stitches as the format the Check tab checks for writes long stitches, when
-//! its records are shorter than the longest stitch.
+//! selected; Split Long Stitches by both lines of the limits when the format the Check tab checks
+//! for has records shorter than the longest stitch.
 
 use serde_json::json;
 use vectorcraft_doc::NodeId;
@@ -28,7 +28,11 @@ fn the_stitch_actions_show_only_while_needle_points_are_selected() {
     assert_eq!(long(&mut app), json!({}), "Janome's JEF, the default palette's format: its records as long as the longest stitch");
     let uid = app.session.active().unwrap().uid;
     app.embroidery.check.format.insert(uid, "dst");
-    assert_eq!(long(&mut app), json!({"format": "dst"}), "DST's records are shorter: split as its writer would");
+    assert_eq!(
+        long(&mut app),
+        json!({"format": "dst", "maxLength": 12.7}),
+        "DST's records are shorter: split as its writer would, and within 12.7 mm"
+    );
     app.run("tool.select", json!({"tool": "selection"})).unwrap();
     assert!(super::items(&mut app).is_none(), "another tool");
 }

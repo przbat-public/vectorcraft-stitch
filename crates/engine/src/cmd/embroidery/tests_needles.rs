@@ -938,9 +938,28 @@ fn long_stitches_split_as_the_writer_would() {
     assert_eq!(dst(&mut s), before, "the same DST");
     let again = run(&mut s, "embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": 5}], "format": "dst"}));
     assert_eq!(again["changedCount"], json!(0), "nothing longer than a record left: {again}");
-    for p in [json!({"maxLength": 0.5}), json!({"maxLength": 20}), json!({"maxLength": 5, "format": "dst"}), json!({"format": "svg"})] {
+    for p in [json!({"maxLength": 0.5}), json!({"maxLength": 20}), json!({"maxLength": 5, "format": "svg"}), json!({"format": "svg"})] {
         assert!(s.execute("embroidery.splitLongStitches", &p).is_err(), "{p}");
     }
+    // Both lines, as the Contextual Task Bar asks with DST checked: a diagonal within DST's records
+    // (10 mm along each) but past 12.7 mm, split within it; one past both, DST's cut and then each
+    // piece past 12.7 mm split again.
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (20.0, 20.0), (50.0, 50.0), (51.0, 50.0)], StitchRun::default());
+    let both = json!({"ranges": [{"id": id, "from": 0, "to": 3}], "format": "dst", "maxLength": 12.7});
+    let alone = run(&mut s, "embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 1, "to": 1}], "format": "dst"}));
+    assert_eq!(alone["changedCount"], json!(0), "within DST's records: {alone}");
+    let r = run(&mut s, "embroidery.splitLongStitches", both.clone());
+    assert_eq!((r["changedCount"].clone(), r["limit"].clone()), (json!(2), json!({"format": "dst", "step": 12.1, "length": 12.7})), "{r}");
+    // The diagonal of 14.1 mm in two; the one of 42.4 mm in DST's three, each of 14.1 mm in two.
+    assert_eq!(r["addedCount"], json!(1 + 5), "{r}");
+    let st = needles::read(&node(&s, id)).unwrap();
+    let points: Vec<_> = st.runs.iter().flat_map(|r| r.needles.iter().map(|n| n.mm())).collect();
+    for w in points.windows(2) {
+        let (dx, dy) = (w[1].x - w[0].x, w[1].y - w[0].y);
+        assert!(dx.hypot(dy) <= 12.7 + 1e-9 && dx.abs() <= 12.1 + 1e-9 && dy.abs() <= 12.1 + 1e-9, "{w:?}");
+    }
+    assert_eq!(run(&mut s, "embroidery.splitLongStitches", both)["changedCount"], json!(0), "nothing past either line left");
     // Every format, from a manual run's needle point kept at a half tenth its document point can't
     // give back (11.55 mm, kept exactly; from the design's left edge, 2 mm, a round trip through
     // points rounds the other way): split on the grid the writer counts the design on, from

@@ -4,6 +4,8 @@
 //! plan the canvas shows, and from the document, and never plans to answer. A new question is a
 //! new method with a default body.
 
+use std::collections::BTreeSet;
+
 use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::{NodeId, Selection};
 use vectorcraft_geom::Point;
@@ -89,6 +91,16 @@ pub struct ThreadHit {
     pub point: Point,
 }
 
+/// The needle points of one path that a selection selects by their anchors
+/// ([`NeedlePoints::span`]): how many (a run of one needle point's two anchors count once), and the
+/// first and the last of them (their places in the path).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SelectedSpan {
+    pub count: usize,
+    pub first: usize,
+    pub last: usize,
+}
+
 /// What stitch editing edits: the object isolated (a stitch object: a converted object, an opened
 /// design's thread block, a run), the paths of stitches in it whose needle points can be edited and
 /// how many needle points they hold, the box those fall in (document points), and the paths of
@@ -146,5 +158,12 @@ pub trait NeedlePoints {
     /// themselves; the engine also takes those inside an object selected whole, as the commands do.
     fn selected_paths(&self, sel: &Selection) -> Vec<(NodeId, bool)> {
         sel.objects.iter().copied().filter(|id| self.holds(*id)).map(|id| (id, !sel.anchors.contains_key(&id))).collect()
+    }
+    /// The needle points of path `id` whose anchors are among `anchors`: how many, and the first
+    /// and the last; `None` when none is. By default each anchor asked for on its own
+    /// ([`NeedlePoints::of_anchor`]); the engine finds the path once for all of them.
+    fn span(&self, id: NodeId, anchors: &BTreeSet<(usize, usize)>) -> Option<SelectedSpan> {
+        let found: BTreeSet<usize> = anchors.iter().filter_map(|a| self.of_anchor(id, *a)).collect();
+        Some(SelectedSpan { count: found.len(), first: *found.first()?, last: *found.last()? })
     }
 }

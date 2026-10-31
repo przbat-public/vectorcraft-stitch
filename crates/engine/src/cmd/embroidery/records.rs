@@ -426,18 +426,20 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
         if mode == "set" {
             sel.clear();
         }
+        let mut selecting = needles::Selecting::new(std::mem::take(sel));
         for (id, k) in &picked {
             let Some(st) = d.node(*id).and_then(|n| needles::read(n).ok()) else { continue };
             let ix = st.index();
-            let now = needles::selected_in(sel, *id, &ix);
+            let now = selecting.selected_in(*id, &ix);
             let next: BTreeSet<usize> = match mode {
                 "toggle" => now.symmetric_difference(k).copied().collect(),
                 "subtract" => now.difference(k).copied().collect(),
                 _ => now.union(k).copied().collect(),
             };
             selected += next.len();
-            needles::select_in(sel, *id, &ix, &next);
+            selecting.select_in(*id, &ix, &next);
         }
+        *sel = selecting.done();
     })?;
     Ok(json!({"selectedCount": selected, "pathCount": picked.len(), "passedOver": passed}))
 }

@@ -15,7 +15,7 @@ use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::{Command, mm_to_pt};
-use vectorcraft_tools::embroidery::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, ThreadHit};
+use vectorcraft_tools::embroidery::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, SelectedSpan, ThreadHit};
 
 use super::needle_index::NeedleIndex;
 use super::plan::{DesignPlan, Part};
@@ -166,15 +166,8 @@ impl crate::Session {
             // the paths being edited inside it.
             for (id, whole) in n.selected_paths(cx.selection) {
                 let (count, lo, hi) = match cx.selection.anchors.get(&id).filter(|_| !whole) {
-                    Some(anchors) => {
-                        let ks: Vec<usize> = anchors.iter().filter_map(|a| n.of_anchor(id, *a)).collect();
-                        let lo = ks.iter().copied().min();
-                        let hi = ks.iter().copied().max();
-                        // A run of one needle point is two anchors: counted once.
-                        let mut unique = ks;
-                        unique.dedup();
-                        (unique.len(), lo, hi)
-                    }
+                    // The path found once for all of its anchors selected.
+                    Some(anchors) => n.span(id, anchors).map_or((0, None, None), |s| (s.count, Some(s.first), Some(s.last))),
                     None => (n.count(id), Some(0), n.count(id).checked_sub(1)),
                 };
                 selected += count;
@@ -191,6 +184,44 @@ impl crate::Session {
             let ends = ends.map(|[a, b]| [(a, n.number(a)), (b, n.number(b))]);
             Some(StitchEditing { scope: n.scope(), selected, ends })
         })
+    }
+
+    /// Where needle points `refs` of the stitches being edited lie in `doc` (the active document,
+    /// or the one a drag under way started from), each a look-up in the needle points stitch
+    /// editing keeps rather than a walk of its path's runs: `None` for one it doesn't edit, or of a
+    /// path `doc` holds otherwise than those kept; all `None` while it isn't editing. What the
+    /// canvas's hover, current ring and range pills are drawn at.
+    pub fn stitch_needle_points(&mut self, view: crate::ViewInfo, doc: &Document, refs: &[NeedleRef]) -> Vec<Option<Point>> {
+        let Some(index) = self.editing_index(view) else { return vec![None; refs.len()] };
+        refs.iter().map(|&n| index.point_in(doc, n)).collect()
+    }
+
+    /// Whether the selection selects each of needle points `refs` of the stitches being edited, by
+    /// the rule every reader of the selection keeps ([`NeedlePoints::selected_paths`]), each a
+    /// look-up in the needle points kept; `false` for one it doesn't edit, or of a path the
+    /// document holds otherwise than those kept; all `false` while it isn't editing. What the
+    /// Stitches tab's rows are drawn by.
+    pub fn stitch_needles_selected(&mut self, view: crate::ViewInfo, refs: &[NeedleRef]) -> Vec<bool> {
+        let (Some(index), Some(st)) = (self.editing_index(view), self.active()) else { return vec![false; refs.len()] };
+        let (doc, sel) = (&*st.doc, &st.selection);
+        let paths: HashMap<NodeId, bool> = index.selected_paths(doc, sel).into_iter().collect();
+        refs.iter()
+            .map(|&n| {
+                index.point_in(doc, n).is_some()
+                    && match paths.get(&n.id) {
+                        Some(&whole) => whole || sel.anchors.get(&n.id).is_some_and(|set| index.anchors(n).iter().any(|a| set.contains(a))),
+                        None => false,
+                    }
+            })
+            .collect()
+    }
+
+    /// The needle points stitch editing keeps, while it edits (the embroidery tool's, in the stitch
+    /// view, `view`).
+    fn editing_index(&mut self, view: crate::ViewInfo) -> Option<Arc<NeedleIndex>> {
+        let editing = self.tool_id() == vectorcraft_tools::embroidery::ID
+            && self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).is_some());
+        editing.then(|| self.kept_needle_index()).flatten()
     }
 
     /// The paths stitch editing edits that the selection selects, as [`Session::stitch_editing`]
@@ -326,6 +357,10 @@ impl NeedlePoints for NeedlesNow<'_> {
 
     fn of_anchor(&self, id: NodeId, anchor: (usize, usize)) -> Option<usize> {
         self.index.of_anchor(id, anchor)
+    }
+
+    fn span(&self, id: NodeId, anchors: &std::collections::BTreeSet<(usize, usize)>) -> Option<SelectedSpan> {
+        self.index.span(id, anchors)
     }
 
     fn count(&self, id: NodeId) -> usize {

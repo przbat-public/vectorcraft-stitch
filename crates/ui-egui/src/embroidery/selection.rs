@@ -25,6 +25,7 @@ use egui::{Align2, Color32, CornerRadius, FontId, Id, Pos2, Rect as ERect, Shape
 use vectorcraft_doc::{Document, NodeId, NodeKind, Selection};
 use vectorcraft_engine::cmd::embroidery::{StitchEditing, StitchLimits, stitch_limits};
 use vectorcraft_geom::{Point, Rect, Vec2};
+use vectorcraft_tools::embroidery::NeedleRef;
 
 use super::handles::{dark, light};
 use super::marks::{self, Mark};
@@ -163,13 +164,34 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
         // The needle points the machine stops after: the needle is then lifted to the next, no
         // stitch between them.
         let stops = marks.placed(path).stops;
-        for (s, sp) in path.subpaths.iter().enumerate() {
+        // The runs holding a needle point selected: those of the anchors selected, else all.
+        let runs: Vec<usize> = match chosen {
+            Some(set) => {
+                let mut runs: Vec<usize> = set.iter().map(|&(s, _)| s).collect();
+                runs.dedup();
+                runs
+            }
+            None => (0..path.subpaths.len()).collect(),
+        };
+        for s in runs {
+            let Some(sp) = path.subpaths.get(s) else { continue };
             let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
             let picked = |a: usize| match chosen {
                 Some(set) => set.contains(&(s, a)) || (len == 1 && sp.anchors.len() == 2 && set.contains(&(s, 1))),
                 None => true,
             };
-            for a in 0..len {
+            // The run's needle points selected: those of its anchors selected (a run of one needle
+            // point is two anchors), else all of them.
+            let needles: Vec<usize> = match chosen {
+                Some(set) => {
+                    let mut k: Vec<usize> =
+                        set.range((s, 0)..=(s, usize::MAX)).map(|&(_, a)| a.min(len.saturating_sub(1))).filter(|&a| a < len).collect();
+                    k.dedup();
+                    k
+                }
+                None => (0..len).collect(),
+            };
+            for a in needles {
                 if !picked(a) {
                     continue;
                 }
@@ -325,23 +347,18 @@ fn head(editing: &StitchEditing, count: usize, lang: crate::i18n::Lang) -> Strin
     format!("{n} · {range}")
 }
 
-/// The needle point `{id, index}` names in the tool's options (`v`), where it is in `doc`.
-fn needle_at(doc: &Document, v: &serde_json::Value) -> Option<Point> {
-    let id = NodeId(v.get("id")?.as_u64()?);
-    let index = usize::try_from(v.get("index")?.as_u64()?).ok()?;
-    let n = doc.node(id)?;
-    let path = n.path_data()?;
-    let alone = path.subpaths.len() == 1;
-    let double_point = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
-    let mut first = 0usize;
-    for sp in &path.subpaths {
-        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
-        if index < first + len {
-            return sp.anchors.get(index - first).map(|a| a.p);
-        }
-        first += len;
-    }
-    None
+/// The needle point `{id, index}` names in the tool's options (`v`).
+fn needle_ref(v: &serde_json::Value) -> Option<NeedleRef> {
+    Some(NeedleRef { id: NodeId(v.get("id")?.as_u64()?), index: usize::try_from(v.get("index")?.as_u64()?).ok()? })
+}
+
+/// Where each needle point `asked` names lies in `doc` (none where none is asked, or where the
+/// session finds none), found together: a look-up each in the needle points stitch editing keeps.
+fn found_at<const N: usize>(app: &mut VectorcraftApp, doc: &Document, asked: [Option<NeedleRef>; N]) -> [Option<Point>; N] {
+    let refs: Vec<NeedleRef> = asked.iter().flatten().copied().collect();
+    let view = app.view_info();
+    let mut found = app.session.stitch_needle_points(view, doc, &refs).into_iter();
+    asked.map(|n| n.and_then(|_| found.next().flatten()))
 }
 
 /// The colour the selection's lines and box are drawn in over their dark edge: the layer's colour
@@ -372,6 +389,20 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
         (Some(i), Some(_)) => i.doc.clone(),
         _ => st.doc.clone(),
     };
+    // The needle points the tool's options name (what lies under the pointer: a needle point, or
+    // the stitch from one to the next; the current one) and the selection's ends, read once and
+    // found together, of the paths being edited only (the tool forgets them when editing moves on).
+    let hover = options.get("hover").cloned().unwrap_or_default();
+    let stitch = hover.get("stitch").and_then(needle_ref);
+    let asked = [
+        hover.get("needlePoint").and_then(needle_ref),
+        stitch,
+        stitch.and_then(|n| Some(NeedleRef { id: n.id, index: n.index.checked_add(1)? })),
+        options.get("current").and_then(needle_ref),
+        editing.ends.map(|[(a, _), _]| a),
+        editing.ends.map(|[_, (b, _)]| b),
+    ];
+    let [hovered, from, to, current, first, last] = found_at(app, &doc, asked);
     let t = Tokens::get(ui.ctx());
     let clip = xf.rect;
     let Some(k) = kept(app, &limits) else { return };
@@ -406,29 +437,17 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
             painter.circle_stroke(c, SELECTED_RADIUS_PT, Stroke::new(EDGE_LIGHT_PT, light()));
         }
     }
-    // The needle point or stitch under the pointer, and the current needle point's ring: of a path
-    // inside the object edited only (the tool forgets them when editing moves on).
-    let inside = |v: &serde_json::Value| {
-        v.get("id").and_then(serde_json::Value::as_u64).and_then(|id| doc.ancestry(NodeId(id))).is_some_and(|a| a.contains(&editing.scope.object))
-    };
-    let hover = options.get("hover").cloned().unwrap_or_default();
-    if let Some(p) = hover.get("needlePoint").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
+    // The needle point or stitch under the pointer, and the current needle point's ring.
+    if let Some(p) = hovered {
         // Two tones, as the marquee's: one of them shows on any fabric and thread.
         let (c, radius) = (screen(p), SELECTED_RADIUS_PT + RING_OUT_PT / 2.0);
         painter.circle_stroke(c, radius, Stroke::new(STITCH_UNDER_PT, dark()));
         painter.circle_stroke(c, radius, Stroke::new(STITCH_PT, light()));
-    } else if let Some(from) = hover.get("stitch").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
-        let to = hover.get("stitch").and_then(|v| {
-            let mut next = v.clone();
-            next["index"] = serde_json::json!(v.get("index")?.as_u64()? + 1);
-            needle_at(&doc, &next)
-        });
-        if let Some(to) = to {
-            painter.line_segment([screen(from), screen(to)], Stroke::new(STITCH_UNDER_PT, dark()));
-            painter.line_segment([screen(from), screen(to)], Stroke::new(STITCH_PT, light()));
-        }
+    } else if let (Some(from), Some(to)) = (from, to) {
+        painter.line_segment([screen(from), screen(to)], Stroke::new(STITCH_UNDER_PT, dark()));
+        painter.line_segment([screen(from), screen(to)], Stroke::new(STITCH_PT, light()));
     }
-    if let Some(p) = options.get("current").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
+    if let Some(p) = current {
         let c = screen(p);
         let radius = SELECTED_RADIUS_PT + RING_OUT_PT;
         for (width, colour) in RING_PT.iter().zip([dark(), light(), ink]) {
@@ -450,12 +469,11 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
         let lang = crate::i18n::current();
         let pill = |n: Option<usize>| n.map_or_else(|| "#…".to_string(), |n| format!("#{}", super::numbers::count(lang, n as u64)));
         let ink_edge = Stroke::new(1.0, dark());
-        let at = |r: vectorcraft_tools::embroidery::NeedleRef| needle_at(&doc, &serde_json::json!({"id": r.id.0, "index": r.index})).map(screen);
-        if let Some(pa) = at(a) {
+        if let Some(pa) = first.map(screen) {
             super::overlay::label(painter, pa + vec2(-RING_OUT_PT, -RING_OUT_PT), Align2::RIGHT_BOTTOM, &pill(na), ink, ink_edge);
         }
         if (a, na) != (b, nb)
-            && let Some(pb) = at(b)
+            && let Some(pb) = last.map(screen)
         {
             super::overlay::label(painter, pb + vec2(RING_OUT_PT, RING_OUT_PT), Align2::LEFT_TOP, &pill(nb), ink, ink_edge);
         }

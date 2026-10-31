@@ -35,6 +35,7 @@ use vectorcraft_engine::cmd::embroidery::plan::DesignPlan;
 use vectorcraft_engine::cmd::embroidery::stitch_list::{self, Filter, Flags, RecordKind};
 use vectorcraft_engine::cmd::embroidery::{StitchLimits, mm_to_pt, stitch_limits};
 use vectorcraft_geom::Point;
+use vectorcraft_tools::embroidery::NeedleRef;
 
 use crate::VectorcraftApp;
 use crate::embroidery::marks::{self, Mark};
@@ -361,31 +362,16 @@ fn refind(app: &mut VectorcraftApp, uid: u64, before: Option<&Shown>, now: &Show
         let count = vectorcraft_engine::cmd::embroidery::needle_points_in;
         // The same place while the path has as many needle points (a move keeps them in order);
         // after an insert or a delete, the needle point where it lay.
+        let points = vectorcraft_engine::cmd::embroidery::needle_points_of;
         let index = if count(was) == count(is) {
             index
         } else {
-            let at = needle_point(was, index)?;
-            (0..count(is)?).find(|k| needle_point(is, *k) == Some(at))?
+            let at = points(was)?.nth(index)?;
+            points(is)?.position(|p| p == at)?
         };
         record_in(&now.plan, &now.document, node, index)
     };
     (d.focus, d.anchor, d.shown) = (again(d.focus), again(d.anchor), again(d.shown));
-}
-
-/// Where needle point `index` of path `n` lies (document points).
-fn needle_point(n: &vectorcraft_doc::Node, index: usize) -> Option<Point> {
-    let path = n.path_data()?;
-    let alone = path.subpaths.len() == 1;
-    let double_point = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
-    let mut first = 0usize;
-    for sp in &path.subpaths {
-        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
-        if index < first + len {
-            return sp.anchors.get(index - first).map(|a| a.p);
-        }
-        first += len;
-    }
-    None
 }
 
 /// The needle point record `number` of `plan` (made from `doc`) is edited by, as a click names it.
@@ -410,27 +396,6 @@ fn record_in(plan: &DesignPlan, doc: &Document, node: NodeId, index: usize) -> O
                 && stitch_list::edited_by(plan, unit, first, &ordinals, n, RecordKind::Stitch) == Some(index)
         })
     })
-}
-
-/// Whether needle point `index` of path `node` is selected in the active document.
-fn is_selected(app: &VectorcraftApp, node: NodeId, index: usize) -> bool {
-    let Some(st) = app.session.active() else { return false };
-    let Some(n) = st.doc.node(node) else { return false };
-    let Some(path) = n.path_data() else { return false };
-    let alone = path.subpaths.len() == 1;
-    let double_point = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.double_point);
-    let mut first = 0usize;
-    for (s, sp) in path.subpaths.iter().enumerate() {
-        let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
-        if index < first + len {
-            return match st.selection.anchors.get(&node) {
-                Some(anchors) => anchors.contains(&(s, index - first)) || (len == 1 && anchors.contains(&(s, 1))),
-                None => st.selection.objects.contains(&node),
-            };
-        }
-        first += len;
-    }
-    false
 }
 
 /// A kind's word.
@@ -642,12 +607,22 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let spacing = ui.spacing().item_spacing.y;
     ui.spacing_mut().item_spacing.y = 0.0;
     let scrolled = area.show_rows(ui, ROW_HEIGHT, in_page, |ui, range| {
-        for i in range {
-            let row_index = page * MAX_SCROLLED_ROWS + i;
-            let Some(number) = listed.record(row_index) else { continue };
-            let Some(row) = stitch_list::row(&shown.plan, number) else { continue };
-            let address = editing.and_then(|_| edited_by(app, &shown, row.unit, number, row.kind));
-            let selected = address.is_some_and(|a| is_selected(app, a.node, a.index));
+        // The rows in view, each with whether the needle point it is edited by is selected: those
+        // asked of the session together, a look-up each.
+        let rows: Vec<(usize, usize, stitch_list::Row, Option<NeedleRef>)> = range
+            .filter_map(|i| {
+                let row_index = page * MAX_SCROLLED_ROWS + i;
+                let number = listed.record(row_index)?;
+                let row = stitch_list::row(&shown.plan, number)?;
+                let address = editing.and_then(|_| edited_by(app, &shown, row.unit, number, row.kind));
+                Some((row_index, number, row, address.map(|a| NeedleRef { id: a.node, index: a.index })))
+            })
+            .collect();
+        let edited: Vec<NeedleRef> = rows.iter().filter_map(|(.., n)| *n).collect();
+        let view = app.view_info();
+        let mut selected_now = app.session.stitch_needles_selected(view, &edited).into_iter();
+        for (row_index, number, row, address) in rows {
+            let selected = address.is_some() && selected_now.next().unwrap_or(false);
             let (rect, resp) = ui.allocate_exact_size(vec2(width, ROW_HEIGHT), Sense::click());
             let focus = match (focus == Some(number), has_keys) {
                 (false, _) => FocusMark::None,

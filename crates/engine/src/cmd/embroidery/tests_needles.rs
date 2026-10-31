@@ -159,18 +159,56 @@ fn the_selection_maps_to_needle_points_and_back() {
     sel.objects = vec![NodeId(id)];
     sel.anchors.insert(NodeId(id), [(1, 1), (0, 2)].into_iter().collect());
     let ix = st.index();
-    assert_eq!(needles::selected_in(&sel, NodeId(id), &ix), [2, 3].into_iter().collect());
-    needles::select_in(&mut sel, NodeId(id), &ix, &[3].into_iter().collect());
+    let mut selecting = needles::Selecting::new(sel);
+    assert_eq!(selecting.selected_in(NodeId(id), &ix), [2, 3].into_iter().collect());
+    selecting.select_in(NodeId(id), &ix, &[3].into_iter().collect());
+    let sel = selecting.done();
     assert_eq!(sel.anchors[&NodeId(id)], [(1, 0), (1, 1)].into_iter().collect(), "both anchors of the one needle point");
-    needles::select_in(&mut sel, NodeId(id), &ix, &Default::default());
+    let mut selecting = needles::Selecting::new(sel);
+    selecting.select_in(NodeId(id), &ix, &Default::default());
+    let mut sel = selecting.done();
     assert!(!sel.contains(NodeId(id)) && !sel.anchors.contains_key(&NodeId(id)), "nothing of it: it leaves the selection");
     sel.anchors.clear();
     sel.objects = vec![NodeId(id)];
-    assert_eq!(needles::selected_in(&sel, NodeId(id), &ix).len(), 4, "selected whole: all of it");
+    assert_eq!(needles::Selecting::new(sel.clone()).selected_in(NodeId(id), &ix).len(), 4, "selected whole: all of it");
     // An anchor past a run's needle points (left stale by an edit since) is none of them; the
     // second anchor of a line to its own start is its one.
     sel.anchors.insert(NodeId(id), [(0, 9), (1, 1)].into_iter().collect());
-    assert_eq!(needles::selected_in(&sel, NodeId(id), &ix), [3].into_iter().collect());
+    assert_eq!(needles::Selecting::new(sel).selected_in(NodeId(id), &ix), [3].into_iter().collect());
+    // The needle index spans them alike, the path found once: the line to its own start's two
+    // anchors one needle point.
+    let doc = s.doc().unwrap().doc.clone();
+    let roots: Vec<NodeId> = doc.layers.iter().map(|l| l.id).collect();
+    let index = super::needle_index::NeedleIndex::of(&doc, &roots, None).unwrap();
+    let span = index.span(NodeId(id), &[(0, 2), (1, 0), (1, 1)].into_iter().collect());
+    assert_eq!(span, Some(vectorcraft_tools::embroidery::SelectedSpan { count: 2, first: 2, last: 3 }));
+    assert_eq!(index.span(NodeId(id), &[(0, 9)].into_iter().collect()), None, "an anchor past the run's needle points");
+}
+
+/// A selection changed path by path ends as the selection's own calls leave it: a path that leaves
+/// goes from its list with its anchors and segments (and the key, when it was), one selected whole
+/// joins at the end, and one that leaves and joins again keeps its place.
+#[test]
+fn a_selection_changed_path_by_path_ends_as_its_own_calls_leave_it() {
+    let ids: Vec<NodeId> = (1..=6).map(NodeId).collect();
+    let mut start = vectorcraft_doc::Selection { objects: ids[..4].to_vec(), key: Some(ids[1]), target: Some(ids[3]), ..Default::default() };
+    start.anchors.insert(ids[1], [(0, 1)].into_iter().collect());
+    start.anchors.insert(ids[2], [(0, 2)].into_iter().collect());
+    let mut selecting = needles::Selecting::new(start.clone());
+    selecting.leave(ids[1]);
+    selecting.whole(ids[2]);
+    selecting.whole(ids[4]);
+    selecting.leave(ids[0]);
+    selecting.whole(ids[0]);
+    selecting.leave(ids[5]);
+    let got = selecting.done();
+    let mut want = start;
+    want.remove(ids[1]);
+    want.anchors.remove(&ids[2]);
+    want.add(ids[4]);
+    want.remove(ids[5]);
+    want.objects = vec![ids[0], ids[2], ids[3], ids[4]];
+    assert_eq!((&got.objects, &got.anchors, got.key, got.target), (&want.objects, &want.anchors, want.key, want.target));
 }
 
 /// The index finds a needle point by its place across the runs, passing over a run with none (an

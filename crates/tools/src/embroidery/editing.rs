@@ -156,7 +156,7 @@ pub fn selected_count(sel: &Selection, needles: &dyn NeedlePoints) -> usize {
 /// and `]` start without a current one. Reads the selection's first path only.
 fn first_selected(sel: &Selection, needles: &dyn NeedlePoints) -> Option<NeedleRef> {
     let (id, whole) = needles.selected_paths(sel).into_iter().next()?;
-    let index = if whole { 0 } else { sel.anchors.get(&id)?.iter().filter_map(|a| needles.of_anchor(id, *a)).min()? };
+    let index = if whole { 0 } else { needles.span(id, sel.anchors.get(&id)?)?.first };
     Some(NeedleRef { id, index })
 }
 

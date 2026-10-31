@@ -462,3 +462,35 @@ fn the_index_is_built_again_only_for_what_changed() {
     s.kept_needle_index();
     assert_eq!(paths_looked_at(), looked + 1, "the path moved looked at again, the refused one not");
 }
+
+/// The session finds the needle points being edited by a look-up in the index it keeps: where each
+/// lies in a document holding its path as the index does (none in one holding it otherwise), and
+/// whether each is selected by the rule every reader keeps (an object holding the path selected
+/// whole selects all of it); none while nothing is edited.
+#[test]
+fn the_session_finds_needle_points_by_the_index_it_keeps() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    let group = m.converted.stroke;
+    run(&mut s, "object.isolate", json!({"id": group}));
+    run(&mut s, "view.stitchPreview", json!({"on": true}));
+    let view = crate::ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    let id = s.kept_needle_index().expect("editing").ids().next().unwrap();
+    let points = read_points(&s, id);
+    let refs: Vec<NeedleRef> = (0..3).map(|index| NeedleRef { id, index }).collect();
+    let doc = s.doc().unwrap().doc.clone();
+    assert_eq!(s.stitch_needle_points(view, &doc, &refs), points[..3].iter().map(|p| Some(*p)).collect::<Vec<_>>());
+    assert_eq!(s.stitch_needles_selected(view, &refs), [false; 3]);
+    run(&mut s, "embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": id.0, "index": 1}]}));
+    assert_eq!(s.stitch_needles_selected(view, &refs), [false, true, false], "by its anchor");
+    run(&mut s, "select.set", json!({"ids": [group]}));
+    assert_eq!(s.stitch_needles_selected(view, &refs), [true; 3], "an object holding the path selected whole");
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id.0, "index": 0}], "dx": 1.0}));
+    assert_eq!(s.stitch_needle_points(view, &doc, &refs), [None; 3], "a document holding the path as it was");
+    let now = s.doc().unwrap().doc.clone();
+    assert!(s.stitch_needle_points(view, &now, &refs).iter().all(Option::is_some));
+    run(&mut s, "object.exitIsolation", json!({}));
+    assert_eq!(s.stitch_needle_points(view, &now, &refs), [None; 3], "nothing edited");
+    assert_eq!(s.stitch_needles_selected(view, &refs), [false; 3]);
+}

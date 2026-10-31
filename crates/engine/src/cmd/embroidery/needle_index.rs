@@ -21,12 +21,12 @@
 //!   numbers or lie outside the document's coordinates, or one holding more needle points than a
 //!   design may have: counted, never indexed.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
 use vectorcraft_doc::{Document, Node, NodeId, NodeKind, Selection};
 use vectorcraft_geom::{Point, Rect};
-use vectorcraft_tools::embroidery::{NeedleHit, NeedleRef, NeedleScope, ThreadHit};
+use vectorcraft_tools::embroidery::{NeedleHit, NeedleRef, NeedleScope, SelectedSpan, ThreadHit};
 
 use super::digitize;
 use super::needles::{self, MAX_NEEDLE_POINTS, Unfit};
@@ -338,7 +338,7 @@ impl NeedleIndex {
                 unfit.insert(n.id, n);
                 continue;
             }
-            let reused = kept.and_then(|k| k.path(n.id)).filter(|p| Arc::ptr_eq(&p.node, &n));
+            let reused = kept.and_then(|k| k.path(n.id)).filter(|p| Arc::ptr_eq(&p.node, &n)).cloned();
             let path = match reused {
                 Some(p) => p,
                 None => match PathIndex::of(&n) {
@@ -387,8 +387,8 @@ impl NeedleIndex {
     }
 
     /// Path `id`'s index, when it is one being edited.
-    fn path(&self, id: NodeId) -> Option<Arc<PathIndex>> {
-        self.order.get(&id).and_then(|&k| self.paths.get(k)).map(|(_, p)| p.clone())
+    fn path(&self, id: NodeId) -> Option<&Arc<PathIndex>> {
+        self.order.get(&id).and_then(|&k| self.paths.get(k)).map(|(_, p)| p)
     }
 
     /// What it edits.
@@ -477,6 +477,29 @@ impl NeedleIndex {
     /// Where needle point `n` is.
     pub(crate) fn point(&self, n: NeedleRef) -> Option<Point> {
         self.path(n.id)?.point(n.index)
+    }
+
+    /// Where needle point `n` lies in `doc`, when `doc` holds its path as the index does (the
+    /// document it was built from, or one an edit since left the path alone in); else `None`.
+    pub(crate) fn point_in(&self, doc: &Document, n: NeedleRef) -> Option<Point> {
+        let p = self.path(n.id)?;
+        std::ptr::eq(Arc::as_ptr(&p.node), doc.node(n.id)?).then(|| p.point(n.index)).flatten()
+    }
+
+    /// The needle points of path `id` whose anchors are among `anchors`, the path found once: how
+    /// many, and the first and the last. The anchors are in order, and so are the needle points
+    /// they are (a run of one needle point's two anchors one after the other).
+    pub(crate) fn span(&self, id: NodeId, anchors: &BTreeSet<(usize, usize)>) -> Option<SelectedSpan> {
+        let p = self.path(id)?;
+        let mut span: Option<SelectedSpan> = None;
+        for k in anchors.iter().filter_map(|&a| p.of_anchor(a)) {
+            span = Some(match span {
+                None => SelectedSpan { count: 1, first: k, last: k },
+                Some(s) if k == s.last => s,
+                Some(s) => SelectedSpan { count: s.count + 1, first: s.first.min(k), last: s.last.max(k) },
+            });
+        }
+        span
     }
 
     /// The needle point after `n` along the thread (`forward`), or before it, round from the last

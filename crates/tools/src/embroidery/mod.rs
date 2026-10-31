@@ -32,7 +32,7 @@ pub use editing::{
     Editing, Hover, LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, SHIFT_STEPS, contains_stitches, is_selected, selected_count,
     stitch_object,
 };
-pub use facts::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, ThreadHit};
+pub use facts::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, SelectedSpan, ThreadHit};
 pub use handles::{
     APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_MIN_PX, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle,
     HandleId, Kind, Owner, State, direction, handle_walks, handles, hit, hit_after,

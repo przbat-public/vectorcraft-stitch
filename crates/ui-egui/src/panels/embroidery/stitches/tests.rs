@@ -1148,3 +1148,26 @@ fn the_foots_actions_are_on_as_their_commands_can_run() {
         assert_eq!(!button.5, on, "{label}: as {command} can run");
     }
 }
+
+/// While editing, the object edited selected whole lights the rows of its needle points, by the rule
+/// every reader of the selection keeps (an object holding a path selected whole selects all of it);
+/// with nothing selected, none is lit.
+#[test]
+fn while_editing_the_object_selected_whole_lights_its_rows() {
+    let (mut app, id) = app();
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let lit = |nodes: &[Node]| nodes.iter().filter(|n| n.1 == Role::Row && n.4 == Some(true)).count();
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let rows = nodes.iter().filter(|n| n.1 == Role::Row).count();
+    assert!(rows > 4, "rows listed: {rows}");
+    assert_eq!(lit(&nodes), 0, "nothing selected");
+    app.run("select.set", json!({"ids": [id]})).unwrap();
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    assert!(lit(&nodes) > 4, "the rows of the needle points it holds lit: {} of {rows}", lit(&nodes));
+}

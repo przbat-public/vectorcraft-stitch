@@ -138,7 +138,7 @@ struct Edit {
     /// The command's id, which its refusals name.
     cmd: &'static str,
     before: Selection,
-    sel: Selection,
+    sel: needles::Selecting,
     /// The one set of limits the stitches around the edit are measured against: the document's
     /// (its shortest stitch, 12.7 mm and its thread palette's format), or Split Long Stitches'.
     limits: StitchLimits,
@@ -156,14 +156,15 @@ impl Edit {
     /// document's limits.
     fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, needles::Unfit)>) -> Result<Self> {
         let limits = StitchLimits::of(&s.doc()?.doc, None);
-        Ok(Self { cmd, sel: before.clone(), before, limits, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
+        let sel = needles::Selecting::new(before.clone());
+        Ok(Self { cmd, sel, before, limits, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
     }
 
     /// The needle points of path `id` (read from it, `ix` its index) that the selection selected
     /// before the edit, when it selected some of them by their anchors (`None`: the path whole or
     /// not at all, which the edit leaves as it is).
     fn selected(&self, id: NodeId, ix: &Index) -> Option<BTreeSet<usize>> {
-        self.before.anchors.contains_key(&id).then(|| needles::selected_in(&self.before, id, ix))
+        needles::by_anchors(&self.before, id, ix)
     }
 
     /// Path `id` as the edit leaves it, `out` (`ix` its index): refused past
@@ -196,23 +197,18 @@ impl Edit {
         match kept {
             Kept::Same => {
                 if let Some(k) = selected {
-                    needles::select_in(&mut self.sel, id, ix, &carried(k));
+                    self.sel.select_in(id, ix, &carried(k));
                 }
             }
             Kept::Moved(moved_to) => {
                 if let Some(k) = selected {
                     let k = k.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()).collect();
-                    needles::select_in(&mut self.sel, id, ix, &carried(k));
+                    self.sel.select_in(id, ix, &carried(k));
                 }
             }
-            Kept::Only(k) => needles::select_in(&mut self.sel, id, ix, &carried(k)),
-            Kept::Left => self.leave(id),
-            Kept::Whole => {
-                self.sel.anchors.remove(&id);
-                if !self.sel.objects.contains(&id) {
-                    self.sel.objects.push(id);
-                }
-            }
+            Kept::Only(k) => self.sel.select_in(id, ix, &carried(k)),
+            Kept::Left => self.sel.leave(id),
+            Kept::Whole => self.sel.whole(id),
         }
         self.edits.push((id, Left::Stitches(out)));
         Ok(())
@@ -220,14 +216,8 @@ impl Edit {
 
     /// Path `id` removed, and out of the selection.
     fn removed(&mut self, id: NodeId) {
-        self.leave(id);
+        self.sel.leave(id);
         self.edits.push((id, Left::Removed));
-    }
-
-    /// Path `id` out of the selection.
-    fn leave(&mut self, id: NodeId) {
-        self.sel.remove(id);
-        self.sel.anchors.remove(&id);
     }
 
     /// The reply: `own`'s keys and what every edit answers (the paths changed or removed and how
@@ -247,7 +237,7 @@ impl Edit {
         let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect();
         reply.insert("passedOver".into(), Value::Array(passed));
         if changed {
-            apply(s, label, self.edits, self.sel)?;
+            apply(s, label, self.edits, self.sel.done())?;
         }
         Ok(Value::Object(reply))
     }

@@ -4,8 +4,8 @@
 //! plan the canvas shows, and from the document, and never plans to answer. A new question is a
 //! new method with a default body.
 
-use vectorcraft_doc::NodeId;
 use vectorcraft_doc::embroidery::PartKind;
+use vectorcraft_doc::{NodeId, Selection};
 use vectorcraft_geom::Point;
 
 /// Where the plan sews a part: the first needle point of its first unit and the last of its last,
@@ -139,4 +139,12 @@ pub trait NeedlePoints {
     /// The record number the plan the canvas shows gives needle point `n`, when that plan is of
     /// its path as it is now; `None` while the plan lags behind an edit of it.
     fn number(&self, n: NeedleRef) -> Option<usize>;
+    /// The paths being edited that `sel` selects, in the selection's order, each with whether all
+    /// of its needle points are selected (the path, or an object holding it, selected whole) or
+    /// only those whose anchors `sel` selects: the one rule the chip, the selection layer, the live
+    /// check, the tool's keys and the stitch commands share. By default the paths it selects
+    /// themselves; the engine also takes those inside an object selected whole, as the commands do.
+    fn selected_paths(&self, sel: &Selection) -> Vec<(NodeId, bool)> {
+        sel.objects.iter().copied().filter(|id| self.holds(*id)).map(|id| (id, !sel.anchors.contains_key(&id))).collect()
+    }
 }

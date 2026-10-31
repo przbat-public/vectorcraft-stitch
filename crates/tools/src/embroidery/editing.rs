@@ -129,33 +129,32 @@ fn select(needles: &[NeedleRef], mode: &str) -> Action {
     Action::Exec(SELECT.into(), json!({"needlePoints": needles.iter().copied().map(address).collect::<Vec<_>>(), "mode": mode}))
 }
 
-/// Whether needle point `n` is selected: its anchor among the selection's anchors, or its path
-/// selected whole.
+/// Whether needle point `n` is selected, by the rule every reader of the selection keeps
+/// ([`NeedlePoints::selected_paths`]): its path selected whole (or an object holding it), or its
+/// anchor among the selection's anchors.
 pub fn is_selected(sel: &Selection, needles: &dyn NeedlePoints, n: NeedleRef) -> bool {
-    match sel.anchors.get(&n.id) {
-        Some(anchors) => needles.anchors(n).iter().any(|a| anchors.contains(a)),
-        None => sel.objects.contains(&n.id),
+    match needles.selected_paths(sel).into_iter().find(|(id, _)| *id == n.id) {
+        Some((_, true)) => true,
+        Some((id, false)) => sel.anchors.get(&id).is_some_and(|anchors| needles.anchors(n).iter().any(|a| anchors.contains(a))),
+        None => false,
     }
 }
 
 /// About how many needle points being edited are selected (a run of one needle point counted once
 /// for each of its two anchors): what decides whether a drag previews live.
 pub fn selected_count(sel: &Selection, needles: &dyn NeedlePoints) -> usize {
-    sel.objects
-        .iter()
-        .filter(|id| needles.holds(**id))
-        .map(|id| sel.anchors.get(id).map_or_else(|| needles.count(*id), std::collections::BTreeSet::len))
+    needles
+        .selected_paths(sel)
+        .into_iter()
+        .map(|(id, whole)| if whole { needles.count(id) } else { sel.anchors.get(&id).map_or(0, std::collections::BTreeSet::len) })
         .sum()
 }
 
 /// The first needle point being edited that is selected, in sewing order, when any is: where `[`
 /// and `]` start without a current one. Reads the selection's first path only.
 fn first_selected(sel: &Selection, needles: &dyn NeedlePoints) -> Option<NeedleRef> {
-    let id = *sel.objects.iter().find(|id| needles.holds(**id))?;
-    let index = match sel.anchors.get(&id) {
-        Some(anchors) => anchors.iter().filter_map(|a| needles.of_anchor(id, *a)).min()?,
-        None => 0,
-    };
+    let (id, whole) = needles.selected_paths(sel).into_iter().next()?;
+    let index = if whole { 0 } else { sel.anchors.get(&id)?.iter().filter_map(|a| needles.of_anchor(id, *a)).min()? };
     Some(NeedleRef { id, index })
 }
 
@@ -399,7 +398,7 @@ impl Editing {
     /// selected; the arrows, Delete and Backspace while needle points are selected; `[` and `]`
     /// while there are needle points to step through.
     pub fn claims_key(&self, cx: &ToolContext, needles: &dyn NeedlePoints, key: ToolKey) -> bool {
-        let selected = || cx.selection.objects.iter().any(|id| needles.holds(*id));
+        let selected = || !needles.selected_paths(cx.selection).is_empty();
         match key {
             ToolKey::Escape => self.drag.is_some() || self.marquee.is_some() || selected(),
             ToolKey::Left | ToolKey::Right | ToolKey::Up | ToolKey::Down | ToolKey::Delete | ToolKey::Backspace => self.drag.is_none() && selected(),

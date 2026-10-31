@@ -151,7 +151,8 @@ fn an_edit_builds_only_the_path_it_changed() {
 }
 
 /// A machine file's run in a clip group is cut by it, so it isn't edited; manual stitches in one
-/// never are, so they are.
+/// never are, so they are. The stitch commands judge it alike: by address refused, in the
+/// selection passed over as clipped.
 #[test]
 fn a_files_run_in_a_clip_group_is_shown_not_edited() {
     let mut s = Session::new();
@@ -173,6 +174,11 @@ fn a_files_run_in_a_clip_group_is_shown_not_edited() {
     run(&mut s, "object.clippingMask.make", json!({}));
     let index = whole(&s);
     assert!(!index.holds(NodeId(run_id)), "a file's run cut by a clip group");
+    let refused = s.execute("embroidery.moveNeedlePoints", &json!({"needlePoints": [{"id": run_id, "index": 0}], "dx": 1})).unwrap_err().to_string();
+    assert!(refused.contains("clipping mask"), "{refused}");
+    run(&mut s, "select.set", json!({"ids": [run_id, m.trim_after]}));
+    let reply = run(&mut s, "embroidery.moveNeedlePoints", json!({"dx": 1}));
+    assert_eq!(reply["passedOver"], json!([{"id": run_id, "reason": "clipped"}]), "{reply}");
 }
 
 /// The marquee: `embroidery.selectNeedlePoints {rect}` selects exactly the needle points inside it,

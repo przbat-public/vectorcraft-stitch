@@ -162,8 +162,10 @@ impl crate::Session {
             let mut ends: Option<[NeedleRef; 2]> = None;
             // Along the thread: the paths in the order they are sewn, then the needle points.
             let along = |r: NeedleRef| (n.order(r.id), r.index);
-            for id in cx.selection.objects.iter().copied().filter(|id| n.holds(*id)) {
-                let (count, lo, hi) = match cx.selection.anchors.get(&id) {
+            // By the rule every reader of the selection keeps: a group selected whole stands for
+            // the paths being edited inside it.
+            for (id, whole) in n.selected_paths(cx.selection) {
+                let (count, lo, hi) = match cx.selection.anchors.get(&id).filter(|_| !whole) {
                     Some(anchors) => {
                         let ks: Vec<usize> = anchors.iter().filter_map(|a| n.of_anchor(id, *a)).collect();
                         let lo = ks.iter().copied().min();
@@ -189,6 +191,17 @@ impl crate::Session {
             let ends = ends.map(|[a, b]| [(a, n.number(a)), (b, n.number(b))]);
             Some(StitchEditing { scope: n.scope(), selected, ends })
         })
+    }
+
+    /// The paths stitch editing edits that the selection selects, as [`Session::stitch_editing`]
+    /// counts them, each with whether all of its needle points are selected (the path, or an object
+    /// holding it, selected whole) or those whose anchors it selects; `None` while it isn't
+    /// editing. What the canvas draws the selection from.
+    pub fn stitch_selected_paths(&mut self, view: crate::ViewInfo) -> Option<Vec<(NodeId, bool)>> {
+        if self.tool_id() != vectorcraft_tools::embroidery::ID {
+            return None;
+        }
+        self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| n.selected_paths(cx.selection)))
     }
 
     /// The embroidery tool's handles as the canvas draws them, while it is the active tool (else
@@ -307,6 +320,10 @@ impl NeedlePoints for NeedlesNow<'_> {
             return None;
         }
         numbers.get(n.index).copied()
+    }
+
+    fn selected_paths(&self, sel: &vectorcraft_doc::Selection) -> Vec<(NodeId, bool)> {
+        self.index.selected_paths(self.doc, sel)
     }
 }
 

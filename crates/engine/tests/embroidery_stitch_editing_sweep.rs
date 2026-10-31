@@ -314,3 +314,46 @@ fn the_lasso_tool_selects_needle_points_while_editing() {
     let editing = s.stitch_editing(view).expect("editing");
     assert!(editing.selected > 0, "back with the Embroidery Tool, the lasso's needle points are selected: {editing:?}");
 }
+
+/// Select All in isolation of a converted group of two objects selects the two converted objects
+/// whole: their needle points are what stitch editing counts as selected, by the rule every reader
+/// of the selection keeps; the tool claims the arrows and moves those needle points (one undo step
+/// named as the command is, not upstream's nudge of the objects), claims Delete and deletes them as
+/// stitches, and claims Escape, which deselects before isolation is left.
+#[test]
+fn objects_selected_whole_stand_for_their_needle_points() {
+    let (mut s, objects) = fixture();
+    let group = objects[4];
+    s.execute("object.isolate", &json!({"id": group})).unwrap();
+    s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
+    s.execute("embroidery.sequence", &json!({})).unwrap();
+    let view = ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    s.execute("select.all", &json!({})).unwrap();
+    let members: Vec<NodeId> = s.doc().unwrap().doc.node(NodeId(group)).unwrap().children().unwrap().iter().map(|c| c.id).collect();
+    assert_eq!(members.len(), 2, "two converted objects");
+    assert_eq!(s.doc().unwrap().selection.objects, members, "selected whole");
+    let all = needle_points(&s, group);
+    let editing = s.stitch_editing(view).expect("editing");
+    assert_eq!(editing.selected, all.len(), "every needle point of both, selected");
+    assert_eq!(editing.selected, editing.scope.needles);
+    // → moves the needle points 0.1 mm: the command's undo step.
+    let undo = s.doc().unwrap().history.undo.len();
+    assert!(s.tool_claims_key(ToolKey::Right, view), "the arrow is the tool's");
+    s.tool_key(ToolKey::Right, Mods::default(), view).unwrap();
+    assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
+    assert_eq!(s.doc().unwrap().history.undo.last().map(|e| e.label.clone()), Some("Move Needle Points".into()));
+    let moved = needle_points(&s, group);
+    let step = vectorcraft_stitch::mm_to_pt(0.1);
+    assert!(all.iter().zip(&moved).all(|(a, b)| (b.x - a.x - step).abs() < 1e-6 && (b.y - a.y).abs() < 1e-6), "every needle point 0.1 mm right");
+    // Delete deletes them as stitches.
+    assert!(s.tool_claims_key(ToolKey::Delete, view));
+    s.tool_key(ToolKey::Delete, Mods::default(), view).unwrap();
+    assert_eq!(s.doc().unwrap().history.undo.last().map(|e| e.label.clone()), Some("Delete Needle Points".into()));
+    s.execute("edit.undo", &json!({})).unwrap();
+    // Escape deselects first, isolation stays.
+    assert!(s.tool_claims_key(ToolKey::Escape, view));
+    s.tool_key(ToolKey::Escape, Mods::default(), view).unwrap();
+    assert!(s.doc().unwrap().selection.objects.is_empty(), "deselected");
+    assert_eq!(s.doc().unwrap().isolation, Some(NodeId(group)), "still isolated");
+}

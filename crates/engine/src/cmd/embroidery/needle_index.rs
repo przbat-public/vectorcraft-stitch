@@ -19,10 +19,10 @@
 //!   numbers or lie outside the document's coordinates, or one holding more needle points than a
 //!   design may have: counted, never indexed.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use vectorcraft_doc::{Document, Node, NodeId, NodeKind};
+use vectorcraft_doc::{Document, Node, NodeId, NodeKind, Selection};
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_tools::embroidery::{NeedleHit, NeedleRef, NeedleScope, ThreadHit};
 
@@ -202,11 +202,6 @@ fn holds_stitches(n: &Node) -> bool {
     matches!(n.kind, NodeKind::Path { .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some())
 }
 
-/// Whether `n`'s run of stitches is manual (converted in VectorCraft), not a machine file's.
-fn manual(n: &Node) -> bool {
-    n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.manual)
-}
-
 impl NeedleIndex {
     /// The index of the paths of stitches inside `roots` of `doc` (each root itself when it is one),
     /// each path reusing `kept`'s chunks when its node is the same; `None` when they hold no path of
@@ -242,7 +237,8 @@ impl NeedleIndex {
             if order.contains_key(&n.id) {
                 continue;
             }
-            if !editable(n.id) || (clipped && !manual(&n)) {
+            // Where it lies, as the stitch commands judge it (its needle points next).
+            if needles::placed_unfit(&n, editable(n.id), clipped).is_some() {
                 refused += 1;
                 continue;
             }
@@ -270,6 +266,31 @@ impl NeedleIndex {
             paths.push((n.id, path));
         }
         Some(Self { object: roots.first().copied().unwrap_or(NodeId(0)), paths, order, refused, needles, bounds })
+    }
+
+    /// The paths being edited that `sel` selects, in the selection's order, each with whether it
+    /// selects all of the path's needle points (the path, or an object holding it, selected whole)
+    /// or only those whose anchors it selects: the one rule the chip, the selection layer, the live
+    /// check, the tool's keys and the stitch commands' selection share (`needles::targets` takes a
+    /// group selected whole as the paths of stitches in it).
+    pub fn selected_paths(&self, doc: &Document, sel: &Selection) -> Vec<(NodeId, bool)> {
+        let mut seen: HashSet<NodeId> = HashSet::new();
+        let mut out = Vec::new();
+        for &id in &sel.objects {
+            if self.holds(id) {
+                if seen.insert(id) {
+                    out.push((id, !sel.anchors.contains_key(&id)));
+                }
+                continue;
+            }
+            let Some(n) = doc.node(id) else { continue };
+            n.walk(&mut |c| {
+                if c.id != id && self.holds(c.id) && seen.insert(c.id) {
+                    out.push((c.id, true));
+                }
+            });
+        }
+        out
     }
 
     /// Path `id`'s index, when it is one being edited.

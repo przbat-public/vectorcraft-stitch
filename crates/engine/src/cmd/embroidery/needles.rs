@@ -52,6 +52,9 @@ pub(crate) enum Unfit {
     NotStitches,
     /// Locked or hidden, or in a locked layer or group, or on a locked artboard.
     Locked,
+    /// A machine file's run cut by a clip group: what is sewn of it is what the mask leaves, not its
+    /// needle points one by one.
+    Clipped,
     /// Anchors that aren't numbers, or lie outside the document's coordinates.
     OutOfRange,
     /// More needle points than a design may have.
@@ -67,6 +70,7 @@ impl Unfit {
         match self {
             Self::NotStitches => "notStitches",
             Self::Locked => "locked",
+            Self::Clipped => "clipped",
             Self::OutOfRange => "outOfRange",
             Self::TooMany => "tooManyNeedlePoints",
             Self::NotJoinable => "notJoinable",
@@ -78,6 +82,7 @@ impl Unfit {
         match self {
             Self::NotStitches => "it isn't a path of stitches",
             Self::Locked => "it is locked or hidden, or in a locked layer, group or artboard",
+            Self::Clipped => "it is a machine file's run cut by a clipping mask, which sews only what the mask leaves",
             Self::OutOfRange => "its anchors aren't numbers, or lie outside the document's coordinates",
             Self::TooMany => "it holds more needle points than a design may have",
             Self::NotJoinable => "no path of stitches in its colour and of its kind is sewn right before it",
@@ -159,6 +164,26 @@ impl Needle {
 /// Whether `p` is a finite point within the document's coordinates.
 pub(crate) fn in_range(p: Point) -> bool {
     p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD
+}
+
+/// Whether `n`'s run of stitches is manual (converted in VectorCraft), not a machine file's.
+pub(crate) fn is_manual(n: &Node) -> bool {
+    n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|s| s.manual)
+}
+
+/// Whether a clip group holds node `id` of `doc` (one of its ancestors clips, not itself).
+pub(crate) fn clipped(doc: &Document, id: NodeId) -> bool {
+    doc.ancestry(id).unwrap_or_default().iter().filter(|a| **a != id).any(|a| doc.node(*a).is_some_and(Node::clips))
+}
+
+/// Why where path `n` lies keeps its stitches from being edited (`None`: it doesn't): locked or
+/// hidden (`editable` false), or a machine file's run a clip group cuts (`clipped`: one holds it).
+/// Stitch editing and the stitch commands judge a path alike: this, then [`check`]'s rules.
+pub(crate) fn placed_unfit(n: &Node, editable: bool, clipped: bool) -> Option<Unfit> {
+    if !editable {
+        return Some(Unfit::Locked);
+    }
+    (clipped && !is_manual(n)).then_some(Unfit::Clipped)
 }
 
 /// What [`read`] answers of `n`, without reading it: how many needle points the path of stitches
@@ -588,8 +613,8 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
     if given {
         for id in order {
             let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
-            if !editable(id) {
-                return Err(bad(cmd, format!("object {}: {}", id.0, Unfit::Locked.words())));
+            if let Some(why) = placed_unfit(n, editable(id), clipped(doc, id)) {
+                return Err(bad(cmd, format!("object {}: {}", id.0, why.words())));
             }
             let st = read(n).map_err(|why| bad(cmd, format!("object {}: {}", id.0, why.words())))?;
             let ranges = named.remove(&id).unwrap_or_default();
@@ -626,8 +651,8 @@ pub(crate) fn targets(doc: &Document, sel: &Selection, o: &Map<String, Value>, c
             if !seen.insert(c.id) {
                 continue;
             }
-            if !editable(c.id) {
-                out.passed_over.push((c.id, Unfit::Locked));
+            if let Some(why) = placed_unfit(c, editable(c.id), clipped(doc, c.id)) {
+                out.passed_over.push((c.id, why));
                 continue;
             }
             match read(c) {

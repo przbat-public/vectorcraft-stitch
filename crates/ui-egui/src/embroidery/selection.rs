@@ -139,25 +139,23 @@ pub struct Kept {
     pub(crate) builds: usize,
 }
 
-/// Build what the selection of `sel` in `doc` draws: the selected needle points of the paths of
-/// stitches inside `scope`, the stitches touching them, judged against `limits`.
-fn build(doc: &Document, sel: &Selection, scope: NodeId, limits: &StitchLimits) -> Kept {
+/// Build what the selection of `sel` in `doc` draws: the selected needle points of `paths` (the
+/// paths being edited that it selects, each whole or by its anchors: the rule the chip counts by),
+/// the stitches touching them, judged against `limits`.
+fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &StitchLimits) -> Kept {
     let mut k = Kept::default();
     let mut moved: Vec<Touch> = Vec::new();
     let mut too_many_moved = false;
-    for &id in &sel.objects {
+    for &(id, whole) in paths {
         let Some(n) = doc.node(id) else { continue };
         let (NodeKind::Path { path, .. }, Some(marks)) = (&n.kind, n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref())) else {
             continue;
         };
-        if !doc.ancestry(id).is_some_and(|a| a.contains(&scope)) {
-            continue;
-        }
         if k.count == 0 {
             k.color = doc.layer_color(id);
         }
         let (alone, double_point) = (path.subpaths.len() == 1, marks.double_point);
-        let chosen = sel.anchors.get(&id);
+        let chosen = sel.anchors.get(&id).filter(|_| !whole);
         for (s, sp) in path.subpaths.iter().enumerate() {
             let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
             let picked = |a: usize| match chosen {
@@ -204,13 +202,16 @@ fn build(doc: &Document, sel: &Selection, scope: NodeId, limits: &StitchLimits) 
 
 /// The selection kept for the active document, built again when its revision or the limits
 /// changed, but not while a gesture is under way.
-fn kept<'a>(app: &'a mut VectorcraftApp, scope: NodeId, limits: &StitchLimits) -> Option<&'a Kept> {
+fn kept<'a>(app: &'a mut VectorcraftApp, limits: &StitchLimits) -> Option<&'a Kept> {
     let st = app.session.active()?;
     let key = (st.uid, st.revision, [limits.shortest.to_bits(), limits.longest.to_bits(), limits.step.to_bits()]);
     let gesture = st.interaction.is_some();
     let k = &app.embroidery.selection;
     if !(k.key == Some(key) || (gesture && k.key.is_some_and(|(u, ..)| u == st.uid))) {
-        let mut built = build(&st.doc, &st.selection, scope, limits);
+        let view = app.view_info();
+        let paths = app.session.stitch_selected_paths(view).unwrap_or_default();
+        let st = app.session.active()?;
+        let mut built = build(&st.doc, &st.selection, &paths, limits);
         built.key = Some(key);
         built.builds = app.embroidery.selection.builds + 1;
         app.embroidery.selection = built;
@@ -233,7 +234,7 @@ pub fn bubble(app: &mut VectorcraftApp) -> Option<Vec<(Option<Mark>, String)>> {
     let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
     let by = moved(app);
     let lang = crate::i18n::current();
-    let k = kept(app, editing.scope.object, &limits)?;
+    let k = kept(app, &limits)?;
     if k.count == 0 {
         return None;
     }
@@ -340,7 +341,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     let by = moved(app).unwrap_or(Vec2::ZERO);
     let t = Tokens::get(ui.ctx());
     let clip = xf.rect;
-    let Some(k) = kept(app, editing.scope.object, &limits) else { return };
+    let Some(k) = kept(app, &limits) else { return };
     let [r, g, b] = k.color;
     let ink = marks::readable(Color32::from_rgb(r, g, b), &[light()], false);
     let screen = |p: Point| xf.to_screen(p + by);

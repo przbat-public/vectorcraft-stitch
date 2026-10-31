@@ -5185,11 +5185,12 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   edit since never moves another needle point; an entry with any other key is refused. Select first, then act, where
   indices may be stale. With neither, a command takes the selection's needle points: the anchors selected of each path of
   stitches, all of one selected whole, all of those in a group selected whole (other objects are passed over and
-  listed in `passedOver` with why: `notStitches`, `locked`, `outOfRange`, `tooManyNeedlePoints`; Join Runs also
-  `notJoinable`). An id stays put
+  listed in `passedOver` with why: `notStitches`, `locked`, `clipped` (a machine file's run a clipping mask cuts),
+  `outOfRange`, `tooManyNeedlePoints`; Join Runs also `notJoinable`); the stitch editing on the canvas counts and
+  draws the same needle points as selected. An id stays put
   across edits and an index shifts only inside the path an edit changes; record numbers are for showing, never for
   editing. Refused before anything changes: an id that isn't a path of stitches in the document's layers, a locked or
-  hidden one, an index past its needle points (or past 1,999,999, whatever the path), anchors that aren't numbers or
+  hidden one, a machine file's run a clipping mask cuts, an index past its needle points (or past 1,999,999, whatever the path), anchors that aren't numbers or
   lie outside the document's coordinates, more than 2,000,000 needle points or 100,000 paths addressed; nothing given
   and nothing selected is an error ("select needle points of a path of stitches, or give needlePoints"). No edit leaves
   a path of more than 2,000,000 needle points. Each edit is one undo step (none when nothing changes), leaves the

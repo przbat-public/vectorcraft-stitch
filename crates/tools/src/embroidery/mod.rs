@@ -45,6 +45,8 @@ pub const ID: &str = "embroidery";
 /// What the session tells the tool ([`Tool::notify`]) after a command from
 /// outside it ran: what stitch editing keeps follows what is edited now.
 pub const COMMAND_RAN: &str = "commandRan";
+/// The key of the tool's options that holds stitch editing's ([`Editing::options`]).
+pub const EDITING_OPTIONS: &str = "stitches";
 
 /// The command a point's drag, nudge or reset runs.
 const SET_ENTRY_EXIT: &str = "embroidery.setEntryExit";
@@ -543,7 +545,7 @@ impl Tool for EmbroideryTool {
         });
         let id = |h: Option<HandleId>| h.map_or(Value::Null, HandleId::json);
         let hover_object = self.hover_object.map_or(Value::Null, |o| json!(o.0));
-        json!({"part": part, "hover": id(self.hover), "hoverObject": hover_object, "focus": id(self.focus), "keyed": self.keyed && self.focus.is_some(), "drag": drag, "stitches": self.editing.options()})
+        json!({"part": part, "hover": id(self.hover), "hoverObject": hover_object, "focus": id(self.focus), "keyed": self.keyed && self.focus.is_some(), "drag": drag, EDITING_OPTIONS: self.editing.options()})
     }
 
     fn set_option(&mut self, key: &str, value: &Value) {

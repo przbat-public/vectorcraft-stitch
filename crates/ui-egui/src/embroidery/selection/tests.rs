@@ -6,7 +6,7 @@
 //! actions, and frames that build nothing while nothing changes.
 
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, Shape};
-use serde_json::json;
+use serde_json::{Value, json};
 use vectorcraft_doc::NodeId;
 use vectorcraft_engine::Session;
 use vectorcraft_geom::Point;
@@ -118,6 +118,36 @@ fn a_selection_change_draws_no_stitches_again() {
         frame(&mut app, &ctx, time, vec![Event::PointerMoved(at + egui::vec2(30.0, 30.0))]);
     }
     assert_eq!(app.embroidery.selection.builds, builds, "idle and hover frames build nothing");
+}
+
+/// The pointer moving along a stitch finds the Embroidery Tool's handles again no more than its
+/// moves elsewhere do: what lies under the pointer changes with every move along a stitch, and the
+/// handles aren't found for it.
+#[test]
+fn moving_along_a_stitch_finds_no_handles_again() {
+    let (mut app, object) = editing();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let centre = needle(&app, object, 4);
+    // Zoomed in until the rows lie apart: midway along a stitch, no needle point is near.
+    app.run("view.setZoom", json!({"zoom": 1600, "center": [centre.x, centre.y]})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let (a, b) = (on_screen(&app, needle(&app, object, 4)), on_screen(&app, needle(&app, object, 5)));
+    let along: Vec<Pos2> = [0.4, 0.45, 0.5, 0.55, 0.6].iter().map(|&t| a + (b - a) * t).collect();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(along[0])]);
+    settle(&mut app, &ctx, &mut time);
+    let (found, walks) = (app.embroidery.handles.found, vectorcraft_tools::embroidery::handle_walks());
+    let mut under = vec![];
+    for &at in &along[1..] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![Event::PointerMoved(at)]);
+        under.push(app.session.tool_options()["stitches"]["hover"]["at"].clone());
+    }
+    assert!(under.iter().all(Value::is_array) && under.windows(2).all(|w| w[0] != w[1]), "the pointer moves along a stitch: {under:?}");
+    assert_eq!(app.embroidery.handles.found, found, "moves along a stitch find no handles again");
+    assert_eq!(vectorcraft_tools::embroidery::handle_walks(), walks, "nor does the tool");
 }
 
 /// A drag of a selected needle point with the mouse moves it while it drags (checked before

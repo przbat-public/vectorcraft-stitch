@@ -241,7 +241,7 @@ pub fn selected_box(app: &mut VectorcraftApp) -> Option<Rect> {
 
 /// The drag's move now (document points), from the tool's options (millimetres on the grid).
 fn moved(app: &VectorcraftApp) -> Option<Vec2> {
-    let m = app.session.tool_options().get("stitches")?.get("moved")?.as_array()?.clone();
+    let m = app.session.tool_options().get(vectorcraft_tools::embroidery::EDITING_OPTIONS)?.get("moved")?.as_array()?.clone();
     let (x, y) = (m.first()?.as_f64()?, m.get(1)?.as_f64()?);
     Some(Vec2::new(x * PT_PER_MM, y * PT_PER_MM))
 }
@@ -360,7 +360,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     let Some(editing) = super::editing::editing(app) else { return };
     let Some(st) = app.session.active() else { return };
     let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
-    let options = app.session.tool_options().get("stitches").cloned().unwrap_or_default();
+    let options = app.session.tool_options().get(vectorcraft_tools::embroidery::EDITING_OPTIONS).cloned().unwrap_or_default();
     let dragged = moved(app);
     let by = dragged.unwrap_or(Vec2::ZERO);
     // Where the needle points drawn below are read: while a drag is under way, in the document it

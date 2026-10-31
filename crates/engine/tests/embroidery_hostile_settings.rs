@@ -216,7 +216,7 @@ fn no_panic(r: Result<Value, vectorcraft_engine::EngineError>) -> Result<Value, 
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 24, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(24))]
 
     /// Hostile settings never panic anything that plans, reads, edits, transforms or derives from
     /// them (a panic the engine catches fails the case), and the document still saves and reads

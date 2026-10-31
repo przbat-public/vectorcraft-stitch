@@ -37,7 +37,6 @@ pub const RED: &str = "#d01818";
 pub const BLUE: &str = "#1830c8";
 pub const GREEN: &str = "#20a030";
 
-/// The id in a command's reply.
 /// The seed the fork's property suites run with unless `PROPTEST_RNG_SEED` is set: any fixed one.
 const PROPTEST_SEED: u64 = 0x5717_c4ed;
 
@@ -55,6 +54,7 @@ pub fn proptest_config(cases: u32) -> proptest::test_runner::Config {
     c
 }
 
+/// The id in a command's reply.
 pub fn id(reply: &Value) -> u64 {
     reply["id"].as_u64().unwrap_or_else(|| panic!("no id in {reply}"))
 }

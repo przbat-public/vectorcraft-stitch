@@ -134,7 +134,7 @@ fn cost(m: &Value) -> f64 {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 24, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(24))]
 
     #[test]
     fn connections_never_get_worse(objects in prop::collection::vec(arb_object(), 2..7)) {

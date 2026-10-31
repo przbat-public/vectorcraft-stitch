@@ -509,8 +509,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   `crates/engine/tests/import_fuzz.rs`, `designs_with_stops_never_panic` (a `proptest!` block of
   its own at the end of the file, after upstream's last, where upstream appends most often). The
   fork's property suites run from a fixed seed (`vectorcraft_testkit::embroidery::proptest_config`,
-  upstream's pathops pattern) unless `PROPTEST_RNG_SEED` is set; the older ones get it once the
-  exit planner's fix (PR #26), which touches `prop_plan.rs`, has merged.
+  upstream's pathops pattern; `doc/src/embroidery/transform.rs`, which the test kit can't reach, from
+  the same seed by its own `seeded`) unless `PROPTEST_RNG_SEED` is set.
 - **The stitch preview's hooks in upstream files**, each marked "VectorCraft Stitch" in a comment
   (the fork's own code is under `crates/ui-egui/src/embroidery/`, `panels/embroidery/` and
   `cmd/embroidery/`):

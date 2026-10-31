@@ -223,6 +223,9 @@ pub struct StitchesState {
     pub(crate) docs: HashMap<u64, DocList>,
     pub(crate) list: Option<(ListKey, Arc<Listed>)>,
     numbering: Option<(u64, u64, Numberings)>,
+    /// The pass the tab was last drawn in (`egui::Context::cumulative_pass_nr`): the canvas rings the
+    /// record shown only while the tab shows, as the Check tab's marks.
+    drawn_pass: Option<u64>,
     /// The last plan drawn with its flags, of document (uid): drawn dimmed while a newer plan's
     /// flags are being built, so the list, Go to and the foot stay (a field typed into keeps the
     /// keyboard).
@@ -426,6 +429,7 @@ pub struct Shown {
 
 /// Draw the tab.
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
+    app.embroidery.stitches.drawn_pass = Some(ui.ctx().cumulative_pass_nr());
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
@@ -1179,8 +1183,11 @@ const MOVE_BY_FIELD: f32 = 72.0;
 
 /// The stitch shown from the list on the canvas, outside stitch editing: a two-tone ring at its
 /// needle point and its stitch from the one before, while the tab shows.
-pub fn draw_mark(app: &VectorcraftApp, painter: &egui::Painter, xf: &crate::canvas::Xf) {
-    if app.ui.embroidery_panel.tab != super::Tab::Stitches {
+pub fn draw_mark(app: &VectorcraftApp, painter: &egui::Painter, xf: &crate::canvas::Xf, pass: u64) {
+    // Only while the tab shows (drawn in this pass or the last), and as the canvas's overlays: not
+    // with Hide Edges, not in presentation mode.
+    let drawn = app.embroidery.stitches.drawn_pass.is_some_and(|p| pass <= p.saturating_add(1));
+    if app.ui.embroidery_panel.tab != super::Tab::Stitches || !drawn || !app.ui.view.edges || app.ui.screen_mode >= 3 {
         return;
     }
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };

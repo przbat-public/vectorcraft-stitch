@@ -613,6 +613,44 @@ fn a_record_shown_is_in_view_and_marked_on_the_canvas() {
         shapes.iter().filter(|s| matches!(s, Shape::Circle(c) if c.radius == super::MARK_RING && c.center.distance(at) < 0.5)).count()
     };
     assert_eq!(rings(&shapes), 2, "a two-tone ring");
+    // The panel closed (the tab not drawn), Hide Edges, presentation mode: none.
+    let canvas_alone = |app: &mut VectorcraftApp, time: f64| {
+        let raw = egui::RawInput {
+            time: Some(time),
+            screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(1100.0, 700.0))),
+            ..Default::default()
+        };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            crate::canvas::show(app, ui);
+            crate::embroidery::canvas_controls(app, ui);
+        });
+        out.textures_delta.clear();
+        let mut all = vec![];
+        let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+        while let Some(s) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v),
+                s => all.push(s),
+            }
+        }
+        all
+    };
+    for _ in 0..2 {
+        time += 0.05;
+        canvas_alone(&mut app, time);
+    }
+    time += 0.05;
+    assert_eq!(rings(&canvas_alone(&mut app, time)), 0, "the panel closed");
+    settle(&mut app, &ctx, &mut time);
+    app.ui.view.edges = false;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(rings(&shapes), 0, "Hide Edges");
+    app.ui.view.edges = true;
+    app.ui.screen_mode = 3;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(rings(&shapes), 0, "presentation mode");
+    app.ui.screen_mode = 0;
     app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap();
     let (shapes, _) = settle(&mut app, &ctx, &mut time);
     assert_eq!(rings(&shapes), 0, "only while the tab shows");

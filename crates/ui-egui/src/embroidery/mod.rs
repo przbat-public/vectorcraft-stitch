@@ -127,7 +127,7 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
         check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
         handles::draw(app, &ui.painter_at(canvas), &xf);
         selection::draw(app, ui, &ui.painter_at(canvas), &xf);
-        crate::panels::embroidery::stitches::draw_mark(app, &ui.painter_at(canvas), &xf);
+        crate::panels::embroidery::stitches::draw_mark(app, &ui.painter_at(canvas), &xf, ui.ctx().cumulative_pass_nr());
     }
     let isolated = app.ui.screen_mode < 3 && app.session.active().is_some_and(|st| st.isolation.is_some());
     let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };

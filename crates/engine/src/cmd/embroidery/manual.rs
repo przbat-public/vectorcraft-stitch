@@ -595,12 +595,16 @@ enum NotRestored {
     NotConverted,
     /// Stitches read from a machine file: there is no object behind them.
     Literal,
-    /// The object kept doesn't read as an object (a damaged file, or a newer version's object).
+    /// The object kept doesn't read as an object (a damaged file, or a newer version's object),
+    /// or reads as a layer.
     Unreadable,
     /// The object places a symbol the document no longer has.
     MissingSymbol,
     /// Locked, or in a locked group or layer.
     Locked,
+    /// Put back where its stitches are, it would lie outside the document's coordinates (or at
+    /// coordinates that aren't numbers): a damaged or hostile frame.
+    OutOfRange,
 }
 
 impl NotRestored {
@@ -612,8 +616,60 @@ impl NotRestored {
             Self::Unreadable => "unreadable",
             Self::MissingSymbol => "missingSymbol",
             Self::Locked => "locked",
+            Self::OutOfRange => "outOfRange",
         }
     }
+}
+
+/// Object `n`, restored from the original a file kept, cleaned as opening a file cleans each
+/// object (`vectorcraft_format::load`): its type's sizes, leading, shifts and scales, indents,
+/// spacing and tab stops, ruby ranges and script proportions, and its graphs' label styles, each
+/// within its range. A kept original is file data put back without the loader; FORK.md asks that a
+/// per-object step the loader gains is added here too.
+fn cleaned(n: &mut Node) {
+    each_mut(n, &mut |c| {
+        if let NodeKind::Text(t) = &mut c.kind {
+            t.keep_type_values_in_range();
+            t.normalize_ruby();
+            for r in &mut t.runs {
+                r.style.keep_scripts_in_range();
+            }
+        }
+        if let Some(g) = c.extras_if_any().and_then(|e| e.graph.as_deref_mut()) {
+            let l = &mut g.label_styles;
+            for st in [&mut l.values, &mut l.categories, &mut l.legend].into_iter().flatten() {
+                st.keep_scripts_in_range();
+            }
+        }
+    });
+}
+
+/// Visit `n` and every descendant, opacity-mask art included, mutably. The kept original was read
+/// from a file, whose nesting serde caps, and the edit that puts it back is held to the document's
+/// depth after.
+fn each_mut(n: &mut Node, f: &mut impl FnMut(&mut Node)) {
+    f(n);
+    if let Some(m) = n.extras_if_any().and_then(|e| e.mask.as_mut()) {
+        each_mut(Arc::make_mut(&mut m.art), f);
+    }
+    for c in n.children_mut().into_iter().flatten() {
+        each_mut(Arc::make_mut(c), f);
+    }
+}
+
+/// Whether `n` lies within the document's coordinates: its bounds no farther out than
+/// [`vectorcraft_doc::MAX_COORD`], and every anchor and handle of its paths, opacity-mask art
+/// included, a finite number (bounds pass over a coordinate that isn't one). An object with no
+/// geometry does.
+fn in_range(n: &Node) -> bool {
+    fn finite(n: &Node) -> bool {
+        let anchors = n.path_data().into_iter().flat_map(|p| &p.subpaths).flat_map(|sp| &sp.anchors);
+        anchors.flat_map(|a| [a.p, a.h_in, a.h_out]).all(|q| q.is_finite())
+            && n.extras().mask.as_deref().is_none_or(|m| finite(&m.art))
+            && n.children().into_iter().flatten().all(|c| finite(c))
+    }
+    let max = vectorcraft_doc::MAX_COORD;
+    finite(n) && n.geometric_bounds().is_none_or(|b| [b.x0, b.y0, b.x1, b.y1].iter().all(|v| v.is_finite() && v.abs() <= max))
 }
 
 /// The converted objects `n` stands for, to restore: itself when it is one, the one a manual run is
@@ -702,6 +758,10 @@ fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling,
     let e = group.extras().embroidery.as_deref();
     let Some(o) = e.and_then(|e| e.original.as_ref()) else { return Err(NotRestored::NotConverted) };
     let mut n: Node = serde_json::from_value((*o.node).clone()).map_err(|_| NotRestored::Unreadable)?;
+    // Converting takes objects from inside layers, never a layer: one kept is damaged data.
+    if n.is_layer() {
+        return Err(NotRestored::Unreadable);
+    }
     let mut missing = false;
     n.walk(&mut |c| {
         if let NodeKind::SymbolInstance { symbol, .. } = &c.kind {
@@ -713,6 +773,10 @@ fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling,
     }
     if o.frame != Affine::IDENTITY {
         n.transform(o.frame, scaling);
+    }
+    cleaned(&mut n);
+    if !in_range(&n) {
+        return Err(NotRestored::OutOfRange);
     }
     n.id = group.id;
     n.name = group.name.clone();
@@ -820,6 +884,8 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
             return Err(nothing_restored(&skipped));
         }
         d.fix_next_id();
+        // Type put back measures its bounds again, as an opened file's does.
+        Session::refresh_text_bounds(d);
         Ok(())
     })?;
     let count = restored_ids.len();

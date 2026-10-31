@@ -5163,9 +5163,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   discarded. `edited` lists the objects whose stitches were edited since converting (not only moved, turned or scaled
   with their object; a run hidden or recoloured, or art in the object that isn't one of its runs, counts): with
   `dryRun: true` nothing changes, so an interface can ask first. Art in the object that isn't one of its runs (pasted
-  in while it was isolated) is kept, beside the restored object in its parent, right above it. It passes over, with
-  `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read), `missingSymbol`, `locked`. One undo
-  step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
+  in while it was isolated) is kept, beside the restored object in its parent, right above it. The object kept is file
+  data, so it is cleaned as opening a file cleans each object: its type's sizes, leading, shifts, scales, indents,
+  spacing, tab stops, ruby and script proportions within their ranges, and its type measured again. It passes over,
+  with `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read as an object, or reads as a
+  layer), `missingSymbol`, `locked`, `outOfRange` (put back where its stitches are, it would lie outside the
+  document's coordinates, or at coordinates that aren't numbers: a damaged frame). One undo step; nothing restored is
+  an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
   Edit is on ("not while Global Edit is on: stop Global Edit first").
 - **Editing stitches.** The stitch commands edit a path of literal stitches (a run opened from a machine file, or one

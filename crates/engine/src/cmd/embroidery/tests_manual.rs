@@ -599,6 +599,63 @@ fn restoring_passes_over_what_it_cant_restore() {
     assert!(s.execute("embroidery.restoreObject", &json!({})).unwrap_err().to_string().contains("notConverted"));
 }
 
+/// What Restore puts back is file data, so it is held to what opening a file holds an object to.
+/// Put back where its stitches are, an object that would lie past the document's coordinates is
+/// passed over as outOfRange: a frame of six finite numbers can still scale it past them, or past
+/// any number (which no file could hold again). One kept as a layer is unreadable. Type comes back
+/// with its values in range and measured.
+#[test]
+fn restore_holds_what_it_puts_back_to_what_opening_a_file_does() {
+    use vectorcraft_doc::embroidery::Original;
+    use vectorcraft_doc::text::{CharPosition, CharStyle, RubySpan, ScriptMetrics};
+    use vectorcraft_doc::{NodeId, NodeKind};
+    use vectorcraft_geom::Affine;
+    let mut s = blank();
+    let [past, endless, layer, typed] = [5.0, 30.0, 60.0, 90.0].map(|x| red_square(&mut s, x, 5.0, 10.0));
+    let t = run(&mut s, "text.create", json!({"x": 0, "y": 0, "text": "Ab"}))["id"].as_u64().unwrap();
+    let mut text = s.doc().unwrap().doc.node(NodeId(t)).unwrap().clone();
+    if let NodeKind::Text(tx) = &mut text.kind {
+        tx.runs[0].style.size = -5.0;
+        tx.runs[0].style.position = CharPosition::Superscript(ScriptMetrics { size: 9000.0, position: -9000.0 });
+        tx.ruby = vec![RubySpan::new(9, 1, " x ")];
+    }
+    run(&mut s, "edit.clear", json!({"ids": [t]}));
+    let mut emptied = (*s.doc().unwrap().doc.layers[0]).clone();
+    emptied.children_mut().unwrap().clear();
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [past, endless, layer, typed]}));
+    // A frame scaling the square past the coordinates, one past any number, a layer, the type.
+    let kept = [
+        (past, Affine::scale(1e6), None),
+        (endless, Affine::scale(1e308), None),
+        (layer, Affine::IDENTITY, Some(serde_json::to_value(&emptied).unwrap())),
+        (typed, Affine::IDENTITY, Some(serde_json::to_value(&text).unwrap())),
+    ];
+    s.edit("Damage", |d, _| {
+        for (id, frame, node) in &kept {
+            let n = d.node_mut(NodeId(*id)).unwrap();
+            if let Some(e) = n.extras_mut().embroidery.as_deref_mut() {
+                let o = e.original.clone().unwrap();
+                let node = node.clone().map_or(o.node.clone(), std::sync::Arc::new);
+                e.original = Some(Original { frame: *frame, node, ..o });
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+    let r = run(&mut s, "embroidery.restoreObject", json!({"ids": [past, endless, layer, typed]}));
+    let skipped: Vec<(u64, &str)> =
+        r["skipped"].as_array().unwrap().iter().map(|k| (k["id"].as_u64().unwrap(), k["reason"].as_str().unwrap())).collect();
+    assert_eq!(skipped, [(past, "outOfRange"), (endless, "outOfRange"), (layer, "unreadable")]);
+    assert_eq!(r["restored"], json!([typed]));
+    let doc = &s.doc().unwrap().doc;
+    let NodeKind::Text(tx) = &doc.node(NodeId(typed)).unwrap().kind else { panic!("the type put back") };
+    assert_eq!(tx.runs[0].style.size, CharStyle::default().size, "a size that isn't one: the default");
+    assert_eq!(tx.runs[0].style.position, CharPosition::Superscript(ScriptMetrics { size: 500.0, position: -500.0 }));
+    assert_eq!(tx.ruby, [RubySpan::new(1, 2, "x")], "the reading's range within the text, ordered, trimmed");
+    assert!(tx.cached_bounds.is_some(), "measured, as an opened file's type is");
+    assert!(doc.layers.iter().all(|l| l.children().unwrap().iter().all(|c| !c.is_layer())));
+}
+
 /// The scale check on `s`: its one rule's reply.
 fn scale_rule(s: &mut Session) -> serde_json::Value {
     run(s, "embroidery.check", json!({"rules": ["stitchesScaled"]}))["rules"][0].clone()

@@ -624,6 +624,17 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   (`embroidery/rows.rs`'s `check`) draws as upstream's `widgets::check_row_named` does (its box,
   tick and dash), its words wrapped and its colours read on what it lies on: when a sync restyles
   upstream's checkboxes, restyle it too.
+- **Opening a file's steps for each object reach Restore Object too.** Restore puts back the object
+  the fork kept as the file saved it (`embroidery.original.node`), read without
+  `vectorcraft_format::load`. So `cmd/embroidery/manual.rs` repeats on it what opening a file does
+  to each object: `cleaned` keeps its type's values, ruby and script proportions within range (as
+  `keep_type_values_in_range`, `fix_ruby` and `keep_scripts_in_range` do for a document), the edit
+  measures its type again (`Session::refresh_text_bounds`), and `in_range` refuses coordinates
+  past the document's. The loader's other steps change nothing an object saved by this version
+  holds. When a sync brings the loader a new step for each object (a node field migrated, a value
+  kept in a new range), add it to `cleaned` as well: otherwise an object converted before that sync
+  comes back unmigrated, or as `unreadable`. `restore_holds_what_it_puts_back_to_what_opening_a_file_does`
+  tests the steps there now.
 - **The fork's app identity in upstream's packaging** (Decisions register, 2026-10-24), to keep
   when resolving: in `packaging/macos/Info.plist.in` the name, display name and identifier (the
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in

@@ -58,13 +58,14 @@ impl Embroidery {
             part.transform(a);
         }
         // The original goes where its stitches go: its frame composed with the transform, as the
-        // convention for kept data composes any frame (so older versions move it the same).
+        // convention for kept data composes any frame (so older versions move it the same). An
+        // object holding a frame has nothing else in it moved: what a newer version keeps beside the
+        // frame is in the original's own coordinates, which the frame places.
         if let Some(o) = original {
             let composed = a * o.frame;
             if composed.as_coeffs().iter().all(|c| c.is_finite()) {
                 o.frame = composed;
             }
-            move_shared(&mut o.extra, a);
         }
         move_shared(extra, a);
         if let Some(run) = stitches {
@@ -346,16 +347,22 @@ mod tests {
     }
 
     /// A converted object's kept original goes where its stitches go: its frame composed with each
-    /// transform (moved, turned, mirrored, scaled), its node left as it was until it is restored. A
-    /// transform that would leave the finite numbers leaves the frame as it was.
+    /// transform (moved, turned, mirrored, scaled), its node, and what a newer version keeps beside
+    /// the frame, left as they were until it is restored (the frame places them). A transform that
+    /// would leave the finite numbers leaves the frame as it was.
     #[test]
     fn an_original_goes_where_its_stitches_go() {
         let mut e = settings();
+        let hint = json!({"points": [[3.0, 4.0]], "anchor": {"position": [1.0, 2.0]}});
+        if let Some(o) = e.original.as_mut() {
+            std::sync::Arc::make_mut(&mut o.extra).insert("hint".into(), hint.clone());
+        }
         let a = Affine::translate((5.0, -2.0)) * turn(90.0) * Affine::scale_non_uniform(1.2, -0.5);
         e.transform(a);
         let o = e.original.as_ref().unwrap();
         assert_eq!(o.frame, a);
         assert_eq!(*o.node, json!({"points": [[1.0, 1.0], [2.0, 2.0]]}), "the node isn't moved");
+        assert_eq!(o.extra.get("hint"), Some(&hint), "nor what it keeps beside its frame");
         e.transform(Affine::scale(f64::MAX));
         assert_eq!(e.original.as_ref().unwrap().frame, a, "a degenerate transform leaves the frame");
     }

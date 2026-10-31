@@ -92,7 +92,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 79] = [
+pub const ROWS: [&str; 80] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -172,6 +172,7 @@ pub const ROWS: [&str; 79] = [
     "needle points: 95th percentile, 2,000,000",
     "needle points: slowest press, 2,000,000",
     "needle points: a marquee over 2,000,000",
+    "edit look: draw 500,000 all flagged",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -191,7 +192,7 @@ pub const ROWS: [&str; 79] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 79] = [
+const BUDGETS: [f64; 80] = [
     400.0,
     100.0,
     100.0,
@@ -271,6 +272,8 @@ const BUDGETS: [f64; 79] = [
     NEEDLE_INDEX_BUDGETS[1],
     NEEDLE_INDEX_BUDGETS[2],
     NEEDLE_INDEX_BUDGETS[3],
+    // Set in the run, beside the same picture drawn plain ([`FLAGGED_FRAME_RATIO`]).
+    f64::INFINITY,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -454,6 +457,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend(many_runs(&literal)?);
     ms.extend(convert_parts(&largest)?);
     ms.extend(needle_index(&literal)?);
+    ms.push(flagged(&stitch_picture(500_000)));
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;
@@ -462,6 +466,12 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
         && let (Some(plain_ms), Some(budget)) = (ms.get(plain).copied(), budgets.get_mut(aimed))
     {
         *budget = budget.min(RINGS_TOWARD_EXIT_RATIO * plain_ms);
+    }
+    // The edit look over every stitch flagged, beside the same picture drawn plain in the same run.
+    if let (Some(plain), Some(flagged)) = (at("stitches: draw 500,000 at fit"), at("edit look: draw 500,000 all flagged"))
+        && let (Some(plain_ms), Some(budget)) = (ms.get(plain).copied(), budgets.get_mut(flagged))
+    {
+        *budget = FLAGGED_FRAME_RATIO * plain_ms + FLAGGED_FRAME_MS;
     }
     // A row with nothing to measure (no corpus) is left out.
     Ok(ROWS.iter().zip(ms).zip(budgets).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
@@ -1548,6 +1558,36 @@ fn draw_with(picture: &LinePicture, zoom: f64, threads: Option<u16>, batch: usiz
     let (style, view) = framed(picture, zoom);
     let (w, h) = CANVAS;
     // A first frame makes the contexts.
+    drop(r.render(picture, w, h, view, &style));
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        drop(r.render(picture, w, h, view, &style));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    middle(samples)
+}
+
+/// The most a frame of a picture whose every stitch breaks a rule may take, in the edit look (each
+/// flagged stitch dashed, at most [`vectorcraft_render::lines::MAX_FLAG_DASHES`] of them), beside
+/// the same picture drawn plain in the same run: that share of it, and a few milliseconds more for
+/// the dashes and marks drawn. Estimates: before the dashes were culled, batched and capped, each
+/// flagged stitch was two strokes of its own, half a million of them a frame.
+const FLAGGED_FRAME_RATIO: f64 = 1.5;
+const FLAGGED_FRAME_MS: f64 = 10.0;
+
+/// Milliseconds a frame of `picture` takes at fit in the edit look with every stitch flagged (each
+/// shorter than a rule's shortest), the median of [`DRAW_RUNS`].
+fn flagged(picture: &LinePicture) -> f64 {
+    use vectorcraft_doc::embroidery::StitchRule;
+    use vectorcraft_render::lines::{EditLook, TagSet};
+    let mut r = LineRenderer::new();
+    let (style, view) = framed(picture, FIT);
+    // Every stitch shorter than the shortest, every line's units edited.
+    let rule = StitchRule { shortest: f64::MAX, longest: f64::MAX, step: f64::MAX };
+    let edit = EditLook { tags: TagSet::of(picture.lines().iter().map(|l| l.tag)), circles: None, rule };
+    let style = LineStyle { edit: Some(edit), ..style };
+    let (w, h) = CANVAS;
     drop(r.render(picture, w, h, view, &style));
     let mut samples = Vec::with_capacity(DRAW_RUNS);
     for _ in 0..DRAW_RUNS {

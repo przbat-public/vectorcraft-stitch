@@ -523,6 +523,23 @@ fn the_edit_look_marks_the_stitches_that_break_a_rule() {
     assert!(edit.breaks(Point::new(0.0, 0.0), Point::new(1.0, 0.0)) && !edit.breaks(Point::new(0.0, 0.0), Point::new(10.0, 0.0)));
 }
 
+/// More rule-breaking stitches on screen than a frame dashes: all are counted, the dashes capped
+/// ([`MAX_FLAG_DASHES`]); a line all off the screen isn't counted.
+#[test]
+fn rule_breakers_past_the_cap_are_counted_not_all_dashed() {
+    let n = MAX_FLAG_DASHES + 100;
+    // A line of short stitches (each 0.01 across) in an 80 by 50 frame, and one far off it.
+    let on: Vec<At> = (0..=n).map(|k| (5.0 + (k % 7000) as f64 * 0.01, 5.0 + (k / 7000) as f64, k as u32 + 1)).collect();
+    let off: Vec<At> = (0..10).map(|k| (5000.0 + k as f64, 5000.0, (n + 2 + k) as u32)).collect();
+    let p = picture(&[(0, 0, 1.0, &on), (0, 0, 1.0, &off)]);
+    let edit = EditLook { tags: TagSet::of([0]), circles: None, rule: rule(5.0, f64::INFINITY, f64::INFINITY) };
+    let mut r = LineRenderer { threads: 0, ..LineRenderer::new() };
+    r.render(&p, 80, 50, Affine::IDENTITY, &LineStyle { edit: Some(edit), ..style(&[RED]) });
+    // Each step to the next row of 7,000 is long enough to pass the rule: the rest are short.
+    let rows = n / 7000;
+    assert_eq!(r.stats.flagged, n - rows, "every short stitch on screen counted, none off it");
+}
+
 /// The default style has no edit look: every picture draws as before it existed.
 #[test]
 fn without_the_edit_look_nothing_changes() {

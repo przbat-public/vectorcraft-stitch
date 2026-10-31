@@ -112,6 +112,9 @@ const FLAG_MARK_BASE: f64 = 0.8;
 /// The most rule-breaking stitches marked in one frame: past it the rest show their dashes alone.
 /// An estimate: more marks than fit on a screen side by side read as noise.
 pub const MAX_FLAG_MARKS: usize = 2_000;
+/// The most rule-breaking stitches dashed in one frame: past it the rest are counted, not drawn.
+/// An estimate: ten times the marks, more dashed stitches than a screen shows apart.
+pub const MAX_FLAG_DASHES: usize = 10 * MAX_FLAG_MARKS;
 
 /// The most a point left out as straight may lie off the line drawn in its place, device pixels: a
 /// tenth of a pixel, which no anti-aliasing shows. An estimate. Zoomed in closer than that keeps
@@ -1059,10 +1062,25 @@ impl LineRenderer {
         ctx.set_transform(Affine::IDENTITY);
         let pt = style.px_per_pt.max(f64::MIN_POSITIVE);
         let screen = Rect::new(0.0, 0.0, f64::from(w), f64::from(h));
-        let mut marks = BezPath::new();
+        let reach = screen.inflate(FLAG_DASH_PT * pt, FLAG_DASH_PT * pt);
+        // The stitches dashed, in two paths drawn once each: under, and the dashes over.
+        let (mut under, mut dashes, mut marks) = (BezPath::new(), BezPath::new(), BezPath::new());
         let mut flagged = 0usize;
-        for line in p.lines() {
+        for (k, line) in p.lines().iter().enumerate() {
+            if k % CANCEL_EVERY == 0 && k > 0 && vectorcraft_doc::cancel::is_cancelled() {
+                return;
+            }
             if !edit.tags.contains(line.tag) || !style.shows(line.tag) {
+                continue;
+            }
+            // A line all off the screen has no stitch on it.
+            let b = offsets.transform_rect_bbox(Rect::new(
+                f64::from(line.bounds[0]),
+                f64::from(line.bounds[1]),
+                f64::from(line.bounds[2]),
+                f64::from(line.bounds[3]),
+            ));
+            if !(b.x1 >= reach.x0 && b.x0 <= reach.x1 && b.y1 >= reach.y0 && b.y0 <= reach.y1) {
                 continue;
             }
             let range = line.points.start as usize..line.points.end as usize;
@@ -1080,11 +1098,14 @@ impl LineRenderer {
                 if !on_screen(da, db, screen) {
                     continue;
                 }
-                let Some(seg) = clipped(da, db, screen.inflate(FLAG_DASH_PT * pt, FLAG_DASH_PT * pt)) else { continue };
-                let seg = kurbo::Line::new(seg.0, seg.1);
-                stroke_line(ctx, seg, style.dark, (FLAG_LINE_PT + 1.0) * pt, None);
-                stroke_line(ctx, seg, style.light, FLAG_LINE_PT * pt, Some(FLAG_DASH_PT * pt));
+                let Some(seg) = clipped(da, db, reach) else { continue };
                 flagged += 1;
+                if flagged <= MAX_FLAG_DASHES {
+                    for path in [&mut under, &mut dashes] {
+                        path.move_to((seg.0.x, seg.0.y));
+                        path.line_to((seg.1.x, seg.1.y));
+                    }
+                }
                 let m = da.midpoint(db);
                 if flagged <= MAX_FLAG_MARKS && screen.contains(m) {
                     let s = FLAG_MARK_PT * pt;
@@ -1094,6 +1115,10 @@ impl LineRenderer {
                     marks.close_path();
                 }
             }
+        }
+        if !under.elements().is_empty() {
+            stroke_path(ctx, &under, style.dark, (FLAG_LINE_PT + 1.0) * pt, None);
+            stroke_path(ctx, &dashes, style.light, FLAG_LINE_PT * pt, Some(FLAG_DASH_PT * pt));
         }
         if !marks.elements().is_empty() {
             ctx.set_paint(peniko::Color::from_rgb8(style.light[0], style.light[1], style.light[2]));
@@ -1216,13 +1241,19 @@ fn clipped(a: Point, b: Point, r: Rect) -> Option<(Point, Point)> {
 
 /// Stroke `line` in `color`, `width` device pixels wide, dashed `dash` pixels on and off when given.
 fn stroke_line(ctx: &mut RenderContext, line: kurbo::Line, color: [u8; 3], width: f64, dash: Option<f64>) {
+    stroke_path(ctx, &line.to_path(0.1), color, width, dash);
+}
+
+/// Stroke `path` with butt caps in `color`, `width` wide, dashed `dash` on and off when given (each
+/// of its subpaths dashed from its start).
+fn stroke_path(ctx: &mut RenderContext, path: &BezPath, color: [u8; 3], width: f64, dash: Option<f64>) {
     ctx.set_paint(peniko::Color::from_rgb8(color[0], color[1], color[2]));
     let stroke = kurbo::Stroke::new(width).with_caps(kurbo::Cap::Butt);
     ctx.set_stroke(match dash {
         Some(d) => stroke.with_dashes(0.0, [d, d]),
         None => stroke,
     });
-    ctx.stroke_path(&line.to_path(0.1));
+    ctx.stroke_path(path);
 }
 
 #[cfg(test)]

@@ -327,9 +327,9 @@ impl NeedlePoints for NeedlesNow<'_> {
 
     fn number(&self, n: NeedleRef) -> Option<usize> {
         let facts = self.facts.as_deref()?;
-        // The plan is of the path as it is: the same node in its snapshot as in the document.
-        let (kept, now) = (facts.snapshot.node(n.id)?, self.doc.node(n.id)?);
-        if !std::ptr::eq(kept, now) {
+        // The plan is of the document as it is: record numbers run through the whole design, so an
+        // edit of any path sewn before this one moves them (as the ends are judged).
+        if !std::ptr::eq(&*facts.snapshot, self.doc) {
             return None;
         }
         let numbers = facts.numbers_of(n.id)?;

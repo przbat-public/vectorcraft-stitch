@@ -386,3 +386,31 @@ fn the_needle_point_stepped_from_follows_the_object_edited() {
     }
     assert!(current(&s).is_object(), "pressed in the other object: {}", current(&s));
 }
+
+/// Record numbers run through the whole design: after an edit of a path sewn earlier, a later
+/// path's needle points have no number until the design is planned again, though their own path
+/// is as it was.
+#[test]
+fn an_edit_of_a_path_sewn_before_takes_the_numbers_away() {
+    let (mut s, objects) = fixture();
+    let group = objects[4];
+    s.execute("object.isolate", &json!({"id": group})).unwrap();
+    s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
+    s.execute("embroidery.sequence", &json!({})).unwrap();
+    let view = ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let first_run = |member: &std::sync::Arc<vectorcraft_doc::Node>| member.children().unwrap()[0].id.0;
+    let members = doc.node(NodeId(group)).unwrap().children().unwrap().clone();
+    let (p1, p2) = (first_run(&members[0]), first_run(&members[1]));
+    s.execute("embroidery.selectNeedlePoints", &json!({"needlePoints": [{"id": p2, "index": 3}]})).unwrap();
+    let numbered = |s: &mut Session| s.stitch_editing(view).and_then(|e| e.ends).map(|[(_, a), _]| a);
+    let before = numbered(&mut s).expect("ends");
+    assert!(before.is_some(), "numbered by the plan");
+    s.execute("embroidery.selectNeedlePoints", &json!({"needlePoints": [{"id": p1, "index": 3}]})).unwrap();
+    let earlier = numbered(&mut s).flatten().expect("numbered");
+    assert!(earlier < before.unwrap(), "the first member's run is sewn first");
+    s.execute("embroidery.selectNeedlePoints", &json!({"needlePoints": [{"id": p2, "index": 3}]})).unwrap();
+    s.execute("embroidery.deleteNeedlePoints", &json!({"needlePoints": [{"id": p1, "index": 2}]})).unwrap();
+    assert_eq!(numbered(&mut s), Some(None), "no number until planned again");
+}

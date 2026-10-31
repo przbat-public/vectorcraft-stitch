@@ -101,7 +101,9 @@ fn a_stop_not_between_two_needle_points_is_written_as_nothing() {
 }
 
 /// A cut beside a stop is kept on its side: before it, at the stretch's end; after it, at the next
-/// stretch's start. A cut alone between two stops is kept too, with the stretch after it.
+/// stretch's start. A cut alone between two stops is kept too, with the stretch after it. PES, PEC,
+/// JEF and EXP read each cut back on its side; DST, TAP, T01 and VP3 write them but read no cut
+/// next to a thread change (a reading that predates stops).
 #[test]
 fn a_cut_beside_a_stop_is_kept() {
     let mut block = row(RED, 0.0, 0.0, 6);
@@ -116,6 +118,9 @@ fn a_cut_beside_a_stop_is_kept() {
     for format in Format::ALL {
         let back = format.read(&format.write(&p).unwrap()).unwrap();
         assert_eq!(needle_points(&back), [3, 3], "{format:?}");
+        let trims: Vec<usize> = back.blocks.iter().map(|b| b.stitches.iter().filter(|s| s.command == Command::Trim).count()).collect();
+        let read = matches!(format, Format::Pes | Format::Pec | Format::Jef | Format::Exp);
+        assert_eq!(trims, if read { [1, 1] } else { [0, 0] }, "{format:?}: the cuts read back");
     }
 }
 

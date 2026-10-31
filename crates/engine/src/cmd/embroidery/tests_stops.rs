@@ -307,6 +307,52 @@ fn a_change_to_the_same_thread_opens_as_a_stop() {
     }
 }
 
+/// A change to the same thread with a cut on each side of it and two runs on each side (a cut and a
+/// jump between them), then a block of another thread, written to bytes: millimetres, y 0.
+fn cut_around_a_stop() -> Pattern {
+    use Command::{Jump, Stitch as Sew, Stop, Trim};
+    let at = |x: f64, c| Stitch::new(x, 0.0, c);
+    let run = |from: f64| (0..3).map(move |i| at(from + f64::from(i) * 2.0, Sew));
+    let mut red = Block::new(Thread::rgb(RED));
+    red.stitches.extend(run(0.0));
+    red.stitches.extend([at(4.0, Trim), at(10.0, Jump)]);
+    red.stitches.extend(run(10.0));
+    red.stitches.extend([at(14.0, Trim), at(14.0, Stop), at(14.0, Trim), at(20.0, Jump)]);
+    red.stitches.extend(run(20.0));
+    red.stitches.extend([at(24.0, Trim), at(30.0, Jump)]);
+    red.stitches.extend(run(30.0));
+    let mut blue = Block::new(Thread::rgb([30, 30, 200]));
+    blue.stitches.extend((0..4).map(|i| Stitch::new(f64::from(i) * 2.0, 6.0, Sew)));
+    Pattern { name: "cut-around-a-stop".into(), blocks: vec![red, blue], ..Pattern::default() }
+}
+
+/// A file whose change to the same thread has a cut on each side and two runs on each side opens as
+/// one group, the stop after the run before the change, and is written back to the same bytes in
+/// PES, PEC and JEF. VP3 holds no cut beside a change of thread (its cuts are long moves inside a
+/// colour's stitches), so it reads those two back as nothing: its stop stays, and from its first
+/// writing back on it is written the same.
+#[test]
+fn a_same_thread_change_between_cuts_writes_back_unchanged() {
+    let pattern = cut_around_a_stop();
+    let opened = |format: StitchFormat, bytes: &[u8]| {
+        let mut s = Session::new();
+        let name = format!("cut-around-a-stop.{}", format.extension());
+        run(&mut s, "document.open", json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)}));
+        assert_eq!(s.doc().unwrap().doc.layers[0].children().unwrap().len(), 2, "{format:?}: the red runs in one group");
+        assert_eq!(run(&mut s, "embroidery.stats", json!({}))["stops"], json!(1), "{format:?}");
+        let again = run(&mut s, "document.export", json!({"format": format.id()}));
+        vectorcraft_format::base64_decode(again["dataBase64"].as_str().unwrap()).unwrap()
+    };
+    for format in [StitchFormat::Pes, StitchFormat::Pec, StitchFormat::Jef, StitchFormat::Vp3] {
+        let bytes = format.write(&pattern).unwrap();
+        let again = opened(format, &bytes);
+        match format {
+            StitchFormat::Vp3 => assert!(opened(format, &again) == again, "VP3: written the same from its first writing back"),
+            _ => assert!(again == bytes, "{format:?}: written back to the same bytes"),
+        }
+    }
+}
+
 /// `embroidery.setStopAfter` marks the objects given (or selected), toggles when `on` is left out,
 /// clears a run's own stop when off, takes one undo step, and refuses what isn't sewn.
 #[test]

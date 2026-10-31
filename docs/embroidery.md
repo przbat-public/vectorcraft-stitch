@@ -1027,6 +1027,13 @@ there); a multi-needle machine changes needle and stops only where its operator 
 that change. Before this, a stop in a PES, PEC or JEF export left the header one colour short:
 pyembroidery 1.5.1, run as an outside reader, read the block after the stop in the next block's
 thread and could not read the JEF at all. Nothing planned a stop then, so no export was wrong.
+Opened again, a change to the same thread reads as a stop, and the file is written back to the
+same bytes in PES, PEC and JEF, with a cut on either side of the stop and runs around it
+(`a_same_thread_change_between_cuts_writes_back_unchanged`, and the pinned stops exports reopened).
+A cut right beside a change of thread reads back only from PES, PEC, JEF and EXP: DST, TAP and T01
+write it but read none there, and VP3 holds none (its cuts are long moves inside a colour's
+stitches), so such a design opened from VP3 has lost those cuts and is written the same from then
+on.
 
 Trims in JEF: the format has no trim record. EduTechWiki calls a jump of zero length the trim
 command (Janome machines set to cut at cutting commands obey it, and set to cut automatically they

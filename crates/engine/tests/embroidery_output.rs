@@ -1679,6 +1679,31 @@ fn opened_with_cuts() -> Session {
     s
 }
 
+/// The pinned stops document's exports open again with each stop, in each format that names its
+/// threads (the stops a file writes as changes to the same thread read back as stops), and are
+/// written back to the same bytes in PES, PEC and JEF. VP3 holds no cut beside a change of thread,
+/// so it reads those as nothing and is written the same from its first writing back on.
+#[test]
+fn the_stops_exports_open_and_write_back_unchanged() {
+    let mut s = stops();
+    let planned = run(&mut s, "embroidery.stats", json!({}))["stops"].clone();
+    assert!(planned.as_u64().is_some_and(|n| n > 0));
+    let reopened = |format: Format, bytes: &[u8]| {
+        let mut back = Session::new();
+        open(&mut back, &format!("stops.{}", format.extension()), bytes);
+        assert_eq!(run(&mut back, "embroidery.stats", json!({}))["stops"], planned, "{format:?}: its stops");
+        export(&mut back, format, &json!({})).unwrap()
+    };
+    for format in [Format::Pes, Format::Pec, Format::Jef, Format::Vp3] {
+        let bytes = export(&mut s, format, &json!({})).unwrap();
+        let again = reopened(format, &bytes);
+        match format {
+            Format::Vp3 => assert!(reopened(format, &again) == again, "VP3: written the same from its first writing back"),
+            _ => assert!(again == bytes, "{format:?}: written back to the same bytes"),
+        }
+    }
+}
+
 /// Stops, each written as a change to the same thread: a design written in code with a stop
 /// between two needle points of its first block and one at that block's end (the thread change's,
 /// written as nothing), opened from PES, so that the stop reads back as one; two squares of one

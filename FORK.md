@@ -499,6 +499,12 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   `doc/src/embroidery/mem.rs`; `ALLOC`, `map_bytes` and `json_bytes` made `pub(crate)` for them), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
   (`cmd/embroidery/threadlib.rs`), `i18n/mod.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
   `mod embroidery_common` and `cases.extend(…)`, and the `pub use` lines in `engine/src/lib.rs`.
+- **The fork's tests inside upstream's test files**, whole blocks rather than hooks, to keep when
+  resolving: `crates/mcp/tests/protocol_props.rs`, the stitch commands' random edits through MCP
+  (a `proptest!` block of its own, 31 lines in the middle of the file, before
+  `tools_never_leave_interactions_open`), and
+  `crates/engine/tests/import_fuzz.rs`, `designs_with_stops_never_panic` (36 lines at the end of its
+  last `proptest!` block, where upstream appends most often).
 - **The stitch preview's hooks in upstream files**, each marked "VectorCraft Stitch" in a comment
   (the fork's own code is under `crates/ui-egui/src/embroidery/`, `panels/embroidery/` and
   `cmd/embroidery/`):
@@ -600,7 +606,11 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `DialogResult` made `pub(crate)` for it), and after it Restore Object's question
     (`embroidery/restore_dialog.rs`).
 - **The stitch commands' hooks in upstream files** (the commands are `cmd/embroidery/needles.rs`
-  and `needle_edits.rs`, the hooks' bodies `hooks.rs`), each one statement marked "VectorCraft Stitch":
+  and `needle_edits.rs`, the hooks' bodies `hooks.rs`), each marked "VectorCraft Stitch": one
+  statement each, but two for each cut (the run as it was taken before the cut, then its marks on
+  the pieces after). Upstream has since moved `cmd/draw2.rs` into a module (`replace_with_pieces`
+  now in `cmd/draw2/common.rs`, `split` in `cmd/draw2/cut.rs`) and `dialogs/mod.rs` to
+  `dialogs.rs`: the hooks move with the functions they sit in.
   - `engine/src/cmd/path.rs`: at the top of `delete_anchors` (which the Delete key, Edit › Clear and
     Edit › Cut with anchors selected, and `path.deleteAnchors` all reach), needle points of runs of
     stitches selected are deleted as stitches (`embroidery::delete_needle_points_selected`: when
@@ -613,7 +623,12 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     a path of several subpaths are put in place, `embroidery::runs_cut_in_place` (the cut point kept
     once). The Knife cuts closed paths only, and so never a run;
   - `engine/src/cmd/path.rs`: in `join`, before the ends are chosen, runs of stitches joined as Join
-    Runs joins them (`embroidery::join_runs_of_stitches`: never reversed; with art, refused); in
+    Runs joins them (`embroidery::join_runs_of_stitches`: never reversed; with art, refused). The
+    hook must come before every branch of `join` that joins: upstream has since rewritten `join`
+    four times, adding a `subpaths` parameter that joins subpaths of one path by their nearest ends
+    (which can reverse them) and branches for compound paths and direct selections, some of which
+    return before today's hook point. On that sync, put the hook ahead of all of them and add a test
+    that no form of `path.join` reverses a run; in
     `cut_at_anchors`, on a path of several subpaths, the run as it was taken before its pieces are
     put in place and `embroidery::runs_cut_in_place` after.
 - **Upstream's internals the fork reads without a hook** (nothing to resolve, but a sync that

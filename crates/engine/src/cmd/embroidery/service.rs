@@ -667,8 +667,10 @@ impl Services {
             self.needles.remove(&st.uid);
             return None;
         };
+        // The one kept, while it is of the document as it is, and through a gesture under way: a
+        // drag's previews move needle points, which the drag doesn't read again until it ends.
         if let Some((doc, kept_scope, index)) = self.needles.get(&st.uid)
-            && Arc::ptr_eq(doc, &st.doc)
+            && (Arc::ptr_eq(doc, &st.doc) || st.interaction.is_some())
             && *kept_scope == scope
         {
             return index.clone();

@@ -13,7 +13,7 @@ use vectorcraft_tools::embroidery::{NeedleRef, PlanFacts};
 
 use super::super::needles;
 use super::super::test_support::{PT_PER_MM, run};
-use super::{Area, Lasso, NeedleIndex, paths_built};
+use super::{Area, Lasso, NeedleIndex, paths_built, paths_looked_at};
 use crate::Session;
 
 fn runner(s: &mut Session) -> impl FnMut(&str, Value) -> Value + '_ {
@@ -401,4 +401,64 @@ fn a_hostile_lasso_is_refused_at_a_bounded_cost() {
     let poly: Vec<Value> = zigzag.iter().map(|p| json!([mm(p.x), mm(p.y)])).collect();
     let e = s.execute("embroidery.selectNeedlePoints", &json!({"polygon": poly})).unwrap_err().to_string();
     assert!(e.contains("too intricate"), "{e}");
+}
+
+/// The index is built again only for what changed: not during a drag of needle points (its previews
+/// move them, the drag doesn't read the index until it ends), not for a path refused for what it
+/// holds while it is the same node, and not for a selection by a shape in the object isolated (the
+/// index kept serves it).
+#[test]
+fn the_index_is_built_again_only_for_what_changed() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    let group = m.converted.stroke;
+    run(&mut s, "object.isolate", json!({"id": group}));
+    run(&mut s, "view.stitchPreview", json!({"on": true}));
+    run(&mut s, "embroidery.sequence", json!({}));
+    let view = crate::ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    let index = s.kept_needle_index().expect("editing");
+    let id = index.ids().next().unwrap();
+    let p = read_points(&s, id)[2];
+    // A drag of a needle point: pressed, dragged in steps (each previewed), let go.
+    let ev =
+        |kind, x: f64| vectorcraft_tools::PointerEvent { kind, pos: Point::new(x, p.y), mods: vectorcraft_tools::Mods::default(), pressure: 1.0 };
+    s.pointer(&ev(vectorcraft_tools::PointerKind::Down, p.x), view).unwrap();
+    s.pointer(&ev(vectorcraft_tools::PointerKind::Drag, p.x + 10.0), view).unwrap();
+    s.tool_tick(1.0, view).unwrap();
+    let built = paths_built();
+    for k in 2..8 {
+        s.pointer(&ev(vectorcraft_tools::PointerKind::Drag, p.x + 10.0 * f64::from(k)), view).unwrap();
+        s.tool_tick(1.0, view).unwrap();
+        s.kept_needle_index();
+    }
+    assert_eq!(paths_built(), built, "nothing built again while the drag goes on");
+    s.pointer(&ev(vectorcraft_tools::PointerKind::Up, p.x + 70.0), view).unwrap();
+    s.kept_needle_index();
+    assert_eq!(paths_built(), built + 1, "the path dragged, once the drag ends");
+    // A selection by a rectangle in the object isolated: the index kept serves it.
+    let b = s.kept_needle_index().unwrap().scope().bounds.unwrap();
+    let mm = |v: f64| v / PT_PER_MM;
+    let built = paths_built();
+    run(&mut s, "embroidery.selectNeedlePoints", json!({"rect": [mm(b.x0), mm(b.y0), mm(b.x1), mm(b.y1)]}));
+    assert_eq!(paths_built(), built, "no second index");
+    // A path refused for what it holds (a needle point out of range, as a file can hold one: the
+    // session refuses such an edit, so the document is changed as a reader would leave it) is not
+    // looked at again while another path of the object is edited.
+    run(&mut s, "object.exitIsolation", json!({}));
+    let two = m.converted.group;
+    let doc = s.doc().unwrap().doc.clone();
+    let members = doc.node(NodeId(two)).unwrap().children().unwrap().clone();
+    let (far, edited) = (members[0].children().unwrap()[0].id, members[1].children().unwrap()[0].id);
+    let st = s.docs.get_mut(s.active.unwrap()).unwrap();
+    if let Some(vectorcraft_doc::NodeKind::Path { path, .. }) = std::sync::Arc::make_mut(&mut st.doc).node_mut(far).map(|n| &mut n.kind) {
+        path.subpaths[0].anchors[0].p = Point::new(1e17, 0.0);
+    }
+    run(&mut s, "object.isolate", json!({"id": two}));
+    let index = s.kept_needle_index().unwrap();
+    assert!(!index.holds(far) && index.holds(edited), "{:?}", index.scope());
+    let looked = paths_looked_at();
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": edited.0, "index": 0}], "dx": 0.1}));
+    s.kept_needle_index();
+    assert_eq!(paths_looked_at(), looked + 1, "the path moved looked at again, the refused one not");
 }

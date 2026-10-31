@@ -371,7 +371,10 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
             }
             None => st.isolation.map_or_else(|| doc.layers.iter().map(|l| l.id).collect(), |i| vec![i]),
         };
-        if let Some(index) = super::needle_index::NeedleIndex::of(&doc, &roots, None) {
+        // The object isolated: the index stitch editing keeps of it; else one built for `ids`.
+        let isolated = st.isolation.filter(|i| roots == [*i]).is_some();
+        let index = if isolated { s.kept_needle_index() } else { super::needle_index::NeedleIndex::of(&doc, &roots, None).map(std::sync::Arc::new) };
+        if let Some(index) = index {
             passed = index.scope().refused;
             let found = index.within(&area).ok_or_else(|| {
                 bad(SELECT, "the `polygon` is too intricate for this many needle points (or the selection was cancelled): give it fewer edges, or select by `rect`")

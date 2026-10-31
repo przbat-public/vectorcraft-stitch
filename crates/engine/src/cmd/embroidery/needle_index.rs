@@ -8,10 +8,12 @@
 //!   with the box its needle points (and the stitch leaving its last) fall in, so a query tests the
 //!   boxes first and the points of a few chunks.
 //! - **Kept by node identity:** a path's chunks are built again only when its node is another one
-//!   (an edit copies only the paths it changes), so after an edit the index costs what the edited
-//!   paths hold, not the design. The engine keeps one index a document while the embroidery tool
-//!   works in isolation of an object holding stitches, and drops it when that ends
-//!   ([`super::service::Services::needle_index`]).
+//!   (an edit copies only the paths it changes), and a path refused for what it holds is refused
+//!   again without a look while it is the same node, so after an edit the index costs a walk of the
+//!   object's nodes and what the edited paths hold, not the design. The engine keeps one index a
+//!   document while the embroidery tool works in isolation of an object holding stitches, as it is
+//!   through a gesture under way (a drag's previews), serves a selection by a shape in the object
+//!   isolated from it, and drops it when that ends ([`super::service::Services::needle_index`]).
 //! - **The needle points are the anchors** of each path, in order, as the stitch commands address
 //!   them ([`super::needles`]): a line to its own start is one needle point.
 //! - **Shown but not edited:** a path locked or hidden (or in a locked layer, group or artboard), a
@@ -59,6 +61,15 @@ thread_local! {
     /// How many paths' chunks were built on this thread: what the tests count, so that an edit of
     /// one path builds one path's again, and a query or an idle frame builds none.
     static BUILT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// How many paths were looked at to be built (refused or not) on this thread: the tests count
+    /// that a path refused for what it holds isn't looked at again while it is the same node.
+    static LOOKED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// How many paths were looked at to be built on this thread ([`LOOKED`]).
+#[cfg(test)]
+pub(crate) fn paths_looked_at() -> usize {
+    LOOKED.with(std::cell::Cell::get)
 }
 
 /// How many paths' chunks were built on this thread ([`BUILT`]).
@@ -104,6 +115,7 @@ impl PathIndex {
     /// The index of path `node`; `Err` with why it can't be edited needle point by needle point,
     /// as the stitch commands judge it ([`needles::check`]: before any arithmetic).
     fn of(node: &Arc<Node>) -> Result<Self, Unfit> {
+        LOOKED.with(|b| b.set(b.get().saturating_add(1)));
         needles::check(node)?;
         let NodeKind::Path { path, .. } = &node.kind else { return Err(Unfit::NotStitches) };
         let Some(marks) = node.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) else { return Err(Unfit::NotStitches) };
@@ -209,6 +221,9 @@ pub struct NeedleIndex {
     refused: usize,
     needles: usize,
     bounds: Option<Rect>,
+    /// The paths refused for what they hold (out of range, too many needle points, not a run),
+    /// by node: refused again without a look while they are the same node.
+    unfit: HashMap<NodeId, Arc<Node>>,
 }
 
 /// A node found for the index: the node, whether a clip group holds it, and whether the walk
@@ -279,6 +294,7 @@ impl NeedleIndex {
         let mut paths: Vec<(NodeId, Arc<PathIndex>)> = Vec::new();
         let mut order = HashMap::new();
         let mut refused = 0usize;
+        let mut unfit: HashMap<NodeId, Arc<Node>> = HashMap::new();
         // The paths of stitches under a node, each with whether a clip group holds it and whether
         // the walk sews it, by the walk's own rules: into layers and groups only (a compound path is
         // sewn as a shape; blends, envelopes and repeats aren't sewn), nothing hidden, at no
@@ -317,6 +333,11 @@ impl NeedleIndex {
                 refused += 1;
                 continue;
             }
+            if kept.and_then(|k| k.unfit.get(&n.id)).is_some_and(|u| Arc::ptr_eq(u, &n)) {
+                refused += 1;
+                unfit.insert(n.id, n);
+                continue;
+            }
             let reused = kept.and_then(|k| k.path(n.id)).filter(|p| Arc::ptr_eq(&p.node, &n));
             let path = match reused {
                 Some(p) => p,
@@ -324,6 +345,7 @@ impl NeedleIndex {
                     Ok(p) => Arc::new(p),
                     Err(_) => {
                         refused += 1;
+                        unfit.insert(n.id, n);
                         continue;
                     }
                 },
@@ -336,7 +358,7 @@ impl NeedleIndex {
             order.insert(n.id, paths.len());
             paths.push((n.id, path));
         }
-        Some(Self { object: roots.first().copied().unwrap_or(NodeId(0)), paths, order, refused, needles, bounds })
+        Some(Self { object: roots.first().copied().unwrap_or(NodeId(0)), paths, order, refused, needles, bounds, unfit })
     }
 
     /// The paths being edited that `sel` selects, in the selection's order, each with whether it

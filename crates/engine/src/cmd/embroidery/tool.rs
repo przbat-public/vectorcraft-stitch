@@ -204,6 +204,13 @@ impl crate::Session {
         self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| n.selected_paths(cx.selection)))
     }
 
+    /// The needle points stitch editing keeps for the active document's isolation
+    /// ([`super::service::Services::needle_index`]): built again only for what changed.
+    pub(crate) fn kept_needle_index(&mut self) -> Option<Arc<super::needle_index::NeedleIndex>> {
+        let st = self.active.and_then(|i| self.docs.get(i))?;
+        self.embroidery_plans.needle_index(st)
+    }
+
     /// The tool that lent the Selection tool for the press under way (a Cmd-press), if one did: the
     /// tool the interface keeps showing, and stitch editing holds, while the press lasts.
     pub fn lent_from(&self) -> Option<&'static str> {

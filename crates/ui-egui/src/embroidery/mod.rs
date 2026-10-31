@@ -20,6 +20,10 @@
 //! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
 //! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
 //! - [`handles`]: the embroidery tool's entry and exit points, in both views.
+//! - [`editing`]: stitch editing (the tool in isolation of a stitch object): the chip under
+//!   isolation's bar, and Edit Stitches.
+//! - [`selection`]: stitch editing's selection on the canvas, its range pills and the live check.
+//! - [`task_bar`]: the Contextual Task Bar's stitch actions while stitches are edited.
 //! - [`point_dialog`]: the Entry Point and Exit Point dialog (X and Y typed, or Auto).
 //! - [`text`]: the embroidery interface's words, in the catalogues' `embroidery` context
 //!   ([`crate::et!`], [`crate::etn!`]).
@@ -29,6 +33,7 @@
 pub mod check_marks;
 pub mod convert_job;
 pub mod counters;
+pub mod editing;
 pub mod fields;
 pub mod handles;
 pub mod marks;
@@ -41,10 +46,12 @@ pub mod plan_worker;
 pub mod point_dialog;
 pub mod restore_dialog;
 pub mod rows;
+pub mod selection;
 pub mod setup_tab;
 pub mod stitch_layer;
 pub mod stitch_preview;
 pub mod switch;
+pub mod task_bar;
 pub mod text;
 pub mod tool_bar;
 pub mod vocabulary;
@@ -69,6 +76,10 @@ pub struct Embroidery {
     pub(crate) ends: overlay::Ends,
     /// The embroidery tool's handles, as last found ([`handles`]).
     pub(crate) handles: handles::Cache,
+    /// What stitch editing edits, as last read ([`editing`]).
+    pub(crate) editing: editing::Editing,
+    /// Stitch editing's selection as drawn, built once a change ([`selection`]).
+    pub(crate) selection: selection::Kept,
     /// Nearest Connection under way from the interface ([`nearest`]).
     pub(crate) nearest: nearest::Nearest,
     /// Convert to Manual Stitches under way ([`convert_job`]).
@@ -79,6 +90,8 @@ pub struct Embroidery {
     pub(crate) check: crate::panels::embroidery::check::CheckState,
     /// The Embroidery panel's Object tab.
     pub(crate) object: crate::panels::embroidery::object::ObjectState,
+    /// The Embroidery panel's Stitches tab.
+    pub(crate) stitches: crate::panels::embroidery::stitches::StitchesState,
     /// Document Setup's Embroidery tab, while the dialog is open: what it opened with.
     pub(crate) setup: Option<setup_tab::Opened>,
     /// The status bar's counters.
@@ -113,11 +126,14 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
         overlay::draw(app, &ui.painter_at(canvas), &xf);
         check_marks::draw(app, ui.ctx(), &ui.painter_at(canvas), &xf);
         handles::draw(app, &ui.painter_at(canvas), &xf);
+        selection::draw(app, ui, &ui.painter_at(canvas), &xf);
+        crate::panels::embroidery::stitches::draw_mark(app, &ui.painter_at(canvas), &xf);
     }
     let isolated = app.ui.screen_mode < 3 && app.session.active().is_some_and(|st| st.isolation.is_some());
     let below = if isolated { egui::Rect::from_min_max(canvas.min + egui::vec2(0.0, ISOLATION_BAR), canvas.max) } else { canvas };
     switch::show(app, ui, below);
     notice::show(app, ui, below);
+    editing::show(app, ui, below);
 }
 
 /// The fork's work at the frame's end: a click on the status bar's counters acted on, then what

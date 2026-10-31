@@ -463,3 +463,26 @@ fn the_lengths_bins_agree_with_the_longest_stitch_check() {
     let empty = stats::stats(&plan(vec![]), Machine { speed: 650.0 }, Thread { fabric: 0.5 }, Page { offset: 0, limit: 0 });
     assert_eq!(empty["lengths"]["median"], Value::Null);
 }
+
+/// One set of limits judges a stitch while stitches are edited, on the canvas and in the Stitches
+/// tab (the project owner's choice): shorter than Document Setup's shortest stitch (0.4 mm unless
+/// set), longer than 12.7 mm, or longer along x or y than one of the format's records; both the
+/// 12.7 mm and the record apply, so PES's long records still flag a 13 mm stitch.
+#[test]
+fn one_set_of_limits_judges_a_stitch() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let limits = check::stitch_limits(&doc, None);
+    assert_eq!((limits.shortest, limits.longest), (0.4, 12.7));
+    assert!(limits.short(0.39) && !limits.short(0.4));
+    assert!(limits.long(12.71, 0.0) && !limits.long(12.0, 3.0));
+    let pes = check::stitch_limits(&doc, Some("pes"));
+    assert!(pes.step > 12.7 && pes.long(13.0, 0.0), "the 12.7 mm still applies: {pes:?}");
+    let dst = check::stitch_limits(&doc, Some("dst"));
+    assert!(dst.step < 12.7 && dst.long(0.0, dst.step + 0.05) && !dst.long(dst.step - 0.05, 0.0), "{dst:?}");
+    assert_eq!(check::stitch_limits(&doc, Some("no such format")).format, limits.format, "the thread palette's");
+    s.execute("embroidery.setup", &json!({"machine": {"minStitch": 0.6}})).unwrap();
+    let set = check::stitch_limits(&s.doc().unwrap().doc, None);
+    assert!(set.short(0.55) && !set.short(0.6), "{set:?}");
+}

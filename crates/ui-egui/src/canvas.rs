@@ -3596,7 +3596,10 @@ fn picked_artboards_bounds(app: &VectorcraftApp) -> Option<Rect> {
 fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
     let t = Tokens::get(ui.ctx());
     let on_artboards = app.session.tool_id() == "artboard";
+    // VectorCraft Stitch: the stitch actions while the Embroidery Tool edits stitches.
+    let stitch_items = crate::embroidery::task_bar::items(app);
     if !on_artboards
+        && stitch_items.is_none()
         && (app.session.active().is_none_or(|st| st.selection.is_empty())
             || !matches!(app.session.tool_id(), "selection" | "directSelection" | "groupSelection"))
     {
@@ -3627,7 +3630,10 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
         });
     let mut items: Vec<(&str, &str, &str, serde_json::Value)> = vec![]; // (label, icon, command, params)
     let none = || json!({});
-    if on_artboards {
+    if let Some(own) = stitch_items.clone() {
+        // VectorCraft Stitch: the stitch actions in place of upstream's.
+        items = own;
+    } else if on_artboards {
         // As in the reference app, the Artboard tool offers to resize, duplicate and export the
         // artboards (<https://community.adobe.com/questions-652/contextual-task-bar-in-illustrator-2025-quick-actions-when-you-need-them-1546580>),
         // and to rearrange them (<https://creativepro.com/managing-artboards-in-illustrator/>).
@@ -3765,8 +3771,9 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
                             run = Some((*cmd, params.clone()));
                         }
                     }
-                    // The selected objects' Fill, Recolor Artwork and Lock, left out with the Artboard tool.
-                    if !on_artboards {
+                    // The selected objects' Fill, Recolor Artwork and Lock, left out with the Artboard tool
+                    // (VectorCraft Stitch: and while stitches are edited).
+                    if !on_artboards && stitch_items.is_none() {
                         let (r, resp) = ui.allocate_exact_size(vec2(26.0, 30.0), Sense::click());
                         widgets::paint_chip(ui, egui::Rect::from_center_size(r.center(), vec2(16.0, 16.0)), &fill);
                         ui.painter().rect_stroke(

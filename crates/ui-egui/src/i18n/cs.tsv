@@ -6128,3 +6128,67 @@ embroidery	would lie outside the document	ležel by mimo dokument
 @plural	{count} needle point|{count} needle points	{count} vpich|{count} vpichy|{count} vpichů
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} vybraný objekt je z ručních stehů|{count} vybrané objekty jsou z ručních stehů|{count} vybraných objektů je z ručních stehů
 embroidery	Converting to manual stitches…	Převod na ruční stehy…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Úprava stehů
+embroidery	Editing stitches: {name}	Úprava stehů: {name}
+embroidery	Zoom in to see the needle points.	Přibližte, abyste viděli vpichy.
+embroidery	Needle points are edited in the Stitches view.	Vpichy se upravují v zobrazení Stehy.
+embroidery	Show Stitches	Zobrazit stehy
+embroidery	Edit Stitches	Upravit stehy
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Přesouvejte, vkládejte a mažte tyto vpichy na plátně nástrojem Výšivka.
+@plural	{count} selected|{count} selected	{count} vybraný|{count} vybrané|{count} vybraných
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} řadu nelze upravit: je zamčená, skrytá nebo oříznutá ořezovou maskou|{count} řady nelze upravit: jsou zamčené, skryté nebo oříznuté ořezovou maskou|{count} řad nelze upravit: jsou zamčené, skryté nebo oříznuté ořezovou maskou
+	 needle points, or a frame round them  |  	 vpichy nebo rámeček kolem nich  |  
+	 a stitch to insert a needle point  |  	 na steh pro vložení vpichu  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 posouvají o 0,1 mm  |  
+	 deselects, then ends editing	 zruší výběr, pak ukončí úpravy
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Posunuto X {x} · Y {y} mm
+embroidery	Insert	Vložit
+embroidery	Delete	Odstranit
+embroidery	Split Run	Rozdělit řadu
+embroidery	Join Runs	Spojit řady
+embroidery	Split Long Stitches	Rozdělit dlouhé stehy
+embroidery	Trim	Střih
+embroidery	Stop	Zastavení
+embroidery	Trim After the Selected Needle Points	Střih po vybraných vpiších
+embroidery	Stop After the Selected Needle Points	Zastavení po vybraných vpiších
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} steh kratší než {value} mm|{count} stehy kratší než {value} mm|{count} stehů kratších než {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} příliš dlouhý steh|{count} příliš dlouhé stehy|{count} příliš dlouhých stehů
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Pořadí
+embroidery	Selection	Výběr
+embroidery	Whole design	Celý návrh
+embroidery	All	Vše
+embroidery	Stops	Zastavení
+embroidery	Too short	Příliš krátké
+embroidery	Shorter than {value} mm	Kratší než {value} mm
+embroidery	Longer than {value} mm	Delší než {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Délka (mm)
+embroidery	stitch	steh
+embroidery	jump	přeskok
+embroidery	trim	střih
+embroidery	stop	zastavení
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Záznam {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, délka {value} mm
+embroidery	, too short	, příliš krátký
+embroidery	, too long	, příliš dlouhý
+embroidery	Rows {first}–{last} of {total}	Řádky {first}–{last} z {total}
+embroidery	Previous rows	Předchozí řádky
+embroidery	Next rows	Další řádky
+embroidery	Listing stitches…	Vypisují se stehy…
+embroidery	Select objects to list their stitches.	Vyberte objekty a vypíšou se jejich stehy.
+embroidery	The selection sews no stitches.	Výběr nešije žádné stehy.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Tento steh nelze upravit: je naplánován z tvaru svého objektu.
+embroidery	Go to #	Přejít na č.
+embroidery	Record number	Číslo záznamu
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Záznam č. {value} tu není: tady jsou č. {first}–{last}.
+embroidery	Move by	Posunout o
+embroidery	Apply	Použít
+embroidery	Click a row or a needle point to select it.	Klepnutím na řádek nebo vpich jej vyberete.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Plánováno z tvaru: chcete-li stehy upravit, převeďte objekt na ruční stehy.
+@plural	{count} needle point selected|{count} needle points selected	{count} vybraný vpich|{count} vybrané vpichy|{count} vybraných vpichů

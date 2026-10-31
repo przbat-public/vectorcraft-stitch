@@ -15,6 +15,7 @@
 //!   angle by [`ANGLE_KEY_STEP`] (→ and ↑ counter-clockwise), Shift ten times that; Enter asks for a
 //!   point's X and Y (as a double-click on it does, [`POINT_DIALOG`]); Escape lets it go.
 
+mod editing;
 mod facts;
 mod handles;
 #[cfg(test)]
@@ -27,7 +28,11 @@ use vectorcraft_doc::embroidery::takers::{compound_of, takers};
 use vectorcraft_doc::hit::{HitKind, hit_test};
 use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
-pub use facts::{FillAngle, PlanFacts, PlannedEnds};
+pub use editing::{
+    Editing, Hover, LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, SHIFT_STEPS, holds_stitches, is_selected, selected_count,
+    stitch_object,
+};
+pub use facts::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, ThreadHit};
 pub use handles::{
     APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_MIN_PX, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle,
     HandleId, Kind, Owner, State, direction, handle_walks, handles, hit, hit_after,
@@ -106,6 +111,8 @@ pub struct EmbroideryTool {
     /// The handles as last found, and what for ([`MemoKey`]): each pointer move and cursor query
     /// asks for them, and they are found again only when that changed.
     memo: std::cell::RefCell<Option<(MemoKey, Vec<Handle>)>>,
+    /// Stitch editing's gesture under way, and what the pointer is over ([`editing`]).
+    editing: Editing,
 }
 
 /// What the tool's handles are found for: the document's uid and revision (which moves with every
@@ -228,11 +235,14 @@ impl EmbroideryTool {
         by_stitch.or_else(by_art)
     }
 
-    /// Whether a press on `id` selects it: an object that takes settings, or a symbol instance,
-    /// which takes no points but its Trim After (selected, it shows no handle).
+    /// Whether a press on `id` selects it: an object that takes settings, a symbol instance, which
+    /// takes no points but its Trim After (selected, it shows no handle), or an object holding
+    /// stitches (manual stitches, a machine file's runs), whose needle points a double-click edits.
     fn takes(cx: &ToolContext, id: vectorcraft_doc::NodeId) -> bool {
         let instance = matches!(cx.doc.node(id).map(|n| &n.kind), Some(vectorcraft_doc::NodeKind::SymbolInstance { .. }));
-        instance || takers(cx.doc, &[id]).0 == [id]
+        // Stitch objects (manual stitches, an opened design's runs) are selected too: a double-click
+        // on them starts editing their needle points.
+        instance || takers(cx.doc, &[id]).0 == [id] || cx.doc.node(id).is_some_and(holds_stitches)
     }
 
     /// A press away from every handle: the object under the pointer selected ([`Self::under`]) and
@@ -303,6 +313,31 @@ impl Tool for EmbroideryTool {
     }
 
     fn pointer(&mut self, cx: &ToolContext, ev: &PointerEvent) -> Vec<Action> {
+        // Editing stitches: a handle (of art inside the object isolated) is caught first, as
+        // outside it; elsewhere the needle points are.
+        // A press of stitch editing still held ends as it began, also when what it edits went (the
+        // selection deleted mid-drag, an undo).
+        if self.grab.is_none() && self.editing.held() && matches!(ev.kind, PointerKind::Up) && cx.embroidery.and_then(|f| f.needle_points()).is_none()
+        {
+            return self.editing.release();
+        }
+        if let Some(needles) = cx.embroidery.and_then(|f| f.needle_points())
+            && self.grab.is_none()
+        {
+            let pressed = matches!(ev.kind, PointerKind::Move | PointerKind::Down | PointerKind::DoubleClick);
+            if self.editing.busy() || self.editing.wants_ticks() || !pressed || hit(cx, &self.now(cx), ev.pos).is_none() {
+                if ev.kind == PointerKind::Move {
+                    self.hover = None;
+                    self.hover_object = None;
+                }
+                if ev.kind == PointerKind::Down {
+                    self.focus = None;
+                    self.keyed = false;
+                }
+                return self.editing.pointer(cx, needles, ev);
+            }
+            self.editing.hover = None;
+        }
         match ev.kind {
             PointerKind::Move => {
                 self.hover = hit(cx, &self.now(cx), ev.pos).map(|h| h.id);
@@ -313,6 +348,7 @@ impl Tool for EmbroideryTool {
                 self.keyed = false;
                 // A press with a drag still under way (no release came between): that drag ends first.
                 let mut out = self.finish_drag();
+                out.extend(self.editing.release());
                 match hit_after(cx, &self.now(cx), ev.pos, self.focus) {
                     None => out.extend(self.select_at(cx, ev)),
                     Some(h) if ev.mods.alt => out.extend(self.back_to_auto(h.id)),
@@ -386,12 +422,34 @@ impl Tool for EmbroideryTool {
                     self.grab = None;
                     self.dialog(&h)
                 }
-                None => vec![],
+                // On a stitch object: its needle points edited, in isolation, in the stitch view (the
+                // project owner's choice, 2026-10-27: editing stitches is the tool in isolation of a
+                // stitch object; entering it shows the stitches).
+                None => match Self::found(cx, ev.pos).and_then(|(id, _)| stitch_object(cx.doc, cx.isolation, id)) {
+                    Some(object) => {
+                        self.grab = None;
+                        vec![
+                            Action::Exec("object.isolate".into(), json!({"id": object.0})),
+                            Action::Exec("view.stitchPreview".into(), json!({"on": true})),
+                        ]
+                    }
+                    None => vec![],
+                },
             },
         }
     }
 
     fn key(&mut self, cx: &ToolContext, key: ToolKey, mods: Mods) -> Vec<Action> {
+        if let Some(needles) = cx.embroidery.and_then(|f| f.needle_points())
+            && self.grab.is_none()
+            && self.focused(cx).is_none()
+            && self.editing.claims_key(cx, needles, key)
+        {
+            return self.editing.key(cx, needles, key, mods);
+        }
+        if key == ToolKey::Escape && self.editing.held() {
+            return self.editing.cancel();
+        }
         if key == ToolKey::Escape {
             return match self.grab.take() {
                 Some(Grab { begun: true, .. }) => vec![Action::Cancel],
@@ -447,7 +505,13 @@ impl Tool for EmbroideryTool {
         }
     }
 
-    fn cursor(&self, cx: &ToolContext, p: Point, _mods: Mods) -> Cursor {
+    fn cursor(&self, cx: &ToolContext, p: Point, mods: Mods) -> Cursor {
+        if let Some(needles) = cx.embroidery.and_then(|f| f.needle_points())
+            && self.grab.is_none()
+            && (self.editing.wants_ticks() || self.editing.busy() || hit(cx, &self.now(cx), p).is_none())
+        {
+            return self.editing.cursor(cx, needles, p, mods);
+        }
         let held = self.grab.as_ref().map(|g| g.id.kind).or_else(|| hit(cx, &self.now(cx), p).map(|h| h.id.kind));
         match held {
             Some(Kind::Entry | Kind::Exit) => Cursor::EmbroideryPoint,
@@ -470,7 +534,7 @@ impl Tool for EmbroideryTool {
         });
         let id = |h: Option<HandleId>| h.map_or(Value::Null, HandleId::json);
         let hover_object = self.hover_object.map_or(Value::Null, |o| json!(o.0));
-        json!({"part": part, "hover": id(self.hover), "hoverObject": hover_object, "focus": id(self.focus), "keyed": self.keyed && self.focus.is_some(), "drag": drag})
+        json!({"part": part, "hover": id(self.hover), "hoverObject": hover_object, "focus": id(self.focus), "keyed": self.keyed && self.focus.is_some(), "drag": drag, "stitches": self.editing.options()})
     }
 
     fn set_option(&mut self, key: &str, value: &Value) {
@@ -483,12 +547,27 @@ impl Tool for EmbroideryTool {
     }
 
     fn busy(&self) -> bool {
-        self.grab.as_ref().is_some_and(|g| g.begun)
+        self.grab.as_ref().is_some_and(|g| g.begun) || self.editing.busy()
+    }
+
+    fn tick(&mut self, _cx: &ToolContext, dt: f64) -> Vec<Action> {
+        self.editing.tick(dt)
+    }
+
+    fn wants_ticks(&self) -> bool {
+        self.editing.wants_ticks()
     }
 
     fn claims_key(&self, cx: &ToolContext, key: ToolKey) -> bool {
+        if let Some(needles) = cx.embroidery.and_then(|f| f.needle_points())
+            && self.grab.is_none()
+            && self.focused(cx).is_none()
+            && self.editing.claims_key(cx, needles, key)
+        {
+            return true;
+        }
         match key {
-            ToolKey::Escape => self.grab.is_some() || self.focus.is_some(),
+            ToolKey::Escape => self.grab.is_some() || self.focus.is_some() || self.editing.held(),
             ToolKey::BracketLeft | ToolKey::BracketRight => !self.now(cx).is_empty(),
             // Enter asks for a point's X and Y: an angle has none.
             ToolKey::Enter => self.focused(cx).is_some_and(|h| h.arrow.is_none()),
@@ -503,12 +582,16 @@ impl Tool for EmbroideryTool {
         if self.grab.as_ref().is_some_and(|g| g.begun) {
             self.grab = None;
         }
+        if self.editing.busy() {
+            self.editing.let_go();
+        }
         vec![]
     }
 
     fn hover_ended(&mut self, _cx: &ToolContext) {
         self.hover = None;
         self.hover_object = None;
+        self.editing.hover = None;
     }
 
     fn deactivate(&mut self, _cx: &ToolContext) -> Vec<Action> {
@@ -517,6 +600,11 @@ impl Tool for EmbroideryTool {
         self.focus = None;
         // Put away, it keeps no handles (the session drops the plan's answers it kept likewise).
         self.memo.get_mut().take();
-        self.finish_drag()
+        let mut out = self.finish_drag();
+        // A drag of needle points under way is kept, as a release keeps it.
+        out.extend(self.editing.release());
+        self.editing.let_go();
+        self.editing.current = None;
+        out
     }
 }

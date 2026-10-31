@@ -6043,3 +6043,67 @@ embroidery	would lie outside the document	დოკუმენტის გა�
 @plural	{count} needle point|{count} needle points	ნემსის ჩხვლეტები: {count}
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	მონიშნული ობიექტებიდან ხელით ნაკერებია: {count}
 embroidery	Converting to manual stitches…	ხელით ნაკერებად გარდაქმნა…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	ნაკერების რედაქტირება
+embroidery	Editing stitches: {name}	ნაკერების რედაქტირება: {name}
+embroidery	Zoom in to see the needle points.	გაადიდეთ ნემსის ჩხვლეტების სანახავად.
+embroidery	Needle points are edited in the Stitches view.	ნემსის ჩხვლეტები რედაქტირდება ხედში „ნაკერები“.
+embroidery	Show Stitches	ნაკერების ჩვენება
+embroidery	Edit Stitches	ნაკერების შესწორება
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	გადაიტანეთ, ჩასვით და წაშალეთ ეს ნემსის ჩხვლეტები ტილოზე ნაქარგობის ხელსაწყოთი.
+@plural	{count} selected|{count} selected	მონიშნული: {count}
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	შეუცვლელი მწკრივები: {count} — ჩაკეტილი, დამალული ან მომჭრელი ნიღბით მოჭრილი
+	 needle points, or a frame round them  |  	 ნემსის ჩხვლეტებზე ან მათ გარშემო ჩარჩო  |  
+	 a stitch to insert a needle point  |  	 ნაკერზე — ნემსის ჩხვლეტის ჩასასმელად  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 — გადაადგილება 0,1 მმ-ით  |  
+	 deselects, then ends editing	 — მონიშვნის მოხსნა, შემდეგ რედაქტირების დასრულება
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	გადაადგილდა X {x} · Y {y} მმ
+embroidery	Insert	ჩასმა
+embroidery	Delete	წაშლა
+embroidery	Split Run	მწკრივის გაყოფა
+embroidery	Join Runs	მწკრივების გაერთიანება
+embroidery	Split Long Stitches	გრძელი ნაკერების გაყოფა
+embroidery	Trim	ჭრა
+embroidery	Stop	გაჩერება
+embroidery	Trim After the Selected Needle Points	ჭრა მონიშნული ნემსის ჩხვლეტების შემდეგ
+embroidery	Stop After the Selected Needle Points	გაჩერება მონიშნული ნემსის ჩხვლეტების შემდეგ
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{value} მმ-ზე მოკლე ნაკერები: {count}
+@plural	{count} stitch too long|{count} stitches too long	ზედმეტად გრძელი ნაკერები: {count}
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	რიგი
+embroidery	Selection	მონიშნული
+embroidery	Whole design	მთელი დიზაინი
+embroidery	All	ყველა
+embroidery	Stops	გაჩერებები
+embroidery	Too short	ზედმეტად მოკლე
+embroidery	Shorter than {value} mm	{value} მმ-ზე მოკლე
+embroidery	Longer than {value} mm	{value} მმ-ზე გრძელი
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (მმ)
+embroidery	Y (mm)	Y (მმ)
+embroidery	Length (mm)	სიგრძე (მმ)
+embroidery	stitch	ნაკერი
+embroidery	jump	ნახტომი
+embroidery	trim	ჭრა
+embroidery	stop	გაჩერება
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	ჩანაწერი {number}: {type}, X {x} მმ, Y {y} მმ
+embroidery	, length {value} mm	, სიგრძე {value} მმ
+embroidery	, too short	, ზედმეტად მოკლე
+embroidery	, too long	, ზედმეტად გრძელი
+embroidery	Rows {first}–{last} of {total}	სტრიქონები {first}–{last} / {total}
+embroidery	Previous rows	წინა სტრიქონები
+embroidery	Next rows	შემდეგი სტრიქონები
+embroidery	Listing stitches…	ნაკერების ჩამოთვლა…
+embroidery	Select objects to list their stitches.	მონიშნეთ ობიექტები, რომ ჩამოითვალოს მათი ნაკერები.
+embroidery	The selection sews no stitches.	მონიშნული ნაკერებს არ კერავს.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	ამ ნაკერის რედაქტირება შეუძლებელია: ის მისი ობიექტის ფორმიდან იგეგმება.
+embroidery	Go to #	გადასვლა №
+embroidery	Record number	ჩანაწერის ნომერი
+embroidery	No record numbered {value} here: these are #{first}–{last}.	აქ ჩანაწერი №{value} არ არის: აქ არის №{first}–{last}.
+embroidery	Move by	გადაადგილება
+embroidery	Apply	გამოყენება
+embroidery	Click a row or a needle point to select it.	მოსანიშნად დააწკაპუნეთ სტრიქონზე ან ნემსის ჩხვლეტაზე.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	ფორმიდან იგეგმება: რედაქტირებისთვის გარდაქმენით ობიექტი ხელით ნაკერებად.
+@plural	{count} needle point selected|{count} needle points selected	მონიშნული ნემსის ჩხვლეტები: {count}

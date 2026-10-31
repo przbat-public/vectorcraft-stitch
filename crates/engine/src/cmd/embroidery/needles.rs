@@ -128,6 +128,16 @@ pub(crate) fn one_needle_point(distance_mm: f64, alone: bool, double_point: bool
     distance_mm < SAME_POINT && !(alone && double_point)
 }
 
+/// How many needle points a subpath of a path of stitches holds, as every reader counts them
+/// ([`one_needle_point`]): one an anchor, but one for a line to its own start, unless it is the
+/// path's only run (`alone`) and the path marks it as two (`double_point`, a tack).
+pub fn needle_count(anchors: &[Anchor], alone: bool, double_point: bool) -> usize {
+    match anchors {
+        [a, b] if one_needle_point(a.p.distance(b.p) * MM_PER_PT, alone, double_point) => 1,
+        all => all.len(),
+    }
+}
+
 impl Needle {
     /// A needle point at `p` (document points), with no stop after it and no exact millimetres.
     pub(crate) fn at(p: Point) -> Self {
@@ -147,7 +157,7 @@ impl Needle {
 }
 
 /// Whether `p` is a finite point within the document's coordinates.
-fn in_range(p: Point) -> bool {
+pub(crate) fn in_range(p: Point) -> bool {
     p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD
 }
 

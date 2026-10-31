@@ -5967,3 +5967,67 @@ embroidery	would lie outside the document	会落在文档之外
 @plural	{count} needle point|{count} needle points	{count} 个落针点
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	所选对象中有 {count} 个是手动针迹
 embroidery	Converting to manual stitches…	正在转换为手动针迹…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	编辑针迹
+embroidery	Editing stitches: {name}	编辑针迹：{name}
+embroidery	Zoom in to see the needle points.	放大以查看落针点。
+embroidery	Needle points are edited in the Stitches view.	落针点在“针迹”视图中编辑。
+embroidery	Show Stitches	显示针迹
+embroidery	Edit Stitches	编辑针迹
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	用刺绣工具在画布上移动、插入和删除这些落针点。
+@plural	{count} selected|{count} selected	已选 {count} 个
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} 个针段无法编辑：已锁定、已隐藏或被剪切蒙版裁切
+	 needle points, or a frame round them  |  	落针点，或在其周围拖出选框  |  
+	 a stitch to insert a needle point  |  	针迹以插入落针点  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	移动 0.1 毫米  |  
+	 deselects, then ends editing	取消选择，再按则结束编辑
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	已移动 X {x} · Y {y} 毫米
+embroidery	Insert	插入
+embroidery	Delete	删除
+embroidery	Split Run	拆分针段
+embroidery	Join Runs	连接针段
+embroidery	Split Long Stitches	拆分长针迹
+embroidery	Trim	剪线
+embroidery	Stop	停机
+embroidery	Trim After the Selected Needle Points	在所选落针点后剪线
+embroidery	Stop After the Selected Needle Points	在所选落针点后停机
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} 针短于 {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} 针过长
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	顺序
+embroidery	Selection	所选对象
+embroidery	Whole design	整个设计
+embroidery	All	全部
+embroidery	Stops	停机
+embroidery	Too short	过短
+embroidery	Shorter than {value} mm	短于 {value} 毫米
+embroidery	Longer than {value} mm	长于 {value} 毫米
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (毫米)
+embroidery	Y (mm)	Y (毫米)
+embroidery	Length (mm)	长度 (毫米)
+embroidery	stitch	针迹
+embroidery	jump	跳针
+embroidery	trim	剪线
+embroidery	stop	停机
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	第 {number} 条记录：{type}，X {x} 毫米，Y {y} 毫米
+embroidery	, length {value} mm	，长度 {value} 毫米
+embroidery	, too short	，过短
+embroidery	, too long	，过长
+embroidery	Rows {first}–{last} of {total}	第 {first}–{last} 行，共 {total} 行
+embroidery	Previous rows	前面的行
+embroidery	Next rows	后面的行
+embroidery	Listing stitches…	正在列出针迹…
+embroidery	Select objects to list their stitches.	选择对象以列出其针迹。
+embroidery	The selection sews no stitches.	所选对象不绣任何针迹。
+embroidery	This stitch can't be edited: it is planned from its object's shape.	无法编辑此针迹：它是根据其对象的形状规划的。
+embroidery	Go to #	转到 #
+embroidery	Record number	记录编号
+embroidery	No record numbered {value} here: these are #{first}–{last}.	这里没有第 {value} 条记录：这里是第 {first}–{last} 条。
+embroidery	Move by	移动
+embroidery	Apply	应用
+embroidery	Click a row or a needle point to select it.	单击行或落针点即可选择。
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	根据形状规划：将对象转换为手动针迹即可编辑。
+@plural	{count} needle point selected|{count} needle points selected	已选择 {count} 个落针点

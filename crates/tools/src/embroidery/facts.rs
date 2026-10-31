@@ -56,4 +56,87 @@ pub trait PlanFacts {
     fn fill_angle(&self, _object: NodeId) -> Option<FillAngle> {
         None
     }
+    /// The needle points stitch editing works on: while the embroidery tool works inside isolation
+    /// of an object holding paths of stitches (the project owner's choice, 2026-10-27: stitch
+    /// editing is the tool in isolation of a stitch object); `None` otherwise.
+    fn needle_points(&self) -> Option<&dyn NeedlePoints> {
+        None
+    }
+}
+
+/// A needle point of a path of stitches (opened from a machine file, or converted to manual
+/// stitches), as the stitch commands address it: the path and the needle point's place in it,
+/// from 0 across its runs (`{id, index}`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct NeedleRef {
+    pub id: NodeId,
+    pub index: usize,
+}
+
+/// A needle point found under the pointer, and where it is (document points).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NeedleHit {
+    pub needle: NeedleRef,
+    pub point: Point,
+}
+
+/// A place on a thread found under the pointer: the stitch from needle point `from` to the next one
+/// in its run, its two ends, and the point on it nearest the pointer (document points).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ThreadHit {
+    pub from: NeedleRef,
+    pub ends: [Point; 2],
+    pub point: Point,
+}
+
+/// What stitch editing edits: the object isolated (a stitch object: a converted object, an opened
+/// design's thread block, a run), the paths of stitches in it whose needle points can be edited and
+/// how many needle points they hold, the box those fall in (document points), and the paths of
+/// stitches in it that are shown but can't be edited (locked or hidden, cut by a clip group, with
+/// anchors that aren't numbers, or more needle points than a design may have).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NeedleScope {
+    pub object: NodeId,
+    pub paths: usize,
+    pub needles: usize,
+    pub bounds: Option<vectorcraft_geom::Rect>,
+    pub refused: usize,
+}
+
+/// The needle points stitch editing works on, answered by the engine from the document as it is
+/// (so a press right after an edit never lands where a needle point was), with record numbers
+/// from the plan the canvas shows where it is of the path as it is. Bounded to the paths being
+/// edited; positions are document points.
+pub trait NeedlePoints {
+    /// What is being edited.
+    fn scope(&self) -> NeedleScope;
+    /// Whether path `id` is one being edited.
+    fn holds(&self, id: NodeId) -> bool;
+    /// The needle point nearest `at` within `tol`; of equally near ones, the one sewn later (drawn
+    /// on top).
+    fn needle_at(&self, at: Point, tol: f64) -> Option<NeedleHit>;
+    /// The stitch nearest `at` within `tol`, and the place on it nearest `at`.
+    fn thread_at(&self, at: Point, tol: f64) -> Option<ThreadHit>;
+    /// Where needle point `n` is.
+    fn point(&self, n: NeedleRef) -> Option<Point>;
+    /// The needle point after `n` along the thread (`forward`), or before it: within its path,
+    /// across its runs, then on to the next path or back to the one before, round from the last to
+    /// the first.
+    fn step(&self, n: NeedleRef, forward: bool) -> Option<NeedleRef>;
+    /// The first needle point of the first path being edited.
+    fn first(&self) -> Option<NeedleRef>;
+    /// The first and the last needle point (their places in its path) of the run `n` is in.
+    fn run(&self, n: NeedleRef) -> Option<(usize, usize)>;
+    /// The anchors needle point `n` is in its path, `(subpath, anchor)`: one, or both of a run of
+    /// one needle point (a line to its own start).
+    fn anchors(&self, n: NeedleRef) -> Vec<(usize, usize)>;
+    /// The needle point anchor `anchor` of path `id` is.
+    fn of_anchor(&self, id: NodeId, anchor: (usize, usize)) -> Option<usize>;
+    /// How many needle points path `id` holds (0: not one being edited).
+    fn count(&self, id: NodeId) -> usize;
+    /// Path `id`'s place among the paths being edited, in the order they are sewn.
+    fn order(&self, id: NodeId) -> Option<usize>;
+    /// The record number the plan the canvas shows gives needle point `n`, when that plan is of
+    /// its path as it is now; `None` while the plan lags behind an edit of it.
+    fn number(&self, n: NeedleRef) -> Option<usize>;
 }

@@ -1,6 +1,6 @@
-//! Window › Embroidery (VectorCraft Stitch): how the active document's design is sewn, in three
-//! tabs: Object (the selected objects' embroidery settings), Sewing Order and Check (Stitches comes
-//! with the PR that builds it).
+//! Window › Embroidery (VectorCraft Stitch): how the active document's design is sewn, in four
+//! tabs: Object (the selected objects' embroidery settings), Sewing Order, Check and Stitches (the
+//! design's records, [`stitches`]).
 //!
 //! - **It never plans.** Drawing it asks the stitch preview's scheduler for the plan and for its
 //!   tab's read command replies ([`crate::embroidery::stitch_preview`]), which the planning thread
@@ -16,9 +16,10 @@
 //!   good result stays when there is one); ready; updating (the last result, and "Updating…" once
 //!   the newer one takes a while). The Object tab draws in every one of them ([`object`]): only its
 //!   stitch count waits for a plan.
-//! - **The tab strip** fits every language: each tab as wide as its name, the widest shrunk first
-//!   when they don't fit (`craft_ui::tabs::fit`), a shrunk name elided with the whole of it in its
-//!   tooltip and for screen readers.
+//! - **The tab strip** fits every language: each tab's short name (the project owner's choice,
+//!   2026-10-27: "Order" for Sewing Order), as wide as it, the widest shrunk first when they don't
+//!   fit (`craft_ui::tabs::fit`), a shrunk name elided; the whole name in its tooltip and for screen
+//!   readers.
 //! - The open tab and the Object tab's part are kept with the interface's state, read leniently (an
 //!   unknown tab reads as the first), and `ui.embroideryPanel {tab?, part?}` shows the panel at a
 //!   tab.
@@ -35,6 +36,7 @@ pub mod check;
 pub mod lengths;
 pub mod object;
 pub mod order;
+pub mod stitches;
 use crate::embroidery::stitch_preview::Freshness;
 use crate::theme::Tokens;
 
@@ -84,16 +86,18 @@ pub enum Tab {
     Object,
     Order,
     Check,
+    Stitches,
 }
 
 impl Tab {
-    pub const ALL: [Tab; 3] = [Tab::Object, Tab::Order, Tab::Check];
+    pub const ALL: [Tab; 4] = [Tab::Object, Tab::Order, Tab::Check, Tab::Stitches];
 
     pub fn id(self) -> &'static str {
         match self {
             Tab::Object => "object",
             Tab::Order => "order",
             Tab::Check => "check",
+            Tab::Stitches => "stitches",
         }
     }
 
@@ -107,6 +111,17 @@ impl Tab {
             Tab::Object => crate::et!("Object"),
             Tab::Order => crate::et!("Sewing Order"),
             Tab::Check => crate::et!("Check"),
+            Tab::Stitches => crate::et!("Stitches"),
+        }
+    }
+
+    /// The tab's short name, as the strip shows it so that four fit in every language (the
+    /// project owner's choice); its whole name ([`Tab::label`]) is its tooltip and its name for
+    /// screen readers.
+    pub fn short(self) -> &'static str {
+        match self {
+            Tab::Order => crate::et!("Order"),
+            _ => self.label(),
         }
     }
 }
@@ -128,12 +143,27 @@ pub struct Settings {
     pub tab: Tab,
     #[serde(serialize_with = "part_id")]
     pub part: object::Part,
+    /// The Stitches tab's scope and filter (saved by their ids).
+    #[serde(serialize_with = "scope_id")]
+    pub stitches_scope: stitches::Scope,
+    #[serde(serialize_with = "filter_id")]
+    pub stitches_filter: vectorcraft_engine::cmd::embroidery::stitch_list::Filter,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { tab: Tab::default(), part: object::Part::Fill }
+        Self { tab: Tab::default(), part: object::Part::Fill, stitches_scope: stitches::Scope::default(), stitches_filter: Default::default() }
     }
+}
+
+/// The Stitches tab's scope as the settings are saved: its id.
+fn scope_id<S: serde::Serializer>(scope: &stitches::Scope, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_str(scope.id())
+}
+
+/// The Stitches tab's filter as the settings are saved: its id.
+fn filter_id<S: serde::Serializer>(filter: &vectorcraft_engine::cmd::embroidery::stitch_list::Filter, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_str(filter.id())
 }
 
 /// A part as the settings are saved: its id.
@@ -151,6 +181,8 @@ impl<'de> Deserialize<'de> for Settings {
         Ok(Self {
             tab: read("tab").and_then(Tab::from_id).unwrap_or_default(),
             part: read("part").and_then(object::Part::from_id).unwrap_or(object::Part::Fill),
+            stitches_scope: read("stitchesScope").and_then(stitches::Scope::from_id).unwrap_or_default(),
+            stitches_filter: read("stitchesFilter").and_then(vectorcraft_engine::cmd::embroidery::stitch_list::Filter::from_id).unwrap_or_default(),
         })
     }
 }
@@ -164,6 +196,7 @@ fn queries(app: &VectorcraftApp, uid: u64, tab: Tab) -> Vec<Query> {
         Tab::Object => vec![stats],
         Tab::Order => vec![stats, order::query()],
         Tab::Check => vec![stats, check::query(&app.embroidery.check, uid)],
+        Tab::Stitches => [Some(stats), stitches::query(app)].into_iter().flatten().collect(),
     }
 }
 
@@ -225,12 +258,14 @@ pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     }
 }
 
-/// `ui.embroideryPanel {tab?: "object"|"order"|"check", part?: "fill"|"stroke", format?: a
-/// format's id, or null}`: show the panel, at `tab`; `part` the one the Object tab shows; `format`
+/// `ui.embroideryPanel {tab?: "object"|"order"|"check"|"stitches", part?: "fill"|"stroke",
+/// format?: a format's id, or null, scope?: "selection"|"design", filter?: "all"|"jumps"|"trims"|
+/// "stops"|"short"|"long"}`: show the panel, at `tab`; `part` the one the Object tab shows; `format`
 /// the one the active document's check is for (null: its thread palette's, as the Check tab's
-/// "Checked for" chooses) → `{tab, part, format}` (`format` null when none is chosen).
+/// "Checked for" chooses); `scope` and `filter` the Stitches tab's → `{tab, part, format, scope,
+/// filter}` (`format` null when none is chosen).
 fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
-    only_keys(p, &["tab", "part", "format"])?;
+    only_keys(p, &["tab", "part", "format", "scope", "filter"])?;
     // Both checked before either changes.
     let tab = match p.get("tab").filter(|v| !v.is_null()) {
         Some(tab) => {
@@ -243,6 +278,24 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
         Some(part) => Some(part.as_str().and_then(object::Part::from_id).ok_or_else(|| format!("part {part}: fill or stroke"))?),
         None => None,
     };
+    let scope = match p.get("scope").filter(|v| !v.is_null()) {
+        Some(v) => Some(v.as_str().and_then(stitches::Scope::from_id).ok_or_else(|| format!("scope {v}: selection or design"))?),
+        None => None,
+    };
+    let filter = match p.get("filter").filter(|v| !v.is_null()) {
+        Some(v) => {
+            use vectorcraft_engine::cmd::embroidery::stitch_list::Filter;
+            let ids: Vec<&str> = Filter::ALL.iter().map(|f| f.id()).collect();
+            Some(v.as_str().and_then(Filter::from_id).ok_or_else(|| format!("filter {v}: one of {}", ids.join(", ")))?)
+        }
+        None => None,
+    };
+    if let Some(scope) = scope {
+        app.ui.embroidery_panel.stitches_scope = scope;
+    }
+    if let Some(filter) = filter {
+        app.ui.embroidery_panel.stitches_filter = filter;
+    }
     if let Some(tab) = tab {
         app.ui.embroidery_panel.tab = tab;
     }
@@ -267,13 +320,15 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     let format = app.session.active().and_then(|st| app.embroidery.check.format.get(&st.uid).copied());
     // The part the Object tab shows: the one chosen, or the other where the objects don't paint it.
     let part = object::shown_part(app);
-    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id(), "part": part.id(), "format": format }))
+    let (scope, filter) = (app.ui.embroidery_panel.stitches_scope.id(), app.ui.embroidery_panel.stitches_filter.id());
+    Ok(json!({ "tab": app.ui.embroidery_panel.tab.id(), "part": part.id(), "format": format, "scope": scope, "filter": filter }))
 }
 
 /// `ui.inspect`'s `embroideryPanel` (VectorCraft Stitch): what the panel's Object tab shows
-/// (`object`, [`object::inspect`]). Its open tab and the part chosen are in `ui.embroidery_panel`.
+/// (`object`, [`object::inspect`]) and its Stitches tab (`stitches`, [`stitches::inspect`]). Its
+/// open tab and the part chosen are in `ui.embroidery_panel`.
 pub fn inspect(app: &VectorcraftApp) -> Value {
-    json!({ "object": object::inspect(app) })
+    json!({ "object": object::inspect(app), "stitches": stitches::inspect(app) })
 }
 
 /// Show the panel: brought forward where it is; else where it was closed from, by the dock's own
@@ -400,10 +455,24 @@ fn tab_group(root: &Option<craft_ui::docking::Node<String>>, panel: &str) -> Vec
     Vec::new()
 }
 
-/// The panel's ≡ menu: the selected object's embroidery settings copied and pasted; the selection
-/// sewn earlier, later, first or last; Nearest Connection; the Sewing order's blocks collapsed or
-/// expanded; the next or previous finding of the check.
+/// The panel's ≡ menu: while stitches are edited with needle points selected, the stitch actions
+/// (as the Contextual Task Bar offers them); the selected object's embroidery settings copied and
+/// pasted; the selection sewn earlier, later, first or last; Nearest Connection; the Sewing order's
+/// blocks collapsed or expanded; the next or previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
+    if let Some(items) = crate::embroidery::task_bar::items(app) {
+        for (_, _, id, params) in items {
+            let label = match params["function"].as_str() {
+                Some("trim") => crate::et!("Trim After the Selected Needle Points").to_string(),
+                Some("stop") => crate::et!("Stop After the Selected Needle Points").to_string(),
+                _ => command_label(app, id),
+            };
+            if crate::widgets::menu_item_name(ui, &label, crate::menus::enabled(app, id), false) {
+                crate::menus::invoke(app, id, params);
+            }
+        }
+        ui.separator();
+    }
     for id in ["embroidery.copySettings", "embroidery.pasteSettings"] {
         if crate::widgets::menu_item_name(ui, &command_label(app, id), crate::menus::enabled(app, id), false) {
             crate::menus::invoke(app, id, json!({}));
@@ -590,6 +659,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             let reply = own.as_ref().map(|(r, _, current)| (r, *current));
             check::show(app, ui, check::Shown { uid, reply, stats: stats.as_deref(), stale });
         }
+        (Tab::Stitches, _) => {
+            // The records' flags, built with the plan on the planning thread for the limits.
+            let flags = stitches::limits_of(app).and_then(|l| app.embroidery.preview.shown(uid).and_then(|s| s.planned.built_stitch_flags(&l)));
+            stitches::show(app, ui, stitches::Shown { plan, generation, stale, flags });
+        }
         // Drawn above, before the plan's states.
         (Tab::Order | Tab::Object, _) => {}
     }
@@ -601,7 +675,8 @@ fn strip(app: &mut VectorcraftApp, ui: &mut Ui) {
         .iter()
         .map(|tab| Segment {
             id: ui.id().with(("embroidery-tab", tab.id())),
-            label: tab.label(),
+            label: tab.short(),
+            full: tab.label(),
             selected: app.ui.embroidery_panel.tab == *tab,
             enabled: true,
         })
@@ -615,11 +690,13 @@ fn strip(app: &mut VectorcraftApp, ui: &mut Ui) {
 /// layout's rounding.
 const ELIDED_SLACK: f32 = 0.5;
 
-/// One segment of a strip ([`segments`]): its id, its words, whether it is the one selected, and
+/// One segment of a strip ([`segments`]): its id, its words as shown and its whole name (its
+/// tooltip where it differs, and its name for screen readers), whether it is the one selected, and
 /// whether it can be chosen.
 pub(crate) struct Segment<'a> {
     pub(crate) id: egui::Id,
     pub(crate) label: &'a str,
+    pub(crate) full: &'a str,
     pub(crate) selected: bool,
     pub(crate) enabled: bool,
 }
@@ -646,7 +723,7 @@ pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>
         let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, height));
         left += width;
         let resp = ui.add_enabled_ui(s.enabled, |ui| {
-            craft_ui::tabs::Tab::new(s.id, s.label, s.selected).show_at(ui, segment, |ui, resp| {
+            craft_ui::tabs::Tab::new(s.id, s.full, s.selected).show_at(ui, segment, |ui, resp| {
                 let fill = if s.selected {
                     t.button
                 } else if resp.hovered() {
@@ -671,7 +748,7 @@ pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>
             })
         });
         let elided = natural.get(i).is_some_and(|n| *n > width + ELIDED_SLACK);
-        let resp = if elided { resp.inner.on_hover_text(s.label) } else { resp.inner };
+        let resp = if elided || s.full != s.label { resp.inner.on_hover_text(s.full) } else { resp.inner };
         if resp.clicked() && s.enabled {
             clicked = Some(i);
         }

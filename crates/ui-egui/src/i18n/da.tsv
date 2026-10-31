@@ -6083,3 +6083,67 @@ embroidery	would lie outside the document	ville ligge uden for dokumentet
 @plural	{count} needle point|{count} needle points	{count} nålestik|{count} nålestik
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} valgt objekt er manuelle sting|{count} valgte objekter er manuelle sting
 embroidery	Converting to manual stitches…	Konverterer til manuelle sting…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Redigering af sting
+embroidery	Editing stitches: {name}	Redigering af sting: {name}
+embroidery	Zoom in to see the needle points.	Zoom ind for at se nålestikkene.
+embroidery	Needle points are edited in the Stitches view.	Nålestik redigeres i visningen Sting.
+embroidery	Show Stitches	Vis sting
+embroidery	Edit Stitches	Rediger sting
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Flyt, indsæt og slet disse nålestik på lærredet med Broderiværktøjet.
+@plural	{count} selected|{count} selected	{count} valgt|{count} valgte
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} række kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske|{count} rækker kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske
+	 needle points, or a frame round them  |  	 nålestik eller en ramme om dem  |  
+	 a stitch to insert a needle point  |  	 på et sting for at indsætte et nålestik  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 flytter 0,1 mm  |  
+	 deselects, then ends editing	 fravælger, og afslutter derefter redigeringen
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Flyttet X {x} · Y {y} mm
+embroidery	Insert	Indsæt
+embroidery	Delete	Slet
+embroidery	Split Run	Del række
+embroidery	Join Runs	Saml rækker
+embroidery	Split Long Stitches	Del lange sting
+embroidery	Trim	Klip
+embroidery	Stop	Stop
+embroidery	Trim After the Selected Needle Points	Klip efter de valgte nålestik
+embroidery	Stop After the Selected Needle Points	Stop efter de valgte nålestik
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} sting kortere end {value} mm|{count} sting kortere end {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} for langt sting|{count} for lange sting
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Rækkefølge
+embroidery	Selection	Markering
+embroidery	Whole design	Hele designet
+embroidery	All	Alle
+embroidery	Stops	Stop
+embroidery	Too short	For korte
+embroidery	Shorter than {value} mm	Kortere end {value} mm
+embroidery	Longer than {value} mm	Længere end {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Længde (mm)
+embroidery	stitch	sting
+embroidery	jump	spring
+embroidery	trim	klip
+embroidery	stop	stop
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Post {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, længde {value} mm
+embroidery	, too short	, for kort
+embroidery	, too long	, for lang
+embroidery	Rows {first}–{last} of {total}	Rækker {first}–{last} af {total}
+embroidery	Previous rows	Forrige rækker
+embroidery	Next rows	Næste rækker
+embroidery	Listing stitches…	Viser sting…
+embroidery	Select objects to list their stitches.	Markér objekter for at vise deres sting.
+embroidery	The selection sews no stitches.	Markeringen syr ingen sting.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Dette sting kan ikke redigeres: det er planlagt ud fra objektets form.
+embroidery	Go to #	Gå til nr.
+embroidery	Record number	Nummer på post
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Ingen post nr. {value} her: her er nr. {first}–{last}.
+embroidery	Move by	Flyt med
+embroidery	Apply	Anvend
+embroidery	Click a row or a needle point to select it.	Klik på en række eller et nålestik for at markere det.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Planlagt ud fra formen: konvertér objektet til manuelle sting for at redigere dem.
+@plural	{count} needle point selected|{count} needle points selected	{count} markeret nålestik|{count} markerede nålestik

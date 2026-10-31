@@ -253,14 +253,16 @@ impl Memo {
         std::ptr::eq(self.snapshot.as_ptr(), Arc::as_ptr(of.snapshot)) && self.selection == of.selection && self.opts == *opts && self.fonts == fonts
     }
 
-    /// The bytes it holds, its scene's included: as built, or as it will be.
+    /// The bytes it holds, its scene's included (as built, or as it will be) and its records'
+    /// flags for the Stitches tab once built.
     fn held(&self) -> usize {
         let scene = match self.plan.as_ref().ok().map(|p| p.scene.get()) {
             Some(Some(built)) => built.byte_size(),
             Some(None) => self.records.saturating_mul(SCENE_BYTES_PER_RECORD),
             None => 0,
         };
-        self.bytes.saturating_add(scene)
+        let flags = self.plan.as_ref().ok().and_then(|p| p.flags.lock().ok().and_then(|f| f.as_ref().map(|f| f.byte_size()))).unwrap_or(0);
+        self.bytes.saturating_add(scene).saturating_add(flags)
     }
 }
 
@@ -280,11 +282,37 @@ pub struct Planned {
     /// the design is to plan. `None` where the walk isn't timed (the web, which has no clock here).
     pub walk_ms: Option<f64>,
     scene: Arc<OnceLock<Arc<StitchScene>>>,
+    /// Its records' flags for the Stitches tab ([`Planned::stitch_flags`]), for the limits they
+    /// were built with.
+    flags: Arc<Mutex<Option<Arc<super::stitch_list::Flags>>>>,
 }
 
 impl Planned {
     fn new(plan: Arc<DesignPlan>) -> Self {
-        Self { plan, generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed), walk_ms: None, scene: Arc::default() }
+        Self { plan, generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed), walk_ms: None, scene: Arc::default(), flags: Arc::default() }
+    }
+
+    /// The plan's records' flags judged against `limits` (the Stitches tab's filters): built the
+    /// first time they are asked for with these limits, on the asking thread (the planning thread,
+    /// for the tab), and kept with the plan.
+    pub fn stitch_flags(&self, limits: &super::check::StitchLimits) -> Arc<super::stitch_list::Flags> {
+        if let Some(kept) = self.built_stitch_flags(limits) {
+            return kept;
+        }
+        let made = Arc::new(super::stitch_list::Flags::of(&self.plan, limits));
+        // A walk cut short by a cancel is incomplete: never kept.
+        if !vectorcraft_doc::cancel::is_cancelled()
+            && let Ok(mut kept) = self.flags.lock()
+        {
+            *kept = Some(made.clone());
+        }
+        made
+    }
+
+    /// The flags for `limits` when they have been built already.
+    pub fn built_stitch_flags(&self, limits: &super::check::StitchLimits) -> Option<Arc<super::stitch_list::Flags>> {
+        let key = super::stitch_list::limits_key(limits);
+        self.flags.lock().ok()?.as_ref().filter(|f| f.limits() == key).cloned()
     }
 
     /// The plan's stitch scene, built the first time it is asked for (on the asking thread, outside
@@ -578,7 +606,15 @@ pub(crate) struct Services {
     shown: HashMap<u64, (Arc<Document>, Planned)>,
     /// The embroidery tool's answers of each document's plan, built once a plan.
     facts: HashMap<u64, Arc<super::tool::ToolFacts>>,
+    /// The needle points stitch editing works on in each document: the paths of stitches inside the
+    /// object isolated, while the embroidery tool works in it ([`Services::needle_index`]), with the
+    /// snapshot and the object they are of (`None`: it holds no path of stitches).
+    needles: HashMap<u64, KeptNeedles>,
 }
+
+/// The needle points kept for a document ([`Services::needle_index`]): the snapshot and the object
+/// isolated they are of, and the index (`None`: the object holds no path of stitches).
+type KeptNeedles = (Arc<Document>, NodeId, Option<Arc<super::needle_index::NeedleIndex>>);
 
 impl Services {
     /// Document `uid`'s service, made when it is first asked for.
@@ -603,6 +639,7 @@ impl Services {
         self.views.remove(&uid);
         self.shown.remove(&uid);
         self.facts.remove(&uid);
+        self.needles.remove(&uid);
     }
 
     /// The interface draws `planned`, the plan of `snapshot`, for document `uid`.
@@ -616,6 +653,36 @@ impl Services {
     /// its scene, built again when the tool is chosen again.
     pub(crate) fn drop_facts(&mut self) {
         self.facts.clear();
+        self.needles.clear();
+    }
+
+    /// The needle points stitch editing works on in document `st` (the embroidery tool working
+    /// inside isolation of an object holding paths of stitches, the project owner's choice,
+    /// 2026-10-27): the paths of stitches inside the object isolated, built from the document as it
+    /// is and kept for its snapshot, a path's needle points built again only when an edit changed it
+    /// ([`super::needle_index`]); `None` when nothing is isolated or the object isolated holds no
+    /// path of stitches, and then what was kept goes.
+    pub(crate) fn needle_index(&mut self, st: &crate::DocState) -> Option<Arc<super::needle_index::NeedleIndex>> {
+        let Some(scope) = st.isolation else {
+            self.needles.remove(&st.uid);
+            return None;
+        };
+        if let Some((doc, kept_scope, index)) = self.needles.get(&st.uid)
+            && Arc::ptr_eq(doc, &st.doc)
+            && *kept_scope == scope
+        {
+            return index.clone();
+        }
+        let kept = self.needles.remove(&st.uid).and_then(|(_, s, i)| i.filter(|_| s == scope));
+        let index = super::needle_index::NeedleIndex::of(&st.doc, &[scope], kept.as_deref()).map(Arc::new);
+        self.needles.insert(st.uid, (st.doc.clone(), scope, index.clone()));
+        index
+    }
+
+    /// How many documents' needle points stitch editing keeps.
+    #[cfg(test)]
+    pub(crate) fn kept_needles(&self) -> usize {
+        self.needles.len()
     }
 
     /// How many documents' answers the embroidery tool keeps.

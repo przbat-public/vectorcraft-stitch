@@ -5743,3 +5743,67 @@ embroidery	would lie outside the document	starebbe fuori dal documento
 @plural	{count} needle point|{count} needle points	{count} punto dell’ago|{count} punti dell’ago
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} oggetto selezionato è in punti manuali|{count} oggetti selezionati sono in punti manuali
 embroidery	Converting to manual stitches…	Conversione in punti manuali…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Modifica dei punti
+embroidery	Editing stitches: {name}	Modifica dei punti: {name}
+embroidery	Zoom in to see the needle points.	Ingrandisci per vedere i punti dell’ago.
+embroidery	Needle points are edited in the Stitches view.	I punti dell’ago si modificano nella vista Punti.
+embroidery	Show Stitches	Mostra i punti
+embroidery	Edit Stitches	Modifica i punti
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Sposta, inserisci ed elimina questi punti dell’ago sulla tela con lo strumento Ricamo.
+@plural	{count} selected|{count} selected	{count} selezionato|{count} selezionati
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} serie non si può modificare: bloccata, nascosta o ritagliata da una maschera di ritaglio|{count} serie non si possono modificare: bloccate, nascoste o ritagliate da una maschera di ritaglio
+	 needle points, or a frame round them  |  	 i punti dell’ago, o un riquadro intorno  |  
+	 a stitch to insert a needle point  |  	 su un punto per inserire un punto dell’ago  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 spostano di 0,1 mm  |  
+	 deselects, then ends editing	 deseleziona, poi termina la modifica
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Spostato X {x} · Y {y} mm
+embroidery	Insert	Inserisci
+embroidery	Delete	Elimina
+embroidery	Split Run	Dividi serie
+embroidery	Join Runs	Unisci serie
+embroidery	Split Long Stitches	Dividi punti lunghi
+embroidery	Trim	Taglio
+embroidery	Stop	Arresto
+embroidery	Trim After the Selected Needle Points	Taglio dopo i punti dell’ago selezionati
+embroidery	Stop After the Selected Needle Points	Arresto dopo i punti dell’ago selezionati
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} punto più corto di {value} mm|{count} punti più corti di {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} punto troppo lungo|{count} punti troppo lunghi
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Ordine
+embroidery	Selection	Selezione
+embroidery	Whole design	Tutto il motivo
+embroidery	All	Tutti
+embroidery	Stops	Arresti
+embroidery	Too short	Troppo corti
+embroidery	Shorter than {value} mm	Più corti di {value} mm
+embroidery	Longer than {value} mm	Più lunghi di {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Lunghezza (mm)
+embroidery	stitch	punto
+embroidery	jump	salto
+embroidery	trim	taglio
+embroidery	stop	arresto
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Record {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, lunghezza {value} mm
+embroidery	, too short	, troppo corto
+embroidery	, too long	, troppo lungo
+embroidery	Rows {first}–{last} of {total}	Righe {first}–{last} di {total}
+embroidery	Previous rows	Righe precedenti
+embroidery	Next rows	Righe successive
+embroidery	Listing stitches…	Elenco dei punti…
+embroidery	Select objects to list their stitches.	Seleziona degli oggetti per elencarne i punti.
+embroidery	The selection sews no stitches.	La selezione non cuce alcun punto.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Questo punto non si può modificare: è pianificato dalla forma del suo oggetto.
+embroidery	Go to #	Vai al n.
+embroidery	Record number	Numero del record
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Nessun record n. {value} qui: questi sono i n. {first}–{last}.
+embroidery	Move by	Sposta di
+embroidery	Apply	Applica
+embroidery	Click a row or a needle point to select it.	Fai clic su una riga o su un punto dell’ago per selezionarlo.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Pianificati dalla forma: converti l’oggetto in punti manuali per modificarli.
+@plural	{count} needle point selected|{count} needle points selected	{count} punto dell’ago selezionato|{count} punti dell’ago selezionati

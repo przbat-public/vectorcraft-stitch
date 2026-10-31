@@ -5979,3 +5979,67 @@ embroidery	would lie outside the document	znalazłby się poza dokumentem
 @plural	{count} needle point|{count} needle points	{count} nakłucie|{count} nakłucia|{count} nakłuć
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} zaznaczony obiekt to ściegi ręczne|{count} zaznaczone obiekty to ściegi ręczne|{count} zaznaczonych obiektów to ściegi ręczne
 embroidery	Converting to manual stitches…	Zamiana na ściegi ręczne…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Edycja ściegów
+embroidery	Editing stitches: {name}	Edycja ściegów: {name}
+embroidery	Zoom in to see the needle points.	Przybliż, aby zobaczyć nakłucia.
+embroidery	Needle points are edited in the Stitches view.	Nakłucia edytuje się w widoku Ściegi.
+embroidery	Show Stitches	Pokaż ściegi
+embroidery	Edit Stitches	Edytuj ściegi
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Przesuwaj, wstawiaj i usuwaj te nakłucia na płótnie narzędziem Haft.
+@plural	{count} selected|{count} selected	{count} zaznaczone|{count} zaznaczone|{count} zaznaczonych
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} odcinek bez możliwości edycji: zablokowany, ukryty lub przycięty maską przycinającą|{count} odcinki bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą|{count} odcinków bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą
+	 needle points, or a frame round them  |  	 nakłucia albo ramkę wokół nich  |  
+	 a stitch to insert a needle point  |  	 ścieg, aby wstawić nakłucie  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 przesuwają o 0,1 mm  |  
+	 deselects, then ends editing	 odznacza, potem kończy edycję
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Przesunięto X {x} · Y {y} mm
+embroidery	Insert	Wstaw
+embroidery	Delete	Usuń
+embroidery	Split Run	Podziel odcinek
+embroidery	Join Runs	Połącz odcinki
+embroidery	Split Long Stitches	Podziel długie ściegi
+embroidery	Trim	Cięcie
+embroidery	Stop	Stop
+embroidery	Trim After the Selected Needle Points	Cięcie po zaznaczonych nakłuciach
+embroidery	Stop After the Selected Needle Points	Stop po zaznaczonych nakłuciach
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} ścieg krótszy niż {value} mm|{count} ściegi krótsze niż {value} mm|{count} ściegów krótszych niż {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} za długi ścieg|{count} za długie ściegi|{count} za długich ściegów
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Kolejność
+embroidery	Selection	Zaznaczenie
+embroidery	Whole design	Cały wzór
+embroidery	All	Wszystkie
+embroidery	Stops	Stopy
+embroidery	Too short	Za krótkie
+embroidery	Shorter than {value} mm	Krótsze niż {value} mm
+embroidery	Longer than {value} mm	Dłuższe niż {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Długość (mm)
+embroidery	stitch	ścieg
+embroidery	jump	przeskok
+embroidery	trim	cięcie
+embroidery	stop	stop
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Rekord {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, długość {value} mm
+embroidery	, too short	, za krótki
+embroidery	, too long	, za długi
+embroidery	Rows {first}–{last} of {total}	Wiersze {first}–{last} z {total}
+embroidery	Previous rows	Poprzednie wiersze
+embroidery	Next rows	Następne wiersze
+embroidery	Listing stitches…	Wypisywanie ściegów…
+embroidery	Select objects to list their stitches.	Zaznacz obiekty, aby wypisać ich ściegi.
+embroidery	The selection sews no stitches.	Zaznaczenie nie szyje żadnych ściegów.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Tego ściegu nie można edytować: jest planowany z kształtu obiektu.
+embroidery	Go to #	Przejdź do nr
+embroidery	Record number	Numer rekordu
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Nie ma tu rekordu nr {value}: są tu nr {first}–{last}.
+embroidery	Move by	Przesuń o
+embroidery	Apply	Zastosuj
+embroidery	Click a row or a needle point to select it.	Kliknij wiersz albo nakłucie, aby je zaznaczyć.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Planowane z kształtu: zamień obiekt na ściegi ręczne, aby je edytować.
+@plural	{count} needle point selected|{count} needle points selected	Zaznaczono {count} nakłucie|Zaznaczono {count} nakłucia|Zaznaczono {count} nakłuć

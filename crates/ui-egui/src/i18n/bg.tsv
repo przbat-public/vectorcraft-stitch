@@ -6067,3 +6067,67 @@ embroidery	would lie outside the document	би излязъл извън док�
 @plural	{count} needle point|{count} needle points	{count} точка на убождане|{count} точки на убождане
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} избран обект е ръчни бодове|{count} избрани обекта са ръчни бодове
 embroidery	Converting to manual stitches…	Преобразуване в ръчни бодове…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Редактиране на бодове
+embroidery	Editing stitches: {name}	Редактиране на бодове: {name}
+embroidery	Zoom in to see the needle points.	Увеличете, за да видите точките на убождане.
+embroidery	Needle points are edited in the Stitches view.	Точките на убождане се редактират в изгледа „Бодове“.
+embroidery	Show Stitches	Показване на бодовете
+embroidery	Edit Stitches	Редактиране на бодовете
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Премествайте, вмъквайте и изтривайте тези точки на убождане в платното с инструмента „Бродерия“.
+@plural	{count} selected|{count} selected	{count} избрана|{count} избрани
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} редица не може да се редактира: заключена, скрита или изрязана от маска за изрязване|{count} редици не могат да се редактират: заключени, скрити или изрязани от маска за изрязване
+	 needle points, or a frame round them  |  	 точки на убождане или рамка около тях  |  
+	 a stitch to insert a needle point  |  	 бод, за да вмъкнете точка на убождане  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 преместват с 0,1 mm  |  
+	 deselects, then ends editing	 отменя избора, после приключва редактирането
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Преместено X {x} · Y {y} mm
+embroidery	Insert	Вмъкване
+embroidery	Delete	Изтриване
+embroidery	Split Run	Разделяне на редица
+embroidery	Join Runs	Съединяване на редици
+embroidery	Split Long Stitches	Разделяне на дълги бодове
+embroidery	Trim	Срязване
+embroidery	Stop	Спиране
+embroidery	Trim After the Selected Needle Points	Срязване след избраните точки на убождане
+embroidery	Stop After the Selected Needle Points	Спиране след избраните точки на убождане
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} бод, по-къс от {value} мм|{count} бода, по-къси от {value} мм
+@plural	{count} stitch too long|{count} stitches too long	{count} твърде дълъг бод|{count} твърде дълги бода
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Ред
+embroidery	Selection	Селекция
+embroidery	Whole design	Целият дизайн
+embroidery	All	Всички
+embroidery	Stops	Спирания
+embroidery	Too short	Твърде къси
+embroidery	Shorter than {value} mm	По-къси от {value} mm
+embroidery	Longer than {value} mm	По-дълги от {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Дължина (mm)
+embroidery	stitch	бод
+embroidery	jump	прескок
+embroidery	trim	срязване
+embroidery	stop	спиране
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Запис {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, дължина {value} mm
+embroidery	, too short	, твърде къс
+embroidery	, too long	, твърде дълъг
+embroidery	Rows {first}–{last} of {total}	Редове {first}–{last} от {total}
+embroidery	Previous rows	Предишни редове
+embroidery	Next rows	Следващи редове
+embroidery	Listing stitches…	Изброяване на бодовете…
+embroidery	Select objects to list their stitches.	Изберете обекти, за да изброите бодовете им.
+embroidery	The selection sews no stitches.	Избраното не шие бодове.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Този бод не може да се редактира: планиран е от формата на обекта си.
+embroidery	Go to #	Към №
+embroidery	Record number	Номер на запис
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Тук няма запис № {value}: тук са № {first}–{last}.
+embroidery	Move by	Преместване с
+embroidery	Apply	Прилагане
+embroidery	Click a row or a needle point to select it.	Щракнете ред или точка на убождане за избор.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Планирани от формата: преобразувайте обекта в ръчни бодове, за да ги редактирате.
+@plural	{count} needle point selected|{count} needle points selected	{count} избрана точка на убождане|{count} избрани точки на убождане

@@ -29,6 +29,12 @@ pub struct Query {
     pub params: Value,
 }
 
+/// The Stitches tab's records' flags, asked of a job as one of its queries: built on the planning
+/// thread with the plan ([`vectorcraft_engine::EmbroideryPlanned::stitch_flags`], for the limits
+/// its params carry), so the interface thread never walks the records; its reply says nothing
+/// (the tab reads the flags off the plan).
+pub const STITCH_FLAGS: &str = "stitchList.flags";
+
 /// What a job's step hands over.
 #[derive(Debug)]
 pub enum Outcome {
@@ -126,6 +132,7 @@ pub fn run(job: &Job, send: &mut dyn FnMut(Done)) {
         Err(e) => return send(Done { walked, ..job.done(Outcome::Failed(e.to_string()), t0, true) }),
     };
     let last = job.queries.is_empty();
+    let kept = planned.clone();
     send(Done { walked, ..job.done(Outcome::Planned(planned), t0, last) });
     if last {
         return;
@@ -135,7 +142,17 @@ pub fn run(job: &Job, send: &mut dyn FnMut(Done)) {
         if job.progress.cancelled() {
             return send(job.done(Outcome::Cancelled, t1, true));
         }
-        let reply = match progress::scope(&job.progress, || vectorcraft_engine::guard::catch_panic(|| job.planner.query(q.cmd, &q.params))) {
+        let ask = || {
+            if q.cmd != STITCH_FLAGS {
+                return job.planner.query(q.cmd, &q.params);
+            }
+            let limits = vectorcraft_engine::cmd::embroidery::stitch_list::limits_from(&q.params)
+                .ok_or_else(|| EngineError::Other("the stitch list's limits aren't numbers".into()))?;
+            drop(kept.stitch_flags(&limits));
+            vectorcraft_doc::cancel::check()?;
+            Ok(Value::Null)
+        };
+        let reply = match progress::scope(&job.progress, || vectorcraft_engine::guard::catch_panic(ask)) {
             Ok(Ok(v)) => Ok(v),
             Ok(Err(EngineError::Cancelled)) => return send(job.done(Outcome::Cancelled, t1, true)),
             Ok(Err(e)) => Err(e.to_string()),

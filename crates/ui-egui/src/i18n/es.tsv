@@ -6069,3 +6069,67 @@ embroidery	would lie outside the document	quedaría fuera del documento
 @plural	{count} needle point|{count} needle points	{count} punto de aguja|{count} puntos de aguja
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} objeto seleccionado es de puntadas manuales|{count} objetos seleccionados son de puntadas manuales
 embroidery	Converting to manual stitches…	Conversión a puntadas manuales…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Edición de puntadas
+embroidery	Editing stitches: {name}	Edición de puntadas: {name}
+embroidery	Zoom in to see the needle points.	Acerque la vista para ver los puntos de aguja.
+embroidery	Needle points are edited in the Stitches view.	Los puntos de aguja se editan en la vista Puntadas.
+embroidery	Show Stitches	Mostrar puntadas
+embroidery	Edit Stitches	Editar puntadas
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Mueva, inserte y elimine estos puntos de aguja en el lienzo con la herramienta Bordado.
+@plural	{count} selected|{count} selected	{count} seleccionado|{count} seleccionados
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} serie no se puede editar: bloqueada, oculta o recortada por una máscara de recorte|{count} series no se pueden editar: bloqueadas, ocultas o recortadas por una máscara de recorte
+	 needle points, or a frame round them  |  	 puntos de aguja, o un marco a su alrededor  |  
+	 a stitch to insert a needle point  |  	 en una puntada para insertar un punto de aguja  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 mueven 0,1 mm  |  
+	 deselects, then ends editing	 quita la selección y después termina la edición
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Movido X {x} · Y {y} mm
+embroidery	Insert	Insertar
+embroidery	Delete	Eliminar
+embroidery	Split Run	Dividir serie
+embroidery	Join Runs	Unir series
+embroidery	Split Long Stitches	Dividir puntadas largas
+embroidery	Trim	Corte
+embroidery	Stop	Parada
+embroidery	Trim After the Selected Needle Points	Corte tras los puntos de aguja seleccionados
+embroidery	Stop After the Selected Needle Points	Parada tras los puntos de aguja seleccionados
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} puntada de menos de {value} mm|{count} puntadas de menos de {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} puntada demasiado larga|{count} puntadas demasiado largas
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Orden
+embroidery	Selection	Selección
+embroidery	Whole design	Todo el diseño
+embroidery	All	Todos
+embroidery	Stops	Paradas
+embroidery	Too short	Demasiado cortas
+embroidery	Shorter than {value} mm	Más cortas de {value} mm
+embroidery	Longer than {value} mm	Más largas de {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Longitud (mm)
+embroidery	stitch	puntada
+embroidery	jump	salto
+embroidery	trim	corte
+embroidery	stop	parada
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Registro {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, longitud {value} mm
+embroidery	, too short	, demasiado corta
+embroidery	, too long	, demasiado larga
+embroidery	Rows {first}–{last} of {total}	Filas {first}–{last} de {total}
+embroidery	Previous rows	Filas anteriores
+embroidery	Next rows	Filas siguientes
+embroidery	Listing stitches…	Listando puntadas…
+embroidery	Select objects to list their stitches.	Seleccione objetos para ver sus puntadas.
+embroidery	The selection sews no stitches.	La selección no borda ninguna puntada.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Esta puntada no se puede editar: se planifica a partir de la forma de su objeto.
+embroidery	Go to #	Ir al n.º
+embroidery	Record number	Número de registro
+embroidery	No record numbered {value} here: these are #{first}–{last}.	No hay ningún registro n.º {value} aquí: estos son los n.º {first}–{last}.
+embroidery	Move by	Mover
+embroidery	Apply	Aplicar
+embroidery	Click a row or a needle point to select it.	Haga clic en una fila o un punto de aguja para seleccionarlo.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Planificadas a partir de la forma: convierta el objeto en puntadas manuales para editarlas.
+@plural	{count} needle point selected|{count} needle points selected	{count} punto de aguja seleccionado|{count} puntos de aguja seleccionados

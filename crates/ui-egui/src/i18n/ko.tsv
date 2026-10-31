@@ -5706,3 +5706,67 @@ embroidery	would lie outside the document	문서 밖에 놓임
 @plural	{count} needle point|{count} needle points	바늘 위치 {count}개
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	선택한 개체 중 {count}개는 수동 스티치입니다
 embroidery	Converting to manual stitches…	수동 스티치로 변환 중…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	스티치 편집
+embroidery	Editing stitches: {name}	스티치 편집: {name}
+embroidery	Zoom in to see the needle points.	바늘 위치를 보려면 확대하세요.
+embroidery	Needle points are edited in the Stitches view.	바늘 위치는 스티치 보기에서 편집합니다.
+embroidery	Show Stitches	스티치 표시
+embroidery	Edit Stitches	스티치 편집하기
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	자수 도구로 캔버스에서 이 바늘 위치를 이동, 삽입, 삭제합니다.
+@plural	{count} selected|{count} selected	{count}개 선택됨
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	편집할 수 없는 구간 {count}개: 잠김, 숨김 또는 클리핑 마스크로 잘림
+	 needle points, or a frame round them  |  	: 바늘 위치 또는 그 주위의 틀  |  
+	 a stitch to insert a needle point  |  	: 스티치에 바늘 위치 삽입  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	: 0.1mm 이동  |  
+	 deselects, then ends editing	: 선택 해제 후 편집 끝내기
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	이동 X {x} · Y {y} mm
+embroidery	Insert	삽입
+embroidery	Delete	삭제
+embroidery	Split Run	구간 나누기
+embroidery	Join Runs	구간 잇기
+embroidery	Split Long Stitches	긴 스티치 나누기
+embroidery	Trim	실 자르기
+embroidery	Stop	정지
+embroidery	Trim After the Selected Needle Points	선택한 바늘 위치 뒤에서 실 자르기
+embroidery	Stop After the Selected Needle Points	선택한 바늘 위치 뒤에서 정지
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{value}mm보다 짧은 스티치 {count}땀
+@plural	{count} stitch too long|{count} stitches too long	너무 긴 스티치 {count}땀
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	순서
+embroidery	Selection	선택 영역
+embroidery	Whole design	디자인 전체
+embroidery	All	모두
+embroidery	Stops	정지
+embroidery	Too short	너무 짧음
+embroidery	Shorter than {value} mm	{value}mm보다 짧음
+embroidery	Longer than {value} mm	{value}mm보다 김
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	길이 (mm)
+embroidery	stitch	스티치
+embroidery	jump	점프
+embroidery	trim	실 자르기
+embroidery	stop	정지
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	{number}번째 레코드: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, 길이 {value} mm
+embroidery	, too short	, 너무 짧음
+embroidery	, too long	, 너무 김
+embroidery	Rows {first}–{last} of {total}	{total}행 중 {first}–{last}행
+embroidery	Previous rows	이전 행
+embroidery	Next rows	다음 행
+embroidery	Listing stitches…	스티치 목록 작성 중…
+embroidery	Select objects to list their stitches.	개체를 선택하면 스티치 목록이 표시됩니다.
+embroidery	The selection sews no stitches.	선택 영역에 수놓을 스티치가 없습니다.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	이 스티치는 편집할 수 없습니다. 개체의 모양에서 계획됩니다.
+embroidery	Go to #	이동 #
+embroidery	Record number	레코드 번호
+embroidery	No record numbered {value} here: these are #{first}–{last}.	여기에는 {value}번 레코드가 없습니다. 여기에는 {first}–{last}번이 있습니다.
+embroidery	Move by	이동 거리
+embroidery	Apply	적용
+embroidery	Click a row or a needle point to select it.	행이나 바늘 위치를 클릭하면 선택됩니다.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	모양에서 계획됨: 편집하려면 개체를 수동 스티치로 변환하세요.
+@plural	{count} needle point selected|{count} needle points selected	선택한 바늘 위치 {count}개

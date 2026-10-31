@@ -6126,3 +6126,67 @@ embroidery	would lie outside the document	zou buiten het document liggen
 @plural	{count} needle point|{count} needle points	{count} insteekpunt|{count} insteekpunten
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} geselecteerd object bestaat uit handmatige steken|{count} geselecteerde objecten bestaan uit handmatige steken
 embroidery	Converting to manual stitches…	Omzetten naar handmatige steken…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Steken bewerken
+embroidery	Editing stitches: {name}	Steken bewerken: {name}
+embroidery	Zoom in to see the needle points.	Zoom in om de insteekpunten te zien.
+embroidery	Needle points are edited in the Stitches view.	Insteekpunten bewerk je in de weergave Steken.
+embroidery	Show Stitches	Steken tonen
+embroidery	Edit Stitches	Steken wijzigen
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Verplaats, voeg in en verwijder deze insteekpunten op het canvas met het Borduur-gereedschap.
+@plural	{count} selected|{count} selected	{count} geselecteerd|{count} geselecteerd
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} reeks kan niet worden bewerkt: vergrendeld, verborgen of bijgesneden door een knipmasker|{count} reeksen kunnen niet worden bewerkt: vergrendeld, verborgen of bijgesneden door een knipmasker
+	 needle points, or a frame round them  |  	 insteekpunten, of een kader eromheen  |  
+	 a stitch to insert a needle point  |  	 op een steek om een insteekpunt in te voegen  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 verplaatsen 0,1 mm  |  
+	 deselects, then ends editing	 heft de selectie op en beëindigt daarna het bewerken
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Verplaatst X {x} · Y {y} mm
+embroidery	Insert	Invoegen
+embroidery	Delete	Verwijderen
+embroidery	Split Run	Reeks splitsen
+embroidery	Join Runs	Reeksen samenvoegen
+embroidery	Split Long Stitches	Lange steken splitsen
+embroidery	Trim	Knip
+embroidery	Stop	Stop
+embroidery	Trim After the Selected Needle Points	Knip na de geselecteerde insteekpunten
+embroidery	Stop After the Selected Needle Points	Stop na de geselecteerde insteekpunten
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} steek korter dan {value} mm|{count} steken korter dan {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} te lange steek|{count} te lange steken
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Volgorde
+embroidery	Selection	Selectie
+embroidery	Whole design	Hele ontwerp
+embroidery	All	Alle
+embroidery	Stops	Stops
+embroidery	Too short	Te kort
+embroidery	Shorter than {value} mm	Korter dan {value} mm
+embroidery	Longer than {value} mm	Langer dan {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Lengte (mm)
+embroidery	stitch	steek
+embroidery	jump	sprong
+embroidery	trim	knip
+embroidery	stop	stop
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Record {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, lengte {value} mm
+embroidery	, too short	, te kort
+embroidery	, too long	, te lang
+embroidery	Rows {first}–{last} of {total}	Rijen {first}–{last} van {total}
+embroidery	Previous rows	Vorige rijen
+embroidery	Next rows	Volgende rijen
+embroidery	Listing stitches…	Steken worden opgesomd…
+embroidery	Select objects to list their stitches.	Selecteer objecten om hun steken op te sommen.
+embroidery	The selection sews no stitches.	De selectie borduurt geen steken.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Deze steek kan niet worden bewerkt: hij wordt gepland uit de vorm van zijn object.
+embroidery	Go to #	Ga naar nr.
+embroidery	Record number	Recordnummer
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Geen record nr. {value} hier: dit zijn nr. {first}–{last}.
+embroidery	Move by	Verplaatsen met
+embroidery	Apply	Toepassen
+embroidery	Click a row or a needle point to select it.	Klik op een rij of een insteekpunt om het te selecteren.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Gepland uit de vorm: zet het object om naar handmatige steken om ze te bewerken.
+@plural	{count} needle point selected|{count} needle points selected	{count} insteekpunt geselecteerd|{count} insteekpunten geselecteerd

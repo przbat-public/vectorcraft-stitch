@@ -34,6 +34,7 @@ mod manual;
 mod measure;
 mod nearest;
 mod needle_edits;
+pub mod needle_index;
 pub(crate) mod needles;
 pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
@@ -52,6 +53,7 @@ mod sequence;
 pub(crate) mod service;
 pub mod setup;
 mod stats;
+pub mod stitch_list;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
@@ -104,6 +106,9 @@ mod tests_view;
 mod tests_walk;
 pub mod threadlib;
 pub(crate) mod tool;
+pub use check::{StitchLimits, stitch_limits};
+pub use needles::needle_count;
+pub use tool::StitchEditing;
 mod unit;
 pub mod view;
 mod vocabulary;
@@ -529,7 +534,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Select Needle Points",
             [],
             None,
-            "{records?: [from, to] (record numbers, from 1, inclusive), ids?, kinds?, shorterThan?, longerThan? (as embroidery.stitches filters them), …the embroidery options | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them), mode?: \"set\"|\"add\"|\"toggle\"|\"subtract\" (default set)} selects needle points (their anchors, as Direct Selection selects them), by the records that sew them (planning the design as embroidery.stitches lists it: a needle point, or the one a jump lands on, or the one a cut or a stop follows; a record the stitch commands can't edit is passed over and counted), or by their addresses (planning nothing). A selection, not an undo step → {selectedCount: the needle points selected in the paths it touched, pathCount, passedOver}",
+            "{records?: [from, to] (record numbers, from 1, inclusive), ids?, kinds?, shorterThan?, longerThan? (as embroidery.stitches filters them), …the embroidery options | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them) | rect?: [x0, y0, x1, y1] or polygon?: [[x, y]…] (3 to 4,096 points; millimetres from the document's origin, y down), ids? (the objects whose paths of stitches it looks in; default: the object isolated, else the whole document), mode?: \"set\"|\"add\"|\"toggle\"|\"subtract\" (default set)} selects needle points (their anchors, as Direct Selection selects them), by the records that sew them (planning the design as embroidery.stitches lists it: a needle point, or the one a jump lands on, or the one a cut or a stop follows; a record the stitch commands can't edit is passed over and counted), by their addresses (planning nothing), or by a shape: those inside a rectangle or a polygon (by the even-odd rule, as the Lasso tool selects anchors), as the Embroidery Tool's marquee selects them while editing stitches (planning nothing; paths of stitches that can't be edited are passed over and counted). A selection, not an undo step → {selectedCount: the needle points selected in the paths it touched, pathCount, passedOver}",
             has_doc,
             records::select
         ),

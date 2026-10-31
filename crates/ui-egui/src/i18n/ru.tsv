@@ -5739,3 +5739,67 @@ embroidery	would lie outside the document	оказался бы вне доку�
 @plural	{count} needle point|{count} needle points	{count} прокол|{count} прокола|{count} проколов
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} выбранный объект — ручные стежки|{count} выбранных объекта — ручные стежки|{count} выбранных объектов — ручные стежки
 embroidery	Converting to manual stitches…	Преобразование в ручные стежки…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Редактирование стежков
+embroidery	Editing stitches: {name}	Редактирование стежков: {name}
+embroidery	Zoom in to see the needle points.	Увеличьте масштаб, чтобы увидеть проколы.
+embroidery	Needle points are edited in the Stitches view.	Проколы редактируются в режиме просмотра «Стежки».
+embroidery	Show Stitches	Показать стежки
+embroidery	Edit Stitches	Редактировать стежки
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Перемещайте, вставляйте и удаляйте эти проколы на холсте инструментом «Вышивка».
+@plural	{count} selected|{count} selected	{count} выбранный|{count} выбранных|{count} выбранных
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} ряд нельзя редактировать: заблокирован, скрыт или обрезан маской обрезки|{count} ряда нельзя редактировать: заблокированы, скрыты или обрезаны маской обрезки|{count} рядов нельзя редактировать: заблокированы, скрыты или обрезаны маской обрезки
+	 needle points, or a frame round them  |  	 проколы или рамку вокруг них  |  
+	 a stitch to insert a needle point  |  	 по стежку, чтобы вставить прокол  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 сдвигают на 0,1 мм  |  
+	 deselects, then ends editing	 снимает выделение, затем завершает редактирование
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Сдвиг X {x} · Y {y} мм
+embroidery	Insert	Вставить
+embroidery	Delete	Удалить
+embroidery	Split Run	Разделить ряд
+embroidery	Join Runs	Соединить ряды
+embroidery	Split Long Stitches	Разделить длинные стежки
+embroidery	Trim	Обрезка
+embroidery	Stop	Остановка
+embroidery	Trim After the Selected Needle Points	Обрезка после выбранных проколов
+embroidery	Stop After the Selected Needle Points	Остановка после выбранных проколов
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} стежок короче {value} мм|{count} стежка короче {value} мм|{count} стежков короче {value} мм
+@plural	{count} stitch too long|{count} stitches too long	{count} слишком длинный стежок|{count} слишком длинных стежка|{count} слишком длинных стежков
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Порядок
+embroidery	Selection	Выделение
+embroidery	Whole design	Весь дизайн
+embroidery	All	Все
+embroidery	Stops	Остановки
+embroidery	Too short	Слишком короткие
+embroidery	Shorter than {value} mm	Короче {value} мм
+embroidery	Longer than {value} mm	Длиннее {value} мм
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (мм)
+embroidery	Y (mm)	Y (мм)
+embroidery	Length (mm)	Длина (мм)
+embroidery	stitch	стежок
+embroidery	jump	перескок
+embroidery	trim	обрезка
+embroidery	stop	остановка
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Запись {number}: {type}, X {x} мм, Y {y} мм
+embroidery	, length {value} mm	, длина {value} мм
+embroidery	, too short	, слишком короткий
+embroidery	, too long	, слишком длинный
+embroidery	Rows {first}–{last} of {total}	Строки {first}–{last} из {total}
+embroidery	Previous rows	Предыдущие строки
+embroidery	Next rows	Следующие строки
+embroidery	Listing stitches…	Составление списка стежков…
+embroidery	Select objects to list their stitches.	Выделите объекты, чтобы увидеть список их стежков.
+embroidery	The selection sews no stitches.	Выделение не вышивает ни одного стежка.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Этот стежок нельзя изменить: он рассчитывается по форме своего объекта.
+embroidery	Go to #	Перейти к №
+embroidery	Record number	Номер записи
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Здесь нет записи № {value}: здесь № {first}–{last}.
+embroidery	Move by	Сдвинуть на
+embroidery	Apply	Применить
+embroidery	Click a row or a needle point to select it.	Щёлкните строку или прокол, чтобы выделить его.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Рассчитаны по форме: преобразуйте объект в ручные стежки, чтобы изменить их.
+@plural	{count} needle point selected|{count} needle points selected	Выбран {count} прокол|Выбрано {count} прокола|Выбрано {count} проколов

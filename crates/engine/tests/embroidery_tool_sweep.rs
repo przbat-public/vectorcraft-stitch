@@ -276,8 +276,10 @@ fn objects_that_take_no_points_have_no_handles() {
     }
 }
 
-/// Over an object a press wouldn't select (a run of stitches read from a file, sewn as it is) the
-/// tool shows NotAllowed; over a square that takes points, and over nothing, its own cursor.
+/// Over an object a press wouldn't select (type) the tool shows NotAllowed; over a run of stitches
+/// read from a file, which a press selects and a double-click edits needle point by needle point
+/// (the project owner's choice, 2026-10-27), over a square that takes points, and over nothing, its
+/// own cursor.
 #[test]
 fn the_cursor_says_where_a_press_selects_nothing() {
     use vectorcraft_geom::Point;
@@ -285,11 +287,13 @@ fn the_cursor_says_where_a_press_selects_nothing() {
     let (mut s, p, _) = fixture();
     let view = ViewInfo::default();
     s.select_tool("embroidery", view).unwrap();
-    // The run's first stitch, the corner of its bounds.
+    // The run's first stitch, the corner of its bounds; the type's middle.
     let run = s.doc().unwrap().doc.node(NodeId(p.run)).and_then(|n| n.geometric_bounds()).unwrap();
+    let text = s.doc().unwrap().doc.bounds_of(&[NodeId(p.text)], false).unwrap().center();
     let [x, y] = p.fill_entry;
     for (at, cursor, what) in [
-        (Point::new(run.x0, run.y0), Cursor::NotAllowed, "the run from a file"),
+        (text, Cursor::NotAllowed, "the type"),
+        (Point::new(run.x0, run.y0), Cursor::Embroidery, "the run from a file"),
         (Point::new(x + 10.0, y), Cursor::Embroidery, "inside the square"),
         (Point::new(10.0, 10.0), Cursor::Embroidery, "nothing"),
     ] {

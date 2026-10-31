@@ -23,6 +23,32 @@ pub(crate) const HINT: &[(&str, bool)] = &[
     (" step from point to point, the arrows nudge it, Enter types it", false),
 ];
 
+/// The hint's id while the tool edits stitches (in isolation of a stitch object): `hint_for`'s arm
+/// for [`EDITING_HINT`], which [`hint_id`] picks.
+pub(crate) const EDITING_HINT_ID: &str = "embroidery.editingStitches";
+
+/// The tool's hint while it edits stitches: the gestures and keys of stitch editing (the project
+/// owner's choices, 2026-10-27), each translated as upstream's hints are.
+pub(crate) const EDITING_HINT: &[(&str, bool)] = &[
+    ("Drag", true),
+    (" needle points, or a frame round them  |  ", false),
+    ("Alt+Click", true),
+    (" a stitch to insert a needle point  |  ", false),
+    ("←↑→↓", true),
+    (" move by 0.1 mm  |  ", false),
+    ("Esc", true),
+    (" deselects, then ends editing", false),
+];
+
+/// The hint the status bar shows for `tool`: the stitch-editing hint ([`EDITING_HINT_ID`]) while the
+/// Embroidery Tool edits stitches, else the tool's own (upstream's choice by the tool's id).
+pub(crate) fn hint_id(app: &mut VectorcraftApp, tool: &'static str) -> &'static str {
+    if tool == ID_OF_TOOL && super::editing::editing(app).is_some() { EDITING_HINT_ID } else { tool }
+}
+
+/// The Embroidery Tool's id.
+const ID_OF_TOOL: &str = vectorcraft_tools::embroidery::ID;
+
 /// The command its button runs: its label is the menu's.
 const NEAREST: &str = "embroidery.nearestConnection";
 
@@ -40,7 +66,13 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
     let labels = [(Part::Fill, crate::et!("Fill")), (Part::Stroke, crate::et!("Stroke"))];
     let items: Vec<Segment<'_>> = labels
         .iter()
-        .map(|(part, label)| Segment { id: ui.id().with(("embroidery-tool-part", part.id())), label, selected: shown == *part, enabled: true })
+        .map(|(part, label)| Segment {
+            id: ui.id().with(("embroidery-tool-part", part.id())),
+            label,
+            full: label,
+            selected: shown == *part,
+            enabled: true,
+        })
         .collect();
     let chosen = ui.allocate_ui(vec2(SWITCH_WIDTH, SWITCH_HEIGHT), |ui| segments(ui, SWITCH_HEIGHT, SWITCH_TEXT, &items)).inner;
     if let Some((part, _)) = chosen.and_then(|i| labels.get(i)) {

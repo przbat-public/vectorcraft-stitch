@@ -26,11 +26,13 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 use egui::{Color32, Pos2, Shape, pos2};
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::scene::{StitchScene, fabric_color};
+use vectorcraft_engine::cmd::embroidery::stitch_limits;
 use vectorcraft_engine::cmd::embroidery::view::{Layers, layers, paused};
 use vectorcraft_geom::{Affine, Point, Rect};
 use vectorcraft_render::Rendered;
-use vectorcraft_render::lines::{LinePicture, LineRenderer, LineStyle, TagSet};
+use vectorcraft_render::lines::{EditLook, LinePicture, LineRenderer, LineStyle, TagSet};
 
+use super::editing::NEEDLE_CIRCLES_MIN_ZOOM;
 use super::stitch_preview::Freshness;
 use crate::VectorcraftApp;
 use crate::canvas::Xf;
@@ -86,6 +88,9 @@ struct LayerKey {
     anti_alias: bool,
     /// The fabric the stitches are drawn on: the edges of threads close to it follow it.
     fabric: [u8; 3],
+    /// Stitch editing's look ([`edit_look`]): the object edited, whether needle points show as
+    /// circles at this zoom, and the limits' bits (shortest, longest, step).
+    edit: Option<(u64, bool, [u64; 3])>,
 }
 
 /// A frame of stitches to draw on the thread, numbered in the order frames are made; or, with
@@ -206,6 +211,9 @@ pub struct StitchLayer {
     last_ms: f64,
     /// The units faded outside isolation mode's group, for (generation, isolated).
     faded: Option<((u64, u64), Arc<TagSet>)>,
+    /// The units stitch editing edits (inside the object isolated, sewn as their points are), for
+    /// (generation, isolated).
+    edited: Option<((u64, u64), Arc<TagSet>)>,
     /// The last frame drew the stitch view.
     shown: bool,
     /// The units emphasised this frame ([`StitchLayer::emphasize`]).
@@ -261,6 +269,12 @@ impl StitchLayer {
     #[cfg(test)]
     pub(crate) fn generation(&self) -> Option<u64> {
         self.key.as_ref().map(|k| k.generation)
+    }
+
+    /// What the last frame drawn in line drew (the tests read the edit look's circles and marks).
+    #[cfg(test)]
+    pub(crate) fn stats(&self) -> vectorcraft_render::lines::LineStats {
+        self.renderer.stats
     }
 
     /// Draw on `worker` from now on (the tests start the thread themselves).
@@ -444,11 +458,42 @@ fn outside(scene: &StitchScene, doc: &Document, isolated: NodeId) -> TagSet {
     TagSet::of(scene.units().iter().enumerate().filter(|(_, u)| !inside.contains(&u.object)).filter_map(|(i, _)| u32::try_from(i).ok()))
 }
 
+/// The units of `scene` inside object `isolated` of `doc` sewn as their points are (manual
+/// stitches, a machine file's runs): those stitch editing edits.
+fn edited_units(scene: &StitchScene, doc: &Document, isolated: NodeId) -> TagSet {
+    let mut inside = std::collections::HashSet::new();
+    if let Some(n) = doc.node(isolated) {
+        n.walk(&mut |c| {
+            inside.insert(c.id);
+        });
+    }
+    let literal = |u: &vectorcraft_engine::cmd::embroidery::scene::SceneUnit| {
+        matches!(u.key.part, vectorcraft_engine::cmd::embroidery::plan::Part::Manual | vectorcraft_engine::cmd::embroidery::plan::Part::Literal)
+    };
+    TagSet::of(scene.units().iter().enumerate().filter(|(_, u)| inside.contains(&u.object) && literal(u)).filter_map(|(i, _)| u32::try_from(i).ok()))
+}
+
+/// The most needle-point circles that sit side by side on a canvas `w` × `h` device pixels at `ppp`
+/// pixels a point: each takes its diameter and a gap ([`NEEDLE_CIRCLE_GAP_PT`]); more can't be told
+/// apart whatever the zoom.
+fn circles_that_fit(w: u32, h: u32, ppp: f32) -> usize {
+    let pitch = ((2.0 * vectorcraft_render::lines::NEEDLE_CIRCLE_PT + NEEDLE_CIRCLE_GAP_PT) * f64::from(ppp)).max(1.0);
+    ((f64::from(w) / pitch).floor() * (f64::from(h) / pitch).floor()) as usize
+}
+
+/// The room left between two needle-point circles that sit side by side, screen points: two points,
+/// so two circles read as two. An estimate.
+const NEEDLE_CIRCLE_GAP_PT: f64 = 2.0;
+
 /// Draw the active document's stitches: their frame for this view drawn now, or on the thread
 /// when slow (the last frame shown meanwhile, moved into this view); with `emphasis`, the rest faded
-/// and those units over them.
+/// and those units over them. While stitches are edited, in the edit look: the units edited thin
+/// and on top, their needle points as circles from [`NEEDLE_CIRCLES_MIN_ZOOM`], their stitches that
+/// break the limits ([`stitch_limits`]) marked.
 fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Painter, xf: &Xf, v: &View, emphasis: Option<Vec<u32>>) {
+    let editing = super::editing::editing(app).map(|e| e.scope.object);
     let Some(st) = app.session.active() else { return };
+    let limits = editing.map(|_| stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied()));
     let (uid, isolated, doc) = (st.uid, st.isolation, st.doc.clone());
     let view = app.session.stitch_view_of(uid);
     let anti_alias = app.session.prefs.anti_aliased_artwork;
@@ -478,6 +523,9 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         isolated: isolated.map(|i| i.0),
         anti_alias,
         fabric: fabric_color(&doc),
+        edit: editing
+            .zip(limits)
+            .map(|(object, l)| (object.0, v.zoom >= NEEDLE_CIRCLES_MIN_ZOOM, [l.shortest.to_bits(), l.longest.to_bits(), l.step.to_bits()])),
     };
     // A frame the thread finished: shown when it is of this document and newer than the frame shown
     // (one drawn in line since may be). An emphasis it finished: shown when it is of the units
@@ -522,8 +570,26 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 }
             }
         });
-        let style =
-            LineStyle { faded: faded.map(|f| (*f).clone()), anti_alias, ..scene.style(key.fabric, view.jumps, view.needle_points, f64::from(ppp)) };
+        let edit = editing.zip(limits).map(|(object, l)| {
+            let id = (generation, object.0);
+            let tags = match &layer.edited {
+                Some((k, set)) if *k == id => set.clone(),
+                _ => {
+                    let set = Arc::new(edited_units(&scene, &doc, object));
+                    layer.edited = Some((id, set.clone()));
+                    set
+                }
+            };
+            let circles = (v.zoom >= NEEDLE_CIRCLES_MIN_ZOOM).then(|| circles_that_fit(w, h, ppp));
+            // Picture units are millimetres, as the limits.
+            EditLook { tags: (*tags).clone(), circles, shortest: l.shortest, longest: l.longest, step: Some(l.step) }
+        });
+        let style = LineStyle {
+            faded: faded.map(|f| (*f).clone()),
+            anti_alias,
+            edit,
+            ..scene.style(key.fabric, view.jumps, view.needle_points, f64::from(ppp))
+        };
         let affine = Affine::translate((f64::from(w) / 2.0, f64::from(h) / 2.0))
             * Affine::rotate(v.rotation.to_radians())
             * Affine::scale(v.zoom * f64::from(ppp))

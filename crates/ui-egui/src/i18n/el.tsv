@@ -6080,3 +6080,67 @@ embroidery	would lie outside the document	θα βρισκόταν έξω από 
 @plural	{count} needle point|{count} needle points	{count} σημείο βελόνας|{count} σημεία βελόνας
 @plural	{count} selected object is manual stitches|{count} selected objects are manual stitches	{count} επιλεγμένο αντικείμενο είναι χειροκίνητες βελονιές|{count} επιλεγμένα αντικείμενα είναι χειροκίνητες βελονιές
 embroidery	Converting to manual stitches…	Μετατροπή σε χειροκίνητες βελονιές…
+# VectorCraft Stitch: stitch editing (the Embroidery Tool in isolation of an object holding stitches): the chip under isolation's bar, Edit Stitches in the Object tab, and the hint while editing
+embroidery	Editing stitches	Επεξεργασία βελονιών
+embroidery	Editing stitches: {name}	Επεξεργασία βελονιών: {name}
+embroidery	Zoom in to see the needle points.	Μεγεθύνετε για να δείτε τα σημεία βελόνας.
+embroidery	Needle points are edited in the Stitches view.	Τα σημεία βελόνας επεξεργάζονται στην προβολή «Βελονιές».
+embroidery	Show Stitches	Εμφάνιση βελονιών
+embroidery	Edit Stitches	Επεξεργασία των βελονιών
+embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Μετακινήστε, εισαγάγετε και διαγράψτε αυτά τα σημεία βελόνας στον καμβά με το Εργαλείο κεντήματος.
+@plural	{count} selected|{count} selected	{count} επιλεγμένο|{count} επιλεγμένα
+@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} σειρά δεν μπορεί να επεξεργαστεί: κλειδωμένη, κρυφή ή αποκομμένη από μάσκα αποκοπής|{count} σειρές δεν μπορούν να επεξεργαστούν: κλειδωμένες, κρυφές ή αποκομμένες από μάσκα αποκοπής
+	 needle points, or a frame round them  |  	 σημεία βελόνας ή ένα πλαίσιο γύρω τους  |  
+	 a stitch to insert a needle point  |  	 σε βελονιά για εισαγωγή σημείου βελόνας  |  
+	←↑→↓	←↑→↓
+	 move by 0.1 mm  |  	 μετακινούν κατά 0,1 mm  |  
+	 deselects, then ends editing	 αποεπιλέγει και μετά τερματίζει την επεξεργασία
+# VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
+embroidery	Moved X {x} · Y {y} mm	Μετακινήθηκε X {x} · Y {y} mm
+embroidery	Insert	Εισαγωγή
+embroidery	Delete	Διαγραφή
+embroidery	Split Run	Διαίρεση σειράς
+embroidery	Join Runs	Ένωση σειρών
+embroidery	Split Long Stitches	Διαίρεση μακριών βελονιών
+embroidery	Trim	Κόψιμο
+embroidery	Stop	Διακοπή
+embroidery	Trim After the Selected Needle Points	Κόψιμο μετά τα επιλεγμένα σημεία βελόνας
+embroidery	Stop After the Selected Needle Points	Διακοπή μετά τα επιλεγμένα σημεία βελόνας
+@plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} βελονιά μικρότερη από {value} mm|{count} βελονιές μικρότερες από {value} mm
+@plural	{count} stitch too long|{count} stitches too long	{count} πολύ μεγάλη βελονιά|{count} πολύ μεγάλες βελονιές
+# VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order
+embroidery	Order	Σειρά
+embroidery	Selection	Επιλογή
+embroidery	Whole design	Όλο το σχέδιο
+embroidery	All	Όλα
+embroidery	Stops	Διακοπές
+embroidery	Too short	Πολύ κοντές
+embroidery	Shorter than {value} mm	Μικρότερες από {value} mm
+embroidery	Longer than {value} mm	Μεγαλύτερες από {value} mm
+embroidery	{filter} {count}	{filter} {count}
+embroidery	X (mm)	X (mm)
+embroidery	Y (mm)	Y (mm)
+embroidery	Length (mm)	Μήκος (mm)
+embroidery	stitch	βελονιά
+embroidery	jump	άλμα
+embroidery	trim	κόψιμο
+embroidery	stop	διακοπή
+embroidery	Record {number}: {type}, X {x} mm, Y {y} mm	Εγγραφή {number}: {type}, X {x} mm, Y {y} mm
+embroidery	, length {value} mm	, μήκος {value} mm
+embroidery	, too short	, πολύ κοντή
+embroidery	, too long	, πολύ μακριά
+embroidery	Rows {first}–{last} of {total}	Γραμμές {first}–{last} από {total}
+embroidery	Previous rows	Προηγούμενες γραμμές
+embroidery	Next rows	Επόμενες γραμμές
+embroidery	Listing stitches…	Γίνεται λίστα βελονιών…
+embroidery	Select objects to list their stitches.	Επιλέξτε αντικείμενα για να δείτε τις βελονιές τους.
+embroidery	The selection sews no stitches.	Η επιλογή δεν κεντά καμία βελονιά.
+embroidery	This stitch can't be edited: it is planned from its object's shape.	Αυτή η βελονιά δεν επεξεργάζεται: σχεδιάζεται από το σχήμα του αντικειμένου της.
+embroidery	Go to #	Μετάβαση σε αρ.
+embroidery	Record number	Αριθμός εγγραφής
+embroidery	No record numbered {value} here: these are #{first}–{last}.	Δεν υπάρχει εγγραφή αρ. {value} εδώ: εδώ είναι οι αρ. {first}–{last}.
+embroidery	Move by	Μετακίνηση κατά
+embroidery	Apply	Εφαρμογή
+embroidery	Click a row or a needle point to select it.	Κάντε κλικ σε μια γραμμή ή ένα σημείο βελόνας για να το επιλέξετε.
+embroidery	Planned from the shape: convert the object to manual stitches to edit them.	Σχεδιάζονται από το σχήμα: μετατρέψτε το αντικείμενο σε χειροκίνητες βελονιές για να τις επεξεργαστείτε.
+@plural	{count} needle point selected|{count} needle points selected	{count} επιλεγμένο σημείο βελόνας|{count} επιλεγμένα σημεία βελόνας

@@ -2,8 +2,8 @@
 //! with a value set on an object and with objects that differ, a check's rule opened and shown, its
 //! chart), its states (planning, failed over the last stitches, checking, a check that failed) and
 //! the status bar's counters draw no English the language's catalogue doesn't give, and the panel's
-//! words stay inside it at 256 and 300 points; Document Setup's Embroidery tab likewise, in its two
-//! layouts; and what screen readers are told.
+//! words stay inside it at 256 and 300 points; the Stitches tab likewise in its states, at 220 too;
+//! Document Setup's Embroidery tab likewise, in its two layouts; and what screen readers are told.
 
 use egui::accesskit::{Node, Role};
 use egui::{Pos2, Rect, Shape, vec2};
@@ -64,11 +64,13 @@ fn frame_at(
     });
     out.textures_delta.clear();
     let mut texts = vec![];
-    let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
-    while let Some(s) = pending.pop() {
+    // A text its clip hides whole isn't drawn (a list's row past its end, laid out for scrolling);
+    // one it cuts keeps its whole box, so words leaving the panel still show.
+    let mut pending: Vec<(Rect, Shape)> = out.shapes.into_iter().map(|c| (c.clip_rect, c.shape)).collect();
+    while let Some((clip, s)) = pending.pop() {
         match s {
-            Shape::Vec(v) => pending.extend(v),
-            Shape::Text(t) => texts.push((t.galley.text().to_string(), t.visual_bounding_rect())),
+            Shape::Vec(v) => pending.extend(v.into_iter().map(|s| (clip, s))),
+            Shape::Text(t) if clip.intersects(t.visual_bounding_rect()) => texts.push((t.galley.text().to_string(), t.visual_bounding_rect())),
             _ => {}
         }
     }
@@ -176,6 +178,14 @@ fn may_be_english(catalogue: &str, text: &str, names: &[String]) -> bool {
     let units = text.split_whitespace().all(|w| ["fps", "ms"].contains(&w) || !w.chars().any(|c| c.is_ascii_alphabetic()));
     if text.contains(" · ") {
         return text.split(" · ").all(|part| may_be_english(catalogue, part, names));
+    }
+    // A word followed by its count (the Stitches tab's filters, "Stops 3"): the word.
+    if let Some((word, count)) = text.rsplit_once(' ')
+        && !count.is_empty()
+        && count.chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | ',' | '\u{a0}' | '\u{202f}'))
+        && may_be_english(catalogue, word, names)
+    {
+        return true;
     }
     let text = text.trim_start_matches("· ");
     let without_names = names.iter().fold(text.to_string(), |t, n| t.replace(n.as_str(), ""));
@@ -317,6 +327,107 @@ fn the_embroidery_interface_in_every_language() {
                             info.code
                         );
                     }
+                }
+            }
+        }
+    }
+}
+
+/// [`frames`] at the Stitches tab, then frames until two in a row draw the same (the rows listed
+/// and the foot's room, laid out from the frame before, settled; at most [`SETTLE_FRAMES`] more).
+fn stitches_frames(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Vec<(String, Rect)> {
+    // A frame's words and their boxes to a tenth of a point (an empty text's box isn't a number).
+    let seen = |texts: &[(String, Rect)]| -> Vec<(String, Option<[i64; 4]>)> {
+        let tenth = |v: f32| v.is_finite().then(|| (v * 10.0).round() as i64);
+        texts.iter().map(|(t, r)| (t.clone(), (|| Some([tenth(r.min.x)?, tenth(r.min.y)?, tenth(r.max.x)?, tenth(r.max.y)?]))())).collect()
+    };
+    let mut last = frames(app, ctx, Tab::Stitches, width).0;
+    for k in 0..SETTLE_FRAMES {
+        let now = frame_at(app, ctx, 1.0 + k as f64 * 0.05, width, &mut |app, ui| crate::panels::embroidery::show(app, ui)).0;
+        let settled = seen(&now) == seen(&last);
+        last = now;
+        if settled {
+            break;
+        }
+    }
+    last
+}
+
+/// The most frames [`stitches_frames`] waits for the Stitches tab to settle.
+const SETTLE_FRAMES: usize = 20;
+
+/// The Stitches tab at `width`: nothing selected, the whole design listed, a planned square
+/// selected (its foot: planned, Convert to Manual Stitches), then that square converted and its
+/// stitches edited with a needle point selected (its foot: the count, Move by, the actions) → each
+/// state's texts.
+fn stitches_tab(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Vec<Vec<(String, Rect)>> {
+    use crate::panels::embroidery::stitches::Scope;
+    let panel = &mut app.ui.embroidery_panel;
+    (panel.stitches_scope, panel.stitches_filter) = (Scope::Selection, vectorcraft_engine::cmd::embroidery::stitch_list::Filter::All);
+    app.run("select.set", json!({"ids": []})).unwrap();
+    let nothing = stitches_frames(app, ctx, width);
+    app.ui.embroidery_panel.stitches_scope = Scope::Design;
+    let design = stitches_frames(app, ctx, width);
+    app.ui.embroidery_panel.stitches_scope = Scope::Selection;
+    let order = app.run("embroidery.sequence", json!({})).unwrap();
+    let first = order["blocks"][0]["units"][0]["id"].as_u64().unwrap();
+    app.run("select.set", json!({ "ids": [first] })).unwrap();
+    let planned = stitches_frames(app, ctx, width);
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    app.run("object.isolate", json!({ "id": first })).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let run = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(first)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 1}]})).unwrap();
+    let editing = stitches_frames(app, ctx, width);
+    assert!(crate::embroidery::editing::editing(app).is_some_and(|e| e.selected == 1), "editing, one needle point selected");
+    vec![nothing, design, planned, editing]
+}
+
+/// In every complete language, the Stitches tab, in each of its states, draws no English its
+/// catalogue doesn't give, no words over others, and nothing outside the panel, at the shared
+/// dock's narrowest (220 points) and at 256 and 300.
+#[test]
+fn the_stitches_tab_in_every_language() {
+    const WIDTHS: [f32; 3] = [220.0, 256.0, 300.0];
+    let english: Vec<String> = {
+        crate::i18n::set_current(Lang::EN);
+        let ctx = egui::Context::default();
+        theme::install_fonts(&ctx);
+        let mut app = app_with_findings();
+        stitches_tab(&mut app, &ctx, 300.0).into_iter().flatten().map(|(t, _)| numbers_blanked(&t)).collect()
+    };
+    for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
+        let lang = Lang::from_code(info.code).unwrap();
+        for width in WIDTHS {
+            crate::i18n::set_current(lang);
+            let ctx = egui::Context::default();
+            theme::install_fonts(&ctx);
+            let mut app = app_with_findings();
+            let drawn = stitches_tab(&mut app, &ctx, width);
+            let names = names(&app, lang);
+            crate::i18n::set_current(Lang::EN);
+            let panel = Rect::from_min_max(Pos2::new(WINDOW - width, 0.0), Pos2::new(WINDOW, HEIGHT - 24.0));
+            for (state, texts) in drawn.iter().enumerate() {
+                let inside: Vec<&(String, Rect)> = texts.iter().filter(|(_, r)| panel.intersects(*r)).collect();
+                for (k, (a, ra)) in inside.iter().enumerate() {
+                    for (b, rb) in &inside[k + 1..] {
+                        // A field's value painted over the app's own words in their place: one text.
+                        if a == b && ra == rb {
+                            continue;
+                        }
+                        assert!(!ra.shrink(0.5).intersects(rb.shrink(0.5)), "{} at {width}, state {state}: {a:?} overlaps {b:?}", info.code);
+                    }
+                }
+                for (text, rect) in inside {
+                    if english.contains(&numbers_blanked(text)) {
+                        assert!(may_be_english(info.source, text, &names), "{}, state {state}: {text:?} is drawn in English", info.code);
+                    }
+                    assert!(
+                        rect.left() >= panel.left() - 0.5 && rect.right() <= panel.right() + 0.5,
+                        "{} at {width}, state {state}: {text:?} {rect:?} leaves the panel",
+                        info.code
+                    );
                 }
             }
         }

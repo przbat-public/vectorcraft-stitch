@@ -397,6 +397,34 @@ fn repeated_and_nested_ids_are_walked_once() {
     assert_eq!(said.matches(&format!("{a} (manual)")).count(), 1, "{said}");
 }
 
+/// While Global Edit is on, Convert to Manual Stitches and Restore Object wait (Global Edit would copy
+/// a converted object's runs onto the other members without their originals), whether the objects
+/// are selected or given; stopped, they work.
+#[test]
+fn convert_and_restore_wait_while_global_edit_is_on() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    red_square(&mut s, 40.0, 5.0, 10.0);
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    run(&mut s, "select.globalEdit", json!({"artboards": "all", "includeCanvas": true}));
+    assert!(s.doc().unwrap().global_edit.is_some());
+    let steps = s.doc().unwrap().history.undo.len();
+    for (command, p) in [
+        ("embroidery.convertToManual", json!({})),
+        ("embroidery.convertToManual", json!({"ids": [a]})),
+        ("embroidery.restoreObject", json!({"ids": [a]})),
+    ] {
+        match s.execute(command, &p) {
+            Err(crate::EngineError::Disabled(_, why)) => assert_eq!(why, super::GLOBAL_EDIT_ON, "{command}"),
+            r => panic!("{command} {p}: {r:?}"),
+        }
+    }
+    assert_eq!(s.doc().unwrap().history.undo.len(), steps, "nothing changed");
+    run(&mut s, "select.globalEdit", json!({}));
+    run(&mut s, "select.set", json!({"ids": [a]}));
+    assert_eq!(run(&mut s, "embroidery.convertToManual", json!({}))["convertedCount"], json!(1));
+}
+
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,
 /// an original that doesn't read as an object, one placing a symbol the document no longer has.
 #[test]

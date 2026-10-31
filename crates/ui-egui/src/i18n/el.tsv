@@ -6053,3 +6053,5 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
 	Cut After Needle Point	Κόψιμο μετά το σημείο βελόνας
 	Stop After Needle Point	Διακοπή μετά το σημείο βελόνας
+# VectorCraft Stitch: why Convert to Manual Stitches and Restore Object wait while Global Edit is on
+@msg	not while Global Edit is on: stop Global Edit first	όχι όσο είναι ενεργή η καθολική επεξεργασία: σταματήστε την πρώτα

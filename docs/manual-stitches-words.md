@@ -95,6 +95,7 @@ Restore asks only when the stitches were edited since converting.
 | A join of runs not sewn one after another | these runs aren't sewn one right after another in one colour block | te odcinki nie są szyte jeden zaraz po drugim w jednym bloku koloru |
 | Join (⌘J) of runs selected with art | runs of stitches join only with runs of stitches: select only them | ciągi ściegów łączą się tylko z ciągami ściegów: zaznacz tylko je |
 | Join (⌘J) of one run selected alone | select two or more runs of stitches sewn one right after another to join them | zaznacz dwa lub więcej ciągów ściegów szytych bezpośrednio jeden po drugim, aby je połączyć |
+| Convert or Restore while Global Edit is on (why the command waits) | not while Global Edit is on: stop Global Edit first | nie podczas edycji globalnej: najpierw ją zakończ |
 
 ## The stitch plan's warnings
 
@@ -139,6 +140,6 @@ and manual stitches; Polish's are the project owner's. Upstream VectorCraft has 
 
 | Date | Change |
 |---|---|
-| 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved; Join's refusals of runs with art and of one run alone; Machine Function's undo steps. |
+| 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved; Join's refusals of runs with art and of one run alone; Machine Function's undo steps; why Convert and Restore wait during Global Edit. |
 | 2026-10-27 | Brought in step with what landed: the Check tab's, the Sewing order's and the plan's words, the scale with the catalogues' percent sign, the terms each language chose. |
 | 2026-10-27 | Written for the manual stitches' first pull request: the planned strings, in English and Polish. |

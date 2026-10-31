@@ -5161,7 +5161,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   with their object): with `dryRun: true` nothing changes, so an interface can ask first. It passes over, with
   `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read), `missingSymbol`, `locked`. One undo
   step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
-  skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run).
+  skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
+  Edit is on ("not while Global Edit is on: stop Global Edit first").
 - **Editing stitches.** The stitch commands edit a path of literal stitches (a run opened from a machine file, or one
   an object was converted to) needle point by needle point, in millimetres, without a plan. A needle point is
   addressed as `{id, index}`: the path and the needle point's place in it, from 0 across its runs (its anchors in

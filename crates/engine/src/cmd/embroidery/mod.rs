@@ -311,7 +311,7 @@ pub fn specs() -> Vec<CommandSpec> {
             [],
             None,
             "{ids?: [id…] (default: the selection; a group or layer stands for the objects in it, each converted on its own; at most 100,000), …the embroidery options (as the read commands take them; default: none, as the stitch preview plans)} freezes each object's stitches, as the plan sews them now, into manual stitches: a group keeping the object's id, name and place, holding a run of literal stitches marked manual for each of its sewing units in walk order (its own stitches: ties, underlay, top stitching, travels, its jumps and cuts; one subpath a run of needle points, the needle jumping between them), each in its thread's art colour, and the object as it was, to restore (embroidery.restoreObject). A manual run is placed in the sewing order as art is (joining a block of its colour where the stacking allows, the move into it cut when long) and never cut again by a clip group, so the export right after converting writes the same bytes. Passed over, with why: stitches from a file (literal), manual stitches (manual), a symbol's instance (symbolInstance: every instance plans the art from its own needle), a clipping path (clippingPath), a piece of an object sewn whole (insideObject), a locked object (locked), what isn't sewn (notSewn), stitches a manual run can't hold (unfreezable). One undo step \"Convert to Manual Stitches\"; nothing converted is an error naming each object and why → {converted: [{id, units, runs, needlePoints}] (at most 1000), convertedCount, needlePoints, skippedCount, skipped: [{id, reason}] (at most 1000)}",
-            has_selection,
+            selected_outside_global_edit,
             manual::convert
         ),
         cmd!(
@@ -320,7 +320,7 @@ pub fn specs() -> Vec<CommandSpec> {
             [],
             None,
             "{ids?: [id…] (default: the selection; a manual run stands for the object it was converted from, a group or layer for the converted objects in it; at most 100,000), strokes?: bool, corners?: bool (Scale Strokes & Effects, Scale Corners for the scaling since converting; default: the preferences), dryRun?: false (true: answer what would be restored, change nothing)} puts back each object converted to manual stitches (embroidery.convertToManual) in place of its stitches: the object as it was when converted, moved, turned and scaled as its stitches were since (planned again at its size now), keeping the group's id, name, visibility and lock, Trim After and Stop After; edits to its stitches are discarded (edited lists the objects whose stitches were edited since converting, so an interface can ask first). Passed over, with why: notConverted (nothing kept to restore), literal (stitches from a file), unreadable (the object kept doesn't read), missingSymbol (it places a symbol the document no longer has), locked. One undo step \"Restore Object\"; nothing restored is an error naming each object and why → {restored: [id] (at most 1000), restoredCount, edited: [id], editedCount, skippedCount, skipped: [{id, reason}] (at most 1000)}",
-            has_selection,
+            selected_outside_global_edit,
             manual::restore
         ),
         cmd!(
@@ -633,6 +633,21 @@ fn set_after(s: &mut Session, p: &Value, what: AfterSet) -> Result<Value> {
     let on = on.unwrap_or_else(|| !ids.iter().all(marked));
     let changed = edit_counted(s, what.label, |d| objects::edit_each(d, &ids, |e| (what.set)(e, on)))?;
     Ok(json!({ "on": on, "changed": changed }))
+}
+
+/// Why Convert to Manual Stitches and Restore Object wait while Global Edit is on: translated (the
+/// interface says it).
+pub(crate) const GLOBAL_EDIT_ON: &str = "not while Global Edit is on: stop Global Edit first";
+
+/// Objects are selected and Global Edit is off: Convert to Manual Stitches and Restore Object
+/// replace an object with a group and back, which Global Edit would copy onto the other members
+/// without what each keeps to be restored.
+fn selected_outside_global_edit(s: &Session) -> std::result::Result<(), String> {
+    has_selection(s)?;
+    if s.active().is_some_and(|st| st.global_edit.is_some()) {
+        return Err(GLOBAL_EDIT_ON.into());
+    }
+    Ok(())
 }
 
 /// The keys of command `cmd`'s params `o` other than `own`, refused, naming the nearest of `own`.

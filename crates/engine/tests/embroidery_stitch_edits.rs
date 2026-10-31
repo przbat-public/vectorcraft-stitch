@@ -15,6 +15,8 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+mod embroidery_common;
+
 use proptest::prelude::*;
 use serde_json::{Value, json};
 use vectorcraft_engine::{EngineError, Session};
@@ -122,6 +124,81 @@ fn stitch_commands_on_every_kind_of_run_never_panic() {
                     }
                 }
             }
+        }
+    }
+    assert!(failures.is_empty(), "{} failures:\n{}", failures.len(), failures.join("\n"));
+}
+
+/// `command` with `params` on a copy of `doc`, after `prepare` (a selection, say) when given: a
+/// caught panic, an internal error or an unsound session after it is a failure.
+fn swept(doc: &vectorcraft_doc::Document, prepare: Option<(&str, &Value)>, command: &str, params: &Value, failures: &mut Vec<String>) {
+    let mut t = Session::new();
+    t.add_document(doc.clone(), None);
+    if let Some((c, p)) = prepare {
+        let _ = t.execute(c, p);
+    }
+    match vectorcraft_testkit::catch_quiet(|| t.execute(command, params)) {
+        Err(msg) => failures.push(format!("PANIC {command} {params}: {msg}")),
+        Ok(Err(e @ EngineError::Internal { .. })) => failures.push(format!("{command} {params}: {e}")),
+        Ok(_) => {
+            if let Err(e) = check_session(&t) {
+                failures.push(format!("{command} {params}: {e}"));
+            }
+        }
+    }
+}
+
+/// Upstream's commands the hooks take over (Delete of anchors, Cut Path at Anchors, Scissors, Join,
+/// Edit › Clear), Convert, Restore and Stop After, aimed at every kind of run the manual fixture
+/// holds, and every embroidery command's structured junk with its ids made the fixture's own:
+/// never a panic or an internal error, the session sound after each.
+#[test]
+fn hooked_commands_convert_restore_and_junk_on_every_kind_of_run_never_panic() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    let c = m.converted;
+    let doc = s.doc().unwrap().doc.clone();
+    let mut ids: Vec<u64> =
+        vec![m.opened[0].runs[0], m.one_point, m.double_point, m.trim_before, m.trim_after, m.curved, m.instance, m.locked, m.hidden, m.stopped];
+    ids.extend(doc.node(vectorcraft_doc::NodeId(c.fill)).unwrap().children().unwrap().iter().map(|n| n.id.0));
+    ids.extend([c.fill, c.group, c.clip_member, m.opened[1].top]);
+    let mut failures = Vec::new();
+    for (k, &id) in ids.iter().enumerate() {
+        let other = ids[(k + 1) % ids.len()];
+        for anchor in [[0, 0], [0, 1], [0, 2], [1, 0], [7, 99]] {
+            let select = json!({"id": id, "anchors": [anchor]});
+            swept(&doc, Some(("select.anchors", &select)), "path.deleteAnchors", &json!({}), &mut failures);
+            swept(&doc, Some(("select.anchors", &select)), "path.cutAtAnchors", &json!({}), &mut failures);
+            swept(&doc, None, "path.split", &json!({"id": id, "subpath": anchor[0], "anchor": anchor[1]}), &mut failures);
+        }
+        for (command, params) in [
+            ("path.split", json!({"id": id, "subpath": 0, "segment": 0, "t": 0.5})),
+            ("path.join", json!({"ids": [id, other]})),
+            ("path.join", json!({"ids": [id, id]})),
+            ("edit.clear", json!({"ids": [id]})),
+            ("embroidery.convertToManual", json!({"ids": [id]})),
+            ("embroidery.restoreObject", json!({"ids": [id]})),
+            ("embroidery.restoreObject", json!({"ids": [id, other], "dryRun": true})),
+            ("embroidery.setStopAfter", json!({"ids": [id]})),
+            ("embroidery.setTrimAfter", json!({"ids": [id], "on": false})),
+        ] {
+            swept(&doc, None, command, &params, &mut failures);
+        }
+    }
+    // The junk every embroidery command takes, aimed at the fixture's own objects.
+    for (command, params) in embroidery_common::junk::structured() {
+        swept(&doc, None, command, &params, &mut failures);
+        let mut aimed = params.clone();
+        if let Some(o) = aimed.as_object_mut() {
+            if o.contains_key("ids") {
+                o.insert("ids".into(), json!(ids));
+            }
+            if o.contains_key("id") {
+                o.insert("id".into(), json!(ids[0]));
+            }
+        }
+        if aimed != params {
+            swept(&doc, None, command, &aimed, &mut failures);
         }
     }
     assert!(failures.is_empty(), "{} failures:\n{}", failures.len(), failures.join("\n"));

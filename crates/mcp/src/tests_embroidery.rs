@@ -20,6 +20,7 @@ fn the_embroidery_commands_are_reachable() {
         "embroidery.setTrimAfter",
         "embroidery.setStopAfter",
         "embroidery.convertToManual",
+        "embroidery.restoreObject",
         "embroidery.moveNeedlePoints",
         "embroidery.insertNeedlePoints",
         "embroidery.deleteNeedlePoints",

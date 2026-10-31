@@ -47,7 +47,7 @@ pub(crate) fn restore_asking(app: &mut VectorcraftApp, ids: Value) {
     }
     match app.run(RESTORE, json!({ "ids": ids })) {
         Ok(v) => app.status(crate::embroidery::restore_dialog::restored(&v)),
-        Err(e) => app.status(e),
+        Err(e) => app.status(super::vocabulary::refusal(&e)),
     }
 }
 

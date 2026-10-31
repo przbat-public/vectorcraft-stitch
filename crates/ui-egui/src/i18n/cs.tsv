@@ -6048,9 +6048,9 @@ embroidery	Auto (where the plan ends the part)	Automaticky (kde plán část uko
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Převést na ruční stehy
 @msg	nothing selected can be converted to manual stitches: {_1}	nic z výběru nelze převést na ruční stehy: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Obnovit objekt
-@msg	nothing selected was converted to manual stitches: {_1}	nic z výběru nebylo převedeno na ruční stehy: {_1}
+@msg	nothing selected can be restored: {_1}	nic z výběru nelze obnovit: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ruční stehy nebo stehy ze souboru se změnou velikosti o víc než {value} %
 embroidery	{name}: {value}% larger	{name}: zvětšení o {value} %
@@ -6110,3 +6110,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	každé zastavení je zapsáno jako výměna na tutéž nit: jednojehlový stroj se na ní zastaví, vícejehlový jen tam, kde obsluha na této výměně nastaví zastavení
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Zamčené objekty nelze obnovit: nejdřív je odemkněte.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	stehy ze souboru
+embroidery	manual stitches already	už ruční stehy
+embroidery	symbol instances	instance symbolů
+embroidery	clipping paths	ořezové cesty
+embroidery	parts of an object sewn whole	části objektu šitého vcelku
+embroidery	holding what isn't sewn	obsahuje nešité
+embroidery	locked	zamčené
+embroidery	not sewn	nešijí se
+embroidery	stitches a manual run can't hold	stehy, které ruční řada nepojme
+embroidery	not converted	nepřevedené
+embroidery	the kept object doesn't read	uchovaný objekt nejde přečíst
+embroidery	its symbol is gone	jeho symbol chybí
+embroidery	would lie outside the document	ležel by mimo dokument
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekt přeskočen: {reasons}|{count} objekty přeskočeny: {reasons}|{count} objektů přeskočeno: {reasons}

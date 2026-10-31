@@ -382,6 +382,37 @@ fn members_as_compounds(doc: &Document, ids: Vec<NodeId>) -> Vec<NodeId> {
     ids.into_iter().map(|id| compound(&id).unwrap_or(id)).collect()
 }
 
+/// The start of Convert's refusal when it converts nothing, before each object's id and reason
+/// (`12 (locked), 14 (notSewn)`), and of Restore's: translated, the interface words the reasons.
+pub const CONVERT_REFUSED: &str = "nothing selected can be converted to manual stitches";
+pub const RESTORE_REFUSED: &str = "nothing selected can be restored";
+
+/// Objects `ids` (in `doc`) passed over for reasons that need no plan (manual stitches already,
+/// a symbol's instance, a clipping path, stitches from a file, a locked object), when every one of
+/// them is: Convert then refuses before planning the whole design. `None` when one may convert.
+fn refused_before_planning(doc: &Document, ids: &[NodeId]) -> Option<Vec<(NodeId, Skip)>> {
+    let locked = |id: NodeId| doc.ancestry(id).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|n| n.locked));
+    ids.iter()
+        .map(|&id| {
+            let n = doc.node(id)?;
+            let why = if is_converted(n) || is_manual_run(n) {
+                Skip::Manual
+            } else if matches!(n.kind, NodeKind::SymbolInstance { .. }) {
+                Skip::SymbolInstance
+            } else if matches!(n.kind, NodeKind::Path { clipping: true, .. }) {
+                Skip::ClippingPath
+            } else if super::needles::is_stitches(n) {
+                Skip::Literal
+            } else if locked(id) {
+                Skip::Locked
+            } else {
+                return None;
+            };
+            Some((id, why))
+        })
+        .collect()
+}
+
 /// Whether `n` is a run of manual stitches.
 fn is_manual_run(n: &Node) -> bool {
     n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|r| r.manual)
@@ -502,6 +533,10 @@ fn prepare(s: &mut Session, p: &Value) -> Result<ConvertJob> {
         return Err(EngineError::NoNode(*missing));
     }
     let ids = outermost_once(&st.doc, members_as_compounds(&st.doc, ids));
+    // A lone locked object (and the like) is refused at once, not after the whole design's plan.
+    if let Some(skipped) = refused_before_planning(&st.doc, &ids) {
+        return Err(nothing_converted(&skipped));
+    }
     Ok(ConvertJob { uid: st.uid, original: st.doc.clone(), planned: to_plan(st, false)?, opts, ids })
 }
 
@@ -593,7 +628,7 @@ fn apply(s: &mut Session, planned: ConvertPlanned) -> Result<Value> {
 /// lists).
 fn nothing_converted(skipped: &[(NodeId, Skip)]) -> EngineError {
     let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({})", id.0, why.code())).collect();
-    EngineError::Other(format!("nothing selected can be converted to manual stitches: {}", named.join(", ")))
+    EngineError::Other(format!("{CONVERT_REFUSED}: {}", named.join(", ")))
 }
 
 const RESTORE: &str = "embroidery.restoreObject";
@@ -934,7 +969,7 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
 /// The error when nothing given could be restored, naming each object and why.
 fn nothing_restored(skipped: &[(NodeId, NotRestored)]) -> EngineError {
     let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({})", id.0, why.code())).collect();
-    EngineError::Other(format!("nothing selected was converted to manual stitches: {}", named.join(", ")))
+    EngineError::Other(format!("{RESTORE_REFUSED}: {}", named.join(", ")))
 }
 
 #[cfg(test)]

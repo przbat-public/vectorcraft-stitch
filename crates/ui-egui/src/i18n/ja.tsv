@@ -5725,9 +5725,9 @@ embroidery	Auto (where the plan ends the part)	自動（計画がパーツを終
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	手動ステッチに変換
 @msg	nothing selected can be converted to manual stitches: {_1}	選択したものは手動ステッチに変換できません: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	オブジェクトを復元
-@msg	nothing selected was converted to manual stitches: {_1}	選択したものは手動ステッチに変換されていません: {_1}
+@msg	nothing selected can be restored: {_1}	選択したものはどれも復元できません: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	{value}% を超えて拡大縮小された手動ステッチまたはファイルのステッチ
 embroidery	{name}: {value}% larger	{name}: {value}% 拡大
@@ -5787,3 +5787,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	停止はすべて同じ糸への糸替えとして書き出されます。単針機はそこで止まり、多針機はオペレーターがその糸替えに停止を設定した箇所でだけ止まります
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	ロックされたオブジェクトは復元できません。先にロックを解除してください。
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	ファイルのステッチ
+embroidery	manual stitches already	すでに手動ステッチ
+embroidery	symbol instances	シンボルインスタンス
+embroidery	clipping paths	クリッピングパス
+embroidery	parts of an object sewn whole	まとめて縫うオブジェクトの一部
+embroidery	holding what isn't sewn	縫わないものを含む
+embroidery	locked	ロック中
+embroidery	not sewn	縫われない
+embroidery	stitches a manual run can't hold	手動の区間に収まらないステッチ
+embroidery	not converted	変換されていない
+embroidery	the kept object doesn't read	保持されたオブジェクトを読めない
+embroidery	its symbol is gone	シンボルがない
+embroidery	would lie outside the document	ドキュメントの外に出る
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} 個のオブジェクトをスキップ: {reasons}

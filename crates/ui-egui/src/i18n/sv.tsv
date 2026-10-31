@@ -6004,9 +6004,9 @@ embroidery	Auto (where the plan ends the part)	Auto (där planen avslutar delen)
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Konvertera till manuella stygn
 @msg	nothing selected can be converted to manual stitches: {_1}	inget av det markerade kan konverteras till manuella stygn: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Återställ objekt
-@msg	nothing selected was converted to manual stitches: {_1}	inget av det markerade har konverterats till manuella stygn: {_1}
+@msg	nothing selected can be restored: {_1}	inget av det markerade kan återställas: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Manuella stygn eller stygn från en fil skalade med mer än {value} %
 embroidery	{name}: {value}% larger	{name}: förstorad {value} %
@@ -6066,3 +6066,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	varje stopp skrivs som ett byte till samma tråd: en ennålsmaskin stannar där, en flernålsmaskin bara där operatören ställer in ett stopp på det bytet
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Låsta objekt kan inte återställas: lås upp dem först.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	stygn från en fil
+embroidery	manual stitches already	redan manuella stygn
+embroidery	symbol instances	symbolinstanser
+embroidery	clipping paths	urklippsbanor
+embroidery	parts of an object sewn whole	delar av ett objekt som sys i ett
+embroidery	holding what isn't sewn	innehåller det som inte sys
+embroidery	locked	låsta
+embroidery	not sewn	sys inte
+embroidery	stitches a manual run can't hold	stygn som en manuell rad inte rymmer
+embroidery	not converted	inte konverterade
+embroidery	the kept object doesn't read	det sparade objektet kan inte läsas
+embroidery	its symbol is gone	dess symbol saknas
+embroidery	would lie outside the document	skulle hamna utanför dokumentet
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekt hoppades över: {reasons}|{count} objekt hoppades över: {reasons}

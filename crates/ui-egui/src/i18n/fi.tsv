@@ -6079,9 +6079,9 @@ embroidery	Auto (where the plan ends the part)	Automaattinen (missä suunnitelma
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Muunna manuaalisiksi pistoiksi
 @msg	nothing selected can be converted to manual stitches: {_1}	mitään valituista ei voi muuntaa manuaalisiksi pistoiksi: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Palauta objekti
-@msg	nothing selected was converted to manual stitches: {_1}	mitään valituista ei ole muunnettu manuaalisiksi pistoiksi: {_1}
+@msg	nothing selected can be restored: {_1}	mitään valituista ei voi palauttaa: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Manuaaliset pistot tai pistot tiedostosta, skaalattu yli {value} %
 embroidery	{name}: {value}% larger	{name}: suurennettu {value} %
@@ -6141,3 +6141,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	jokainen pysäytys kirjoitetaan vaihdoksi samaan lankaan: yksineulainen kone pysähtyy siinä, moneulainen vain siellä, missä käyttäjä asettaa vaihdolle pysäytyksen
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Lukittuja objekteja ei voi palauttaa: avaa niiden lukitus ensin.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	pistot tiedostosta
+embroidery	manual stitches already	jo manuaalisia pistoja
+embroidery	symbol instances	symbolien esiintymät
+embroidery	clipping paths	leikkauspolut
+embroidery	parts of an object sewn whole	kokonaan ommellun objektin osat
+embroidery	holding what isn't sewn	sisältää ompelematonta
+embroidery	locked	lukittu
+embroidery	not sewn	ei ommella
+embroidery	stitches a manual run can't hold	pistot, joita manuaalinen pistosarja ei mahduta
+embroidery	not converted	ei muunnettu
+embroidery	the kept object doesn't read	säilytettyä objektia ei voi lukea
+embroidery	its symbol is gone	sen symboli puuttuu
+embroidery	would lie outside the document	olisi asiakirjan ulkopuolella
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekti ohitettiin: {reasons}|{count} objektia ohitettiin: {reasons}

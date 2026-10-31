@@ -6034,9 +6034,9 @@ embroidery	Auto (where the plan ends the part)	Automatikus (ahol a terv befejezi
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Átalakítás kézi öltésekké
 @msg	nothing selected can be converted to manual stitches: {_1}	a kijelölésből semmi sem alakítható kézi öltésekké: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Objektum visszaállítása
-@msg	nothing selected was converted to manual stitches: {_1}	a kijelölésből semmit sem alakítottak kézi öltésekké: {_1}
+@msg	nothing selected can be restored: {_1}	a kijelölésből semmi sem állítható vissza: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Több mint {value}%-kal átméretezett kézi öltések vagy öltések fájlból
 embroidery	{name}: {value}% larger	{name}: {value}%-kal nagyobb
@@ -6096,3 +6096,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	minden megállás ugyanarra a szálra való cseréként íródik ki: az egytűs gép ott megáll, a többtűs csak ott, ahol a kezelője megállást állít be erre a cserére
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	A zárolt objektumok nem állíthatók vissza: előbb oldja fel őket.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	öltések fájlból
+embroidery	manual stitches already	már kézi öltések
+embroidery	symbol instances	szimbólumpéldányok
+embroidery	clipping paths	vágóútvonalak
+embroidery	parts of an object sewn whole	egészben varrt objektum részei
+embroidery	holding what isn't sewn	varratlant tartalmaz
+embroidery	locked	zárolt
+embroidery	not sewn	nem varrja
+embroidery	stitches a manual run can't hold	öltések, amelyeket kézi öltéssor nem tud tartani
+embroidery	not converted	nincs átalakítva
+embroidery	the kept object doesn't read	a megőrzött objektum nem olvasható
+embroidery	its symbol is gone	a szimbóluma hiányzik
+embroidery	would lie outside the document	a dokumentumon kívül lenne
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objektum kimaradt: {reasons}

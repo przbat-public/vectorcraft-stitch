@@ -93,7 +93,7 @@ Restore asks only when the stitches were edited since converting.
 | Where | English | Polish |
 |---|---|---|
 | Nothing to convert | nothing selected can be converted to manual stitches | nic z zaznaczenia nie da się zamienić na ściegi ręczne |
-| Nothing to restore | nothing selected was converted to manual stitches | nic z zaznaczenia nie zostało zamienione na ściegi ręczne |
+| Nothing to restore | nothing selected can be restored | nic z zaznaczenia nie da się przywrócić |
 | No run to edit | select needle points of a path of stitches, or give needlePoints | zaznacz nakłucia ścieżki ściegów lub podaj needlePoints |
 | A join of runs not sewn one after another | these runs aren't sewn one right after another in one colour block | te odcinki nie są szyte jeden zaraz po drugim w jednym bloku koloru |
 | Join (⌘J) of runs selected with art | paths of stitches join only with paths of stitches: select only them | ścieżki ściegów łączą się tylko ze ścieżkami ściegów: zaznacz tylko je |

@@ -5963,9 +5963,9 @@ embroidery	Auto (where the plan ends the part)	ავტომატური (�
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	ხელით ნაკერებად გარდაქმნა
 @msg	nothing selected can be converted to manual stitches: {_1}	მონიშნულიდან ვერაფერი გარდაიქმნება ხელით ნაკერებად: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	ობიექტის აღდგენა
-@msg	nothing selected was converted to manual stitches: {_1}	მონიშნულიდან არაფერი გარდაქმნილა ხელით ნაკერებად: {_1}
+@msg	nothing selected can be restored: {_1}	მონიშნულიდან ვერაფერი აღდგება: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	ხელით ნაკერები ან ნაკერები ფაილიდან, მასშტაბირებული {value}%-ზე მეტით
 embroidery	{name}: {value}% larger	{name}: {value}%-ით გადიდებული
@@ -6025,3 +6025,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	ყოველი გაჩერება იწერება იმავე ძაფზე გადართვად: ერთნემსიანი მანქანა იქ ჩერდება, მრავალნემსიანი — მხოლოდ იქ, სადაც ოპერატორი ამ გადართვაზე გაჩერებას დააყენებს
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	ჩაკეტილი ობიექტების აღდგენა შეუძლებელია: ჯერ განბლოკეთ ისინი.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	ნაკერები ფაილიდან
+embroidery	manual stitches already	უკვე ხელით ნაკერები
+embroidery	symbol instances	სიმბოლოს ასლები
+embroidery	clipping paths	ამოჭრის ტრაექტორიები
+embroidery	parts of an object sewn whole	მთლიანად ნაკერი ობიექტის ნაწილები
+embroidery	holding what isn't sewn	შეიცავს უკერავს
+embroidery	locked	ჩაკეტილი
+embroidery	not sewn	არ იკერება
+embroidery	stitches a manual run can't hold	ნაკერები, რომლებსაც ხელით მწკრივი ვერ იტევს
+embroidery	not converted	არ გარდაქმნილა
+embroidery	the kept object doesn't read	შენახული ობიექტი არ იკითხება
+embroidery	its symbol is gone	მისი სიმბოლო აღარ არის
+embroidery	would lie outside the document	დოკუმენტის გარეთ აღმოჩნდებოდა
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	გამოტოვებული ობიექტები: {count} — {reasons}

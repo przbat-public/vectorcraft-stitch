@@ -5887,9 +5887,9 @@ embroidery	Auto (where the plan ends the part)	自动（计划结束该部分处
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	转换为手动针迹
 @msg	nothing selected can be converted to manual stitches: {_1}	所选内容均无法转换为手动针迹：{_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	恢复对象
-@msg	nothing selected was converted to manual stitches: {_1}	所选内容均未转换为手动针迹：{_1}
+@msg	nothing selected can be restored: {_1}	所选内容都无法恢复：{_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	缩放超过 {value}% 的手动针迹或文件中的针迹
 embroidery	{name}: {value}% larger	{name}：放大 {value}%
@@ -5949,3 +5949,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	每次停机都写成换到同一种线：单针机会在那里停下，多针机只在操作员为该次换线设置了停机的地方停下
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	锁定的对象无法恢复：请先解锁。
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	来自文件的针迹
+embroidery	manual stitches already	已是手动针迹
+embroidery	symbol instances	符号实例
+embroidery	clipping paths	剪切路径
+embroidery	parts of an object sewn whole	整体缝制对象的一部分
+embroidery	holding what isn't sewn	含有不缝制的内容
+embroidery	locked	已锁定
+embroidery	not sewn	不缝制
+embroidery	stitches a manual run can't hold	手动针段容纳不了的针迹
+embroidery	not converted	未转换
+embroidery	the kept object doesn't read	无法读取保留的对象
+embroidery	its symbol is gone	其符号已不存在
+embroidery	would lie outside the document	会落在文档之外
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	跳过了 {count} 个对象：{reasons}

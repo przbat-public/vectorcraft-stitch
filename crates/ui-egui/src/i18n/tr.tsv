@@ -6009,9 +6009,9 @@ embroidery	Auto (where the plan ends the part)	Otomatik (planın parçayı bitir
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Manuel Dikişlere Dönüştür
 @msg	nothing selected can be converted to manual stitches: {_1}	seçilenlerden hiçbiri manuel dikişlere dönüştürülemiyor: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Nesneyi Geri Yükle
-@msg	nothing selected was converted to manual stitches: {_1}	seçilenlerden hiçbiri manuel dikişlere dönüştürülmemiş: {_1}
+@msg	nothing selected can be restored: {_1}	seçilenlerden hiçbiri geri yüklenemez: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	%{value} üzerinde ölçeklenmiş manuel dikişler veya dosyadan dikişler
 embroidery	{name}: {value}% larger	{name}: %{value} büyütülmüş
@@ -6071,3 +6071,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	her durma aynı ipliğe geçiş olarak yazılır: tek iğneli makine orada durur, çok iğneli makine yalnızca operatörünün o geçişe durma koyduğu yerde durur
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Kilitli nesneler geri yüklenemez: önce kilitlerini açın.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	dosyadan dikişler
+embroidery	manual stitches already	zaten manuel dikişler
+embroidery	symbol instances	sembol örnekleri
+embroidery	clipping paths	kırpma yolları
+embroidery	parts of an object sewn whole	bütün olarak dikilen nesnenin parçaları
+embroidery	holding what isn't sewn	dikilmeyeni içeriyor
+embroidery	locked	kilitli
+embroidery	not sewn	dikilmez
+embroidery	stitches a manual run can't hold	manuel dizinin tutamayacağı dikişler
+embroidery	not converted	dönüştürülmemiş
+embroidery	the kept object doesn't read	saklanan nesne okunamıyor
+embroidery	its symbol is gone	sembolü yok
+embroidery	would lie outside the document	belgenin dışında kalır
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} nesne atlandı: {reasons}

@@ -5663,9 +5663,9 @@ embroidery	Auto (where the plan ends the part)	Auto (dove il piano termina la pa
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Converti in punti manuali
 @msg	nothing selected can be converted to manual stitches: {_1}	nulla della selezione si può convertire in punti manuali: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Ripristina oggetto
-@msg	nothing selected was converted to manual stitches: {_1}	nulla della selezione è stato convertito in punti manuali: {_1}
+@msg	nothing selected can be restored: {_1}	niente della selezione si può ripristinare: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Punti manuali o da un file scalati di oltre il {value}%
 embroidery	{name}: {value}% larger	{name}: ingrandito del {value}%
@@ -5725,3 +5725,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	ogni arresto è scritto come un cambio allo stesso filo: una macchina ad ago singolo vi si ferma, una multiago solo dove il suo operatore imposta un arresto su quel cambio
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Gli oggetti bloccati non si possono ripristinare: sbloccali prima.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	punti da un file
+embroidery	manual stitches already	già punti manuali
+embroidery	symbol instances	istanze di simboli
+embroidery	clipping paths	tracciati di ritaglio
+embroidery	parts of an object sewn whole	parti di un oggetto cucito intero
+embroidery	holding what isn't sewn	contiene ciò che non si cuce
+embroidery	locked	bloccati
+embroidery	not sewn	non cuciti
+embroidery	stitches a manual run can't hold	punti che una serie manuale non può contenere
+embroidery	not converted	non convertiti
+embroidery	the kept object doesn't read	l’oggetto conservato non si legge
+embroidery	its symbol is gone	manca il suo simbolo
+embroidery	would lie outside the document	starebbe fuori dal documento
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} oggetto saltato: {reasons}|{count} oggetti saltati: {reasons}

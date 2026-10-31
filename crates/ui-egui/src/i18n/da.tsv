@@ -6003,9 +6003,9 @@ embroidery	Auto (where the plan ends the part)	Auto (hvor planen afslutter delen
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Konvertér til manuelle sting
 @msg	nothing selected can be converted to manual stitches: {_1}	intet af det valgte kan konverteres til manuelle sting: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Gendan objekt
-@msg	nothing selected was converted to manual stitches: {_1}	intet af det valgte er konverteret til manuelle sting: {_1}
+@msg	nothing selected can be restored: {_1}	intet af det valgte kan gendannes: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Manuelle sting eller sting fra en fil skaleret med mere end {value} %
 embroidery	{name}: {value}% larger	{name}: forstørret {value} %
@@ -6065,3 +6065,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	hvert stop skrives som et skift til samme tråd: en enkeltnålsmaskine stopper der, en flernålsmaskine kun hvor operatøren sætter et stop på det skift
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Låste objekter kan ikke gendannes: lås dem op først.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	sting fra en fil
+embroidery	manual stitches already	allerede manuelle sting
+embroidery	symbol instances	symbolforekomster
+embroidery	clipping paths	beskæringskurver
+embroidery	parts of an object sewn whole	dele af et objekt syet samlet
+embroidery	holding what isn't sewn	indeholder det, der ikke sys
+embroidery	locked	låste
+embroidery	not sewn	sys ikke
+embroidery	stitches a manual run can't hold	sting en manuel række ikke kan rumme
+embroidery	not converted	ikke konverteret
+embroidery	the kept object doesn't read	det gemte objekt kan ikke læses
+embroidery	its symbol is gone	dets symbol mangler
+embroidery	would lie outside the document	ville ligge uden for dokumentet
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objekt sprunget over: {reasons}|{count} objekter sprunget over: {reasons}

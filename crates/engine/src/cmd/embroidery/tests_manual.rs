@@ -266,6 +266,23 @@ fn a_compound_paths_member_stands_for_its_compound() {
     assert_eq!((converted, r["skippedCount"].clone()), (vec![compound], json!(0)), "{r}");
 }
 
+/// Objects passed over for reasons that need no plan (a lone locked object, say) are refused at
+/// once, with the same words, before the design is planned; one that may convert is planned.
+#[test]
+fn what_needs_no_plan_to_refuse_is_refused_before_planning() {
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    let b = red_square(&mut s, 30.0, 5.0, 10.0);
+    run(&mut s, "object.lock", json!({"ids": [a]}));
+    let e = s.execute("embroidery.convertToManual", &json!({"ids": [a]})).unwrap_err().to_string();
+    assert_eq!(e, format!("{CONVERT_REFUSED}: {a} (locked)"));
+    // Refused as the job is prepared, before the plan the interface makes on another thread.
+    assert!(s.convert_to_manual_job(&json!({"ids": [a]})).is_err(), "refused before planning");
+    assert!(s.convert_to_manual_job(&json!({"ids": [a, b]})).is_ok(), "one may convert: planned");
+    let r = run(&mut s, "embroidery.convertToManual", json!({"ids": [a, b]}));
+    assert_eq!((r["convertedCount"].clone(), r["skipped"].clone()), (json!(1), json!([{"id": a, "reason": "locked"}])));
+}
+
 /// Converting is one undo step, Undo gives the document back exactly, and nothing converted takes
 /// none: the error names each object and why. An id naming no object is refused before anything
 /// changes, as are params of another shape.

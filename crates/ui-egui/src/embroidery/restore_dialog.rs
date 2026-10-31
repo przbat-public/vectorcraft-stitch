@@ -56,5 +56,5 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
 /// The status bar's words after restoring, from the command's reply.
 pub(crate) fn restored(reply: &Value) -> String {
     let count = reply["restoredCount"].as_u64().unwrap_or(0);
-    crate::etn!(count, "{count} object restored", "{count} objects restored")
+    super::vocabulary::with_passed_over(&crate::etn!(count, "{count} object restored", "{count} objects restored"), reply)
 }

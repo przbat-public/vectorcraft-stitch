@@ -903,11 +903,12 @@ fn hand_focus(resp: &egui::Response, next: FocusNext, ids: &[NodeId], focus: &mu
 /// The status bar's words after converting, from the command's reply.
 pub(crate) fn converted(reply: &Value) -> String {
     let count = reply["convertedCount"].as_u64().unwrap_or(0);
-    crate::etn!(
+    let done = crate::etn!(
         count,
         "{count} object converted to manual stitches: Restore Object brings it back",
         "{count} objects converted to manual stitches: Restore Object brings them back"
-    )
+    );
+    vocabulary::with_passed_over(&done, reply)
 }
 
 /// The manual stitches among the selection ([`ObjectSettings::manual`]): what they are, their runs

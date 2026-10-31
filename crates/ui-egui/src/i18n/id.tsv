@@ -6003,9 +6003,9 @@ embroidery	Auto (where the plan ends the part)	Otomatis (tempat rencana mengakhi
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Ubah menjadi jahitan manual
 @msg	nothing selected can be converted to manual stitches: {_1}	tidak ada yang dipilih yang dapat diubah menjadi jahitan manual: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Pulihkan objek
-@msg	nothing selected was converted to manual stitches: {_1}	tidak ada yang dipilih yang telah diubah menjadi jahitan manual: {_1}
+@msg	nothing selected can be restored: {_1}	tidak ada yang dipilih yang dapat dipulihkan: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Jahitan manual atau jahitan dari berkas yang diskalakan lebih dari {value}%
 embroidery	{name}: {value}% larger	{name}: {value}% lebih besar
@@ -6065,3 +6065,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	setiap pemberhentian ditulis sebagai ganti ke benang yang sama: mesin satu jarum berhenti di sana, mesin multi-jarum hanya di tempat operatornya menetapkan pemberhentian pada ganti itu
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Objek yang terkunci tidak dapat dipulihkan: buka kuncinya terlebih dahulu.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	jahitan dari berkas
+embroidery	manual stitches already	sudah jahitan manual
+embroidery	symbol instances	instans simbol
+embroidery	clipping paths	jalur kliping
+embroidery	parts of an object sewn whole	bagian objek yang dijahit utuh
+embroidery	holding what isn't sewn	berisi yang tidak dijahit
+embroidery	locked	terkunci
+embroidery	not sewn	tidak dijahit
+embroidery	stitches a manual run can't hold	jahitan yang tidak muat dalam rangkaian manual
+embroidery	not converted	tidak dikonversi
+embroidery	the kept object doesn't read	objek yang disimpan tidak terbaca
+embroidery	its symbol is gone	simbolnya hilang
+embroidery	would lie outside the document	akan berada di luar dokumen
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objek dilewati: {reasons}

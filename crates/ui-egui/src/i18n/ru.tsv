@@ -5659,9 +5659,9 @@ embroidery	Auto (where the plan ends the part)	Авто (там, где план
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Преобразовать в ручные стежки
 @msg	nothing selected can be converted to manual stitches: {_1}	ничего из выделенного нельзя преобразовать в ручные стежки: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Восстановить объект
-@msg	nothing selected was converted to manual stitches: {_1}	ничего из выделенного не преобразовано в ручные стежки: {_1}
+@msg	nothing selected can be restored: {_1}	ничего из выбранного нельзя восстановить: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ручные стежки или стежки из файла, масштабированные больше чем на {value} %
 embroidery	{name}: {value}% larger	{name}: увеличение на {value} %
@@ -5721,3 +5721,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	каждая остановка записана как смена на ту же нить: одноигольная машина там останавливается, многоигольная — только там, где оператор задал остановку на этой смене
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Заблокированные объекты нельзя восстановить: сначала разблокируйте их.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	стежки из файла
+embroidery	manual stitches already	уже ручные стежки
+embroidery	symbol instances	экземпляры символов
+embroidery	clipping paths	обтравочные контуры
+embroidery	parts of an object sewn whole	части объекта, сшиваемого целиком
+embroidery	holding what isn't sewn	содержит то, что не шьётся
+embroidery	locked	заблокированы
+embroidery	not sewn	не шьются
+embroidery	stitches a manual run can't hold	стежки, которые ручной ряд не вмещает
+embroidery	not converted	не преобразованы
+embroidery	the kept object doesn't read	сохранённый объект не читается
+embroidery	its symbol is gone	его символа нет
+embroidery	would lie outside the document	оказался бы вне документа
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	пропущен {count} объект: {reasons}|пропущено {count} объекта: {reasons}|пропущено {count} объектов: {reasons}

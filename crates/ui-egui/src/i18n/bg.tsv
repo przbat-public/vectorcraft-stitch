@@ -5987,9 +5987,9 @@ embroidery	Auto (where the plan ends the part)	Автоматично (къде�
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Преобразуване в ръчни бодове
 @msg	nothing selected can be converted to manual stitches: {_1}	нищо от избраното не може да се преобразува в ръчни бодове: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Възстановяване на обекта
-@msg	nothing selected was converted to manual stitches: {_1}	нищо от избраното не е преобразувано в ръчни бодове: {_1}
+@msg	nothing selected can be restored: {_1}	нищо от избраното не може да се възстанови: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Ръчни бодове или бодове от файл, мащабирани с над {value}%
 embroidery	{name}: {value}% larger	{name}: увеличение с {value}%
@@ -6049,3 +6049,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	всяко спиране е записано като смяна към същата нишка: едноиглена машина спира там, а многоиглена — само където операторът е задал спиране на тази смяна
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Заключени обекти не могат да се възстановят: първо ги отключете.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	бодове от файл
+embroidery	manual stitches already	вече ръчни бодове
+embroidery	symbol instances	копия на символи
+embroidery	clipping paths	изрязващи пътища
+embroidery	parts of an object sewn whole	части от обект, шит изцяло
+embroidery	holding what isn't sewn	съдържа нешито
+embroidery	locked	заключени
+embroidery	not sewn	не се шият
+embroidery	stitches a manual run can't hold	бодове, които ръчна редица не побира
+embroidery	not converted	не са преобразувани
+embroidery	the kept object doesn't read	запазеният обект не се чете
+embroidery	its symbol is gone	символът му липсва
+embroidery	would lie outside the document	би излязъл извън документа
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} обект е пропуснат: {reasons}|{count} обекта са пропуснати: {reasons}

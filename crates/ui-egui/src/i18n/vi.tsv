@@ -5643,9 +5643,9 @@ embroidery	Auto (where the plan ends the part)	Tự động (nơi kế hoạch k
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Chuyển thành mũi thêu thủ công
 @msg	nothing selected can be converted to manual stitches: {_1}	không gì trong vùng chọn có thể chuyển thành mũi thêu thủ công: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Khôi phục đối tượng
-@msg	nothing selected was converted to manual stitches: {_1}	không gì trong vùng chọn đã được chuyển thành mũi thêu thủ công: {_1}
+@msg	nothing selected can be restored: {_1}	không có gì trong vùng chọn có thể khôi phục: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Mũi thêu thủ công hoặc mũi thêu từ tệp bị đổi tỷ lệ hơn {value}%
 embroidery	{name}: {value}% larger	{name}: phóng to {value}%
@@ -5705,3 +5705,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	mỗi lần dừng được ghi thành một lần đổi sang cùng sợi chỉ: máy một kim dừng ở đó, máy nhiều kim chỉ dừng ở nơi người vận hành đặt điểm dừng cho lần đổi đó
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Không thể khôi phục đối tượng bị khóa: hãy mở khóa chúng trước.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	mũi thêu từ tệp
+embroidery	manual stitches already	đã là mũi thêu thủ công
+embroidery	symbol instances	bản sao biểu tượng
+embroidery	clipping paths	đường cắt xén
+embroidery	parts of an object sewn whole	phần của đối tượng may nguyên khối
+embroidery	holding what isn't sewn	chứa thứ không may
+embroidery	locked	bị khóa
+embroidery	not sewn	không may
+embroidery	stitches a manual run can't hold	mũi thêu mà đoạn thủ công không chứa được
+embroidery	not converted	chưa chuyển đổi
+embroidery	the kept object doesn't read	không đọc được đối tượng đã lưu
+embroidery	its symbol is gone	thiếu biểu tượng của nó
+embroidery	would lie outside the document	sẽ nằm ngoài tài liệu
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	đã bỏ qua {count} đối tượng: {reasons}

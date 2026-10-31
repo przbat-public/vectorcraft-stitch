@@ -1195,7 +1195,7 @@ fn restored(mut s: Session) -> Session {
     run(&mut s, "select.all", json!({}));
     match s.execute("embroidery.restoreObject", &json!({})) {
         Ok(r) => assert!(r["restoredCount"].as_u64().unwrap() > 0 && r["editedCount"] == json!(0), "{r}"),
-        Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("nothing selected was converted"), "{e}"),
+        Err(vectorcraft_engine::EngineError::Other(e)) => assert!(e.starts_with("nothing selected can be restored"), "{e}"),
         Err(e) => panic!("{e}"),
     }
     run(&mut s, "select.none", json!({}));

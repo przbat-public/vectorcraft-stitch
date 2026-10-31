@@ -288,3 +288,19 @@ fn the_palette_runs_convert_restore_and_nearest_connection_as_the_panel_does() {
     until_done(&mut app, &ctx);
     assert!(app.ui.status.starts_with("Nearest Connection · "), "{}", app.ui.status);
 }
+
+/// Convert's and Restore's refusals and what they passed over are said with their reasons worded
+/// and counted, never as ids and codes; any other message is left as it is.
+#[test]
+fn passed_over_objects_are_said_with_their_reasons_in_words() {
+    let refused = format!("{}: 7 (locked), 9 (locked), 12 (literal)", vectorcraft_engine::cmd::embroidery::CONVERT_REFUSED);
+    assert_eq!(super::vocabulary::refusal(&refused), "nothing selected can be converted to manual stitches: locked (2), stitches from a file (1)");
+    let refused = format!("{}: 4 (outOfRange)", vectorcraft_engine::cmd::embroidery::RESTORE_REFUSED);
+    assert_eq!(super::vocabulary::refusal(&refused), "nothing selected can be restored: would lie outside the document (1)");
+    assert_eq!(super::vocabulary::refusal("something else: 3 (locked)"), "something else: 3 (locked)");
+    let reply = json!({"convertedCount": 1, "skippedCount": 2, "skipped": [{"id": 3, "reason": "locked"}, {"id": 4, "reason": "notSewn"}]});
+    assert_eq!(
+        crate::panels::embroidery::object::converted(&reply),
+        "1 object converted to manual stitches: Restore Object brings it back · 2 objects passed over: locked (1), not sewn (1)"
+    );
+}

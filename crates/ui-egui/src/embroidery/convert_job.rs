@@ -67,7 +67,7 @@ pub fn start(app: &mut VectorcraftApp, params: &Value) {
     }
     let job = match app.session.convert_to_manual_job(params) {
         Ok(job) => job,
-        Err(e) => return app.status(crate::i18n::msg(&e.to_string())),
+        Err(e) => return app.status(super::vocabulary::refusal(&e.to_string())),
     };
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
     let (stop, done) = (CancelToken::new(), Arc::new(AtomicU64::new(0)));
@@ -137,7 +137,7 @@ pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
         }
         Ok(planned) => match app.session.apply_convert_to_manual(planned) {
             Ok(reply) => crate::panels::embroidery::object::converted(&reply),
-            Err(e) => crate::i18n::msg(&e.to_string()),
+            Err(e) => super::vocabulary::refusal(&e.to_string()),
         },
         Err(e) => crate::i18n::msg(&e.to_string()),
     };

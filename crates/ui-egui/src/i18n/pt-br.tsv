@@ -5964,9 +5964,9 @@ embroidery	Auto (where the plan ends the part)	Automático (onde o plano termina
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Converter em pontos manuais
 @msg	nothing selected can be converted to manual stitches: {_1}	nada da seleção pode ser convertido em pontos manuais: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Restaurar objeto
-@msg	nothing selected was converted to manual stitches: {_1}	nada da seleção foi convertido em pontos manuais: {_1}
+@msg	nothing selected can be restored: {_1}	nada da seleção pode ser restaurado: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Pontos manuais ou de um arquivo redimensionados em mais de {value}%
 embroidery	{name}: {value}% larger	{name}: ampliado em {value}%
@@ -6026,3 +6026,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	cada parada é gravada como uma troca para a mesma linha: uma máquina de uma agulha para ali; uma de várias agulhas, só onde o operador define uma parada nessa troca
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Objetos bloqueados não podem ser restaurados: desbloqueie-os primeiro.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	pontos de um arquivo
+embroidery	manual stitches already	já são pontos manuais
+embroidery	symbol instances	instâncias de símbolos
+embroidery	clipping paths	caminhos de recorte
+embroidery	parts of an object sewn whole	partes de um objeto costurado inteiro
+embroidery	holding what isn't sewn	contém o que não é costurado
+embroidery	locked	bloqueados
+embroidery	not sewn	não costurados
+embroidery	stitches a manual run can't hold	pontos que uma sequência manual não comporta
+embroidery	not converted	não convertidos
+embroidery	the kept object doesn't read	o objeto guardado não pode ser lido
+embroidery	its symbol is gone	falta o símbolo
+embroidery	would lie outside the document	ficaria fora do documento
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} objeto ignorado: {reasons}|{count} objetos ignorados: {reasons}

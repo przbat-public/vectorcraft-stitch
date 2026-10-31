@@ -6000,9 +6000,9 @@ embroidery	Auto (where the plan ends the part)	Αυτόματα (όπου το �
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Μετατροπή σε χειροκίνητες βελονιές
 @msg	nothing selected can be converted to manual stitches: {_1}	τίποτα από την επιλογή δεν μετατρέπεται σε χειροκίνητες βελονιές: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Επαναφορά αντικειμένου
-@msg	nothing selected was converted to manual stitches: {_1}	τίποτα από την επιλογή δεν έχει μετατραπεί σε χειροκίνητες βελονιές: {_1}
+@msg	nothing selected can be restored: {_1}	τίποτα από την επιλογή δεν μπορεί να επαναφερθεί: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Χειροκίνητες βελονιές ή βελονιές από αρχείο με κλιμάκωση πάνω από {value}%
 embroidery	{name}: {value}% larger	{name}: μεγέθυνση κατά {value}%
@@ -6062,3 +6062,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	κάθε διακοπή γράφεται ως αλλαγή στην ίδια κλωστή: μια μονοβελονική μηχανή σταματά εκεί, μια πολυβελονική μόνο όπου ο χειριστής της ορίσει διακοπή σε αυτή την αλλαγή
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Τα κλειδωμένα αντικείμενα δεν μπορούν να επαναφερθούν: ξεκλειδώστε τα πρώτα.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	βελονιές από αρχείο
+embroidery	manual stitches already	ήδη χειροκίνητες βελονιές
+embroidery	symbol instances	παρουσίες συμβόλων
+embroidery	clipping paths	διαδρομές αποκοπής
+embroidery	parts of an object sewn whole	μέρη αντικειμένου που ράβεται ολόκληρο
+embroidery	holding what isn't sewn	περιέχει ό,τι δεν ράβεται
+embroidery	locked	κλειδωμένα
+embroidery	not sewn	δεν ράβονται
+embroidery	stitches a manual run can't hold	βελονιές που δεν χωρούν σε χειροκίνητη σειρά
+embroidery	not converted	δεν μετατράπηκαν
+embroidery	the kept object doesn't read	το φυλαγμένο αντικείμενο δεν διαβάζεται
+embroidery	its symbol is gone	λείπει το σύμβολό του
+embroidery	would lie outside the document	θα βρισκόταν έξω από το έγγραφο
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} αντικείμενο παραλείφθηκε: {reasons}|{count} αντικείμενα παραλείφθηκαν: {reasons}

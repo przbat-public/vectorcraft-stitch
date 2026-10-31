@@ -6046,9 +6046,9 @@ embroidery	Auto (where the plan ends the part)	Automatisch (waar het plan het de
 # VectorCraft Stitch: Convert to Manual Stitches (an object's stitches frozen to be edited one by one), and what it says when nothing selected can be converted
 	Convert to Manual Stitches	Omzetten naar handmatige steken
 @msg	nothing selected can be converted to manual stitches: {_1}	niets van de selectie kan worden omgezet naar handmatige steken: {_1}
-# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected was converted
+# VectorCraft Stitch: Restore Object (the object a manual object was converted from, put back), and what it says when nothing selected can be restored
 	Restore Object	Object herstellen
-@msg	nothing selected was converted to manual stitches: {_1}	niets van de selectie is omgezet naar handmatige steken: {_1}
+@msg	nothing selected can be restored: {_1}	niets van de selectie kan worden hersteld: {_1}
 # VectorCraft Stitch: the Check tab's warning for manual stitches and stitches from a file scaled past ±10 % since opened or converted, its findings and its largest change
 embroidery	Manual stitches or stitches from a file scaled by more than {value}%	Handmatige steken of steken uit een bestand die meer dan {value}% geschaald zijn
 embroidery	{name}: {value}% larger	{name}: {value}% vergroot
@@ -6108,3 +6108,18 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 @msg	each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change	elke stop wordt geschreven als een wissel naar dezelfde draad: een machine met één naald stopt daar, een meernaaldsmachine alleen waar de bediener op die wissel een stop instelt
 # VectorCraft Stitch: why Restore Object is dimmed
 embroidery	Locked objects can't be restored: unlock them first.	Vergrendelde objecten kunnen niet worden hersteld: ontgrendel ze eerst.
+# VectorCraft Stitch: what Convert to Manual Stitches and Restore Object passed over, and why
+embroidery	stitches from a file	steken uit een bestand
+embroidery	manual stitches already	al handmatige steken
+embroidery	symbol instances	symboolinstanties
+embroidery	clipping paths	knippaden
+embroidery	parts of an object sewn whole	delen van een object dat als geheel wordt genaaid
+embroidery	holding what isn't sewn	bevat wat niet wordt genaaid
+embroidery	locked	vergrendeld
+embroidery	not sewn	niet genaaid
+embroidery	stitches a manual run can't hold	steken die een handmatige reeks niet kan bevatten
+embroidery	not converted	niet omgezet
+embroidery	the kept object doesn't read	het bewaarde object is onleesbaar
+embroidery	its symbol is gone	het symbool ontbreekt
+embroidery	would lie outside the document	zou buiten het document liggen
+@plural	{count} object passed over: {reasons}|{count} objects passed over: {reasons}	{count} object overgeslagen: {reasons}|{count} objecten overgeslagen: {reasons}

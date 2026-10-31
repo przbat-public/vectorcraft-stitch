@@ -526,6 +526,45 @@ fn an_object_sewn_whole_holding_what_isnt_sewn_is_passed_over() {
     }
 }
 
+/// Art in a converted object that isn't one of its runs (pasted in while it was isolated), and a run
+/// hidden or recoloured, are edits Restore asks before; restoring keeps that art, beside the
+/// restored object in its parent, right above it (the project owner's choice, 2026-10-30).
+#[test]
+fn restore_asks_before_foreign_art_and_keeps_it_beside_the_object() {
+    let edited = |s: &mut Session, g: u64| run(s, "embroidery.restoreObject", json!({"ids": [g], "dryRun": true}))["edited"].clone();
+    for edit in ["hide", "recolour"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+        let first = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(a)).unwrap().children().unwrap()[0].id.0;
+        assert_eq!(edited(&mut s, a), json!([]));
+        match edit {
+            "hide" => run(&mut s, "object.hide", json!({"ids": [first]})),
+            _ => {
+                run(&mut s, "select.set", json!({"ids": [first]}));
+                run(&mut s, "paint.setStroke", json!({"color": "#1e1ec8"}))
+            }
+        };
+        assert_eq!(edited(&mut s, a), json!([a]), "{edit}");
+    }
+    let mut s = blank();
+    let a = red_square(&mut s, 5.0, 5.0, 10.0);
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [a]}));
+    let art = red_square(&mut s, 40.0, 40.0, 5.0);
+    s.edit("Into the converted object", |d, _| {
+        let n = d.remove(vectorcraft_doc::NodeId(art)).unwrap();
+        d.insert(Some(vectorcraft_doc::NodeId(a)), usize::MAX, (*n).clone()).map(|_| ()).map_err(|e| crate::EngineError::Other(e.to_string()))
+    })
+    .unwrap();
+    assert_eq!(edited(&mut s, a), json!([a]), "foreign art in it");
+    run(&mut s, "embroidery.restoreObject", json!({"ids": [a]}));
+    let doc = s.doc().unwrap().doc.clone();
+    let (parent, at, _) = doc.position(vectorcraft_doc::NodeId(art)).expect("the art kept");
+    let (object_parent, object_at, _) = doc.position(vectorcraft_doc::NodeId(a)).unwrap();
+    assert_eq!((parent, at), (object_parent, object_at + 1), "beside the restored object, right above it");
+    assert!(matches!(doc.node(vectorcraft_doc::NodeId(a)).unwrap().kind, vectorcraft_doc::NodeKind::Path { .. }), "the object back");
+}
+
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,
 /// an original that doesn't read as an object, one placing a symbol the document no longer has.
 #[test]

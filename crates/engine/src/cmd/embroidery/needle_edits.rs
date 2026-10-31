@@ -888,7 +888,7 @@ fn join_within(st: &Stitches, at: &BTreeSet<usize>) -> (Rebuilt, usize, usize) {
 
 /// The colour a path of stitches is sewn in, as the walk reads it: its first visible stroke's
 /// solid colour, in 8-bit RGB.
-fn stroke_colour(n: &vectorcraft_doc::Node) -> Option<[u8; 3]> {
+pub(super) fn stroke_colour(n: &vectorcraft_doc::Node) -> Option<[u8; 3]> {
     n.appearance.items.iter().filter(|i| i.visible()).find_map(|i| match i {
         vectorcraft_doc::AppearanceItem::Stroke(s) => match &s.paint {
             vectorcraft_color::Paint::Solid { color, .. } => {

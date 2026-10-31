@@ -5161,7 +5161,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   Strokes & Effects and Scale Corners from `strokes` and `corners`, else the preferences), so it is planned again at
   its size now, with the group's id, name, visibility, lock, Trim After and Stop After; edits to its stitches are
   discarded. `edited` lists the objects whose stitches were edited since converting (not only moved, turned or scaled
-  with their object): with `dryRun: true` nothing changes, so an interface can ask first. It passes over, with
+  with their object; a run hidden or recoloured, or art in the object that isn't one of its runs, counts): with
+  `dryRun: true` nothing changes, so an interface can ask first. Art in the object that isn't one of its runs (pasted
+  in while it was isolated) is kept, beside the restored object in its parent, right above it. It passes over, with
   `reason`: `notConverted`, `literal`, `unreadable` (the object kept doesn't read), `missingSymbol`, `locked`. One undo
   step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global

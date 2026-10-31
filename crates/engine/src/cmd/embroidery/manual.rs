@@ -222,6 +222,10 @@ pub(crate) fn fingerprint(group: &Node, frame: Affine) -> Option<u64> {
         let e = c.extras().embroidery.as_deref();
         let none = StitchRun::default();
         let run = e.and_then(|e| e.stitches.as_ref()).unwrap_or(&none);
+        // Shown or hidden, and in which thread colour: a run hidden or recoloured is an edit.
+        let colour = super::needle_edits::stroke_colour(c).map_or(u64::MAX, |[r, g, b]| u64::from(r) << 16 | u64::from(g) << 8 | u64::from(b));
+        eat(u64::from(c.visible));
+        eat(colour);
         eat(path.subpaths.len() as u64);
         for sp in &path.subpaths {
             eat(sp.anchors.len() as u64);
@@ -678,11 +682,13 @@ pub(crate) fn summary(doc: &Document, ids: &[NodeId]) -> Option<super::info::Man
 }
 
 /// Whether the stitches of converted group `group` were edited since converting: their fingerprint
-/// ([`fingerprint`], the needle points taken back by the original's frame) is no longer the one kept,
-/// or none was kept.
+/// ([`fingerprint`], the needle points taken back by the original's frame, each run's cuts, stops,
+/// visibility and colour) is no longer the one kept, or none was kept; or the group holds art that
+/// isn't one of its runs (pasted into it while isolated): Restore asks before it then (the project
+/// owner's choice, 2026-10-30).
 pub(crate) fn edited(group: &Node) -> bool {
     let Some(o) = group.extras().embroidery.as_deref().and_then(|e| e.original.as_ref()) else { return false };
-    o.fingerprint.is_none() || fingerprint(group, o.frame) != o.fingerprint
+    o.fingerprint.is_none() || fingerprint(group, o.frame) != o.fingerprint || group.children().into_iter().flatten().any(|c| !is_manual_run(c))
 }
 
 /// The object converted group `group` (in `doc`) was converted from, as it is to be put back: read
@@ -792,8 +798,18 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
             let Some(group) = d.node(*g).cloned() else { continue };
             match restored(d, &group, scaling, &mut used) {
                 Ok(n) => {
+                    // Art that isn't one of its runs (pasted in while isolated) isn't the object's:
+                    // it stays, beside the restored object in its parent, in its stacking order.
+                    let foreign: Vec<Node> = group.children().into_iter().flatten().filter(|c| !is_manual_run(c)).map(|c| (**c).clone()).collect();
                     let Some(slot) = d.node_mut(*g) else { continue };
                     *slot = n;
+                    if !foreign.is_empty()
+                        && let Some((parent, at, _)) = d.position(*g)
+                    {
+                        for (k, art) in foreign.into_iter().enumerate() {
+                            d.insert(parent, at + 1 + k, art).map_err(|e| EngineError::Internal { cmd: RESTORE.into(), msg: e.to_string() })?;
+                        }
+                    }
                     sel.anchors.remove(g);
                     restored_ids.push(g.0);
                 }

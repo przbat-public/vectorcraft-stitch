@@ -196,8 +196,9 @@ bar saying how far it has got and Escape stopping it; it converts only if the do
 was when the convert began. Restore Object
 (`embroidery.restoreObject`, the Object tab's button on manual stitches) puts the object back,
 moved, turned and scaled as its stitches were since, planned again at its size now; it asks first
-only when the stitches were edited since converting, as those edits are then lost (Undo brings
-them back). The Object tab says what manual stitches are, their runs and needle points and how much
+only when the stitches were edited since converting (a run hidden or recoloured, or art pasted into
+the object, counts), as those edits are then lost (Undo brings them back); art pasted into the
+object stays, beside it, right above it (the project owner's choice, 2026-10-30). The Object tab says what manual stitches are, their runs and needle points and how much
 they were scaled since converting; the Check tab warns past ±10 % (`stitchesScaled`), for an
 opened design's stitches too, since stitches scaled keep their count, not their density.
 

@@ -315,7 +315,11 @@ impl Editing {
                 }
             }
             None => {
-                self.marquee = Some(Marquee { from: ev.pos, to: ev.pos, mode: if ev.mods.shift { "add" } else { "set" }, dragged: false });
+                // Kept within the document's coordinates, as anything the marquee's box reaches is
+                // drawn and sent: a pointer from far off (an agent's) stops at the edge.
+                if let Some(at) = super::within(ev.pos) {
+                    self.marquee = Some(Marquee { from: at, to: at, mode: if ev.mods.shift { "add" } else { "set" }, dragged: false });
+                }
             }
         }
         out
@@ -324,21 +328,23 @@ impl Editing {
     /// The pointer dragged: the move of the needle points held (on the grid; Shift at 45° steps),
     /// previewed at the next tick; or the marquee's corner.
     fn drag_to(&mut self, cx: &ToolContext, ev: &PointerEvent) -> Vec<Action> {
+        // Within the document's coordinates, as at the press.
+        let Some(pos) = super::within(ev.pos) else { return vec![] };
         if let Some(m) = self.marquee.as_mut() {
-            m.to = ev.pos;
-            m.dragged |= ev.pos.distance(m.from) > cx.tol(DRAG_START_PX);
+            m.to = pos;
+            m.dragged |= pos.distance(m.from) > cx.tol(DRAG_START_PX);
             return vec![];
         }
         let Some(d) = self.drag.as_mut() else { return vec![] };
         let mut out = Vec::new();
         if !d.begun {
-            if ev.pos.distance(d.from) <= cx.tol(DRAG_START_PX) {
+            if pos.distance(d.from) <= cx.tol(DRAG_START_PX) {
                 return out;
             }
             d.begun = true;
             out.push(Action::Begin(MOVE_LABEL.into()));
         }
-        let by: Vec2 = ev.pos - d.from;
+        let by: Vec2 = pos - d.from;
         let by = if ev.mods.shift { constrain_angle_from(by, SHIFT_ANGLE, cx.constrain_angle) } else { by };
         let delta = [on_grid(by.x), on_grid(by.y)];
         if delta != d.delta {

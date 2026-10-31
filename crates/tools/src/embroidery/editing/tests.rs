@@ -375,6 +375,16 @@ fn the_marquee_selects_the_needle_points_inside_it() {
     );
     t.pointer(&c, &ev(PointerKind::Down, 50.0, 50.0));
     assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 50.0, 50.0)), vec![exec("select.none", json!({}))], "a click away from them");
+    // Dragged far off, it stops at the document's edge; a corner that isn't a number leaves it.
+    let max = vectorcraft_doc::MAX_COORD;
+    t.pointer(&c, &ev(PointerKind::Down, 50.0, 50.0));
+    t.pointer(&c, &ev(PointerKind::Drag, 3e17, -3e17));
+    t.pointer(&c, &ev(PointerKind::Drag, f64::NAN, f64::INFINITY));
+    assert_eq!(t.options()["stitches"]["marquee"], json!([50.0, -max, max, 50.0]));
+    assert_eq!(
+        t.pointer(&c, &ev(PointerKind::Up, 3e17, -3e17)),
+        vec![exec("embroidery.selectNeedlePoints", json!({"rect": [mm(50.0), mm(-max), mm(max), mm(50.0)], "mode": "set"}))]
+    );
 }
 
 /// Alt-click on a stitch inserts a needle point where it is pressed, before the needle point the

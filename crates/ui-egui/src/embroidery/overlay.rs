@@ -170,9 +170,16 @@ fn anchors_within(nodes: &[&Node], max: usize) -> bool {
     true
 }
 
+/// The farthest from the canvas's origin a dashed line may reach, screen points. A document's art
+/// stays within [`vectorcraft_doc::MAX_COORD`], 3.4 billion screen points at the closest zoom
+/// (64,000 % with Display Print Size), and the renderer leaves art past this range undrawn: a
+/// segment reaching past it comes from input out of range (a pointer sent from far off, a file's
+/// run) and is left undrawn too. Within it an f64 places every dash to well under a point.
+const SCREEN_RANGE_PT: f64 = 1e10;
+
 /// Dash `line` (screen points) with `stroke`, `pattern` its dashes' and gaps' lengths, where it
 /// crosses `clip`, at most `budget` dashes, taken from it: a long line far outside the canvas costs
-/// nothing.
+/// nothing, and a segment past [`SCREEN_RANGE_PT`] is left out.
 pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f32, f32), clip: egui::Rect, budget: &mut usize) {
     let (dash, period) = (f64::from(pattern.0), f64::from(pattern.0 + pattern.1));
     // How far along the line this segment starts, folded into one period (the dashes go on from one
@@ -180,8 +187,9 @@ pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f
     let mut phase = 0.0_f64;
     for w in line.windows(2) {
         let [a, b] = w else { continue };
+        let in_range = [a.x, a.y, b.x, b.y].iter().all(|v| v.is_finite() && f64::from(v.abs()) <= SCREEN_RANGE_PT);
         let len = f64::from(a.distance(*b));
-        if !len.is_finite() || len <= 0.0 {
+        if !in_range || !len.is_finite() || len <= 0.0 {
             continue;
         }
         if let Some((t0, t1)) = clip_segment(*a, *b, clip) {
@@ -190,16 +198,23 @@ pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f
             let [ax, ay, bx, by] = [a.x, a.y, b.x, b.y].map(f64::from);
             let (dx, dy) = (bx - ax, by - ay);
             let at = |x: f64| pos2((ax + dx * x / len) as f32, (ay + dy * x / len) as f32);
-            // The dashes over [x0, x1] of the segment, the first one starting at or before x0.
-            let mut d0 = x0 - (x0 + phase).rem_euclid(period);
-            while d0 < x1 {
-                let (u0, u1) = (d0.max(x0), (d0 + dash).min(x1));
+            // The dashes over [x0, x1] of the segment, the first one starting at or before x0 (and
+            // perhaps ending before it). Counted rather than stepped until past x1, so the loop ends
+            // whatever the floats do, and never more than the budget can draw.
+            let d0 = x0 - (x0 + phase).rem_euclid(period);
+            let steps = ((x1 - d0) / period).ceil();
+            if !steps.is_finite() {
+                continue;
+            }
+            let most = budget.saturating_add(1) as f64;
+            for k in 0..steps.clamp(0.0, most) as usize {
+                let d = d0 + k as f64 * period;
+                let (u0, u1) = (d.max(x0), (d + dash).min(x1));
                 if u1 > u0 {
                     let Some(left) = budget.checked_sub(1) else { return };
                     *budget = left;
                     p.line_segment([at(u0), at(u1)], stroke);
                 }
-                d0 += period;
             }
         }
         phase = (phase + len).rem_euclid(period);

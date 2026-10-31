@@ -165,6 +165,86 @@ fn a_drag_moves_needle_points_and_escape_puts_them_back() {
     assert!(needle(&app, object, 4).x > from.x + 1.0);
 }
 
+/// A marquee dragged far off the canvas: the tool keeps it within the document's coordinates, so
+/// the frames that draw it end, whether the pointer is the mouse's (held across frames) or an
+/// agent's (`ui.pointer`, whose release selects the needle points it covers).
+#[test]
+fn a_marquee_dragged_far_off_stays_within_the_document() {
+    let (mut app, _) = editing();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let max = vectorcraft_doc::MAX_COORD;
+    // With the mouse, from an empty spot of the artboard to far past the window.
+    let empty = on_screen(&app, Point::new(20.0, 20.0));
+    let far = egui::pos2(3e17, 3e17);
+    for e in [Event::PointerMoved(empty), press(empty, true), Event::PointerMoved(empty + egui::vec2(30.0, 30.0)), Event::PointerMoved(far)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let marquee = app.session.tool_options()["stitches"]["marquee"].clone();
+    let corner = |m: &serde_json::Value, k: usize| m[k].as_f64().unwrap();
+    assert!((corner(&marquee, 0) - 20.0).abs() < 1e-6 && (corner(&marquee, 1) - 20.0).abs() < 1e-6, "{marquee}");
+    assert_eq!([corner(&marquee, 2), corner(&marquee, 3)], [max, max], "kept within the document's coordinates");
+    settle(&mut app, &ctx, &mut time);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![press(far, false)]);
+    settle(&mut app, &ctx, &mut time);
+    let editing = app.session.stitch_editing(app.view_info()).unwrap();
+    assert!(editing.selected > 0 && editing.selected == editing.scope.needles, "{} of {}", editing.selected, editing.scope.needles);
+    // An agent's, in one request (a command ends a gesture: each request ends reading the
+    // document).
+    app.run("select.none", json!({})).unwrap();
+    let events = json!([{"kind": "down", "x": 20, "y": 20}, {"kind": "drag", "x": 3e17, "y": 3e17}, {"kind": "up", "x": 3e17, "y": 3e17}]);
+    let (req, _) = crate::control::ControlRequest::new("ui.pointer", json!({"events": events}));
+    let crate::control::Outcome::Done(r) = crate::control::handle(&mut app, &ctx, &req) else { panic!("not done") };
+    assert_eq!(r["ok"], true, "{r}");
+    settle(&mut app, &ctx, &mut time);
+    let editing = app.session.stitch_editing(app.view_info()).unwrap();
+    assert!(editing.selected > 0 && editing.selected == editing.scope.needles, "{} of {}", editing.selected, editing.scope.needles);
+}
+
+/// A run of the edited object out of the document's range, as a file can hold one: the needle
+/// index refuses it, so Select All selects the other runs' needle points alone, the box drawn for
+/// them (past the shapes' cap) stays where they are, and the frames that draw it end.
+#[test]
+fn a_run_out_of_range_is_left_out_of_the_selection_and_its_box() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.embroidery.preview.pin_light();
+    app.run("file.new", json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    app.run("paint.setFill", json!({"color": "#c81e1e"})).unwrap();
+    let big = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 280, "height": 200})).unwrap()["id"].as_u64().unwrap();
+    let small = app.run("shape.rectangle", json!({"x": 10, "y": 230, "width": 60, "height": 50})).unwrap()["id"].as_u64().unwrap();
+    app.run("select.set", json!({"ids": [big, small]})).unwrap();
+    let group = app.run("object.group", json!({})).unwrap()["id"].as_u64().unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    // The small shape's first run with its last needle point far off.
+    {
+        let doc = std::sync::Arc::make_mut(&mut app.session.active_mut().unwrap().doc);
+        let run = doc.node(NodeId(small)).unwrap().children().unwrap().first().unwrap().id;
+        let path = doc.node_mut(run).unwrap().path_data_mut().unwrap();
+        path.subpaths.last_mut().unwrap().anchors.last_mut().unwrap().p = Point::new(1e17, 1e17);
+    }
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": group})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    app.run("select.all", json!({})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let editing = app.session.stitch_editing(app.view_info()).unwrap();
+    assert_eq!(editing.scope.refused, 1, "{:?}", editing.scope);
+    assert!(editing.selected > super::SELECTION_SHAPES_MAX, "the box is drawn: {}", editing.selected);
+    assert_eq!(editing.selected, editing.scope.needles, "every needle point being edited, the far run's left out");
+    let k = &app.embroidery.selection;
+    assert_eq!(k.count, editing.selected, "the selection layer counts as the chip does");
+    let b = k.bounds.unwrap();
+    assert!(b.x1 < 300.0 && b.y1 < 300.0, "the box stays on the artboard: {b:?}");
+}
+
 /// The live check: the needle points selected, and their stitches' shortest and longest with a
 /// passed mark; a stitch made longer than the limit warns.
 #[test]

@@ -1155,8 +1155,10 @@ fn chains(doc: &Document, firsts: &[NodeId], passed: &mut Vec<(NodeId, needles::
 }
 
 pub(super) const FUNCTION: &str = "embroidery.setMachineFunction";
-/// The undo step's name, the command's label.
-pub(super) const FUNCTION_LABEL: &str = "Machine Function";
+/// The undo step's name for a cut, and for a stop: what the step did (the command's label, Machine
+/// Function, names both).
+const TRIM_LABEL: &str = "Cut After Needle Point";
+const STOP_LABEL: &str = "Stop After Needle Point";
 
 /// The needle point a function after needle point `k` of `st` (`ix` its index) comes after: `k`
 /// itself when it ends its run; else, when all its run has after it is a tie-off back to its spot
@@ -1326,7 +1328,11 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
         "splitCount": splits,
         "needlePoints": addressed,
     });
-    e.finish(s, FUNCTION_LABEL, changed > 0, own)
+    let label = match f {
+        Function::Trim => TRIM_LABEL,
+        Function::Stop => STOP_LABEL,
+    };
+    e.finish(s, label, changed > 0, own)
 }
 
 pub(super) const SPLIT_LONG: &str = "embroidery.splitLongStitches";

@@ -5693,3 +5693,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
 @msg	runs of stitches join only with runs of stitches: select only them	các đoạn mũi thêu chỉ nối với các đoạn mũi thêu: chỉ chọn chúng
 @msg	select two or more runs of stitches sewn one right after another to join them	chọn hai đoạn mũi thêu trở lên được may nối tiếp nhau để nối chúng
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Cắt chỉ sau điểm đâm kim
+	Stop After Needle Point	Dừng sau điểm đâm kim

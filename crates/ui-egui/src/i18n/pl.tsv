@@ -5949,3 +5949,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
 @msg	runs of stitches join only with runs of stitches: select only them	ciągi ściegów łączą się tylko z ciągami ściegów: zaznacz tylko je
 @msg	select two or more runs of stitches sewn one right after another to join them	zaznacz dwa lub więcej ciągów ściegów szytych bezpośrednio jeden po drugim, aby je połączyć
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	Cięcie po nakłuciu
+	Stop After Needle Point	Stop po nakłuciu

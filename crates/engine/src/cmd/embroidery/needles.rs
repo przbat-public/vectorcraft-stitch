@@ -39,7 +39,9 @@ pub(crate) const MAX_NEEDLE_POINTS: usize = 2_000_000;
 /// The most paths one command edits: the Layers panel's and the settings commands' bound on the
 /// objects a call names (`layer::MAX_ROWS`).
 pub(crate) const MAX_PATHS: usize = crate::cmd::layer::MAX_ROWS;
-/// The most entries a reply lists (its counts are never cut): enough to show what an edit did.
+/// The most entries a reply lists (its counts are never cut): enough to show what an edit did, in a
+/// reply of a few hundred kilobytes at most, as the settings commands list their objects. An
+/// estimate.
 pub(crate) const MAX_LISTED: usize = 1000;
 
 /// Why a path's stitches can't be edited needle point by needle point, or a path joined: each
@@ -254,10 +256,12 @@ impl Index {
     }
 
     /// The needle point anchor `(subpath, anchor)` is, of stitches read from a path (a run a
-    /// subpath): the second anchor of a line to its own start is its one needle point.
+    /// subpath): the second anchor of a line to its own start is its one needle point; an anchor
+    /// past a run's needle points otherwise (one an edit since left stale) is none.
     fn needle_of_anchor(&self, (s, a): (usize, usize)) -> Option<usize> {
-        let i = a.min(self.run_len(s).checked_sub(1)?);
-        Some(self.index_of(s, i))
+        let len = self.run_len(s);
+        let i = if len == 1 { 0 } else { a };
+        (i < len).then(|| self.index_of(s, i))
     }
 }
 

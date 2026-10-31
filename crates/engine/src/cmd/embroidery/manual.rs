@@ -31,9 +31,8 @@ const CONVERT: &str = "embroidery.convertToManual";
 /// The undo step's name, the command's label.
 const CONVERT_LABEL: &str = "Convert to Manual Stitches";
 
-/// The most objects a reply lists in `converted` and in `skipped` (their counts are whole): as many
-/// as the settings commands list.
-const MAX_LISTED: usize = 1000;
+/// The most objects a reply lists in `converted` and in `skipped` (their counts are whole).
+use super::needles::MAX_LISTED;
 
 /// Why an object given isn't converted, as the reply names it ([`Skip::code`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

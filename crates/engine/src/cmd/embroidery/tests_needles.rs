@@ -159,6 +159,10 @@ fn the_selection_maps_to_needle_points_and_back() {
     sel.anchors.clear();
     sel.objects = vec![NodeId(id)];
     assert_eq!(needles::selected_in(&sel, NodeId(id), &ix).len(), 4, "selected whole: all of it");
+    // An anchor past a run's needle points (left stale by an edit since) is none of them; the
+    // second anchor of a line to its own start is its one.
+    sel.anchors.insert(NodeId(id), [(0, 9), (1, 1)].into_iter().collect());
+    assert_eq!(needles::selected_in(&sel, NodeId(id), &ix), [3].into_iter().collect());
 }
 
 /// The index finds a needle point by its place across the runs, passing over a run with none (an
@@ -223,6 +227,31 @@ fn addresses_are_strict_and_replies_give_new_ones() {
     assert_eq!(len, 10);
     let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": id, "index": 8, "of": len}]}));
     assert_eq!(r["merged"], json!([{"id": id, "index": 7}]), "{r}");
+}
+
+/// Each edit's label constant (its undo step's name) is the command's own label, as the command
+/// table gives it; Machine Function names its step by what it did, a cut or a stop.
+#[test]
+fn the_edits_name_their_undo_steps_as_their_commands() {
+    use super::needle_edits as e;
+    let specs = super::specs();
+    let label = |id: &str| specs.iter().find(|c| c.id == id).map(|c| c.label);
+    for (id, constant) in [
+        (e::MOVE, e::MOVE_LABEL),
+        (e::INSERT, e::INSERT_LABEL),
+        (e::DELETE, e::DELETE_LABEL),
+        (e::SPLIT, e::SPLIT_LABEL),
+        (e::JOIN, e::JOIN_LABEL),
+        (e::SPLIT_LONG, e::SPLIT_LONG_LABEL),
+    ] {
+        assert_eq!(label(id), Some(constant), "{id}");
+    }
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (14.0, 10.0), (18.0, 10.0)], StitchRun::default());
+    for (function, step) in [("trim", "Cut After Needle Point"), ("stop", "Stop After Needle Point")] {
+        run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": id, "index": 1}], "function": function, "ties": false}));
+        assert_eq!(s.doc().unwrap().history.undo.last().map(|h| h.label.clone()), Some(step.to_string()));
+    }
 }
 
 /// Move Needle Points moves the needle points addressed by millimetres, or one to a point, one undo
@@ -939,6 +968,11 @@ fn an_opened_designs_gaps_between_runs_can_be_edited() {
     let r = run(&mut s, "embroidery.setMachineFunction", json!({"needlePoints": [{"id": a, "index": 1}], "function": "trim"}));
     assert_eq!(r["on"], json!(true), "{r}");
     assert_eq!(trims(&mut s), before);
+    // Selected by its cut's record: the needle point the cut follows.
+    let r = run(&mut s, "embroidery.selectNeedlePoints", json!({"kinds": ["trim"]}));
+    assert_eq!(r["selectedCount"], json!(1), "{r}");
+    assert_eq!(s.doc().unwrap().selection.anchors[&NodeId(a)], [(0, 1)].into_iter().collect());
+    run(&mut s, "select.none", json!({}));
     // Join Runs at b's first needle point: b joined to a; then c (now after a) to a.
     let r = run(&mut s, "embroidery.joinRuns", json!({"needlePoints": [{"id": b, "index": 0}]}));
     assert_eq!((r["changedCount"].clone(), r["removed"].clone()), (json!(1), json!([b])), "{r}");

@@ -5231,7 +5231,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     the next run, a stop after it), at the path's last the path's (its Trim After or Stop After, the object's own
     included, and the cut an opened design keeps before the path sewn right after it). A function set with ties comes after the tie-off that follows the needle point addressed, and is
     found there again: the same call at the same index turns it off, and on again without a second split. Turned
-    off, the runs stay split. It answers `{function, on, changedCount, unchangedCount, splitCount,
+    off, the runs stay split. Its undo step is "Cut After Needle Point" or "Stop After Needle Point". It answers `{function, on, changedCount, unchangedCount, splitCount,
     needlePoints: [{id, index}], paths, pathCount, lengths, passedOver}` (`needlePoints`: each needle point addressed,
     numbered as after the edit, which splits and ties renumber).
   - `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?: 12.7 | format?}` splits each stitch arriving at
@@ -5247,7 +5247,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   - `embroidery.stitches {…embroidery options, from?, to?, ids?, kinds?, shorterThan?, longerThan?, offset?, limit?}`
     (a read command, also served off the interface thread) lists the design's records, numbered as the Sewing order
     and the Check tab number them: `{recordCount, matchedCount, offset, truncated, records: [{record, kind:
-    "stitch"|"jump"|"trim"|"stop", at, length, id, node, block, unit, index, editable}], options}`. `length` is a
+    "stitch"|"jump"|"trim"|"stop", at, length, id, node, block, unit, index, editable}], warnings, options}`. `length` is a
     needle-down stitch's from the needle point before it, or a jump's move (null for the needle point a jump or a cut
     lands on, a cut, a stop). Where the stitch commands can edit a record, `index` is the needle point of `node` it is
     (a jump: the one it lands on; a cut or a stop: the one before it, in the path before for the cut an opened
@@ -5258,8 +5258,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     length in millimetres; at most 10,000 listed a call. No `selectedOnly`: the numbers are the whole design's.
   - `embroidery.selectNeedlePoints {records?: [from, to], ids?, kinds?, shorterThan?, longerThan? | needlePoints?,
     ranges?, mode?: "set"|"add"|"toggle"|"subtract", …embroidery options}` selects needle points (their anchors, as
-    Direct Selection does) by the records that sew them, planning the design (a record that can't be edited is
-    passed over and counted; cuts and stops select nothing), or by their addresses, planning nothing. A selection,
+    Direct Selection does) by the records that sew them, planning the design (a jump selects the needle point it
+    lands on, a cut or a stop the one it follows; a record that can't be edited is passed over and counted), or by
+    their addresses, planning nothing. A selection,
     not an undo step: `{selectedCount, pathCount, passedOver}`. Selecting the needle points that end stitches
     shorter than a length, then `embroidery.deleteNeedlePoints {}`, deletes them.
 - The settings on objects (`embroidery.md` › Settings on objects): `embroidery.set {ids?, part, …the part's settings}`

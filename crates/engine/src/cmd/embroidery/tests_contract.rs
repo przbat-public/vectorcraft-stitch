@@ -171,7 +171,7 @@ fn the_manual_stitch_commands_replies_keep_their_shape() {
     let pinned = "{addedCount: int, changedCount: int, collapsedCount: int, lengths: {aboveMax: int, belowMin: int, count: int, longest: float, max: float, min: float, shortest: float}, limit: {length: float}, needlePoints: [{id: int, index: int}], passedOver: [], pathCount: int, paths: [{id: int, needlePoints: int}]}";
     assert_eq!(long, pinned, "replies changed shape; if on purpose, pin it");
     let listed = shape(&run(&mut s, "embroidery.stitches", json!({"limit": 1, "kinds": ["stitch"], "ids": [ids[0]]})));
-    let pinned = "{matchedCount: int, offset: int, options: {stitch: string}, recordCount: int, records: [{at: [float], block: int, editable: bool, id: int, index: int, kind: string, length: null, node: int, record: int, unit: int}], truncated: bool}";
+    let pinned = "{matchedCount: int, offset: int, options: {stitch: string}, recordCount: int, records: [{at: [float], block: int, editable: bool, id: int, index: int, kind: string, length: null, node: int, record: int, unit: int}], truncated: bool, warnings: []}";
     assert_eq!(listed, pinned, "replies changed shape; if on purpose, pin it");
     let selected = shape(&run(&mut s, "embroidery.selectNeedlePoints", json!({"records": [1, 5]})));
     assert_eq!(selected, "{passedOver: int, pathCount: int, selectedCount: int}", "replies changed shape; if on purpose, pin it");

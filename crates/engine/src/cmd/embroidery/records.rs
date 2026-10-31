@@ -303,6 +303,7 @@ pub(crate) fn list(plan: &DesignPlan, doc: &Document, ask: &Ask) -> Value {
         "offset": ask.page.offset,
         "truncated": ask.page.truncated(matched),
         "records": listed,
+        "warnings": plan.messages(),
     })
 }
 
@@ -315,8 +316,9 @@ const BY_RECORDS: [&str; 5] = ["records", "ids", "kinds", "shorterThan", "longer
 /// `embroidery.selectNeedlePoints {records?, ids?, kinds?, shorterThan?, longerThan? | needlePoints?,
 /// ranges?, mode?, …the embroidery options}`: needle points selected (`Selection.anchors`, as
 /// Direct Selection selects anchors) by the records that sew them (planning the design, as
-/// `embroidery.stitches` lists them; a record the stitch commands can't edit passed over and
-/// counted), or by their addresses (planning nothing). `mode`: set (the default), add, toggle or
+/// `embroidery.stitches` lists them: a needle point itself, a jump the one it lands on, a cut or a
+/// stop the one it follows; a record the stitch commands can't edit passed over and counted), or by
+/// their addresses (planning nothing). `mode`: set (the default), add, toggle or
 /// subtract. A selection, not an undo step.
 pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> {
     let o = super::object(p, SELECT)?;
@@ -362,7 +364,7 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
         let (plan, doc) = super::planned(s, &opts, false, SELECT)?;
         let mut count = 0usize;
         rows(&plan, &doc, &ask, |row| match row.index {
-            Some(k) if matches!(row.kind, RecordKind::Stitch | RecordKind::Jump) && count < needles::MAX_NEEDLE_POINTS => {
+            Some(k) if count < needles::MAX_NEEDLE_POINTS => {
                 if picked.entry(row.node).or_default().insert(k) {
                     count += 1;
                 }

@@ -5676,3 +5676,6 @@ embroidery	Changes made to the stitches since converting will be lost; Undo brin
 # VectorCraft Stitch: what Join (Cmd+J) says of runs of stitches it can't join: selected with art, or alone
 @msg	runs of stitches join only with runs of stitches: select only them	스티치 구간은 스티치 구간끼리만 연결됩니다: 그것만 선택하세요
 @msg	select two or more runs of stitches sewn one right after another to join them	연결하려면 바로 이어서 꿰매는 스티치 구간을 두 개 이상 선택하세요
+# VectorCraft Stitch: Machine Function's undo steps, named by what they did: a cut or a stop after a needle point
+	Cut After Needle Point	바늘 위치 뒤 실 자르기
+	Stop After Needle Point	바늘 위치 뒤 정지

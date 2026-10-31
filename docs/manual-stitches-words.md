@@ -20,7 +20,8 @@ ręczne", stop „stop", trim „cięcie", jump „przeskok"; the commands „Za
 
 ## Commands: menus, the command palette and Undo
 
-Each command's label is also its undo step's name in Edit › Undo and in History.
+Each command's label is also its undo step's name in Edit › Undo and in History, but Machine
+Function's, whose step is named by what it did.
 
 | Command | English | Polish |
 |---|---|---|
@@ -33,6 +34,8 @@ Each command's label is also its undo step's name in Edit › Undo and in Histor
 | `embroidery.splitRun` | Split Run | Podziel odcinek |
 | `embroidery.joinRuns` | Join Runs | Połącz odcinki |
 | `embroidery.setMachineFunction` | Machine Function | Funkcja maszyny |
+| its undo step for a cut | Cut After Needle Point | Cięcie po nakłuciu |
+| its undo step for a stop | Stop After Needle Point | Stop po nakłuciu |
 | `embroidery.splitLongStitches` | Split Long Stitches | Podziel długie ściegi |
 | `embroidery.stitches` | Stitch List | Lista ściegów |
 | `embroidery.selectNeedlePoints` | Select Needle Points | Zaznacz nakłucia |
@@ -136,6 +139,6 @@ and manual stitches; Polish's are the project owner's. Upstream VectorCraft has 
 
 | Date | Change |
 |---|---|
-| 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved; Join's refusals of runs with art and of one run alone. |
+| 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved; Join's refusals of runs with art and of one run alone; Machine Function's undo steps. |
 | 2026-10-27 | Brought in step with what landed: the Check tab's, the Sewing order's and the plan's words, the scale with the catalogues' percent sign, the terms each language chose. |
 | 2026-10-27 | Written for the manual stitches' first pull request: the planned strings, in English and Polish. |

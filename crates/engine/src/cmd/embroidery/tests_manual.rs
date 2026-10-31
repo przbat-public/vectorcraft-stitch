@@ -476,6 +476,56 @@ fn a_cut_before_a_manual_run_is_sewn() {
     assert_eq!(trims(&mut s), 1, "b's cut before it, sewn");
 }
 
+/// A group the plan sews whole (a drop shadow on it) of two near squares of one colour: Trim After,
+/// then Stop After, on the first square carried onto the run its last unit became, so the export
+/// right after converting is the same bytes in every format and the run says so (the project
+/// owner's choice, 2026-10-30).
+#[test]
+fn a_members_trim_and_stop_after_in_an_object_sewn_whole_are_carried() {
+    for mark in ["setTrimAfter", "setStopAfter"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        let b = red_square(&mut s, 18.0, 5.0, 10.0);
+        let group = run(&mut s, "object.group", json!({"ids": [a, b]}))["id"].as_u64().unwrap();
+        run(&mut s, "effect.apply", json!({"effect": "stylize.dropShadow", "ids": [group]}));
+        run(&mut s, &format!("embroidery.{mark}"), json!({"ids": [a], "on": true}));
+        let before = exports(&mut s);
+        let records = |s: &mut Session| run(s, "embroidery.stats", json!({}));
+        let (trims, stops) = (records(&mut s)["trims"].clone(), records(&mut s)["stops"].clone());
+        let r = run(&mut s, "embroidery.convertToManual", json!({"ids": [group]}));
+        assert_eq!(r["convertedCount"], json!(1), "{mark}: {r}");
+        assert!(exports(&mut s) == before, "{mark}: the same bytes right after converting");
+        assert_eq!((records(&mut s)["trims"].clone(), records(&mut s)["stops"].clone()), (trims, stops), "{mark}");
+        let runs = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(group)).unwrap().children().unwrap().clone();
+        let carried = runs.iter().filter_map(|c| c.extras().embroidery.as_deref()?.stitches.as_ref()).any(|r| r.trim_after || r.stop_after);
+        assert!(carried, "{mark}: on a run");
+    }
+}
+
+/// A group the plan sews whole holding what isn't sewn (type, a hidden or a locked object) is passed
+/// over as `holdsUnsewn`: converting would hide it inside the object kept.
+#[test]
+fn an_object_sewn_whole_holding_what_isnt_sewn_is_passed_over() {
+    for what in ["type", "hidden", "locked"] {
+        let mut s = blank();
+        let a = red_square(&mut s, 5.0, 5.0, 10.0);
+        let other = match what {
+            "type" => run(&mut s, "text.create", json!({"x": 60, "y": 60, "text": "Label"}))["id"].as_u64().unwrap(),
+            _ => red_square(&mut s, 30.0, 5.0, 10.0),
+        };
+        let group = run(&mut s, "object.group", json!({"ids": [a, other]}))["id"].as_u64().unwrap();
+        run(&mut s, "effect.apply", json!({"effect": "stylize.dropShadow", "ids": [group]}));
+        match what {
+            "hidden" => run(&mut s, "object.hide", json!({"ids": [other]})),
+            "locked" => run(&mut s, "object.lock", json!({"ids": [other]})),
+            _ => json!({}),
+        };
+        let r = s.execute("embroidery.convertToManual", &json!({"ids": [group]}));
+        let said = r.as_ref().err().map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains(&format!("{group} (holdsUnsewn)")), "{what}: {r:?}");
+    }
+}
+
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,
 /// an original that doesn't read as an object, one placing a symbol the document no longer has.
 #[test]

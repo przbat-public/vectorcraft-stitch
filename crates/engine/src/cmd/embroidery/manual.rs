@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::embroidery::{Embroidery, Exact, Mark, Original, StitchRun, shape_of};
+use vectorcraft_doc::embroidery::{After, Embroidery, Exact, Mark, Original, StitchRun, shape_of};
 use vectorcraft_doc::{Appearance, AppearanceItem, Document, LineCap, LineJoin, Node, NodeId, NodeKind, Shared};
 use vectorcraft_geom::{Affine, Anchor, PathData, Point, SubPath};
 use vectorcraft_stitch::plan::THREAD_WIDTH;
@@ -55,6 +55,11 @@ enum Skip {
     /// Its stitches hold what a run of manual stitches can't (two needle points at one spot in a run
     /// of several): converting would change them.
     Unfreezable,
+    /// An object the plan sews whole (a group with an effect or an appearance of its own) holding
+    /// what isn't sewn (type, an image, a placed file, a symbol's instance, a hidden, locked or
+    /// unpainted object): converting would hide it inside the object kept (the project owner's
+    /// choice, 2026-10-30).
+    HoldsUnsewn,
 }
 
 impl Skip {
@@ -69,6 +74,7 @@ impl Skip {
             Self::Locked => "locked",
             Self::NotSewn => "notSewn",
             Self::Unfreezable => "unfreezable",
+            Self::HoldsUnsewn => "holdsUnsewn",
         }
     }
 }
@@ -273,6 +279,8 @@ fn collect(
             Some(Skip::Manual)
         } else if !doc.is_editable(n.id) {
             Some(Skip::Locked)
+        } else if holds_unsewn(n) {
+            Some(Skip::HoldsUnsewn)
         } else {
             None
         };
@@ -294,6 +302,58 @@ fn collect(
             let inside = doc.ancestry(n.id).unwrap_or_default().iter().any(|a| *a != n.id && by_object.contains_key(a));
             skipped.push((n.id, if inside { Skip::InsideObject } else { Skip::NotSewn }));
         }
+    }
+}
+
+/// The cut and the stop after each of `units` (object `n`'s, in walk order, of `plan`) that a member
+/// of `n` asks for (Trim After, Stop After on an object inside one sewn whole: the project owner's
+/// choice, 2026-10-30), to go on its run, so that the walk makes them again where it made them: the
+/// cut or stop the walk put after the unit's own stitches. After the object's last unit sewn (the
+/// one ending the latest block of its units) the object's own Trim After and Stop After (kept on
+/// the group) and an outer group's land too: there a mark goes on the run only when a member asks
+/// for it and the object itself doesn't.
+fn members_marks(n: &Node, units: &[usize], plan: &DesignPlan) -> Vec<After> {
+    let own = n.extras().embroidery.as_deref().map(Embroidery::own_after).unwrap_or_default();
+    let mut members = After::default();
+    for c in n.children().into_iter().flatten() {
+        c.walk(&mut |m| members = members | m.extras().embroidery.as_deref().map(Embroidery::own_after).unwrap_or_default());
+    }
+    let last = units.iter().copied().max_by_key(|&u| plan.units.get(u).map(|u| (u.block, u.walked)));
+    units
+        .iter()
+        .map(|&u| {
+            let Some(unit) = plan.units.get(u) else { return After::default() };
+            let tail = plan.blocks.get(unit.block).and_then(|b| b.stitches.get(unit.own.end..unit.stitches.end)).unwrap_or_default();
+            let after = After { trim: tail.iter().any(|s| s.command == Command::Trim), stop: tail.iter().any(|s| s.command == Command::Stop) };
+            match Some(u) == last {
+                true => After { trim: after.trim && members.trim && !own.trim, stop: after.stop && members.stop && !own.stop },
+                false => after,
+            }
+        })
+        .collect()
+}
+
+/// Whether object `n` (one the plan sews whole) holds what isn't sewn: type, an image, a placed
+/// file, a symbol's instance or other art that isn't a path (live art, intertwines), or a hidden,
+/// locked or unpainted path or compound path. A compound path's members are painted by it; a clip
+/// group's clipping path clips.
+fn holds_unsewn(n: &Node) -> bool {
+    fn unsewn(c: &Node) -> bool {
+        if !c.visible || c.locked {
+            return true;
+        }
+        let painted = || c.appearance.items.iter().filter(|i| i.visible()).any(|i| !matches!(i.paint(), Paint::None));
+        match &c.kind {
+            NodeKind::Group { children, .. } | NodeKind::Layer { children, .. } => children.iter().any(|c| unsewn(c)),
+            NodeKind::Path { clipping: true, .. } => false,
+            NodeKind::Path { .. } | NodeKind::Compound { .. } => !painted(),
+            _ => true,
+        }
+    }
+    match &n.kind {
+        // Its members are painted by it.
+        NodeKind::Compound { .. } => false,
+        _ => n.children().into_iter().flatten().any(|c| unsewn(c)),
     }
 }
 
@@ -329,12 +389,13 @@ fn convert_one(doc: &mut Document, n: &Node, units: &[usize], plan: &DesignPlan)
     let mut children: Vec<Arc<Node>> = Vec::with_capacity(units.len());
     let (mut runs, mut needle_points) = (0, 0);
     let mut frozen_units = Vec::with_capacity(units.len());
-    for &u in units {
+    let marks = members_marks(n, units, plan);
+    for (&u, after) in units.iter().zip(marks) {
         let unit = plan.units.get(u)?;
         let f = frozen(&plan.own_stitches(u))?;
-        frozen_units.push((unit.thread.art, f));
+        frozen_units.push((unit.thread.art, f, after));
     }
-    for (art, f) in frozen_units {
+    for (art, f, after) in frozen_units {
         runs += f.subpaths.len();
         needle_points += f.subpaths.iter().map(Vec::len).sum::<usize>();
         let path = run_path(&f);
@@ -344,7 +405,16 @@ fn convert_one(doc: &mut Document, n: &Node, units: &[usize], plan: &DesignPlan)
         let mut node = Node::path(doc.alloc_id(), path, Appearance::default());
         node.appearance = looks.entry(art).or_insert_with(|| Shared::new(run_look(art))).clone();
         let exact = exact_millimetres(&f);
-        let run = StitchRun { manual: true, trims, shape, double_point: f.double_point, exact, ..StitchRun::default() };
+        let run = StitchRun {
+            manual: true,
+            trims,
+            shape,
+            double_point: f.double_point,
+            exact,
+            trim_after: after.trim,
+            stop_after: after.stop,
+            ..StitchRun::default()
+        };
         node.extras_mut().embroidery = Some(Box::new(Embroidery { stitches: Some(run), ..Embroidery::default() }));
         children.push(Arc::new(node));
     }

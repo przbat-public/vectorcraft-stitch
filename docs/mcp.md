@@ -5147,10 +5147,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   of the same id and name holding one run of literal stitches marked manual for each of its sewing units in walk order
   (one subpath a run, the needle jumping between them), each in its thread's art colour, and keeping the object as it
   was to restore it. A manual run is placed in the sewing order as art is and never cut again by a clip group, so the
-  export right after converting writes the same bytes. It passes over, with `reason`: `literal` (stitches from a file),
-  `manual`, `symbolInstance` (convert its art), `clippingPath`, `insideObject` (a piece of an object sewn whole),
-  `locked`, `notSewn`, `unfreezable` (stitches a manual run can't hold); with nothing converted it is an error naming
-  each object and why. One undo step. It answers `{converted: [{id, units, runs, needlePoints}], convertedCount,
+  export right after converting writes the same bytes. An object the plan sews whole (a group with an effect or an
+  appearance of its own) is converted whole, its members' Trim After and Stop After carried onto the runs their units
+  became. It passes over, with `reason`: `literal` (stitches from a file), `manual`, `symbolInstance` (convert its art),
+  `clippingPath`, `insideObject` (a piece of an object sewn whole), `holdsUnsewn` (an object sewn whole holding type,
+  an image, a placed file, a symbol's instance, or a hidden, locked or unpainted object), `locked`, `notSewn`,
+  `unfreezable` (stitches a manual run can't hold); with nothing converted it is an error naming each object and
+  why. One undo step. It answers `{converted: [{id, units, runs, needlePoints}], convertedCount,
   needlePoints, skippedCount, skipped: [{id, reason}]}`, each list at most 1,000 long.
 - `embroidery.restoreObject {ids?, strokes?, corners?, dryRun?}` puts back each object converted to manual stitches
   (given or selected; a manual run stands for the object it was converted from, a group or a layer for the converted

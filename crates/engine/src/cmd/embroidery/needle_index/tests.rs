@@ -325,7 +325,7 @@ proptest! {
         points in proptest::collection::vec((-120.0f64..120.0, -120.0f64..120.0), 1..60),
     ) {
         let poly: Vec<Point> = poly.into_iter().map(|(x, y)| Point::new(x, y)).collect();
-        let Some(lasso) = Lasso::new(&poly) else { return Ok(()) };
+        let Ok(lasso) = Lasso::new(&poly) else { return Ok(()) };
         for (x, y) in points {
             let p = Point::new(x, y);
             let mut inside = false;
@@ -370,4 +370,35 @@ fn what_the_walk_doesnt_sew_is_left_out() {
     let lift = NeedleRef { id: stopped, index: 1 };
     assert!(after.path(stopped).unwrap().stops.contains(&lift.index), "the stop kept by the index");
     assert!(after.thread_at(mid(p[1], p[2]), tol).is_none_or(|t| t.from != lift), "the lift after the stop");
+}
+
+/// A hostile lasso costs a bounded amount: a zigzag of the most points a lasso may have, each edge
+/// spanning its whole height (every edge in every band), is refused before anything is filled; a
+/// selection that would test past its budget of edges is refused, nothing selected; a fair lasso
+/// over the same needle points selects.
+#[test]
+fn a_hostile_lasso_is_refused_at_a_bounded_cost() {
+    use super::{LassoRefused, MAX_LASSO_POINTS};
+    let zigzag: Vec<Point> = (0..MAX_LASSO_POINTS).map(|k| Point::new(k as f64, if k % 2 == 0 { 0.0 } else { 1000.0 })).collect();
+    assert_eq!(Lasso::new(&zigzag).err(), Some(LassoRefused::TooIntricate));
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    let doc = s.doc().unwrap().doc.clone();
+    let index = NeedleIndex::of(&doc, &[NodeId(m.converted.fill)], None).unwrap();
+    let b = index.scope().bounds.unwrap();
+    let around = [
+        Point::new(b.x0 - 1.0, b.y0 - 1.0),
+        Point::new(b.x1 + 1.0, b.y0 - 1.0),
+        Point::new(b.x1 + 1.0, b.y1 + 1.0),
+        Point::new(b.x0 - 1.0, b.y1 + 1.0),
+    ];
+    let area = Area::Lasso(Lasso::new(&around).unwrap());
+    let all = index.within(&area).expect("a fair lasso");
+    assert_eq!(all.iter().map(|(_, k)| k.len()).sum::<usize>(), index.scope().needles);
+    assert!(index.within_tested(&area, 10).is_none(), "past its budget of edge tests");
+    // Through the command: the zigzag refused, saying why.
+    let mm = |v: f64| v / PT_PER_MM;
+    let poly: Vec<Value> = zigzag.iter().map(|p| json!([mm(p.x), mm(p.y)])).collect();
+    let e = s.execute("embroidery.selectNeedlePoints", &json!({"polygon": poly})).unwrap_err().to_string();
+    assert!(e.contains("too intricate"), "{e}");
 }

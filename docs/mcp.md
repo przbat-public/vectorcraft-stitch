@@ -5285,7 +5285,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
     inside by the even-odd rule, as the Lasso tool selects anchors), of the paths of stitches inside `ids` (each
     path once, however often or however nested `ids` names it), else inside the object isolated, else in the whole
     document, planning nothing (the paths that can't be edited, locked or hidden or a file's run cut by a clip
-    group, passed over and counted once). The Embroidery Tool's marquee,
+    group, passed over and counted once; a polygon whose edges cross back and forth too often, or one that would test
+    more than 200 million edges against the needle points, is refused, nothing selected). The Embroidery Tool's marquee,
     while it edits stitches, is this command with `rect`. A selection, not an undo step:
     `{selectedCount, pathCount, passedOver}`. Selecting the needle points that end stitches shorter than a length,
     then `embroidery.deleteNeedlePoints {}`, deletes them.

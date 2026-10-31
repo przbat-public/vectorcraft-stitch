@@ -373,7 +373,10 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
         };
         if let Some(index) = super::needle_index::NeedleIndex::of(&doc, &roots, None) {
             passed = index.scope().refused;
-            for (id, k) in index.within(&area) {
+            let found = index.within(&area).ok_or_else(|| {
+                bad(SELECT, "the `polygon` is too intricate for this many needle points (or the selection was cancelled): give it fewer edges, or select by `rect`")
+            })?;
+            for (id, k) in found {
                 picked.entry(id).or_default().extend(k);
             }
         }
@@ -440,7 +443,7 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
 /// (3 to [`MAX_LASSO_POINTS`] points), millimetres from the document's origin, y down, every one a
 /// number within the document's coordinates; as document points.
 fn shape(o: &Map<String, Value>) -> crate::Result<super::needle_index::Area> {
-    use super::needle_index::{Area, Lasso, MAX_LASSO_POINTS};
+    use super::needle_index::{Area, Lasso, LassoRefused, MAX_LASSO_POINTS};
     use vectorcraft_geom::{Point, Rect};
     let number = |v: &Value| v.as_f64().map(vectorcraft_stitch::mm_to_pt).filter(|x| x.is_finite() && x.abs() <= vectorcraft_doc::MAX_COORD);
     let point = |v: &Value| match v.as_array().map(Vec::as_slice) {
@@ -466,7 +469,10 @@ fn shape(o: &Map<String, Value>) -> crate::Result<super::needle_index::Area> {
                 .iter()
                 .map(|p| point(p).ok_or_else(|| bad(SELECT, format!("`polygon` point {p}: [x, y], millimetres within the document's coordinates"))))
                 .collect::<crate::Result<_>>()?;
-            Lasso::new(&points).map(Area::Lasso).ok_or_else(|| bad(SELECT, "`polygon` encloses no area"))
+            Lasso::new(&points).map(Area::Lasso).map_err(|why| match why {
+                LassoRefused::NoArea => bad(SELECT, "`polygon` encloses no area"),
+                LassoRefused::TooIntricate => bad(SELECT, "`polygon` is too intricate: its edges cross back and forth too often; give it fewer"),
+            })
         }
         _ => Err(bad(SELECT, "give rect or polygon, not both")),
     }

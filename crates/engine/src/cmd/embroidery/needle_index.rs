@@ -42,6 +42,18 @@ pub const MAX_LASSO_POINTS: usize = 4096;
 /// edges of its band alone, not every edge. An estimate (a band a screen pixel high on a 4K display
 /// is narrower than any edge needs).
 const LASSO_BANDS: usize = 256;
+/// The most entries a lasso's bands hold in all (each edge in every band it crosses): as if each of
+/// [`MAX_LASSO_POINTS`] edges crossed a quarter of the bands, 8 MB. A polygon past it (a zigzag whose
+/// every edge spans its whole height puts a million there) is refused before anything is tested. An
+/// estimate.
+pub const LASSO_ENTRIES_MAX: usize = MAX_LASSO_POINTS * LASSO_BANDS / 4;
+/// The most edge tests a selection by a lasso makes (each needle point it looks at against the edges
+/// of its band): past it the selection stops and is refused, nothing selected. About a second at a
+/// few nanoseconds a test. An estimate.
+pub const LASSO_TESTS_MAX: usize = 200_000_000;
+/// How many needle points a selection by a shape looks at between two looks at whether its work was
+/// cancelled.
+const CANCEL_EVERY: usize = 1 << 16;
 
 thread_local! {
     /// How many paths' chunks were built on this thread: what the tests count, so that an edit of
@@ -488,27 +500,44 @@ impl NeedleIndex {
         self.path(id)?.of_anchor(anchor)
     }
 
-    /// The needle points inside `area` (document points), path by path, in order.
-    pub fn within(&self, area: &Area) -> Vec<(NodeId, Vec<usize>)> {
+    /// The needle points inside `area` (document points), path by path, in order; `None` when a
+    /// lasso would test past [`LASSO_TESTS_MAX`] edges, or the work was cancelled.
+    pub fn within(&self, area: &Area) -> Option<Vec<(NodeId, Vec<usize>)>> {
+        self.within_tested(area, LASSO_TESTS_MAX)
+    }
+
+    /// [`NeedleIndex::within`], with at most `most` edge tests.
+    fn within_tested(&self, area: &Area, most: usize) -> Option<Vec<(NodeId, Vec<usize>)>> {
         let mut out = Vec::new();
+        let (mut tests, mut looked) = (0usize, 0usize);
+        // Set once the tests run past `most` or the work is cancelled: the chunks left are skipped.
+        let stopped = std::cell::Cell::new(false);
         for (id, p) in &self.paths {
             if !p.bounds.is_some_and(|b| area.overlaps(b)) {
                 continue;
             }
             let mut inside = Vec::new();
             p.each_in(
-                |b| area.overlaps(b),
+                |b| !stopped.get() && area.overlaps(b),
                 |index, q| {
-                    if area.contains(q) && inside.last() != Some(&index) {
+                    looked += 1;
+                    tests = tests.saturating_add(area.tests(q));
+                    if tests > most || (looked.is_multiple_of(CANCEL_EVERY) && vectorcraft_doc::cancel::is_cancelled()) {
+                        stopped.set(true);
+                    }
+                    if !stopped.get() && area.contains(q) && inside.last() != Some(&index) {
                         inside.push(index);
                     }
                 },
             );
+            if stopped.get() || vectorcraft_doc::cancel::is_cancelled() {
+                return None;
+            }
             if !inside.is_empty() {
                 out.push((*id, inside));
             }
         }
-        out
+        Some(out)
     }
 }
 
@@ -536,6 +565,14 @@ impl Area {
         }
     }
 
+    /// How many edges telling whether `p` lies inside tests (none for a rectangle).
+    fn tests(&self, p: Point) -> usize {
+        match self {
+            Area::Rect(_) => 0,
+            Area::Lasso(l) => l.band(p).map_or(0, <[(Point, Point)]>::len),
+        }
+    }
+
     /// Whether box `b` may hold a point inside it.
     fn overlaps(&self, b: Rect) -> bool {
         let r = match self {
@@ -554,24 +591,41 @@ pub struct Lasso {
     band_height: f64,
 }
 
+/// Why a lasso isn't made ([`Lasso::new`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LassoRefused {
+    /// Fewer than three points, one that isn't a number, or no area.
+    NoArea,
+    /// Its edges would fill its bands past [`LASSO_ENTRIES_MAX`].
+    TooIntricate,
+}
+
 impl Lasso {
-    /// The lasso through `points` (closed back to its first); `None` with fewer than three points,
-    /// a point that isn't a number, or no area.
-    pub fn new(points: &[Point]) -> Option<Self> {
+    /// The lasso through `points` (closed back to its first), or why it isn't one.
+    pub fn new(points: &[Point]) -> Result<Self, LassoRefused> {
         if points.len() < 3 || !points.iter().all(|p| p.x.is_finite() && p.y.is_finite()) {
-            return None;
+            return Err(LassoRefused::NoArea);
         }
-        let first = *points.first()?;
-        let bounds = points.iter().map(|p| Rect::from_points(*p, *p)).reduce(|a, b| a.union(b))?;
+        let first = *points.first().ok_or(LassoRefused::NoArea)?;
+        let bounds = points.iter().map(|p| Rect::from_points(*p, *p)).reduce(|a, b| a.union(b)).ok_or(LassoRefused::NoArea)?;
         if !(bounds.height() > 0.0 && bounds.width() > 0.0) {
-            return None;
+            return Err(LassoRefused::NoArea);
         }
         let count = LASSO_BANDS.min(points.len());
         let band_height = bounds.height() / count as f64;
         let mut bands = vec![Vec::new(); count];
         let band = |y: f64| (((y - bounds.y0) / band_height).floor().max(0.0) as usize).min(count - 1);
-        for (k, &a) in points.iter().enumerate() {
-            let b = points.get(k + 1).copied().unwrap_or(first);
+        let edge = |k: usize| (points.get(k).copied(), points.get(k + 1).copied().unwrap_or(first));
+        // What the bands would hold, counted before any is filled.
+        let entries = (0..points.len()).filter_map(|k| match edge(k) {
+            (Some(a), b) if a.y != b.y => Some(band(a.y.max(b.y)) - band(a.y.min(b.y)) + 1),
+            _ => None,
+        });
+        if entries.fold(0usize, usize::saturating_add) > LASSO_ENTRIES_MAX {
+            return Err(LassoRefused::TooIntricate);
+        }
+        for k in 0..points.len() {
+            let (Some(a), b) = edge(k) else { continue };
             if a.y == b.y {
                 continue;
             }
@@ -580,18 +634,24 @@ impl Lasso {
                 slot.push((a, b));
             }
         }
-        Some(Self { bounds, bands, band_height })
+        Ok(Self { bounds, bands, band_height })
+    }
+
+    /// The edges of the band `p` lies in (`None` outside the lasso's box).
+    fn band(&self, p: Point) -> Option<&[(Point, Point)]> {
+        if !(p.x >= self.bounds.x0 && p.x <= self.bounds.x1 && p.y >= self.bounds.y0 && p.y <= self.bounds.y1) {
+            return None;
+        }
+        let count = self.bands.len();
+        let k = (((p.y - self.bounds.y0) / self.band_height).floor().max(0.0) as usize).min(count.saturating_sub(1));
+        self.bands.get(k).map(Vec::as_slice)
     }
 
     /// Whether `p` lies inside (even-odd: a ray to the right crosses an odd number of edges).
     fn contains(&self, p: Point) -> bool {
-        if !(p.x >= self.bounds.x0 && p.x <= self.bounds.x1 && p.y >= self.bounds.y0 && p.y <= self.bounds.y1) {
-            return false;
-        }
-        let count = self.bands.len();
-        let k = (((p.y - self.bounds.y0) / self.band_height).floor().max(0.0) as usize).min(count.saturating_sub(1));
+        let Some(edges) = self.band(p) else { return false };
         let mut inside = false;
-        for &(a, b) in self.bands.get(k).map_or(&[][..], Vec::as_slice) {
+        for &(a, b) in edges {
             if (a.y > p.y) != (b.y > p.y) {
                 let x = a.x + (p.y - a.y) / (b.y - a.y) * (b.x - a.x);
                 if p.x < x {

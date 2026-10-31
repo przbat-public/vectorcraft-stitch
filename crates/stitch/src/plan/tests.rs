@@ -995,6 +995,37 @@ fn the_moves_counted_are_the_moves_sewn() {
     }
 }
 
+/// A lead that must jump (no way inside from where the needle goes in to the first row: across
+/// the gap between two squares, 0.35 mm) ties on first with a stitch that stays inside, here turned
+/// a quarter turn from the row along the square's edge, and the needle jumps from that stitch's
+/// end, 1.06 mm from the row: counted so, the lift is one, as `Runs::join` sews it. Counted from
+/// where the needle went in, the move is shorter than the shortest stitch and is none, and an aimed
+/// plan that lifts once more passes the guard toward an exit as no worse.
+#[test]
+fn a_leads_lift_is_counted_from_its_tie_stitch() {
+    use super::area::{Area, Travels};
+    use super::geometry::{SubPath, subpaths};
+    use super::runs::{Runs, Travel};
+    let mut two = rect(0.0, 0.0, 10.0, 10.0);
+    two.extend(rect(10.2, 0.0, 10.0, 10.0));
+    let subs = subpaths(&two);
+    let outlines: Vec<&SubPath> = subs.iter().collect();
+    let mut travels = Travels::new(Area { outlines: &outlines, rule: FillRule::NonZero, grid: None });
+    let p = Params { underlay: Underlay::None, ..Params::for_style(Style::Fill) }.sane();
+    let (here, to) = (Point::new(9.95, 5.0), Point::new(10.3, 5.0));
+    assert!(here.distance(to) < p.min_stitch, "a move too short to lift for");
+    let mut runs = Runs::from(None);
+    runs.lead_from(here, None);
+    assert_eq!(runs.approach(&mut travels, to, to, f64::INFINITY, &|_| 0.0, &p), Travel::Lift);
+    runs.push(vec![to, Point::new(15.0, 5.0), Point::new(19.0, 5.0)], Travel::Lift);
+    let moves = runs.moves;
+    let out = runs.join(&p);
+    let jumps = out.iter().filter(|s| s.command == Command::Jump).count();
+    assert_eq!(jumps, 1, "the needle jumps from the tie stitch's end: {out:?}");
+    assert_eq!(moves.lifts, jumps, "lifts counted");
+    assert_eq!(moves.trims, 0, "no cut");
+}
+
 /// Shapes whose regions branch (a U, combs, rings, an H) are sewn in one go at any angle, underlay
 /// or not: of the ways to order their regions, one that travels under stitching still to come (or
 /// shows a little) is kept over one that jumps, and a jump that would need a cut costs more still.

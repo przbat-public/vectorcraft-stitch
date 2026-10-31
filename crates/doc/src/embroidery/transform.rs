@@ -68,9 +68,9 @@ impl Embroidery {
         }
         move_shared(extra, a);
         if let Some(run) = stitches {
-            // Every needle point moves: the exact millimetres kept for where they were no longer
-            // apply.
-            run.exact.clear();
+            // The exact millimetres kept for its needle points stay: each applies only while its
+            // needle point lies where it was kept for (`digitize::exact`), so a run moved and moved
+            // back sews as it did, as a needle point moved and moved back does.
             // Each cut and stop is kept where its needle point lies: it moves with it (by the same
             // arithmetic, so the two still agree to the bit), or, when that leaves the numbers, is
             // found by its place alone.

@@ -137,7 +137,8 @@ fn a_manual_run_in_a_clip_group_is_not_cut_again() {
 }
 
 /// The exact millimetres a manual run keeps are sewn where its document points can't give them
-/// back, while the needle point lies where it was stored; moved with its object, the run drops them.
+/// back, while the needle point lies where it was stored: moved with its object, the run sews where
+/// it lies now; moved back, as it did (a nudge right then left changes nothing sewn).
 #[test]
 fn a_manual_runs_exact_millimetres_hold_while_its_points_stay() {
     use vectorcraft_doc::embroidery::{Exact, StitchRun};
@@ -161,8 +162,10 @@ fn a_manual_runs_exact_millimetres_hold_while_its_points_stay() {
     let first = |s: &mut Session| s.embroidery_plan(&Options::default()).unwrap().blocks[0].stitches[0].x;
     assert_eq!(first(&mut s), lost, "the exact millimetres");
     run(&mut s, "object.move", json!({"ids": [id], "dx": 10, "dy": 0}));
-    let moved = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).and_then(|n| n.extras().embroidery.as_deref()?.stitches.clone()).unwrap();
-    assert!(moved.exact.is_empty(), "a transform drops them");
+    assert!((first(&mut s) - (lost + 10.0 * MM_PER_PT)).abs() < 1e-6, "moved: where it lies now");
+    run(&mut s, "object.move", json!({"ids": [id], "dx": -10, "dy": 0}));
+    assert_eq!(first(&mut s), lost, "moved back: the exact millimetres again");
+    run(&mut s, "edit.undo", json!({}));
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(first(&mut s), lost, "undone: back");
 }

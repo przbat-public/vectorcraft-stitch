@@ -333,6 +333,15 @@ fn needle_at(doc: &Document, v: &serde_json::Value) -> Option<Point> {
     None
 }
 
+/// The colour the selection's lines and box are drawn in over their dark edge: the layer's colour
+/// lifted against the fabric they lie on, so that on a dark fabric with a dark layer colour they
+/// still show.
+fn line_colour(layer: [u8; 3], fabric: [u8; 3]) -> Color32 {
+    let ([r, g, b], [fr, fg, fb]) = (layer, fabric);
+    let fabric = Color32::from_rgb(fr, fg, fb);
+    marks::readable(Color32::from_rgb(r, g, b), &[fabric], marks::text_on(fabric) == Color32::WHITE)
+}
+
 /// Draw the selection while stitches are edited: the selected needle points and the stitches
 /// touching them (or the selection's box), the current needle point's ring, the hover, the marquee,
 /// the range pills and the live check.
@@ -357,6 +366,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     let Some(k) = kept(app, &limits) else { return };
     let [r, g, b] = k.color;
     let ink = marks::readable(Color32::from_rgb(r, g, b), &[light()], false);
+    let line_ink = line_colour(k.color, vectorcraft_engine::cmd::embroidery::scene::fabric_color(&doc));
     let screen = |p: Point| xf.to_screen(p + by);
     let mut budget = DASHES_MAX;
     if k.count > SELECTION_SHAPES_MAX {
@@ -364,7 +374,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
             let corners: Vec<Pos2> =
                 [(b.x0, b.y0), (b.x1, b.y0), (b.x1, b.y1), (b.x0, b.y1), (b.x0, b.y0)].iter().map(|(x, y)| screen(Point::new(*x, *y))).collect();
             super::overlay::dash(painter, &corners, Stroke::new(STITCH_UNDER_PT, dark()), DASH, clip, &mut budget);
-            super::overlay::dash(painter, &corners, Stroke::new(STITCH_PT, ink), DASH, clip, &mut budget);
+            super::overlay::dash(painter, &corners, Stroke::new(STITCH_PT, line_ink), DASH, clip, &mut budget);
         }
     } else {
         for tch in &k.touching {
@@ -374,7 +384,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
                 continue;
             }
             painter.line_segment([a, b], Stroke::new(STITCH_UNDER_PT, dark()));
-            painter.line_segment([a, b], Stroke::new(STITCH_PT, ink));
+            painter.line_segment([a, b], Stroke::new(STITCH_PT, line_ink));
         }
         for p in &k.points {
             let c = screen(*p);
@@ -392,7 +402,10 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     };
     let hover = options.get("hover").cloned().unwrap_or_default();
     if let Some(p) = hover.get("needlePoint").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
-        painter.circle_stroke(screen(p), SELECTED_RADIUS_PT + RING_OUT_PT / 2.0, Stroke::new(STITCH_PT, dark()));
+        // Two tones, as the marquee's: one of them shows on any fabric and thread.
+        let (c, radius) = (screen(p), SELECTED_RADIUS_PT + RING_OUT_PT / 2.0);
+        painter.circle_stroke(c, radius, Stroke::new(STITCH_UNDER_PT, dark()));
+        painter.circle_stroke(c, radius, Stroke::new(STITCH_PT, light()));
     } else if let Some(from) = hover.get("stitch").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
         let to = hover.get("stitch").and_then(|v| {
             let mut next = v.clone();

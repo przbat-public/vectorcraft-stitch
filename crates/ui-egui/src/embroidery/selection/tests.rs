@@ -463,3 +463,16 @@ fn the_task_bar_offers_the_stitch_actions() {
     let now = app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors.len();
     assert_eq!(now, count - 1, "the needle point deleted");
 }
+
+/// The selection's lines and box stand out from the fabric whatever the layer's colour: black on
+/// black fabric is lifted to show, white on white fabric darkened.
+#[test]
+fn the_selections_lines_show_on_any_fabric() {
+    let (black, white) = ([0, 0, 0], [255, 255, 255]);
+    for (layer, fabric) in [(black, black), (white, white), ([20, 30, 90], black), ([200, 200, 60], white)] {
+        let line = super::line_colour(layer, fabric);
+        let [r, g, b] = fabric;
+        let c = crate::embroidery::marks::contrast(line, egui::Color32::from_rgb(r, g, b));
+        assert!(c >= 3.0, "{layer:?} on {fabric:?}: {line:?}, {c}");
+    }
+}

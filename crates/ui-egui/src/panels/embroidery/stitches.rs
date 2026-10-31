@@ -464,12 +464,27 @@ pub struct Shown {
     pub flags: Option<Arc<Flags>>,
 }
 
+/// What the tab keeps of a document closed since let go, each frame (as the stitch preview's plans
+/// are), whether the tab shows or not: its place in the list, and what the tab keeps of one
+/// document (its rows listed, their numberings, its last plan drawn) when it is that one.
+pub fn forget_closed(app: &mut VectorcraftApp) {
+    let open: std::collections::HashSet<u64> = app.session.documents().iter().map(|d| d.uid).collect();
+    let kept = &mut app.embroidery.stitches;
+    kept.docs.retain(|uid, _| open.contains(uid));
+    if kept.list.as_ref().is_some_and(|((uid, ..), _)| !open.contains(uid)) {
+        kept.list = None;
+    }
+    if kept.numbering.as_ref().is_some_and(|(uid, ..)| !open.contains(uid)) {
+        kept.numbering = None;
+    }
+    if kept.drawn.as_ref().is_some_and(|(uid, _)| !open.contains(uid)) {
+        kept.drawn = None;
+    }
+}
+
 /// Draw the tab.
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     app.embroidery.stitches.drawn_pass = Some(ui.ctx().cumulative_pass_nr());
-    // A closed document's place in the list goes with it.
-    let open: std::collections::HashSet<u64> = app.session.documents().iter().map(|d| d.uid).collect();
-    app.embroidery.stitches.docs.retain(|uid, _| open.contains(uid));
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };

@@ -396,8 +396,14 @@ impl super::service::Services {
         }
         let facts = self.tool_facts(st.uid, &super::Options::default());
         let drawn = super::view::layers(self.view(st.uid), super::view::paused(&st.doc), outline).stitches;
-        // Needle points are edited where they are drawn: in the stitch view.
-        let needles = if drawn { self.needle_index(st) } else { None };
+        // Needle points are edited where they are drawn: in the stitch view (out of it, editing
+        // ended, those kept for the document go).
+        let needles = if drawn {
+            self.needle_index(st)
+        } else {
+            self.drop_needles(st.uid);
+            None
+        };
         let mut now = FactsNow::new(facts.clone(), &st.doc, drawn);
         now.needles = needles.map(|index| NeedlesNow { index, facts, doc: &st.doc });
         Some(now)

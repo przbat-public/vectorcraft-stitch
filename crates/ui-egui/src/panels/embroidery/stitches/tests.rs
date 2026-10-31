@@ -1171,3 +1171,33 @@ fn while_editing_the_object_selected_whole_lights_its_rows() {
     let (_, nodes) = settle(&mut app, &ctx, &mut time);
     assert!(lit(&nodes) > 4, "the rows of the needle points it holds lit: {} of {rows}", lit(&nodes));
 }
+
+/// What the tab keeps of a document goes when it closes, though the tab isn't drawn after: its place
+/// in the list, its rows listed, their numberings and its last plan drawn.
+#[test]
+fn a_closed_documents_rows_go_with_it() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let at = row_at(&shapes, list.record(3).unwrap());
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let kept = &app.embroidery.stitches;
+    assert!(kept.list.is_some() && kept.numbering.is_some() && kept.drawn.is_some() && kept.docs.contains_key(&uid), "kept while it is open");
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    // Closed by the engine's command (the interface's asks to save first).
+    let index = app.session.documents().iter().position(|d| d.uid == uid).unwrap();
+    app.session.execute("file.close", &json!({"index": index})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let kept = &app.embroidery.stitches;
+    assert!(kept.list.is_none() && kept.numbering.is_none() && kept.drawn.is_none() && !kept.docs.contains_key(&uid), "gone with it");
+}

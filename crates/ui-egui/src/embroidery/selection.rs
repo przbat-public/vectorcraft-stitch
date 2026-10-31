@@ -234,6 +234,15 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
     k
 }
 
+impl Kept {
+    /// What was built let go, while stitches aren't edited (how many builds there were kept).
+    fn forget(&mut self) {
+        if self.key.is_some() {
+            *self = Self { builds: self.builds, ..Self::default() };
+        }
+    }
+}
+
 /// The selection kept for the active document, built again when its revision or the limits
 /// changed, but not while a gesture is under way.
 fn kept<'a>(app: &'a mut VectorcraftApp, limits: &StitchLimits) -> Option<&'a Kept> {
@@ -374,7 +383,11 @@ fn line_colour(layer: [u8; 3], fabric: [u8; 3]) -> Color32 {
 /// touching them (or the selection's box), the current needle point's ring, the hover, the marquee,
 /// the range pills and the live check.
 pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf: &Xf) {
-    let Some(editing) = super::editing::editing(app) else { return };
+    let Some(editing) = super::editing::editing(app) else {
+        // Editing ended: what its selection drew goes.
+        app.embroidery.selection.forget();
+        return;
+    };
     let Some(st) = app.session.active() else { return };
     let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
     let options = app.session.tool_options().get(vectorcraft_tools::embroidery::EDITING_OPTIONS).cloned().unwrap_or_default();

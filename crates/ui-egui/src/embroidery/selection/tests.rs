@@ -535,3 +535,26 @@ fn the_task_bar_sits_under_the_selected_needle_points() {
     }
     assert!(bars[0].min.x + 100.0 < bars[1].min.x, "the bar follows the needle points: {bars:?}");
 }
+
+/// What editing kept goes when it ends: the selection drawn and the units edited, when the object
+/// is left and when the stitch view is turned off.
+#[test]
+fn what_editing_kept_goes_when_it_ends() {
+    for (end, params) in [("object.exitIsolation", json!({})), ("view.stitchPreview", json!({"on": false}))] {
+        let (mut app, object) = editing();
+        let ctx = context();
+        let mut time = 0.0;
+        settle(&mut app, &ctx, &mut time);
+        let at = on_screen(&app, needle(&app, object, 4));
+        for e in [Event::PointerMoved(at), press(at, true), press(at, false)] {
+            time += 0.05;
+            frame(&mut app, &ctx, time, vec![e]);
+        }
+        settle(&mut app, &ctx, &mut time);
+        assert!(app.embroidery.selection.key.is_some() && app.embroidery.layer.keeps_edited(), "{end}: kept while editing");
+        app.run(end, params).unwrap();
+        settle(&mut app, &ctx, &mut time);
+        assert!(app.embroidery.selection.key.is_none(), "{end}: the selection drawn goes");
+        assert!(!app.embroidery.layer.keeps_edited(), "{end}: the units edited go");
+    }
+}

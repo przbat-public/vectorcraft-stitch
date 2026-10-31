@@ -282,6 +282,12 @@ impl StitchLayer {
         self.shown_stats
     }
 
+    /// Whether it keeps the units stitch editing edits (the tests: they go when editing ends).
+    #[cfg(test)]
+    pub(crate) fn keeps_edited(&self) -> bool {
+        self.edited.is_some()
+    }
+
     /// Say the frame shown capped the edit look's circles (the chip's tests).
     #[cfg(test)]
     pub(crate) fn pretend_circles_capped(&mut self) {
@@ -403,6 +409,8 @@ pub fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Paint
     let emphasis = app.embroidery.layer.emphasis.take();
     if !pass.stitches {
         app.embroidery.layer.end_emphasis();
+        // Out of the stitch view nothing is edited: the units editing edited go.
+        app.embroidery.layer.edited = None;
         return;
     }
     let outline = app.ui.view.outline;
@@ -510,6 +518,10 @@ const NEEDLE_CIRCLE_GAP_PT: f64 = 2.0;
 /// break the limits ([`stitch_limits`]) marked.
 fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Painter, xf: &Xf, v: &View, emphasis: Option<Vec<u32>>) {
     let editing = super::editing::editing(app).map(|e| e.scope.object);
+    if editing.is_none() {
+        // Editing ended: the units it edited go.
+        app.embroidery.layer.edited = None;
+    }
     let Some(st) = app.session.active() else { return };
     let limits = editing.map(|_| stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied()));
     let (uid, isolated, doc) = (st.uid, st.isolation, st.doc.clone());

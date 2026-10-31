@@ -681,6 +681,11 @@ impl Services {
         index
     }
 
+    /// The needle points stitch editing kept for document `uid` dropped: it no longer edits them.
+    pub(crate) fn drop_needles(&mut self, uid: u64) {
+        self.needles.remove(&uid);
+    }
+
     /// How many documents' needle points stitch editing keeps.
     #[cfg(test)]
     pub(crate) fn kept_needles(&self) -> usize {

@@ -494,3 +494,24 @@ fn the_session_finds_needle_points_by_the_index_it_keeps() {
     assert_eq!(s.stitch_needle_points(view, &now, &refs), [None; 3], "nothing edited");
     assert_eq!(s.stitch_needles_selected(view, &refs), [false; 3]);
 }
+
+/// Editing ends out of the stitch view, with the tool still in isolation: the needle points kept
+/// for the document (and the snapshot they hold) go then, not when the tool does. Outline draws the
+/// stitches still: editing goes on there.
+#[test]
+fn the_needle_points_kept_go_when_editing_ends_with_the_stitch_view() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    run(&mut s, "object.isolate", json!({"id": m.converted.stroke}));
+    run(&mut s, "view.stitchPreview", json!({"on": true}));
+    let view = crate::ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    assert!(s.stitch_editing(view).is_some());
+    assert_eq!(s.embroidery_plans.kept_needles(), 1);
+    run(&mut s, "view.stitchPreview", json!({"on": false}));
+    assert!(s.stitch_editing(view).is_none());
+    assert_eq!(s.embroidery_plans.kept_needles(), 0, "the stitch view turned off");
+    run(&mut s, "view.stitchPreview", json!({"on": true}));
+    assert!(s.stitch_editing(crate::ViewInfo { outline: true, ..view }).is_some(), "Outline");
+    assert_eq!(s.embroidery_plans.kept_needles(), 1);
+}

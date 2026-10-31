@@ -108,12 +108,14 @@ pub struct Embroidery {
 const ISOLATION_BAR: f32 = 24.0;
 
 /// Each frame, before it is drawn: the stitch preview's plans taken in
-/// ([`stitch_preview::poll`]), and Nearest Connection's search and a convert under way looked at
-/// ([`nearest::poll`], [`convert_job::poll`]).
+/// ([`stitch_preview::poll`]), Nearest Connection's search and a convert under way looked at
+/// ([`nearest::poll`], [`convert_job::poll`]), and what the Stitches tab keeps of a document closed
+/// let go.
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     stitch_preview::poll(app);
     nearest::poll(app, ctx);
     convert_job::poll(app, ctx);
+    crate::panels::embroidery::stitches::forget_closed(app);
 }
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the

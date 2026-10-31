@@ -277,8 +277,11 @@ of another object (the Whole design scope lists it) only shows its stitch, as ou
 while the list waits for the plan of an edit a click only shows the stitch: the needle points its
 rows number may have moved. Go to # takes a record's number; under the list, while
 needle points are selected, Move by X and Y moves them in one undo step. The list takes the
-keyboard when a row is clicked: ↑ ↓, Page Up and Down, Home and End move through it, Space selects,
-Escape gives the keyboard back to the canvas. The tab strip's names are short so that four tabs
+keyboard when a row is clicked or Go to # finds its record: ↑ ↓, Page Up and Down, Home and End
+move through it, Space selects, Escape gives the keyboard back to the canvas. The row in focus is
+ringed while the list has the keyboard and marked quietly while the keys reach the canvas. While a
+newer plan's records are being judged (after an edit, or the Check tab's format changed), the rows
+drawn last stay, dimmed, with Go to and the foot. The tab strip's names are short so that four tabs
 fit in every language ("Order" for Sewing Order, whole in its tooltip).
 
 **Settings on objects.** Each object keeps settings for its fills and for its strokes (one set

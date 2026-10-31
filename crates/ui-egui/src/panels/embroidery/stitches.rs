@@ -60,6 +60,10 @@ const CHIP: f32 = 8.0;
 const MARK: f32 = 11.0;
 /// The list's least height, points: a few rows, whatever the panel's room.
 const MIN_LIST: f32 = 6.0 * ROW_HEIGHT;
+/// The ring of the row in focus while the list has the keyboard, and its quiet mark while it
+/// hasn't, points (the canvas's selection rings' weights).
+const FOCUS_RING_PT: f32 = 2.0;
+const FOCUS_QUIET_PT: f32 = 1.0;
 /// Points in a millimetre.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 /// The most rows a Shift-click's range selects at once (the status line says so past it): the
@@ -97,6 +101,13 @@ pub struct Listed {
     pub counts: [usize; Filter::ALL.len()],
     /// The scope's first and last record numbers.
     pub span: Option<(usize, usize)>,
+}
+
+impl Default for Listed {
+    /// No rows: before any plan's flags are built.
+    fn default() -> Self {
+        Self { rows: Rows::Picked(Vec::new()), counts: [0; Filter::ALL.len()], span: None }
+    }
 }
 
 enum Rows {
@@ -201,7 +212,7 @@ pub struct DocList {
     move_by: [f64; 2],
     goto: String,
     said: Option<String>,
-    /// Scroll to the focus in the next frame.
+    /// Scroll to the focus in the next frame, and give the list the keyboard (Go to's Enter).
     reveal: bool,
 }
 
@@ -212,6 +223,10 @@ pub struct StitchesState {
     pub(crate) docs: HashMap<u64, DocList>,
     list: Option<(ListKey, Arc<Listed>)>,
     numbering: Option<(u64, u64, Numberings)>,
+    /// The last plan drawn with its flags, of document (uid): drawn dimmed while a newer plan's
+    /// flags are being built, so the list, Go to and the foot stay (a field typed into keeps the
+    /// keyboard).
+    drawn: Option<(u64, Shown)>,
     /// How many times the rows were worked out (the tests count them: never on an idle frame).
     pub(crate) builds: usize,
     /// The foot's height as last drawn, points, outside stitch editing and while editing (0: not
@@ -387,6 +402,7 @@ fn chip_words(filter: Filter, count: usize, limits: &StitchLimits, lang: Lang) -
 /// What the tab is drawn from: the plan shown (its generation, the document it was made from, and
 /// whether it is of the document as it is) and the records' flags when the planning thread has
 /// built them.
+#[derive(Clone)]
 pub struct Shown {
     pub plan: Arc<DesignPlan>,
     pub generation: u64,
@@ -417,10 +433,26 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         app.ui.embroidery_panel.stitches_scope = *s;
     }
     ui.add_space(CELL_PAD);
-    let Some(flags) = shown.flags.clone() else {
-        ui.label(egui::RichText::new(crate::et!("Listing stitches…")).size(TEXT).color(t.text_dim));
-        return;
+    // The plan shown once its flags are built; until then the last one drawn with its flags,
+    // dimmed and only shown by a click, as the Order and Check tabs keep their last result.
+    let kept = &mut app.embroidery.stitches.drawn;
+    if kept.as_ref().is_some_and(|(u, _)| *u != uid) {
+        *kept = None;
+    }
+    let shown = match (&shown.flags, kept.as_ref()) {
+        (Some(_), _) => {
+            *kept = Some((uid, shown.clone()));
+            shown
+        }
+        (None, Some((_, last))) => Shown { stale: true, ..last.clone() },
+        (None, None) => {
+            ui.label(egui::RichText::new(crate::et!("Listing stitches…")).size(TEXT).color(t.text_dim));
+            let editing = crate::embroidery::editing::editing(app);
+            foot_ui(app, ui, editing, &Listed::default(), lang, &t);
+            return;
+        }
     };
+    let Some(flags) = shown.flags.clone() else { return };
     let listed = rows(app, &shown.plan, shown.generation, &flags);
     if app.ui.embroidery_panel.stitches_scope == Scope::Selection && listed.span.is_none() {
         let words = if scope_ids(app).is_empty() {
@@ -495,6 +527,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     // Whole rows: none cut by the foot's words under the list.
     let room = (((ui.available_height() - foot) / ROW_HEIGHT).floor() * ROW_HEIGHT).max(MIN_LIST);
     let list_id = ui.id().with("embroidery-stitch-list");
+    // Whether the list has the keyboard: its row in focus is ringed only then (its keys are the
+    // list's), else marked quietly (they reach the canvas).
+    let has_keys = ui.memory(|m| m.has_focus(list_id));
     let mut clicked: Option<(usize, egui::Modifiers, bool)> = None;
     let focus = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus);
     let reveal = app.embroidery.stitches.docs.get_mut(&uid).is_some_and(|d| std::mem::take(&mut d.reveal));
@@ -521,7 +556,13 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
             let address = editing.and_then(|_| edited_by(app, &shown, row.unit, number, row.kind));
             let selected = address.is_some_and(|a| is_selected(app, a.node, a.index));
             let (rect, resp) = ui.allocate_exact_size(vec2(width, ROW_HEIGHT), Sense::click());
-            let words = draw_row(app, ui, rect, &row, &columns, &flags, selected, focus == Some(number), lang, &t);
+            let focus = match (focus == Some(number), has_keys) {
+                (false, _) => FocusMark::None,
+                (true, true) => FocusMark::Ring,
+                (true, false) => FocusMark::Quiet,
+            };
+            let look = RowLook { selected, focus, dimmed: shown.stale };
+            let words = draw_row(app, ui, rect, &shown.plan, &row, &columns, &flags, look, lang, &t);
             ui.ctx().accesskit_node_builder(resp.id, |node| {
                 node.set_role(egui::accesskit::Role::Row);
                 node.set_row_index(row_index);
@@ -538,7 +579,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     ui.spacing_mut().item_spacing.y = spacing;
     // The list itself takes the keyboard's focus (a row clicked gives it), so its keys are its own.
     let list = ui.interact(scrolled.inner_rect, list_id, Sense::focusable_noninteractive());
-    if clicked.is_some() {
+    if clicked.is_some() || reveal {
         list.request_focus();
     }
     // Its arrows and Escape locked to it: egui would move the focus to the next widget on an arrow
@@ -655,6 +696,24 @@ fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
     ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(1.0, t.divider));
 }
 
+/// How a row is marked as the list's focus: not at all, quietly (the list doesn't have the
+/// keyboard: the keys reach the canvas), or ringed (they are the list's).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FocusMark {
+    None,
+    Quiet,
+    Ring,
+}
+
+/// How a row is drawn: lit when its needle point is selected, its focus mark, and dimmed while it
+/// is of a plan an edit has left behind.
+#[derive(Clone, Copy, Debug)]
+struct RowLook {
+    selected: bool,
+    focus: FocusMark,
+    dimmed: bool,
+}
+
 /// Draw one row → its name for screen readers ("Record 4695: stitch, X 25.1 mm, Y 23.2 mm, length
 /// 2.61 mm, too short").
 #[allow(clippy::too_many_arguments)]
@@ -662,39 +721,36 @@ fn draw_row(
     app: &VectorcraftApp,
     ui: &Ui,
     rect: Rect,
+    plan: &DesignPlan,
     row: &stitch_list::Row,
     columns: &Columns,
     flags: &Flags,
-    selected: bool,
-    focused: bool,
+    look: RowLook,
     lang: Lang,
     t: &Tokens,
 ) -> String {
+    let RowLook { selected, focus, dimmed } = look;
     let p = ui.painter();
     if selected {
         p.rect_filled(rect, CornerRadius::ZERO, t.row_selected);
     }
     let font = egui::FontId::proportional(TEXT);
-    let ink = if selected { t.text_strong } else { t.text };
+    let faded = |c: Color32| if dimmed { c.gamma_multiply(super::STALE_INK) } else { c };
+    let ink = faded(if selected { t.text_strong } else { t.text });
     let origin = app.ruler_origin();
     let x_mm = (mm_to_pt(row.at.x) - origin.x) / PT_PER_MM;
     let y_mm = (mm_to_pt(row.at.y) - origin.y) / PT_PER_MM;
     let [short, long] = flags.judged(row.record);
     let mut x = rect.left();
-    // The thread chip and the number.
-    let colour = app
-        .embroidery
-        .preview
-        .shown(app.session.active().map_or(0, |st| st.uid))
-        .and_then(|s| s.planned.plan.blocks.get(row.block).map(|b| b.thread.color()))
-        .map_or(t.text_dim, |[r, g, b]| Color32::from_rgb(r, g, b));
+    // The thread chip (of the plan the row is of) and the number.
+    let colour = plan.blocks.get(row.block).map(|b| b.thread.color()).map_or(t.text_dim, |[r, g, b]| faded(Color32::from_rgb(r, g, b)));
     let chip = Rect::from_center_size(pos2(x + CELL_PAD + CHIP / 2.0, rect.center().y), vec2(CHIP, CHIP));
     p.rect(chip, CornerRadius::same(2), colour, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
     let number = numbers::count(lang, row.record as u64);
     p.text(pos2(x + columns.widths[0] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &number, font.clone(), ink);
     x += columns.widths[0];
     let kind = kind_word(row.kind);
-    let dim = marks::readable_text(t.text_dim, &[if selected { t.row_selected } else { t.panel }], t.dark);
+    let dim = faded(marks::readable_text(t.text_dim, &[if selected { t.row_selected } else { t.panel }], t.dark));
     if columns.words {
         let colour = if row.kind == RecordKind::Stitch { ink } else { dim };
         p.text(pos2(x + columns.widths[1] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, kind, font.clone(), colour);
@@ -721,10 +777,16 @@ fn draw_row(
     if short || long {
         marks::paint(p, pos2(x + MARK / 2.0, rect.center().y), MARK, Mark::Warning, t);
     }
-    if focused {
-        let ring = marks::readable(t.accent, &[if selected { t.row_selected } else { t.panel }], t.dark);
-        p.rect_stroke(rect.shrink(1.0), CornerRadius::same(2), Stroke::new(2.0, ring), egui::StrokeKind::Inside);
-        p.rect_stroke(rect.shrink(3.0), CornerRadius::same(2), Stroke::new(1.0, t.panel), egui::StrokeKind::Inside);
+    match focus {
+        FocusMark::Ring => {
+            let ring = marks::readable(t.accent, &[if selected { t.row_selected } else { t.panel }], t.dark);
+            p.rect_stroke(rect.shrink(1.0), CornerRadius::same(2), Stroke::new(FOCUS_RING_PT, ring), egui::StrokeKind::Inside);
+            p.rect_stroke(rect.shrink(3.0), CornerRadius::same(2), Stroke::new(1.0, t.panel), egui::StrokeKind::Inside);
+        }
+        FocusMark::Quiet => {
+            p.rect_stroke(rect.shrink(1.0), CornerRadius::same(2), Stroke::new(FOCUS_QUIET_PT, t.border), egui::StrokeKind::Inside);
+        }
+        FocusMark::None => {}
     }
     let mut name = crate::embroidery::text::fill(
         crate::et!("Record {number}: {type}, X {x} mm, Y {y} mm"),

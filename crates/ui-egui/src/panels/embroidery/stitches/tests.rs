@@ -461,6 +461,87 @@ fn go_to_takes_a_number_and_refuses_junk() {
     }
 }
 
+/// The rings drawn round a row in focus, and the quiet marks: rectangles a row high (less the
+/// mark's inset) stroked at the ring's weight, or at the quiet mark's in the border's colour.
+fn focus_marks(shapes: &[Shape], border: egui::Color32) -> (usize, usize) {
+    let row = |r: &egui::epaint::RectShape| (r.rect.height() - (super::ROW_HEIGHT - 2.0)).abs() < 0.01 && r.rect.min.x > 800.0;
+    let rings = shapes.iter().filter(|s| matches!(s, Shape::Rect(r) if row(r) && r.stroke.width == super::FOCUS_RING_PT)).count();
+    let quiet = shapes
+        .iter()
+        .filter(|s| matches!(s, Shape::Rect(r) if row(r) && r.stroke.width == super::FOCUS_QUIET_PT && r.stroke.color == border))
+        .count();
+    (rings, quiet)
+}
+
+/// Go to's Enter gives the list the keyboard: ↓ then moves its focus, not the needle points
+/// selected. The row in focus is ringed only while the list has the keyboard; Escape gives it back
+/// to the canvas and the row is marked quietly.
+#[test]
+fn go_to_gives_the_list_the_keyboard_and_the_ring_says_who_has_it() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    // A needle point selected: the canvas's ↓ would nudge it.
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 3}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let border = crate::theme::Tokens::get(&ctx).border;
+    let uid = app.session.active().unwrap().uid;
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let target = list.record(5).unwrap();
+    let field = nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0).expect("the field");
+    time += 0.05;
+    let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+    frame(&mut app, &ctx, time, vec![focus]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(target.to_string()), key(Key::Enter)]);
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), Some(target));
+    assert_eq!(focus_marks(&shapes, border), (1, 0), "ringed: the list has the keyboard");
+    let doc = app.session.active().unwrap().doc.clone();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::ArrowDown)]);
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), list.record(6), "↓ moves the list's focus");
+    assert!(app.session.active().unwrap().doc == doc, "the needle point wasn't nudged");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Escape)]);
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(focus_marks(&shapes, border), (0, 1), "marked quietly: the keys reach the canvas");
+}
+
+/// While a newer plan's flags are being built (the Check tab's format changed the limits), the tab
+/// keeps the rows it drew, dimmed, with Go to and the foot; then it draws the new ones.
+#[test]
+fn the_last_rows_stay_dimmed_until_the_new_flags_come() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let number = app.embroidery.stitches.list.as_ref().unwrap().1.record(2).unwrap();
+    let colour = |shapes: &[Shape]| {
+        let words = number.to_string();
+        shapes.iter().find_map(|s| match s {
+            Shape::Text(t) if t.galley.text() == words && t.pos.x > 800.0 => t.galley.job.sections.first().map(|s| s.format.color),
+            _ => None,
+        })
+    };
+    let fresh = colour(&shapes).expect("the row drawn");
+    let uid = app.session.active().unwrap().uid;
+    app.embroidery.check.format.insert(uid, "dst");
+    time += 0.05;
+    let (shapes, nodes) = frame(&mut app, &ctx, time, vec![]);
+    let words: Vec<String> = shapes.iter().filter_map(|s| if let Shape::Text(t) = s { Some(t.galley.text().to_string()) } else { None }).collect();
+    assert!(!words.iter().any(|w| w == "Listing stitches…"), "the rows stay");
+    let dimmed = colour(&shapes).expect("the row still drawn");
+    assert_ne!(dimmed, fresh, "dimmed");
+    assert!(nodes.iter().any(|n| n.2 == "Record number"), "Go to stays");
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(colour(&shapes), Some(fresh), "the new flags' rows");
+}
+
 /// Go to a record far down the list (in its middle, so the end's clamp can't bring it in) scrolls
 /// its row into view.
 #[test]

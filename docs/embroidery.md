@@ -132,14 +132,24 @@ needle lifts across each cut the same way (tied off and in around a long jump).
 Moving or scaling the lines moves or scales the stitches; editing a line's points edits the
 stitches. A run's needle points are its anchors, in order: handles pulled out of them are ignored
 (the curve the art then draws between two needle points is sewn as the straight stitch a machine
-makes), a closed run sews no closing stitch, and its subpaths are runs the needle jumps between. Turning a design back into shapes that are stitched by the rules (what professional
+makes), a closed run sews no closing stitch, and its subpaths are runs the needle jumps between.
+A document saved before manual stitches came (2026-10-30) may sew its runs otherwise now: a run
+whose handles were pulled out was sewn along its curve and is now sewn straight between its
+needle points, and a run that upstream's Delete Anchor Point left in pieces, as subpaths of one
+path, was stitched across each gap and now jumps there (untrimmed). Turning a design back into shapes that are stitched by the rules (what professional
 software calls recognising objects) is not done yet.
 
 **Saved by upstream VectorCraft.** Upstream keeps the document's embroidery settings it doesn't
 know but drops every object's (its node format keeps no unknown keys): a design opened from a
 machine file, saved by upstream VectorCraft and opened here again is art, its lines stitched as
 thin strokes and its Trim After marks gone, and every object's fill and stroke settings and entry
-and exit points are gone too, with no warning (FORK.md › Keeping up with upstream). Both apps
+and exit points are gone too, with no warning (FORK.md › Keeping up with upstream). An object
+converted to manual stitches loses the object itself, kept only in `embroidery.original`, so it
+can no longer be restored; its runs lose their `manual` mark (stitched as thin strokes), their cuts,
+stops, Stop After and exact millimetres. An older version of this fork keeps every key it doesn't
+read and composes the kept frames as this one does, but sews a converted run as it sewed a file's
+run then: each subpath's start stitched to rather than jumped to, its inner cuts and stops ignored,
+placed by the file's rules, and cut again by a clip group. Both apps
 open `.vectorcraft` files, so a double-click may open one in upstream VectorCraft: save designs
 with object settings in this app.
 

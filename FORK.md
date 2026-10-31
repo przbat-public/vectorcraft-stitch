@@ -675,7 +675,15 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   doesn't know (in `Document::extra`) but drops every object's (`NodeWire` keeps no unknown keys),
   so a design opened from a machine file, saved by upstream and opened here again, is art: its
   lines are stitched as thin strokes, and its Trim After marks are gone; so are every object's
-  embroidery settings (its fills' and strokes' values, entry and exit points). No warning can say so.
+  embroidery settings (its fills' and strokes' values, entry and exit points). An object converted
+  to manual stitches loses the object itself (kept only in `embroidery.original`, so Restore Object
+  has nothing to put back), and its runs their `manual` mark, cuts, stops, Stop After and exact
+  millimetres. No warning can say so. (An original kept as a hidden child node instead would survive
+  upstream; not chosen, since every walk, selection and export would then have to pass over it.)
+  Older versions of this fork keep every key they don't read and compose the kept frames by the
+  convention, but sew a converted run as a file's run was sewn then: each subpath's start stitched
+  to, not jumped to, its inner cuts and stops ignored, placed by the file's rules, cut again by a
+  clip group.
   Upstream keeping a node's unknown keys would fix it (a proposal for upstream).
 
 ## Practicalities

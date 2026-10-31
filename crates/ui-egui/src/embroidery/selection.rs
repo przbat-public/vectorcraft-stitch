@@ -381,11 +381,15 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
             painter.circle_stroke(c, SELECTED_RADIUS_PT, Stroke::new(EDGE_LIGHT_PT, light()));
         }
     }
-    // The needle point or stitch under the pointer, and the current needle point's ring.
+    // The needle point or stitch under the pointer, and the current needle point's ring: of a path
+    // inside the object edited only (the tool forgets them when editing moves on).
+    let inside = |v: &serde_json::Value| {
+        v.get("id").and_then(serde_json::Value::as_u64).and_then(|id| doc.ancestry(NodeId(id))).is_some_and(|a| a.contains(&editing.scope.object))
+    };
     let hover = options.get("hover").cloned().unwrap_or_default();
-    if let Some(p) = hover.get("needlePoint").and_then(|v| needle_at(&doc, v)) {
+    if let Some(p) = hover.get("needlePoint").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
         painter.circle_stroke(screen(p), SELECTED_RADIUS_PT + RING_OUT_PT / 2.0, Stroke::new(STITCH_PT, dark()));
-    } else if let Some(from) = hover.get("stitch").and_then(|v| needle_at(&doc, v)) {
+    } else if let Some(from) = hover.get("stitch").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
         let to = hover.get("stitch").and_then(|v| {
             let mut next = v.clone();
             next["index"] = serde_json::json!(v.get("index")?.as_u64()? + 1);
@@ -396,7 +400,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
             painter.line_segment([screen(from), screen(to)], Stroke::new(STITCH_PT, light()));
         }
     }
-    if let Some(p) = options.get("current").and_then(|v| needle_at(&doc, v)) {
+    if let Some(p) = options.get("current").filter(|v| inside(v)).and_then(|v| needle_at(&doc, v)) {
         let c = screen(p);
         let radius = SELECTED_RADIUS_PT + RING_OUT_PT;
         for (width, colour) in RING_PT.iter().zip([dark(), light(), ink]) {

@@ -42,6 +42,9 @@ use crate::{Action, Cursor, Mods, PointerEvent, PointerKind, Tool, ToolContext, 
 
 /// The tool's id.
 pub const ID: &str = "embroidery";
+/// What the session tells the tool ([`Tool::notify`]) after a command from
+/// outside it ran: what stitch editing keeps follows what is edited now.
+pub const COMMAND_RAN: &str = "commandRan";
 
 /// The command a point's drag, nudge or reset runs.
 const SET_ENTRY_EXIT: &str = "embroidery.setEntryExit";
@@ -313,6 +316,7 @@ impl Tool for EmbroideryTool {
     }
 
     fn pointer(&mut self, cx: &ToolContext, ev: &PointerEvent) -> Vec<Action> {
+        self.editing.follow(cx.embroidery.and_then(|f| f.needle_points()));
         // Editing stitches: a handle (of art inside the object isolated) is caught first, as
         // outside it; elsewhere the needle points are.
         // A press of stitch editing still held ends as it began, also when what it edits went (the
@@ -440,6 +444,7 @@ impl Tool for EmbroideryTool {
     }
 
     fn key(&mut self, cx: &ToolContext, key: ToolKey, mods: Mods) -> Vec<Action> {
+        self.editing.follow(cx.embroidery.and_then(|f| f.needle_points()));
         if let Some(needles) = cx.embroidery.and_then(|f| f.needle_points())
             && self.grab.is_none()
             && self.focused(cx).is_none()
@@ -554,6 +559,15 @@ impl Tool for EmbroideryTool {
         self.editing.tick(dt)
     }
 
+    /// A command from outside ran ([`COMMAND_RAN`]): what stitch editing keeps follows what is
+    /// edited now (an agent's `object.exitIsolation`, isolation's ‹, an Escape the tool left to
+    /// isolation, Edit Stitches on another object).
+    fn notify(&mut self, cx: &ToolContext, what: &str) {
+        if what == COMMAND_RAN {
+            self.editing.follow(cx.embroidery.and_then(|f| f.needle_points()));
+        }
+    }
+
     fn wants_ticks(&self) -> bool {
         self.editing.wants_ticks()
     }
@@ -604,7 +618,7 @@ impl Tool for EmbroideryTool {
         // A drag of needle points under way is kept, as a release keeps it.
         out.extend(self.editing.release());
         self.editing.let_go();
-        self.editing.current = None;
+        self.editing.follow(None);
         out
     }
 }

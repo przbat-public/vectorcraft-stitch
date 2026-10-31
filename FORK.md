@@ -611,7 +611,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     embroidery tool in `create`'s chain after `touchtype`; the `Cursor` variants `Embroidery` and
     `EmbroideryPoint` after `WidthPoint`, and their stand-ins (`Arrow`, `Move`) in `stand_in()`;
   - `engine/src/tooling.rs`: in `after_command`, the embroidery tool asked too when a command ended
-    its drag (Undo mid-drag); in `with_tool_cx`, the stitch plan's and the settings' answers for
+    its drag (Undo mid-drag), and told after each command from outside it (`notify` with
+    `embroidery::COMMAND_RAN`) so that what stitch editing keeps follows what is edited; in `with_tool_cx`, the stitch plan's and the settings' answers for
     the embroidery tool, one call (`Services::facts_now` in `cmd/embroidery/tool.rs`: its
     `FactsNow`, told whether the canvas draws the stitches), only while that tool is active, and the
     context's `embroidery` field set from them; in `switch_tool`, the answers it kept dropped when the tool is put

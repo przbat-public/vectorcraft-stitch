@@ -357,3 +357,32 @@ fn objects_selected_whole_stand_for_their_needle_points() {
     assert!(s.doc().unwrap().selection.objects.is_empty(), "deselected");
     assert_eq!(s.doc().unwrap().isolation, Some(NodeId(group)), "still isolated");
 }
+
+/// What stitch editing keeps follows what is edited: the needle point `[` and `]` step from goes
+/// when editing ends by an agent's `object.exitIsolation`, and isn't carried into another object's
+/// editing; pressed again, it comes back.
+#[test]
+fn the_needle_point_stepped_from_follows_the_object_edited() {
+    let (mut s, objects) = fixture();
+    let view = ViewInfo::default();
+    let (a, b) = (objects[0], objects[1]);
+    let current = |s: &Session| s.tool_options()["stitches"]["current"].clone();
+    s.execute("object.isolate", &json!({"id": a})).unwrap();
+    s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
+    s.execute("embroidery.sequence", &json!({})).unwrap();
+    s.select_tool("embroidery", view).unwrap();
+    let p = needle_points(&s, a)[5];
+    for kind in [PointerKind::Down, PointerKind::Up] {
+        s.pointer(&PointerEvent { kind, pos: p, mods: Mods::default(), pressure: 1.0 }, view).unwrap();
+    }
+    assert!(current(&s).is_object(), "pressed: {}", current(&s));
+    s.execute("object.exitIsolation", &json!({})).unwrap();
+    assert!(current(&s).is_null(), "editing ended: {}", current(&s));
+    s.execute("object.isolate", &json!({"id": b})).unwrap();
+    assert!(current(&s).is_null(), "another object: {}", current(&s));
+    let q = needle_points(&s, b)[2];
+    for kind in [PointerKind::Down, PointerKind::Up] {
+        s.pointer(&PointerEvent { kind, pos: q, mods: Mods::default(), pressure: 1.0 }, view).unwrap();
+    }
+    assert!(current(&s).is_object(), "pressed in the other object: {}", current(&s));
+}

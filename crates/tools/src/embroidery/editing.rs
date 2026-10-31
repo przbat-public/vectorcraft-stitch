@@ -97,8 +97,10 @@ struct Marquee {
 #[derive(Clone, Debug, Default)]
 pub struct Editing {
     pub hover: Option<Hover>,
-    /// The needle point `[` and `]` step from: the one last pressed or stepped to.
+    /// The needle point `[` and `]` step from: the one last pressed or stepped to, of the object
+    /// `scope` edited ([`Editing::follow`]).
     pub current: Option<NeedleRef>,
+    scope: Option<NodeId>,
     drag: Option<Drag>,
     marquee: Option<Marquee>,
 }
@@ -214,6 +216,21 @@ impl Editing {
         self.drag.as_ref().filter(|d| d.begun).map(|d| d.delta)
     }
 
+    /// Keep up with what is edited now (`needles`; `None`: nothing): the needle point stepped from
+    /// and the hover are forgotten when editing ended or moved to another object, or when the
+    /// needle point is no longer one of those edited (an edit took it away).
+    pub fn follow(&mut self, needles: Option<&dyn NeedlePoints>) {
+        let scope = needles.map(|n| n.scope().object);
+        if scope != self.scope {
+            (self.scope, self.current, self.hover) = (scope, None, None);
+        }
+        if let (Some(c), Some(n)) = (self.current, needles)
+            && !(n.holds(c.id) && c.index < n.count(c.id))
+        {
+            self.current = None;
+        }
+    }
+
     /// Everything let go (the tool put away, an outside command ended the drag).
     pub fn let_go(&mut self) {
         self.drag = None;
@@ -258,6 +275,7 @@ impl Editing {
                 // leaves isolation with the Selection tool.
                 None => {
                     self.let_go();
+                    self.follow(None);
                     vec![Action::Exec("object.exitIsolation".into(), json!({}))]
                 }
             },

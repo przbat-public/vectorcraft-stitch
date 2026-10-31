@@ -113,7 +113,9 @@ pub fn lines(app: &mut VectorcraftApp) -> Option<(String, Vec<String>)> {
             said.push(selected);
         }
         let mut lines = vec![said.join(" · ")];
-        if app.view().is_some_and(|v| v.zoom < NEEDLE_CIRCLES_MIN_ZOOM) {
+        // Below the zoom the circles show from, or past as many as can be told apart in view (then
+        // none is drawn).
+        if app.view().is_some_and(|v| v.zoom < NEEDLE_CIRCLES_MIN_ZOOM) || app.embroidery.layer.stats().circles_capped {
             lines.push(crate::et!("Zoom in to see the needle points.").to_string());
         }
         if e.scope.refused > 0 {

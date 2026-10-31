@@ -30,7 +30,7 @@ use vectorcraft_engine::cmd::embroidery::stitch_limits;
 use vectorcraft_engine::cmd::embroidery::view::{Layers, layers, paused};
 use vectorcraft_geom::{Affine, Point, Rect};
 use vectorcraft_render::Rendered;
-use vectorcraft_render::lines::{EditLook, LinePicture, LineRenderer, LineStyle, TagSet};
+use vectorcraft_render::lines::{EditLook, LinePicture, LineRenderer, LineStats, LineStyle, TagSet};
 
 use super::editing::NEEDLE_CIRCLES_MIN_ZOOM;
 use super::stitch_preview::Freshness;
@@ -113,6 +113,8 @@ struct LayerDone {
     emphasis: Option<Vec<u32>>,
     img: egui::ColorImage,
     ms: f64,
+    /// What the frame drew (the edit look's circles capped among it).
+    stats: LineStats,
 }
 
 /// What the thread finished since the last look: the newest frame and the newest emphasis.
@@ -163,7 +165,7 @@ impl LineWorker {
                         }) else {
                             break 'jobs;
                         };
-                        let done = LayerDone { seq: job.seq, key: job.key, emphasis: job.emphasis, img, ms: crate::now_ms() - t0 };
+                        let done = LayerDone { seq: job.seq, key: job.key, emphasis: job.emphasis, img, ms: crate::now_ms() - t0, stats: r.stats };
                         if done_tx.send(done).is_err() {
                             break 'jobs;
                         }
@@ -205,6 +207,9 @@ pub struct StitchLayer {
     /// shown: a frame the thread finishes is shown only when it is newer than the one shown.
     seq: u64,
     shown_seq: u64,
+    /// What the frame shown drew (in line or on the thread): the edit look's circles capped there
+    /// ask the chip to say zoom in.
+    shown_stats: LineStats,
     renderer: LineRenderer,
     worker: Option<LineWorker>,
     worker_started: bool,
@@ -271,10 +276,16 @@ impl StitchLayer {
         self.key.as_ref().map(|k| k.generation)
     }
 
-    /// What the last frame drawn in line drew (the tests read the edit look's circles and marks).
+    /// What the frame shown drew, in line or on the thread: the chip reads whether the edit look's
+    /// circles were capped, the tests its circles and marks.
+    pub(crate) fn stats(&self) -> LineStats {
+        self.shown_stats
+    }
+
+    /// Say the frame shown capped the edit look's circles (the chip's tests).
     #[cfg(test)]
-    pub(crate) fn stats(&self) -> vectorcraft_render::lines::LineStats {
-        self.renderer.stats
+    pub(crate) fn pretend_circles_capped(&mut self) {
+        self.shown_stats.circles_capped = true;
     }
 
     /// Draw on `worker` from now on (the tests start the thread themselves).
@@ -545,6 +556,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 }
                 if done.key.uid == uid && done.seq > layer.shown_seq {
                     layer.last_ms = done.ms;
+                    layer.shown_stats = done.stats;
                     upload(layer, ctx, done.img, done.key, done.seq);
                 }
             }
@@ -624,6 +636,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
                 let t0 = crate::now_ms();
                 let img = color_image(&layer.renderer.render(&job.picture, w, h, job.view, &job.style));
                 layer.last_ms = crate::now_ms() - t0;
+                layer.shown_stats = layer.renderer.stats;
                 // Newer than anything the thread is drawing: that frame is wanted no more.
                 layer.asked = None;
                 upload(layer, ctx, img, key.clone(), seq);

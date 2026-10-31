@@ -249,3 +249,25 @@ fn a_cmd_press_keeps_editing_on() {
     assert!(super::editing(&mut app).is_some());
     assert_eq!(app.embroidery.layer.uploads, uploads, "no frame of stitches drawn again for the press");
 }
+
+/// The chip asks to zoom in below 250 %, and above it while more needle points are in view than
+/// circles can be told apart there (the frame then draws none).
+#[test]
+fn the_chip_asks_to_zoom_in_while_the_circles_dont_show() {
+    let (mut app, object) = app();
+    app.run("object.isolate", json!({"id": object})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("view.setZoom", json!({"zoom": 400})).unwrap();
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let zoom_in = "Zoom in to see the needle points.";
+    let says = |app: &mut VectorcraftApp| super::lines(app).unwrap().1.iter().any(|l| l == zoom_in);
+    assert!(!says(&mut app), "the circles show");
+    app.embroidery.layer.pretend_circles_capped();
+    assert!(says(&mut app), "too many in view");
+    app.run("view.setZoom", json!({"zoom": 100})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    assert!(says(&mut app), "under 250 %");
+}

@@ -850,10 +850,12 @@ const NEEDLE_INDEX_BUDGETS: [f64; 4] = [NEEDLE_INDEX_MS[0] * 2.5, NEEDLE_PRESS_P
 /// (see [`NEEDLE_INDEX_BUDGETS`]).
 const NEEDLE_PRESS_P95_MS: f64 = 0.25;
 const NEEDLE_PRESS_MS: f64 = 1.0;
-/// What the needle-point index's rows measured on 2026-10-27 (release, 12-core Apple Silicon, load
-/// about 4 to 8), milliseconds: built 16.3, the nearest needle point 0.04 at the 95th percentile and
-/// 0.15 at worst, the marquee 156 (it writes a million needle points into the selection).
-const NEEDLE_INDEX_MS: [f64; 4] = [16.3, 0.04, 0.15, 156.0];
+/// What the needle-point index's rows measured once the manual stitches' review round was merged
+/// in (2026-10-31, release, 12-core Apple Silicon, load about 2.7 to 3, twice), milliseconds: built
+/// 15.8, the nearest needle point 0.04 at the 95th percentile and 0.16 to 0.18 at worst, the marquee
+/// 157 to 160 (it writes a million needle points into the selection). On 2026-10-27: 16.3, 0.04,
+/// 0.15 and 156.
+const NEEDLE_INDEX_MS: [f64; 4] = [15.8, 0.04, 0.17, 158.0];
 /// How many presses the nearest needle point's rows time, at points spread over the design's box
 /// and as far again round it (misses included).
 const NEEDLE_QUERIES: usize = 1000;

@@ -4268,6 +4268,11 @@ proptest! {
         bytes.extend(body);
         survive_metafile("embroidery records", &format!("x.{}", EMBROIDERY[which]), &bytes)?;
     }
+}
+
+// VectorCraft Stitch: designs with stops, from the fork's fixed seed.
+proptest! {
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// Designs with stops anywhere (at a block's start or end, several in a row, between blocks of
     /// one thread, which open as one group with a stop), written in each format and opened: they

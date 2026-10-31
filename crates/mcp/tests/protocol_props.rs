@@ -579,7 +579,7 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 12, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(12))]
 
     /// Random stitch edits (VectorCraft Stitch) on a design opened from a machine file, through
     /// `run_command` and on a local session started from the same file: each succeeds or is

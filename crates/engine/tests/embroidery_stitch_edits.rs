@@ -125,7 +125,7 @@ fn stitch_commands_on_every_kind_of_run_never_panic() {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 24, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(24))]
 
     /// Random stitch edits on a design opened from a machine file: never a panic; at most one undo
     /// step each, none when refused (the document as it was) or when nothing changed; undo gives

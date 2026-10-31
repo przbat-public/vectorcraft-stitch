@@ -11,7 +11,7 @@ use vectorcraft_format::{load, save};
 use vectorcraft_testkit::embroidery::arb_json;
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 256, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(256))]
 
     /// Whatever a newer version writes under an object's `embroidery` key, the file opens, and saved
     /// again it holds the same, but for what reads as unset (a cut that is false or null, a run or

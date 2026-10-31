@@ -38,6 +38,23 @@ pub const BLUE: &str = "#1830c8";
 pub const GREEN: &str = "#20a030";
 
 /// The id in a command's reply.
+/// The seed the fork's property suites run with unless `PROPTEST_RNG_SEED` is set: any fixed one.
+const PROPTEST_SEED: u64 = 0x5717_c4ed;
+
+/// A property suite's config, as upstream's pathops suites take theirs: `cases` cases from a fixed
+/// seed, so that a CI run never fails at random. Explore further locally with `PROPTEST_CASES=5000
+/// PROPTEST_RNG_SEED=<n>`, and keep a minimal failure found that way as a test of its own.
+pub fn proptest_config(cases: u32) -> proptest::test_runner::Config {
+    let mut c = proptest::test_runner::Config { failure_persistence: None, ..proptest::test_runner::Config::default() };
+    if std::env::var_os("PROPTEST_CASES").is_none() {
+        c.cases = cases;
+    }
+    if std::env::var_os("PROPTEST_RNG_SEED").is_none() {
+        c.rng_seed = proptest::test_runner::RngSeed::Fixed(PROPTEST_SEED);
+    }
+    c
+}
+
 pub fn id(reply: &Value) -> u64 {
     reply["id"].as_u64().unwrap_or_else(|| panic!("no id in {reply}"))
 }

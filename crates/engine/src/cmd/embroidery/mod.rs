@@ -18,7 +18,10 @@
 //! design's figures: counts, size, thread, time), [`order`] (the sewing order as
 //! `embroidery.sequence` lists it), [`check`] (the design checks, each rule with its source),
 //! [`scene`] (the plan as the stitch preview draws it) and [`render`] (that drawing as a picture,
-//! `embroidery.render`).
+//! `embroidery.render`). Manual stitches: `manual` (Convert to Manual Stitches and Restore Object),
+//! `needles` (a path of stitches read as runs of needle points, and written back), `needle_edits`
+//! (the stitch commands), `hooks` (what upstream's Delete, cutting tools and Join do to runs of
+//! stitches, reached through the marked wrappers below) and `records` (`embroidery.stitches`).
 
 mod cache;
 mod check;
@@ -115,6 +118,19 @@ use vectorcraft_stitch::format::Format as StitchFormat;
 use vectorcraft_stitch::thread::{MISMATCH_DELTA_E, Palette};
 
 pub use self::objects::skip_reasons;
+pub use self::options::{SettingField, distinct_underlays, fabric_field, part_field, setting_field};
+use self::stats::Page;
+use super::*;
+
+// For the Check tab: the most hits it may ask a rule for, and the plan's millimetres as points; for
+// the Sewing order tab, the most units a list may ask for.
+pub use self::check::{MAX_LIMIT, POINT_MISS_MM};
+pub use self::stats::MAX_LIST_LIMIT;
+pub use options::Options;
+pub use service::Planned;
+pub(crate) use service::Services;
+pub(crate) use unit::PlanError;
+pub use vectorcraft_stitch::mm_to_pt;
 
 /// The marked upstream hooks of the stitch commands: Delete with needle points selected
 /// (`path::delete_anchors`, which the Delete key, Edit › Clear, Edit › Cut and `path.deleteAnchors`
@@ -160,19 +176,6 @@ pub(crate) fn runs_cut_in_place(d: &mut Document, id: vectorcraft_doc::NodeId, r
 pub(crate) fn join_runs_of_stitches(s: &mut Session, ids: &[vectorcraft_doc::NodeId]) -> Option<Result<Value>> {
     hooks::join_paths(s, ids)
 }
-pub use self::options::{SettingField, distinct_underlays, fabric_field, part_field, setting_field};
-use self::stats::Page;
-use super::*;
-
-// For the Check tab: the most hits it may ask a rule for, and the plan's millimetres as points; for
-// the Sewing order tab, the most units a list may ask for.
-pub use self::check::{MAX_LIMIT, POINT_MISS_MM};
-pub use self::stats::MAX_LIST_LIMIT;
-pub use options::Options;
-pub use service::Planned;
-pub(crate) use service::Services;
-pub(crate) use unit::PlanError;
-pub use vectorcraft_stitch::mm_to_pt;
 
 /// The machine formats `embroidery.check {format}` checks for, as (id, the name the export lists
 /// it by), in the export's order: the Check tab's choice of format.

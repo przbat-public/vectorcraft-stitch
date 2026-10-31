@@ -85,10 +85,10 @@ impl Embroidery {
             // nothing (so moving a run leaves its saved form as it was), anything more starts the
             // record, and every transform after is composed with it.
             let [m0, m1, m2, m3, _, _] = a.as_coeffs();
-            if run.transformed.is_some() || [m0, m1, m2, m3] != [1.0, 0.0, 0.0, 1.0] {
-                let composed = a * run.transformed.unwrap_or(Affine::IDENTITY);
+            if run.since_made.is_some() || [m0, m1, m2, m3] != [1.0, 0.0, 0.0, 1.0] {
+                let composed = a * run.since_made.unwrap_or(Affine::IDENTITY);
                 if composed.as_coeffs().iter().all(|c| c.is_finite()) {
-                    run.transformed = Some(composed);
+                    run.since_made = Some(composed);
                 }
             }
             move_shared(&mut run.extra, a);
@@ -373,7 +373,7 @@ mod tests {
     #[test]
     fn a_run_records_its_transforms_since_it_was_made() {
         let mut e = Embroidery { stitches: Some(super::super::StitchRun::default()), ..Embroidery::default() };
-        let recorded = |e: &Embroidery| e.stitches.as_ref().and_then(|r| r.transformed);
+        let recorded = |e: &Embroidery| e.stitches.as_ref().and_then(|r| r.since_made);
         e.transform(Affine::translate((5.0, -2.0)));
         assert_eq!(recorded(&e), None, "a move records nothing");
         let scale = Affine::scale_non_uniform(1.15, 1.0);
@@ -395,7 +395,7 @@ mod tests {
     #[test]
     fn a_runs_record_is_a_kept_frame() {
         let scale = Affine::scale(1.2);
-        let run = super::super::StitchRun { transformed: Some(scale), ..Default::default() };
+        let run = super::super::StitchRun { since_made: Some(scale), ..Default::default() };
         let saved = serde_json::Value::from(run.clone());
         assert_eq!(saved, json!({"transformed": {"frame": [1.2, 0.0, 0.0, 1.2, 0.0, 0.0]}}));
         let back = super::super::StitchRun::from(saved.as_object().unwrap().clone());
@@ -409,10 +409,10 @@ mod tests {
         assert_eq!(older.stitches.as_ref().unwrap().extra["transformed"], json!({"frame": [0.6, 0.0, 0.0, 0.6, 0.0, 0.0]}));
         let newer = json!({"transformed": {"frame": [1.2, 0.0, 0.0, 1.2, 0.0, 0.0], "by": "a newer version"}});
         let read = super::super::StitchRun::from(newer.as_object().unwrap().clone());
-        assert_eq!((read.transformed, serde_json::Value::from(read)), (None, newer), "kept as it was");
+        assert_eq!((read.since_made, serde_json::Value::from(read)), (None, newer), "kept as it was");
         for odd in [json!({"frame": [1.0, 0.0]}), json!({"frame": "x"}), json!([1.0, 0.0, 0.0, 1.0, 0.0, 0.0])] {
             let held = json!({ "transformed": odd });
-            assert_eq!(super::super::StitchRun::from(held.as_object().unwrap().clone()).transformed, None, "{held}");
+            assert_eq!(super::super::StitchRun::from(held.as_object().unwrap().clone()).since_made, None, "{held}");
         }
     }
 
@@ -504,7 +504,7 @@ mod tests {
             let node = std::sync::Arc::new(json!({"id": 7}));
             e.original = Some(super::super::Original { frame: Affine::IDENTITY, node, fingerprint: None, extra: Default::default() });
             // A run already transformed once since it was made, so that its record is composed.
-            e.stitches = Some(super::super::StitchRun { transformed: Some(Affine::IDENTITY), ..Default::default() });
+            e.stitches = Some(super::super::StitchRun { since_made: Some(Affine::IDENTITY), ..Default::default() });
             e
         })
     }
@@ -533,7 +533,7 @@ mod tests {
             (Some(x), Some(y)) => near(x.frame, y.frame),
             (x, y) => x == y,
         };
-        let records = match (a.stitches.as_ref().and_then(|r| r.transformed), b.stitches.as_ref().and_then(|r| r.transformed)) {
+        let records = match (a.stitches.as_ref().and_then(|r| r.since_made), b.stitches.as_ref().and_then(|r| r.since_made)) {
             (Some(x), Some(y)) => near(x, y),
             (x, y) => x == y,
         };

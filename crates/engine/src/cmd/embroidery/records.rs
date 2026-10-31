@@ -179,7 +179,7 @@ fn numbered(plan: &DesignPlan, doc: &Document) -> Vec<Option<(NodeId, usize)>> {
             let node = u.origin.node;
             let manual = matches!(u.origin.part, Part::Manual);
             if !(manual || matches!(u.origin.part, Part::Literal))
-                || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::converted))
+                || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted))
             {
                 return None;
             }

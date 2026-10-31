@@ -20,7 +20,7 @@ use vectorcraft_geom::{Affine, Anchor, PathData, Point, SubPath};
 use vectorcraft_stitch::plan::THREAD_WIDTH;
 use vectorcraft_stitch::{Command, MM_PER_PT, SAME_POINT, Stitch, mm_to_pt};
 
-use super::digitize::converted;
+use super::digitize::is_converted;
 use super::objects::MAX_IDS;
 use super::plan::{DesignPlan, Part};
 use super::{object, options_in, service, to_plan};
@@ -263,7 +263,7 @@ fn collect(
     out: &mut Vec<Target>,
     skipped: &mut Vec<(NodeId, Skip)>,
 ) {
-    if converted(n) || is_manual_run(n) {
+    if is_converted(n) || is_manual_run(n) {
         skipped.push((n.id, Skip::Manual));
         return;
     }
@@ -687,12 +687,12 @@ fn in_range(n: &Node) -> bool {
 /// The converted objects `n` stands for, to restore: itself when it is one, the one a manual run is
 /// in, those a group or a layer holds; what isn't one, with why, into `skipped`.
 fn restorable(doc: &Document, n: &Node, out: &mut Vec<NodeId>, skipped: &mut Vec<(NodeId, NotRestored)>) {
-    if converted(n) {
+    if is_converted(n) {
         out.push(n.id);
         return;
     }
     if let Some(run) = n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()) {
-        match doc.parent_of(n.id).and_then(|p| doc.node(p)).filter(|p| run.manual && converted(p)) {
+        match doc.parent_of(n.id).and_then(|p| doc.node(p)).filter(|p| run.manual && is_converted(p)) {
             Some(group) => out.push(group.id),
             None => skipped.push((n.id, if run.manual { NotRestored::NotConverted } else { NotRestored::Literal })),
         }

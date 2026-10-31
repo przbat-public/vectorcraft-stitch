@@ -127,7 +127,7 @@ pub struct StitchRun {
     /// how much its stitches were scaled is known ([`scale_factors`]). `None`: only moved since,
     /// if at all. Saved as `{"frame": [...]}`, which every version of the fork composes with each
     /// transform by the convention for kept data, so an older version keeps it right.
-    pub transformed: Option<vectorcraft_geom::Affine>,
+    pub since_made: Option<vectorcraft_geom::Affine>,
     /// The thread the file recorded for the run's colour block beside its colour (a VP3 thread
     /// record), written back by a format that has one. `None`: the file recorded none.
     pub thread: Option<ThreadRecord>,
@@ -140,9 +140,13 @@ pub struct StitchRun {
 /// coordinate that comes back as it was `null`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Exact {
+    /// The needle point's subpath, from 0.
     pub subpath: usize,
+    /// The needle point's anchor in its subpath, from 0.
     pub anchor: usize,
+    /// Its x in millimetres, as the plan sewed it; `None`: its document point gives it back.
     pub x: Option<f64>,
+    /// Its y in millimetres, likewise.
     pub y: Option<f64>,
 }
 
@@ -527,8 +531,8 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
         let exact = take_list(&mut map, EXACT, Exact::read);
         // An object holding only a frame; anything else a newer version wrote there is kept as it
         // is, unread (and composed with each transform all the same, by the convention).
-        let transformed = map.get(TRANSFORMED).and_then(|v| v.as_object()).filter(|m| m.len() == 1).and_then(|m| m.get(FRAME)).and_then(frame);
-        if transformed.is_some() {
+        let since_made = map.get(TRANSFORMED).and_then(|v| v.as_object()).filter(|m| m.len() == 1).and_then(|m| m.get(FRAME)).and_then(frame);
+        if since_made.is_some() {
             map.remove(TRANSFORMED);
         }
         // A record of another shape is kept as it is, unread.
@@ -536,7 +540,7 @@ impl From<serde_json::Map<String, serde_json::Value>> for StitchRun {
         if thread.is_some() {
             map.remove(THREAD);
         }
-        Self { trim_before, trim_after, double_point, manual, trims, stops, shape, stop_after, exact, transformed, thread, extra: map.into() }
+        Self { trim_before, trim_after, double_point, manual, trims, stops, shape, stop_after, exact, since_made, thread, extra: map.into() }
     }
 }
 
@@ -557,12 +561,9 @@ impl From<StitchRun> for serde_json::Value {
         let shape = r.shape.map(|shape| (SHAPE, serde_json::json!(shape)));
         let exact = (!r.exact.is_empty())
             .then(|| (EXACT, serde_json::Value::Array(r.exact.iter().map(|e| serde_json::json!([e.subpath, e.anchor, e.x, e.y])).collect())));
-        let transformed = r.transformed.map(|f| (TRANSFORMED, serde_json::json!({ FRAME: f.as_coeffs() })));
+        let since_made = r.since_made.map(|f| (TRANSFORMED, serde_json::json!({ FRAME: f.as_coeffs() })));
         let thread = r.thread.map(|t| (THREAD, serde_json::Value::from(t)));
-        with_kept(
-            flags.chain(trims).chain(stops).chain(shape).chain(exact).chain(transformed).chain(thread),
-            std::sync::Arc::unwrap_or_clone(r.extra),
-        )
+        with_kept(flags.chain(trims).chain(stops).chain(shape).chain(exact).chain(since_made).chain(thread), std::sync::Arc::unwrap_or_clone(r.extra))
     }
 }
 

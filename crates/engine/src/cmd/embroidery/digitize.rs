@@ -462,7 +462,7 @@ impl<'a> Digitizer<'a> {
         // instance; so are the manual runs an object converted to manual stitches became, by the
         // group standing for it.
         let outer = self.instance;
-        if outer.is_none() && (self.expanded.contains(&n.id) || converted(n)) {
+        if outer.is_none() && (self.expanded.contains(&n.id) || is_converted(n)) {
             self.instance = Some(n.id);
         }
         // What it leaves out is about it (or the instance placing it); a layer is no object.
@@ -624,7 +624,7 @@ impl<'a> Digitizer<'a> {
         let occurrence = self.occurrence(&origin);
         // How much its stitches were scaled since they were made, as walked: a symbol's art carries
         // its instance's transform too.
-        let scale = run.transformed.and_then(scale_factors);
+        let scale = run.since_made.and_then(scale_factors);
         let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default() };
         // The cut before it: as its file had it, or one a stitch edit passed to a manual run.
         self.seq.add(Planned { facts, block, literal, cut_before });
@@ -1103,7 +1103,7 @@ fn paints_off_its_path(st: &StrokeLayer, bp: &BezPath) -> bool {
 /// Whether `n` stands for an object converted to manual stitches: a group keeping the object it was
 /// converted from ([`vectorcraft_doc::embroidery::Original`]). Its runs are placed by it, the object
 /// a person selects.
-pub(crate) fn converted(n: &Node) -> bool {
+pub(crate) fn is_converted(n: &Node) -> bool {
     matches!(n.kind, NodeKind::Group { clip: false, .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.original.is_some())
 }
 

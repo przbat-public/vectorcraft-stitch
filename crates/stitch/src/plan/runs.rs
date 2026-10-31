@@ -119,8 +119,10 @@ impl Moves {
 }
 
 /// The stitch a lead sews from where the needle goes in when no way inside leads on, millimetres:
-/// something to tie on to before the jump (an estimate: a short running stitch); and how many
-/// directions it tries, an eighth of a turn apart, for one that stays inside.
+/// something to tie on to before the jump (an estimate: a short running stitch), or the shortest
+/// stitch when that is longer, so that the joining sews it and can tie the thread off on it (the
+/// project owner's choice, 2026-10-31); and how many directions it tries, an eighth of a turn
+/// apart, for one that stays inside.
 const LEAD_TIE: f64 = 1.0;
 const TIE_TRIES: usize = 8;
 
@@ -324,13 +326,16 @@ impl Runs {
             }
         }
         // A lead with no way inside from where the needle goes in: it goes in there all the same,
-        // with a stitch to tie on to before the jump (a needle point alone can't be tied off): toward
-        // where it goes next, else the first of the eighths of a turn from there that stays inside.
+        // with a stitch to tie on to before the jump (a needle point alone can't be tied off), no
+        // shorter than the shortest stitch the runs are joined with, so that it is sewn
+        // ([`LEAD_TIE`]): toward where it goes next, else the first of the eighths of a turn from
+        // there that stays inside.
         let tie = if lead {
             let toward = to_inside - from;
+            let reach = LEAD_TIE.max(self.p.min_stitch);
             (0..TIE_TRIES)
                 .map(|k| vectorcraft_geom::Affine::rotate(std::f64::consts::TAU * k as f64 / TIE_TRIES as f64) * toward.to_point())
-                .map(|v| v.to_vec2().normalize() * LEAD_TIE)
+                .map(|v| v.to_vec2().normalize() * reach)
                 .find(|v| v.x.is_finite() && v.y.is_finite() && travels.area.contains_segment(from, from + *v))
         } else {
             None

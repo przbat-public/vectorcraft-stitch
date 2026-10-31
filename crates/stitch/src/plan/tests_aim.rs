@@ -70,16 +70,24 @@ fn a_fill_starts_at_its_entry_on_its_inset_outline() {
 /// Entered where no way inside leads on to its first row (on the edge of a second outline the
 /// non-zero rule fills too, which travels don't cross), a fill with no underlay still goes in at its
 /// entry, and sews a stitch there to tie on to before it jumps: two needle points before the cut,
-/// not one alone.
+/// not one alone, at any shortest stitch. The stitch is at least the shortest stitch long, so the
+/// joining sews it and ties the thread off on it before the cut: 1 mm long, at a shortest stitch
+/// over 1 mm it was left out, and the thread was cut after one needle point with no tie.
 #[test]
 fn a_lead_that_must_jump_is_tied_first() {
     let mut overlapping = rect(0.0, 0.0, 60.0, 40.0);
     overlapping.extend(rect(20.0, 15.0, 20.0, 10.0));
-    let p = Params { underlay: Underlay::None, angle: 0.0, ..Params::for_style(Style::Fill) }.sane();
-    let out = entered(&overlapping, &p, (30.0, 15.0));
-    let before_cut = out.iter().take_while(|s| s.command == Command::Stitch).count();
-    assert!(before_cut >= 2, "{before_cut} needle point before the cut: {:?}", &out[..4.min(out.len())]);
-    assert!(first_point(&out).distance(Point::new(30.0, 15.0)) <= inset_reach(&p), "goes in at its entry");
+    for min_stitch in [Params::for_style(Style::Fill).min_stitch, 1.5, 2.5] {
+        let p = Params { underlay: Underlay::None, angle: 0.0, min_stitch, ..Params::for_style(Style::Fill) }.sane();
+        let out = entered(&overlapping, &p, (30.0, 15.0));
+        let before: Vec<Point> = out.iter().take_while(|s| s.command == Command::Stitch).map(|s| s.point()).collect();
+        // Tied off: the last needle point sewn again after a stitch back at least the shortest
+        // stitch long.
+        let [.., back, step, last] = before.as_slice() else { panic!("shortest {min_stitch} mm: {} needle points before the cut", before.len()) };
+        assert!(back.distance(*last) <= crate::SAME_POINT, "shortest {min_stitch} mm: not tied off before the cut: {before:?}");
+        assert!(step.distance(*last) + crate::SAME_POINT >= min_stitch, "shortest {min_stitch} mm: a tie stitch {} mm long", step.distance(*last));
+        assert!(first_point(&out).distance(Point::new(30.0, 15.0)) <= inset_reach(&p), "shortest {min_stitch} mm: goes in at its entry");
+    }
 }
 
 /// Entered without underlay, a fill still sews its rows over the place it is entered: the needle

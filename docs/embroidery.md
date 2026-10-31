@@ -189,7 +189,9 @@ of its own) is converted whole, its members' Trim After and Stop After carried o
 units became (the project owner's choice, 2026-10-30). What can't be frozen exactly (a symbol's
 instances, a clipping path, a locked object, stitches from a file, a group sewn whole holding type,
 images, placed files, symbol instances, or hidden, locked or unpainted objects) is passed over with
-the reason.
+the reason. A symbol's art lies outside the layers, so it is never converted in place: taken out by
+Edit Symbol, which breaks the link, it is art and converts, and Redefine Symbol then makes its runs
+the symbol's, each instance placing them.
 Converting asks nothing; the status bar says how to go back. A convert plans the whole design
 afresh, as the export does, so from the Object tab or the command palette it plans off the
 interface thread, the status bar saying how far it has got and Escape stopping it; it converts only

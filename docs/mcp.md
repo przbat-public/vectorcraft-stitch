@@ -5149,8 +5149,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   was to restore it. A manual run is placed in the sewing order as art is and never cut again by a clip group, so the
   export right after converting writes the same bytes. An object the plan sews whole (a group with an effect or an
   appearance of its own) is converted whole, its members' Trim After and Stop After carried onto the runs their units
-  became. It passes over, with `reason`: `literal` (stitches from a file), `manual`, `symbolInstance` (convert its art),
-  `clippingPath`, `insideObject` (a piece of an object sewn whole), `holdsUnsewn` (an object sewn whole holding type,
+  became. It passes over, with `reason`: `literal` (stitches from a file), `manual`, `symbolInstance` (each
+  instance plans its symbol's art from its own needle; a symbol's art, outside the layers, is never converted in
+  place, but taken out by Edit Symbol, which breaks the link, it converts), `clippingPath`, `insideObject` (a piece
+  of an object sewn whole), `holdsUnsewn` (an object sewn whole holding type,
   an image, a placed file, a symbol's instance, or a hidden, locked or unpainted object), `locked`, `notSewn`,
   `unfreezable` (stitches a manual run can't hold); with nothing converted it is an error naming each object and
   why. One undo step. It answers `{converted: [{id, units, runs, needlePoints}], convertedCount,

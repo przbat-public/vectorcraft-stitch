@@ -82,11 +82,47 @@ const SHORT_BIT: u8 = 0b100;
 const LONG_BIT: u8 = 0b1000;
 
 /// Each record's kind and judgement, one byte a record (record `n` at `n - 1`), for the limits it
-/// was built with.
+/// was built with; and each filter's count of the records before every [`COUNT_CHUNK`]th one, so
+/// that a scope's counts take a few chunks and a filter's rows skip the chunks it matches nothing
+/// in (the interface thread asks for both).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Flags {
     bits: Vec<u8>,
     limits: [u64; 3],
+    counted: Vec<[u32; Filter::ALL.len()]>,
+}
+
+/// How many records a chunk of [`Flags`]' counts covers: a scope's counts walk at most two chunks'
+/// records at its ends; 2 million records keep 489 chunks. An estimate.
+pub const COUNT_CHUNK: usize = 4096;
+
+/// Each filter's count of the records before every [`COUNT_CHUNK`]th one of `bits`, and of them
+/// all at the end: one walk, with the flags, on the planning thread.
+fn counted(bits: &[u8]) -> Vec<[u32; Filter::ALL.len()]> {
+    let mut out = Vec::with_capacity(bits.len() / COUNT_CHUNK + 2);
+    let mut sum = [0u32; Filter::ALL.len()];
+    for (slot, b) in bits.iter().enumerate() {
+        if slot % COUNT_CHUNK == 0 {
+            out.push(sum);
+        }
+        for (s, f) in sum.iter_mut().zip(Filter::ALL) {
+            *s = s.saturating_add(u32::from(bit_matches(*b, f)));
+        }
+    }
+    out.push(sum);
+    out
+}
+
+/// Whether a record of flag byte `b` is listed under `filter`.
+fn bit_matches(b: u8, filter: Filter) -> bool {
+    match filter {
+        Filter::All => true,
+        Filter::Jumps => kind_of_bits(b) == RecordKind::Jump,
+        Filter::Trims => kind_of_bits(b) == RecordKind::Trim,
+        Filter::Stops => kind_of_bits(b) == RecordKind::Stop,
+        Filter::Short => b & SHORT_BIT != 0,
+        Filter::Long => b & LONG_BIT != 0,
+    }
 }
 
 /// `limits` as a query's params carry them to the planning thread: `{shortest, longest, step,
@@ -135,7 +171,64 @@ impl Flags {
                 }
             }
         });
-        Self { bits, limits: limits_key(limits) }
+        let counted = counted(&bits);
+        Self { bits, limits: limits_key(limits), counted }
+    }
+
+    /// How many of records `range` (numbers, from 1) each filter lists, in [`Filter::ALL`]'s order:
+    /// whole chunks by their counts, the records at the ends one by one.
+    pub fn counts(&self, range: Range<usize>) -> [usize; Filter::ALL.len()] {
+        let (start, end) = (range.start.max(1), range.end.min(self.bits.len() + 1));
+        let mut out = [0usize; Filter::ALL.len()];
+        if start >= end {
+            return out;
+        }
+        // Slots (number - 1): the whole chunks between the ends, from the counts before them.
+        let (a, b) = (start - 1, end - 1);
+        let (first, last) = (a.div_ceil(COUNT_CHUNK), b / COUNT_CHUNK);
+        let mut add = |slots: Range<usize>| {
+            for slot in slots {
+                for (o, f) in out.iter_mut().zip(Filter::ALL) {
+                    *o += usize::from(self.matches(slot + 1, f));
+                }
+            }
+        };
+        if first >= last {
+            add(a..b);
+            return out;
+        }
+        add(a..first * COUNT_CHUNK);
+        add(last * COUNT_CHUNK..b);
+        if let (Some(from), Some(to)) = (self.counted.get(first), self.counted.get(last)) {
+            for ((o, x), y) in out.iter_mut().zip(from).zip(to) {
+                *o += (y - x) as usize;
+            }
+        }
+        out
+    }
+
+    /// Each record of `range` (numbers, from 1) `filter` lists, in order, skipping the chunks it
+    /// lists none of.
+    pub fn each_listed(&self, range: Range<usize>, filter: Filter, mut f: impl FnMut(usize)) {
+        let (start, end) = (range.start.max(1), range.end.min(self.bits.len() + 1));
+        let k = Filter::ALL.iter().position(|x| *x == filter).unwrap_or(0);
+        let mut n = start;
+        while n < end {
+            let chunk = (n - 1) / COUNT_CHUNK;
+            let chunk_end = ((chunk + 1) * COUNT_CHUNK + 1).min(end);
+            let none = match (self.counted.get(chunk), self.counted.get(chunk + 1)) {
+                (Some(x), Some(y)) => x.get(k) == y.get(k),
+                _ => false,
+            };
+            if !none {
+                for m in n..chunk_end {
+                    if self.matches(m, filter) {
+                        f(m);
+                    }
+                }
+            }
+            n = chunk_end;
+        }
     }
 
     /// The limits' bits it was built with.
@@ -159,15 +252,7 @@ impl Flags {
 
     /// Whether record `number` is listed under `filter`.
     pub fn matches(&self, number: usize, filter: Filter) -> bool {
-        let Some(&b) = number.checked_sub(1).and_then(|i| self.bits.get(i)) else { return false };
-        match filter {
-            Filter::All => true,
-            Filter::Jumps => kind_of_bits(b) == RecordKind::Jump,
-            Filter::Trims => kind_of_bits(b) == RecordKind::Trim,
-            Filter::Stops => kind_of_bits(b) == RecordKind::Stop,
-            Filter::Short => b & SHORT_BIT != 0,
-            Filter::Long => b & LONG_BIT != 0,
-        }
+        number.checked_sub(1).and_then(|i| self.bits.get(i)).is_some_and(|b| bit_matches(*b, filter))
     }
 
     /// Whether record `number`'s stitch breaks the limits: too short, too long.
@@ -178,7 +263,7 @@ impl Flags {
 
     /// About how many bytes it holds.
     pub fn byte_size(&self) -> usize {
-        std::mem::size_of::<Self>() + self.bits.capacity()
+        std::mem::size_of::<Self>() + self.bits.capacity() + self.counted.capacity() * std::mem::size_of::<[u32; Filter::ALL.len()]>()
     }
 }
 

@@ -164,21 +164,20 @@ impl Listed {
 pub fn listed(flags: &Flags, ranges: Option<&[Range<usize>]>, filter: Filter) -> Listed {
     let whole = 1..flags.len() + 1;
     let ranges: &[Range<usize>] = ranges.unwrap_or(std::slice::from_ref(&whole));
+    // Each filter's count from the flags' counts by chunk (built on the planning thread), and the
+    // filter's rows from the chunks it lists any of: no walk of every record here.
     let mut counts = [0usize; Filter::ALL.len()];
     let mut picked: Vec<u32> = Vec::new();
     for r in ranges {
-        for n in r.clone() {
-            for (slot, f) in counts.iter_mut().zip(Filter::ALL) {
-                if flags.matches(n, f) {
-                    *slot += 1;
+        for (slot, n) in counts.iter_mut().zip(flags.counts(r.clone())) {
+            *slot += n;
+        }
+        if filter != Filter::All {
+            flags.each_listed(r.clone(), filter, |n| {
+                if let Ok(n) = u32::try_from(n) {
+                    picked.push(n);
                 }
-            }
-            if filter != Filter::All
-                && flags.matches(n, filter)
-                && let Ok(n) = u32::try_from(n)
-            {
-                picked.push(n);
-            }
+            });
         }
     }
     let span = ranges.first().zip(ranges.last()).and_then(|(a, b)| (b.end > a.start).then(|| (a.start, b.end - 1)));

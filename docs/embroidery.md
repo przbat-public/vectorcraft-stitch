@@ -2702,9 +2702,12 @@ Limits:
 - **The Stitches tab** (`panels/embroidery/stitches.rs`, `cmd/embroidery/stitch_list.rs`): each
   record's kind and judgement is one byte, built with the plan on the planning thread (the marker
   query `stitchList.flags`: one walk of 2 million records is 11.7 to 15.7 ms, past the 8 ms a frame
-  may spend) and kept with it; the rows a scope and a filter list, with every filter's count, are
-  worked out once per plan, scope, filter and limits (a counting test proves idle frames work out
-  nothing); only the rows in view are drawn, in pages of 400,000 rows (egui lays rows out in `f32`).
+  may spend) and kept with it, with each filter's running count every 4,096 records; the rows a
+  scope and a filter list, with every filter's count, are worked out once per plan, scope, filter
+  and limits (a counting test proves idle frames work out nothing), the counts from those running
+  counts (a scope's ends walked, its middle not) and a filter's rows from the chunks it lists any of,
+  so the interface thread never walks every record; only the rows in view are drawn, in pages of
+  400,000 rows (egui lays rows out in `f32`).
   A row's needle point is resolved from its unit's numbering in the document the plan shown was
   made from, worked out once a unit for the plan, as `embroidery.stitches` names it: the records
   before a unit's own (an opened design's run) from `stitch_list::leading`, once a unit too. A row

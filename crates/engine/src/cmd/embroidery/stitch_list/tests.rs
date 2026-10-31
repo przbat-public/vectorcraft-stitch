@@ -108,3 +108,29 @@ fn a_scope_is_its_objects_records() {
     }
     assert!(scope(&plan, &doc, &[]).is_empty());
 }
+
+/// Each filter's count by chunks, and its records skipping the chunks it lists none of, are what a
+/// walk of every record finds: over the whole design, a range inside one chunk, ranges across
+/// chunk edges, and ones past the records' ends.
+#[test]
+fn counts_by_chunk_are_a_walks() {
+    let (s, _, plan) = planned();
+    let limits = StitchLimits::of(&s.doc().unwrap().doc, None);
+    let flags = Flags::of(&plan, &limits);
+    let n = flags.len();
+    let chunk = super::COUNT_CHUNK;
+    let mut ranges = vec![1..n + 1, 3..10, 0..n + 50, n..n + 1, n + 5..n + 9];
+    if n > chunk + 10 {
+        ranges.extend([chunk - 3..chunk + 4, chunk..chunk + 1, 2..n - 1]);
+    }
+    for r in ranges {
+        let walked: Vec<usize> = Filter::ALL.iter().map(|f| r.clone().filter(|m| flags.matches(*m, *f)).count()).collect();
+        assert_eq!(flags.counts(r.clone()).to_vec(), walked, "{r:?} of {n}");
+        for f in Filter::ALL {
+            let mut listed = vec![];
+            flags.each_listed(r.clone(), f, |m| listed.push(m));
+            let want: Vec<usize> = r.clone().filter(|m| flags.matches(*m, f)).collect();
+            assert_eq!(listed, want, "{f:?} over {r:?}");
+        }
+    }
+}

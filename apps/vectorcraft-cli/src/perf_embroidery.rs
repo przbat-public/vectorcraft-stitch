@@ -92,7 +92,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 80] = [
+pub const ROWS: [&str; 81] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -173,6 +173,7 @@ pub const ROWS: [&str; 80] = [
     "needle points: slowest press, 2,000,000",
     "needle points: a marquee over 2,000,000",
     "edit look: draw 500,000 all flagged",
+    "stitches tab: counts and rows, 2,000,000",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -192,7 +193,7 @@ pub const ROWS: [&str; 80] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 80] = [
+const BUDGETS: [f64; 81] = [
     400.0,
     100.0,
     100.0,
@@ -274,6 +275,7 @@ const BUDGETS: [f64; 80] = [
     NEEDLE_INDEX_BUDGETS[3],
     // Set in the run, beside the same picture drawn plain ([`FLAGGED_FRAME_RATIO`]).
     f64::INFINITY,
+    TAB_ROWS_MS,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -458,6 +460,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend(convert_parts(&largest)?);
     ms.extend(needle_index(&literal)?);
     ms.push(flagged(&stitch_picture(500_000)));
+    ms.push(tab_rows(&literal)?);
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;
@@ -1575,6 +1578,33 @@ fn draw_with(picture: &LinePicture, zoom: f64, threads: Option<u16>, batch: usiz
 /// flagged stitch was two strokes of its own, half a million of them a frame.
 const FLAGGED_FRAME_RATIO: f64 = 1.5;
 const FLAGGED_FRAME_MS: f64 = 10.0;
+
+/// The Stitches tab's rows' budget, milliseconds: each filter's count over the whole design, and the
+/// rows of a filter that lists few records, worked out on the interface thread once a plan comes,
+/// within half the 8 ms a frame may spend. An estimate.
+const TAB_ROWS_MS: f64 = 4.0;
+
+/// Milliseconds the Stitches tab takes on the interface thread, once a plan of `doc` comes, to work
+/// out each filter's count over the whole design and the rows of the Jumps filter, from the records'
+/// flags (built on the planning thread, not timed), the median of [`DRAW_RUNS`].
+fn tab_rows(doc: &Document) -> Result<f64, String> {
+    use vectorcraft_engine::cmd::embroidery::stitch_list::{Filter, Flags};
+    let mut s = fresh(doc);
+    let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
+    let limits = vectorcraft_engine::cmd::embroidery::stitch_limits(doc, None);
+    let flags = Flags::of(&plan, &limits);
+    let whole = 1..flags.len() + 1;
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        let counts = flags.counts(whole.clone());
+        let mut rows = Vec::new();
+        flags.each_listed(whole.clone(), Filter::Jumps, |n| rows.push(n));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+        std::hint::black_box((counts, rows));
+    }
+    Ok(middle(samples))
+}
 
 /// Milliseconds a frame of `picture` takes at fit in the edit look with every stitch flagged (each
 /// shorter than a rule's shortest), the median of [`DRAW_RUNS`].

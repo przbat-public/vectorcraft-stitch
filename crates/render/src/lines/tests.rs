@@ -364,7 +364,7 @@ fn a_picture_is_placed_by_its_origin_and_scale() {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 48, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(48))]
 
     /// Any picture, any view, any style: drawn without a panic.
     #[test]

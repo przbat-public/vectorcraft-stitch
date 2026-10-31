@@ -63,7 +63,7 @@ fn moves(out: &[Stitch]) -> Vec<(f64, bool, bool)> {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 128, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(128))]
 
     /// Every needle point lies within the art's bounds (a fill's rows reaching past them by their
     /// pull compensation at most: for a row as long as the art's diagonal), and is a point.
@@ -260,7 +260,7 @@ fn no_worse_from(plain: &[Stitch], aimed: &[Stitch], exit: Point, from: Option<P
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// Any path, in any style, from any start: every point is a point; a fill's stitches lie on the
     /// art, a running line's needle points on its path, a satin's within its half width and pull
@@ -379,7 +379,7 @@ fn no_worse(plain: &[Stitch], aimed: &[Stitch], exit: Point) -> Result<(), Strin
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// An exit that isn't a number is no exit: a shape is sewn bit for bit as with none, from any
     /// start, and the entry points `try_stitches_from` and `try_stitches_aimed` agree. (That no

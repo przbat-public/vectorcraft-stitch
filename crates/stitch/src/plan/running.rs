@@ -24,7 +24,7 @@ const RUNNING: Finish = Finish { returns: false, flip: None, reach: COST_HIDDEN 
 /// connecting stitches sewn between its lines (millimetres, [`Runs::connectors`]).
 pub(super) fn running(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
     let p = p.sane();
-    let mut runs = Runs::from(aim.start.point());
+    let mut runs = Runs::from(aim.start.point(), &p);
     for Line { pts, closed, toward, .. } in ordered_toward(subpaths(path), aim, &RUNNING, &p) {
         if length(&pts, closed) < p.min_stitch {
             continue;
@@ -39,7 +39,7 @@ pub(super) fn running(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64
         runs.push(run, Travel::Auto);
     }
     let connectors = runs.connectors(&p);
-    (runs.join(&p), connectors)
+    (runs.join(), connectors)
 }
 
 /// A run with a lock stitch at each end: a short stitch back along the run and forward again, so

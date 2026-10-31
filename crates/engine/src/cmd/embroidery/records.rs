@@ -10,7 +10,7 @@
 //! can be edited, not cut by a clip group (manual stitches never are), and whose needle-down records
 //! are as many as its needle points. Elsewhere `index` is `null` and `editable` false.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::{Document, NodeId};
@@ -18,7 +18,7 @@ use vectorcraft_stitch::Command;
 
 use super::measure;
 use super::needles;
-use super::plan::{DesignPlan, Part};
+use super::plan::{DesignPlan, Part, Unit};
 use super::stats::Page;
 use crate::cmd::bad;
 
@@ -171,22 +171,30 @@ fn numbered(plan: &DesignPlan, doc: &Document) -> Vec<Option<(NodeId, usize)>> {
             }
         }
     }
+    // The units a path of stitches the commands can edit sews, and those paths found in one walk:
+    // what can be edited measured once for them all, each path counted without reading it.
+    let literal = |u: &Unit| {
+        let node = u.origin.node;
+        (matches!(u.origin.part, Part::Manual | Part::Literal)
+            && !u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted)))
+        .then_some(node)
+    };
+    let nodes: HashSet<NodeId> = plan.units.iter().filter_map(literal).collect();
+    let paths = doc.index_paths(nodes.iter().copied());
+    let editable = doc.editable();
     let mut lengths: HashMap<NodeId, Option<usize>> = HashMap::new();
     plan.units
         .iter()
         .zip(sewn)
         .map(|(u, sewn)| {
-            let node = u.origin.node;
+            let node = literal(u)?;
             let manual = matches!(u.origin.part, Part::Manual);
-            if !(manual || matches!(u.origin.part, Part::Literal))
-                || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted))
-            {
-                return None;
-            }
             let len = *lengths.entry(node).or_insert_with(|| {
-                let n = doc.node(node)?;
-                let clipped = !manual && doc.ancestry(node).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|a| a.clips()));
-                (doc.is_editable(node) && !clipped).then(|| needles::read(n).ok().map(|st| st.len())).flatten()
+                let path = paths.get(&node)?;
+                let n = doc.node_at(path)?;
+                let ancestors = doc.ancestry_at(path).unwrap_or_default();
+                let clipped = !manual && ancestors.iter().any(|a| doc.node(*a).is_some_and(|a| a.clips()));
+                (editable(node) && !clipped).then(|| needles::check(n).ok()).flatten()
             });
             let first = usize::from(u.met);
             (len == Some(sewn + first)).then_some((node, first))

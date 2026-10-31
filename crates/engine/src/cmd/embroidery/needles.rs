@@ -151,6 +151,27 @@ fn in_range(p: Point) -> bool {
     p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD
 }
 
+/// What [`read`] answers of `n`, without reading it: how many needle points the path of stitches
+/// holds, or why it can't be edited.
+pub(crate) fn check(n: &Node) -> std::result::Result<usize, Unfit> {
+    let NodeKind::Path { path, .. } = &n.kind else { return Err(Unfit::NotStitches) };
+    if !is_stitches(n) {
+        return Err(Unfit::NotStitches);
+    }
+    let anchors: usize = path.subpaths.iter().map(|sp| sp.anchors.len()).sum();
+    if anchors > 2 * MAX_NEEDLE_POINTS {
+        return Err(Unfit::TooMany);
+    }
+    if !path.subpaths.iter().flat_map(|sp| &sp.anchors).all(|a| in_range(a.p)) {
+        return Err(Unfit::OutOfRange);
+    }
+    match count(n) {
+        Some(len) if len <= MAX_NEEDLE_POINTS => Ok(len),
+        Some(_) => Err(Unfit::TooMany),
+        None => Err(Unfit::NotStitches),
+    }
+}
+
 /// The path holding stitches `n` is, as the walk sews it; `Err` with the reason when `n` isn't
 /// one, or holds what can't be edited (anchors that aren't numbers or lie outside the document's
 /// coordinates, or more needle points than a design may have), checked before any arithmetic.

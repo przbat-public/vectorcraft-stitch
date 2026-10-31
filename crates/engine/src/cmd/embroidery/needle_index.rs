@@ -507,8 +507,8 @@ impl NeedleIndex {
     pub(crate) fn step(&self, n: NeedleRef, forward: bool) -> Option<NeedleRef> {
         let &k = self.order.get(&n.id)?;
         let count = self.paths.get(k)?.1.needles;
-        if forward && n.index + 1 < count {
-            return Some(NeedleRef { id: n.id, index: n.index + 1 });
+        if forward && let Some(next) = n.index.checked_add(1).filter(|&k| k < count) {
+            return Some(NeedleRef { id: n.id, index: next });
         }
         if !forward && n.index > 0 && n.index <= count {
             return Some(NeedleRef { id: n.id, index: n.index - 1 });

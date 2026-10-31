@@ -299,7 +299,7 @@ impl Editing {
             Some(Hover::Thread(n, at)) if ev.mods.alt => {
                 // A new needle point on the stitch, where it is pressed: before the needle point the
                 // stitch arrives at, left selected.
-                let next = NeedleRef { id: n.id, index: n.index + 1 };
+                let next = NeedleRef { id: n.id, index: n.index.saturating_add(1) };
                 self.current = Some(next);
                 out.push(Action::Exec(INSERT.into(), json!({"id": n.id.0, "index": next.index, "at": [mm(at)]})));
             }
@@ -319,7 +319,7 @@ impl Editing {
                 }
             }
             Some(Hover::Thread(n, _)) => {
-                let pair = [n, NeedleRef { id: n.id, index: n.index + 1 }];
+                let pair = [n, NeedleRef { id: n.id, index: n.index.saturating_add(1) }];
                 self.current = Some(n);
                 let both = pair.iter().all(|m| is_selected(cx.selection, needles, *m));
                 if ev.mods.shift {

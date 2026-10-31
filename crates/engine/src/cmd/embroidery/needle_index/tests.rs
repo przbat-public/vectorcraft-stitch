@@ -125,6 +125,9 @@ fn steps_go_along_the_thread_and_round() {
     let ids: Vec<NodeId> = index.ids().collect();
     assert_eq!(last.id, *ids.last().unwrap(), "back from the first: the last path's");
     assert_eq!(last.index + 1, index.count(last.id));
+    // An index no path holds (an agent's) steps on to a path's end, with no overflow.
+    let past = NeedleRef { id: first.id, index: usize::MAX };
+    assert!(index.step(past, true).is_some_and(|n| n.index == 0) && index.step(past, false).is_some());
 }
 
 /// An edit of one path builds that path's needle points again and no other's; the next query finds

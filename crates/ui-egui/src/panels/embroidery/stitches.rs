@@ -1074,11 +1074,11 @@ fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, listed: &Li
         return;
     }
     let target = if pressed(egui::Key::ArrowDown) {
-        Some(if jump { last } else { (row + 1).min(last) })
+        Some(if jump { last } else { row.saturating_add(1).min(last) })
     } else if pressed(egui::Key::ArrowUp) {
         Some(if jump { 0 } else { row.saturating_sub(1) })
     } else if pressed(egui::Key::PageDown) {
-        Some((row + screenful).min(last))
+        Some(row.saturating_add(screenful).min(last))
     } else if pressed(egui::Key::PageUp) {
         Some(row.saturating_sub(screenful))
     } else if pressed(egui::Key::Home) {

@@ -30,7 +30,7 @@ use std::sync::Arc;
 
 use egui::{Color32, CornerRadius, Rect, Sense, Stroke, Ui, pos2, vec2};
 use serde_json::json;
-use vectorcraft_doc::NodeId;
+use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::plan::DesignPlan;
 use vectorcraft_engine::cmd::embroidery::stitch_list::{self, Filter, Flags, RecordKind};
 use vectorcraft_engine::cmd::embroidery::{StitchLimits, mm_to_pt, stitch_limits};
@@ -210,7 +210,7 @@ pub struct DocList {
 pub struct StitchesState {
     pub(crate) docs: HashMap<u64, DocList>,
     list: Option<(ListKey, Arc<Listed>)>,
-    numbering: Option<(u64, u64, HashMap<usize, Option<Numbered>>)>,
+    numbering: Option<(u64, u64, Numberings)>,
     /// How many times the rows were worked out (the tests count them: never on an idle frame).
     pub(crate) builds: usize,
     /// The foot's height as last drawn, points, outside stitch editing and while editing (0: not
@@ -226,6 +226,23 @@ struct Numbered {
     first: usize,
     ordinals: Arc<Vec<u32>>,
     leading: Arc<Vec<(usize, (NodeId, usize))>>,
+}
+
+/// The numberings worked out for the plan shown, by unit, and how many needle points each path they
+/// name held in the document it was planned from (an address's `of`), by path.
+#[derive(Default)]
+struct Numberings {
+    units: HashMap<usize, Option<Numbered>>,
+    counts: HashMap<NodeId, Option<usize>>,
+}
+
+/// A needle point as a row names it: its path, its place, and how many needle points the path held
+/// when the plan shown numbered them (the stitch commands refuse it when an edit since changed it).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Address {
+    node: NodeId,
+    index: usize,
+    of: usize,
 }
 
 /// The limits the tab, the canvas and the Check tab's format judge by, for the active document.
@@ -269,30 +286,39 @@ fn rows(app: &mut VectorcraftApp, plan: &DesignPlan, generation: u64, flags: &Ar
 }
 
 /// The needle point record `number` (of `kind`, in unit `unit`) is edited by, from the unit's
-/// numbering, worked out once a unit for the plan of `generation`.
-fn edited_by(app: &mut VectorcraftApp, plan: &DesignPlan, generation: u64, unit: usize, number: usize, kind: RecordKind) -> Option<(NodeId, usize)> {
+/// numbering in the document the plan shown was made from, worked out once a unit for the plan.
+/// `None` while its path changed since (its node isn't the same now, as the canvas's record
+/// numbers ask): an edit since may have moved its needle points.
+fn edited_by(app: &mut VectorcraftApp, shown: &Shown, unit: usize, number: usize, kind: RecordKind) -> Option<Address> {
     let st = app.session.active()?;
-    let (uid, doc) = (st.uid, st.doc.clone());
     let kept = &mut app.embroidery.stitches.numbering;
-    if kept.as_ref().is_none_or(|(u, g, _)| *u != uid || *g != generation) {
-        *kept = Some((uid, generation, HashMap::new()));
+    if kept.as_ref().is_none_or(|(u, g, _)| *u != st.uid || *g != shown.generation) {
+        *kept = Some((st.uid, shown.generation, Numberings::default()));
     }
-    let (_, _, units) = kept.as_mut()?;
-    let n = units
+    let (_, _, numberings) = kept.as_mut()?;
+    let (plan, then) = (&shown.plan, &shown.document);
+    let n = numberings
+        .units
         .entry(unit)
         .or_insert_with(|| {
-            stitch_list::numbering(plan, &doc, unit).map(|(node, first)| Numbered {
+            stitch_list::numbering(plan, then, unit).map(|(node, first)| Numbered {
                 node,
                 first,
                 ordinals: Arc::new(stitch_list::ordinals(plan, unit)),
-                leading: Arc::new(stitch_list::leading(plan, &doc, unit, first)),
+                leading: Arc::new(stitch_list::leading(plan, then, unit, first)),
             })
         })
         .clone()?;
-    if let Some((_, at)) = n.leading.iter().find(|(r, _)| *r == number) {
-        return Some(*at);
+    let (node, index) = match n.leading.iter().find(|(r, _)| *r == number) {
+        Some((_, at)) => *at,
+        None => (n.node, stitch_list::edited_by(plan, unit, n.first, &n.ordinals, number, kind)?),
+    };
+    let was = then.node(node)?;
+    if !std::ptr::eq(was, st.doc.node(node)?) {
+        return None;
     }
-    stitch_list::edited_by(plan, unit, n.first, &n.ordinals, number, kind).map(|k| (n.node, k))
+    let of = (*numberings.counts.entry(node).or_insert_with(|| vectorcraft_engine::cmd::embroidery::needle_points_in(was)))?;
+    Some(Address { node, index, of })
 }
 
 /// Whether needle point `index` of path `node` is selected in the active document.
@@ -357,11 +383,13 @@ fn chip_words(filter: Filter, count: usize, limits: &StitchLimits, lang: Lang) -
     (shown, named)
 }
 
-/// What the tab is drawn from: the plan shown (its generation, and whether it is of the document
-/// as it is) and the records' flags when the planning thread has built them.
+/// What the tab is drawn from: the plan shown (its generation, the document it was made from, and
+/// whether it is of the document as it is) and the records' flags when the planning thread has
+/// built them.
 pub struct Shown {
     pub plan: Arc<DesignPlan>,
     pub generation: u64,
+    pub document: Arc<Document>,
     pub stale: bool,
     pub flags: Option<Arc<Flags>>,
 }
@@ -489,8 +517,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
             let row_index = page * MAX_SCROLLED_ROWS + i;
             let Some(number) = listed.record(row_index) else { continue };
             let Some(row) = stitch_list::row(&shown.plan, number) else { continue };
-            let address = editing.and_then(|_| edited_by(app, &shown.plan, shown.generation, row.unit, number, row.kind));
-            let selected = address.is_some_and(|(node, k)| is_selected(app, node, k));
+            let address = editing.and_then(|_| edited_by(app, &shown, row.unit, number, row.kind));
+            let selected = address.is_some_and(|a| is_selected(app, a.node, a.index));
             let (rect, resp) = ui.allocate_exact_size(vec2(width, ROW_HEIGHT), Sense::click());
             let words = draw_row(app, ui, rect, &row, &columns, &flags, selected, focus == Some(number), lang, &t);
             ui.ctx().accesskit_node_builder(resp.id, |node| {
@@ -729,7 +757,9 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
         }
     }
     let editing = crate::embroidery::editing::editing(app).is_some();
-    if !editing || double {
+    // Outside editing, a double-click, or while the plan shown lags an edit (its rows may name
+    // needle points the edit moved): the stitch shown.
+    if !editing || double || shown.stale {
         show_stitch(app, shown, number, double);
         return;
     }
@@ -739,14 +769,14 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, number: usize, mods: egui::Mod
     };
     // Each needle point once: a cut follows the needle point the stitch before it is, and Cmd
     // would otherwise take it away again.
-    let mut picked: std::collections::BTreeSet<(u64, usize)> = std::collections::BTreeSet::new();
+    let mut picked: std::collections::BTreeSet<(u64, usize, usize)> = std::collections::BTreeSet::new();
     for n in range.take(RANGE_MAX) {
         let Some(row) = stitch_list::row(&shown.plan, n) else { continue };
-        if let Some((node, k)) = edited_by(app, &shown.plan, shown.generation, row.unit, n, row.kind) {
-            picked.insert((node.0, k));
+        if let Some(a) = edited_by(app, shown, row.unit, n, row.kind) {
+            picked.insert((a.node.0, a.index, a.of));
         }
     }
-    let points: Vec<serde_json::Value> = picked.into_iter().map(|(id, k)| json!({"id": id, "index": k})).collect();
+    let points: Vec<serde_json::Value> = picked.into_iter().map(|(id, k, of)| json!({"id": id, "index": k, "of": of})).collect();
     if points.is_empty() {
         app.status(crate::et!("This stitch can't be edited: it is planned from its object's shape."));
         return;

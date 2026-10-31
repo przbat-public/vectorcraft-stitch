@@ -651,6 +651,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
     });
     let plan = shown.planned.plan.clone();
+    let document = shown.document.clone();
     match (tab, &own) {
         (Tab::Order, Some((Ok(reply), of, current))) => {
             order::show(app, ui, order::Shown { generation, reply, of: *of, current: *current, stats: stats.as_deref(), stale, plan })
@@ -662,7 +663,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         (Tab::Stitches, _) => {
             // The records' flags, built with the plan on the planning thread for the limits.
             let flags = stitches::limits_of(app).and_then(|l| app.embroidery.preview.shown(uid).and_then(|s| s.planned.built_stitch_flags(&l)));
-            stitches::show(app, ui, stitches::Shown { plan, generation, stale, flags });
+            stitches::show(app, ui, stitches::Shown { plan, generation, document, stale, flags });
         }
         // Drawn above, before the plan's states.
         (Tab::Order | Tab::Object, _) => {}

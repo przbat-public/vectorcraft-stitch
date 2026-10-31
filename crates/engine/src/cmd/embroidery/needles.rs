@@ -186,6 +186,12 @@ pub(crate) fn placed_unfit(n: &Node, editable: bool, clipped: bool) -> Option<Un
     (clipped && !is_manual(n)).then_some(Unfit::Clipped)
 }
 
+/// How many needle points the stitch commands address in path `n` (what an address's `of` says),
+/// `None` when they can't edit it: [`check`] for the interface.
+pub fn needle_points_in(n: &Node) -> Option<usize> {
+    check(n).ok()
+}
+
 /// What [`read`] answers of `n`, without reading it: how many needle points the path of stitches
 /// holds, or why it can't be edited.
 pub(crate) fn check(n: &Node) -> std::result::Result<usize, Unfit> {

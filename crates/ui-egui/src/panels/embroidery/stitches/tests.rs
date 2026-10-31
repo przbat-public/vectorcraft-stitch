@@ -9,7 +9,7 @@ use egui::{Event, Key, Modifiers, PointerButton, Pos2, Shape};
 use serde_json::json;
 use vectorcraft_doc::NodeId;
 use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::embroidery::stitch_list::Filter;
+use vectorcraft_engine::cmd::embroidery::stitch_list::{self, Filter};
 
 use super::{Listed, Scope, listed};
 use crate::{Services, VectorcraftApp};
@@ -285,6 +285,59 @@ fn a_click_on_a_cuts_row_selects_the_needle_point_it_follows() {
     }
     let left: usize = app.session.active().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum();
     assert_eq!(left, 0);
+}
+
+/// While the plan shown lags an edit (a heavy design waits for the document to rest), a click on a
+/// row only shows its stitch, as the needle points it numbers may have moved; once the plan comes,
+/// the row selects the needle point it shows.
+#[test]
+fn a_click_while_the_plan_lags_an_edit_only_shows_the_stitch() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    // A stitch well into the first run: its record, and its needle point.
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let stitch = |n: &usize| stitch_list::row(&plan, *n).is_some_and(|r| r.kind == stitch_list::RecordKind::Stitch && r.length.is_some());
+    let number = (0..list.len()).filter_map(|i| list.record(i)).filter(stitch).nth(8).expect("a stitch");
+    // The design made heavy: the next edit is planned once the document rests.
+    let generation = app.embroidery.preview.shown(uid).unwrap().planned.generation;
+    app.embroidery.preview.set_plan_ms(uid, 1000.0);
+    app.run("embroidery.insertNeedlePoints", json!({"id": run.0, "index": 1})).unwrap();
+    app.run("select.none", json!({})).unwrap();
+    time += 0.01;
+    let (shapes, _) = frame(&mut app, &ctx, time, vec![]);
+    assert_eq!(app.embroidery.preview.shown(uid).unwrap().planned.generation, generation, "still the plan before the edit");
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.01;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let selection = &app.session.active().unwrap().selection;
+    assert!(selection.anchors.is_empty() && selection.objects.is_empty(), "nothing selected: {selection:?}");
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.shown), Some(number), "the stitch shown");
+    // Planned: the row selects the needle point it shows.
+    time += 1.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let row = stitch_list::row(&plan, number).unwrap();
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let st = app.session.active().unwrap();
+    let (node, anchors) = st.selection.anchors.iter().next().expect("a needle point selected");
+    let &(s, a) = anchors.iter().next().unwrap();
+    let p = st.doc.node(*node).unwrap().path_data().unwrap().subpaths[s].anchors[a].p;
+    let shown = vectorcraft_geom::Point::new(row.at.x * super::PT_PER_MM, row.at.y * super::PT_PER_MM);
+    assert!(p.distance(shown) < 1e-6, "the needle point the row shows: {p:?} vs {shown:?}");
 }
 
 /// Go to takes a number in the scope (the focus moves to it), and says so when one isn't there;

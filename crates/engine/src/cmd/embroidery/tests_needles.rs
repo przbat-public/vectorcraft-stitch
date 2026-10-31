@@ -541,8 +541,10 @@ fn deleted_needle_points_merge_their_neighbours() {
     assert_eq!((back.path_data(), stitches(&back)), (original.path_data(), stitches(&original)), "insert then delete: as it was");
     let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}]}));
     assert_eq!((at(&s, id, 1), at(&s, id, 2)), ((12.0, 10.0), (16.0, 10.0)), "the others stay");
-    assert_eq!(r["lengths"]["count"], json!(2), "the merged stitch, and the one after: {r}");
-    assert_eq!(r["lengths"]["longest"], json!(4.0));
+    // The merged one now follows the stop passed to the needle point before it: the needle is
+    // lifted there, no stitch to judge; the one after is judged.
+    assert_eq!(r["lengths"]["count"], json!(1), "the stitch after the merged one: {r}");
+    assert_eq!(r["lengths"]["longest"], json!(2.0));
     assert_eq!(places(&stitches(&node(&s, id)).stops), [(0, 1)], "the stop passes to the needle point before");
     assert_eq!(r["moved"], json!([{"function": "stop", "id": id, "index": 1}]));
     assert!(!s.doc().unwrap().selection.contains(NodeId(id)));

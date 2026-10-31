@@ -729,7 +729,8 @@ impl Lengths {
         }
         for k in arriving {
             let Some((r, i)) = ix.locate(k) else { continue };
-            if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(|h| st.needle((r, h))), st.needle((r, i))) {
+            // After a stop the needle is lifted to the next: no stitch.
+            if let (Some(a), Some(b)) = (i.checked_sub(1).and_then(|h| st.needle((r, h))).filter(|a| !a.stop), st.needle((r, i))) {
                 self.add(a.p, b.p, limits);
             }
         }

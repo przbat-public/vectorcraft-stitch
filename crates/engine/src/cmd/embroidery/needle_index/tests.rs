@@ -339,3 +339,35 @@ proptest! {
         }
     }
 }
+
+/// What the walk doesn't sew isn't edited on the canvas, by the walk's own rules: a run at no
+/// opacity and a run without a colour are left out, each counted as one that can't be edited; and
+/// after a stop the needle is lifted, so no stitch is offered there.
+#[test]
+fn what_the_walk_doesnt_sew_is_left_out() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    let before = whole(&s);
+    let (clear, unpainted) = (NodeId(m.opened[0].runs[0]), NodeId(m.opened[0].runs[1]));
+    assert!(before.holds(clear) && before.holds(unpainted));
+    s.edit("Not Sewn", |d, _| {
+        d.node_mut(clear).unwrap().opacity = 0.0;
+        d.node_mut(unpainted).unwrap().appearance.items.clear();
+        Ok(())
+    })
+    .unwrap();
+    let after = whole(&s);
+    assert!(!after.holds(clear) && !after.holds(unpainted), "neither is sewn");
+    assert_eq!(after.scope().refused, before.scope().refused + 2, "{:?}", after.scope());
+    // The run the machine stops in, after its second needle point: the lift to the third isn't a
+    // stitch (a stitch sewn later over the same place may be); one in its middle is.
+    let stopped = NodeId(m.stopped);
+    let p = read_points(&s, stopped);
+    let mid = |a: Point, b: Point| Point::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
+    let tol = 0.01;
+    let k = p.len() / 2;
+    assert_eq!(after.thread_at(mid(p[k], p[k + 1]), tol).map(|t| t.from), Some(NeedleRef { id: stopped, index: k }), "a stitch");
+    let lift = NeedleRef { id: stopped, index: 1 };
+    assert!(after.path(stopped).unwrap().stops.contains(&lift.index), "the stop kept by the index");
+    assert!(after.thread_at(mid(p[1], p[2]), tol).is_none_or(|t| t.from != lift), "the lift after the stop");
+}

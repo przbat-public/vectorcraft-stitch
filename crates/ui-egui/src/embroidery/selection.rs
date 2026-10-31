@@ -156,6 +156,9 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
         }
         let (alone, double_point) = (path.subpaths.len() == 1, marks.double_point);
         let chosen = sel.anchors.get(&id).filter(|_| !whole);
+        // The needle points the machine stops after: the needle is then lifted to the next, no
+        // stitch between them.
+        let stops = marks.placed(path).stops;
         for (s, sp) in path.subpaths.iter().enumerate() {
             let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
             let picked = |a: usize| match chosen {
@@ -173,9 +176,10 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
                     k.points.push(p);
                 }
                 // The stitch arriving (when the one before isn't selected: else it was counted
-                // leaving that one) and the stitch leaving.
-                let before = a.checked_sub(1).filter(|b| !picked(*b)).and_then(|b| sp.anchors.get(b)).map(|x| (x.p, false));
-                let after = (a + 1 < len).then(|| sp.anchors.get(a + 1).map(|x| (x.p, picked(a + 1)))).flatten();
+                // leaving that one) and the stitch leaving, neither after a stop.
+                let stopped = |k: usize| stops.contains(&(s, k));
+                let before = a.checked_sub(1).filter(|b| !picked(*b) && !stopped(*b)).and_then(|b| sp.anchors.get(b)).map(|x| (x.p, false));
+                let after = (a + 1 < len && !stopped(a)).then(|| sp.anchors.get(a + 1).map(|x| (x.p, picked(a + 1)))).flatten();
                 for (q, q_selected, arriving) in before.map(|(q, s)| (q, s, true)).into_iter().chain(after.map(|(q, s)| (q, s, false))) {
                     let t = if arriving { Touch { a: q, b: p, moves: [q_selected, true] } } else { Touch { a: p, b: q, moves: [true, q_selected] } };
                     if t.moves == [true, true] {

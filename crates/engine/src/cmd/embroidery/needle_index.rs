@@ -26,6 +26,7 @@ use vectorcraft_doc::{Document, Node, NodeId, NodeKind, Selection};
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_tools::embroidery::{NeedleHit, NeedleRef, NeedleScope, ThreadHit};
 
+use super::digitize;
 use super::needles::{self, MAX_NEEDLE_POINTS, Unfit};
 
 /// The most needle points a chunk of a path's index holds: as many as a line of the stitch scene
@@ -76,13 +77,15 @@ struct Chunk {
 
 /// One path of stitches as the index finds its needle points: the node it was built from (its
 /// identity says whether it is still the document's), its subpaths and chunks, how many needle
-/// points it holds, and the box they fall in.
+/// points it holds, the box they fall in, and the needle points the machine stops after (the
+/// needle is then lifted to the next: no stitch between them).
 pub struct PathIndex {
     node: Arc<Node>,
     subs: Vec<Sub>,
     chunks: Vec<Chunk>,
     needles: usize,
     bounds: Option<Rect>,
+    stops: std::collections::BTreeSet<usize>,
 }
 
 impl PathIndex {
@@ -120,7 +123,15 @@ impl PathIndex {
         if needles > MAX_NEEDLE_POINTS {
             return Err(Unfit::TooMany);
         }
-        Ok(Self { node: node.clone(), subs, chunks, needles, bounds })
+        // The stops where their needle points are now, as the walk places them; one named past a
+        // subpath's last needle point (the second of a line to its own start) is that one's.
+        let stops = marks
+            .placed(path)
+            .stops
+            .iter()
+            .filter_map(|&(s, a)| subs.get(s).filter(|sub| sub.needles > 0).map(|sub| sub.first + a.min(sub.needles - 1)))
+            .collect();
+        Ok(Self { node: node.clone(), subs, chunks, needles, bounds, stops })
     }
 
     /// The path's anchors of subpath `s`.
@@ -188,25 +199,30 @@ pub struct NeedleIndex {
     bounds: Option<Rect>,
 }
 
+/// A node found for the index: the node, whether a clip group holds it, and whether the walk
+/// sews what is above it (shown, on a layer that prints: [`digitize::shows`], [`digitize::printed`]).
+type Found = (Arc<Node>, bool, bool);
+
 /// The node at index path `path` of `doc`, as its parent holds it (its identity is what an edit
-/// changes), and whether a clip group above it holds it.
-fn arc_at(doc: &Document, path: &[usize]) -> Option<(Arc<Node>, bool)> {
+/// changes), whether a clip group above it holds it, and whether the walk sews what is above it.
+fn arc_at(doc: &Document, path: &[usize]) -> Option<Found> {
     let (last, up) = path.split_last()?;
     let mut nodes = &doc.layers;
-    let mut clipped = false;
+    let (mut clipped, mut sewn) = (false, true);
     for &i in up {
         let n = nodes.get(i)?;
         clipped |= n.clips();
+        sewn &= digitize::shows(n) && digitize::printed(n);
         nodes = n.children()?;
     }
-    nodes.get(*last).map(|n| (n.clone(), clipped))
+    nodes.get(*last).map(|n| (n.clone(), clipped, sewn))
 }
 
 /// `roots` of `doc` each once, and only the outermost (one inside another is walked with it), with
 /// whether a clip group holds them: so each node is walked once however often, or however nested,
 /// `ids` names it. Looked up in one walk of the document, so an id that isn't in it costs nothing
 /// more.
-fn outermost(doc: &Document, roots: &[NodeId]) -> Vec<(Arc<Node>, bool)> {
+fn outermost(doc: &Document, roots: &[NodeId]) -> Vec<Found> {
     let found = doc.index_paths(roots.iter().copied());
     let mut seen: HashSet<NodeId> = HashSet::with_capacity(found.len());
     let mut out = Vec::new();
@@ -251,33 +267,41 @@ impl NeedleIndex {
         let mut paths: Vec<(NodeId, Arc<PathIndex>)> = Vec::new();
         let mut order = HashMap::new();
         let mut refused = 0usize;
-        // The paths of stitches under a node, each with whether a clip group holds it.
-        fn walk(n: &Arc<Node>, clipped: bool, out: &mut Vec<(Arc<Node>, bool)>) {
+        // The paths of stitches under a node, each with whether a clip group holds it and whether
+        // the walk sews it, by the walk's own rules: into layers and groups only (a compound path is
+        // sewn as a shape; blends, envelopes and repeats aren't sewn), nothing hidden, at no
+        // opacity or on a layer that doesn't print, no guide, no run without a colour.
+        fn walk(n: &Arc<Node>, clipped: bool, sewn: bool, out: &mut Vec<Found>) {
+            let sewn = sewn && digitize::shows(n) && digitize::printed(n);
             if holds_stitches(n) {
-                out.push((n.clone(), clipped));
+                let guide = matches!(n.kind, NodeKind::Path { guide: true, .. });
+                out.push((n.clone(), clipped, sewn && !guide && digitize::run_colour(n).is_some()));
+                return;
+            }
+            if !matches!(n.kind, NodeKind::Layer { .. } | NodeKind::Group { .. }) {
                 return;
             }
             let clips = clipped || n.clips();
             for c in n.children().into_iter().flatten() {
-                walk(c, clips, out);
+                walk(c, clips, sewn, out);
             }
         }
-        let mut found: Vec<(Arc<Node>, bool)> = Vec::new();
-        for (n, clipped) in outermost(doc, roots) {
-            walk(&n, clipped, &mut found);
+        let mut found: Vec<Found> = Vec::new();
+        for (n, clipped, sewn) in outermost(doc, roots) {
+            walk(&n, clipped, sewn, &mut found);
         }
         if found.is_empty() {
             return None;
         }
         let mut needles = 0usize;
         let mut bounds: Option<Rect> = None;
-        for (n, clipped) in found {
+        for (n, clipped, sewn) in found {
             if order.contains_key(&n.id) {
                 continue;
             }
-            // Where it lies, as the stitch commands judge it (its needle points next), and whether
-            // it fits what the budget has left: past it, a path isn't indexed at all.
-            if needles::placed_unfit(&n, editable(n.id), clipped).is_some() || needles.saturating_add(needles_in(&n)) > MAX_NEEDLE_POINTS {
+            // Sewn and drawn, where it lies as the stitch commands judge it (its needle points
+            // next), and within what the budget has left: past it, a path isn't indexed at all.
+            if !sewn || needles::placed_unfit(&n, editable(n.id), clipped).is_some() || needles.saturating_add(needles_in(&n)) > MAX_NEEDLE_POINTS {
                 refused += 1;
                 continue;
             }
@@ -400,6 +424,10 @@ impl NeedleIndex {
                 let Some(sub) = p.subs.get(c.sub).filter(|s| !s.collapsed && s.needles > 1) else { continue };
                 let anchors = p.anchors(c.sub);
                 for k in c.from..(c.from + c.len).min(sub.needles - 1) {
+                    // After a stop the needle is lifted to the next: no stitch.
+                    if p.stops.contains(&(sub.first + k)) {
+                        continue;
+                    }
                     let (Some(a), Some(b)) = (anchors.get(k), anchors.get(k + 1)) else { continue };
                     let q = nearest_on(a.p, b.p, at);
                     let d = q.distance(at);

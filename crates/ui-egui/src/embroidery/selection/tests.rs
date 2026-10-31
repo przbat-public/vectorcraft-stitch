@@ -316,6 +316,12 @@ fn the_live_check_judges_the_stitches_of_the_selection() {
     settle(&mut app, &ctx, &mut time);
     let lines = super::bubble(&mut app).unwrap();
     assert!(lines.iter().any(|(m, w)| *m == Some(super::Mark::Warning) && w.contains("too long")), "{lines:?}");
+    // More stitches with one end selected than a drag measures again each frame: at rest the check
+    // still says what they are (judged once), not "Updating…".
+    app.embroidery.selection.moved_ends = None;
+    let lines = super::bubble(&mut app).unwrap();
+    assert!(lines.iter().any(|(m, w)| *m == Some(super::Mark::Warning) && w.contains("too long")), "at rest: {lines:?}");
+    assert!(!lines.iter().any(|(_, w)| w == "Updating…"), "{lines:?}");
 }
 
 /// The edit look: needle points as circles from 250 % and not under it; a stitch longer than the

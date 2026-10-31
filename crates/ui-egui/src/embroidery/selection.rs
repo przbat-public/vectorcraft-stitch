@@ -133,6 +133,9 @@ pub struct Kept {
     /// they are).
     moved_ends: Option<Vec<Touch>>,
     fixed: Judged,
+    /// Every stitch touching the selection judged as it is, once (the live check at rest, however
+    /// many: [`RUBBER_BANDS_MAX`] bounds only what a drag measures again each frame).
+    at_rest: Judged,
     /// The selection's layer's colour.
     color: [u8; 3],
     /// How many times it was built (the tests count them: an idle frame builds nothing).
@@ -146,6 +149,7 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
     let mut k = Kept::default();
     let mut moved: Vec<Touch> = Vec::new();
     let mut too_many_moved = false;
+    let mut stretched = Judged::default();
     for &(id, whole) in paths {
         let Some(n) = doc.node(id) else { continue };
         let (NodeKind::Path { path, .. }, Some(marks)) = (&n.kind, n.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref())) else {
@@ -184,10 +188,13 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
                     let t = if arriving { Touch { a: q, b: p, moves: [q_selected, true] } } else { Touch { a: p, b: q, moves: [true, q_selected] } };
                     if t.moves == [true, true] {
                         k.fixed.add(t.a, t.b, limits);
-                    } else if moved.len() < RUBBER_BANDS_MAX {
-                        moved.push(t);
                     } else {
-                        too_many_moved = true;
+                        stretched.add(t.a, t.b, limits);
+                        if moved.len() < RUBBER_BANDS_MAX {
+                            moved.push(t);
+                        } else {
+                            too_many_moved = true;
+                        }
                     }
                     if k.count <= SELECTION_SHAPES_MAX && k.touching.len() < RUBBER_BANDS_MAX {
                         k.touching.push(t);
@@ -201,6 +208,7 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
         k.touching.clear();
     }
     k.moved_ends = (!too_many_moved).then_some(moved);
+    k.at_rest = k.fixed.join(stretched);
     k
 }
 
@@ -253,10 +261,12 @@ pub fn bubble(app: &mut VectorcraftApp) -> Option<Vec<(Option<Mark>, String)>> {
         );
         lines.push((None, words));
     }
-    // The stitches touching the selection: those with both ends selected as they were, those with
-    // one end moved measured again.
-    let judged = match (&k.moved_ends, by) {
-        (Some(ends), Some(d)) => {
+    // The stitches touching the selection: at rest as judged once; during a drag, those with both
+    // ends selected as they were and those with one end moved measured again (past as many as a
+    // frame measures, not until the drag ends: "Updating…").
+    let judged = match (by, &k.moved_ends) {
+        (None, _) => Some(k.at_rest),
+        (Some(d), Some(ends)) => {
             let mut j = Judged::default();
             for t in ends {
                 let (a, b) = (if t.moves[0] { t.a + d } else { t.a }, if t.moves[1] { t.b + d } else { t.b });
@@ -264,14 +274,7 @@ pub fn bubble(app: &mut VectorcraftApp) -> Option<Vec<(Option<Mark>, String)>> {
             }
             Some(k.fixed.join(j))
         }
-        (Some(ends), None) => {
-            let mut j = Judged::default();
-            for t in ends {
-                j.add(t.a, t.b, &limits);
-            }
-            Some(k.fixed.join(j))
-        }
-        (None, _) => None,
+        (Some(_), None) => None,
     };
     match judged {
         Some(j) if j.short == 0 && j.long == 0 => {

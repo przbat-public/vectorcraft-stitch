@@ -260,7 +260,10 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         return;
     }
     let Some(ends) = ends(app) else { return };
-    let pending = pending_outlines(app, &ends);
+    // While stitches are edited the selection layer draws what moved (the needle points and the
+    // stitches they stretch): no dashed outline of the runs over it, rebuilt each frame of a drag.
+    let editing = super::editing::editing(app).is_some();
+    let pending = if editing { None } else { pending_outlines(app, &ends) };
     let Some(st) = app.session.active() else { return };
     let t = Tokens::get(painter.ctx());
     // A stroke's width past the canvas, so that a dash on its edge isn't cut.

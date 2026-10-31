@@ -278,3 +278,31 @@ fn the_notice_counts_selected_objects_that_arent_sewn() {
     settle(&mut app, &ctx, &mut time);
     assert_eq!(not_sewn(&app, time), 1);
 }
+
+/// While stitches are edited, a run changed since the plan shown (a needle point moved) isn't
+/// outlined dashed over the edit look: the selection layer draws what moved.
+#[test]
+fn no_changed_outline_while_stitches_are_edited() {
+    let mut app = app();
+    let ctx = egui::Context::default();
+    // The chip's words while editing.
+    crate::theme::install_fonts(&ctx);
+    let id = app.session.doc().unwrap().doc.layers[0].children().unwrap()[0].id;
+    app.run("select.set", json!({"ids": [id.0]})).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": id.0})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let run = app.session.doc().unwrap().doc.node(id).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 2}]})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    app.embroidery.preview.set_plan_ms(uid, 1000.0);
+    app.run("embroidery.moveNeedlePoints", json!({"dx": 1})).unwrap();
+    time += 0.01;
+    frame(&mut app, &ctx, time);
+    assert_eq!(pending(&app), [run], "the run changed since the plan shown");
+    assert!(app.embroidery.ends.pending.is_none(), "not outlined while editing");
+}

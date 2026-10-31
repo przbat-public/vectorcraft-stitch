@@ -30,6 +30,10 @@ use vectorcraft_testkit::strategies::{Op, arb_ops};
 const DOCS: usize = 40;
 const STEPS: std::ops::Range<usize> = 5..40;
 
+/// How many objects converting every document of the corpus converts: pinned, since an object
+/// that stops being converted stays art that exports the same bytes, which no hash would show.
+const CONVERTED_IN_CORPUS: u64 = 132;
+
 /// The corpus's seed: any fixed one.
 const SEED: [u8; 32] = *b"vectorcraft-stitch export corpus";
 
@@ -191,7 +195,8 @@ fn converted_the_corpus_exports_the_same_whatever_its_originals_hold() {
         }
         got.extend(sewn);
     }
-    assert!(converted >= DOCS as u64 && scrambled as u64 == converted, "{converted} objects converted, {scrambled} originals swapped");
+    assert_eq!(converted, CONVERTED_IN_CORPUS, "objects converted");
+    assert_eq!(scrambled as u64, converted, "{scrambled} originals swapped");
     assert!(shown > 0, "restoring the swapped originals changed no export");
     assert_as_recorded(&got, "converted");
 }

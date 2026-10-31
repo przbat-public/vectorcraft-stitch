@@ -933,3 +933,42 @@ fn nothing_restored(skipped: &[(NodeId, NotRestored)]) -> EngineError {
     let named: Vec<String> = skipped.iter().take(MAX_LISTED).map(|(id, why)| format!("{} ({})", id.0, why.code())).collect();
     EngineError::Other(format!("nothing selected was converted to manual stitches: {}", named.join(", ")))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Stitches at x millimetres along y 0, each with its command.
+    fn records(r: &[(f64, Command)]) -> Vec<Stitch> {
+        r.iter().map(|&(x, c)| Stitch::new(x, 0.0, c)).collect()
+    }
+
+    /// What a run of manual stitches can't hold makes a unit `unfreezable`, each case refused: a
+    /// start that isn't a needle point, a jump that lands elsewhere, two jumps running, a cut away
+    /// from its needle point or not followed by a jump, a stop, a thread change, an end on a cut or a
+    /// jump, and two needle points at one spot among several runs (read back as one). A cut then a
+    /// jump onto the next needle point is the next run's cut; two needle points at one spot alone
+    /// are kept as two.
+    #[test]
+    fn freezing_refuses_what_a_manual_run_cant_hold() {
+        use Command::{ColorChange, Jump, Stitch as S, Stop, Trim};
+        let Some(f) = frozen(&records(&[(0.0, S), (1.0, S), (1.0, Trim), (5.0, Jump), (5.0, S), (6.0, S)])) else { panic!("a cut and a jump") };
+        assert_eq!((f.subpaths.len(), f.trims, f.double_point), (2, vec![1], false));
+        let refused: [(&str, &[(f64, Command)]); 10] = [
+            ("a start that isn't a needle point", &[(0.0, Jump), (0.0, S)]),
+            ("a jump landing elsewhere", &[(0.0, S), (5.0, Jump), (6.0, S)]),
+            ("two jumps running", &[(0.0, S), (5.0, Jump), (6.0, Jump), (6.0, S)]),
+            ("a cut away from its needle point", &[(0.0, S), (1.0, S), (3.0, Trim), (5.0, Jump), (5.0, S)]),
+            ("a cut not followed by a jump", &[(0.0, S), (1.0, S), (1.0, Trim), (2.0, S)]),
+            ("a stop", &[(0.0, S), (1.0, Stop), (1.0, S)]),
+            ("a thread change", &[(0.0, S), (1.0, ColorChange), (1.0, S)]),
+            ("an end on a cut", &[(0.0, S), (1.0, S), (1.0, Trim)]),
+            ("an end on a jump", &[(0.0, S), (1.0, S), (5.0, Jump)]),
+            ("two needle points at one spot among runs", &[(0.0, S), (1.0, S), (5.0, Jump), (5.0, S), (5.0, S)]),
+        ];
+        for (what, r) in refused {
+            assert!(frozen(&records(r)).is_none(), "{what}");
+        }
+        assert!(frozen(&records(&[(2.0, S), (2.0, S)])).is_some_and(|f| f.double_point), "alone: kept as two");
+    }
+}

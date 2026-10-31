@@ -181,7 +181,9 @@ button under a planned object's rows, the command palette) freezes the selected 
 as the plan sews them now: each object becomes a group of the same id and name holding one path
 of literal stitches marked manual for each of its sewing units, in its thread's colour, and keeps
 the object itself. Nothing sewn changes: the export right after converting is the same bytes
-(checked over every pinned export, the 11 artworks and a seeded corpus of random documents), as a
+(checked over every pinned export, the 11 artworks and a seeded corpus of random documents, with
+how many objects each converts and why the rest are passed over pinned, so an object that stops
+converting can't hide as art that exports the same bytes), as a
 converted object is placed in the sewing order as art is and never cut again by a clip group. Its
 stitches no longer follow the fabric or its settings; each needle point is an anchor to move. In a
 group each object is converted on its own, and a compound path's member stands for its compound path; a group the plan sews whole (an effect or an appearance

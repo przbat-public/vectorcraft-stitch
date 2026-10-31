@@ -13,6 +13,11 @@
 //!   planned again from its original.
 //! - Converted and restored, it exports the same bytes again.
 //!
+//! How they were made: this file and the corpus's generator were added to a checkout of c8610efe
+//! (they build against its interfaces) and the record command below run there; the editing the
+//! corpus is generated from is pinned by its hash (`CORPUS_OPS`), so that a change to the random
+//! editing or to proptest reads as the corpus changing, not the exports.
+//!
 //! To record the hashes again (only for a change meant to move the stitches of designs that use
 //! nothing new, said in its commit), at the merge base:
 //! `VECTORCRAFT_EMBROIDERY_GOLDEN_RECORD=1 cargo test -p vectorcraft-engine --test embroidery_golden_corpus the_corpus_exports_as_at_the_merge_base`.
@@ -47,8 +52,24 @@ const GOLDEN: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/embroidery_gold
 /// the corpus's art, so that a stitch planned from it would be elsewhere.
 const FOREIGN_RECT: [f64; 4] = [300.0, 200.0, 40.0, 30.0];
 
-/// The corpus's editing, the same on every run and every target.
+/// The FNV-1a hash of the corpus's editing as `Debug` prints it: pinned, so that a change to the
+/// random editing (`arb_ops`) or to proptest's value stream fails as the corpus changing, not as
+/// its exports changing (FNV-1a 64's offset basis and prime, from its published definition).
+const CORPUS_OPS: u64 = 0xd457_23ec_2b23_40c3;
+const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
+const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
+
+/// The corpus's editing, the same on every run and every target; refused unless it is the editing
+/// the hashes were recorded from ([`CORPUS_OPS`]).
 fn corpus() -> Vec<Vec<Op>> {
+    let ops = generated();
+    let hash = format!("{ops:?}").bytes().fold(FNV_OFFSET, |h, b| (h ^ u64::from(b)).wrapping_mul(FNV_PRIME));
+    assert_eq!(hash, CORPUS_OPS, "the corpus's editing changed (arb_ops or proptest), not its exports: record the hashes again as the module says");
+    ops
+}
+
+/// The corpus's editing, generated from [`SEED`].
+fn generated() -> Vec<Vec<Op>> {
     let mut runner = TestRunner::new_with_rng(Config::default(), TestRng::from_seed(RngAlgorithm::ChaCha, &SEED));
     (0..DOCS).map(|_| arb_ops(STEPS).new_tree(&mut runner).unwrap().current()).collect()
 }

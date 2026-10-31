@@ -87,6 +87,14 @@ fn every_kind_of_path_reads_and_writes_back_as_it_was() {
         let mut back = n.clone();
         assert!(needles::write(&mut back, st.clone()));
         if n.id.0 == m.curved {
+            // Written straight: its anchors where they were, every handle at its anchor.
+            let (was, now) = (n.path_data().unwrap(), back.path_data().unwrap());
+            let points = |p: &vectorcraft_geom::PathData| -> Vec<vectorcraft_geom::Point> {
+                p.subpaths.iter().flat_map(|sp| sp.anchors.iter().map(|a| a.p)).collect()
+            };
+            assert_eq!(points(now), points(was), "the curved run's needle points kept");
+            assert!(now.subpaths.iter().flat_map(|sp| &sp.anchors).all(|a| a.h_in == a.p && a.h_out == a.p), "and written straight");
+            assert!(was.subpaths.iter().flat_map(|sp| &sp.anchors).any(|a| a.h_in != a.p || a.h_out != a.p), "it was curved");
             continue;
         }
         assert_eq!(back.path_data(), n.path_data(), "{}: its path", n.id.0);

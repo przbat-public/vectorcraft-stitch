@@ -619,9 +619,10 @@ pub(crate) fn edited(group: &Node) -> bool {
 /// from the original kept, transformed by the original's frame (moved, turned and scaled as the
 /// stitches were since, strokes and corners as `scaling` says), taking the group's id, name,
 /// visibility and lock, and its Trim After and Stop After (the marks the manual object can change
-/// itself). Its members keep their ids where the document doesn't use them (they are free right
-/// after converting), else take new ones. Or why it can't be.
-fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling) -> std::result::Result<Node, NotRestored> {
+/// itself). Its members keep their ids where the document doesn't use them (`used`, the ids the
+/// document holds, gathered once for the whole restore; the ids it gives out are added) (they are
+/// free right after converting), else take new ones. Or why it can't be.
+fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling, used: &mut HashSet<u64>) -> std::result::Result<Node, NotRestored> {
     let e = group.extras().embroidery.as_deref();
     let Some(o) = e.and_then(|e| e.original.as_ref()) else { return Err(NotRestored::NotConverted) };
     let mut n: Node = serde_json::from_value((*o.node).clone()).map_err(|_| NotRestored::Unreadable)?;
@@ -643,16 +644,16 @@ fn restored(doc: &mut Document, group: &Node, scaling: vectorcraft_doc::Scaling)
     n.locked = group.locked;
     // Members keep their ids where free and already handed out; else new ones.
     let issued = doc.peek_next_id();
-    let mut taken: HashSet<u64> = HashSet::new();
-    fn renumber(n: &mut Node, doc: &mut Document, issued: u64, taken: &mut HashSet<u64>, top: bool) {
-        if !top && (n.id.0 >= issued || doc.node(n.id).is_some() || !taken.insert(n.id.0)) {
+    fn renumber(n: &mut Node, doc: &mut Document, issued: u64, used: &mut HashSet<u64>, top: bool) {
+        if !top && (n.id.0 >= issued || !used.insert(n.id.0)) {
             n.id = doc.alloc_id();
+            used.insert(n.id.0);
         }
         for c in n.children_mut().into_iter().flatten() {
-            renumber(Arc::make_mut(c), doc, issued, taken, false);
+            renumber(Arc::make_mut(c), doc, issued, used, false);
         }
     }
-    renumber(&mut n, doc, issued, &mut taken, true);
+    renumber(&mut n, doc, issued, used, true);
     let (cut, stop) = e.map_or((false, false), |e| (e.trim_after, e.stop_after));
     let mut marks = n.extras().embroidery.as_deref().cloned().unwrap_or_default();
     marks.set_trim_after(cut);
@@ -710,9 +711,16 @@ pub(super) fn restore(s: &mut Session, p: &Value) -> Result<Value> {
     let scaling = crate::cmd::object::scaling(s, p);
     let mut restored_ids: Vec<u64> = Vec::new();
     s.edit(RESTORE_LABEL, |d, sel| {
+        // Every id the document holds, gathered once: a member keeps its id only where none uses it.
+        let mut used: HashSet<u64> = HashSet::new();
+        for l in &d.layers {
+            l.walk(&mut |n| {
+                used.insert(n.id.0);
+            });
+        }
         for g in &open {
             let Some(group) = d.node(*g).cloned() else { continue };
-            match restored(d, &group, scaling) {
+            match restored(d, &group, scaling, &mut used) {
                 Ok(n) => {
                     let Some(slot) = d.node_mut(*g) else { continue };
                     *slot = n;

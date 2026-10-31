@@ -425,6 +425,32 @@ fn convert_and_restore_wait_while_global_edit_is_on() {
     assert_eq!(run(&mut s, "embroidery.convertToManual", json!({}))["convertedCount"], json!(1));
 }
 
+/// A converted compound path and its duplicate, restored in one step, give every node an id of its
+/// own: the second original's members, which hold the same ids as the first's, take new ones.
+#[test]
+fn restored_duplicates_keep_every_id_unique() {
+    let mut s = blank();
+    let outer = red_square(&mut s, 5.0, 5.0, 20.0);
+    let inner = red_square(&mut s, 10.0, 10.0, 8.0);
+    run(&mut s, "select.set", json!({"ids": [outer, inner]}));
+    let compound = run(&mut s, "object.compoundPath.make", json!({}))["id"].as_u64().unwrap();
+    run(&mut s, "embroidery.convertToManual", json!({"ids": [compound]}));
+    run(&mut s, "select.set", json!({"ids": [compound]}));
+    let copy = run(&mut s, "edit.duplicate", json!({}))["ids"][0].as_u64().unwrap();
+    let r = run(&mut s, "embroidery.restoreObject", json!({"ids": [compound, copy]}));
+    assert_eq!(r["restoredCount"], json!(2), "{r}");
+    let mut ids = Vec::new();
+    for l in &s.doc().unwrap().doc.layers {
+        l.walk(&mut |n| ids.push(n.id.0));
+    }
+    let count = ids.len();
+    ids.sort_unstable();
+    ids.dedup();
+    assert_eq!(ids.len(), count, "every id once");
+    let members = |id: u64| s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().children().map_or(0, |c| c.len());
+    assert_eq!((members(compound), members(copy)), (2, 2), "both compounds back, each with its two members");
+}
+
 /// What can't be restored is passed over with why: an object never converted, stitches from a file,
 /// an original that doesn't read as an object, one placing a symbol the document no longer has.
 #[test]

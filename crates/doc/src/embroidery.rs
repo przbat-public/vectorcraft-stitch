@@ -15,6 +15,8 @@ mod marks;
 mod mem;
 pub mod outline;
 mod part;
+#[cfg(test)]
+pub(crate) mod seeded;
 mod setup;
 pub mod takers;
 mod transform;

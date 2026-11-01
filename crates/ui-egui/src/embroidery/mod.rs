@@ -29,7 +29,9 @@
 //!   ([`crate::et!`], [`crate::etn!`]).
 //! - [`zoom`]: View › Zoom to Box (`view.zoomTo`).
 //! - [`render_stitches`]: the control channel's picture of the stitches.
+//! - [`bounds`]: the canvas's bounds of each open document, measured only where an edit changed it.
 
+pub mod bounds;
 pub mod check_marks;
 pub mod convert_job;
 pub mod counters;
@@ -101,6 +103,9 @@ pub struct Embroidery {
     pub(crate) fit_dock_frames: u8,
     /// The dock's width asked for then, given to the dock at the frame's end.
     pub(crate) dock_width: Option<f32>,
+    /// The canvas's bounds of each open document, measured only where an edit changed it
+    /// ([`bounds`]).
+    pub bounds: bounds::Bounds,
 }
 
 /// The height of the isolation mode's breadcrumb bar, which upstream draws over the canvas's top
@@ -121,13 +126,14 @@ pub fn limits(app: &VectorcraftApp) -> Option<vectorcraft_engine::cmd::embroider
 
 /// Each frame, before it is drawn: the stitch preview's plans taken in
 /// ([`stitch_preview::poll`]), Nearest Connection's search and a convert under way looked at
-/// ([`nearest::poll`], [`convert_job::poll`]), and what the Stitches tab keeps of a document closed
-/// let go.
+/// ([`nearest::poll`], [`convert_job::poll`]), and what the Stitches tab and the canvas's bounds
+/// keep of a document closed let go.
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     stitch_preview::poll(app);
     nearest::poll(app, ctx);
     convert_job::poll(app, ctx);
     crate::panels::embroidery::stitches::forget_closed(app);
+    bounds::forget_closed(app);
 }
 
 /// What the fork draws over the canvas, after it: the selection's markers in the stitch view, the
@@ -206,6 +212,8 @@ mod tests;
 mod tests_fields;
 #[cfg(test)]
 mod tests_gate;
+#[cfg(test)]
+mod tests_gate_large;
 #[cfg(test)]
 mod tests_languages;
 #[cfg(test)]

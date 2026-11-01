@@ -1270,6 +1270,17 @@ impl Node {
     /// The box of [`Node::visual_bounds`], or of [`Node::visual_bounds_with`] when `symbols` is
     /// given.
     pub(crate) fn visual(&self, symbols: Option<&SymbolBoxes>) -> Option<Rect> {
+        // VectorCraft Stitch: a container's members measured by `visual` itself (`visual_by`).
+        self.visual_by(symbols, &mut |c| c.visual(symbols))
+    }
+    /// VectorCraft Stitch: [`Node::visual`], with the members of a layer, a group and an
+    /// Intertwine group whose bounds it unions measured by `member` (`visual` measures them by
+    /// itself; `crate::visual_bounds::VisualBounds` hands over the bounds it kept for each, so a
+    /// container is measured by upstream's own arms). It reads only the object and the document's
+    /// symbols (`symbols`), and the members it hands `member`, in order, are a tail of
+    /// [`Node::children`] (all of them, or all but the first that [`Node::editing_children`] leaves
+    /// out): the cache relies on both.
+    pub(crate) fn visual_by(&self, symbols: Option<&SymbolBoxes>, member: &mut impl FnMut(&Arc<Node>) -> Option<Rect>) -> Option<Rect> {
         match &self.kind {
             NodeKind::Group { children, clip: true } | NodeKind::Layer { children, clip: true, .. } => {
                 // A clipping path that paints (see `clip_paint`) strokes over the clip edge.
@@ -1280,11 +1291,12 @@ impl Node {
                     clip.geometric(symbols)
                 }
             }
-            NodeKind::Intertwine { children } => children.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.visual(symbols))),
+            // VectorCraft Stitch: `member(c)` in these two arms only, where upstream calls `c.visual(symbols)`.
+            NodeKind::Intertwine { children } => children.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, member(c))),
             NodeKind::Layer { .. } | NodeKind::Group { .. } => {
                 // The container's own strokes paint around its members.
                 let o = self.appearance.outset();
-                self.editing_children().iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.visual(symbols))).map(|b| b.inflate(o, o))
+                self.editing_children().iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, member(c))).map(|b| b.inflate(o, o))
             }
             NodeKind::Blend { children, spec } => {
                 let b = children.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.visual(symbols)));

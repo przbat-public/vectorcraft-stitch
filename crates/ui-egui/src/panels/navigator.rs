@@ -67,7 +67,9 @@ impl Cache {
     /// The region (artboards, and the art unless `artboard_only`, with a margin) to show
     /// `doc` (`uid` at `revision`) in. While `busy` (a drag) the last one of the document stays,
     /// rather than walking the whole document every frame.
-    fn region(&mut self, doc: &vectorcraft_doc::Document, uid: u64, revision: u64, artboard_only: bool, busy: bool) -> DRect {
+    // VectorCraft Stitch: the art's bounds handed in (`art`), measured only where an edit changed
+    // the document, instead of `doc.art_bounds()`.
+    fn region(&mut self, doc: &vectorcraft_doc::Document, art: Option<DRect>, uid: u64, revision: u64, artboard_only: bool, busy: bool) -> DRect {
         let key = (uid, revision, artboard_only);
         if let Some((k, r)) = self.region
             && (k == key || (busy && k.0 == uid && k.2 == artboard_only))
@@ -75,7 +77,7 @@ impl Cache {
             return r;
         }
         let mut region = doc.artboards.iter().map(|a| a.rect).reduce(|a, b| a.union(b)).unwrap_or(DRect::new(0.0, 0.0, 612.0, 792.0));
-        if !artboard_only && let Some(b) = doc.art_bounds() {
+        if !artboard_only && let Some(b) = art {
             region = region.union(b);
         }
         let region = region.inflate(region.width() * 0.04 + 4.0, region.height() * 0.04 + 4.0);
@@ -208,7 +210,10 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let (uid, revision) = (st.uid, st.revision);
     // A drag in progress: every pointer move makes a new revision. The image waits for its end.
     let busy = st.interaction.is_some() || app.session.tool_busy();
-    let region = CACHE.with(|c| c.borrow_mut().region(&doc, uid, revision, artboard_only, busy));
+    // VectorCraft Stitch: the art's bounds as the canvas has them (with the artboards, which the
+    // region holds anyway), measured only where an edit changed the document.
+    let art = app.content_bounds();
+    let region = CACHE.with(|c| c.borrow_mut().region(&doc, art, uid, revision, artboard_only, busy));
     let w = ui.available_width();
     let h = (w * 0.72).clamp(100.0, 200.0);
     let (thumb, resp) = ui.allocate_exact_size(vec2(w, h), Sense::click_and_drag());

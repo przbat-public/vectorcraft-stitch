@@ -1287,7 +1287,8 @@ impl VectorcraftApp {
         {
             return b;
         }
-        let b = st.doc.bounds_of(&st.selection.objects, true);
+        // VectorCraft Stitch: measured again only where the document changed (`embroidery::bounds`).
+        let b = self.embroidery.bounds.of(st.uid, &st.doc, &st.selection.objects);
         self.canvas.selection_bounds = Some((key, b));
         b
     }
@@ -1303,7 +1304,8 @@ impl VectorcraftApp {
             return b;
         }
         let boards = st.doc.artboards.iter().map(|a| a.rect).reduce(|r, a| r.union(a));
-        let b = vectorcraft_geom::union_opt(st.doc.art_bounds(), boards);
+        // VectorCraft Stitch: measured again only where the document changed (`embroidery::bounds`).
+        let b = vectorcraft_geom::union_opt(self.embroidery.bounds.art(st.uid, &st.doc), boards);
         self.canvas.content_bounds = Some((key, b));
         b
     }

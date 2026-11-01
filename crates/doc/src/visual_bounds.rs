@@ -37,6 +37,9 @@ use vectorcraft_geom::{Rect, union_opt};
 use crate::id_index::IdMap;
 use crate::{Document, Node, NodeId, NodeKind, SymbolBoxes};
 
+#[cfg(test)]
+mod tests;
+
 /// The visual bounds of a document's objects as last measured, which [`VisualBounds::art_bounds`]
 /// and [`VisualBounds::bounds_of`] measure again only where the document changed. They answer as
 /// [`Document::art_bounds`] and [`Document::bounds_of`] (with `visual`) do: the same measures,

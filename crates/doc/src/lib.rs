@@ -2684,6 +2684,3 @@ mod tests_lookups;
 mod tests_slices;
 #[cfg(test)]
 mod tests_units;
-// VectorCraft Stitch: `visual_bounds`' tests.
-#[cfg(test)]
-mod tests_visual_bounds;

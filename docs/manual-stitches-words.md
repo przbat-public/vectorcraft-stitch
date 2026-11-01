@@ -1,7 +1,10 @@
 # Manual stitches: the words
 
-> **Last updated:** 2026-10-31 · **Change:** the second pull request's words: editing stitches on the canvas and the
-> Embroidery panel's Stitches tab; earlier: the review round's words: command names in sentences marked, Stop After's help, a lone manual run's note, why Restore is dimmed, what Convert and Restore passed over and why, the convert's progress, a path of stitches called a path; earlier: the review's fixes: the plan's warning for a cut or a
+> **Last updated:** 2026-10-31 · **Change:** the second pull request's review round: its two
+> sections say where each string shows, the reused words the Stitches tab shows are listed, a run
+> that can't be edited is said by why, the owner's words for Trim and Stop, Go to's answers, the
+> range's limit and Show Record; earlier: the second pull request's words: editing stitches on the
+> canvas and the Embroidery panel's Stitches tab; earlier: the review round's words: command names in sentences marked, Stop After's help, a lone manual run's note, why Restore is dimmed, what Convert and Restore passed over and why, the convert's progress, a path of stitches called a path; earlier: the review's fixes: the plan's warning for a cut or a
 > stop left out; earlier: written for the manual stitches' first pull request (converting an object
 > to manual stitches, restoring it, stops, and editing needle points by command): every interface
 > string it adds, in English and Polish.
@@ -114,38 +117,38 @@ Edit Stitches, the chip under isolation's bar, the hint while editing, the Conte
 the panel menu's stitch actions, and the live check beside the selected needle points (the second
 pull request).
 
-| English | Polish |
-|---|---|
-| Editing stitches | Edycja ściegów |
-| Editing stitches: {name} | Edycja ściegów: {name} |
-| Zoom in to see the needle points. | Przybliż, aby zobaczyć nakłucia. |
-| Needle points are edited in the Stitches view. | Nakłucia edytuje się w widoku Ściegi. |
-| Show Stitches | Pokaż ściegi |
-| Edit Stitches | Edytuj ściegi |
-| Move, insert and delete these needle points on the canvas with the Embroidery Tool. | Przesuwaj, wstawiaj i usuwaj te nakłucia na płótnie narzędziem Haft. |
-| {count} needle point / {count} needle points | {count} nakłucie / {count} nakłucia / {count} nakłuć |
-| {count} selected / {count} selected | {count} zaznaczone / {count} zaznaczone / {count} zaznaczonych |
-| {count} run can't be edited: locked, hidden or not sewn / {count} runs can't be edited: locked, hidden or not sewn | {count} odcinek bez możliwości edycji: zablokowany, ukryty lub nieszyty / {count} odcinki bez możliwości edycji: zablokowane, ukryte lub nieszyte / {count} odcinków bez możliwości edycji: zablokowane, ukryte lub nieszyte |
-| {count} run can't be edited: cut by a clipping mask / {count} runs can't be edited: cut by a clipping mask | {count} odcinek bez możliwości edycji: przycięty maską przycinającą / {count} odcinki bez możliwości edycji: przycięte maską przycinającą / {count} odcinków bez możliwości edycji: przycięte maską przycinającą |
-| {count} run can't be edited: its points lie outside the document / {count} runs can't be edited: their points lie outside the document | {count} odcinek bez możliwości edycji: jego punkty leżą poza dokumentem / {count} odcinki bez możliwości edycji: ich punkty leżą poza dokumentem / {count} odcinków bez możliwości edycji: ich punkty leżą poza dokumentem |
-| {count} run can't be edited: more needle points than a design may have / {count} runs can't be edited: more needle points than a design may have | {count} odcinek bez możliwości edycji: więcej nakłuć, niż może mieć projekt / {count} odcinki bez możliwości edycji: więcej nakłuć, niż może mieć projekt / {count} odcinków bez możliwości edycji: więcej nakłuć, niż może mieć projekt |
-| needle points, or a frame round them  \| | nakłucia albo ramkę wokół nich  \| |
-| a stitch to insert a needle point  \| | ścieg, aby wstawić nakłucie  \| |
-| ←↑→↓ | ←↑→↓ |
-| move by 0.1 mm  \| | przesuwają o 0,1 mm  \| |
-| deselects, then ends editing | odznacza, potem kończy edycję |
-| Moved X {x} · Y {y} mm | Przesunięto X {x} · Y {y} mm |
-| Insert | Wstaw |
-| Delete | Usuń |
-| Split Run | Podziel odcinek |
-| Join Runs | Połącz odcinki |
-| Split Long Stitches | Podziel długie ściegi |
-| Trim | Dodaj cięcie |
-| Stop | Dodaj stop |
-| Trim After the Selected Needle Points | Dodaj cięcie po zaznaczonych nakłuciach |
-| Stop After the Selected Needle Points | Dodaj stop po zaznaczonych nakłuciach |
-| {count} stitch shorter than {value} mm / {count} stitches shorter than {value} mm | {count} ścieg krótszy niż {value} mm / {count} ściegi krótsze niż {value} mm / {count} ściegów krótszych niż {value} mm |
-| {count} stitch too long / {count} stitches too long | {count} za długi ścieg / {count} za długie ściegi / {count} za długich ściegów |
+| Where | English | Polish |
+|---|---|---|
+| The chip's title, in the art view | Editing stitches | Edycja ściegów |
+| The chip's title | Editing stitches: {name} | Edycja ściegów: {name} |
+| The chip, below 250 % or past the circles drawn | Zoom in to see the needle points. | Przybliż, aby zobaczyć nakłucia. |
+| The chip, in the art view | Needle points are edited in the Stitches view. | Nakłucia edytuje się w widoku Ściegi. |
+| The chip's button, in the art view | Show Stitches | Pokaż ściegi |
+| The Object tab's and the Stitches tab's button | Edit Stitches | Edytuj ściegi |
+| Edit Stitches' tooltip | Move, insert and delete these needle points on the canvas with the Embroidery Tool. | Przesuwaj, wstawiaj i usuwaj te nakłucia na płótnie narzędziem Haft. |
+| The chip: the needle points being edited (reused) | {count} needle point / {count} needle points | {count} nakłucie / {count} nakłucia / {count} nakłuć |
+| The chip: how many are selected | {count} selected / {count} selected | {count} zaznaczone / {count} zaznaczone / {count} zaznaczonych |
+| The chip, and the Stitches tab's status line for a row of one | {count} run can't be edited: locked, hidden or not sewn / {count} runs can't be edited: locked, hidden or not sewn | {count} odcinek bez możliwości edycji: zablokowany, ukryty lub nieszyty / {count} odcinki bez możliwości edycji: zablokowane, ukryte lub nieszyte / {count} odcinków bez możliwości edycji: zablokowane, ukryte lub nieszyte |
+| The chip, and the Stitches tab's status line for a row of one | {count} run can't be edited: cut by a clipping mask / {count} runs can't be edited: cut by a clipping mask | {count} odcinek bez możliwości edycji: przycięty maską przycinającą / {count} odcinki bez możliwości edycji: przycięte maską przycinającą / {count} odcinków bez możliwości edycji: przycięte maską przycinającą |
+| The chip, and the Stitches tab's status line for a row of one | {count} run can't be edited: its points lie outside the document / {count} runs can't be edited: their points lie outside the document | {count} odcinek bez możliwości edycji: jego punkty leżą poza dokumentem / {count} odcinki bez możliwości edycji: ich punkty leżą poza dokumentem / {count} odcinków bez możliwości edycji: ich punkty leżą poza dokumentem |
+| The chip, and the Stitches tab's status line for a row of one | {count} run can't be edited: more needle points than a design may have / {count} runs can't be edited: more needle points than a design may have | {count} odcinek bez możliwości edycji: więcej nakłuć, niż może mieć projekt / {count} odcinki bez możliwości edycji: więcej nakłuć, niż może mieć projekt / {count} odcinków bez możliwości edycji: więcej nakłuć, niż może mieć projekt |
+| The status bar's hint while editing (after "Drag") | needle points, or a frame round them  \| | nakłucia albo ramkę wokół nich  \| |
+| The status bar's hint (after "Alt+Click") | a stitch to insert a needle point  \| | ścieg, aby wstawić nakłucie  \| |
+| The status bar's hint: the arrows' key | ←↑→↓ | ←↑→↓ |
+| The status bar's hint (after the arrows) | move by 0.1 mm  \| | przesuwają o 0,1 mm  \| |
+| The status bar's hint (after "Esc") | deselects, then ends editing | odznacza, potem kończy edycję |
+| The live check, while needle points are dragged | Moved X {x} · Y {y} mm | Przesunięto X {x} · Y {y} mm |
+| The Contextual Task Bar's and the Stitches tab's buttons; the ≡ menu's items | Insert | Wstaw |
+| The Contextual Task Bar's and the Stitches tab's buttons; the ≡ menu's items | Delete | Usuń |
+| The Contextual Task Bar's and the Stitches tab's buttons; the ≡ menu's items | Split Run | Podziel odcinek |
+| The Contextual Task Bar's and the Stitches tab's buttons; the ≡ menu's items | Join Runs | Połącz odcinki |
+| The Contextual Task Bar's and the Stitches tab's buttons; the ≡ menu's items | Split Long Stitches | Podziel długie ściegi |
+| The Contextual Task Bar's and the Stitches tab's button (the owner's words, 2026-10-31) | Trim | Dodaj cięcie |
+| The Contextual Task Bar's and the Stitches tab's button (the owner's words, 2026-10-31) | Stop | Dodaj stop |
+| The panel's ≡ menu (the owner's words, 2026-10-31) | Trim After the Selected Needle Points | Dodaj cięcie po zaznaczonych nakłuciach |
+| The panel's ≡ menu (the owner's words, 2026-10-31) | Stop After the Selected Needle Points | Dodaj stop po zaznaczonych nakłuciach |
+| The live check | {count} stitch shorter than {value} mm / {count} stitches shorter than {value} mm | {count} ścieg krótszy niż {value} mm / {count} ściegi krótsze niż {value} mm / {count} ściegów krótszych niż {value} mm |
+| The live check | {count} stitch too long / {count} stitches too long | {count} za długi ścieg / {count} za długie ściegi / {count} za długich ściegów |
 
 ## The Embroidery panel's Stitches tab
 
@@ -153,43 +156,52 @@ The design's records: the scope switch, the filters with their counts, the colum
 what screen readers hear of a row, and the tab strip's short name for Sewing Order (the second pull
 request).
 
-| English | Polish |
-|---|---|
-| Order | Kolejność |
-| Selection | Zaznaczenie |
-| Whole design | Cały wzór |
-| All | Wszystkie |
-| Stops | Stopy |
-| Too short | Za krótkie |
-| Shorter than {value} mm | Krótsze niż {value} mm |
-| Longer than {value} mm | Dłuższe niż {value} mm |
-| {filter} {count} | {filter} {count} |
-| X (mm) | X (mm) |
-| Y (mm) | Y (mm) |
-| Length (mm) | Długość (mm) |
-| stitch | ścieg |
-| jump | przeskok |
-| trim | cięcie |
-| stop | stop |
-| Record {number}: {type}, X {x} mm, Y {y} mm | Rekord {number}: {type}, X {x} mm, Y {y} mm |
-| , length {value} mm | , długość {value} mm |
-| , too short | , za krótki |
-| , too long | , za długi |
-| Rows {first}–{last} of {total} | Wiersze {first}–{last} z {total} |
-| Previous rows | Poprzednie wiersze |
-| Next rows | Następne wiersze |
-| Listing stitches… | Wypisywanie ściegów… |
-| Select objects to list their stitches. | Zaznacz obiekty, aby wypisać ich ściegi. |
-| The selection sews no stitches. | Zaznaczenie nie szyje żadnych ściegów. |
-| This stitch can't be edited: it is planned from its object's shape. | Tego ściegu nie można edytować: jest planowany z kształtu obiektu. |
-| Go to # | Przejdź do nr |
-| Record number | Numer rekordu |
-| No record numbered {value} here: these are #{first}–{last}. | Nie ma tu rekordu nr {value}: są tu nr {first}–{last}. |
-| Move by | Przesuń o |
-| Apply | Zastosuj |
-| Click a row or a needle point to select it. | Kliknij wiersz albo nakłucie, aby je zaznaczyć. |
-| Planned from the shape: convert the object to manual stitches to edit them. | Planowane z kształtu: zamień obiekt na ściegi ręczne, aby je edytować. |
-| {count} needle point selected / {count} needle points selected | Zaznaczono {count} nakłucie / Zaznaczono {count} nakłucia / Zaznaczono {count} nakłuć |
+| Where | English | Polish |
+|---|---|---|
+| The tab strip: Sewing Order's short name | Order | Kolejność |
+| The tab's name; the list's name for screen readers (reused) | Stitches | Ściegi |
+| The scope switch | Selection | Zaznaczenie |
+| The scope switch | Whole design | Cały wzór |
+| A filter | All | Wszystkie |
+| A filter (reused) | Jumps | Przeskoki |
+| A filter (reused) | Trims | Cięcia |
+| A filter | Stops | Stopy |
+| A filter | Too short | Za krótkie |
+| A filter (reused) | Too long | Za długie |
+| A filter's tooltip | Shorter than {value} mm | Krótsze niż {value} mm |
+| A filter's tooltip | Longer than {value} mm | Dłuższe niż {value} mm |
+| A filter's tooltip, when the format's records are the nearer | Longer than {longest} mm, or along x or y than one {format} record ({step} mm) | Dłuższe niż {longest} mm albo wzdłuż x lub y dłuższe niż jeden rekord {format} ({step} mm) |
+| A filter's name for screen readers | {filter} {count} | {filter} {count} |
+| A column's head (reused) | Type | Rodzaj |
+| A column's head | X (mm) | X (mm) |
+| A column's head | Y (mm) | Y (mm) |
+| A column's head | Length (mm) | Długość (mm) |
+| A row's kind, in words | stitch | ścieg |
+| A row's kind, in words | jump | przeskok |
+| A row's kind, in words | trim | cięcie |
+| A row's kind, in words | stop | stop |
+| A row, as screen readers hear it | Record {number}: {type}, X {x} mm, Y {y} mm | Rekord {number}: {type}, X {x} mm, Y {y} mm |
+| A row, as screen readers hear it (after the above) | , length {value} mm | , długość {value} mm |
+| A row, as screen readers hear it (after the above) | , too short | , za krótki |
+| A row, as screen readers hear it (after the above) | , too long | , za długi |
+| The pages, past 400,000 rows | Rows {first}–{last} of {total} | Wiersze {first}–{last} z {total} |
+| The pages' buttons and their names for screen readers | Previous rows | Poprzednie wiersze |
+| The pages' buttons and their names for screen readers | Next rows | Następne wiersze |
+| The list, while its flags are built | Listing stitches… | Wypisywanie ściegów… |
+| The list, with nothing selected | Select objects to list their stitches. | Zaznacz obiekty, aby wypisać ich ściegi. |
+| The list, for objects that sew nothing | The selection sews no stitches. | Zaznaczenie nie szyje żadnych ściegów. |
+| The status line: a click on a planned row while editing | This stitch can't be edited: it is planned from its object's shape. | Tego ściegu nie można edytować: jest planowany z kształtu obiektu. |
+| The status line: a Shift-click past 100,000 rows | Only the first {count} rows of the range are selected: a click selects no more. | Zaznaczono tylko pierwsze {count} wierszy zakresu: jedno kliknięcie nie zaznacza więcej. |
+| Go to | Go to # | Przejdź do nr |
+| Go to's field, for screen readers | Record number | Numer rekordu |
+| Go to's answer, a number out of the scope | No record numbered {value} here: these are #{first}–{last}. | Nie ma tu rekordu nr {value}: są tu nr {first}–{last}. |
+| Go to's answer, a number the filter leaves out | Record #{value} is left out by the filter chosen. | Rekord nr {value} pomija wybrany filtr. |
+| The command palette (an agent's command too) | Show Record | Pokaż rekord |
+| The foot, while editing | Move by | Przesuń o |
+| The foot, while editing: Move by's button | Apply | Zastosuj |
+| The foot, while editing, nothing selected | Click a row or a needle point to select it. | Kliknij wiersz albo nakłucie, aby je zaznaczyć. |
+| The foot, for an object planned from its shape | Planned from the shape: convert the object to manual stitches to edit them. | Planowane z kształtu: zamień obiekt na ściegi ręczne, aby je edytować. |
+| The foot, while editing: how many are selected | {count} needle point selected / {count} needle points selected | Zaznaczono {count} nakłucie / Zaznaczono {count} nakłucia / Zaznaczono {count} nakłuć |
 
 ## Terms in every language
 
@@ -227,6 +239,7 @@ and manual stitches; Polish's are the project owner's. Upstream VectorCraft has 
 
 | Date | Change |
 |---|---|
+| 2026-10-31 | The second pull request's review round: a Where column in its two sections; the reused words the Stitches tab shows (Stitches, Jumps, Trims, Too long, Type) listed; a run that can't be edited said by why (four sentences in place of one); the project owner's words for Trim and Stop („Dodaj cięcie”, „Dodaj stop”, „… po zaznaczonych nakłuciach”); Go to's answer for a number the filter leaves out; the range's limit; the Too long filter's tooltip with the format's record; Show Record. |
 | 2026-10-30 | The review's fixes: the plan's warning for a cut or a stop whose needle point a path command deleted or moved; Join's refusals of runs with art and of one run alone; Machine Function's undo steps; why Convert and Restore wait during Global Edit; a path of stitches called a path, not a run, in the stitch commands' refusals (a run is a subpath).; command names in sentences marked in Polish, French, Spanish and Czech; a manual run outside its object said without Restore; why Restore is dimmed. |
 | 2026-10-28 | The second pull request's words: editing stitches on the canvas (the chip, the hint, the stitch actions, the live check) and the Stitches tab. |
 | 2026-10-27 | Brought in step with what landed: the Check tab's, the Sewing order's and the plan's words, the scale with the catalogues' percent sign, the terms each language chose. |

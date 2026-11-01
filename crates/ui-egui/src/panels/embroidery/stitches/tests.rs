@@ -1266,3 +1266,15 @@ fn the_kinds_glyphs_are_in_the_interfaces_fonts() {
         }
     });
 }
+
+/// Past [`super::MAX_SCROLLED_ROWS`] rows the list is split into pages: 450,000 rows are two, the
+/// second holding the 50,000 left; a row is on the page its place says; none is one page.
+#[test]
+fn the_list_is_split_into_pages_past_its_rows() {
+    use super::pages;
+    let per = super::MAX_SCROLLED_ROWS;
+    assert_eq!((pages::count(0), pages::count(per), pages::count(per + 1), pages::count(450_000)), (1, 1, 2, 2));
+    assert_eq!((pages::rows(0, 450_000), pages::rows(1, 450_000)), (0..per, per..450_000));
+    assert_eq!(pages::rows(2, 450_000), 450_000..450_000, "a page past the last holds none");
+    assert_eq!((pages::of(per - 1), pages::of(per), pages::of(449_999)), (0, 1, 1));
+}

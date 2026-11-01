@@ -48,6 +48,27 @@ pub const ROW_HEIGHT: f32 = 20.0;
 /// The most rows one page scrolls through: 400,000 rows of [`ROW_HEIGHT`] reach 8,000,000 points,
 /// under 2²³, where `f32` still places a row to half a point (egui lays rows out in `f32`).
 pub const MAX_SCROLLED_ROWS: usize = 400_000;
+
+/// The list's pages of [`MAX_SCROLLED_ROWS`] rows, of `total` rows in all: how many (one for none),
+/// the page row `row` (from 0) is on, and the rows page `page` shows (from 0, the last page's those
+/// left).
+pub(crate) mod pages {
+    use super::MAX_SCROLLED_ROWS;
+    use std::ops::Range;
+
+    pub(crate) fn count(total: usize) -> usize {
+        total.div_ceil(MAX_SCROLLED_ROWS).max(1)
+    }
+
+    pub(crate) fn of(row: usize) -> usize {
+        row / MAX_SCROLLED_ROWS
+    }
+
+    pub(crate) fn rows(page: usize, total: usize) -> Range<usize> {
+        let first = page.saturating_mul(MAX_SCROLLED_ROWS).min(total);
+        first..first.saturating_add(MAX_SCROLLED_ROWS).min(total)
+    }
+}
 /// The decimals of X and Y (a tenth of a millimetre, the formats' grid) and of a length (a
 /// hundredth, as the commands give lengths).
 const PLACE_DECIMALS: usize = 1;
@@ -442,14 +463,14 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     go_to(app, ui, uid, &listed);
     let editing = crate::embroidery::editing::editing(app);
     let total = listed.len();
-    let pages = total.div_ceil(MAX_SCROLLED_ROWS).max(1);
+    let pages = pages::count(total);
     let doc_list = app.embroidery.stitches.docs.entry(uid).or_default();
     doc_list.page = doc_list.page.min(pages - 1);
     let page = doc_list.page;
     if pages > 1 {
         ui.horizontal(|ui| {
-            let first = page * MAX_SCROLLED_ROWS + 1;
-            let last = ((page + 1) * MAX_SCROLLED_ROWS).min(total);
+            let shown = pages::rows(page, total);
+            let (first, last) = (shown.start + 1, shown.end);
             let words = crate::embroidery::text::fill(
                 crate::et!("Rows {first}–{last} of {total}"),
                 &[
@@ -480,7 +501,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     // The column heads, then the rows in view.
     let width = ui.available_width();
     let columns = Columns::fit(ui, width);
-    let in_page = (total - (page * MAX_SCROLLED_ROWS).min(total)).min(MAX_SCROLLED_ROWS);
+    let in_page = pages::rows(page, total).len();
     let drawn = *app.embroidery.stitches.foot.of(editing.is_some());
     let foot = if drawn > 0.0 { drawn } else { foot_height(editing.is_some()) };
     // Whole rows: none cut by the foot's words under the list.
@@ -512,7 +533,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let focus = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus);
     let reveal = app.embroidery.stitches.docs.get_mut(&uid).is_some_and(|d| std::mem::take(&mut d.reveal));
     let mut area = egui::ScrollArea::vertical().id_salt(list_id).max_height(room).auto_shrink([false, false]);
-    if reveal && let Some(row) = focus.and_then(|f| listed.row_of(f)).filter(|r| r / MAX_SCROLLED_ROWS == page) {
+    if reveal && let Some(row) = focus.and_then(|f| listed.row_of(f)).filter(|r| pages::of(*r) == page) {
         area = area.vertical_scroll_offset(((row % MAX_SCROLLED_ROWS) as f32 * ROW_HEIGHT - room / 2.0).max(0.0));
     }
     // No spacing between rows, in the list as in egui's sums: it places a row and works out the
@@ -527,7 +548,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
             // asked of the session together, a look-up each.
             let rows: Vec<(usize, usize, stitch_list::Row, Option<NeedleRef>)> = range
                 .filter_map(|i| {
-                    let row_index = page * MAX_SCROLLED_ROWS + i;
+                    let row_index = pages::rows(page, total).start + i;
                     let number = listed.record(row_index)?;
                     let row = stitch_list::row(&shown.plan, number)?;
                     let address = editing.and_then(|_| edited_by(app, &shown, row.unit, number, row.kind));
@@ -665,7 +686,7 @@ pub(crate) fn show_record_command(app: &mut VectorcraftApp, p: &serde_json::Valu
         format!("record {number} isn't listed (scope {scope}, filter {filter})")
     })?;
     let d = app.embroidery.stitches.docs.entry(uid).or_default();
-    (d.focus, d.page, d.reveal, d.of) = (Some(number), row / MAX_SCROLLED_ROWS, true, Some(shown.generation));
+    (d.focus, d.page, d.reveal, d.of) = (Some(number), pages::of(row), true, Some(shown.generation));
     show_stitch(app, &shown, number, zoom);
     Ok(json!({"record": number, "row": row}))
 }

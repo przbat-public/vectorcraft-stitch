@@ -140,8 +140,10 @@ pub(super) fn show_stitch(app: &mut VectorcraftApp, shown: &Shown, number: usize
 #[cfg(test)]
 pub(crate) fn reveal(app: &mut VectorcraftApp, number: usize) {
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
+    // Its page as production finds it: the page of its row in the rows listed.
+    let row = app.embroidery.stitches.list.as_ref().and_then(|(_, l)| l.row_of(number)).unwrap_or(0);
     let d = app.embroidery.stitches.docs.entry(uid).or_default();
-    (d.focus, d.shown, d.page, d.reveal) = (Some(number), Some(number), number.saturating_sub(1) / MAX_SCROLLED_ROWS, true);
+    (d.focus, d.shown, d.page, d.reveal) = (Some(number), Some(number), pages::of(row), true);
 }
 
 /// The keys while the list has the keyboard's focus (a row clicked gives it; Escape gives it
@@ -212,7 +214,7 @@ pub(super) fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, 
     }
     if let (Some(r), Some(d)) = (listed.row_of(n), app.embroidery.stitches.docs.get_mut(&uid)) {
         d.focus = Some(n);
-        d.page = r / MAX_SCROLLED_ROWS;
+        d.page = pages::of(r);
         d.reveal = true;
     }
 }
@@ -261,7 +263,7 @@ pub(super) fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Li
     match number.map(|n| (n, listed.row_of(n))) {
         Some((n, Some(r))) => {
             d.focus = Some(n);
-            d.page = r / MAX_SCROLLED_ROWS;
+            d.page = pages::of(r);
             d.reveal = true;
             d.said = None;
         }

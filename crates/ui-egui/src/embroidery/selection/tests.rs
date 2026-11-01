@@ -659,3 +659,114 @@ fn an_alt_click_on_a_later_runs_stitch_inserts_into_that_run() {
     assert_eq!(now.len(), later.len() + 1, "one needle point more, in the later run");
     assert!(now[2].distance(mid) < 0.3, "between the stitch's two needle points, where it was pressed: {:?}", now[2]);
 }
+
+/// An app editing one run of `n` needle points (rows of a hundred a millimetre apart, two
+/// millimetres between rows, back and forth), in a group of its own → the app and the run.
+fn editing_run(n: usize) -> (VectorcraftApp, NodeId) {
+    const ROW: usize = 100;
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.embroidery.preview.pin_light();
+    app.run("file.new", json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    let mm = vectorcraft_engine::cmd::embroidery::mm_to_pt;
+    let d: Vec<String> = (0..n)
+        .map(|k| {
+            let (row, col) = (k / ROW, k % ROW);
+            let x = if row % 2 == 0 { col } else { ROW - 1 - col };
+            format!("{} {} {}", if k == 0 { "M" } else { "L" }, mm(5.0 + x as f64), mm(5.0 + 2.0 * row as f64))
+        })
+        .collect();
+    app.run("paint.setFill", json!({"none": true})).unwrap();
+    app.run("paint.setStroke", json!({"color": "#1e64c8"})).unwrap();
+    let id = NodeId(app.run("path.create", json!({"d": d.join(" ")})).unwrap()["id"].as_u64().unwrap());
+    app.session
+        .edit("Stitches", |doc, _| {
+            doc.node_mut(id).unwrap().extras_mut().embroidery = Some(Box::new(vectorcraft_doc::embroidery::Embroidery {
+                stitches: Some(vectorcraft_doc::embroidery::StitchRun::default()),
+                ..Default::default()
+            }));
+            Ok(())
+        })
+        .unwrap();
+    app.run("select.set", json!({"ids": [id.0]})).unwrap();
+    let group = app.run("object.group", json!({})).unwrap()["id"].as_u64().unwrap();
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": group})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    (app, id)
+}
+
+/// The left edge of the selection's box as drawn: its dark dashes' leftmost point (screen).
+fn box_left(shapes: &[Shape]) -> f32 {
+    shapes
+        .iter()
+        .filter_map(|s| match s {
+            Shape::LineSegment { points, stroke } if stroke.width == super::STITCH_UNDER_PT && stroke.color == super::dark() => {
+                Some(points[0].x.min(points[1].x))
+            }
+            _ => None,
+        })
+        .fold(f32::INFINITY, f32::min)
+}
+
+/// Past [`super::SELECTION_SHAPES_MAX`] needle points selected the selection is drawn as its box,
+/// no circle of its own, and the box follows a drag of them.
+#[test]
+fn past_2000_selected_the_box_is_drawn_and_follows_a_drag() {
+    let (mut app, run) = editing_run(2_500);
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    app.run("embroidery.selectNeedlePoints", json!({"ranges": [{"id": run.0, "from": 0, "to": 2_499}]})).unwrap();
+    let before = box_left(&settle(&mut app, &ctx, &mut time));
+    let k = &app.embroidery.selection;
+    assert!(k.count > super::SELECTION_SHAPES_MAX && k.points.is_empty() && k.bounds.is_some(), "the box: {} selected", k.count);
+    assert!(before.is_finite(), "its dashes drawn");
+    let grip = {
+        let st = app.session.active().unwrap();
+        on_screen(&app, st.doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[0].p)
+    };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(grip), press(grip, true)]);
+    let mut shapes = vec![];
+    for k in 1..=5 {
+        time += 0.05;
+        shapes = frame(&mut app, &ctx, time, vec![Event::PointerMoved(grip + egui::vec2(8.0 * k as f32, 0.0))]);
+    }
+    let during = box_left(&shapes);
+    assert!(during > before + 30.0, "the box moved with the drag: {before} → {during}");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![press(grip + egui::vec2(40.0, 0.0), false)]);
+}
+
+/// Past [`super::RUBBER_BANDS_MAX`] stitches with one end selected, the live check says
+/// "Updating…" while a drag goes on (it measures them again only when the drag ends) and judges
+/// them at rest.
+#[test]
+fn past_20000_stretched_the_live_check_says_updating_during_a_drag() {
+    let (mut app, run) = editing_run(45_000);
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    // Every other needle point: each selected one has two stitches stretched by a move.
+    let ranges: Vec<_> = (0..45_000).step_by(2).map(|k| json!({"id": run.0, "from": k, "to": k})).collect();
+    app.run("embroidery.selectNeedlePoints", json!({"ranges": ranges})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let updating = |app: &mut VectorcraftApp| super::bubble(app).is_some_and(|l| l.iter().any(|(_, w)| w == "Updating…"));
+    assert!(!updating(&mut app), "judged at rest");
+    let grip = {
+        let st = app.session.active().unwrap();
+        on_screen(&app, st.doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[0].p)
+    };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(grip), press(grip, true)]);
+    for k in 1..=3 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![Event::PointerMoved(grip + egui::vec2(8.0 * k as f32, 0.0))]);
+    }
+    assert!(updating(&mut app), "during the drag: {:?}", super::bubble(&mut app));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![press(grip + egui::vec2(24.0, 0.0), false)]);
+    settle(&mut app, &ctx, &mut time);
+    assert!(!updating(&mut app), "judged again once let go");
+}

@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-11-01 · **Change:** the canvas's bounds measured only where an edit changed the document, so that dragging one point of a design of 2 million no longer re-measures every stitch each frame, brought up to date with manual stitches' second part (Architecture › Editing a large design, Manual stitches and needle points; Files); earlier: manual stitches, second part, its review round: the Lasso tool keeping the edit look, a drag below 250 % from what isn't selected drawing a marquee, stitch editing's files, tests and limits, the Stitches tab's words, measured again; earlier: a fill's lifts and cuts counted as they are sewn, at any shortest stitch, and a lead's tie stitch at least the shortest stitch (What is not stitched; Validation); earlier: manual stitches, second part, brought in step with the first part's review round and measured again; earlier: manual stitches, second part: editing needle points on the canvas with the Embroidery Tool in isolation, and the Embroidery panel's Stitches tab (Using it › Editing stitches on the canvas, The Stitches tab; Architecture › Manual stitches and needle points); earlier: manual stitches' review round: a run's cuts and stops kept by their needle points through upstream's path commands, a group sewn whole converted with its members' marks or passed over, Restore asking about foreign art and keeping it, range-checked and cleaned, the Global Edit wait, a clip group carrying a file's run's cuts and stops, the export's note on stops, the Object tab's states, focus and words, compatibility notes, new perf rows, everything measured again (Using it › Manual stitches, Editing stitches, Exporting what you read, Saved by upstream VectorCraft, What is not stitched; The formats › Stops; Validation; Architecture › Manual stitches and needle points; Files); earlier: manual stitches, first part: Convert to Manual Stitches and Restore Object, stops, editing stitches by command and Direct Selection, the scale warning (Using it › Stopping the machine after an object, Manual stitches, Editing stitches, Checks; What is not stitched; The formats › Stops; Changing the sewing order); earlier: the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-11-01 · **Change:** the canvas's bounds' review round: containers measured by upstream's own arms through `Node::visual_by`, one cache per open document let go when it closes, the Navigator's region from it, a change of the symbols measuring only what reads them, the selection's ids looked up one by one, the one-point drag on 2 million budgeted, tests that reach the cache's own branches, measured again (Architecture › Editing a large design, Manual stitches and needle points; Files); earlier: the canvas's bounds measured only where an edit changed the document, so that dragging one point of a design of 2 million no longer re-measures every stitch each frame, brought up to date with manual stitches' second part; earlier: manual stitches, second part, its review round: the Lasso tool keeping the edit look, a drag below 250 % from what isn't selected drawing a marquee, stitch editing's files, tests and limits, the Stitches tab's words, measured again; earlier: a fill's lifts and cuts counted as they are sewn, at any shortest stitch, and a lead's tie stitch at least the shortest stitch (What is not stitched; Validation); earlier: manual stitches, second part, brought in step with the first part's review round and measured again; earlier: manual stitches, second part: editing needle points on the canvas with the Embroidery Tool in isolation, and the Embroidery panel's Stitches tab (Using it › Editing stitches on the canvas, The Stitches tab; Architecture › Manual stitches and needle points); earlier: manual stitches' review round: a run's cuts and stops kept by their needle points through upstream's path commands, a group sewn whole converted with its members' marks or passed over, Restore asking about foreign art and keeping it, range-checked and cleaned, the Global Edit wait, a clip group carrying a file's run's cuts and stops, the export's note on stops, the Object tab's states, focus and words, compatibility notes, new perf rows, everything measured again (Using it › Manual stitches, Editing stitches, Exporting what you read, Saved by upstream VectorCraft, What is not stitched; The formats › Stops; Validation; Architecture › Manual stitches and needle points; Files); earlier: manual stitches, first part: Convert to Manual Stitches and Restore Object, stops, editing stitches by command and Direct Selection, the scale warning (Using it › Stopping the machine after an object, Manual stitches, Editing stitches, Checks; What is not stitched; The formats › Stops; Changing the sewing order); earlier: the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -2618,57 +2618,126 @@ rings in one fill plan in 563 to 572 ms cold against their 600 ms).
 
 ### Editing a large design
 
-The canvas measures the art's visual bounds (the span of its scroll bars) and the selection's (its
-frame) once per revision of the document, and a drag makes a revision a frame. Upstream's canvas
-walked every object for it (`Document::art_bounds`, each path's stroke measured along its
-segments): on a design of 2 million needle points (2,000 runs of 1,000 in 20 thread groups) that
-was 45 to 60 ms of every frame of any edit, a needle point dragged by the embroidery tool or an
-anchor by Direct Selection alike (profiled with macOS `sample`: `StrokeLayer::bounds_on` under
-`content_bounds`).
+The canvas measures the art's visual bounds (the span of its scroll bars), the selection's (its
+frame) and, with the Navigator open, the art again for the Navigator's region, once per revision of
+the document, and a drag makes a revision a frame. Upstream walked every object for each
+(`Document::art_bounds`, `Document::bounds_of`, each path's stroke measured along its segments): on
+a design of 2 million needle points (2,000 runs of 1,000 in 20 thread groups) about 60 ms of every
+frame of any edit (`large_design_drag_gate`'s 50th percentile, below), a needle point dragged by the
+Embroidery Tool or an anchor by Direct Selection alike.
 
 `vectorcraft_doc::visual_bounds::VisualBounds` keeps each object's visual bounds as it measured
-them, in a tree that mirrors the document: a layer's, group's or Intertwine group's entry holds its
-members' entries, and each entry holds its object weakly, by its address. An edit replaces only the
-objects it changes and the containers on the way up to their layer (`Arc`, copy on write), so an
-object found at the address it was measured at is unchanged and its bounds stand; any other object
-is measured again, a container as the union of its members' bounds, most of them kept. While an
-entry holds an object weakly no other object can take its address, and `Arc::make_mut` moves an
-object it changes to a new one. Objects added, removed or restacked are lined up by id (those in the
-same order at the start and at the end in place, a map for those between). The bounds of symbol
-instances and Repeats read the symbols' art, so another set of symbols (by name and art) measures
-everything again. The rule for containers is `Node::visual_members`, which `Node::visual` measures
-by too, so the two answer alike bit for bit.
+them, in a tree that mirrors the document: the entry of a layer or group without a clipping mask,
+and of an Intertwine group, holds its members' entries. An edit replaces only the objects it changes
+and the containers on the way up to their layer (`Arc`, copy on write), so an object found at the
+address it was measured at is unchanged, and its bounds stand; any other is measured again. A
+container is measured by upstream's own arms of `Node::visual`, through `Node::visual_by`, which
+asks for each member's bounds (open recursion, the project owner's choice): the cache hands over
+those it kept and measures again only the members that changed. On the way up it compares each
+sibling's address, and its id only where the address differs; once a member comes out of its old
+order (one added, removed or restacked), the members left are looked up after the last one taken,
+then by id through the crate's `IdMap`.
 
-Memory: an entry (about 80 bytes) for each object of the document last measured, down to the
-objects measured whole (everything but layers, groups without a clipping mask and Intertwine
-groups); nothing of an earlier version once the next is measured. The weak references keep only
-the allocation of an object replaced since the last measure, until the next one.
+The entries hold their objects weakly, and compare an address only while the weak reference still
+has a strong one. That rests on what std documents: a weak reference keeps its allocation, so no
+other object can take that address; safe code reaches `&mut Node` behind an `Arc` only through
+`Arc::get_mut`, which refuses while a weak reference exists, or `Arc::make_mut`, which clones a
+shared object and otherwise dissociates the weak references; unsafe code is denied workspace-wide.
+The bounds of symbol instances and Repeats read the document's symbols: when the symbols differ (by
+name and art), what shows an instance or holds a Repeat, and the containers holding one, are
+measured again, and nothing else. The cache answers as the full walk does, the same measures folded
+in the same order, so the answers are equal; it looks the selection's ids up one by one, as
+`Document::bounds_of` does (the project owner's choice), so that a repeated id means the copy the
+commands act on.
 
-**Measured** (2026-10-28: release build, 12-core Apple Silicon, a 1440 × 900 window at 2 pixels a
-point, 90 frames of a drag at 60 Hz). Two drags on the design of 2 million points (20 groups of 100
-paths of 1,000), with the canvas's two calls on the full walk ("before") and on the cache:
+Memory: one cache per open document, by its uid, in the fork's interface state
+(`ui-egui/src/embroidery/bounds.rs`, the project owner's choice): an entry (80 bytes) for each object
+of each open document, down to the objects measured whole, and nothing of an earlier version once
+the next is measured. A switch between documents measures nothing again; a document's cache goes in
+the frame after it closes. The weak references keep only the allocation of an object replaced since
+the last measure, until the next one (upstream's `CanvasCache::shown` keeps the last document shown
+alive anyway, until another is shown).
 
-| Drag | Before p50 / p95 / max | With the cache p50 / p95 / max |
+**Measured** (2026-11-01, release build, 12-core Apple Silicon at a load of 1.7 to 2.8 unless said,
+1440 × 900 points at 2 pixels a point, the status bar and the Embroidery panel drawn with the
+planning threads running, 90 frames of a drag at 60 Hz). "Before" is `large_design_drag_gate` with
+the canvas's two calls put back on the full walk, and `stitch_editing_gate` on `feat/embroidery`
+before this change; the figures are ranges over the runs:
+
+| On the design of 2 million needle points | Before | After |
 |---|---:|---:|
-| One anchor with Direct Selection, the art drawn (`large_design_drag_gate`; load 4 to 6) | 59.9 / 64.8 / 67.6 ms | 1.4 / 2.9 / 3.1 ms |
-| One needle point with the embroidery tool, the stitches drawn (the stitch-editing gate's design, on the second manual-stitches PR with this applied; load 2 to 7; ten runs without, eleven with) | 46–49 / 47–73 / 65–84 ms | 2.0–3.4 / 4.0–5.9 / 4.5–8.6 ms |
+| One anchor dragged with Direct Selection, a frame p50 / p95 / max (`large_design_drag_gate`, 3 runs; before at a load of 3.3 to 5.5) | 59.3–60.5 / 64.5–78.3 / 72–105 ms | 1.77–1.78 / 2.82–2.86 / 2.9–3.5 ms |
+| Everything selected and dragged with the Selection tool, a frame p50 / p95 (the same runs) | 161–166 / 180–194 ms | 84.1–84.4 / 100.8–106.1 ms |
+| One needle point dragged with the Embroidery Tool, a frame p95 / max (`stitch_editing_gate`, 5 runs) | 47.2–47.7 / 70–76 ms | 1.95–2.53 / 2.6–3.0 ms |
+| The stitches fresh after that drag, from the release press (3 runs) | 207–208 ms | 262–269 ms |
+| The marquee's release over a million needle points, one frame (5 runs) | 167–168 ms | 121–123 ms |
+| The stitches fresh after a million are dragged, from the release press (3 runs) | 167–168 ms | 150–166 ms |
+| The Lasso tool's release round the same million (2 runs) | 384–388 ms | 335–336 ms |
 
-Every frame of both drags is now well within a 60 Hz frame. After the embroidery tool's drag, the
-stitches of the document as it is are drawn 234 to 253 ms after the release with the cache, and
-210 to 227 ms after it without (four runs each). It isn't more work: with the drag's frames slowed
-by 45 ms, to the pace they had before, the same runs take 178 to 196 ms. A light design's plan of
-an earlier state is let finish before the last state is planned (Planning for the stitch preview),
-and how far it has got when the drag ends depends on the frames' pace.
+Every drag of one point is now well within a frame, and `stitch_editing_gate` budgets the one needle
+point on 2 million (`ONE_POINT_ON_2M_BUDGET_MS`, a 60 Hz frame). The canvas measures at most the
+three objects on the way up to the point's path each frame (the path, its thread's group, the
+layer), which `large_design_drag_gate` checks frame by frame, whatever the machine. A drag of
+everything measures every object again each frame, as the walk did, and takes half the time it did:
+before, each frame walked the art twice, for the scroll bars and again for the selection's frame of
+the 20 thread groups; the cache's frame measures once and reads the frame from its entries.
 
-Tests (`doc/src/tests_visual_bounds.rs`): an edit of one path of 2,000 (in 20 groups) measures the
-path, its group and the layer again, 3 objects of 2,021, with or without the version before kept,
-and undoing it the same 3; a path added measures 3, a path removed 2, a path restacked in its group
-2 and moved to another group 4, a group removed 1, and new symbols every object; an object inside a
-clipping group is measured on its own; and on random documents (paths stroked mitred or round,
-symbol instances of symbols holding instances, groups stroked or clipping, Intertwine groups,
-compound paths, sublayers, Repeats, some hidden) through random sessions of edits with undo, every
-answer (the art, each object, all of them at once) is the full walk's bit for bit, with never more
-entries than objects.
+The one figure that moves the other way is the stitches' catching up after one needle point's drag:
+55 to 60 ms later. It isn't more work. A light design's plan of an earlier state is let finish
+before the last state is planned (Planning for the stitch preview), and how far that plan has got
+when the drag ends depends on the frames' pace: with the drag's frames slowed by 45 ms to the pace
+they had before (measured on an earlier build), the cache's runs caught up sooner than before. A
+drag of a million, previewed only on a pause, isn't later.
+
+`vectorcraft-cli perf` and `perf --embroidery` measure the same before and after (`Node::visual`'s
+arms now run through `visual_by`), every row within noise: the render at fit 39.1 against 38.8 ms,
+a save 40.4 against 40.8, an open 115 against 112, the SVG export 160 against 158, a handle's drag on
+a path of 5,000 anchors 0.52 against 0.55 ms. On a flat layer (every path right in one layer, as a
+traced photo makes them; a local probe of the doc crate, 3 runs, medians of 5):
+
+| A flat layer of | 100,000 paths | 300,000 paths |
+|---|---:|---:|
+| The full walk (`Document::art_bounds`) | 12.1–12.6 ms | 35.1–37.0 ms |
+| The cache's first measure of the document | 14.2–14.8 ms | 40.9–43.2 ms |
+| One path moved | 0.43–0.54 ms | 3.5–3.6 ms |
+| The bottom path brought to the front / the top one sent to the back | 2.9 / 2.3 ms | 10.0–10.3 / 9.0–9.2 ms |
+| Everything selected, the selection's frame: ids one by one / in one walk / the full walk | 3.6 / 10.6–10.7 / 15.5–16.8 ms | 11.8–12.1 / 37.1–39.2 / 48.2–49.2 ms |
+
+The first measure of a document costs a little more than the walk (its entries made), once a
+document; everything after costs what changed, plus a pass over the siblings on the way up.
+Looking the selection's ids up one by one is also the quicker way: one walk first builds a map of
+every place.
+
+Tests (`doc/src/visual_bounds/tests.rs`):
+- **Counts.** An edit of one path of 2,000 (in 20 groups) measures the path, its group and the layer
+  again, 3 objects of 2,021, with or without the version before kept, and undoing it the same 3; a
+  path added measures 3, a path removed 2, a path restacked in its group 2 and moved to another group
+  4, a group removed 1; a symbol added to a design with no instance measures nothing, and with one
+  instance in a group, its art replaced or the symbol renamed measures the instance, its group and
+  the layer. A Shaper group's members come from their entries and its left-out source is measured on
+  its own; a clipping mask turned on drops its members' entries; measuring another document lets the
+  last one go.
+- **The full walk's answers.** On random documents through random sessions of edits with undo
+  (paths stroked mitred or round, symbol instances of symbols holding instances, groups stroked or
+  clipping, clipping and stroked sublayers, Intertwine groups, compound paths, Repeats, Shaper
+  groups, live traces, some hidden; edits that move, restroke, hide, add, remove and restack
+  objects, turn clipping masks on and off, copy an object keeping its id, put one object at two
+  places, add, remove and swap top-level layers, and rename, delete, add, swap or replace symbols;
+  another document measured between now and then), every answer (the art, each object, all of them
+  at once) is the full walk's, with exactly one entry for each object the cache keeps one for:
+  96 cases from the fork's fixed seed, up to 24 edits each, each edit checked. Each side looks ids
+  up on a clone of the document, which shares its id index as it is, so the comparison is exact for
+  a repeated id too.
+- **Boxes worked out by hand** for a stroked group, sublayer and top-level layer, a stroked
+  Intertwine group, a clipping layer and a clipping group with a stroked mask: an oracle sharing no
+  code with the walk or the cache.
+- **The assumption.** With every document field but the layers and the symbols taken from a document
+  that differs in each, the walk's answers and the cache's don't move.
+- Siblings sharing an id, an id repeated while the id index still holds its earlier place, a
+  document nested as deep as allowed (measured on a 1 MB stack). In the interface
+  (`ui-egui/src/embroidery/bounds.rs`), in CI: the canvas's two calls answer as the full walk after
+  an edit, an undo, a symbol made and renamed, another document and a document closed, an edit
+  measures only what it changed, a switch back nothing, and a closed document's cache goes.
 
 ### One embroidery tool
 
@@ -2891,14 +2960,17 @@ from the in-app gates, `stitch_editing_gate` and `manual_stitches_gate`, with re
 
 The last row is why the tab's flags are built with the plan on the planning thread: one walk is
 more than the 8 ms a frame may spend (`embroidery.stitches`'s own walk of the records takes
-11.6 ms). The marquee's release over a million needle points takes one frame of 165 ms (it writes a
-million into the selection), and the stitches are fresh 48 ms after a million are let go; held
-still mid-drag, the million preview once, in a frame of 229 ms. The Lasso tool round the same
-million, upstream's per-anchor selection (the project owner's choice): its frames 1.65 ms at the
-95th percentile, its release frame 369 ms, and 8.3 MB of params naming every needle point, where the
-marquee's command carries four numbers. Each of these figures on 2 million needle points includes
-the canvas measuring the whole art once, as it then did at every revision (a change of the
-selection is one); Editing a large design measures the drags without it. The edit look's budget is 1.5 times the same picture
+11.6 ms). On 2 million needle points, measured again on 2026-11-01 once the canvas measured only
+what an edit changed (each of these frames had held one walk of the whole art, a change of the
+selection being a revision; Editing a large design has the figures before and after): the
+marquee's release over a million takes one frame of 121 to 123 ms (it writes a million into the
+selection), and the stitches are fresh 150 to 166 ms after the release press of a million dragged;
+held still mid-drag, the million preview once, in a frame of 226 to 228 ms. The Lasso tool round
+the same million, upstream's per-anchor selection (the project owner's choice): its frames 1.43 to
+1.50 ms at the 95th percentile, its release frame 335 to 336 ms, and 8.3 MB of params naming every
+needle point, where the marquee's command carries four numbers. One needle point of the 2 million
+dragged: 1.95 to 2.53 ms a frame at the 95th percentile, within the frame `stitch_editing_gate`
+budgets. The edit look's budget is 1.5 times the same picture
 drawn plain, and 10 ms. Before the round (2026-10-31): the index built in 15.8 ms, the marquee 157 to
 160 ms, a drag at 9.6 ms, fresh within 19.8 ms, the million at 6.2 ms, and the command's walk of the
 records 11.7 ms.
@@ -3098,7 +3170,9 @@ Public documentation, cited per claim in the crate:
   (every language), `tests_handles.rs` (the tool's handles headless with real pointer events, and
   their contrast), `tests_gate.rs` (the third gate, the Object tab's scrub, the tool's drag, and
   the manual stitches' and stitch editing's gates, by hand), `tests_gate_large.rs` (one point of a
-  design of 2 million dragged, by hand), `tests_shots.rs` (the pictures, by hand).
+  design of 2 million dragged, and everything dragged, by hand), `tests_shots.rs` (the pictures, by
+  hand); `bounds.rs` (the canvas's bounds of each open document, measured only where an edit
+  changed it, and its test).
 - `crates/tools/src/embroidery/` — the embroidery tool: `mod.rs` (its gestures and keys),
   `handles.rs` (its kinds of handles and where they stand), `facts.rs` (what the engine hands it,
   `PlanFacts`, and the needle points, `NeedlePoints`), `editing.rs` (stitch editing's gestures and
@@ -3123,7 +3197,9 @@ Public documentation, cited per claim in the crate:
   document's fabric and machine; `embroidery/transform.rs`: the settings moved and turned with
   their object; `embroidery/mem.rs`: the memory they hold, for the undo history's budget);
   `crates/doc/src/visual_bounds.rs` — the visual bounds measured only where an edit changed the
-  document, which the canvas reads (its tests `tests_visual_bounds.rs`).
+  document, which the canvas reads (its tests `visual_bounds/tests.rs`);
+  `crates/doc/src/embroidery/seeded.rs` — the fixed seed the fork's property suites in the doc
+  crate run from.
 - `crates/engine/src/cmd/fileio/embroidery/` — the files' side: `mod.rs` (the export's options as
   `document.formats` lists them, and its entry point), `import.rs` (a design opened as art).
 - `crates/engine/tests/embroidery_corpus.rs` and `xtask/src/embroidery_corpus.rs` — the real
@@ -3147,7 +3223,8 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-11-01 | minor | The canvas's scroll-bar span and the selection's frame measured only where an edit changed the document (`vectorcraft_doc::visual_bounds`): each object's visual bounds kept by its address, a container's as the union of its members'; the same answers as the full walk, bit for bit; a point dragged on a design of 2 million measured (Architecture › Editing a large design). Brought up to date with manual stitches' second part, whose limit for dragging one needle point of 2 million (the walk this change removes) is gone. |
+| 2026-11-01 | minor | The canvas's bounds' review round: a container measured by upstream's own arms of `Node::visual` through `visual_by` (open recursion), not by a rule of the fork's; one cache per open document, in the fork's interface state, let go in the frame after the document closes; the Navigator's region from it; a change of the symbols measuring again only what reads them; members lined up through `IdMap`, each address read before its id; addresses compared only while their weak reference has a strong one; the selection's ids looked up one by one, as `Document::bounds_of` does; the one needle point dragged on 2 million budgeted in `stitch_editing_gate`; tests from the fork's fixed seed that reach the cache's own branches, boxes worked out by hand, the assumption that visual bounds read only the layers and the symbols tested; measured again on the merged code. |
+| 2026-11-01 | minor | The canvas's scroll-bar span and the selection's frame measured only where an edit changed the document (`vectorcraft_doc::visual_bounds`): each object's visual bounds kept by its address, a container's as the union of its members'; the same answers as the full walk; a point dragged on a design of 2 million measured (Architecture › Editing a large design). Brought up to date with manual stitches' second part, whose limit for dragging one needle point of 2 million (the walk this change removes) is gone. |
 | 2026-11-01 | minor | Manual stitches, second part, its review round: the Lasso tool keeps the edit look while stitches are edited (it still selects as it selects anchors); below 250 % a drag from a needle point or a stitch not selected draws a marquee, a click there selecting at the release; the panel's four tabs, the Stitches tab's chip, Space and its words table; stitch editing's files, tests and limits; the line renderer's rule; the pictures retaken; everything measured again (Using it › Editing stitches on the canvas, The Stitches tab; Architecture › Manual stitches and needle points). |
 | 2026-10-31 | minor | A fill's lifts and cuts, which the guard toward an exit compares, counted as they are sewn, by the joining's own code as each run is planned, at any shortest stitch (counted from a run's last point, they had differed from the stitches at shortest stitches over 0.4 mm); two sweeps test it, from every kind of start, toward exits, at shortest stitches of 0.4 to 2.5 mm. A lead's tie stitch at least the shortest stitch, so that it is sewn and the thread tied off on it before the jump. |
 | 2026-10-31 | minor | Manual stitches, second part, brought in step with the first part's review round: a Stitches tab click on a cut's or a stop's row selects the needle point it follows, and the records before an opened design's run name the needle point `embroidery.stitches` names; editing stitches on the canvas and the Stitches tab measured again (Architecture › Manual stitches and needle points). |

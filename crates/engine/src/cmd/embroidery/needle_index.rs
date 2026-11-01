@@ -196,11 +196,6 @@ impl PathIndex {
         Some(self.starts.get(s + 1)? - self.starts.get(s)?)
     }
 
-    /// Whether run `s` is a line to its own start: two anchors, one needle point.
-    fn collapsed(&self, s: usize) -> bool {
-        self.run_len(s).is_some_and(|len| len < self.anchors(s).len())
-    }
-
     /// Needle point `index`'s run and its place among the run's needle points.
     fn locate(&self, index: usize) -> Option<(usize, usize)> {
         if index >= self.needles {
@@ -223,20 +218,21 @@ impl PathIndex {
         self.anchors(s).get(i).map(|a| a.p)
     }
 
-    /// The anchors needle point `index` is: one, or both of a line to its own start.
+    /// The anchors needle point `index` is: one, or both of a run of one needle point (written as a
+    /// line to its own start), by the rule the stitch commands keep ([`needles::Index::anchors_of`]).
     fn anchors_of(&self, index: usize) -> Vec<(usize, usize)> {
         match self.locate(index) {
-            Some((s, _)) if self.collapsed(s) => vec![(s, 0), (s, 1)],
+            Some((s, _)) if self.run_len(s) == Some(1) => vec![(s, 0), (s, 1)],
             Some((s, i)) => vec![(s, i)],
             None => Vec::new(),
         }
     }
 
-    /// The needle point anchor `(s, a)` is (the second anchor of a line to its own start is its one
-    /// needle point).
+    /// The needle point anchor `(s, a)` is: either anchor of a run of one needle point is its one,
+    /// by the rule the stitch commands keep ([`needles::Index::needle_of_anchor`]).
     fn of_anchor(&self, (s, a): (usize, usize)) -> Option<usize> {
         let len = self.run_len(s)?;
-        let i = if self.collapsed(s) { 0 } else { a };
+        let i = if len == 1 { 0 } else { a };
         (i < len).then(|| self.starts.get(s).map(|first| first + i)).flatten()
     }
 
@@ -356,11 +352,6 @@ fn needles_in(n: &Node) -> usize {
     path.subpaths.iter().map(|sp| needles::needle_count(&sp.anchors, alone, marks.double_point)).fold(0, usize::saturating_add)
 }
 
-/// Whether `n` is a path holding a run of literal stitches.
-fn holds_stitches(n: &Node) -> bool {
-    matches!(n.kind, NodeKind::Path { .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some())
-}
-
 impl NeedleIndex {
     /// The index of the paths of stitches inside `roots` of `doc` (each root itself when it is one;
     /// each root once, and none inside another: [`outermost`]), each path reusing `kept`'s chunks
@@ -378,7 +369,7 @@ impl NeedleIndex {
         // opacity or on a layer that doesn't print, no guide, no run without a colour.
         fn walk(n: &Arc<Node>, clipped: bool, sewn: bool, out: &mut Vec<Found>) {
             let sewn = sewn && digitize::shows(n) && digitize::printed(n);
-            if holds_stitches(n) {
+            if needles::is_stitches(n) {
                 let guide = matches!(n.kind, NodeKind::Path { guide: true, .. });
                 out.push((n.clone(), clipped, sewn && !guide && digitize::run_colour(n).is_some()));
                 return;

@@ -106,29 +106,19 @@ impl ToolFacts {
         if let Some(v) = kept.get(&id) {
             return v.clone();
         }
-        let v = numbered(&self.planned.plan, id).map(Arc::new);
+        let v = numbered(&self.planned.plan, &self.snapshot, id).map(Arc::new);
         kept.insert(id, v.clone());
         v
     }
 }
 
-/// The record numbers `plan` gives path `id`'s needle points, in order, as `embroidery.stitches`
-/// numbers them: its unit's own needle-down records, after the record before them where the unit
-/// starts where the needle already was (its first needle point left to the unit before). `None`
-/// when no unit sews the path as its needle points.
-fn numbered(plan: &DesignPlan, id: NodeId) -> Option<Vec<usize>> {
-    let u = plan.units.iter().find(|u| u.origin.node == id && matches!(u.origin.part, Part::Manual | Part::Literal))?;
-    let block = plan.blocks.get(u.block)?;
-    let mut out = Vec::new();
-    if u.met {
-        out.push(block.first_number + u.own.start.checked_sub(1)?);
-    }
-    for i in u.own.clone() {
-        if block.stitches.get(i).is_some_and(|s| s.command == Command::Stitch) {
-            out.push(block.first_number + i);
-        }
-    }
-    Some(out)
+/// The record numbers `plan` (made from `doc`) gives path `id`'s needle points, in order, by the
+/// rule `embroidery.stitches` numbers them by ([`super::records::numbering`]); `None` when no unit
+/// sews the path as its needle points.
+fn numbered(plan: &DesignPlan, doc: &Document, id: NodeId) -> Option<Vec<usize>> {
+    let unit = plan.units.iter().position(|u| u.origin.node == id && matches!(u.origin.part, Part::Manual | Part::Literal))?;
+    let (_, first) = super::records::numbering(plan, doc, unit)?;
+    super::records::needle_numbers(plan, unit, first)
 }
 
 impl crate::Session {

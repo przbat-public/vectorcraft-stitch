@@ -578,3 +578,33 @@ fn a_path_of_many_short_runs_holds_few_chunks() {
         assert!(index.thread_at(at, tol).is_some_and(|h| (h.point.distance(at) - near).abs() < 1e-9), "on {a:?}–{b:?}");
     }
 }
+
+/// The index maps needle points to anchors and back by the stitch commands' rule
+/// (`needles::Index`): every needle point and anchor of the fixture's paths, and a run of one
+/// anchor, whose one needle point either anchor is.
+#[test]
+fn needle_points_and_anchors_map_as_the_stitch_commands_map_them() {
+    let mut s = Session::new();
+    let lone = NodeId(fx::manual(&mut runner(&mut s)).trim_before);
+    s.edit("A Run of One Anchor", |d, _| {
+        if let Some(vectorcraft_doc::NodeKind::Path { path, .. }) = d.node_mut(lone).map(|n| &mut n.kind) {
+            path.subpaths.push(vectorcraft_geom::SubPath { anchors: vec![vectorcraft_geom::Anchor::corner(Point::new(30.0, 30.0))], closed: false });
+        }
+        Ok(())
+    })
+    .unwrap();
+    let index = whole(&s);
+    let doc = s.doc().unwrap().doc.clone();
+    for id in index.ids() {
+        let ix = needles::read(doc.node(id).unwrap()).unwrap().index();
+        for k in 0..index.count(id) {
+            assert_eq!(index.anchors(NeedleRef { id, index: k }), ix.anchors_of(k), "{id:?} needle point {k}");
+        }
+        let path = doc.node(id).unwrap().path_data().unwrap();
+        for (sp, a) in path.subpaths.iter().enumerate().flat_map(|(sp, p)| (0..=p.anchors.len()).map(move |a| (sp, a))) {
+            assert_eq!(index.of_anchor(id, (sp, a)), ix.needle_of_anchor((sp, a)), "{id:?} anchor {:?}", (sp, a));
+        }
+    }
+    let last = index.count(lone) - 1;
+    assert_eq!(index.anchors(NeedleRef { id: lone, index: last }).len(), 2, "a run of one anchor: both of its anchors");
+}

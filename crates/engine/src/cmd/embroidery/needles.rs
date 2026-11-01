@@ -344,7 +344,7 @@ impl Index {
     /// The needle point anchor `(subpath, anchor)` is, of stitches read from a path (a run a
     /// subpath): the second anchor of a line to its own start is its one needle point; an anchor
     /// past a run's needle points otherwise (one an edit since left stale) is none.
-    fn needle_of_anchor(&self, (s, a): (usize, usize)) -> Option<usize> {
+    pub(crate) fn needle_of_anchor(&self, (s, a): (usize, usize)) -> Option<usize> {
         let len = self.run_len(s);
         let i = if len == 1 { 0 } else { a };
         (i < len).then(|| self.index_of(s, i))
@@ -365,8 +365,7 @@ pub(crate) fn count(n: &Node) -> Option<usize> {
     let NodeKind::Path { path, .. } = &n.kind else { return None };
     let marks = n.extras().embroidery.as_deref()?.stitches.as_ref()?;
     let alone = path.subpaths.len() == 1;
-    let one = |sp: &SubPath| matches!(sp.anchors.as_slice(), [a, b] if one_needle_point(a.p.distance(b.p) * MM_PER_PT, alone, marks.double_point));
-    Some(path.subpaths.iter().map(|sp| if one(sp) { 1 } else { sp.anchors.len() }).sum())
+    Some(path.subpaths.iter().map(|sp| needle_count(&sp.anchors, alone, marks.double_point)).sum())
 }
 
 impl Stitches {

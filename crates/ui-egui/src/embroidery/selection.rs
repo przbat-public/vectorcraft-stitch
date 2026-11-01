@@ -176,8 +176,10 @@ fn build(doc: &Document, sel: &Selection, paths: &[(NodeId, bool)], limits: &Sti
         for s in runs {
             let Some(sp) = path.subpaths.get(s) else { continue };
             let len = vectorcraft_engine::cmd::embroidery::needle_count(&sp.anchors, alone, double_point);
+            // Either anchor of a run of one needle point is its one (the rule the stitch commands
+            // keep).
             let picked = |a: usize| match chosen {
-                Some(set) => set.contains(&(s, a)) || (len == 1 && sp.anchors.len() == 2 && set.contains(&(s, 1))),
+                Some(set) => set.contains(&(s, a)) || (len == 1 && set.range((s, 0)..=(s, usize::MAX)).next().is_some()),
                 None => true,
             };
             // The run's needle points selected: those of its anchors selected (a run of one needle

@@ -37,6 +37,16 @@ impl Record {
     pub(crate) fn moved(&self) -> f64 {
         self.before.map_or(0.0, |b| b.distance(self.stitch))
     }
+
+    /// Its length as the records list it, millimetres: the thread a needle-down stitch lays
+    /// ([`Record::sewn`]), a jump's move ([`Record::moved`]); `None` for a cut or a stop.
+    pub(crate) fn length(&self) -> Option<f64> {
+        match self.stitch.command {
+            Command::Stitch => self.sewn(),
+            Command::Jump => Some(self.moved()),
+            _ => None,
+        }
+    }
 }
 
 /// How a unit is sewn ([`super::plan::Unit::sewn`]), `None` for a literal run (points sewn as they

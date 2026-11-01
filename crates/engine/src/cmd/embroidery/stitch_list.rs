@@ -21,7 +21,7 @@ use vectorcraft_geom::Point;
 use vectorcraft_stitch::Command;
 
 use super::check::StitchLimits;
-use super::plan::{DesignPlan, Part};
+use super::plan::DesignPlan;
 
 pub use super::records::RecordKind;
 
@@ -296,11 +296,7 @@ pub fn row(plan: &DesignPlan, number: usize) -> Option<Row> {
         Some(i) => block.stitches.get(i).copied(),
         None => k.checked_sub(1).and_then(|b| plan.blocks.get(b)).and_then(|b| b.stitches.last().copied()),
     };
-    let length = match stitch.command {
-        Command::Stitch => before.filter(|b| index > 0 && b.command == Command::Stitch).map(|b| b.distance(stitch)),
-        Command::Jump => Some(before.map_or(0.0, |b| b.distance(stitch))),
-        _ => None,
-    };
+    let length = super::measure::Record { number, unit, stitch, before, same_block: index > 0 }.length();
     Some(Row {
         record: number,
         kind: RecordKind::of(stitch.command),
@@ -345,31 +341,10 @@ pub fn scope(plan: &DesignPlan, doc: &Document, ids: &[NodeId]) -> Vec<Range<usi
     out
 }
 
-/// The path unit `unit` sews where its records number the path's needle points, as
-/// `embroidery.stitches` names them, and the needle point its first own needle-down record is (1
-/// when it starts where the needle already was); `None` for a unit that isn't one (planned art, a
-/// symbol's art, a file's run cut by a clip group, a locked or hidden path, a path whose needle
-/// points the records don't count one to one).
-pub fn numbering(plan: &DesignPlan, doc: &Document, unit: usize) -> Option<(NodeId, usize)> {
-    let u = plan.units.get(unit)?;
-    let node = u.origin.node;
-    let manual = matches!(u.origin.part, Part::Manual);
-    if !(manual || matches!(u.origin.part, Part::Literal))
-        || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted))
-    {
-        return None;
-    }
-    let n = doc.node(node)?;
-    let clipped = !manual && doc.ancestry(node).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|a| a.clips()));
-    if !doc.is_editable(node) || clipped {
-        return None;
-    }
-    let needles = super::needles::check(n).ok()?;
-    let block = plan.blocks.get(u.block)?;
-    let sewn = block.stitches.get(u.own.clone()).map_or(0, |s| s.iter().filter(|s| s.command == Command::Stitch).count());
-    let first = usize::from(u.met);
-    (needles == sewn + first).then_some((node, first))
-}
+/// The path unit `unit` sews where its records number the path's needle points, and the needle
+/// point its first own needle-down record is: `embroidery.stitches`' rule
+/// ([`super::records::numbering`]).
+pub use super::records::numbering;
 
 /// For each record of unit `unit` (its range, [`DesignPlan::numbers`]), how many of the unit's own
 /// needle-down records come before it: the needle point a record is edited by is the numbering's
@@ -401,11 +376,7 @@ pub fn edited_by(plan: &DesignPlan, unit: usize, first: usize, ordinals: &[u32],
     if !u.own.contains(&at) {
         return None;
     }
-    let k = first + *ordinals.get(at.checked_sub(u.stitches.start)?)? as usize;
-    match kind {
-        RecordKind::Trim | RecordKind::Stop => k.checked_sub(1),
-        RecordKind::Stitch | RecordKind::Jump => Some(k),
-    }
+    kind.edited_needle(first, *ordinals.get(at.checked_sub(u.stitches.start)?)? as usize)
 }
 
 /// The needle points unit `unit`'s records before its own are edited by, as `embroidery.stitches`
@@ -429,12 +400,11 @@ pub fn leading(plan: &DesignPlan, doc: &Document, unit: usize, first: usize) -> 
     for at in u.stitches.start..u.own.start {
         let Some(s) = block.stitches.get(at) else { break };
         let number = block.first_number + at;
-        match s.command {
-            Command::Jump => out.push((number, (u.origin.node, first))),
-            Command::Trim | Command::Stop => out.extend(last.map(|l| (number, l))),
-            // A needle-down record that isn't numbered: nothing after it follows a needle point.
-            Command::Stitch => last = None,
-            Command::ColorChange => {}
+        // A needle-down record that isn't numbered: nothing after it follows a needle point.
+        if s.command == Command::Stitch {
+            last = None;
+        } else if let Some(at) = super::records::leading_needle(s.command, (u.origin.node, first), last) {
+            out.push((number, at));
         }
     }
     out

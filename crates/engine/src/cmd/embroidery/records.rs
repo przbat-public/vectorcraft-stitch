@@ -10,7 +10,7 @@
 //! can be edited, not cut by a clip group (manual stitches never are), and whose needle-down records
 //! are as many as its needle points. Elsewhere `index` is `null` and `editable` false.
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::{Document, NodeId};
@@ -18,7 +18,7 @@ use vectorcraft_stitch::Command;
 
 use super::measure;
 use super::needles;
-use super::plan::{DesignPlan, Part, Unit};
+use super::plan::{DesignPlan, Part};
 use super::stats::Page;
 use crate::cmd::bad;
 
@@ -48,6 +48,17 @@ impl RecordKind {
             Self::Jump => "jump",
             Self::Trim => "trim",
             Self::Stop => "stop",
+        }
+    }
+
+    /// The needle point a record of this kind of a unit's own is edited by, the unit numbered from
+    /// `first` ([`numbering`]) and `count` of its own needle-down records before it: a needle point
+    /// itself, the one a jump lands on, the one before a cut or a stop.
+    pub(crate) fn edited_needle(self, first: usize, count: usize) -> Option<usize> {
+        let k = first.checked_add(count)?;
+        match self {
+            Self::Stitch | Self::Jump => Some(k),
+            Self::Trim | Self::Stop => k.checked_sub(1),
         }
     }
 
@@ -141,9 +152,10 @@ impl Ask {
     }
 }
 
-/// One record as the reply lists it.
+/// One record as the reply lists it (its block and unit numbered from 1; the Stitches tab's
+/// [`super::stitch_list::Row`] numbers them as indices, from 0).
 #[derive(Clone, Debug)]
-pub(crate) struct Row {
+pub(crate) struct ReplyRow {
     pub(crate) record: usize,
     pub(crate) kind: RecordKind,
     pub(crate) at: [f64; 2],
@@ -157,54 +169,83 @@ pub(crate) struct Row {
     pub(crate) index: Option<usize>,
 }
 
-/// Each unit's path, where its records number that path's needle points ([`self`]'s rule): the
-/// path, and the needle point its first own needle-down record is (1 when it starts where the
-/// needle already was: its first needle point is the record before, left to the unit before).
-fn numbered(plan: &DesignPlan, doc: &Document) -> Vec<Option<(NodeId, usize)>> {
-    let mut sewn = vec![0usize; plan.units.len()];
-    for b in &plan.blocks {
-        for k in b.units.clone() {
-            let Some(u) = plan.units.get(k) else { continue };
-            let count = b.stitches.get(u.own.clone()).map_or(0, |s| s.iter().filter(|s| s.command == Command::Stitch).count());
-            if let Some(slot) = sewn.get_mut(k) {
-                *slot = count;
-            }
-        }
+/// Where unit `unit` of `plan` (made from `doc`) numbers the needle points of the path it sews
+/// ([`self`]'s rule): the path, and the needle point its first own needle-down record is (1 when
+/// it starts where the needle already was: its first needle point is the record before, left to
+/// the unit before); `None` for a unit that isn't one (planned art, a symbol's art, a file's run cut
+/// by a clip group, a locked or hidden path, a path whose needle points the records don't count one
+/// to one). The one rule the reply, the Stitches tab and the canvas's range pills number by.
+pub fn numbering(plan: &DesignPlan, doc: &Document, unit: usize) -> Option<(NodeId, usize)> {
+    numbered_unit(plan, doc, unit, &|id| doc.is_editable(id), &mut HashMap::new())
+}
+
+/// [`numbering`] of unit `unit`, given whether a node can be edited (`editable`) and how many
+/// needle points each path holds that the stitch commands can edit (`measured`: worked out once a
+/// path, `None` for one they can't).
+fn numbered_unit(
+    plan: &DesignPlan,
+    doc: &Document,
+    unit: usize,
+    editable: &dyn Fn(NodeId) -> bool,
+    measured: &mut HashMap<NodeId, Option<usize>>,
+) -> Option<(NodeId, usize)> {
+    let u = plan.units.get(unit)?;
+    let node = u.origin.node;
+    let manual = matches!(u.origin.part, Part::Manual);
+    if !(manual || matches!(u.origin.part, Part::Literal))
+        || u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted))
+    {
+        return None;
     }
-    // The units a path of stitches the commands can edit sews, and those paths found in one walk:
-    // what can be edited measured once for them all, each path counted without reading it.
-    let literal = |u: &Unit| {
-        let node = u.origin.node;
-        (matches!(u.origin.part, Part::Manual | Part::Literal)
-            && !u.origin.instance.is_some_and(|i| i != node && !doc.node(i).is_some_and(super::digitize::is_converted)))
-        .then_some(node)
-    };
-    let nodes: HashSet<NodeId> = plan.units.iter().filter_map(literal).collect();
-    let paths = doc.index_paths(nodes.iter().copied());
+    let len = *measured.entry(node).or_insert_with(|| {
+        let path = doc.index_path(node)?;
+        let n = doc.node_at(&path)?;
+        let clipped = !manual && doc.ancestry_at(&path).unwrap_or_default().iter().any(|a| doc.node(*a).is_some_and(|a| a.clips()));
+        (editable(node) && !clipped).then(|| needles::check(n).ok()).flatten()
+    });
+    let block = plan.blocks.get(u.block)?;
+    let sewn = block.stitches.get(u.own.clone()).map_or(0, |s| s.iter().filter(|s| s.command == Command::Stitch).count());
+    let first = usize::from(u.met);
+    (len == Some(sewn + first)).then_some((node, first))
+}
+
+/// Each unit's [`numbering`], what can be edited measured once for them all.
+fn numbered(plan: &DesignPlan, doc: &Document) -> Vec<Option<(NodeId, usize)>> {
     let editable = doc.editable();
-    let mut lengths: HashMap<NodeId, Option<usize>> = HashMap::new();
-    plan.units
-        .iter()
-        .zip(sewn)
-        .map(|(u, sewn)| {
-            let node = literal(u)?;
-            let manual = matches!(u.origin.part, Part::Manual);
-            let len = *lengths.entry(node).or_insert_with(|| {
-                let path = paths.get(&node)?;
-                let n = doc.node_at(path)?;
-                let ancestors = doc.ancestry_at(path).unwrap_or_default();
-                let clipped = !manual && ancestors.iter().any(|a| doc.node(*a).is_some_and(|a| a.clips()));
-                (editable(node) && !clipped).then(|| needles::check(n).ok()).flatten()
-            });
-            let first = usize::from(u.met);
-            (len == Some(sewn + first)).then_some((node, first))
-        })
-        .collect()
+    let mut measured = HashMap::new();
+    (0..plan.units.len()).map(|unit| numbered_unit(plan, doc, unit, &editable, &mut measured)).collect()
+}
+
+/// The record numbers unit `unit` of `plan` gives its path's needle points, in order, the unit
+/// numbered from `first` ([`numbering`]): the record before its own when it starts where the needle
+/// already was, then its own needle-down records.
+pub(crate) fn needle_numbers(plan: &DesignPlan, unit: usize, first: usize) -> Option<Vec<usize>> {
+    let u = plan.units.get(unit)?;
+    let block = plan.blocks.get(u.block)?;
+    let mut out = Vec::new();
+    if first > 0 {
+        out.push(block.first_number + u.own.start.checked_sub(1)?);
+    }
+    out.extend(u.own.clone().filter(|i| block.stitches.get(*i).is_some_and(|s| s.command == Command::Stitch)).map(|i| block.first_number + i));
+    Some(out)
+}
+
+/// The needle point a record among a unit's records before its own (an opened design's run, which
+/// the cut and the jump onto it the file had come before) is edited by, a record of command
+/// `command`: a jump lands on the unit's first needle point (`first`, the path and its place), a
+/// cut or a stop follows `last` (the needle point the last needle-down record before it in its
+/// block is, where that record is numbered); anything else none.
+pub(crate) fn leading_needle<T>(command: Command, first: T, last: Option<T>) -> Option<T> {
+    match command {
+        Command::Jump => Some(first),
+        Command::Trim | Command::Stop => last,
+        _ => None,
+    }
 }
 
 /// The rows of `plan` (of `doc`) that `ask` matches, in sewing order, as `f` takes them: with how
 /// many records there are. Walks every record once; stops early when the work is cancelled.
-pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnMut(Row)) -> usize {
+pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnMut(ReplyRow)) -> usize {
     let numbered = numbered(plan, doc);
     // Each unit's needle-down records so far among its own.
     let mut counts = vec![0usize; plan.units.len()];
@@ -228,41 +269,29 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
         let index = match (numbered.get(r.unit).copied().flatten(), place) {
             (Some((_, first)), Some(_)) => {
                 let count = counts.get(r.unit).copied().unwrap_or(0);
-                match r.stitch.command {
-                    Command::Stitch => {
-                        if let Some(c) = counts.get_mut(r.unit) {
-                            *c += 1;
-                        }
-                        last_needle = Some((u.block, node, first + count));
-                        Some(first + count)
+                let k = kind.edited_needle(first, count);
+                if r.stitch.command == Command::Stitch {
+                    if let Some(c) = counts.get_mut(r.unit) {
+                        *c += 1;
                     }
-                    // A jump: the needle point it lands on.
-                    Command::Jump => Some(first + count),
-                    // A cut or a stop: the needle point before it.
-                    _ => (first + count).checked_sub(1),
+                    last_needle = k.map(|k| (u.block, node, k));
                 }
+                k
             }
-            (Some((_, first)), None) if leading => match r.stitch.command {
-                Command::Jump => Some(first),
-                Command::Trim | Command::Stop => match last_needle.filter(|(b, ..)| *b == u.block) {
-                    Some((_, before, k)) => {
-                        node = before;
-                        Some(k)
-                    }
-                    None => None,
-                },
-                _ => None,
-            },
+            (Some((_, first)), None) if leading => {
+                let last = last_needle.filter(|(b, ..)| *b == u.block).map(|(_, before, k)| (before, k));
+                let at = leading_needle(r.stitch.command, (node, first), last);
+                if let Some((before, _)) = at {
+                    node = before;
+                }
+                at.map(|(_, k)| k)
+            }
             _ => None,
         };
         if index.is_none() && r.stitch.command == Command::Stitch {
             last_needle = None;
         }
-        let length = match r.stitch.command {
-            Command::Stitch => r.sewn(),
-            Command::Jump => Some(r.moved()),
-            _ => None,
-        };
+        let length = r.length();
         if ask.from.is_some_and(|from| r.number < from) || ask.to.is_some_and(|to| r.number > to) {
             return;
         }
@@ -278,7 +307,7 @@ pub(crate) fn rows(plan: &DesignPlan, doc: &Document, ask: &Ask, mut f: impl FnM
         {
             return;
         }
-        f(Row { record: r.number, kind, at: [r.stitch.x, r.stitch.y], length, id, node, block: u.block + 1, unit: r.unit + 1, index });
+        f(ReplyRow { record: r.number, kind, at: [r.stitch.x, r.stitch.y], length, id, node, block: u.block + 1, unit: r.unit + 1, index });
     });
     total
 }

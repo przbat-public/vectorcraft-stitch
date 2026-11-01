@@ -323,7 +323,7 @@ fn the_tool_edits_needle_points_in_isolation_of_a_stitch_object() {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 64, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// A lasso's inside, against a plain even-odd test over every edge, for random polygons and
     /// points.

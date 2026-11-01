@@ -156,7 +156,7 @@ fn place(spot: Spot, points: &[Point]) -> (f64, f64) {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 40, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(40))]
 
     #[test]
     fn stitch_editing_never_breaks_a_session(

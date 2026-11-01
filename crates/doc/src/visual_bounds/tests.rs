@@ -299,6 +299,131 @@ fn a_document_as_deep_as_allowed_is_measured_on_a_1_mb_stack() {
         .unwrap();
 }
 
+/// A 10 × 10 square at the origin, filled, unstroked: its bounds are its own box.
+fn square(d: &mut Document) -> Arc<Node> {
+    Arc::new(Node::path(
+        d.alloc_id(),
+        shapes::rectangle(Rect::new(0.0, 0.0, 10.0, 10.0)),
+        Appearance::basic(Paint::solid(Color::WHITE), Paint::None, 0.0),
+    ))
+}
+
+/// A 2 pt stroke with round joins and butt caps: it reaches 1 pt past its path on every side.
+fn round_stroke() -> Appearance {
+    let mut a = Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 2.0);
+    if let Some(s) = a.stroke_mut() {
+        s.join = LineJoin::Round;
+    }
+    a
+}
+
+/// Boxes worked out by hand for the containers whose bounds the cache unions: an oracle that shares
+/// no code with the walk or the cache. A 10 × 10 square in a group, in a sublayer and in a
+/// top-level layer, each with a 2 pt stroke of its own reaching 1 pt, grown by it; in an Intertwine
+/// group with that stroke, not grown; under a clipping layer, its mask's box; under a clipping group
+/// whose mask is stroked, the stroked mask's box.
+#[test]
+fn containers_measure_as_worked_out_by_hand() {
+    let mut doc = Document::new(100.0, 100.0);
+    let layer = doc.layers.first().map(|l| l.id);
+    let mask = |d: &mut Document, a: Appearance| Arc::new(Node::path(d.alloc_id(), shapes::rectangle(Rect::new(20.0, 20.0, 30.0, 30.0)), a));
+    let mut group = Node::group(doc.alloc_id(), vec![square(&mut doc)]);
+    group.appearance = round_stroke().into();
+    let mut sublayer = Node::layer(doc.alloc_id(), "stroked", LayerColor::Preset(1));
+    if let Some(c) = sublayer.children_mut() {
+        c.push(square(&mut doc));
+    }
+    sublayer.appearance = round_stroke().into();
+    let mut intertwine = Node::new(doc.alloc_id(), NodeKind::Intertwine { children: vec![square(&mut doc)] });
+    intertwine.appearance = round_stroke().into();
+    let mut clipping_layer = Node::layer(doc.alloc_id(), "clipping", LayerColor::Preset(2));
+    let unstroked = Appearance::basic(Paint::solid(Color::WHITE), Paint::None, 0.0);
+    if let NodeKind::Layer { children, clip, .. } = &mut clipping_layer.kind {
+        (*children, *clip) = (vec![mask(&mut doc, unstroked), square(&mut doc)], true);
+    }
+    let clipping_group = Node::new(doc.alloc_id(), NodeKind::Group { children: vec![mask(&mut doc, round_stroke()), square(&mut doc)], clip: true });
+    let cases = [
+        (group, Rect::new(-1.0, -1.0, 11.0, 11.0), "a stroked group"),
+        (sublayer, Rect::new(-1.0, -1.0, 11.0, 11.0), "a stroked sublayer"),
+        (intertwine, Rect::new(0.0, 0.0, 10.0, 10.0), "a stroked Intertwine group"),
+        (clipping_layer, Rect::new(20.0, 20.0, 30.0, 30.0), "a clipping layer"),
+        (clipping_group, Rect::new(19.0, 19.0, 31.0, 31.0), "a clipping group with a stroked mask"),
+    ];
+    let mut cache = VisualBounds::default();
+    for (n, want, what) in cases {
+        let id = doc.insert(layer, usize::MAX, n).unwrap();
+        assert_eq!(doc.bounds_of(&[id], true), Some(want), "the walk, {what}");
+        assert_eq!(cache.bounds_of(&doc, &[id]), Some(want), "the cache, {what}");
+    }
+    // A top-level layer with that stroke: the art's bounds.
+    let mut alone = Document::new(100.0, 100.0);
+    let only = square(&mut alone);
+    if let Some(l) = alone.layers.first_mut() {
+        let l = Arc::make_mut(l);
+        l.appearance = round_stroke().into();
+        if let Some(c) = l.children_mut() {
+            c.push(only);
+        }
+    }
+    assert_eq!(alone.art_bounds(), Some(Rect::new(-1.0, -1.0, 11.0, 11.0)), "the walk, a stroked top-level layer");
+    assert_eq!(VisualBounds::default().art_bounds(&alone), Some(Rect::new(-1.0, -1.0, 11.0, 11.0)), "the cache, a stroked top-level layer");
+}
+
+/// Random documents measured with every field but their layers and symbols taken from
+/// [`donor_document`].
+const DOCUMENTS_SWAPPED: u64 = 32;
+
+/// A document that differs from a new one in the fields the walk could read besides its layers and
+/// symbols: its artboards, units, rulers' origin, colour mode, guides, graphic styles, unknown
+/// keys (a perspective grid), embroidery settings, page and raster settings.
+fn donor_document() -> Document {
+    let mut d = Document::new(500.0, 300.0);
+    d.title = "donor".into();
+    d.units = crate::Unit::Millimeters;
+    d.ruler_origin = vectorcraft_geom::Point::new(17.0, 23.0);
+    d.color_mode = crate::ColorMode::Cmyk;
+    if let Some(mut board) = d.artboards.first().cloned() {
+        (board.id, board.rect) = (2, Rect::new(600.0, 0.0, 900.0, 200.0));
+        d.artboards.push(board);
+    }
+    d.guides.push(crate::Guide::new(true, 40.0));
+    d.graphic_styles = vec![crate::GraphicStyle::new("Thick", Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 12.0))].into();
+    let mut unknown = serde_json::Map::new();
+    unknown.insert("perspectiveGrid".into(), serde_json::json!({ "horizon": 120.0, "left": [0.0, 300.0], "right": [500.0, 300.0] }));
+    d.unknown = unknown.into();
+    d.embroidery = Some(Box::default());
+    (d.raster_effects_ppi, d.page_isolate, d.page_knockout, d.spot_use_lab, d.transparency_grid) = (300.0, true, true, false, true);
+    d
+}
+
+/// The cache keeps boxes by address, which is right only while visual bounds read nothing of a
+/// document but its layers and its symbols. With every other field taken from another document,
+/// the full walk's answers, and the cache's, stay as they are.
+#[test]
+fn visual_bounds_read_only_the_layers_and_the_symbols() {
+    let donor = serde_json::to_value(donor_document()).unwrap();
+    for seed in 0..DOCUMENTS_SWAPPED {
+        let own = serde_json::to_value(random_document(&mut Rng(seed))).unwrap();
+        let base: Document = serde_json::from_value(own.clone()).unwrap();
+        let mut mixed = donor.clone();
+        for key in ["layers", "symbols"] {
+            match own.get(key) {
+                Some(v) => mixed[key] = v.clone(),
+                None => {
+                    mixed.as_object_mut().unwrap().remove(key);
+                }
+            }
+        }
+        let swapped: Document = serde_json::from_value(mixed).unwrap();
+        assert_ne!(swapped.artboards, base.artboards, "seed {seed}: the other fields come from the donor");
+        assert_eq!(bits(swapped.art_bounds()), bits(base.art_bounds()), "seed {seed}");
+        assert_eq!(bits(VisualBounds::default().art_bounds(&swapped)), bits(base.art_bounds()), "seed {seed}, the cache");
+        for id in objects(&base).0 {
+            assert_eq!(bits(swapped.bounds_of(&[id], true)), bits(base.bounds_of(&[id], true)), "seed {seed}, object {id}");
+        }
+    }
+}
+
 /// A small random number generator (SplitMix64), so that one proptest seed makes a document and a
 /// session of edits.
 struct Rng(u64);

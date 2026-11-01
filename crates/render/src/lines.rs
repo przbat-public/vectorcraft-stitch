@@ -2,10 +2,12 @@
 //! them drawn as thin links, and points marked, all drawn by [`LineRenderer`] with a look chosen at
 //! draw time ([`LineStyle`]). Fork-owned (VectorCraft Stitch): the stitch preview's drawing.
 //!
-//! Nothing here knows about stitches. The engine builds a picture from a design's stitch plan
-//! (`cmd::embroidery::scene`): each run of needle points a line in its thread's slot, each jump a
-//! link, each cut and stop a mark, with the plan's record numbers. The canvas, headless renders
-//! and later views draw that picture through one function, so they show the same pixels.
+//! Nothing here knows the stitch plan (the renderer depends on no part of `vectorcraft-stitch`);
+//! the edit look alone judges a stitch, by the document crate's `StitchRule`, the one rule the
+//! canvas, the Check tab and the stitch commands share. The engine builds a picture from a design's
+//! stitch plan (`cmd::embroidery::scene`): each run of needle points a line in its thread's slot,
+//! each jump a link, each cut and stop a mark, with the plan's record numbers. The canvas, headless
+//! renders and later views draw that picture through one function, so they show the same pixels.
 //!
 //! **Geometry only.** A picture holds points (`f32` offsets from an `f64` origin, in picture
 //! units), each with its number, and lines of at most [`MAX_LINE_POINTS`] points (consecutive pieces

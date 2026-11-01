@@ -737,6 +737,13 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   to, not jumped to, its inner cuts and stops ignored, placed by the file's rules, cut again by a
   clip group.
   Upstream keeping a node's unknown keys would fix it (a proposal for upstream).
+- **The Contextual Task Bar's items have no names for screen readers:** upstream's bar paints each
+  item's words over a click area that gives no `widget_info`, so every item, its own and the stitch
+  actions the fork puts there while stitches are edited (`embroidery/task_bar.rs`), is an unnamed
+  node: Trim and Stop can't be told apart. The stitch actions are named in the panel's ≡ menu and
+  the Stitches tab's foot. Upstream giving each item
+  `widget_info(|| WidgetInfo::labeled(WidgetType::Button, true, label))` would name them all, its
+  own too (a proposal for upstream, not filed; no hook of the fork's for it).
 
 ## Practicalities
 

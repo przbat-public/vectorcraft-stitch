@@ -74,7 +74,7 @@ fn brute(chain: &[JoinShape], at: usize, before: Option<Point>, chosen: &mut Vec
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 512, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(512))]
 
     /// The programme's choice is the cheapest of every choice, and costs what it says.
     #[test]

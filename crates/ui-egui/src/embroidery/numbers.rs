@@ -138,6 +138,17 @@ pub fn percent(lang: Lang, value: u64) -> String {
 /// "12.7", "1"), its whole part grouped as [`count`] groups: Polish "0,38", "12 345,6". Not a
 /// number: [`NOT_A_NUMBER`].
 pub fn decimal(lang: Lang, v: f64, places: usize) -> String {
+    written(lang, v, places, false)
+}
+
+/// `v` as `lang` writes it to exactly `places` decimals, trailing zeros kept ("1.00", Polish
+/// "13,60"): a column of them lines up. Not a number: [`NOT_A_NUMBER`].
+pub fn fixed(lang: Lang, v: f64, places: usize) -> String {
+    written(lang, v, places, true)
+}
+
+/// [`decimal`] or [`fixed`]: `v` to `places` decimals, its trailing zeros kept or left out.
+fn written(lang: Lang, v: f64, places: usize, zeros: bool) -> String {
     if !v.is_finite() {
         return NOT_A_NUMBER.to_string();
     }
@@ -148,9 +159,9 @@ pub fn decimal(lang: Lang, v: f64, places: usize) -> String {
         None => ("", text.as_str()),
     };
     let (whole, fraction) = body.split_once('.').unwrap_or((body, ""));
-    let fraction = fraction.trim_end_matches('0');
+    let fraction = if zeros { fraction } else { fraction.trim_end_matches('0') };
     // Rounded to nothing (−0.001 to two places, or −0 itself): no sign before a zero.
-    let zero = whole.bytes().all(|b| b == b'0') && fraction.is_empty();
+    let zero = whole.bytes().all(|b| b == b'0') && fraction.bytes().all(|b| b == b'0');
     let mut out = String::new();
     if !zero {
         out.push_str(sign);

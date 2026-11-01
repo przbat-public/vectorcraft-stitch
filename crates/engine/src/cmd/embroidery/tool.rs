@@ -15,9 +15,10 @@ use vectorcraft_doc::embroidery::PartKind;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::{Command, mm_to_pt};
-use vectorcraft_tools::embroidery::{FillAngle, PlanFacts, PlannedEnds};
+use vectorcraft_tools::embroidery::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, SelectedSpan, ThreadHit};
 
-use super::plan::Part;
+use super::needle_index::NeedleIndex;
+use super::plan::{DesignPlan, Part};
 use super::service::Planned;
 
 /// One plan's answers: where each object's part is sewn (document points: its first and last
@@ -31,6 +32,9 @@ pub(crate) struct ToolFacts {
     /// The plan, for its stitch scene: built when a press first asks what lies under it (in the
     /// app the planning thread has built it already).
     planned: Planned,
+    /// The record numbers the plan gives each path of stitches' needle points, worked out the first
+    /// time a path being edited asks ([`ToolFacts::numbers_of`]): bounded by the paths edited.
+    numbers: std::sync::Mutex<HashMap<NodeId, Option<Arc<Vec<usize>>>>>,
 }
 
 /// Where one object's part is sewn, and its neighbours along the thread.
@@ -73,7 +77,7 @@ impl ToolFacts {
             let kind = match u.origin.part {
                 Part::Fill(_) => PartKind::Fill,
                 Part::Stroke(_) => PartKind::Stroke,
-                Part::Literal => continue,
+                Part::Literal | Part::Manual => continue,
             };
             let Some(Some((first, last, _, _))) = units.get(i).copied() else { continue };
             ends.entry((u.origin.selected(), kind))
@@ -85,8 +89,36 @@ impl ToolFacts {
         }
         let doc_layer = super::resolve::DocLayer::of(&snapshot);
         let trim = mm_to_pt(super::resolve::DesignSettings::new(&super::Options::default(), &doc_layer).0.connect.trim);
-        Self { generation: planned.generation, snapshot, ends, trim, planned: planned.clone() }
+        Self { generation: planned.generation, snapshot, ends, trim, planned: planned.clone(), numbers: std::sync::Mutex::default() }
     }
+
+    /// The plan these answers are of.
+    #[cfg(test)]
+    pub(crate) fn plan(&self) -> Arc<DesignPlan> {
+        self.planned.plan.clone()
+    }
+
+    /// The record numbers the plan gives path `id`'s needle points, in order (`None`: the plan
+    /// sews no unit of it as its needle points), worked out the first time it is asked.
+    fn numbers_of(&self, id: NodeId) -> Option<Arc<Vec<usize>>> {
+        // A lock poisoned by a panic elsewhere: no numbers, never a second panic.
+        let mut kept = self.numbers.lock().ok()?;
+        if let Some(v) = kept.get(&id) {
+            return v.clone();
+        }
+        let v = numbered(&self.planned.plan, &self.snapshot, id).map(Arc::new);
+        kept.insert(id, v.clone());
+        v
+    }
+}
+
+/// The record numbers `plan` (made from `doc`) gives path `id`'s needle points, in order, by the
+/// rule `embroidery.stitches` numbers them by ([`super::records::numbering`]); `None` when no unit
+/// sews the path as its needle points.
+fn numbered(plan: &DesignPlan, doc: &Document, id: NodeId) -> Option<Vec<usize>> {
+    let unit = plan.units.iter().position(|u| u.origin.node == id && matches!(u.origin.part, Part::Manual | Part::Literal))?;
+    let (_, first) = super::records::numbering(plan, doc, unit)?;
+    super::records::needle_numbers(plan, unit, first)
 }
 
 impl crate::Session {
@@ -105,6 +137,126 @@ impl crate::Session {
         self.embroidery_plans.drop_facts();
     }
 
+    /// What stitch editing edits now (the embroidery tool working inside isolation of an object
+    /// holding paths of stitches, in the stitch view, `view`, or the Lasso tool selecting needle
+    /// points there): the object, its paths of stitches and needle points, how many of them are
+    /// selected and the selection's first and last along the thread with their record numbers in
+    /// the plan shown; `None` while it isn't editing. Never plans; walks the selected needle points
+    /// once (the interface asks once a revision).
+    pub fn stitch_editing(&mut self, view: crate::ViewInfo) -> Option<StitchEditing> {
+        if !vectorcraft_tools::embroidery::edits_stitches(self.tool_id()) {
+            return None;
+        }
+        self.with_tool_cx(view, |_, cx| {
+            let n = cx.embroidery.and_then(|f| f.needle_points())?;
+            let mut selected = 0usize;
+            let mut ends: Option<[NeedleRef; 2]> = None;
+            // Along the thread: the paths in the order they are sewn, then the needle points.
+            let along = |r: NeedleRef| (n.order(r.id), r.index);
+            // By the rule every reader of the selection keeps: a group selected whole stands for
+            // the paths being edited inside it.
+            for (id, whole) in n.selected_paths(cx.selection) {
+                let (count, lo, hi) = match cx.selection.anchors.get(&id).filter(|_| !whole) {
+                    // The path found once for all of its anchors selected.
+                    Some(anchors) => n.span(id, anchors).map_or((0, None, None), |s| (s.count, Some(s.first), Some(s.last))),
+                    None => (n.count(id), Some(0), n.count(id).checked_sub(1)),
+                };
+                selected += count;
+                if let (Some(lo), Some(hi)) = (lo, hi) {
+                    let (a, b) = (NeedleRef { id, index: lo }, NeedleRef { id, index: hi });
+                    ends = Some(match ends {
+                        None => [a, b],
+                        // The selection lists paths in the order they were selected: the first
+                        // and last are the ones sewn first and last.
+                        Some([f, l]) => [if along(a) < along(f) { a } else { f }, if along(l) < along(b) { b } else { l }],
+                    });
+                }
+            }
+            let ends = ends.map(|[a, b]| [(a, n.number(a)), (b, n.number(b))]);
+            Some(StitchEditing { scope: n.scope(), selected, ends })
+        })
+    }
+
+    /// Where needle points `refs` of the stitches being edited lie in `doc` (the active document,
+    /// or the one a drag under way started from), each a look-up in the needle points stitch
+    /// editing keeps rather than a walk of its path's runs: `None` for one it doesn't edit, or of a
+    /// path `doc` holds otherwise than those kept; all `None` while it isn't editing. What the
+    /// canvas's hover, current ring and range pills are drawn at.
+    pub fn stitch_needle_points(&mut self, view: crate::ViewInfo, doc: &Document, refs: &[NeedleRef]) -> Vec<Option<Point>> {
+        let Some(index) = self.editing_index(view) else { return vec![None; refs.len()] };
+        refs.iter().map(|&n| index.point_in(doc, n)).collect()
+    }
+
+    /// Whether the selection selects each of needle points `refs` of the stitches being edited, by
+    /// the rule every reader of the selection keeps ([`NeedlePoints::selected_paths`]), each a
+    /// look-up in the needle points kept; `false` for one it doesn't edit, or of a path the
+    /// document holds otherwise than those kept; all `false` while it isn't editing. What the
+    /// Stitches tab's rows are drawn by.
+    pub fn stitch_needles_selected(&mut self, view: crate::ViewInfo, refs: &[NeedleRef]) -> Vec<bool> {
+        let (Some(index), Some(st)) = (self.editing_index(view), self.active()) else { return vec![false; refs.len()] };
+        let (doc, sel) = (&*st.doc, &st.selection);
+        let paths: HashMap<NodeId, bool> = index.selected_paths(doc, sel).into_iter().collect();
+        refs.iter()
+            .map(|&n| {
+                index.point_in(doc, n).is_some()
+                    && match paths.get(&n.id) {
+                        Some(&whole) => whole || sel.anchors.get(&n.id).is_some_and(|set| index.anchors(n).iter().any(|a| set.contains(a))),
+                        None => false,
+                    }
+            })
+            .collect()
+    }
+
+    /// Why path `id` of the object edited can't be edited, while stitches are edited (`None`: it can,
+    /// it isn't a path of stitches shown in the object, or nothing is edited). What the Stitches tab
+    /// says of a row of it.
+    pub fn stitch_refusal(&mut self, view: crate::ViewInfo, id: NodeId) -> Option<vectorcraft_tools::embroidery::Refusal> {
+        self.editing_index(view)?.refusal(id)
+    }
+
+    /// The needle points stitch editing keeps, while it edits (the embroidery tool's, in the stitch
+    /// view, `view`).
+    fn editing_index(&mut self, view: crate::ViewInfo) -> Option<Arc<NeedleIndex>> {
+        let editing = vectorcraft_tools::embroidery::edits_stitches(self.tool_id())
+            && self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).is_some());
+        editing.then(|| self.kept_needle_index()).flatten()
+    }
+
+    /// The paths stitch editing edits that the selection selects, as [`Session::stitch_editing`]
+    /// counts them, each with whether all of its needle points are selected (the path, or an object
+    /// holding it, selected whole) or those whose anchors it selects; `None` while it isn't
+    /// editing. What the canvas draws the selection from.
+    pub fn stitch_selected_paths(&mut self, view: crate::ViewInfo) -> Option<Vec<(NodeId, bool)>> {
+        if !vectorcraft_tools::embroidery::edits_stitches(self.tool_id()) {
+            return None;
+        }
+        self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| n.selected_paths(cx.selection)))
+    }
+
+    /// The needle points stitch editing keeps for the active document's isolation
+    /// ([`super::service::Services::needle_index`]): built again only for what changed.
+    pub(crate) fn kept_needle_index(&mut self) -> Option<Arc<super::needle_index::NeedleIndex>> {
+        let st = self.active.and_then(|i| self.docs.get(i))?;
+        self.embroidery_plans.needle_index(st)
+    }
+
+    /// The tool that lent the Selection tool for the press under way (a Cmd-press), if one did: the
+    /// tool the interface keeps showing, and stitch editing holds, while the press lasts.
+    pub fn lent_from(&self) -> Option<&'static str> {
+        self.lender.as_ref().map(|t| t.id())
+    }
+
+    /// Which of `ids` stitch editing edits now (the needle index holds them), in order; all `false`
+    /// while it isn't editing. The Stitches tab selects only these from its rows.
+    pub fn stitch_edits(&mut self, view: crate::ViewInfo, ids: &[NodeId]) -> Vec<bool> {
+        let held = if vectorcraft_tools::embroidery::edits_stitches(self.tool_id()) {
+            self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| ids.iter().map(|id| n.holds(*id)).collect()))
+        } else {
+            None
+        };
+        held.unwrap_or_else(|| vec![false; ids.len()])
+    }
+
     /// The embroidery tool's handles as the canvas draws them, while it is the active tool (else
     /// none), in `view`: the list the tool catches ([`vectorcraft_tools::embroidery::handles`]), of
     /// the part its options show, and its options (`hover`, `focus`, `drag`). Never plans.
@@ -120,6 +272,17 @@ impl crate::Session {
     }
 }
 
+/// What stitch editing edits now ([`crate::Session::stitch_editing`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StitchEditing {
+    pub scope: NeedleScope,
+    /// How many needle points being edited are selected.
+    pub selected: usize,
+    /// The selection's first and last needle points along the thread, each with its record number
+    /// in the plan shown (`None` while that plan lags behind an edit of its path).
+    pub ends: Option<[(NeedleRef, Option<usize>); 2]>,
+}
+
 /// [`ToolFacts`] (when a plan is remembered) read against the document as it is now.
 pub(crate) struct FactsNow<'a> {
     facts: Option<Arc<ToolFacts>>,
@@ -128,13 +291,96 @@ pub(crate) struct FactsNow<'a> {
     drawn: bool,
     /// The document's settings layer, read when an angle is first asked for.
     layer: OnceCell<super::resolve::DocLayer>,
+    /// The needle points stitch editing works on, while it does.
+    needles: Option<NeedlesNow<'a>>,
 }
 
 impl<'a> FactsNow<'a> {
     /// The answers of `facts` (none before a first plan) and of the document `doc`, whose stitches
     /// the canvas draws or not (`drawn`).
     pub(crate) fn new(facts: Option<Arc<ToolFacts>>, doc: &'a Document, drawn: bool) -> Self {
-        Self { facts, doc, drawn, layer: OnceCell::new() }
+        Self { facts, doc, drawn, layer: OnceCell::new(), needles: None }
+    }
+}
+
+/// The needle points stitch editing works on ([`NeedleIndex`]), read against the document as it is,
+/// with record numbers from the plan the canvas shows ([`ToolFacts`]) where it is of the path as it
+/// is.
+pub(crate) struct NeedlesNow<'a> {
+    index: Arc<NeedleIndex>,
+    facts: Option<Arc<ToolFacts>>,
+    doc: &'a Document,
+}
+
+impl NeedlePoints for NeedlesNow<'_> {
+    fn scope(&self) -> NeedleScope {
+        self.index.scope()
+    }
+
+    fn holds(&self, id: NodeId) -> bool {
+        self.index.holds(id)
+    }
+
+    fn needle_at(&self, at: Point, tol: f64) -> Option<NeedleHit> {
+        self.index.needle_at(at, tol)
+    }
+
+    fn thread_at(&self, at: Point, tol: f64) -> Option<ThreadHit> {
+        self.index.thread_at(at, tol)
+    }
+
+    fn point(&self, n: NeedleRef) -> Option<Point> {
+        self.index.point(n)
+    }
+
+    fn step(&self, n: NeedleRef, forward: bool) -> Option<NeedleRef> {
+        self.index.step(n, forward)
+    }
+
+    fn first(&self) -> Option<NeedleRef> {
+        self.index.first()
+    }
+
+    fn run(&self, n: NeedleRef) -> Option<(usize, usize)> {
+        self.index.run(n)
+    }
+
+    fn order(&self, id: NodeId) -> Option<usize> {
+        self.index.order_of(id)
+    }
+
+    fn anchors(&self, n: NeedleRef) -> Vec<(usize, usize)> {
+        self.index.anchors(n)
+    }
+
+    fn of_anchor(&self, id: NodeId, anchor: (usize, usize)) -> Option<usize> {
+        self.index.of_anchor(id, anchor)
+    }
+
+    fn span(&self, id: NodeId, anchors: &std::collections::BTreeSet<(usize, usize)>) -> Option<SelectedSpan> {
+        self.index.span(id, anchors)
+    }
+
+    fn count(&self, id: NodeId) -> usize {
+        self.index.count(id)
+    }
+
+    fn number(&self, n: NeedleRef) -> Option<usize> {
+        let facts = self.facts.as_deref()?;
+        // The plan is of the document as it is: record numbers run through the whole design, so an
+        // edit of any path sewn before this one moves them (as the ends are judged).
+        if !std::ptr::eq(&*facts.snapshot, self.doc) {
+            return None;
+        }
+        let numbers = facts.numbers_of(n.id)?;
+        if numbers.len() != self.index.count(n.id) {
+            return None;
+        }
+        numbers.get(n.index).copied()
+    }
+
+    fn selected_paths(&self, sel: &vectorcraft_doc::Selection) -> Vec<(NodeId, bool)> {
+        self.index.selected_paths(self.doc, sel)
     }
 }
 
@@ -143,12 +389,37 @@ impl super::service::Services {
     /// for another tool): from a plan already made with the stitch preview's options, and whether
     /// the canvas draws the stitches (`outline`: the outline view, which draws none).
     pub(crate) fn facts_now<'a>(&mut self, tool: &str, st: &'a crate::DocState, outline: bool) -> Option<FactsNow<'a>> {
-        if tool != vectorcraft_tools::embroidery::ID {
+        let lasso = tool == vectorcraft_tools::embroidery::LASSO;
+        if tool != vectorcraft_tools::embroidery::ID && !lasso {
             return None;
         }
-        let facts = self.tool_facts(st.uid, &super::Options::default());
         let drawn = super::view::layers(self.view(st.uid), super::view::paused(&st.doc), outline).stitches;
-        Some(FactsNow::new(facts, &st.doc, drawn))
+        // The Lasso tool keeps stitch editing's look while it selects needle points (the project
+        // owner's choice, 2026-10-31): their answers inside isolation of an object holding stitches,
+        // in the stitch view alone, and the plan's (the record numbers) only as the Embroidery Tool
+        // kept them, never built for it: putting that tool away lets them go, and nothing would
+        // let go of the Lasso's.
+        if lasso && !drawn {
+            // Out of the stitch view nothing is edited: what stitch editing kept goes, as below.
+            self.drop_needles(st.uid);
+            return None;
+        }
+        if lasso && !st.isolation.and_then(|i| st.doc.node(i)).is_some_and(vectorcraft_tools::embroidery::contains_stitches) {
+            return None;
+        }
+        let facts =
+            if lasso { self.kept_tool_facts(st.uid, &super::Options::default()) } else { self.tool_facts(st.uid, &super::Options::default()) };
+        // Needle points are edited where they are drawn: in the stitch view (out of it, editing
+        // ended, those kept for the document go).
+        let needles = if drawn {
+            self.needle_index(st)
+        } else {
+            self.drop_needles(st.uid);
+            None
+        };
+        let mut now = FactsNow::new(facts.clone(), &st.doc, drawn);
+        now.needles = needles.map(|index| NeedlesNow { index, facts, doc: &st.doc });
+        Some(now)
     }
 }
 
@@ -184,6 +455,10 @@ impl PlanFacts for FactsNow<'_> {
         let layer = self.layer.get_or_init(|| super::resolve::DocLayer::of(self.doc));
         let (degrees, set) = super::info::fill_rows(self.doc, n, &super::Options::default(), layer)?;
         Some(FillAngle { degrees, set })
+    }
+
+    fn needle_points(&self) -> Option<&dyn NeedlePoints> {
+        self.needles.as_ref().map(|n| n as &dyn NeedlePoints)
     }
 }
 

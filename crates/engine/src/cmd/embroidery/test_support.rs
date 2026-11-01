@@ -43,7 +43,12 @@ pub(super) fn planned(node: u64, params: Option<Params>, color: [u8; 3], points:
     block.stitches = points.iter().map(|&(x, y)| Stitch::sew(Point::new(x, y))).collect();
     let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
     let why = if params.is_some() { Choice::Forced(super::plan::ForcedBy::Export) } else { Choice::Literal };
-    Planned { facts: Facts { origin, occurrence: 1, params, columns: None, satin_widths, why, asked: Default::default() }, block, literal: None }
+    Planned {
+        facts: Facts { origin, occurrence: 1, params, columns: None, satin_widths, scale: None, why, asked: Default::default() },
+        block,
+        literal: None,
+        cut_before: false,
+    }
 }
 
 /// The plan of `units`, added in order, in Janome's palette.

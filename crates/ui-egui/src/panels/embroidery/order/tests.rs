@@ -169,6 +169,26 @@ fn a_blocks_objects_and_parts_are_worked_out_once() {
     assert!(how_sewn(&listed.order.blocks[0].units[n], true).contains(" 2"));
 }
 
+/// A unit of manual stitches is said so, not "from the file"; a unit's stops are counted beside its
+/// trims, in the language's plural.
+#[test]
+fn manual_stitches_and_stops_in_a_row() {
+    let mut app = app_with(1);
+    let ctx = egui::Context::default();
+    ready(&mut app, &ctx);
+    let mut unit = order_of(&app).blocks[0].units[0].clone();
+    (unit.part, unit.sewn, unit.part_index, unit.jumps, unit.trims, unit.stops) = ("manual".into(), "literal".into(), None, 0, 1, 2);
+    assert_eq!(how_sewn(&unit, false), "manual stitches · 1 trim · 2 stops");
+    unit.part = "literal".into();
+    assert_eq!(how_sewn(&unit, false), "from the file · 1 trim · 2 stops");
+    crate::i18n::set_current(crate::i18n::Lang::from_code("pl").unwrap());
+    unit.part = "manual".into();
+    unit.stops = 5;
+    let polish = how_sewn(&unit, false);
+    crate::i18n::set_current(crate::i18n::Lang::EN);
+    assert_eq!(polish, "ściegi ręczne · 1 cięcie · 5 stopów");
+}
+
 /// A row dragged to the list's bottom edge and held there scrolls the list down, and back up at
 /// its top edge.
 #[test]

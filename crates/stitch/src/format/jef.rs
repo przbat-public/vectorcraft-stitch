@@ -23,7 +23,7 @@
 //! pyembroidery 1.5.1 (MIT) served only as an outside reader of the files written here
 //! (`docs/embroidery.md` › Validation); none of its code was read.
 
-use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, add, finish, mm, two_byte_move, walk};
+use super::{Emitter, Frame, Reader, TWO_BYTE_COMMAND, add, finish, mm, two_byte_move, walk, written_blocks, written_numbers};
 use crate::thread::{self, Palette};
 use crate::{Command, Error, Pattern, Result, Stitch};
 
@@ -67,12 +67,18 @@ const HOOPS: [(u32, u32, u32); 4] = [(500, 500, 1), (1260, 1100, 3), (1400, 2000
 /// The hoop number for a design that fits none of [`HOOPS`]: the 110×110 default.
 const DEFAULT_HOOP: u32 = 0;
 
+/// The frame JEF counts `p`'s points in: from its centre, y counting upwards (Janome places a
+/// design around the hoop's centre: the stitches start there, and the header's extents are
+/// distances from it).
+pub(crate) fn frame(p: &Pattern) -> Result<Frame> {
+    Frame::centered(p, true)
+}
+
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
-    // Janome places a design around the hoop's centre: the stitches start there, and the header's
-    // extents are distances from it.
-    let frame = Frame::centered(p, true)?;
+    let frame = frame(p)?;
     let b = frame.bounds;
-    let colors = p.blocks.iter().filter(|b| !b.stitches.is_empty()).count();
+    // A stop is written as a change to the same thread: a colour of its own in the header.
+    let colors = written_blocks(p).count();
     if colors == 0 {
         return Err(Error::Format("the design has no stitches to write".into()));
     }
@@ -108,9 +114,9 @@ pub fn write(p: &Pattern) -> Result<Vec<u8>> {
         }
     }
     // Janome's palette indices, one per block: the thread chosen for it when it is Janome's, else
-    // the nearest to its colour, never the block before's (a thread change needs another thread).
-    let threads = p.blocks.iter().filter(|b| !b.stitches.is_empty()).map(|b| &b.thread);
-    for index in Palette::Jef.numbers(threads) {
+    // the nearest to its colour, never the block before's (a thread change needs another thread);
+    // a stop repeats its block's.
+    for index in written_numbers(p, Palette::Jef) {
         // A thread's number is at most the palette's length, which a word holds.
         let word = u32::try_from(index).map_err(|_| Error::Format(format!("thread number {index} doesn't fit a JEF header")))?;
         out.extend_from_slice(&word.to_le_bytes());

@@ -756,7 +756,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "ui.embroideryPanel",
         "Embroidery Panel",
         "",
-        "{tab?: object|order|check, part?: fill|stroke (the part of the selected objects the Object tab shows), format?: a format's id (embroidery.check's), or null for the thread palette's} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for → {tab, part, format}",
+        "{tab?: object|order|check|stitches, part?: fill|stroke (the part of the selected objects the Object tab shows), format?: a format's id (embroidery.check's), or null for the thread palette's, scope?: selection|design, filter?: all|jumps|trims|stops|short|long (the Stitches tab's)} show the Embroidery panel (VectorCraft Stitch), at a tab: the first time docked as the last tab beside Properties, Layers and Libraries; format: the one the active document's Check tab checks for; scope and filter: the rows the Stitches tab lists → {tab, part, format, scope, filter}",
     ),
     (
         "embroidery.copySettings",
@@ -781,6 +781,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "Show Finding",
         "",
         "{rule: a check rule's id, hit?: a listed hit's place, from 0} (VectorCraft Stitch) Show from the Embroidery panel's Check tab: select the rule's objects (or the hit's) and zoom to its hits, on the check the tab shows for the document as it is; then embroidery.nextHit and embroidery.previousHit step from it → {rule, hit}",
+    ),
+    (
+        "embroidery.showRecord",
+        "Show Record",
+        "",
+        "{record: a record's number, from 1, zoom?: false} (VectorCraft Stitch) the Embroidery panel's Stitches tab: the record in focus, its row scrolled into view, its stitch shown on the canvas (a ring, the view panned to it; zoom: zoomed to it), as Go to # and a click outside stitch editing do; refused when the scope or the filter leaves it out, or while the plan's records aren't judged yet → {record, row: its place among the rows listed, from 0}",
     ),
     (
         "ui.flattenerPreview",
@@ -3784,6 +3790,11 @@ pub(crate) fn graph_dialog(app: &mut VectorcraftApp, id: &str) -> Result<Value, 
 
 pub fn invoke(app: &mut VectorcraftApp, id: &str, p: Value) {
     if waits_for_ime(app, id) {
+        return;
+    }
+    // VectorCraft Stitch: a person's Convert to Manual Stitches, Restore Object and Nearest
+    // Connection, run as the Embroidery panel runs them.
+    if p.as_object().is_none_or(|o| o.is_empty()) && crate::embroidery::menu::invoked(app, id) {
         return;
     }
     // Params first: some dialogs' fields take a look through the session (Move's last move).

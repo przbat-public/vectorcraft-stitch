@@ -9,7 +9,7 @@ use vectorcraft_doc::cancel;
 use vectorcraft_geom::kurbo::ParamCurveExtrema;
 use vectorcraft_geom::{BezPath, FillRule, PathData, PathSeg, Point, Rect, Shape};
 use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke, unite_all};
-use vectorcraft_stitch::plan::{self, Aim, Params, Start};
+use vectorcraft_stitch::plan::{self, Aim, Carried, Params, Start};
 use vectorcraft_stitch::{Command, Stitch};
 
 /// The miter limit given for a band grown along an outline (a fill's `expand`, a narrow column's
@@ -248,15 +248,8 @@ fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(
 /// comes back in, the needle lifted between as the planner lifts it (`p`'s jump and trim lengths,
 /// the thread tied off and in around a long jump).
 pub(super) fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Params) -> Vec<Stitch> {
-    let (path, rule) = region;
-    let banded = Banded::new(path);
-    let inside = |s: &Stitch| {
-        let w = banded.winding(s.point());
-        match rule {
-            FillRule::NonZero => w != 0,
-            FillRule::EvenOdd => w % 2 != 0,
-        }
-    };
+    let banded = Banded::new(&region.0);
+    let inside = |s: &Stitch| winds(&banded, region.1, s.point());
     // The stretches inside, each with the plan's own jumps and trims within it.
     let mut pieces: Vec<Vec<Stitch>> = vec![Vec::new()];
     for s in stitches {
@@ -277,6 +270,81 @@ pub(super) fn cut_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Pa
         }
     }
     plan::join_cut(pieces, p)
+}
+
+/// Whether `p` lies inside the path `banded` sorts, by fill rule `rule`.
+fn winds(banded: &Banded, rule: FillRule, p: Point) -> bool {
+    let w = banded.winding(p);
+    match rule {
+        FillRule::NonZero => w != 0,
+        FillRule::EvenOdd => w % 2 != 0,
+    }
+}
+
+/// A run of stitches read from a file cut to a clip group's region ([`cut_run_to`]): its stitches,
+/// and the cut and stop the clip's edges leave before and after them.
+pub(super) struct ClippedRun {
+    pub stitches: Vec<Stitch>,
+    /// A cut before the first needle point the clip leaves: the move into the run is cut.
+    pub cut_before: bool,
+    /// The cut and the stop after the last needle point the clip leaves.
+    pub after: Carried,
+}
+
+/// A run of stitches read from a file (its records, cuts and stops among them) cut to `region` as
+/// [`cut_to`] cuts art, its cuts and stops at the clip's edges carried rather than dropped with the
+/// jumps there: one between two pieces left is made at their joint (the cut, then the stop, before
+/// the needle lifts), one after the last piece goes after the run, a cut before the first piece
+/// before the run, and a stop there after the first needle point sewn (the needle then lifted to
+/// the next, as after any stop).
+pub(super) fn cut_run_to(stitches: Vec<Stitch>, region: &(BezPath, FillRule), p: &Params) -> ClippedRun {
+    let banded = Banded::new(&region.0);
+    let mut raw: Vec<Vec<Stitch>> = vec![Vec::new()];
+    for s in stitches {
+        if s.command == Command::Stitch && !winds(&banded, region.1, s.point()) {
+            if raw.last().is_some_and(|p| !p.is_empty()) {
+                raw.push(Vec::new());
+            }
+            continue;
+        }
+        if let Some(piece) = raw.last_mut() {
+            piece.push(s);
+        }
+    }
+    // What the records outside a piece's needle points name: a cut, a stop (a jump the joint makes).
+    let named = |records: &[Stitch]| Carried {
+        cut: records.iter().any(|s| s.command == Command::Trim),
+        stop: records.iter().any(|s| s.command == Command::Stop),
+    };
+    let either = |a: Carried, b: Carried| Carried { cut: a.cut || b.cut, stop: a.stop || b.stop };
+    let (mut pieces, mut pending, mut cut_before): (Vec<(Vec<Stitch>, Carried)>, Carried, bool) = (Vec::new(), Carried::default(), false);
+    for mut piece in raw {
+        let start = piece.iter().position(|s| s.command == Command::Stitch);
+        let end = piece.iter().rposition(|s| s.command == Command::Stitch);
+        let (Some(start), Some(end)) = (start, end) else {
+            pending = either(pending, named(&piece));
+            continue;
+        };
+        let trailing = piece.split_off(end + 1);
+        let leading: Vec<Stitch> = piece.drain(..start).collect();
+        let mut carried = either(pending, named(&leading));
+        pending = named(&trailing);
+        if pieces.is_empty() {
+            // Before anything sewn: the cut before the run, the stop after its first needle point
+            // (with the joint after it, when it is the piece's only one).
+            cut_before = carried.cut;
+            match (carried.stop, piece.first().copied(), piece.get(1).copied()) {
+                (true, Some(first), Some(next)) => {
+                    piece.splice(1..1, [Stitch::new(first.x, first.y, Command::Stop), Stitch::jump(next.point())]);
+                }
+                (true, _, _) => pending.stop = true,
+                _ => {}
+            }
+            carried = Carried::default();
+        }
+        pieces.push((piece, carried));
+    }
+    ClippedRun { stitches: plan::join_cut_carrying(pieces, p), cut_before, after: pending }
 }
 
 /// A margin round each segment's box when it is sorted into bands (millimetres). The box comes from

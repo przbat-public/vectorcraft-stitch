@@ -29,6 +29,86 @@ pub fn structured() -> Vec<(&'static str, Value)> {
         ("embroidery.render", json!({"rect": [10, 10, 5, 5], "artboard": 0})),
         ("embroidery.render", json!({"scale": 0.0001, "region": "design", "background": null, "jumps": false})),
         ("embroidery.render", json!({"rect": [0, "x", 10, 10, 20], "needlePoints": "yes"})),
+        ("embroidery.convertToManual", json!({"ids": [1e308, -1, null, "x"], "density": 1e308})),
+        ("embroidery.convertToManual", json!({"ids": too_many_ids(), "stitchStyle": [5]})),
+        ("embroidery.convertToManual", json!({"ids": {"0": 1}, "stitchLength": -1e308, "underlay": "deep"})),
+        ("embroidery.restoreObject", json!({"ids": [1e308, -1, null], "strokes": "yes", "dryRun": 1})),
+        ("embroidery.restoreObject", json!({"ids": too_many_ids(), "corners": [true]})),
+        ("embroidery.restoreObject", json!({"dryRun": true, "frame": [1e308, 0, 0, 1, 0, 0]})),
+        ("embroidery.setStopAfter", json!({"on": "yes", "ids": [1e308, -1, null]})),
+        ("embroidery.setStopAfter", json!({"ids": too_many_ids(), "on": false})),
+        ("embroidery.setStopAfter", json!({"on": [true], "stopAfter": 1})),
+        ("embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": 1e308, "index": -1}, null, "x"], "dx": f64::NAN})),
+        ("embroidery.moveNeedlePoints", json!({"ranges": [{"id": 1, "from": 9, "to": 2}], "to": [1e308, 0]})),
+        ("embroidery.moveNeedlePoints", json!({"ranges": [{"id": 1, "from": 0, "to": 1e18}], "dy": 1})),
+        ("embroidery.moveNeedlePoints", json!({"needlePoints": {"id": 1}, "dx": [1]})),
+        ("embroidery.moveNeedlePoints", json!({"dx": 1e308, "dy": -1e308})),
+        // Integer extremes, as integers (a float that size isn't a whole number to the commands): a
+        // range whose count would overflow, and indices and ids no path or object can have.
+        ("embroidery.moveNeedlePoints", json!({"ranges": [{"id": 1, "from": 0, "to": u64::MAX}], "dx": 1})),
+        ("embroidery.moveNeedlePoints", json!({"ranges": [{"id": u64::MAX, "from": u32::MAX, "to": u32::MAX}], "dy": 1})),
+        ("embroidery.deleteNeedlePoints", json!({"ranges": [{"id": 2, "from": 1, "to": u64::MAX}]})),
+        ("embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": u64::MAX, "index": u64::MAX}]})),
+        ("embroidery.insertNeedlePoints", json!({"id": 1, "index": u64::MAX})),
+        ("embroidery.insertNeedlePoints", json!({"id": u32::MAX, "index": u32::MAX, "at": [[0, 0]]})),
+        ("embroidery.insertNeedlePoints", json!({"ranges": [{"id": 1, "from": 0, "to": u64::MAX}]})),
+        ("embroidery.splitRun", json!({"ranges": [{"id": 1, "from": 0, "to": u64::MAX}]})),
+        ("embroidery.joinRuns", json!({"ranges": [{"id": 1, "from": u64::MAX, "to": u64::MAX}]})),
+        ("embroidery.joinRuns", json!({"ids": [u64::MAX, u32::MAX]})),
+        ("embroidery.setMachineFunction", json!({"function": "trim", "ranges": [{"id": 1, "from": 0, "to": u64::MAX}]})),
+        ("embroidery.splitLongStitches", json!({"ranges": [{"id": 2, "from": 0, "to": u64::MAX}], "maxLength": 1})),
+        ("embroidery.selectNeedlePoints", json!({"ranges": [{"id": 1, "from": 0, "to": u64::MAX}], "mode": "add"})),
+        ("embroidery.selectNeedlePoints", json!({"records": [u64::MAX, u64::MAX]})),
+        ("embroidery.stitches", json!({"from": u64::MAX, "to": u64::MAX, "offset": u64::MAX, "limit": u64::MAX})),
+        ("embroidery.insertNeedlePoints", json!({"id": 1e308, "index": -1, "at": [[f64::NAN, 0]]})),
+        ("embroidery.insertNeedlePoints", json!({"id": 1, "index": 1e18, "at": "here"})),
+        ("embroidery.insertNeedlePoints", json!({"id": 1, "index": 0, "at": vec![[0.0, 0.0]; 10_001]})),
+        ("embroidery.insertNeedlePoints", json!({"at": [[1, 2, 3]], "ranges": [{"id": 1, "from": 0, "to": 1e18}]})),
+        ("embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": 1, "index": 0}, {"id": 1, "index": 0}], "ranges": "all"})),
+        ("embroidery.deleteNeedlePoints", json!({"ranges": [{"id": 1, "from": 0, "to": 1_999_999}, {"id": 2, "from": 0, "to": 1}]})),
+        ("embroidery.deleteNeedlePoints", json!({"needlePoints": [], "index": 0})),
+        ("embroidery.splitRun", json!({"ranges": [{"id": 1, "from": 0, "to": 1_999_999}], "ties": "yes"})),
+        ("embroidery.splitRun", json!({"needlePoints": [{"id": 1e308, "index": 1}], "ties": false})),
+        ("embroidery.joinRuns", json!({"ids": [1, 1, 1], "needlePoints": [{"id": 1, "index": 1}]})),
+        ("embroidery.joinRuns", json!({"ids": [1e308, -1]})),
+        ("embroidery.joinRuns", json!({"ids": [1]})),
+        ("embroidery.joinRuns", json!({"ranges": [{"id": 2, "from": 0, "to": 5}]})),
+        ("embroidery.setMachineFunction", json!({"function": "colorChange", "needlePoints": [{"id": 1, "index": 0}]})),
+        ("embroidery.setMachineFunction", json!({"function": "stop", "on": 1, "ties": [false], "ranges": [{"id": 1, "from": 0, "to": 9}]})),
+        ("embroidery.setMachineFunction", json!({"function": "trim", "needlePoints": [{"id": 1e308, "index": 1e308}]})),
+        ("embroidery.splitLongStitches", json!({"maxLength": f64::NAN, "format": "dst"})),
+        ("embroidery.splitLongStitches", json!({"maxLength": 1e-300, "ranges": [{"id": 1, "from": 0, "to": 1_999_999}]})),
+        ("embroidery.splitLongStitches", json!({"format": ["pes"], "needlePoints": [{"id": 1, "index": 1}]})),
+        ("embroidery.stitches", json!({"from": 1e308, "to": -1, "kinds": "all", "limit": 1e308})),
+        ("embroidery.stitches", json!({"ids": [1e308, null], "shorterThan": f64::NAN, "longerThan": [1]})),
+        ("embroidery.stitches", json!({"from": 3, "to": 1_000_000_000, "kinds": ["stop", "jump"], "density": 0.05})),
+        ("embroidery.selectNeedlePoints", json!({"records": [1, 1e308], "mode": "toggle"})),
+        ("embroidery.selectNeedlePoints", json!({"records": "all", "needlePoints": [{"id": 1, "index": 0}]})),
+        ("embroidery.selectNeedlePoints", json!({"shorterThan": 1e308, "mode": "subtract", "stitchStyle": "satin"})),
+        // A selection by a shape (a marquee, a lasso) given as nothing, as words, nested, both at
+        // once, beside addresses or records, with points that aren't numbers, and with ids repeated,
+        // nested in lists or too many.
+        ("embroidery.selectNeedlePoints", json!({"rect": null})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": null, "mode": "add"})),
+        ("embroidery.selectNeedlePoints", json!({"rect": "all", "mode": "toggle"})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": "lasso"})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [[0, 0], [100, 100]]})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[[0, 0]], [[100, 0]], [[100, 100]]]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, null, "x", 1e308]})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], null, [1e308, 0], "x", [5, f64::NAN]]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, 100, 100], "polygon": [[0, 0], [100, 0], [100, 100]]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, 100, 100], "needlePoints": [{"id": 1, "index": 0}]})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], [100, 0], [100, 100]], "ranges": [{"id": 1, "from": 0, "to": 3}]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, 100, 100], "records": [1, 2], "kinds": ["trim"]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": [1, 1, 1, 2, 2, 3]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": [[1], [2, [3]], {"id": 4}]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": too_many_ids(), "mode": "subtract"})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], [1e6, 0], [0, 1e6]], "ids": [u64::MAX, 0, 1, 2, 3, 4, 5, 6, 7, 8]})),
+        // A lasso of as many points as one may have, zigzagging: each edge across half its height
+        // (refused as too intricate) and each across a sliver of it (taken); and one point more.
+        ("embroidery.selectNeedlePoints", json!({"polygon": zigzag(LASSO_POINTS_MAX, ZIGZAG_DEEP_MM)})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": zigzag(LASSO_POINTS_MAX, ZIGZAG_SHALLOW_MM)})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": zigzag(LASSO_POINTS_MAX + 1, ZIGZAG_SHALLOW_MM), "mode": "add"})),
         ("embroidery.sewEarlier", json!({"ids": "all"})),
         ("embroidery.sewEarlier", json!({"ids": [1e308, -1, null, "x", {"id": 1}]})),
         ("embroidery.sewLater", json!({"ids": [u64::MAX, u64::MAX], "density": 1e308})),
@@ -91,4 +171,22 @@ pub fn structured() -> Vec<(&'static str, Value)> {
 /// More ids than a move takes: refused before anything is looked up.
 fn too_many_ids() -> Vec<u64> {
     (0..100_001).collect()
+}
+
+/// The most points a lasso may have: the engine's own limit (a selection by `polygon`).
+const LASSO_POINTS_MAX: usize = 4096;
+/// A zigzag's step along its base and the height of the point that closes it, millimetres.
+const ZIGZAG_STEP_MM: f64 = 0.02;
+const ZIGZAG_CLOSE_MM: f64 = 100.0;
+/// A zigzag whose every edge spans half the lasso's height, and one whose edges span a sliver of
+/// it, millimetres.
+const ZIGZAG_DEEP_MM: f64 = 100.0;
+const ZIGZAG_SHALLOW_MM: f64 = 0.05;
+
+/// A lasso of `n` points: a zigzag `depth` millimetres deep along its base, closed by a point above
+/// it.
+fn zigzag(n: usize, depth: f64) -> Vec<[f64; 2]> {
+    let mut points: Vec<[f64; 2]> = (0..n.saturating_sub(1)).map(|k| [k as f64 * ZIGZAG_STEP_MM, if k % 2 == 0 { 0.0 } else { depth }]).collect();
+    points.push([0.0, -ZIGZAG_CLOSE_MM]);
+    points
 }

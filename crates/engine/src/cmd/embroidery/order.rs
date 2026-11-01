@@ -25,13 +25,17 @@ pub(crate) fn part_of(p: Part) -> (&'static str, Option<usize>) {
         Part::Fill(k) => ("fill", Some(k + 1)),
         Part::Stroke(k) => ("stroke", Some(k + 1)),
         Part::Literal => ("literal", None),
+        Part::Manual => ("manual", None),
     }
 }
 
 /// How a unit is sewn, in the words the `stitch` option takes (`running`, `satin`, `tatami`), or
-/// `literal` for points sewn as they are.
+/// `literal` (from a file) or `manual` (converted) for points sewn as they are.
 pub(crate) fn sewn_of(u: &Unit) -> &'static str {
-    u.sewn().map_or("literal", stitch_id)
+    match u.origin.part {
+        Part::Manual => "manual",
+        _ => u.sewn().map_or("literal", stitch_id),
+    }
 }
 
 /// The rule that chose how a unit is sewn: its id, the values it turned on, and the same as a
@@ -83,6 +87,7 @@ pub(crate) fn rule_of(u: &Unit) -> (&'static str, Value, String) {
             ("forced", json!({"stitch": stitch_id(Style::Satin), "source": by.id()}), why.into())
         }
         Choice::Literal => ("literal", json!({}), "stitches read from a machine file, sewn as they are".into()),
+        Choice::Manual => ("manual", json!({}), "manual stitches converted from an object, sewn as they are".into()),
     }
 }
 
@@ -148,6 +153,8 @@ pub struct OrderBlock {
     pub last_record: usize,
     pub jumps: usize,
     pub trims: usize,
+    /// Stops of the machine in it, each written as a change to the same thread.
+    pub stops: usize,
     pub unit_count: usize,
     /// Its units listed (those in the page asked for).
     pub units: Vec<OrderUnit>,
@@ -193,6 +200,7 @@ pub struct OrderUnit {
     pub last_record: Option<usize>,
     pub jumps: usize,
     pub trims: usize,
+    pub stops: usize,
     pub entry: Option<[f64; 2]>,
     pub exit: Option<[f64; 2]>,
     pub bounds: Option<[f64; 4]>,
@@ -270,6 +278,7 @@ impl SewingOrder {
                             last_record: numbers.as_ref().map(|n| n.end.saturating_sub(1)),
                             jumps: t.jumps,
                             trims: t.trims,
+                            stops: t.stops,
                             entry: ends.map(|e| at(e.0)),
                             exit: ends.map(|e| at(e.1)),
                             bounds: u.bounds.map(|r| [mm(r.x0), mm(r.y0), mm(r.x1), mm(r.y1)]),
@@ -291,6 +300,7 @@ impl SewingOrder {
                     last_record: b.last_number(),
                     jumps: t.jumps,
                     trims: t.trims,
+                    stops: t.stops,
                     unit_count: b.units.len(),
                     units,
                     then: (k + 1 < plan.blocks.len())

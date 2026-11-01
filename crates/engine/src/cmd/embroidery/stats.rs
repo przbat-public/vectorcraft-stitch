@@ -100,7 +100,7 @@ const BOBBIN_PER_TOP: f64 = 3.0 / 5.0;
 /// What the thread figures rest on, as the answer says it: an estimate.
 const THREAD_ESTIMATE: &str = "an estimate: top thread, each needle-down stitch's length on the face, the share of its length on the back that is top thread pulled under (two thirds under a satin, the balance thread makers teach, scaled by Wilcom's bobbin factors for the other stitches), and twice fabricThickness at every needle point; bobbin thread, 3/5 of the top thread (Madeira's 3 m to 5 m a 1,000 standard stitches)";
 /// What the time rests on, as the answer says it: an estimate.
-const TIME_ESTIMATE: &str = "an estimate: each needle point and jump of the plan one turn of a home machine at speed (650 by default, a home machine's default maximum), slowSpeed past slowAbove mm, and trimSeconds a trim; not timed: thread changes, the design's start and end; a file may hold more records than the plan (a DST trim is three, a long move several)";
+const TIME_ESTIMATE: &str = "an estimate: each needle point and jump of the plan one turn of a home machine at speed (650 by default, a home machine's default maximum), slowSpeed past slowAbove mm, and trimSeconds a trim; not timed: thread changes and stops (the operator's), the design's start and end; a file may hold more records than the plan (a DST trim is three, a long move several)";
 
 /// Millimetres in a metre.
 const MM_PER_M: f64 = 1000.0;
@@ -144,6 +144,8 @@ pub(crate) struct Tally {
     pub(crate) needle: usize,
     pub(crate) jumps: usize,
     pub(crate) trims: usize,
+    /// Stops of the machine (a run's, Stop After), each written as a change to the same thread.
+    pub(crate) stops: usize,
     /// The shortest and longest needle-down stitch, the longest jump (millimetres).
     pub(crate) shortest: Option<f64>,
     pub(crate) longest: Option<f64>,
@@ -162,7 +164,8 @@ impl Tally {
             Command::Stitch => self.needle += 1,
             Command::Jump => self.jumps += 1,
             Command::Trim => self.trims += 1,
-            Command::ColorChange | Command::Stop => {}
+            Command::Stop => self.stops += 1,
+            Command::ColorChange => {}
         }
     }
 
@@ -201,6 +204,7 @@ impl Tally {
         self.needle += o.needle;
         self.jumps += o.jumps;
         self.trims += o.trims;
+        self.stops += o.stops;
         self.shortest = pick(self.shortest, o.shortest, f64::min);
         self.longest = pick(self.longest, o.longest, f64::max);
         self.longest_jump = pick(self.longest_jump, o.longest_jump, f64::max);
@@ -474,6 +478,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: P
                 "records": b.stitches.len(),
                 "jumps": t.jumps,
                 "trims": t.trims,
+                "stops": t.stops,
                 "firstRecord": b.first_number,
                 "lastRecord": b.last_number(),
                 "topThreadMetres": metres(t.top),
@@ -488,6 +493,7 @@ pub(crate) fn stats(plan: &DesignPlan, machine: Machine, thread: Thread, page: P
         "records": plan.len(),
         "jumps": total.jumps,
         "trims": total.trims,
+        "stops": total.stops,
         "colorChanges": color_changes,
         "threadCount": threads.len(),
         "blockCount": plan.blocks.len(),

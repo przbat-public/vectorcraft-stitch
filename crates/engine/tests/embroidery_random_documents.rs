@@ -112,7 +112,7 @@ impl Step {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 48, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(48))]
 
     /// Random editing with embroidery steps among it: the document saves and reads back as it
     /// was, and its embroidery is read, checked and exported, or refused, without a panic.

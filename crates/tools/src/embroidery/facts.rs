@@ -4,8 +4,10 @@
 //! plan the canvas shows, and from the document, and never plans to answer. A new question is a
 //! new method with a default body.
 
-use vectorcraft_doc::NodeId;
+use std::collections::BTreeSet;
+
 use vectorcraft_doc::embroidery::PartKind;
+use vectorcraft_doc::{NodeId, Selection};
 use vectorcraft_geom::Point;
 
 /// Where the plan sews a part: the first needle point of its first unit and the last of its last,
@@ -55,5 +57,188 @@ pub trait PlanFacts {
     /// as it is (no plan needed); `None` for a fill sewn otherwise or not at all.
     fn fill_angle(&self, _object: NodeId) -> Option<FillAngle> {
         None
+    }
+    /// The needle points stitch editing works on: while the embroidery tool works inside isolation
+    /// of an object holding paths of stitches (the project owner's choice, 2026-10-27: stitch
+    /// editing is the tool in isolation of a stitch object); `None` otherwise.
+    fn needle_points(&self) -> Option<&dyn NeedlePoints> {
+        None
+    }
+}
+
+/// How a selection of needle points meets what was selected (`embroidery.selectNeedlePoints`'
+/// `mode`): in its place, added to it, each needle point taken in or out, or taken from it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SelectMode {
+    Set,
+    Add,
+    Toggle,
+    Subtract,
+}
+
+impl SelectMode {
+    /// Every mode, as the command lists them.
+    pub const ALL: [Self; 4] = [Self::Set, Self::Add, Self::Toggle, Self::Subtract];
+
+    /// As the command's `mode` names it.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Set => "set",
+            Self::Add => "add",
+            Self::Toggle => "toggle",
+            Self::Subtract => "subtract",
+        }
+    }
+
+    /// The mode the command's `mode` `id` names.
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|m| m.id() == id)
+    }
+}
+
+/// A needle point of a path of stitches (opened from a machine file, or converted to manual
+/// stitches), as the stitch commands address it: the path and the needle point's place in it,
+/// from 0 across its runs (`{id, index}`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct NeedleRef {
+    pub id: NodeId,
+    pub index: usize,
+}
+
+/// A needle point found under the pointer, and where it is (document points).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NeedleHit {
+    pub needle: NeedleRef,
+    pub point: Point,
+}
+
+/// A place on a thread found under the pointer: the stitch from needle point `from` to the next one
+/// in its run, its two ends, and the point on it nearest the pointer (document points).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ThreadHit {
+    pub from: NeedleRef,
+    pub ends: [Point; 2],
+    pub point: Point,
+}
+
+/// The needle points of one path that a selection selects by their anchors
+/// ([`NeedlePoints::span`]): how many (a run of one needle point's two anchors count once), and the
+/// first and the last of them (their places in the path).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SelectedSpan {
+    pub count: usize,
+    pub first: usize,
+    pub last: usize,
+}
+
+/// Why a path of stitches shown in the object edited can't be edited ([`NeedleScope::refused`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Refusal {
+    /// Locked or hidden (or in a locked layer, group or artboard), or not sewn: at no opacity, on a
+    /// layer that doesn't print, a guide, or a run with no colour.
+    Locked,
+    /// A machine file's run cut by a clip group: what is sewn of it is what the mask leaves.
+    Clipped,
+    /// Anchors that aren't numbers, or lie outside the document's coordinates.
+    OutOfRange,
+    /// More needle points than a design may have: the path's own, or with the paths before it in
+    /// the object.
+    TooMany,
+}
+
+impl Refusal {
+    /// Every reason, in the order they are said.
+    pub const ALL: [Self; 4] = [Self::Locked, Self::Clipped, Self::OutOfRange, Self::TooMany];
+}
+
+/// How many paths of stitches shown in the object edited can't be edited, by why ([`Refusal`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Refused {
+    counts: [usize; Refusal::ALL.len()],
+}
+
+impl Refused {
+    /// One more refused for `why`.
+    pub fn add(&mut self, why: Refusal) {
+        if let Some(c) = self.counts.get_mut(why as usize) {
+            *c = c.saturating_add(1);
+        }
+    }
+
+    /// How many are refused for `why`.
+    pub fn of(&self, why: Refusal) -> usize {
+        self.counts.get(why as usize).copied().unwrap_or(0)
+    }
+
+    /// How many are refused, for every reason.
+    pub fn total(&self) -> usize {
+        self.counts.iter().sum()
+    }
+}
+
+/// What stitch editing edits: the object isolated (a stitch object: a converted object, an opened
+/// design's thread block, a run), the paths of stitches in it whose needle points can be edited and
+/// how many needle points they hold, the box those fall in (document points), and how many paths of
+/// stitches in it are shown but can't be edited, by why.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NeedleScope {
+    pub object: NodeId,
+    pub paths: usize,
+    pub needles: usize,
+    pub bounds: Option<vectorcraft_geom::Rect>,
+    pub refused: Refused,
+}
+
+/// The needle points stitch editing works on, answered by the engine from the document as it is
+/// (so a press right after an edit never lands where a needle point was), with record numbers
+/// from the plan the canvas shows where it is of the path as it is. Bounded to the paths being
+/// edited; positions are document points.
+pub trait NeedlePoints {
+    /// What is being edited.
+    fn scope(&self) -> NeedleScope;
+    /// Whether path `id` is one being edited.
+    fn holds(&self, id: NodeId) -> bool;
+    /// The needle point nearest `at` within `tol`; of equally near ones, the one sewn later (drawn
+    /// on top).
+    fn needle_at(&self, at: Point, tol: f64) -> Option<NeedleHit>;
+    /// The stitch nearest `at` within `tol`, and the place on it nearest `at`.
+    fn thread_at(&self, at: Point, tol: f64) -> Option<ThreadHit>;
+    /// Where needle point `n` is.
+    fn point(&self, n: NeedleRef) -> Option<Point>;
+    /// The needle point after `n` along the thread (`forward`), or before it: within its path,
+    /// across its runs, then on to the next path or back to the one before, round from the last to
+    /// the first.
+    fn step(&self, n: NeedleRef, forward: bool) -> Option<NeedleRef>;
+    /// The first needle point of the first path being edited.
+    fn first(&self) -> Option<NeedleRef>;
+    /// The first and the last needle point (their places in its path) of the run `n` is in.
+    fn run(&self, n: NeedleRef) -> Option<(usize, usize)>;
+    /// The anchors needle point `n` is in its path, `(subpath, anchor)`: one, or both of a run of
+    /// one needle point (a line to its own start).
+    fn anchors(&self, n: NeedleRef) -> Vec<(usize, usize)>;
+    /// The needle point anchor `anchor` of path `id` is.
+    fn of_anchor(&self, id: NodeId, anchor: (usize, usize)) -> Option<usize>;
+    /// How many needle points path `id` holds (0: not one being edited).
+    fn count(&self, id: NodeId) -> usize;
+    /// Path `id`'s place among the paths being edited, in document order: the order the plan sews
+    /// them in (its Sewing order is the document's).
+    fn order(&self, id: NodeId) -> Option<usize>;
+    /// The record number the plan the canvas shows gives needle point `n`, when that plan is of
+    /// its path as it is now; `None` while the plan lags behind an edit of it.
+    fn number(&self, n: NeedleRef) -> Option<usize>;
+    /// The paths being edited that `sel` selects, in the selection's order, each with whether all
+    /// of its needle points are selected (the path, or an object holding it, selected whole) or
+    /// only those whose anchors `sel` selects: the one rule the chip, the selection layer, the live
+    /// check, the tool's keys and the stitch commands share. By default the paths it selects
+    /// themselves; the engine also takes those inside an object selected whole, as the commands do.
+    fn selected_paths(&self, sel: &Selection) -> Vec<(NodeId, bool)> {
+        sel.objects.iter().copied().filter(|id| self.holds(*id)).map(|id| (id, !sel.anchors.contains_key(&id))).collect()
+    }
+    /// The needle points of path `id` whose anchors are among `anchors`: how many, and the first
+    /// and the last; `None` when none is. By default each anchor asked for on its own
+    /// ([`NeedlePoints::of_anchor`]); the engine finds the path once for all of them.
+    fn span(&self, id: NodeId, anchors: &BTreeSet<(usize, usize)>) -> Option<SelectedSpan> {
+        let found: BTreeSet<usize> = anchors.iter().filter_map(|a| self.of_anchor(id, *a)).collect();
+        Some(SelectedSpan { count: found.len(), first: *found.first()?, last: *found.last()? })
     }
 }

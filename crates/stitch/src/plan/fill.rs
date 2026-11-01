@@ -75,14 +75,14 @@ pub(super) const UNDERLAY_TURN: f64 = 90.0;
 /// region the one nearest), as Ink/Stitch starts fills.
 pub(super) fn fill(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
-    fill_runs(path, rule, &p, aim).join(&p)
+    fill_runs(path, rule, &p, aim).join()
 }
 
 /// [`fill`]'s runs before they are joined into stitches: what the moves between them are
 /// ([`Runs::moves`]) is known then. `p` is sane.
 pub(super) fn fill_runs(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Runs {
     let subs = closed_subpaths(path);
-    let mut runs = Runs::from(aim.start.point());
+    let mut runs = Runs::from(aim.start.point(), p);
     for sub in subs.iter().filter(|s| !s.closed) {
         let line = sub.points();
         if length(&line, false) >= p.min_stitch {
@@ -256,7 +256,7 @@ pub(crate) fn fill_with_columns(
     let subs = closed_subpaths(shape);
     let outlines = outlines(&subs);
     if outlines.is_empty() {
-        return Runs::from(aim.start.point()).join(&fill);
+        return Runs::from(aim.start.point(), &fill).join();
     }
     let grid = Grid::new(&outlines);
     let whole = Area { outlines: &outlines, rule, grid: grid.as_ref() };
@@ -276,11 +276,11 @@ pub(crate) fn fill_with_columns(
     // An open column that does not come back is left at its other end.
     let through =
         |k: usize| matches!(parts.get(k), Some(Part::Column(i)) if columns.get(*i).is_some_and(|c| !c.closed && !column_returns(c, &satin)));
-    let here = Runs::from(aim.start.point()).here_inside();
+    let here = Runs::from(aim.start.point(), &fill).here_inside();
     let order = Order { contacts: &contacts, through: &through, exit: None, first: None }.best(here);
     // The parts sewn in `order`, the last one toward `exit` when given.
     let mut sew_parts = |order: &[usize], exit: Option<Point>| -> Runs {
-        let mut runs = Runs::from(aim.start.point());
+        let mut runs = Runs::from(aim.start.point(), &fill);
         let mut sewn: Vec<bool> = vec![false; areas.len()];
         for (step, &k) in order.iter().enumerate() {
             if runs.full() {
@@ -322,10 +322,10 @@ pub(crate) fn fill_with_columns(
         runs
     };
     let plain = sew_parts(&order, None);
-    let Some(exit) = aim.exit.filter(|x| x.x.is_finite() && x.y.is_finite()) else { return plain.join(&fill) };
+    let Some(exit) = aim.exit.filter(|x| x.x.is_finite() && x.y.is_finite()) else { return plain.join() };
     let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
     if !can_gain(from_exit(&plain)) {
-        return plain.join(&fill);
+        return plain.join();
     }
     // Toward an exit: the parts ordered to end nearest it, the last aimed at it; the part a set entry
     // starts kept first, any part first otherwise (a set entry beats a set exit, which beats where
@@ -337,7 +337,7 @@ pub(crate) fn fill_with_columns(
     let aimed = sew_parts(&aimed_order, Some(exit));
     let moves = |r: &Runs| r.moves.moved_in(aim.start.point(), r.first(), &fill);
     let keep = if moves(&aimed).within(&moves(&plain), FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
-    keep.join(&fill)
+    keep.join()
 }
 
 /// The pieces of a shape's rest (`subs`, from path operations): each outline wound as the largest
@@ -1451,11 +1451,11 @@ mod tests_finished {
         let whole = Area { outlines: &whole_outlines, rule: FillRule::NonZero, grid: None };
         let piece = Area { outlines: &piece_outlines, rule: FillRule::NonZero, grid: None };
         let lifts = |finished: &dyn Fn(&[Point]) -> f64| {
-            let mut runs = Runs::from(Some(Point::new(2.0, 5.0)));
+            let mut runs = Runs::from(Some(Point::new(2.0, 5.0)), &p);
             runs.push(vec![Point::new(1.0, 5.0), Point::new(2.0, 5.0)], Travel::Auto);
             let mut travels = Travels::new(whole);
             sew_area(piece, &mut travels, &p, None, None, &[], &mut runs, finished);
-            runs.join(&p).iter().filter(|s| s.command == Command::Jump).count()
+            runs.join().iter().filter(|s| s.command == Command::Jump).count()
         };
         assert_eq!(lifts(&|_| 0.0), 0, "across nothing sewn, a hidden travel");
         assert!(lifts(&|route| length(route, false)) > 0, "across 48 mm already sewn, a lift");

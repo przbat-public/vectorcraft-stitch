@@ -94,10 +94,16 @@ pub(crate) struct Records {
     extents: (i32, i32, i32, i32),
 }
 
+/// The frame DST, TAP and T01 count `p`'s points in: from where it starts (or its corner), y
+/// counting upwards.
+pub(crate) fn frame(p: &Pattern) -> Result<Frame> {
+    Frame::of(p, true)
+}
+
 /// The records `p` is written as: stitches, jumps, trims as three small jumps, a colour change
 /// between blocks, and the end record.
 pub(crate) fn records(p: &Pattern) -> Result<Records> {
-    let frame = Frame::of(p, true)?;
+    let frame = frame(p)?;
     let mut body: Body = Body::default();
     walk(p, &frame, &mut body, "DST")?;
     if body.out.is_empty() {

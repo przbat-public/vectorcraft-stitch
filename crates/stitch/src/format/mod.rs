@@ -376,6 +376,42 @@ impl Format {
     }
 }
 
+/// The 0.1 mm grid a format's writer counts a design's points on ([`Format::grid`]): its origin
+/// (where the design starts or its corner, or its centre) and whether y counts upwards, as that
+/// writer makes them for the design.
+pub struct Grid(Frame);
+
+impl Grid {
+    /// The units (tenths of a millimetre from the grid's origin) the writer writes a point of the
+    /// design (millimetres) as.
+    pub fn units(&self, p: vectorcraft_geom::Point) -> (i32, i32) {
+        (self.0.x(p.x), self.0.y(p.y))
+    }
+
+    /// The point of the design (millimetres) that units `(x, y)` stand for: on the grid, so that the
+    /// writer writes it as those units.
+    pub fn point(&self, (x, y): (i32, i32)) -> vectorcraft_geom::Point {
+        let mm = |u: i32| f64::from(u) / crate::UNITS_PER_MM;
+        let f = &self.0;
+        vectorcraft_geom::Point::new(f.left + mm(x), if f.flip { f.top - mm(y) } else { f.top + mm(y) })
+    }
+}
+
+impl Format {
+    /// The grid this format's writer counts `pattern`'s points on: the frame each writer makes (from
+    /// where the design starts, or its corner, for DST, TAP, T01, EXP, PES and PEC; from its centre
+    /// for JEF and VP3).
+    pub fn grid(self, pattern: &Pattern) -> Result<Grid> {
+        Ok(Grid(match self {
+            Self::Dst | Self::Tap | Self::T01 => dst::frame(pattern)?,
+            Self::Exp => exp::frame(pattern)?,
+            Self::Pes | Self::Pec => pes::frame(pattern)?,
+            Self::Jef => jef::frame(pattern)?,
+            Self::Vp3 => vp3::frame(pattern)?,
+        }))
+    }
+}
+
 /// The design's points in the file's frame: tenths of a millimetre from the frame's origin (the
 /// design's top-left corner, or its centre), y flipped when the format counts y upwards; and the
 /// box the design's points fall in, which the frame was made from.
@@ -490,23 +526,77 @@ pub(crate) trait Emitter {
     fn size(&self) -> usize;
 }
 
-/// Walk `p`'s blocks in sewing order, telling `w` what to write: a thread change before each block
-/// that follows one that wrote something ([`Emitter::wrote`]), each block's first stitch reached
-/// with the needle up (a jump to it, then the stitch), then its stitches, jumps, trims and stops as
-/// they come. Empty blocks are passed by. Refused with [`file_too_large`] (naming `format`) once
-/// more than [`MAX_FILE_BYTES`] are written.
-pub(crate) fn walk(p: &Pattern, frame: &Frame, w: &mut impl Emitter, format: &str) -> Result<()> {
-    for (i, block) in p.blocks.iter().enumerate() {
-        if block.stitches.is_empty() {
-            continue;
+/// The stretches a block's stitches are written as: cut at each stop (or thread change) that has a
+/// needle point of the block before it, since the last cut, and one after it. No format has a stop
+/// of its own (EduTechWiki gives DST's, EXP's and JEF's stop the bytes of their colour change, and
+/// PEC and VP3 document none), so a stop is written as a change to the same thread: each stretch is
+/// written as a block of the block's thread. A stop or thread change anywhere else (before the
+/// block's first needle point, after its last, right after another) is written as nothing: the
+/// thread change before the next block, or the design's end, already stops a machine there.
+///
+/// Each stretch is a range of `stitches`, holding a needle point, without the stops it was cut at;
+/// one written as nothing stays inside a stretch, which writes it as nothing. A block without a
+/// needle point is one stretch, as it is (empty: none).
+pub(crate) fn stretches(stitches: &[Stitch]) -> Vec<std::ops::Range<usize>> {
+    let Some(last) = stitches.iter().rposition(|s| s.command == Command::Stitch) else {
+        return std::iter::once(0..stitches.len()).filter(|r| !r.is_empty()).collect();
+    };
+    let mut out = Vec::new();
+    let (mut start, mut sewn) = (0, false);
+    for (i, s) in stitches.iter().enumerate() {
+        match s.command {
+            Command::Stitch => sewn = true,
+            Command::Stop | Command::ColorChange if sewn && i < last => {
+                out.push(start..i);
+                (start, sewn) = (i + 1, false);
+            }
+            _ => {}
         }
+    }
+    out.push(start..stitches.len());
+    out
+}
+
+/// The stops (and thread changes) of a block of `stitches` that are written ([`stretches`]), by
+/// their index, in order: a stitch plan keeps these and leaves out the rest, so that it lists what
+/// the machine gets.
+pub fn written_stops(stitches: &[Stitch]) -> Vec<usize> {
+    let ranges = stretches(stitches);
+    let cut = ranges.len().saturating_sub(1);
+    ranges.into_iter().take(cut).map(|r| r.end).collect()
+}
+
+/// `p`'s blocks as they are written, each stretch of a block ([`stretches`]) with its block's
+/// thread: in sewing order, empty blocks left out.
+pub(crate) fn written_blocks(p: &Pattern) -> impl Iterator<Item = (&Thread, &[Stitch])> {
+    p.blocks.iter().flat_map(|b| stretches(&b.stitches).into_iter().map(move |r| (&b.thread, b.stitches.get(r).unwrap_or_default())))
+}
+
+/// The threads `palette` numbers a design's written blocks with ([`written_blocks`]): each block's
+/// number ([`thread::Palette::numbers`], matched block by block), repeated for each stretch it is
+/// written as, so that a stop is a change to the same thread and never matched again (as a block of
+/// its own, it would take another thread than the block before's).
+pub(crate) fn written_numbers(p: &Pattern, palette: thread::Palette) -> Vec<usize> {
+    let blocks: Vec<&Block> = p.blocks.iter().filter(|b| !b.stitches.is_empty()).collect();
+    let numbers = palette.numbers(blocks.iter().map(|b| &b.thread));
+    blocks.iter().zip(numbers).flat_map(|(b, n)| std::iter::repeat_n(n, stretches(&b.stitches).len())).collect()
+}
+
+/// Walk `p`'s blocks in sewing order, telling `w` what to write: each block as the stretches it is
+/// written as ([`written_blocks`]: a stop is a change to the same thread), a thread change before
+/// each that follows one that wrote something ([`Emitter::wrote`]), each one's first stitch reached
+/// with the needle up (a jump to it, then the stitch), then its stitches, jumps and trims as they
+/// come. Refused with [`file_too_large`] (naming `format`) once more than [`MAX_FILE_BYTES`] are
+/// written.
+pub(crate) fn walk(p: &Pattern, frame: &Frame, w: &mut impl Emitter, format: &str) -> Result<()> {
+    for (i, (_, stitches)) in written_blocks(p).enumerate() {
         if i > 0 && w.wrote() {
             w.next_block();
         }
         // Each block starts with the needle up: travel to its first stitch, so that no thread runs
         // from where the needle was.
         let mut up = true;
-        for s in &block.stitches {
+        for s in stitches {
             match s.command {
                 Command::Stitch => {
                     let (x, y) = frame.point(*s);
@@ -521,7 +611,8 @@ pub(crate) fn walk(p: &Pattern, frame: &Frame, w: &mut impl Emitter, format: &st
                     up = false;
                 }
                 Command::Trim => w.trim(),
-                Command::ColorChange | Command::Stop => w.color_change(),
+                // Written as nothing ([`stretches`]): a stop between needle points ends a stretch.
+                Command::ColorChange | Command::Stop => {}
             }
             if w.size() > MAX_FILE_BYTES {
                 return Err(file_too_large(format));
@@ -641,8 +732,10 @@ impl<'a> Reader<'a> {
 
 /// The delta steps of at most `max` tenths a move is written as: `n` steps whose sum is exactly
 /// (dx, dy), each rounded to whole tenths. Worked out as they are taken (a design's moves are
-/// written by the million, most of them one step).
-pub(crate) fn steps(dx: i32, dy: i32, max: i32) -> impl Iterator<Item = (i32, i32)> {
+/// written by the million, most of them one step). Public so that a stitch split before it is
+/// written (`embroidery.splitLongStitches {format}`) is cut where the writer would cut it, and the
+/// file is the same.
+pub fn steps(dx: i32, dy: i32, max: i32) -> impl Iterator<Item = (i32, i32)> {
     let max = i64::from(max.max(1));
     let span = i64::from(dx.unsigned_abs().max(dy.unsigned_abs()));
     let n = i64::from(i32::try_from((span + max - 1) / max).unwrap_or(1).max(1));
@@ -714,6 +807,8 @@ fn collapse_jumps(points: &mut Vec<Stitch>) {
 
 #[cfg(test)]
 mod tests_fixtures;
+#[cfg(test)]
+mod tests_stops;
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,7 @@
 //! The order a design's blocks are sewn in: stacking order, with blocks of one thread joined
-//! where nothing lies between them, and literal stitches kept as their file had them.
+//! where nothing lies between them, and literal stitches kept as their file had them. A stop (a
+//! run's, or Stop After on an object) lifts the needle as a cut does, and is kept only where a
+//! machine file writes it: between two needle points of its block.
 //!
 //! Sewing units are added one at a time, in document order, so that each can be planned knowing
 //! where the needle will be when it starts ([`Sequence::needle`]): an object starts near the end of
@@ -36,6 +38,9 @@ pub(super) struct Facts {
     pub(super) columns: Option<Params>,
     /// The narrowest and widest satin columns it sews (`Unit::satin_widths`).
     pub(super) satin_widths: Option<[f64; 2]>,
+    /// How much a run sewn as its points are was scaled since its stitches were made
+    /// (`Unit::scale`).
+    pub(super) scale: Option<[f64; 2]>,
     /// Why it is sewn the way it is.
     pub(super) why: Choice,
     /// The entry and exit points it was planned toward.
@@ -46,18 +51,38 @@ pub(super) struct Facts {
 pub(super) struct Planned {
     pub(super) facts: Facts,
     pub(super) block: Block,
-    /// A literal run read from a machine file: the group it belongs to (that file's colour block)
-    /// and whether the thread was cut before it. `None`: stitches planned from art.
-    pub(super) literal: Option<(NodeId, bool)>,
+    /// A literal run read from a machine file: the group it belongs to (that file's colour block).
+    /// `None`: stitches placed as art is (planned from art, or manual stitches).
+    pub(super) literal: Option<NodeId>,
+    /// The thread cut before it, whatever the move into it: as a file had it, or a manual run's
+    /// cut before it (one a stitch edit passed to it).
+    pub(super) cut_before: bool,
 }
 
-/// A unit in a block: what it is and was planned with, the box its stitches cover as planned, and
-/// where its stitches start in the block (they run up to the next unit's first stitch). It is sewn
-/// in its block's thread.
+/// A unit in a block: what it is and was planned with, the box its stitches cover as planned, where
+/// its stitches start in the block (they run up to the next unit's first stitch), where its own
+/// stitches are (without the move that reaches it and the cut or stop after it), whether it starts
+/// at the needle point before them (where the needle already was), and its place in walk order. It
+/// is sewn in its block's thread.
 struct Member {
     facts: Facts,
     bounds: Option<Rect>,
     start: usize,
+    own: std::ops::Range<usize>,
+    met: bool,
+    walked: usize,
+}
+
+/// Whether a record lifts the needle where it is: a cut, or a stop (the needle up, the thread kept
+/// or cut by the operator). After one, the next needle point is reached by a jump, never sewn to.
+fn lifts(command: Command) -> bool {
+    matches!(command, Command::Trim | Command::Stop)
+}
+
+/// Where the needle is after `stitches`: the last record that isn't a cut or a stop (each lies
+/// where the needle is).
+fn needle_at(stitches: &[Stitch]) -> Option<Stitch> {
+    stitches.iter().rev().find(|s| !lifts(s.command)).copied()
 }
 
 /// The thread cut at the end of `stitches`, unless it already ends in a cut.
@@ -135,24 +160,32 @@ impl Sequence {
             Some(j) => self.blocks.get(j),
             None => self.blocks.last(),
         }?;
-        sewn.block.stitches.iter().rev().find(|s| s.command != Command::Trim).map(|s| s.point())
+        needle_at(&sewn.block.stitches).map(|s| s.point())
     }
 
     /// Add one unit's stitches after the others.
     pub(super) fn add(&mut self, planned: Planned) {
-        let Planned { facts, block, literal } = planned;
+        let Planned { facts, block, literal, cut_before } = planned;
         let Some(&first) = block.stitches.first() else { return };
         let planned_bounds = block.bounds();
-        let member = |start: usize| Member { facts, bounds: planned_bounds, start };
+        let walked = self.adds.len();
+        let member = |start: usize, own: std::ops::Range<usize>, met: bool| Member { facts, bounds: planned_bounds, start, own, met, walked };
         match literal {
-            Some((owner, trim_before)) => self.add_literal(block, first, member, owner, trim_before),
-            None => self.add_art(block, first, member),
+            Some(owner) => self.add_literal(block, first, member, owner, cut_before),
+            None => self.add_art(block, first, member, cut_before),
         }
     }
 
     /// A literal run's stitches (`b`, starting at `first`): into the block of its group's runs
     /// before it (its thread's), or a block of its own, with the cut before it the file had.
-    fn add_literal(&mut self, mut b: Block, first: Stitch, member: impl Fn(usize) -> Member, owner: NodeId, trim_before: bool) {
+    fn add_literal(
+        &mut self,
+        mut b: Block,
+        first: Stitch,
+        member: impl Fn(usize, std::ops::Range<usize>, bool) -> Member,
+        owner: NodeId,
+        trim_before: bool,
+    ) {
         let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
         match self.blocks.last_mut() {
             Some(sewn) if sewn.literal == Some(owner) && sewn.block.thread.color == b.thread.color => {
@@ -162,16 +195,18 @@ impl Sequence {
                     cut_after(&mut merged.stitches);
                 }
                 merged.stitches.push(Stitch::jump(first.point()));
+                let own = merged.stitches.len();
                 merged.stitches.extend(b.stitches.iter().copied());
                 sewn.bounds = union(sewn.bounds, bounds);
-                sewn.members.push(member(start));
+                sewn.members.push(member(start, own..merged.stitches.len(), false));
             }
             _ => {
                 // A cut at the very start of the block, as the file had it.
+                let own = usize::from(trim_before);
                 if trim_before {
                     b.stitches.insert(0, Stitch::new(first.x, first.y, Command::Trim));
                 }
-                let members = vec![member(0)];
+                let members = vec![member(0, own..b.stitches.len(), false)];
                 self.blocks.push(Sewn { block: b, bounds, literal: Some(owner), members });
             }
         }
@@ -179,8 +214,9 @@ impl Sequence {
     }
 
     /// Art's stitches (`b`, starting at `first`): into the last block of its colour when nothing
-    /// sewn since overlaps it ([`Sequence::target`]), else a block of its own.
-    fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize) -> Member) {
+    /// sewn since overlaps it ([`Sequence::target`]), else a block of its own; the thread cut before
+    /// it when `cut_before` asks, whatever the move.
+    fn add_art(&mut self, b: Block, first: Stitch, member: impl Fn(usize, std::ops::Range<usize>, bool) -> Member, cut_before: bool) {
         let bounds = b.bounds().map(|r| r.inflate(CLEARANCE, CLEARANCE));
         let target = self.target(b.thread.color, bounds);
         self.adds.push(target.unwrap_or(self.blocks.len()));
@@ -192,24 +228,28 @@ impl Sequence {
                 // than `trimLength` (each object ties itself off and in), or when the object
                 // before asked for it. An object that starts where the needle is goes on from
                 // there, its first needle point left out: the needle is already in that hole.
+                // After a cut or a stop the needle is lifted: a jump, and nothing left out. A cut
+                // among the lifts the block ends with (a cut, then a stop after it) is the cut.
                 let mut skip = 0;
                 if let Some(last) = merged.stitches.last().copied() {
-                    let at = merged.stitches.iter().rev().find(|s| s.command != Command::Trim).copied().unwrap_or(last);
-                    if last.command != Command::Trim && at.distance(first) > self.connect.trim {
-                        merged.stitches.push(Stitch::new(last.x, last.y, Command::Trim));
+                    let at = needle_at(&merged.stitches).unwrap_or(last);
+                    let cut = merged.stitches.iter().rev().take_while(|s| lifts(s.command)).any(|s| s.command == Command::Trim);
+                    if !cut && (cut_before || at.distance(first) > self.connect.trim) {
+                        merged.stitches.push(Stitch::new(at.x, at.y, Command::Trim));
                     }
-                    if at.distance(first) > SAME_POINT || last.command == Command::Trim {
+                    if at.distance(first) > SAME_POINT || lifts(last.command) {
                         merged.stitches.push(Stitch::jump(first.point()));
                     } else if first.command == Command::Stitch {
                         skip = 1;
                     }
                 }
+                let own = merged.stitches.len();
                 merged.stitches.extend(b.stitches.iter().skip(skip).copied());
                 sewn.bounds = union(sewn.bounds, bounds);
-                sewn.members.push(member(start));
+                sewn.members.push(member(start, own..merged.stitches.len(), skip == 1));
             }
             None => {
-                let members = vec![member(0)];
+                let members = vec![member(0, 0..b.stitches.len(), false)];
                 self.last_of.insert(b.thread.color, self.blocks.len());
                 self.blocks.push(Sewn { block: b, bounds, literal: None, members });
             }
@@ -233,6 +273,20 @@ impl Sequence {
         }
     }
 
+    /// Stop the machine after the units added since `since` (an object that asks for it, Stop
+    /// After, or a group that does), as [`Sequence::trim_after_since`] cuts: after the one sewn
+    /// last, after its cut when it has one. A stop the block then ends with is the thread change's,
+    /// and the plan leaves it out unless a later unit joins the block ([`Sequence::plan`]).
+    pub(super) fn stop_after_since(&mut self, since: usize) {
+        let latest = self.adds.get(since..).and_then(|blocks| blocks.iter().max().copied());
+        if let Some(sewn) = latest.and_then(|j| self.blocks.get_mut(j))
+            && let Some(at) = needle_at(&sewn.block.stitches)
+            && sewn.block.stitches.last().is_some_and(|s| s.command != Command::Stop)
+        {
+            sewn.block.stitches.push(Stitch::new(at.x, at.y, Command::Stop));
+        }
+    }
+
     /// The design's plan, named `name`, with the `warnings` of what was left out: the blocks in
     /// sewing order, each in the thread of `palette` matched to its art's colour (the nearest; when
     /// a neighbouring block has it, the nearest other within ΔE 10, else the nearest all the same,
@@ -245,21 +299,28 @@ impl Sequence {
         let mut number = FIRST_NUMBER;
         let colors: Vec<([u8; 3], Option<PaletteThread>)> = self.blocks.iter().map(|s| (s.block.thread.color, None)).collect();
         let matched = palette.assign(&colors);
-        for (k, (Sewn { block: Block { thread, stitches }, members, .. }, matched)) in self.blocks.into_iter().zip(matched).enumerate() {
+        for (k, (Sewn { block: Block { thread, stitches }, mut members, .. }, matched)) in self.blocks.into_iter().zip(matched).enumerate() {
             let thread = BlockThread { record: thread.record, ..BlockThread::new(thread.color, palette, matched) };
+            let stitches = written_stops_only(stitches, &mut members);
             let first_unit = plan.units.len();
             let ends: Vec<usize> = members.iter().skip(1).map(|m| m.start).chain([stitches.len()]).collect();
             for (m, end) in members.into_iter().zip(ends) {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
-                let Member { facts: Facts { origin, occurrence, params, columns, satin_widths, why, asked }, bounds, .. } = m;
+                let Member {
+                    facts: Facts { origin, occurrence, params, columns, satin_widths, scale, why, asked }, bounds, own, met, walked, ..
+                } = m;
                 plan.units.push(Unit {
+                    own,
+                    met,
+                    walked,
                     origin,
                     occurrence,
                     thread: thread.clone(),
                     params,
                     columns,
                     satin_widths,
+                    scale,
                     why,
                     bounds,
                     block: k,
@@ -274,6 +335,32 @@ impl Sequence {
         }
         plan
     }
+}
+
+/// A block's `stitches` with only the stops a machine file writes (`format::written_stops`: those
+/// between two needle points of the block, one a stretch), so that the plan lists what the machine
+/// gets: a stop at the block's start or end, or right after another, is the thread change's or the
+/// end's. Its `members`' starts move back past the records left out.
+fn written_stops_only(stitches: Vec<Stitch>, members: &mut [Member]) -> Vec<Stitch> {
+    if !stitches.iter().any(|s| matches!(s.command, Command::Stop | Command::ColorChange)) {
+        return stitches;
+    }
+    let written = vectorcraft_stitch::format::written_stops(&stitches);
+    let kept = |i: usize, s: &Stitch| !matches!(s.command, Command::Stop | Command::ColorChange) || written.binary_search(&i).is_ok();
+    // How many records before each index are left out, to move the members' starts.
+    let mut dropped_before: Vec<usize> = Vec::with_capacity(stitches.len() + 1);
+    let mut dropped = 0;
+    for (i, s) in stitches.iter().enumerate() {
+        dropped_before.push(dropped);
+        dropped += usize::from(!kept(i, s));
+    }
+    dropped_before.push(dropped);
+    let moved = |i: usize| i.saturating_sub(dropped_before.get(i).copied().unwrap_or(dropped));
+    for m in members.iter_mut() {
+        m.start = moved(m.start);
+        m.own = moved(m.own.start)..moved(m.own.end);
+    }
+    stitches.into_iter().enumerate().filter(|(i, s)| kept(*i, s)).map(|(_, s)| s).collect()
 }
 
 fn union(a: Option<Rect>, b: Option<Rect>) -> Option<Rect> {
@@ -309,10 +396,11 @@ mod tests {
             params: Some(Params::for_style(Style::Fill)),
             columns: None,
             satin_widths: None,
+            scale: None,
             why: Choice::Fill,
             asked: Asked::default(),
         };
-        Planned { facts, block: b, literal: None }
+        Planned { facts, block: b, literal: None, cut_before: false }
     }
 
     /// The trims and jumps between two objects of one thread, the second starting `gap` mm from

@@ -432,6 +432,10 @@ fn join(s: &mut Session, p: &Value) -> Result<Value> {
             return ok();
         }
     }
+    // VectorCraft Stitch: runs of stitches join as Join Runs joins them, never reversed.
+    if let Some(done) = super::embroidery::join_runs_of_stitches(s, &ids) {
+        return done;
+    }
     // The ends to join, as (reverse the first path, reverse the second): the first path's end
     // must come last, the second's first.
     let ends = match p.get("ends") {
@@ -591,6 +595,10 @@ fn convert_anchors(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 pub(crate) fn delete_anchors(s: &mut Session, _: &Value) -> Result<Value> {
+    // VectorCraft Stitch: needle points of runs of stitches are deleted as stitches (neighbours merge).
+    if let Some(done) = super::embroidery::delete_needle_points_selected(s) {
+        return done;
+    }
     let st = s.doc()?;
     let sel = st.selection.anchors.clone();
     let segments = st.selection.segments.clone();
@@ -826,7 +834,10 @@ fn cut_at_anchors(s: &mut Session, _: &Value) -> Result<Value> {
                 picked.extend(ids.iter().zip(&starts).filter(|(_, s)| **s).map(|(id, _)| (*id, (0, 0))));
                 all.extend(ids);
             } else {
+                // VectorCraft Stitch: a run of stitches as it was, then the needle point each cut made twice kept once.
+                let run = super::embroidery::stitches_before_cut(d, id);
                 path_mut(d, id)?.subpaths = subs;
+                super::embroidery::runs_cut_in_place(d, id, run.as_ref());
                 picked.extend(starts.iter().enumerate().filter(|(_, s)| **s).map(|(si, _)| (id, (si, 0))));
                 all.push(id);
             }

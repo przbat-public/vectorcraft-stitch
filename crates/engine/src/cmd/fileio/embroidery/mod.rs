@@ -175,6 +175,10 @@ pub(crate) fn options(p: &Value) -> Result<Options> {
     }
 }
 
+/// The export's note when it writes a stop: no format has one, so it is a change to the same
+/// thread, which machines take differently (`docs/embroidery.md` › The formats).
+pub(crate) const STOPS_WRITTEN: &str = "each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change";
+
 /// Write a machine file from the document's visible art: its stitch plan, as the format writes it.
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
@@ -189,7 +193,10 @@ pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
         }));
     }
     // What the format can't hold is the design's limit, not a wrong parameter.
-    let warnings = plan.messages();
+    let mut warnings = plan.messages();
+    if plan.blocks.iter().any(|b| !vectorcraft_stitch::format::written_stops(&b.stitches).is_empty()) {
+        warnings.push(STOPS_WRITTEN.to_string());
+    }
     let bytes = format.write(&plan.into_pattern()).map_err(|e| EngineError::Other(e.to_string()))?;
     Ok(Encoded { warnings, ..Encoded::one(bytes) })
 }

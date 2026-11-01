@@ -26,8 +26,13 @@ const TRIM: u8 = 0x80;
 /// The two bytes that follow a trim command, as the format's decodings give them: not a move.
 const TRIM_PAYLOAD: [u8; 2] = [0x07, 0x00];
 
+/// The frame EXP counts `p`'s points in: from where it starts (or its corner), y counting upwards.
+pub(crate) fn frame(p: &Pattern) -> Result<Frame> {
+    Frame::of(p, true)
+}
+
 pub fn write(p: &Pattern) -> Result<Vec<u8>> {
-    let frame = Frame::of(p, true)?;
+    let frame = frame(p)?;
     // Two bytes a point, and a little more for commands (a guess; the buffer grows as needed).
     let mut w = Exp { out: Vec::with_capacity(p.points().count() * 2 + 16), at: (0, 0), wrote: false };
     walk(p, &frame, &mut w, "EXP")?;

@@ -289,7 +289,7 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// A plan made with the stitches and areas kept from the plans before it, after every edit, is
     /// the plan made afresh, whatever the cache had room for.
@@ -1195,6 +1195,7 @@ fn a_planners_query_is_the_commands_reply() {
         ("embroidery.sequence", json!({"offset": 1, "limit": 2})),
         ("embroidery.check", json!({"format": "dst", "limit": 5})),
         ("embroidery.check", json!({"spacing": 0.5, "rules": ["layers"]})),
+        ("embroidery.stitches", json!({"offset": 5, "limit": 20, "kinds": ["stitch", "jump"]})),
     ];
     let planner = s.embroidery_planner().unwrap();
     let asked: Vec<(&str, Value)> = asks.iter().map(|(c, p)| (*c, p.clone())).collect();

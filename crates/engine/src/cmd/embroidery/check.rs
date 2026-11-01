@@ -115,7 +115,7 @@ const MELCO_MACHINE: &str = "https://www.melco-service.com/docs/X/melco-os-ai-en
 const NEEDLE_BLADE: f64 = 0.75;
 /// A stitch shorter than this is short in a row of short stitches ([`MOST_SHORT_IN_A_ROW`]): the
 /// 1 mm Melco's machine manual keeps stitches above for most needles.
-const SHORT: f64 = 1.0;
+pub(crate) const SHORT: f64 = 1.0;
 /// Brother's embroidery machines delete stitches of the set pitch or less, 0.3 mm as they come
 /// (PRT23 manual, printed p. 108, p. 110 of the PDF): the source checked, so a stitch of 0.3 mm is
 /// flagged. Ricoma's digitizing tips advise deleting stitches under 0.3 mm while making a design
@@ -127,10 +127,79 @@ const TINY: f64 = 0.3;
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>), a
 /// setting of that effect, not a quality limit: background for the estimate.
 const MOST_SHORT_IN_A_ROW: usize = 5;
+/// The one set of lines a stitch is judged by while stitches are edited, on the canvas, in the
+/// live check and in the Stitches tab (the project owner's choice, 2026-10-27: one set of
+/// thresholds everywhere): shorter than the document's shortest stitch (Document Setup's
+/// `minStitch`, else the planner's 0.4 mm), longer than Melco's 12.7 mm (`stitchTooLong`), or
+/// longer along x or y than one record of the format the Check tab checks for (`formatStep`; the
+/// thread palette's format unless one is chosen). Millimetres.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StitchLimits {
+    pub shortest: f64,
+    pub longest: f64,
+    pub step: f64,
+    pub format: Format,
+}
+
+/// What a judgement against [`StitchLimits`] is kept for ([`StitchLimits::key`]): the bits of their
+/// three lines, which are all a stitch is judged by.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct LimitsKey {
+    shortest: u64,
+    longest: u64,
+    step: u64,
+}
+
+impl StitchLimits {
+    /// What a judgement against these limits is kept for: built here only, so that a line added to
+    /// them goes into every cache keyed by it.
+    pub fn key(&self) -> LimitsKey {
+        LimitsKey { shortest: self.shortest.to_bits(), longest: self.longest.to_bits(), step: self.step.to_bits() }
+    }
+
+    /// The limits of document `doc`, for `format` (`None`: the thread palette's).
+    pub fn of(doc: &vectorcraft_doc::Document, format: Option<Format>) -> Self {
+        let format = format.unwrap_or_else(|| super::thread_palette(doc).format());
+        Self { shortest: super::needles::shortest_stitch(doc), longest: LONGEST_STITCH, step: format.max_step(), format }
+    }
+
+    /// The lines themselves, as the canvas judges by them too.
+    pub fn rule(&self) -> vectorcraft_doc::embroidery::StitchRule {
+        vectorcraft_doc::embroidery::StitchRule { shortest: self.shortest, longest: self.longest, step: self.step }
+    }
+
+    /// Whether a stitch `length` millimetres long is too short ([`StitchRule::short`]).
+    ///
+    /// [`StitchRule::short`]: vectorcraft_doc::embroidery::StitchRule::short
+    pub fn short(&self, length: f64) -> bool {
+        self.rule().short(length)
+    }
+
+    /// Whether a stitch moving `dx`, `dy` millimetres is too long ([`StitchRule::long`]).
+    ///
+    /// [`StitchRule::long`]: vectorcraft_doc::embroidery::StitchRule::long
+    pub fn long(&self, dx: f64, dy: f64) -> bool {
+        self.rule().long(dx, dy)
+    }
+}
+
 /// How far a unit's stitches may miss the entry or exit point it was planned toward before the
 /// miss is pointed out (millimetres): the planner's own threshold, which it also keeps an aimed
 /// plan by (at least this much nearer the exit).
 pub use vectorcraft_stitch::plan::POINT_MISS_MM;
+/// How much a run sewn as its points are may be scaled since its stitches were made (read from a
+/// machine file, or converted) before it is warned about, percent either way: its stitches keep
+/// their count, so their density follows the size. Wilcom's help on scaling, BERNINA's on opening
+/// machine files and Hatch's on manual objects all say no more than ±10 %
+/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Modifying/transform/transform-8.htm>,
+/// <https://softwarehelp.bernina.com/en/MainHelp/PART_Basics/manage_designs/manage_designs-5.htm>,
+/// <https://hatch.embroideryhelp.net/v3/en/OnlineHelp/Setup/assets/Machine_file_recognition.htm>);
+/// Wilcom's warning options give about ±5 %, listed second.
+const SCALED_PERCENT: f64 = 10.0;
+/// The steps a percent of scaling is rounded to before it is judged: hundredths, so that a scale
+/// of exactly 90 % or 110 % passes whatever the arithmetic's last bit, far finer than anyone
+/// scales by. An estimate.
+const SCALED_STEPS: f64 = 100.0;
 /// Brother's PRT51 manual warns that stitching sewn over three times or more may break the thread
 /// or the needle (<https://download.brother.com/welcome/doch100486/prt51_om02ja.pdf>, data
 /// precautions and troubleshooting).
@@ -351,6 +420,37 @@ pub(crate) const RULES: &[Rule] = &[
         }],
     },
     Rule {
+        id: "stitchesScaled",
+        title: "Stitches sewn as they are, scaled since they were opened or converted: they keep their count, not their density",
+        severity: Severity::Warning,
+        threshold: Some(SCALED_PERCENT),
+        unit: Some("percent"),
+        measures: "how much a run sewn as its points are was enlarged or reduced since it was opened or converted, along the direction it changed most",
+        extreme: Some(Extreme::Largest),
+        sources: &[
+            Source {
+                name: "Wilcom EmbroideryStudio 28 help, Scale objects numerically",
+                url: "https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Modifying/transform/transform-8.htm",
+                value: "machine files scaled more than ±10 % change density, and quality with it",
+            },
+            Source {
+                name: "BERNINA embroidery software help, Open machine files",
+                url: "https://softwarehelp.bernina.com/en/MainHelp/PART_Basics/manage_designs/manage_designs-5.htm",
+                value: "no more than ±10 %: the stitch count stays, so the density follows the size",
+            },
+            Source {
+                name: "Hatch help, Machine file recognition",
+                url: "https://hatch.embroideryhelp.net/v3/en/OnlineHelp/Setup/assets/Machine_file_recognition.htm",
+                value: "designs holding manual objects: no more than ±10 %",
+            },
+            Source {
+                name: "Wilcom EmbroideryStudio 28 help, Warning message options",
+                url: "https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Setup/settings/settings-25.htm",
+                value: "machine files: about ±5 %",
+            },
+        ],
+    },
+    Rule {
         id: "threadMismatch",
         title: "Thread that looks unlike the art's colour",
         severity: Severity::Warning,
@@ -384,7 +484,7 @@ pub(crate) const RULES: &[Rule] = &[
         severity: Severity::Error,
         threshold: None,
         unit: Some("blocks"),
-        measures: "the design's colour blocks",
+        measures: "the design's colour blocks, a stop counted as one (it is written as a change to the same thread)",
         extreme: Some(Extreme::Largest),
         sources: &[
             Source {
@@ -429,7 +529,7 @@ pub(crate) const RULES: &[Rule] = &[
         severity: Severity::Info,
         threshold: Some(MACHINE_COLOR_CHANGES),
         unit: Some("colorChanges"),
-        measures: "the design's colour changes",
+        measures: "the design's colour changes, stops included (each is written as one)",
         extreme: Some(Extreme::Largest),
         sources: &[Source {
             name: "Brother PR680W manual, specifications",
@@ -606,6 +706,15 @@ struct Extremes {
     short_run: Option<f64>,
     /// The most units over one cell.
     layers: Option<f64>,
+}
+
+/// How much a run stretched by `least` to `most` since it was made changed in size, percent, along
+/// the direction it changed most, rounded to [`SCALED_STEPS`]: the largest number for a change past
+/// what a number holds.
+fn scale_change([least, most]: [f64; 2]) -> f64 {
+    let percent = (most - 1.0).max(1.0 - least) * 100.0;
+    let rounded = (percent * SCALED_STEPS).round() / SCALED_STEPS;
+    if rounded.is_finite() { rounded } else { f64::MAX }
 }
 
 /// `m`, raised to `v` when `v` is larger (`more`) or lowered when smaller.
@@ -785,6 +894,16 @@ impl<'a> Checker<'a> {
                     self.add("pointMissed", Hit { at: asked, from, note: Some(note.to_string()), ..hit(missed) });
                 }
             }
+            // A run sewn as its points are, scaled since it was made: its stitches spread or crowd.
+            if let Some(scale) = u.scale {
+                let change = scale_change(scale);
+                self.judged("stitchesScaled", change);
+                if change > SCALED_PERCENT {
+                    let [least, most] = scale;
+                    let note = if most - 1.0 >= 1.0 - least { "larger" } else { "smaller" };
+                    self.add("stitchesScaled", Hit { note: Some(note.to_string()), ..hit(change) });
+                }
+            }
             match (u.sewn(), u.params) {
                 (Some(Style::Fill), Some(p)) => {
                     self.judged("fillStitchShort", p.stitch_length);
@@ -827,7 +946,10 @@ impl<'a> Checker<'a> {
             }
             self.add("notSewn", Hit { note: Some(w.clone()), objects: Some(objects), ..Hit::default() });
         }
-        let blocks = plan.blocks.len();
+        // A stop is written as a change to the same thread: a colour of its own in the format's
+        // header and a colour change on the machine.
+        let stops: usize = plan.blocks.iter().map(|b| vectorcraft_stitch::format::written_stops(&b.stitches).len()).sum();
+        let blocks = plan.blocks.len() + stops;
         let needle: usize = plan.blocks.iter().map(|b| b.needle_points()).sum();
         let changes = blocks.saturating_sub(1);
         for (id, v) in [("formatColors", blocks), ("machineStitches", needle), ("machineColorChanges", changes)] {

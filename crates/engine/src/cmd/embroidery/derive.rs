@@ -34,11 +34,14 @@ use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::{Affine, Point};
 use vectorcraft_render::effects::{self, StrokeArt};
 
-/// The embroidery settings a new object made from `n` takes: `n`'s, less its literal stitches.
-/// `None` when nothing is left.
+/// The embroidery settings a new object made from `n` takes: `n`'s, less its literal stitches (they
+/// are its path's own points) and the object it was converted from (the new object is art, made
+/// from the manual one's stitch lines: there is nothing to restore it to). `None` when nothing is
+/// left.
 pub(crate) fn carried(n: &Node) -> Option<Box<Embroidery>> {
     let mut e = n.extras().embroidery.as_deref()?.clone();
     e.stitches = None;
+    e.original = None;
     (!e.is_empty()).then(|| Box::new(e))
 }
 
@@ -61,14 +64,14 @@ pub(crate) fn cut_once<'a>(pieces: impl DoubleEndedIterator<Item = &'a mut Node>
         }
     }
     for (e, members) in &groups {
-        // Only the last keeps the cut.
-        if e.trim_after
+        // Only the last keeps the cut and the stop.
+        if (e.trim_after || e.stop_after)
             && let Some((_, before)) = members.split_last()
         {
             for &k in before {
                 let Some(p) = pieces.get_mut(k) else { continue };
                 let mut e = e.clone();
-                e.trim_after = false;
+                (e.trim_after, e.stop_after) = (false, false);
                 p.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
             }
         }
@@ -103,10 +106,10 @@ pub(crate) fn compound<'a>(sources: impl IntoIterator<Item = &'a Node>) -> Optio
     sources.into_iter().find_map(backmost).and_then(carried)
 }
 
-/// The object-level settings of `e`, for what stands for an object made into several: the cut
-/// after it, and what a newer version kept. `None` when nothing is left.
+/// The object-level settings of `e`, for what stands for an object made into several: the cut and
+/// the stop after it, and what a newer version kept. `None` when nothing is left.
 pub(crate) fn whole(e: &Embroidery) -> Option<Box<Embroidery>> {
-    let stand_in = Embroidery { trim_after: e.trim_after, extra: e.extra.clone(), ..Embroidery::default() };
+    let stand_in = Embroidery { trim_after: e.trim_after, stop_after: e.stop_after, extra: e.extra.clone(), ..Embroidery::default() };
     (!stand_in.is_empty()).then(|| Box::new(stand_in))
 }
 
@@ -126,6 +129,7 @@ pub(crate) fn released(n: &Node, parts: &mut [Node]) {
     for (k, p) in parts.iter_mut().enumerate() {
         let mut own = (*e).clone();
         own.trim_after = e.trim_after && k == last;
+        own.stop_after = e.stop_after && k == last;
         p.extras_mut().embroidery = (!own.is_empty()).then(|| Box::new(own));
     }
     let mut all: Vec<&mut Node> = parts.iter_mut().collect();
@@ -139,7 +143,7 @@ pub(crate) fn released(n: &Node, parts: &mut [Node]) {
 /// so that the cut stays after the same stitches (its other settings are about its own fills and
 /// strokes, which ungrouping drops).
 pub(crate) fn ungrouped(group: &Node, members: &mut [Node]) {
-    let cut = group.extras().embroidery.as_deref().is_some_and(|e| e.trim_after);
+    let (cut, stop) = group.extras().embroidery.as_deref().map_or((false, false), |e| (e.trim_after, e.stop_after));
     let sewn = |n: &Node| {
         n.visible
             && match &n.kind {
@@ -148,9 +152,14 @@ pub(crate) fn ungrouped(group: &Node, members: &mut [Node]) {
                 _ => false,
             }
     };
-    if let (true, Some(last)) = (cut, members.iter_mut().rev().find(|m| sewn(m))) {
+    if let (true, Some(last)) = (cut || stop, members.iter_mut().rev().find(|m| sewn(m))) {
         let mut e = last.extras().embroidery.as_deref().cloned().unwrap_or_default();
-        e.set_trim_after(true);
+        if cut {
+            e.set_trim_after(true);
+        }
+        if stop {
+            e.set_stop_after(true);
+        }
         last.extras_mut().embroidery = Some(Box::new(e));
     }
 }
@@ -179,9 +188,15 @@ pub(crate) fn outlined_type(text: &Node, group: &mut Node) {
 /// Break Link of `instance` into `art`: the instance's cut goes to the art standing for it (the
 /// art's own settings, set inside the symbol and turned by the instance, stay).
 pub(crate) fn unlinked(instance: &Node, art: &mut Node) {
-    if instance.extras().embroidery.as_deref().is_some_and(|e| e.trim_after) {
+    let (cut, stop) = instance.extras().embroidery.as_deref().map_or((false, false), |e| (e.trim_after, e.stop_after));
+    if cut || stop {
         let mut e = art.extras().embroidery.as_deref().cloned().unwrap_or_default();
-        e.set_trim_after(true);
+        if cut {
+            e.set_trim_after(true);
+        }
+        if stop {
+            e.set_stop_after(true);
+        }
         art.extras_mut().embroidery = Some(Box::new(e));
     }
 }
@@ -220,9 +235,9 @@ pub(crate) fn expand_art(d: &mut Document, n: &mut Node, stroke_art: StrokeArt) 
 /// A symbol's art keeps the settings it has in the symbol.
 pub(crate) fn outlined(n: &Node, result: &mut Node) {
     fn uncut(n: &mut Node) {
-        if let Some(e) = n.extras().embroidery.as_deref().filter(|e| e.trim_after) {
+        if let Some(e) = n.extras().embroidery.as_deref().filter(|e| e.trim_after || e.stop_after) {
             let mut e = e.clone();
-            e.trim_after = false;
+            (e.trim_after, e.stop_after) = (false, false);
             n.extras_mut().embroidery = (!e.is_empty()).then(|| Box::new(e));
         }
         for c in n.children_mut().into_iter().flatten() {
@@ -237,6 +252,7 @@ pub(crate) fn outlined(n: &Node, result: &mut Node) {
     let Some(stand_in) = whole(e) else { return };
     let mut own = result.extras().embroidery.as_deref().cloned().unwrap_or_default();
     own.trim_after |= stand_in.trim_after;
+    own.stop_after |= stand_in.stop_after;
     if own.extra.is_empty() {
         own.extra = stand_in.extra;
     } else if stand_in.extra.keys().any(|k| !own.extra.contains_key(k)) {
@@ -322,6 +338,7 @@ impl Expanding {
         } else if let Some(e) = e {
             let mut own = of(self.fills).map(|b| *b).unwrap_or_default();
             own.trim_after = e.trim_after;
+            own.stop_after = e.stop_after;
             own.extra = e.extra.clone();
             result.extras_mut().embroidery = (!own.is_empty()).then(|| Box::new(own));
         }

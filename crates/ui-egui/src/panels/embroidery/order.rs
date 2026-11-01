@@ -227,7 +227,7 @@ type Covered = Arc<HashSet<u64>>;
 
 /// The query the tab asks the preview for: the whole order (as many units as a reply may list).
 pub(crate) fn query() -> crate::embroidery::plan_worker::Query {
-    crate::embroidery::plan_worker::Query { cmd: "embroidery.sequence", params: json!({ "limit": MAX_LIST_UNITS }) }
+    crate::embroidery::plan_worker::Query::read("embroidery.sequence", json!({ "limit": MAX_LIST_UNITS }))
 }
 
 /// The most units the tab lists: as many as `embroidery.sequence` lists at most.
@@ -888,6 +888,7 @@ fn how_sewn(unit: &OrderUnit, several: bool) -> String {
     let part = match unit.part.as_str() {
         "fill" => crate::et!("fill"),
         "stroke" => crate::et!("stroke"),
+        "manual" => crate::et!("manual stitches"),
         _ => crate::et!("from the file"),
     };
     let part = match unit.part_index.filter(|_| several) {
@@ -910,6 +911,9 @@ fn how_sewn(unit: &OrderUnit, several: bool) -> String {
     }
     if unit.trims > 0 {
         words.push(crate::etn!(unit.trims as u64, "{count} trim", "{count} trims"));
+    }
+    if unit.stops > 0 {
+        words.push(crate::etn!(unit.stops as u64, "{count} stop", "{count} stops"));
     }
     words.join(" · ")
 }

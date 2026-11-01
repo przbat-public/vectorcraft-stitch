@@ -63,7 +63,7 @@ fn moves(out: &[Stitch]) -> Vec<(f64, bool, bool)> {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 128, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(128))]
 
     /// Every needle point lies within the art's bounds (a fill's rows reaching past them by their
     /// pull compensation at most: for a row as long as the art's diagonal), and is a point.
@@ -260,7 +260,7 @@ fn no_worse_from(plain: &[Stitch], aimed: &[Stitch], exit: Point, from: Option<P
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// Any path, in any style, from any start: every point is a point; a fill's stitches lie on the
     /// art, a running line's needle points on its path, a satin's within its half width and pull
@@ -379,7 +379,7 @@ fn no_worse(plain: &[Stitch], aimed: &[Stitch], exit: Point) -> Result<(), Strin
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// An exit that isn't a number is no exit: a shape is sewn bit for bit as with none, from any
     /// start, and the entry points `try_stitches_from` and `try_stitches_aimed` agree. (That no
@@ -466,6 +466,37 @@ proptest! {
         if let Some(end) = judged(&plain).0 {
             prop_assert!(sew(Some(end)) == plain, "toward its own end {end:?}");
         }
+    }
+}
+
+/// Two cases [`an_exit_never_makes_a_plan_worse`] found: fills without underlay whose outline
+/// crosses itself (the second in a small loop by its first corner), toward an exit, from nowhere.
+/// The aimed rows start where the plain ones do, and their first region starts 0.38 mm from there
+/// across a crossing of the outline (travels don't cross one), so the needle lifts. The stitch it
+/// ties on with first had to turn away from that region, and the needle jumped 1.31 mm from its
+/// end; the lift was counted from where it went in, shorter than the shortest stitch (0.4 mm) and
+/// so none, and the aimed rows passed the guard lifting the needle once more than the plain ones.
+#[test]
+fn a_lead_whose_tie_stitch_turns_away_lifts_no_more_toward_an_exit() {
+    let mut crossed = BezPath::new();
+    crossed.move_to((63.36266559615397, 185.33820763106368));
+    crossed.line_to((118.04835245024549, 47.30949329697991));
+    crossed.curve_to((118.04835245024549, 47.30949329697991), (148.5465550693259, 56.134504663611125), (125.18563732144057, 56.134504663611125));
+    crossed.line_to((159.63820341722754, 129.12404958621005));
+    crossed.curve_to((159.63820341722754, 129.12404958621005), (39.75410442147457, 4.8641282708484805), (68.0219208638132, 13.301219126152619));
+    crossed.curve_to((82.52915567621409, 31.67083694357511), (63.36266559615397, 185.33820763106368), (63.36266559615397, 185.33820763106368));
+    crossed.close_path();
+    let mut looped = BezPath::new();
+    looped.move_to((16.460968339368534, 76.52400440854944));
+    looped.curve_to((16.460968339368534, 83.31999079496487), (128.75683586839207, 72.38719493829879), (128.75683586839207, 72.38719493829879));
+    looped.line_to((96.01805626449706, 167.60918571206832));
+    looped.curve_to((92.15850251002615, 167.60918571206832), (25.565015044542825, 63.408316908392464), (16.460968339368534, 76.52400440854944));
+    looped.close_path();
+    let p = Params { width: 1.0, underlay: Underlay::None, ..Params::for_style(Style::Fill) };
+    let cases = [("crossed", &crossed, Point::new(131.35862004104277, 205.75044115805744)), ("looped", &looped, Point::new(139.04949637395313, 0.0))];
+    for (name, bp, exit) in cases {
+        let sew = |exit| try_stitches_aimed(bp, FillRule::NonZero, &p, Aim { start: Start::Nowhere, exit }).unwrap();
+        assert_eq!(no_worse(&sew(None), &sew(Some(exit)), exit), Ok(()), "{name}");
     }
 }
 

@@ -24,7 +24,7 @@ use std::collections::{HashMap, HashSet};
 use egui::{Color32, FontId, Rect, Sense, Ui, pos2, vec2};
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
-use vectorcraft_engine::cmd::embroidery::{check_formats, mm_to_pt};
+use vectorcraft_engine::cmd::embroidery::{Format, check_formats, mm_to_pt};
 use vectorcraft_geom::{Point, Rect as DocRect};
 
 use crate::VectorcraftApp;
@@ -70,7 +70,7 @@ pub const SHOW_MIN_BOX_MM: f64 = 10.0;
 
 /// The rules this version words itself, in the engine's order: any other the engine lists shows
 /// its own English title.
-pub const WORDED: [&str; 16] = [
+pub const WORDED: [&str; 17] = [
     "satinTooWide",
     "stitchTooLong",
     "formatStep",
@@ -82,6 +82,7 @@ pub const WORDED: [&str; 16] = [
     "shortStitchesInARow",
     "layers",
     "pointMissed",
+    "stitchesScaled",
     "threadMismatch",
     "notSewn",
     "formatColors",
@@ -92,8 +93,8 @@ pub const WORDED: [&str; 16] = [
 /// The tab's own state: the format chosen per document and the rules opened.
 #[derive(Default)]
 pub struct CheckState {
-    /// The format chosen for each document (by uid), for the session: an id of [`check_formats`].
-    pub(crate) format: HashMap<u64, &'static str>,
+    /// The format chosen for each document (by uid), for the session: one of [`check_formats`].
+    pub(crate) format: HashMap<u64, Format>,
     /// The rules opened, by id.
     pub(crate) open: HashSet<String>,
     /// Since when the check asked for has been waiting (seconds, the frame's clock), for the busy
@@ -127,9 +128,9 @@ pub(crate) struct Focus {
 pub fn query(state: &CheckState, uid: u64) -> Query {
     let mut params = json!({ "limit": CHECK_LIST_LIMIT });
     if let Some(format) = state.format.get(&uid) {
-        params["format"] = json!(format);
+        params["format"] = json!(format.id());
     }
-    Query { cmd: "embroidery.check", params }
+    Query::read("embroidery.check", params)
 }
 
 /// What the tab shows: the check's reply for the plan shown (and whether it is that plan's), and
@@ -182,6 +183,7 @@ pub fn title(rule: &Value, format: &str, lang: Lang) -> String {
         ("shortStitchesInARow", true) => crate::et!("More than {value} short stitches in a row"),
         ("layers", true) => crate::et!("{value} or more layers of stitches on one spot"),
         ("pointMissed", true) => crate::et!("Entry or exit points missed by more than {value} mm"),
+        ("stitchesScaled", true) => crate::et!("Manual stitches or stitches from a file scaled by more than {value}%"),
         ("threadMismatch", true) => crate::et!("Threads unlike the art's color (over {value})"),
         ("notSewn", _) if hits == 0 => crate::et!("Everything is sewn"),
         ("notSewn", _) => crate::et!("Art that isn't sewn"),
@@ -215,9 +217,15 @@ pub fn found(rule: &Value, lang: Lang) -> String {
     let count = measured.as_u64().unwrap_or(0);
     // The design's own figures, against a format's or a machine's limit, found or not.
     match id {
-        "formatColors" if measured.is_u64() => return crate::etn!(count, "{count} thread block", "{count} thread blocks"),
+        // Counted as the file and the machine count them: each stop is a change to the same thread
+        // (the status bar's thread changes leave stops out).
+        "formatColors" if measured.is_u64() => {
+            return crate::etn!(count, "{count} thread block, stops included", "{count} thread blocks, stops included");
+        }
         "machineStitches" if measured.is_u64() => return crate::etn!(count, "{count} stitch", "{count} stitches"),
-        "machineColorChanges" if measured.is_u64() => return crate::etn!(count, "{count} thread change", "{count} thread changes"),
+        "machineColorChanges" if measured.is_u64() => {
+            return crate::etn!(count, "{count} thread change, stops included", "{count} thread changes, stops included");
+        }
         _ => {}
     }
     if hits == 0 {
@@ -231,6 +239,7 @@ pub fn found(rule: &Value, lang: Lang) -> String {
             "layers" => crate::et!("At most {value} on one spot"),
             "threadMismatch" => crate::et!("Largest difference: {value}"),
             "pointMissed" => crate::et!("Largest miss: {value} mm"),
+            "stitchesScaled" => crate::et!("Largest change: {value}%"),
             _ => crate::et!("No findings"),
         };
         let value = if id == "threadMismatch" { delta_e(&value) } else { value };
@@ -269,6 +278,10 @@ pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, h
         "pointMissed" => {
             let point = if hit["note"] == "exit" { crate::et!("Exit") } else { crate::et!("Entry") };
             fill(crate::et!("{name}, {point}: {value} mm"), &[("name", &name()?), ("point", point), ("value", &value)])
+        }
+        "stitchesScaled" => {
+            let template = if hit["note"] == "smaller" { crate::et!("{name}: {value}% smaller") } else { crate::et!("{name}: {value}% larger") };
+            fill(template, &[("name", &name()?), ("value", &value)])
         }
         "threadMismatch" => {
             let thread = &hit["thread"];
@@ -493,7 +506,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     ui.label(egui::RichText::new(summary(reply)).size(SMALL).color(if stale { t.text_dim } else { t.text }));
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(crate::et!("Checked for")).size(SMALL).color(t.text_dim));
-        let chosen = app.embroidery.check.format.get(&shown.uid).copied().unwrap_or(format);
+        let chosen = app.embroidery.check.format.get(&shown.uid).map_or(format, |f| f.id());
         egui::ComboBox::from_id_salt(("embroidery-check-format", shown.uid)).selected_text(format_label(chosen)).show_ui(ui, |ui| {
             for (id, label) in check_formats() {
                 if ui.selectable_label(id == chosen, label).clicked() {
@@ -553,7 +566,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
                 }
             }
             Act::Format(id) => {
-                app.embroidery.check.format.insert(shown.uid, id);
+                if let Some(format) = Format::from_id(id) {
+                    app.embroidery.check.format.insert(shown.uid, format);
+                }
             }
             Act::Open(url) => app.open_url(&url),
             Act::Show(id, hit) => {

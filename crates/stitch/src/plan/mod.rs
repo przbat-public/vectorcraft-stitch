@@ -56,7 +56,7 @@ pub use fill::TATAMI_UNDERLAY_MIN;
 pub(crate) use fill::fill_with_columns;
 pub use joins::{JoinShape, Joined, Link, MAX_JOIN_EDGES, Role, apart, joined_cost, joins, move_cost, stitches_cost, thinned_to};
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
-pub use runs::join_cut;
+pub use runs::{Carried, join_cut, join_cut_carrying, lock_step};
 pub use satin::{SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, satin_auto_underlay, satin_spacing};
 
 use crate::{Error, Stitch};

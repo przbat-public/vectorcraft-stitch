@@ -111,9 +111,13 @@ fn spawn(job: NearestJob, stop: &CancelToken, passes: &Arc<AtomicU64>, pass: &Ar
 /// still running says how far it has got. One for another document than the active one stops.
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let Some(r) = app.embroidery.nearest.running.as_ref() else { return };
-    if app.session.active().map(|st| st.uid) != Some(r.uid) || ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+    // Escape is an open dialog's or a field's first (it closes or cancels that), then the search's.
+    let escape = app.ui.dialog.is_none() && !ctx.egui_wants_keyboard_input() && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape));
+    if app.session.active().map(|st| st.uid) != Some(r.uid) || escape {
         r.stop.cancel();
     }
+    // Stopped is stopped, even when the search had just finished.
+    let stopped = r.stop.is_cancelled();
     let finished = match &r.result {
         Pending::Thread(receive) => match receive.try_recv() {
             Ok(result) => Some(result),
@@ -122,26 +126,17 @@ pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
                 Some(Err(vectorcraft_engine::EngineError::Internal { cmd: NEAREST.into(), msg: "the search stopped".into() }))
             }
         },
-        Pending::InLine(_) => None,
-    };
-    let finished = match finished {
-        Some(result) => Some(result),
-        None => match app.embroidery.nearest.running.take() {
-            // The web's frame after the one that said it has begun: searched now, in one go.
-            Some(Running { result: Pending::InLine(job), .. }) => Some(job.search()),
-            other => {
-                app.embroidery.nearest.running = other;
-                None
-            }
-        },
+        // The web's frame after the one that said it has begun: searched now, in one go, unless an
+        // Escape or another document stopped it first.
+        Pending::InLine(_) if stopped => Some(Err(vectorcraft_engine::EngineError::Cancelled)),
+        Pending::InLine(job) => Some(job.search()),
     };
     let Some(result) = finished else {
         say_progress(app);
         ctx.request_repaint_after(std::time::Duration::from_secs_f32(PROGRESS_EVERY_SECS));
         return;
     };
-    // Stopped is stopped, even when the search had just finished.
-    let stopped = app.embroidery.nearest.running.take().is_some_and(|r| r.stop.is_cancelled());
+    app.embroidery.nearest.running = None;
     let label = command_label(app, NEAREST);
     let said = match result {
         _ if stopped => crate::et!("Stopped: nothing was changed.").to_string(),
@@ -201,15 +196,14 @@ mod tests {
         out.textures_delta.clear();
     }
 
+    /// Frames until the search is done, or a deadline generous for a busy machine has passed.
     fn until_done(app: &mut VectorcraftApp, ctx: &egui::Context) {
-        for _ in 0..1000 {
-            if !running(app) {
-                return;
-            }
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+        while running(app) {
+            assert!(std::time::Instant::now() < deadline, "still running");
             frame(app, ctx, vec![]);
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
-        panic!("still running");
     }
 
     fn undo_steps(app: &VectorcraftApp) -> usize {
@@ -238,5 +232,29 @@ mod tests {
         start(&mut app);
         until_done(&mut app, &ctx);
         assert_eq!(undo_steps(&app), edited + 1, "{}", app.ui.status);
+    }
+
+    /// Where no thread searches (the web), the search runs in the frame after the one that said it
+    /// has begun: an Escape in that frame stops it before it searches, nothing changed, and the
+    /// status bar says so; with none, what it found is applied in that frame.
+    #[test]
+    fn escape_stops_a_search_made_in_line() {
+        let ctx = egui::Context::default();
+        let mut app = app();
+        let steps = undo_steps(&app);
+        let in_line = |app: &mut VectorcraftApp| {
+            let job = app.session.nearest_connection_job(&json!({})).unwrap();
+            let uid = app.session.active().unwrap().uid;
+            let (stop, passes, pass) = (CancelToken::new(), Arc::new(AtomicU64::new(0)), Arc::new(AtomicU64::new(0)));
+            app.embroidery.nearest.running = Some(Running { uid, stop, passes, pass, result: Pending::InLine(Box::new(job)) });
+        };
+        in_line(&mut app);
+        let escape = Event::Key { key: Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
+        frame(&mut app, &ctx, vec![escape]);
+        assert!(!running(&app));
+        assert_eq!((undo_steps(&app), app.ui.status.as_str()), (steps, "Nearest Connection · Stopped: nothing was changed."));
+        in_line(&mut app);
+        frame(&mut app, &ctx, vec![]);
+        assert_eq!(undo_steps(&app), steps + 1, "{}", app.ui.status);
     }
 }

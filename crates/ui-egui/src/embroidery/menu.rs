@@ -1,14 +1,55 @@
 //! The fork's items in the app's menus and title: View › Stitch Preview (⌘E) and its options, after
 //! Pixel Preview, checked as the active document's stitch view is (and Show Check Marks, for the
-//! check's marks on the canvas); and the document tab's mode, "Stitches" while the canvas shows
-//! them.
+//! check's marks on the canvas); the document tab's mode, "Stitches" while the canvas shows them;
+//! and a person's Convert to Manual Stitches, Restore Object and Nearest Connection from the
+//! command palette or a shortcut, run as the Embroidery panel runs them.
 
-use serde_json::Value;
+use serde_json::{Value, json};
 use vectorcraft_engine::DocState;
 use vectorcraft_engine::cmd::embroidery::view::{layers, paused};
 
 use crate::VectorcraftApp;
 use crate::menus::Item;
+
+/// The commands a person's palette or shortcut runs as the Embroidery panel does.
+const CONVERT: &str = "embroidery.convertToManual";
+const RESTORE: &str = "embroidery.restoreObject";
+const NEAREST: &str = "embroidery.nearestConnection";
+
+/// A person's Convert to Manual Stitches, Restore Object or Nearest Connection (`id`, with no
+/// params), from the command palette or a shortcut, run as the Embroidery panel runs it: Convert
+/// and Nearest Connection off the interface thread, the status bar saying how far they have got
+/// and Escape stopping them; Restore asking first when the stitches it would put back were edited
+/// since converting, and saying what it restored → whether `id` was one of them. Agents' and
+/// scripts' commands run in one go, as every command does.
+pub fn invoked(app: &mut VectorcraftApp, id: &str) -> bool {
+    match id {
+        CONVERT => crate::embroidery::convert_job::start(app, &json!({})),
+        NEAREST => crate::embroidery::nearest::start(app),
+        RESTORE => restore_asking(app, Value::Null),
+        _ => return false,
+    }
+    true
+}
+
+/// Restore Object on objects `ids` (null: the selection), as the Object tab's button and the
+/// command palette run it: asking first when the stitches of an object it would put back were
+/// edited since converting (a dry run says), else restoring at once and saying what it restored.
+pub(crate) fn restore_asking(app: &mut VectorcraftApp, ids: Value) {
+    let asked = match app.session.execute(RESTORE, &json!({"ids": ids, "dryRun": true})) {
+        Ok(v) if v["editedCount"].as_u64().is_some_and(|n| n > 0) => v["restoredCount"].as_u64(),
+        _ => None,
+    };
+    if let Some(count) = asked {
+        // The question restores the same objects: the selection can't change while it is open.
+        let count = usize::try_from(count).unwrap_or(usize::MAX);
+        return crate::embroidery::restore_dialog::open(app, ids, count);
+    }
+    match app.run(RESTORE, json!({ "ids": ids })) {
+        Ok(v) => app.status(crate::embroidery::restore_dialog::restored(&v)),
+        Err(e) => app.status(super::vocabulary::refusal(&e)),
+    }
+}
 
 /// View › Stitch Preview.
 pub fn stitch_preview() -> Item {

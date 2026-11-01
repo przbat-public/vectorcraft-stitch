@@ -166,8 +166,8 @@ fn findings_and_what_passed_rules_measured() {
     assert!(line("fillStitchShort").starts_with("Shortest: "), "{}", line("fillStitchShort"));
     assert_eq!(line("runStitchShort"), "No findings", "no stroke");
     assert_eq!(line("satinTooWide"), "No findings", "no satin column");
-    assert_eq!(line("formatColors"), "3 thread blocks");
-    assert_eq!(line("machineColorChanges"), "2 thread changes");
+    assert_eq!(line("formatColors"), "3 thread blocks, stops included");
+    assert_eq!(line("machineColorChanges"), "2 thread changes, stops included");
 }
 
 /// The tab drawn: the summary, the rules' words, the type left out as the plan says it, what isn't
@@ -204,7 +204,7 @@ fn a_format_chosen_checks_for_it() {
     ready(&mut app, &ctx);
     let uid = app.session.active().unwrap().uid;
     let generation = app.embroidery.preview.shown(uid).unwrap().planned.generation;
-    app.embroidery.check.format.insert(uid, "dst");
+    app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::Dst);
     let mut words = vec![];
     // Frames past the quiet time, in case the plan shown went out of date meanwhile (the fonts'
     // generation is the process's, which other tests change).
@@ -213,8 +213,12 @@ fn a_format_chosen_checks_for_it() {
     }
     assert!(has(&words, "Tajima DST"), "{words:?}");
     assert_eq!(app.embroidery.preview.shown(uid).unwrap().planned.generation, generation, "not planned again");
-    assert_eq!(query(&app.embroidery.check, uid).params["format"], json!("dst"));
-    assert!(query(&app.embroidery.check, uid + 1).params.get("format").is_none(), "another document keeps the palette's");
+    let format = |uid: u64| match query(&app.embroidery.check, uid) {
+        Query::Read { params, .. } => params.get("format").cloned(),
+        q => panic!("{q:?}"),
+    };
+    assert_eq!(format(uid), Some(json!("dst")));
+    assert!(format(uid + 1).is_none(), "another document keeps the palette's");
 }
 
 /// Nothing found: no problems, and everything is sewn.

@@ -305,12 +305,27 @@ fn shift_keeps_45_degrees_and_a_drag_back_to_the_start_keeps_nothing() {
     );
 }
 
-/// Past [`LIVE_DRAG_POINTS_MAX`] needle points selected, a drag previews only once it has rested
-/// [`PAUSE_PREVIEW_SECS`] (the project owner's choice), and at the release.
+/// Up to the project owner's 20,000 needle points selected ([`LIVE_DRAG_POINTS_MAX`]), a drag
+/// previews at the first tick; past it, only once it has rested [`PAUSE_PREVIEW_SECS`] (moving
+/// again starts the rest over), and at the release.
 #[test]
 fn a_drag_of_many_needle_points_previews_when_it_rests() {
+    assert_eq!(
+        LIVE_DRAG_POINTS_MAX, 20_000,
+        "the project owner's number (2026-10-27: above 20,000 selected, the stitches refresh on a pause or the release)"
+    );
     let (d, g, ids) = doc();
     let [a, _] = ids;
+    // As many as a live drag takes: previewed at once.
+    let live: Vec<(usize, usize)> = (0..LIVE_DRAG_POINTS_MAX).map(|k| (0, k)).collect();
+    let (s, p, f) = (selected(a, &live), PaintDefaults::default(), Editing { needles: Some(needles(g, ids)), under: None });
+    let c = editing(&d, &s, &p, &f, g);
+    let mut t = EmbroideryTool::default();
+    t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0));
+    t.pointer(&c, &ev(PointerKind::Drag, 110.0, 100.0));
+    assert!(matches!(t.tick(&c, PAUSE_PREVIEW_SECS / 2.0).as_slice(), [Action::Preview(..)]), "{} selected: at once", live.len());
+    t.pointer(&c, &ev(PointerKind::Up, 110.0, 100.0));
+    // One more: only once it rests.
     let many: Vec<(usize, usize)> = (0..=LIVE_DRAG_POINTS_MAX).map(|k| (0, k)).collect();
     let (s, p, f) = (selected(a, &many), PaintDefaults::default(), Editing { needles: Some(needles(g, ids)), under: None });
     let c = editing(&d, &s, &p, &f, g);

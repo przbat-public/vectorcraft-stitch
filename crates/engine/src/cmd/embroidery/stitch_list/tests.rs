@@ -8,7 +8,7 @@ use vectorcraft_testkit::embroidery as fx;
 
 use super::super::check::StitchLimits;
 use super::super::test_support::run;
-use super::{Filter, Flags, edited_by, leading, numbering, ordinals, row, scope};
+use super::{Filter, Flags, Listed, edited_by, leading, listed, numbering, ordinals, row, scope};
 use crate::Session;
 
 fn runner(s: &mut Session) -> impl FnMut(&str, Value) -> Value + '_ {
@@ -132,5 +132,36 @@ fn counts_by_chunk_are_a_walks() {
             let want: Vec<usize> = r.clone().filter(|m| flags.matches(*m, f)).collect();
             assert_eq!(listed, want, "{f:?} over {r:?}");
         }
+    }
+}
+
+/// Rows as ranges and as picked numbers: row to record and back.
+#[test]
+fn rows_and_records_round_trip() {
+    let all = Listed { rows: super::Rows::Ranges(vec![3..7, 10..12], vec![0, 4]), counts: [0; 6], span: Some((3, 11)) };
+    assert_eq!(all.len(), 6);
+    assert_eq!((0..6).map(|i| all.record(i).unwrap()).collect::<Vec<_>>(), [3, 4, 5, 6, 10, 11]);
+    assert_eq!((all.row_of(10), all.row_of(7), all.row_of(2), all.record(6)), (Some(4), None, None, None));
+    let picked = Listed { rows: super::Rows::Picked(vec![2, 9, 40]), counts: [0; 6], span: Some((2, 40)) };
+    assert_eq!((picked.record(1), picked.row_of(40), picked.row_of(3)), (Some(9), Some(2), None));
+}
+
+/// One pass over the scope gives every filter's count; a filter's rows are its matches.
+#[test]
+fn every_filters_count_in_one_pass() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 100, "height": 60})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 180, "y": 20, "width": 60, "height": 60})).unwrap();
+    let opts = crate::EmbroideryOptions::default();
+    let plan = s.embroidery_plan(&opts).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let limits = StitchLimits::of(&doc, None);
+    let flags = Flags::of(&plan, &limits);
+    let all = listed(&flags, None, Filter::All);
+    for (k, f) in Filter::ALL.into_iter().enumerate() {
+        let picked = listed(&flags, None, f);
+        assert_eq!(picked.len(), all.counts[k], "{f:?}");
+        assert!((0..picked.len()).all(|i| flags.matches(picked.record(i).unwrap(), f)), "{f:?}");
     }
 }

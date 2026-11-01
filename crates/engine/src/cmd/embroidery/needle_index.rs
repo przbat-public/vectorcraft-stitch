@@ -34,11 +34,11 @@ use super::needles::{self, MAX_NEEDLE_POINTS, Unfit};
 /// The most needle points a chunk of a path's index holds: as many as a line of the stitch scene
 /// (`vectorcraft_render::lines::MAX_LINE_POINTS`), so that a query tests as many points a box as a
 /// press on the stitches does.
-pub const CHUNK_POINTS: usize = vectorcraft_render::lines::MAX_LINE_POINTS;
+pub(crate) const CHUNK_POINTS: usize = vectorcraft_render::lines::MAX_LINE_POINTS;
 
 /// The most points a lasso may have (a selection by a polygon): a loop round a 4K display at a
 /// screen pixel a point, after the loop is simplified. An estimate.
-pub const MAX_LASSO_POINTS: usize = 4096;
+pub(crate) const MAX_LASSO_POINTS: usize = 4096;
 
 /// The most horizontal bands a lasso's edges are sorted into: a needle point is tested against the
 /// edges of its band alone, not every edge. An estimate (a band a screen pixel high on a 4K display
@@ -48,11 +48,11 @@ const LASSO_BANDS: usize = 256;
 /// [`MAX_LASSO_POINTS`] edges crossed a quarter of the bands, 8 MB. A polygon past it (a zigzag whose
 /// every edge spans its whole height puts a million there) is refused before anything is tested. An
 /// estimate.
-pub const LASSO_ENTRIES_MAX: usize = MAX_LASSO_POINTS * LASSO_BANDS / 4;
+pub(crate) const LASSO_ENTRIES_MAX: usize = MAX_LASSO_POINTS * LASSO_BANDS / 4;
 /// The most edge tests a selection by a lasso makes (each needle point it looks at against the edges
 /// of its band): past it the selection stops and is refused, nothing selected. About a second at a
 /// few nanoseconds a test. An estimate.
-pub const LASSO_TESTS_MAX: usize = 200_000_000;
+pub(crate) const LASSO_TESTS_MAX: usize = 200_000_000;
 /// How many needle points a selection by a shape looks at between two looks at whether its work was
 /// cancelled.
 const CANCEL_EVERY: usize = 1 << 16;
@@ -100,7 +100,7 @@ const CHUNK_RUNS: usize = CHUNK_POINTS;
 /// among its needle points, its chunks, how many needle points it holds, the box they fall in, and
 /// the needle points the machine stops after (the needle is then lifted to the next: no stitch
 /// between them).
-pub struct PathIndex {
+pub(crate) struct PathIndex {
     node: Arc<Node>,
     /// Run `r`'s first needle point's index in the path, and one past the last needle point at the
     /// end: a needle point's run is found by its index without walking the runs before it.
@@ -618,7 +618,7 @@ impl NeedleIndex {
 
     /// The needle points inside `area` (document points), path by path, in order; `None` when a
     /// lasso would test past [`LASSO_TESTS_MAX`] edges, or the work was cancelled.
-    pub fn within(&self, area: &Area) -> Option<Vec<(NodeId, Vec<usize>)>> {
+    pub(crate) fn within(&self, area: &Area) -> Option<Vec<(NodeId, Vec<usize>)>> {
         self.within_tested(area, LASSO_TESTS_MAX)
     }
 
@@ -667,7 +667,7 @@ fn nearest_on(a: Point, b: Point, p: Point) -> Point {
 
 /// What a selection by a shape takes: the needle points inside a rectangle, or inside a polygon (a
 /// lasso: inside by the even-odd rule, as the Lasso tool selects anchors), document points.
-pub enum Area {
+pub(crate) enum Area {
     Rect(Rect),
     Lasso(Lasso),
 }
@@ -701,7 +701,7 @@ impl Area {
 
 /// A polygon whose edges are sorted into horizontal bands ([`LASSO_BANDS`]), so that a point is
 /// tested against the few edges of its band.
-pub struct Lasso {
+pub(crate) struct Lasso {
     bounds: Rect,
     bands: Vec<Vec<(Point, Point)>>,
     band_height: f64,
@@ -709,7 +709,7 @@ pub struct Lasso {
 
 /// Why a lasso isn't made ([`Lasso::new`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LassoRefused {
+pub(crate) enum LassoRefused {
     /// Fewer than three points, one that isn't a number, or no area.
     NoArea,
     /// Its edges would fill its bands past [`LASSO_ENTRIES_MAX`].
@@ -718,7 +718,7 @@ pub enum LassoRefused {
 
 impl Lasso {
     /// The lasso through `points` (closed back to its first), or why it isn't one.
-    pub fn new(points: &[Point]) -> Result<Self, LassoRefused> {
+    pub(crate) fn new(points: &[Point]) -> Result<Self, LassoRefused> {
         if points.len() < 3 || !points.iter().all(|p| p.x.is_finite() && p.y.is_finite()) {
             return Err(LassoRefused::NoArea);
         }

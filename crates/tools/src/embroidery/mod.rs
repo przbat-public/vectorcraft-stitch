@@ -28,10 +28,8 @@ use vectorcraft_doc::embroidery::takers::{compound_of, takers};
 use vectorcraft_doc::hit::{HitKind, hit_test};
 use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
-pub use editing::{
-    Editing, Hover, LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, SHIFT_STEPS, contains_stitches, is_selected, selected_count,
-    stitch_object,
-};
+pub(crate) use editing::Editing;
+pub use editing::{LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, contains_stitches, stitch_object};
 pub use facts::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, SelectMode, SelectedSpan, ThreadHit};
 pub use handles::{
     APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_MIN_PX, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle,
@@ -342,7 +340,7 @@ impl Tool for EmbroideryTool {
                 }
                 return self.editing.pointer(cx, needles, ev);
             }
-            self.editing.hover = None;
+            self.editing.clear_hover();
         }
         match ev.kind {
             PointerKind::Move => {
@@ -611,7 +609,7 @@ impl Tool for EmbroideryTool {
     fn hover_ended(&mut self, _cx: &ToolContext) {
         self.hover = None;
         self.hover_object = None;
-        self.editing.hover = None;
+        self.editing.clear_hover();
     }
 
     fn deactivate(&mut self, _cx: &ToolContext) -> Vec<Action> {

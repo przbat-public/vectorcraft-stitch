@@ -96,10 +96,10 @@ struct Marquee {
 /// The gesture under way while editing stitches, and what the pointer is over.
 #[derive(Clone, Debug, Default)]
 pub struct Editing {
-    pub hover: Option<Hover>,
+    hover: Option<Hover>,
     /// The needle point `[` and `]` step from: the one last pressed or stepped to, of the object
     /// `scope` edited ([`Editing::follow`]).
-    pub current: Option<NeedleRef>,
+    current: Option<NeedleRef>,
     scope: Option<NodeId>,
     drag: Option<Drag>,
     marquee: Option<Marquee>,
@@ -181,6 +181,12 @@ pub fn stitch_object(doc: &Document, isolation: Option<NodeId>, id: NodeId) -> O
 }
 
 impl Editing {
+    /// The pointer is no longer over a needle point or a stitch (it left the canvas, or the tool
+    /// stopped editing).
+    pub fn clear_hover(&mut self) {
+        self.hover = None;
+    }
+
     /// Whether a gesture is under way (a drag that has begun, or a marquee).
     pub fn busy(&self) -> bool {
         self.drag.as_ref().is_some_and(|d| d.begun) || self.marquee.is_some_and(|m| m.dragged)

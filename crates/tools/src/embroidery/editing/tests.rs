@@ -9,6 +9,7 @@ use vectorcraft_doc::{Appearance, Document, Node, NodeId, Selection};
 use vectorcraft_geom::{PathData, Point, SubPath};
 
 use super::super::*;
+use super::PAUSE_PREVIEW_SECS;
 use crate::testutil::cx;
 use crate::{Action, Cursor, Mods, PaintDefaults, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
 

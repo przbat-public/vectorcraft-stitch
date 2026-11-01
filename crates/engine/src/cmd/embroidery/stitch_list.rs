@@ -400,5 +400,106 @@ fn needle_of(plan: &DesignPlan, doc: &Document, number: usize) -> Option<(NodeId
     Some((node, k))
 }
 
+/// The rows a scope and a filter list (the Stitches tab's): record numbers in sewing order, as ranges
+/// (every record of them) or picked one by one; with each filter's count in the scope.
+pub struct Listed {
+    rows: Rows,
+    pub counts: [usize; Filter::ALL.len()],
+    /// The scope's first and last record numbers.
+    pub span: Option<(usize, usize)>,
+}
+
+impl Default for Listed {
+    /// No rows: before any plan's flags are built.
+    fn default() -> Self {
+        Self { rows: Rows::Picked(Vec::new()), counts: [0; Filter::ALL.len()], span: None }
+    }
+}
+
+enum Rows {
+    /// Every record of the ranges, and how many come before each range.
+    Ranges(Vec<Range<usize>>, Vec<usize>),
+    Picked(Vec<u32>),
+}
+
+impl Listed {
+    /// How many rows.
+    pub fn len(&self) -> usize {
+        match &self.rows {
+            Rows::Ranges(r, before) => before.last().copied().unwrap_or(0) + r.last().map_or(0, |l| l.len()),
+            Rows::Picked(p) => p.len(),
+        }
+    }
+
+    /// Whether it lists no row.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Row `i`'s record number.
+    pub fn record(&self, i: usize) -> Option<usize> {
+        match &self.rows {
+            Rows::Ranges(ranges, before) => {
+                let k = before.partition_point(|b| *b <= i).checked_sub(1)?;
+                let r = ranges.get(k)?;
+                let n = r.start + (i - before.get(k)?);
+                (n < r.end).then_some(n)
+            }
+            Rows::Picked(p) => p.get(i).map(|n| *n as usize),
+        }
+    }
+
+    /// The row of record `number`, when it is listed.
+    pub fn row_of(&self, number: usize) -> Option<usize> {
+        match &self.rows {
+            Rows::Ranges(ranges, before) => {
+                let k = ranges.partition_point(|r| r.end <= number);
+                let r = ranges.get(k).filter(|r| r.contains(&number))?;
+                Some(before.get(k)? + (number - r.start))
+            }
+            Rows::Picked(p) => {
+                let n = u32::try_from(number).ok()?;
+                p.binary_search(&n).ok()
+            }
+        }
+    }
+}
+
+/// The rows of `ranges` (record numbers; `None`: every record of `flags`) under `filter`, and every
+/// filter's count, in one pass over the scope's records.
+pub fn listed(flags: &Flags, ranges: Option<&[Range<usize>]>, filter: Filter) -> Listed {
+    let whole = 1..flags.len() + 1;
+    let ranges: &[Range<usize>] = ranges.unwrap_or(std::slice::from_ref(&whole));
+    // Each filter's count from the flags' counts by chunk (built on the planning thread), and the
+    // filter's rows from the chunks it lists any of: no walk of every record here.
+    let mut counts = [0usize; Filter::ALL.len()];
+    let mut picked: Vec<u32> = Vec::new();
+    for r in ranges {
+        for (slot, n) in counts.iter_mut().zip(flags.counts(r.clone())) {
+            *slot += n;
+        }
+        if filter != Filter::All {
+            flags.each_listed(r.clone(), filter, |n| {
+                if let Ok(n) = u32::try_from(n) {
+                    picked.push(n);
+                }
+            });
+        }
+    }
+    let span = ranges.first().zip(ranges.last()).and_then(|(a, b)| (b.end > a.start).then(|| (a.start, b.end - 1)));
+    let rows = if filter == Filter::All {
+        let mut before = Vec::with_capacity(ranges.len());
+        let mut sum = 0;
+        for r in ranges {
+            before.push(sum);
+            sum += r.len();
+        }
+        Rows::Ranges(ranges.to_vec(), before)
+    } else {
+        Rows::Picked(picked)
+    };
+    Listed { rows, counts, span }
+}
+
 #[cfg(test)]
 mod tests;

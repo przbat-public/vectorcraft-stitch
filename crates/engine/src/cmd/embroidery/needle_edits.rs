@@ -12,6 +12,7 @@ use vectorcraft_doc::{Document, NodeId, Selection};
 use vectorcraft_geom::{Point, Vec2};
 use vectorcraft_stitch::{mm_to_pt, point_to_mm, point_to_pt, pt_to_mm};
 
+use super::check::StitchLimits;
 use super::needles::{self, Index, LONGEST, Lengths, MAX_LISTED, MAX_NEEDLE_POINTS, NOTHING_ADDRESSED, Stitches, Targets};
 use super::{object, only};
 use crate::cmd::bad;
@@ -137,9 +138,10 @@ struct Edit {
     /// The command's id, which its refusals name.
     cmd: &'static str,
     before: Selection,
-    sel: Selection,
-    min: f64,
-    max: f64,
+    sel: needles::Selecting,
+    /// The one set of limits the stitches around the edit are measured against: the document's
+    /// (its shortest stitch, 12.7 mm and its thread palette's format), or Split Long Stitches'.
+    limits: StitchLimits,
     lengths: Lengths,
     edits: Vec<(NodeId, Left)>,
     passed_over: Vec<(NodeId, needles::Unfit)>,
@@ -151,17 +153,18 @@ struct Edit {
 impl Edit {
     /// An edit of the active document's needle points by command `cmd`, the selection as it is
     /// `before` and what of it the command passed over `passed_over`; measured against the
-    /// document's shortest stitch.
+    /// document's limits.
     fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, needles::Unfit)>) -> Result<Self> {
-        let min = needles::shortest_stitch(&s.doc()?.doc);
-        Ok(Self { cmd, sel: before.clone(), before, min, max: LONGEST, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
+        let limits = StitchLimits::of(&s.doc()?.doc, None);
+        let sel = needles::Selecting::new(before.clone());
+        Ok(Self { cmd, sel, before, limits, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
     }
 
     /// The needle points of path `id` (read from it, `ix` its index) that the selection selected
     /// before the edit, when it selected some of them by their anchors (`None`: the path whole or
     /// not at all, which the edit leaves as it is).
     fn selected(&self, id: NodeId, ix: &Index) -> Option<BTreeSet<usize>> {
-        self.before.anchors.contains_key(&id).then(|| needles::selected_in(&self.before, id, ix))
+        needles::by_anchors(&self.before, id, ix)
     }
 
     /// Path `id` as the edit leaves it, `out` (`ix` its index): refused past
@@ -189,28 +192,23 @@ impl Edit {
             Some(map) => map.get(k).copied().flatten(),
             None => Some(k),
         };
-        self.lengths.around(&out, ix, touched.into_iter().filter_map(&after), self.min, self.max);
+        self.lengths.around(&out, ix, touched.into_iter().filter_map(&after), &self.limits);
         let carried = |k: BTreeSet<usize>| -> BTreeSet<usize> { k.into_iter().filter_map(&after).collect() };
         match kept {
             Kept::Same => {
                 if let Some(k) = selected {
-                    needles::select_in(&mut self.sel, id, ix, &carried(k));
+                    self.sel.select_in(id, ix, &carried(k));
                 }
             }
             Kept::Moved(moved_to) => {
                 if let Some(k) = selected {
                     let k = k.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()).collect();
-                    needles::select_in(&mut self.sel, id, ix, &carried(k));
+                    self.sel.select_in(id, ix, &carried(k));
                 }
             }
-            Kept::Only(k) => needles::select_in(&mut self.sel, id, ix, &carried(k)),
-            Kept::Left => self.leave(id),
-            Kept::Whole => {
-                self.sel.anchors.remove(&id);
-                if !self.sel.objects.contains(&id) {
-                    self.sel.objects.push(id);
-                }
-            }
+            Kept::Only(k) => self.sel.select_in(id, ix, &carried(k)),
+            Kept::Left => self.sel.leave(id),
+            Kept::Whole => self.sel.whole(id),
         }
         self.edits.push((id, Left::Stitches(out)));
         Ok(())
@@ -218,14 +216,8 @@ impl Edit {
 
     /// Path `id` removed, and out of the selection.
     fn removed(&mut self, id: NodeId) {
-        self.leave(id);
+        self.sel.leave(id);
         self.edits.push((id, Left::Removed));
-    }
-
-    /// Path `id` out of the selection.
-    fn leave(&mut self, id: NodeId) {
-        self.sel.remove(id);
-        self.sel.anchors.remove(&id);
     }
 
     /// The reply: `own`'s keys and what every edit answers (the paths changed or removed and how
@@ -240,12 +232,12 @@ impl Edit {
         let count = self.edits.iter().filter(|(_, l)| !matches!(l, Left::Marks(_))).count();
         reply.insert("paths".into(), Value::Array(paths));
         reply.insert("pathCount".into(), json!(count));
-        reply.insert("lengths".into(), self.lengths.json(self.min, self.max));
+        reply.insert("lengths".into(), self.lengths.json(&self.limits));
         reply.insert("collapsedCount".into(), json!(self.collapsed));
         let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect();
         reply.insert("passedOver".into(), Value::Array(passed));
         if changed {
-            apply(s, label, self.edits, self.sel)?;
+            apply(s, label, self.edits, self.sel.done())?;
         }
         Ok(Value::Object(reply))
     }
@@ -810,7 +802,7 @@ pub(super) fn split_run(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, SPLIT, &["ties"])?;
     let (t, before) = targets(s, &o, SPLIT)?;
     let mut e = Edit::begin(s, SPLIT, before, t.passed_over)?;
-    let ties = ties(&o, SPLIT, e.min)?;
+    let ties = ties(&o, SPLIT, e.limits.shortest)?;
     let (mut jumps, mut split, mut unchanged) = (Vec::new(), 0usize, 0usize);
     for (id, st, indices) in t.paths {
         let was = st.index();
@@ -981,7 +973,7 @@ pub(super) fn join_runs(s: &mut Session, p: &Value) -> Result<Value> {
             let ix = out.index();
             // The stitches joined: into each needle point that started a run.
             let touched: Vec<usize> = indices.iter().filter_map(|&k| moved_to.get(k).copied().flatten()).collect();
-            e.lengths.around(&out, &ix, touched, e.min, e.max);
+            e.lengths.around(&out, &ix, touched, &e.limits);
             let selected = selected.map(|k| k.into_iter().filter_map(|k| moved_to.get(k).copied().flatten()).collect());
             within.insert(id, (out, selected, true));
         }
@@ -1216,7 +1208,7 @@ pub(super) fn machine_function(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let (t, before) = targets(s, &o, FUNCTION)?;
     let mut e = Edit::begin(s, FUNCTION, before, t.passed_over)?;
-    let ties = ties(&o, FUNCTION, e.min)?;
+    let ties = ties(&o, FUNCTION, e.limits.shortest)?;
     // The path of stitches sewn right after each path addressed that keeps a cut before it (an
     // opened design keeps the cut between two of its runs so): the cut after the path's end.
     let doc = s.doc()?.doc.clone();
@@ -1336,64 +1328,74 @@ pub(super) const SPLIT_LONG_LABEL: &str = "Split Long Stitches";
 /// the default.
 const MAX_LENGTH_RANGE: std::ops::RangeInclusive<f64> = super::check::SHORT..=LONGEST;
 
+/// How a stitch is split: where a format's writer would cut it (its grid, and its records' reach in
+/// tenths), into stitches no longer than a length (millimetres), or both, the format's cut first.
+#[derive(Clone, Copy)]
+struct Split<'a> {
+    grid: Option<(&'a vectorcraft_stitch::format::Grid, i32)>,
+    max: Option<f64>,
+}
+
 /// The needle points (document points) a stitch from `a` to `b` (millimetres, as the walk sews
-/// them) is split into, besides its ends: with `grid` (a format's, and its records' reach in
-/// tenths), where that format's writer would cut it (each end on the grid the writer counts the
-/// design on, the fewest equal steps of at most one record's reach along x and along y,
-/// `format::steps`); else the fewest equal stitches no longer than `max` millimetres. Refused past
-/// `room` new needle points.
-fn pieces(
-    a: Point,
-    b: Point,
-    grid: Option<(&vectorcraft_stitch::format::Grid, i32)>,
-    max: f64,
-    room: usize,
-) -> std::result::Result<Vec<Point>, String> {
-    let pt = point_to_pt;
-    match grid {
-        Some((grid, reach)) => {
-            let ((ax, ay), (bx, by)) = (grid.units(a), grid.units(b));
-            let (dx, dy) = (bx - ax, by - ay);
-            let span = dx.unsigned_abs().max(dy.unsigned_abs());
-            if span <= reach.unsigned_abs() {
-                return Ok(Vec::new());
-            }
+/// them) is split into by `split`, besides its ends: with a grid, where that format's writer would
+/// cut it (each end on the grid the writer counts the design on, the fewest equal steps of at most
+/// one record's reach along x and along y, `format::steps`); then, with a length, each stitch still
+/// longer than it into the fewest equal stitches within it. Refused past `room` new needle points.
+fn pieces(a: Point, b: Point, split: Split<'_>, room: usize) -> std::result::Result<Vec<Point>, String> {
+    // The writer's cut, millimetres.
+    let mut cut = vec![a];
+    if let Some((grid, reach)) = split.grid {
+        let ((ax, ay), (bx, by)) = (grid.units(a), grid.units(b));
+        let (dx, dy) = (bx - ax, by - ay);
+        let span = dx.unsigned_abs().max(dy.unsigned_abs());
+        if span > reach.unsigned_abs() {
             let n = span.div_ceil(reach.unsigned_abs().max(1)) as usize;
             if n > room {
                 return Err(format!("a stitch would take {n} needle points"));
             }
-            let mut out = Vec::with_capacity(n);
             let (mut x, mut y) = (ax, ay);
             for (sx, sy) in vectorcraft_stitch::format::steps(dx, dy, reach) {
                 (x, y) = (x + sx, y + sy);
-                out.push(pt(grid.point((x, y))));
+                cut.push(grid.point((x, y)));
             }
             // The last step ends on the stitch's own end.
-            out.pop();
-            Ok(out)
-        }
-        None => {
-            let length = a.distance(b);
-            // Within the limit, or no number (no split).
-            if !length.is_finite() || length <= max {
-                return Ok(Vec::new());
-            }
-            let n = (length / max).ceil();
-            if !n.is_finite() || n > room as f64 {
-                return Err(format!("a stitch {length:.1} mm long would take more needle points than one edit adds"));
-            }
-            let n = n as usize;
-            Ok((1..n).map(|i| pt(a.lerp(b, i as f64 / n as f64))).collect())
+            cut.pop();
         }
     }
+    cut.push(b);
+    let mut out: Vec<Point> = Vec::new();
+    for (k, w) in cut.windows(2).enumerate() {
+        let [p, q] = w else { continue };
+        if k > 0 {
+            out.push(*p);
+        }
+        let Some(max) = split.max else { continue };
+        let length = p.distance(*q);
+        // Within the limit, or no number (no split).
+        if !length.is_finite() || length <= max {
+            continue;
+        }
+        let n = (length / max).ceil();
+        if !n.is_finite() || n > room.saturating_sub(out.len()) as f64 {
+            return Err(format!("a stitch {length:.1} mm long would take more needle points than one edit adds"));
+        }
+        let n = n as usize;
+        out.extend((1..n).map(|i| p.lerp(*q, i as f64 / n as f64)));
+    }
+    if out.len() > room {
+        return Err(format!("a stitch would take {} needle points", out.len()));
+    }
+    Ok(out.into_iter().map(point_to_pt).collect())
 }
 
 /// `embroidery.splitLongStitches {needlePoints?, ranges?, maxLength?, format?}`: each stitch arriving
 /// at a needle point addressed (or selected; a path or group selected whole: all of its stitches)
 /// longer than `maxLength` (millimetres, its own length; default 12.7) split into the fewest equal
 /// stitches within it, or, with `format`, longer along x or y than one of that format's records, cut
-/// where its writer would cut it (that format's export unchanged). More needle points, never jumps;
-/// a jump between runs is never split (the writers split long moves themselves).
+/// where its writer would cut it (that format's export unchanged); with both, the format's cut, then
+/// each stitch still longer than `maxLength` split within it (the one set of limits' two lines).
+/// More needle points, never jumps; a jump between runs is never split (the writers split long moves
+/// themselves).
 pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
     let o = params(p, SPLIT_LONG, &["maxLength", "format"])?;
     let format = match o.get("format").filter(|v| !v.is_null()) {
@@ -1404,12 +1406,9 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
                 .ok_or_else(|| bad(SPLIT_LONG, format!("`format` {v}: one of dst, tap, t01, exp, pes, pec, jef, vp3")))?,
         ),
     };
-    let max = millimetres(&o, "maxLength", SPLIT_LONG)?;
-    if format.is_some() && max.is_some() {
-        return Err(bad(SPLIT_LONG, "give `maxLength` or `format`, not both"));
-    }
+    let given = millimetres(&o, "maxLength", SPLIT_LONG)?;
     let (lo, hi) = (*MAX_LENGTH_RANGE.start(), *MAX_LENGTH_RANGE.end());
-    let max = max.unwrap_or(hi);
+    let max = given.unwrap_or(hi);
     if !MAX_LENGTH_RANGE.contains(&max) {
         return Err(bad(SPLIT_LONG, format!("`maxLength` {max}: {lo} to {hi} millimetres")));
     }
@@ -1425,8 +1424,11 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
         None => None,
     };
     let mut e = Edit::begin(s, SPLIT_LONG, before, t.passed_over)?;
-    // The live check measures against the limit asked for.
-    e.max = max;
+    // The live check measures against the lines asked for: the length, and the format's records.
+    e.limits.longest = max;
+    if let Some(f) = format {
+        (e.limits.step, e.limits.format) = (f.max_step(), f);
+    }
     let (mut split, mut added) = (0usize, 0usize);
     // Each needle point addressed, as numbered after the edit.
     let mut addressed = Vec::new();
@@ -1438,8 +1440,9 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
             for (i, n) in run.needles.iter().enumerate() {
                 if let (true, Some(prev)) = (indices.contains(&k), i.checked_sub(1).and_then(|j| run.needles.get(j))) {
                     let room = MAX_ADDED.saturating_sub(added);
-                    let grid = grid.as_ref().map(|(g, reach)| (g, *reach));
-                    let new = pieces(prev.mm(), n.mm(), grid, max, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
+                    // A format alone cuts as its writer does; a length, alone or with it, too.
+                    let how = Split { grid: grid.as_ref().map(|(g, reach)| (g, *reach)), max: (grid.is_none() || given.is_some()).then_some(max) };
+                    let new = pieces(prev.mm(), n.mm(), how, room).map_err(|why| bad(SPLIT_LONG, format!("object {}: {why}", id.0)))?;
                     if !new.is_empty() {
                         split += 1;
                         added += new.len();
@@ -1464,9 +1467,10 @@ pub(super) fn split_long(s: &mut Session, p: &Value) -> Result<Value> {
         addressed.extend(touched.iter().take(MAX_LISTED.saturating_sub(addressed.len())).map(|k| json!({"id": id.0, "index": k})));
         e.rebuilt(id, out, &ix, selected, Kept::Moved(&moved_to), touched)?;
     }
-    let limit = match format {
-        Some(f) => json!({"format": f.id(), "step": f.max_step()}),
-        None => json!({"length": max}),
+    let limit = match (format, given) {
+        (Some(f), Some(_)) => json!({"format": f.id(), "step": f.max_step(), "length": max}),
+        (Some(f), None) => json!({"format": f.id(), "step": f.max_step()}),
+        (None, _) => json!({"length": max}),
     };
     e.finish(s, SPLIT_LONG_LABEL, split > 0, json!({"changedCount": split, "addedCount": added, "limit": limit, "needlePoints": addressed}))
 }

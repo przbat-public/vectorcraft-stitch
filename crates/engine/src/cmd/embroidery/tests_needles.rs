@@ -159,18 +159,56 @@ fn the_selection_maps_to_needle_points_and_back() {
     sel.objects = vec![NodeId(id)];
     sel.anchors.insert(NodeId(id), [(1, 1), (0, 2)].into_iter().collect());
     let ix = st.index();
-    assert_eq!(needles::selected_in(&sel, NodeId(id), &ix), [2, 3].into_iter().collect());
-    needles::select_in(&mut sel, NodeId(id), &ix, &[3].into_iter().collect());
+    let mut selecting = needles::Selecting::new(sel);
+    assert_eq!(selecting.selected_in(NodeId(id), &ix), [2, 3].into_iter().collect());
+    selecting.select_in(NodeId(id), &ix, &[3].into_iter().collect());
+    let sel = selecting.done();
     assert_eq!(sel.anchors[&NodeId(id)], [(1, 0), (1, 1)].into_iter().collect(), "both anchors of the one needle point");
-    needles::select_in(&mut sel, NodeId(id), &ix, &Default::default());
+    let mut selecting = needles::Selecting::new(sel);
+    selecting.select_in(NodeId(id), &ix, &Default::default());
+    let mut sel = selecting.done();
     assert!(!sel.contains(NodeId(id)) && !sel.anchors.contains_key(&NodeId(id)), "nothing of it: it leaves the selection");
     sel.anchors.clear();
     sel.objects = vec![NodeId(id)];
-    assert_eq!(needles::selected_in(&sel, NodeId(id), &ix).len(), 4, "selected whole: all of it");
+    assert_eq!(needles::Selecting::new(sel.clone()).selected_in(NodeId(id), &ix).len(), 4, "selected whole: all of it");
     // An anchor past a run's needle points (left stale by an edit since) is none of them; the
     // second anchor of a line to its own start is its one.
     sel.anchors.insert(NodeId(id), [(0, 9), (1, 1)].into_iter().collect());
-    assert_eq!(needles::selected_in(&sel, NodeId(id), &ix), [3].into_iter().collect());
+    assert_eq!(needles::Selecting::new(sel).selected_in(NodeId(id), &ix), [3].into_iter().collect());
+    // The needle index spans them alike, the path found once: the line to its own start's two
+    // anchors one needle point.
+    let doc = s.doc().unwrap().doc.clone();
+    let roots: Vec<NodeId> = doc.layers.iter().map(|l| l.id).collect();
+    let index = super::needle_index::NeedleIndex::of(&doc, &roots, None).unwrap();
+    let span = index.span(NodeId(id), &[(0, 2), (1, 0), (1, 1)].into_iter().collect());
+    assert_eq!(span, Some(vectorcraft_tools::embroidery::SelectedSpan { count: 2, first: 2, last: 3 }));
+    assert_eq!(index.span(NodeId(id), &[(0, 9)].into_iter().collect()), None, "an anchor past the run's needle points");
+}
+
+/// A selection changed path by path ends as the selection's own calls leave it: a path that leaves
+/// goes from its list with its anchors and segments (and the key, when it was), one selected whole
+/// joins at the end, and one that leaves and joins again keeps its place.
+#[test]
+fn a_selection_changed_path_by_path_ends_as_its_own_calls_leave_it() {
+    let ids: Vec<NodeId> = (1..=6).map(NodeId).collect();
+    let mut start = vectorcraft_doc::Selection { objects: ids[..4].to_vec(), key: Some(ids[1]), target: Some(ids[3]), ..Default::default() };
+    start.anchors.insert(ids[1], [(0, 1)].into_iter().collect());
+    start.anchors.insert(ids[2], [(0, 2)].into_iter().collect());
+    let mut selecting = needles::Selecting::new(start.clone());
+    selecting.leave(ids[1]);
+    selecting.whole(ids[2]);
+    selecting.whole(ids[4]);
+    selecting.leave(ids[0]);
+    selecting.whole(ids[0]);
+    selecting.leave(ids[5]);
+    let got = selecting.done();
+    let mut want = start;
+    want.remove(ids[1]);
+    want.anchors.remove(&ids[2]);
+    want.add(ids[4]);
+    want.remove(ids[5]);
+    want.objects = vec![ids[0], ids[2], ids[3], ids[4]];
+    assert_eq!((&got.objects, &got.anchors, got.key, got.target), (&want.objects, &want.anchors, want.key, want.target));
 }
 
 /// The index finds a needle point by its place across the runs, passing over a run with none (an
@@ -298,6 +336,22 @@ fn an_edits_lengths_are_judged_by_the_documents_own_lines() {
     assert_eq!((l["belowMin"].clone(), l["aboveMax"].clone()), (json!(1), json!(0)), "{r}");
     let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "to": [40.0, 10.0]}));
     assert_eq!((r["lengths"]["belowMin"].clone(), r["lengths"]["aboveMax"].clone()), (json!(0), json!(1)), "{r}");
+    // Exactly on each line, as the canvas and the Stitches tab judge it: none counted; the format
+    // whose records are judged named (the thread palette's).
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 1}], "to": [11.0, 10.0]}));
+    assert_eq!(r["lengths"]["belowMin"], json!(0), "1 mm on the shortest stitch's line: {r}");
+    let r = run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "to": [23.7, 10.0]}));
+    let l = &r["lengths"];
+    assert_eq!(l["aboveMax"], json!(0), "12.7 mm on the longest stitch's line: {r}");
+    assert_eq!((l["format"].clone(), l["step"].as_f64().is_some()), (json!("jef"), true), "{r}");
+    // Split Long Stitches with DST measures against DST's records too.
+    run(&mut s, "embroidery.moveNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}], "to": [25.0, 10.0]}));
+    let r = run(&mut s, "embroidery.splitLongStitches", json!({"needlePoints": [{"id": id, "index": 2}], "format": "dst"}));
+    assert_eq!(
+        (r["lengths"]["format"].clone(), r["lengths"]["step"].clone(), r["lengths"]["aboveMax"].clone()),
+        (json!("dst"), json!(12.1), json!(0)),
+        "{r}"
+    );
 }
 
 /// Move Needle Points moves the needle points addressed by millimetres, or one to a point, one undo
@@ -525,8 +579,10 @@ fn deleted_needle_points_merge_their_neighbours() {
     assert_eq!((back.path_data(), stitches(&back)), (original.path_data(), stitches(&original)), "insert then delete: as it was");
     let r = run(&mut s, "embroidery.deleteNeedlePoints", json!({"needlePoints": [{"id": id, "index": 2}]}));
     assert_eq!((at(&s, id, 1), at(&s, id, 2)), ((12.0, 10.0), (16.0, 10.0)), "the others stay");
-    assert_eq!(r["lengths"]["count"], json!(2), "the merged stitch, and the one after: {r}");
-    assert_eq!(r["lengths"]["longest"], json!(4.0));
+    // The merged one now follows the stop passed to the needle point before it: the needle is
+    // lifted there, no stitch to judge; the one after is judged.
+    assert_eq!(r["lengths"]["count"], json!(1), "the stitch after the merged one: {r}");
+    assert_eq!(r["lengths"]["longest"], json!(2.0));
     assert_eq!(places(&stitches(&node(&s, id)).stops), [(0, 1)], "the stop passes to the needle point before");
     assert_eq!(r["moved"], json!([{"function": "stop", "id": id, "index": 1}]));
     assert!(!s.doc().unwrap().selection.contains(NodeId(id)));
@@ -938,9 +994,28 @@ fn long_stitches_split_as_the_writer_would() {
     assert_eq!(dst(&mut s), before, "the same DST");
     let again = run(&mut s, "embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": 5}], "format": "dst"}));
     assert_eq!(again["changedCount"], json!(0), "nothing longer than a record left: {again}");
-    for p in [json!({"maxLength": 0.5}), json!({"maxLength": 20}), json!({"maxLength": 5, "format": "dst"}), json!({"format": "svg"})] {
+    for p in [json!({"maxLength": 0.5}), json!({"maxLength": 20}), json!({"maxLength": 5, "format": "svg"}), json!({"format": "svg"})] {
         assert!(s.execute("embroidery.splitLongStitches", &p).is_err(), "{p}");
     }
+    // Both lines, as the Contextual Task Bar asks with DST checked: a diagonal within DST's records
+    // (10 mm along each) but past 12.7 mm, split within it; one past both, DST's cut and then each
+    // piece past 12.7 mm split again.
+    let mut s = blank();
+    let id = path_mm(&mut s, &[(10.0, 10.0), (20.0, 20.0), (50.0, 50.0), (51.0, 50.0)], StitchRun::default());
+    let both = json!({"ranges": [{"id": id, "from": 0, "to": 3}], "format": "dst", "maxLength": 12.7});
+    let alone = run(&mut s, "embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 1, "to": 1}], "format": "dst"}));
+    assert_eq!(alone["changedCount"], json!(0), "within DST's records: {alone}");
+    let r = run(&mut s, "embroidery.splitLongStitches", both.clone());
+    assert_eq!((r["changedCount"].clone(), r["limit"].clone()), (json!(2), json!({"format": "dst", "step": 12.1, "length": 12.7})), "{r}");
+    // The diagonal of 14.1 mm in two; the one of 42.4 mm in DST's three, each of 14.1 mm in two.
+    assert_eq!(r["addedCount"], json!(1 + 5), "{r}");
+    let st = needles::read(&node(&s, id)).unwrap();
+    let points: Vec<_> = st.runs.iter().flat_map(|r| r.needles.iter().map(|n| n.mm())).collect();
+    for w in points.windows(2) {
+        let (dx, dy) = (w[1].x - w[0].x, w[1].y - w[0].y);
+        assert!(dx.hypot(dy) <= 12.7 + 1e-9 && dx.abs() <= 12.1 + 1e-9 && dy.abs() <= 12.1 + 1e-9, "{w:?}");
+    }
+    assert_eq!(run(&mut s, "embroidery.splitLongStitches", both)["changedCount"], json!(0), "nothing past either line left");
     // Every format, from a manual run's needle point kept at a half tenth its document point can't
     // give back (11.55 mm, kept exactly; from the design's left edge, 2 mm, a round trip through
     // points rounds the other way): split on the grid the writer counts the design on, from

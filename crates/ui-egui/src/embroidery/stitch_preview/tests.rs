@@ -459,8 +459,8 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
     let (mut p, fake) = preview();
     let mut s = Session::new();
     let uid = document(&mut s);
-    let stats = Query { cmd: "embroidery.stats", params: json!({}) };
-    let check = |format: &str| Query { cmd: "embroidery.check", params: json!({"format": format}) };
+    let stats = Query::read("embroidery.stats", json!({}));
+    let check = |format: &str| Query::read("embroidery.check", json!({"format": format}));
     let ask = |p: &mut StitchPreview, format: &str| {
         p.want(stats.clone());
         p.want(check(format));
@@ -472,11 +472,11 @@ fn the_replies_are_the_commands_and_a_new_one_reuses_the_plan() {
     fake.finish(LIGHT_MS);
     p.take_in();
     let shown = p.shown(uid).unwrap();
-    for (q, params) in [(stats.clone(), json!({})), (check("dst"), json!({"format": "dst"}))] {
+    for (q, cmd, params) in [(stats.clone(), "embroidery.stats", json!({})), (check("dst"), "embroidery.check", json!({"format": "dst"}))] {
         let r = shown.reply(&q).unwrap();
         let (reply, current) = (r.result, r.current);
         assert!(current);
-        assert_eq!(**reply.as_ref().unwrap(), exec(&mut s, q.cmd, params), "{}", q.cmd);
+        assert_eq!(**reply.as_ref().unwrap(), exec(&mut s, cmd, params), "{cmd}");
     }
     let plan = shown.planned.plan.clone();
     ask(&mut p, "pes");
@@ -506,8 +506,8 @@ fn replies_come_one_by_one_and_never_hold_up_the_next_plan() {
     let (mut p, fake) = preview();
     let mut s = Session::new();
     let uid = document(&mut s);
-    let stats = Query { cmd: "embroidery.stats", params: json!({}) };
-    let check = Query { cmd: "embroidery.check", params: json!({}) };
+    let stats = Query::read("embroidery.stats", json!({}));
+    let check = Query::read("embroidery.check", json!({}));
     let ask = |p: &mut StitchPreview| {
         p.want(stats.clone());
         p.want(check.clone());
@@ -546,7 +546,7 @@ fn in_line_a_design_is_light_when_it_fits_a_frame_and_the_replies_wait_for_the_d
     fake.0.borrow_mut().in_line = true;
     let mut s = Session::new();
     let uid = document(&mut s);
-    let stats = Query { cmd: "embroidery.stats", params: json!({}) };
+    let stats = Query::read("embroidery.stats", json!({}));
     let ask = |p: &mut StitchPreview| p.want(stats.clone());
     // Light on the thread, too slow for a frame: during a drag it waits.
     frame(&mut p, &mut s, 0.0, false, true);
@@ -588,14 +588,14 @@ fn the_preview_plans_with_no_exports_options() {
     let uid = document(&mut s);
     exec(&mut s, "document.export", json!({"format": "dst", "spacing": 0.5}));
     let opts = EmbroideryOptions::default();
-    p.want(Query { cmd: "embroidery.stats", params: json!({}) });
+    p.want(Query::read("embroidery.stats", json!({})));
     p.schedule_at(&mut s, 0.0, false);
     fake.finish(LIGHT_MS);
     p.take_in();
     let shown = p.shown(uid).unwrap();
     assert_eq!(shown.key, s.embroidery_plan_key(&opts).unwrap());
     assert_eq!(*shown.planned.plan, *s.embroidery_plan(&opts).unwrap());
-    let reply = shown.reply(&Query { cmd: "embroidery.stats", params: json!({}) }).unwrap().result;
+    let reply = shown.reply(&Query::read("embroidery.stats", json!({}))).unwrap().result;
     assert_eq!(**reply.as_ref().unwrap(), exec(&mut s, "embroidery.stats", json!({})));
 }
 
@@ -626,7 +626,7 @@ fn the_notice_shows_once_the_stitches_have_been_out_of_date_a_while() {
 /// its query.
 #[test]
 fn replies_are_merged_per_plan() {
-    let q = |cmd: &'static str, n: u64| Query { cmd, params: json!({ "n": n }) };
+    let q = |cmd: &'static str, n: u64| Query::read(cmd, json!({ "n": n }));
     let reply = |query: Query, generation: u64| Reply { query, generation, result: Ok(Arc::new(json!(generation))) };
     let mut kept = vec![reply(q("a", 0), 1), reply(q("b", 0), 1), reply(q("c", 0), 2)];
     // Plan 2's job answers a: the earlier plan's b, not asked, goes; c, the plan's own, stays.
@@ -635,7 +635,7 @@ fn replies_are_merged_per_plan() {
     assert!(
         has(&kept, &q("a", 0), 2) && has(&kept, &q("c", 0), 2) && kept.len() == 2,
         "{:?}",
-        kept.iter().map(|r| (r.query.cmd, r.generation)).collect::<Vec<_>>()
+        kept.iter().map(|r| (&r.query, r.generation)).collect::<Vec<_>>()
     );
     // An earlier plan's reply to a query being answered stays until its new one comes.
     let mut kept = vec![reply(q("a", 0), 1), reply(q("b", 0), 1)];

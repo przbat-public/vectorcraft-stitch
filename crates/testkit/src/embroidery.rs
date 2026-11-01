@@ -703,7 +703,9 @@ pub fn arb_json() -> impl Strategy<Value = Value> {
 
 /// One random stitch edit ([`arb_stitch_ops`]): its path and needle points picked by place among a
 /// document's paths of stitches and their needle points (taken modulo their counts), so that most
-/// address what is there and some don't (an index past the end is refused).
+/// address what is there and some don't (an index past the end is refused). A marquee (`rect`) and
+/// a lasso (`polygon`, a regular polygon of `sides` round a centre) are placed in millimetres and
+/// select as `mode` (an index into [`SELECT_MODES`]).
 #[derive(Clone, Debug)]
 pub enum StitchOp {
     Move { path: usize, at: usize, dx: f64, dy: f64 },
@@ -714,8 +716,13 @@ pub enum StitchOp {
     Function { path: usize, at: usize, stop: bool, on: Option<bool> },
     SplitLong { path: usize, at: usize, max: f64 },
     Select { from: usize, to: usize },
+    Marquee { x: f64, y: f64, width: f64, height: f64, mode: usize },
+    Lasso { x: f64, y: f64, radius: f64, sides: usize, mode: usize },
     Undo,
 }
+
+/// The ways `embroidery.selectNeedlePoints` selects.
+pub const SELECT_MODES: [&str; 4] = ["set", "add", "toggle", "subtract"];
 
 /// The paths of stitches of `doc`'s layers, in document order, each with its needle points (its
 /// anchors, a run stored as a line to its own start one).
@@ -798,6 +805,20 @@ impl StitchOp {
                 c("embroidery.splitLongStitches", json!({"ranges": [{"id": id, "from": 0, "to": k}], "maxLength": max}))
             }
             StitchOp::Select { from, to } => c("embroidery.selectNeedlePoints", json!({"records": [from.min(to) + 1, from.max(to) + 1]})),
+            StitchOp::Marquee { x, y, width, height, mode } => {
+                let mode = SELECT_MODES.get(mode % SELECT_MODES.len()).copied();
+                c("embroidery.selectNeedlePoints", json!({"rect": [x, y, x + width, y + height], "mode": mode}))
+            }
+            StitchOp::Lasso { x, y, radius, sides, mode } => {
+                let mode = SELECT_MODES.get(mode % SELECT_MODES.len()).copied();
+                let polygon: Vec<Value> = (0..sides)
+                    .map(|k| {
+                        let a = std::f64::consts::TAU * k as f64 / sides.max(1) as f64;
+                        json!([x + radius * a.cos(), y + radius * a.sin()])
+                    })
+                    .collect();
+                c("embroidery.selectNeedlePoints", json!({"polygon": polygon, "mode": mode}))
+            }
             StitchOp::Undo => c("edit.undo", json!({})),
         }
     }
@@ -816,6 +837,8 @@ pub fn arb_stitch_op() -> impl Strategy<Value = StitchOp> {
         2 => (path.clone(), at.clone(), any::<bool>(), proptest::option::of(any::<bool>())).prop_map(|(path, at, stop, on)| StitchOp::Function { path, at, stop, on }),
         1 => (path.clone(), at.clone(), 1.0..12.7f64).prop_map(|(path, at, max)| StitchOp::SplitLong { path, at, max }),
         1 => (0usize..2000, 0usize..2000).prop_map(|(from, to)| StitchOp::Select { from, to }),
+        1 => (0.0..120.0f64, 0.0..120.0f64, 0.0..60.0f64, 0.0..60.0f64, 0usize..4).prop_map(|(x, y, width, height, mode)| StitchOp::Marquee { x, y, width, height, mode }),
+        1 => (0.0..120.0f64, 0.0..120.0f64, 0.5..40.0f64, 3usize..12, 0usize..4).prop_map(|(x, y, radius, sides, mode)| StitchOp::Lasso { x, y, radius, sides, mode }),
         1 => Just(StitchOp::Undo),
     ]
 }

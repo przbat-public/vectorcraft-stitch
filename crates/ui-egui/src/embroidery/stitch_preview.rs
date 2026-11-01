@@ -188,9 +188,14 @@ impl Shown {
         })
     }
 
-    /// Whether `query` has a reply of the plan shown.
+    /// Whether `query` has a reply of the plan shown. The records' flags only once the plan keeps
+    /// them for the query's limits: it keeps one set, so limits changed and changed back (the Check
+    /// tab's format) find a reply for flags another set has replaced.
     fn answers(&self, query: &Query) -> bool {
-        self.reply(query).is_some_and(|r| r.current)
+        match query {
+            Query::StitchFlags(limits) => self.planned.built_stitch_flags(limits).is_some(),
+            Query::Read { .. } => self.reply(query).is_some_and(|r| r.current),
+        }
     }
 }
 
@@ -298,7 +303,7 @@ struct Interest {
 /// The figures every plan wanted comes with (`embroidery.stats`): the status bar's counters and
 /// the Embroidery panel read them, so neither asks for a plan of its own.
 pub fn figures_query() -> Query {
-    Query { cmd: "embroidery.stats", params: serde_json::json!({}) }
+    Query::read("embroidery.stats", serde_json::json!({}))
 }
 
 /// The stitch preview's scheduler and what it shows ([`self`]).
@@ -647,13 +652,14 @@ impl StitchPreview {
     }
 }
 
-/// `q` with the embroidery options `opts` among its params (its own keys win).
+/// `q` with the embroidery options `opts` among a read command's params (its own keys win).
 fn with_options(q: &Query, opts: &EmbroideryOptions) -> Query {
+    let Query::Read { cmd, params: own } = q else { return q.clone() };
     let mut params = opts.to_json();
-    if let (Some(all), Some(own)) = (params.as_object_mut(), q.params.as_object()) {
+    if let (Some(all), Some(own)) = (params.as_object_mut(), own.as_object()) {
         all.extend(own.iter().map(|(k, v)| (k.clone(), v.clone())));
     }
-    Query { cmd: q.cmd, params }
+    Query::read(cmd, params)
 }
 
 /// Start of a frame: take in what the planning finished.

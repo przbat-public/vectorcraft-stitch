@@ -24,7 +24,7 @@ fn session() -> Session {
 }
 
 fn stats() -> Query {
-    Query { cmd: "embroidery.stats", params: json!({}) }
+    Query::read("embroidery.stats", json!({}))
 }
 
 fn job(s: &mut Session, ticket: u64, queries: Vec<Query>) -> Job {
@@ -48,7 +48,7 @@ fn finished(w: &mut PlanWorker, n: usize) -> Vec<Done> {
 fn a_job_hands_over_the_plan_then_the_commands_replies() {
     let mut s = session();
     let mut w = PlanWorker::start(&egui::Context::default()).expect("the planning thread starts");
-    let check = Query { cmd: "embroidery.check", params: json!({"format": "dst"}) };
+    let check = Query::read("embroidery.check", json!({"format": "dst"}));
     assert!(w.submit(job(&mut s, 1, vec![stats(), check.clone()])).is_none());
     let got = finished(&mut w, 1);
     // The plan first, then each reply as it is made, in the order asked.
@@ -63,10 +63,11 @@ fn a_job_hands_over_the_plan_then_the_commands_replies() {
     assert!(planned.built_scene().is_some(), "the scene is built on the thread");
     assert_eq!(*planned.plan, *s.embroidery_plan(&EmbroideryOptions::default()).unwrap(), "the planner's plan");
     for (q, reply) in [(stats(), first), (check, second)] {
-        assert_eq!(reply.as_ref().unwrap(), &s.execute(q.cmd, &q.params).unwrap(), "{}: the command's own reply", q.cmd);
+        let Query::Read { cmd, params } = q else { panic!("{q:?}") };
+        assert_eq!(reply.as_ref().unwrap(), &s.execute(cmd, &params).unwrap(), "{cmd}: the command's own reply");
     }
     // A reply's own error stays with it.
-    let bad = Query { cmd: "embroidery.check", params: json!({"format": "svg"}) };
+    let bad = Query::read("embroidery.check", json!({"format": "svg"}));
     assert!(w.submit(job(&mut s, 2, vec![bad, stats()])).is_none());
     let got = finished(&mut w, 1);
     let replies: Vec<(usize, bool)> =

@@ -34,7 +34,7 @@ use vectorcraft_stitch::plan::{self, THREAD_WIDTH};
 use vectorcraft_stitch::{Command, mm_to_pt};
 
 use super::measure;
-use super::plan::{DesignPlan, UnitKey};
+use super::plan::{DesignPlan, Part, UnitKey};
 
 /// How far off the line drawn in their place the needle points left out may lie when the whole
 /// design is drawn, millimetres: 2 µm, under the formats' 0.1 mm, and under a tenth of a pixel up
@@ -70,6 +70,9 @@ pub struct SceneBlock {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SceneUnit {
     pub object: NodeId,
+    /// The path it sews: a converted object's run is a path inside the object a person selects
+    /// (`object`), selected on its own while its needle points are edited.
+    pub node: NodeId,
     pub key: UnitKey,
     pub block: usize,
     /// Its first and last needle points: where it enters and leaves the fabric (`None`: it has
@@ -92,6 +95,10 @@ pub struct ObjectEnds {
     pub units: Vec<u32>,
     pub entry: Option<Point>,
     pub exit: Option<Point>,
+    /// Whether it is sewn: it has units, or it is a path of stitches inside the object a person
+    /// selects (a converted object's run, selected on its own while its needle points are edited),
+    /// whose units, entry and exit stay that object's.
+    pub sewn: bool,
 }
 
 /// A design's stitches as the stitch preview draws them: the picture (its lines tagged with unit
@@ -150,8 +157,9 @@ impl StitchScene {
     /// Where each of `selected` (objects of `doc`, as a selection holds them) is sewn: its units,
     /// those of the objects inside it included, in sewing order, the needle's entry (its first
     /// unit's first needle point) and its exit (its last unit's last). An object that sews nothing
-    /// has no units. One walk of each selected object and one pass over the units: the Sewing order
-    /// list and the canvas's markers read the same ends.
+    /// has no units; a path of stitches selected on its own has none either, but is sewn. One walk
+    /// of each selected object and one pass over the units: the Sewing order list and the canvas's
+    /// markers read the same ends.
     pub fn ends_of(&self, doc: &Document, selected: &[NodeId]) -> Vec<ObjectEnds> {
         let mut owner: HashMap<NodeId, usize> = HashMap::new();
         for (i, id) in selected.iter().enumerate() {
@@ -161,9 +169,19 @@ impl StitchScene {
                 });
             }
         }
-        let mut ends: Vec<ObjectEnds> = selected.iter().map(|&object| ObjectEnds { object, units: Vec::new(), entry: None, exit: None }).collect();
+        let mut ends: Vec<ObjectEnds> =
+            selected.iter().map(|&object| ObjectEnds { object, units: Vec::new(), entry: None, exit: None, sewn: false }).collect();
         for (tag, u) in self.units.iter().enumerate() {
-            let (Some(e), Ok(tag)) = (owner.get(&u.object).and_then(|i| ends.get_mut(*i)), u32::try_from(tag)) else { continue };
+            let Some(e) = owner.get(&u.object).and_then(|i| ends.get_mut(*i)) else {
+                if matches!(u.key.part, Part::Manual | Part::Literal)
+                    && let Some(e) = owner.get(&u.node).and_then(|i| ends.get_mut(*i))
+                {
+                    e.sewn = true;
+                }
+                continue;
+            };
+            let Ok(tag) = u32::try_from(tag) else { continue };
+            e.sewn = true;
             e.units.push(tag);
             e.entry = e.entry.or(u.entry);
             e.exit = u.exit.or(e.exit);
@@ -274,7 +292,17 @@ pub fn scene(plan: &DesignPlan) -> StitchScene {
             let exit = needle.next_back().or(entry);
             let bounds = u.bounds.map(|r| Rect::from_points(to_pt(Point::new(r.x0, r.y0)), to_pt(Point::new(r.x1, r.y1))));
             let asked = [u.asked.entry.map(to_pt), u.asked.exit.map(to_pt)];
-            SceneUnit { object: u.origin.selected(), key: u.key(), block: u.block, entry, exit, bounds, asked, missed: plan.missed(i) }
+            SceneUnit {
+                object: u.origin.selected(),
+                node: u.origin.node,
+                key: u.key(),
+                block: u.block,
+                entry,
+                exit,
+                bounds,
+                asked,
+                missed: plan.missed(i),
+            }
         })
         .collect();
     let picture = b.build();

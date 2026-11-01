@@ -93,15 +93,21 @@ const ANGLE_DECIMALS: usize = 1;
 /// How far the labels sit from their handle, points (the passive markers' labels').
 const LABEL_OFFSET: f32 = super::overlay::LABEL_OFFSET;
 /// The dark edge round a label's pill, points wide: the pill reads on fabric of its own colour.
-const LABEL_EDGE_PT: f32 = 1.0;
+pub(super) const LABEL_EDGE_PT: f32 = 1.0;
 
-/// What the handles are found for ([`Cache`]).
-type Key = (u64, u64, Option<u64>, [u64; 3], String);
+/// What the handles are found for ([`Cache`]): the document's uid and revision, the generation of
+/// the plan shown, the view's zoom and turn (an arrow's head and an exit moved apart from its entry
+/// are placed in screen pixels), and the tool's options the handles are drawn by ([`drawn_by`]).
+#[derive(Clone, PartialEq)]
+struct Key {
+    uid: u64,
+    revision: u64,
+    generation: Option<u64>,
+    frame: [u64; 3],
+    options: String,
+}
 
-/// What the handles are found for, and what was found: the document's uid and revision, the
-/// generation of the plan shown, the view's zoom and turn (an arrow's head and an exit moved apart
-/// from its entry are placed in screen pixels), and the tool's options (its part, hover, focus and
-/// drag).
+/// What the handles are found for ([`Key`]), and what was found.
 #[derive(Default)]
 pub struct Cache {
     key: Option<Key>,
@@ -163,14 +169,14 @@ fn current(app: &mut VectorcraftApp) -> Option<(Vec<Handle>, Value)> {
     let view = app.view_info();
     let right = view.screen.map_or(vectorcraft_geom::Vec2::ZERO, |s| s.right);
     let frame = [view.zoom.to_bits(), right.x.to_bits(), right.y.to_bits()];
-    let key = (uid, revision, generation, frame, app.session.tool_options().to_string());
+    let key = Key { uid, revision, generation, frame, options: drawn_by(app.session.tool_options()).to_string() };
     if app.embroidery.handles.key.as_ref() != Some(&key) {
         // More objects selected than show their points: said once, as the selection changes.
         let more =
             vectorcraft_doc::embroidery::takers::first_takers(&st.doc, &st.selection.objects, HANDLED_OBJECTS_MAX + 1).len() > HANDLED_OBJECTS_MAX;
         let (handles, options) = app.session.embroidery_handles(view);
         let cache = &mut app.embroidery.handles;
-        (cache.key, cache.handles, cache.options) = (Some(key), handles, options);
+        (cache.key, cache.handles, cache.options) = (Some(key), handles, drawn_by(options));
         cache.found += 1;
         let said = cache.capped == Some(uid);
         cache.capped = more.then_some(uid);
@@ -184,6 +190,15 @@ fn current(app: &mut VectorcraftApp) -> Option<(Vec<Handle>, Value)> {
     }
     let cache = &app.embroidery.handles;
     Some((cache.handles.clone(), cache.options.clone()))
+}
+
+/// The tool's options the handles are drawn by (its part, hover, focus and drag): all but stitch
+/// editing's, which say what lies under the pointer and change with every move along a stitch.
+fn drawn_by(mut options: Value) -> Value {
+    if let Some(o) = options.as_object_mut() {
+        o.remove(vectorcraft_tools::embroidery::EDITING_OPTIONS);
+    }
+    options
 }
 
 /// Whether the embroidery tool is the active tool: its handles show, and the passive markers give
@@ -405,11 +420,11 @@ pub(super) fn exit_color([r, g, b]: [u8; 3]) -> Color32 {
     super::marks::readable(Color32::from_rgb(r, g, b), &[light()], false)
 }
 
-pub(super) fn dark() -> Color32 {
+pub(crate) fn dark() -> Color32 {
     Color32::from_rgb(MARK_DARK[0], MARK_DARK[1], MARK_DARK[2])
 }
 
-pub(super) fn light() -> Color32 {
+pub(crate) fn light() -> Color32 {
     Color32::from_rgb(MARK_LIGHT[0], MARK_LIGHT[1], MARK_LIGHT[2])
 }
 

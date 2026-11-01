@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-23 · **Change:** minor (fork: the stitch preview's drawing under Rendering; the `stitch` crate, machine embroidery, in the crate list and layers; shared PDF reader and writer; app output policy and editable-import adapter retained; verified PngSuite downloads, #1729; synthetic control-input budgets, #1709; desktop printing uses craft-print; Windows 7 fallback retained) · **Target:** Adobe Illustrator 2026 (30.x)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-31 · **Change:** minor (fork: the line renderer judges a stitch while stitches are edited; earlier: the stitch preview's drawing under Rendering; the `stitch` crate, machine embroidery, in the crate list and layers; shared PDF reader and writer; app output policy and editable-import adapter retained; verified PngSuite downloads, #1729; synthetic control-input budgets, #1709; desktop printing uses craft-print; Windows 7 fallback retained) · **Target:** Adobe Illustrator 2026 (30.x)
 
 How VectorCraft is built today. The design rationale lives in the local, gitignored `plan/architecture.md`;
 this file describes what is committed. Day-to-day rules (clean-room, never crash, quality gates) are in
@@ -47,7 +47,9 @@ effects are rendered offscreen per object and cached while panning. See
 
 **Embroidery stitches (fork).** The stitch view draws a design's stitch plan as *line pictures*
 (`render::lines`: polylines in colour slots with opaque tags, links and point marks, knowing nothing
-about stitches, so the renderer gains no dependency on `vectorcraft-stitch`). The engine builds the
+of the stitch plan, so the renderer gains no dependency on `vectorcraft-stitch`; while stitches are
+edited it judges a stitch by the document crate's `StitchRule`, the one rule the canvas and the
+commands share). The engine builds the
 picture from the plan (`cmd::embroidery::scene`); the UI plans on a thread of its own and draws the
 picture on the canvas over the art's pass (`ui-egui/src/embroidery/`), on the stitch layer's thread
 when a frame is slow, with one raster texture uploaded per change. Measured budgets and the

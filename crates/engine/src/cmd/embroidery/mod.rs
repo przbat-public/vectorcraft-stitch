@@ -34,6 +34,7 @@ mod manual;
 mod measure;
 mod nearest;
 mod needle_edits;
+pub mod needle_index;
 pub(crate) mod needles;
 pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
@@ -52,6 +53,7 @@ mod sequence;
 pub(crate) mod service;
 pub mod setup;
 mod stats;
+pub mod stitch_list;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
@@ -104,6 +106,9 @@ mod tests_view;
 mod tests_walk;
 pub mod threadlib;
 pub(crate) mod tool;
+pub use check::{LimitsKey, StitchLimits};
+pub use needles::{needle_count, needle_points_in, needle_points_of};
+pub use tool::StitchEditing;
 mod unit;
 pub mod view;
 mod vocabulary;
@@ -130,7 +135,8 @@ pub use options::Options;
 pub use service::Planned;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
-pub use vectorcraft_stitch::mm_to_pt;
+pub use vectorcraft_stitch::format::Format;
+pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
 
 /// The marked upstream hooks of the stitch commands: Delete with needle points selected
 /// (`path::delete_anchors`, which the Delete key, Edit › Clear, Edit › Cut and `path.deleteAnchors`
@@ -331,7 +337,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Move Needle Points",
             [],
             None,
-            "{needlePoints?: [{id, index, of?}…] (a path of literal stitches, opened from a machine file or converted to manual stitches, and a needle point's place in it, from 0 across its runs: its anchors in order, a line to its own start one needle point; of: the path's needle points as last counted, refused when it holds another number, so a stale index moves nothing; no other key), ranges?: [{id, from, to, of?}…] (inclusive) (default: the selection's needle points: of each path of stitches selected, its anchors selected, or all of it selected whole, and all of those in a group selected whole; at most 2,000,000 needle points in 100,000 paths), dx?: 0, dy?: 0 (millimetres, y down) | to?: [x, y] (millimetres from the document's origin, y down; one needle point)} moves each needle point addressed, nothing else; a path whose only run is two needle points brought to one spot sews both (a tack), and such a run among others is one needle point (collapsedCount, in every edit's reply). Refused before anything changes: an id that isn't a path of stitches (or isn't in the document's layers), one locked or hidden, an index past its needle points, a needle point taken outside the document's coordinates. No edit leaves a path past 2,000,000 needle points. One undo step \"Move Needle Points\", none when nothing moves; the selection keeps its needle points → {changedCount: the needle points moved, paths: [{id, needlePoints}] (the paths changed or removed, at most 1000), pathCount, collapsedCount: runs of two needle points brought to one spot in a path of several, each made one needle point (the ones after it move down by one), lengths: {count, shortest, longest, belowMin, aboveMax, min, max} (the stitches into and out of each needle point moved, each once, millimetres, against the document's shortest stitch, min, and the 12.7 mm a machine sews well, max), passedOver: [{id, reason}] (selected objects that aren't paths of stitches, at most 1000: notStitches, locked, outOfRange, tooManyNeedlePoints)}",
+            "{needlePoints?: [{id, index, of?}…] (a path of literal stitches, opened from a machine file or converted to manual stitches, and a needle point's place in it, from 0 across its runs: its anchors in order, a line to its own start one needle point; of: the path's needle points as last counted, refused when it holds another number, so a stale index moves nothing; no other key), ranges?: [{id, from, to, of?}…] (inclusive) (default: the selection's needle points: of each path of stitches selected, its anchors selected, or all of it selected whole, and all of those in a group selected whole; at most 2,000,000 needle points in 100,000 paths), dx?: 0, dy?: 0 (millimetres, y down) | to?: [x, y] (millimetres from the document's origin, y down; one needle point)} moves each needle point addressed, nothing else; a path whose only run is two needle points brought to one spot sews both (a tack), and such a run among others is one needle point (collapsedCount, in every edit's reply). Refused before anything changes: an id that isn't a path of stitches (or isn't in the document's layers), one locked or hidden, an index past its needle points, a needle point taken outside the document's coordinates. No edit leaves a path past 2,000,000 needle points. One undo step \"Move Needle Points\", none when nothing moves; the selection keeps its needle points → {changedCount: the needle points moved, paths: [{id, needlePoints}] (the paths changed or removed, at most 1000), pathCount, collapsedCount: runs of two needle points brought to one spot in a path of several, each made one needle point (the ones after it move down by one), lengths: {count, shortest, longest, belowMin, aboveMax, min, max, format, step} (the stitches into and out of each needle point moved, each once, millimetres, judged as the canvas and the Stitches tab judge them: shorter than the document's shortest stitch, min, or longer than the 12.7 mm a machine sews well, max, or along x or y than one record of the thread palette's format, step), passedOver: [{id, reason}] (selected objects that aren't paths of stitches, at most 1000: notStitches, locked, clipped (a machine file's run a clipping mask cuts), outOfRange, tooManyNeedlePoints)}",
             has_doc,
             needle_edits::move_points
         ),
@@ -385,7 +391,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Split Long Stitches",
             [],
             None,
-            "{needlePoints?, ranges? (the needle points the stitches to split arrive at; default the selection's: a path or a group selected whole, all of its stitches), maxLength?: 12.7 (millimetres, 1 to 12.7: a stitch's own length; the Check tab's stitchTooLong line by default) | format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (a stitch longer along x or y than one of its records)} splits each stitch arriving at a needle point addressed that is longer than the limit: into the fewest equal stitches within it, or with format where that format's writer would cut it (from the needle points as the walk sews them, exact millimetres included, each end on the 0.1 mm grid that format's writer counts the design on, the design planned as the export plans it for this; the fewest equal steps of at most one record, so that format's export is the same bytes). More needle points, never jumps; the move between runs is never split (the writers split long moves themselves). The new needle points aren't selected; the selected ones keep their places. At most 100,000 added. One undo step \"Split Long Stitches\", none when nothing is split → {changedCount: the stitches split, addedCount, limit: {length} | {format, step}, needlePoints: [{id, index}] (each needle point addressed, numbered as after the edit), paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
+            "{needlePoints?, ranges? (the needle points the stitches to split arrive at; default the selection's: a path or a group selected whole, all of its stitches), maxLength?: 12.7 (millimetres, 1 to 12.7: a stitch's own length; the Check tab's stitchTooLong line by default), format?: \"dst\"|\"tap\"|\"t01\"|\"exp\"|\"pes\"|\"pec\"|\"jef\"|\"vp3\" (a stitch longer along x or y than one of its records)} splits each stitch arriving at a needle point addressed that is longer than the limit: into the fewest equal stitches within it, or with format where that format's writer would cut it (from the needle points as the walk sews them, exact millimetres included, each end on the 0.1 mm grid that format's writer counts the design on, the design planned as the export plans it for this; the fewest equal steps of at most one record, so that format's export is the same bytes); with both, the format's cut, then each stitch still longer than maxLength split within it (the Contextual Task Bar's, when the format's records are shorter than 12.7 mm). More needle points, never jumps; the move between runs is never split (the writers split long moves themselves). The new needle points aren't selected; the selected ones keep their places. At most 100,000 added. One undo step \"Split Long Stitches\", none when nothing is split → {changedCount: the stitches split, addedCount, limit: {length} | {format, step} | {format, step, length}, needlePoints: [{id, index}] (each needle point addressed, numbered as after the edit), paths: [{id, needlePoints}], pathCount, lengths, passedOver}",
             has_doc,
             needle_edits::split_long
         ),
@@ -529,7 +535,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Select Needle Points",
             [],
             None,
-            "{records?: [from, to] (record numbers, from 1, inclusive), ids?, kinds?, shorterThan?, longerThan? (as embroidery.stitches filters them), …the embroidery options | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them), mode?: \"set\"|\"add\"|\"toggle\"|\"subtract\" (default set)} selects needle points (their anchors, as Direct Selection selects them), by the records that sew them (planning the design as embroidery.stitches lists it: a needle point, or the one a jump lands on, or the one a cut or a stop follows; a record the stitch commands can't edit is passed over and counted), or by their addresses (planning nothing). A selection, not an undo step → {selectedCount: the needle points selected in the paths it touched, pathCount, passedOver}",
+            "{records?: [from, to] (record numbers, from 1, inclusive), ids?, kinds?, shorterThan?, longerThan? (as embroidery.stitches filters them), …the embroidery options | needlePoints?, ranges? (as embroidery.moveNeedlePoints addresses them) | rect?: [x0, y0, x1, y1] or polygon?: [[x, y]…] (3 to 4,096 points; millimetres from the document's origin, y down), ids? (the objects whose paths of stitches it looks in, each path once however often or however nested they name it; default: the object isolated, else the whole document), mode?: \"set\"|\"add\"|\"toggle\"|\"subtract\" (default set)} selects needle points (their anchors, as Direct Selection selects them), by the records that sew them (planning the design as embroidery.stitches lists it: a needle point, or the one a jump lands on, or the one a cut or a stop follows; a record the stitch commands can't edit is passed over and counted), by their addresses (planning nothing), or by a shape: those inside a rectangle or a polygon (by the even-odd rule, as the Lasso tool selects anchors), as the Embroidery Tool's marquee selects them while editing stitches (planning nothing; paths of stitches that can't be edited are passed over and counted, each once). A selection, not an undo step → {selectedCount: the needle points selected in the paths it touched, pathCount, passedOver}",
             has_doc,
             records::select
         ),

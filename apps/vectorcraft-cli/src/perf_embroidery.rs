@@ -92,7 +92,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 75] = [
+pub const ROWS: [&str; 82] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -168,6 +168,13 @@ pub const ROWS: [&str; 75] = [
     "stitch commands: delete, many-run paths",
     "manual stitches: convert 22,000, apply",
     "object tab: read of 22,000 converted",
+    "needle points: index of 2,000,000 built",
+    "needle points: 95th percentile, 2,000,000",
+    "needle points: slowest press, 2,000,000",
+    "needle points: a marquee over 2,000,000",
+    "needle points: slowest press at 10%",
+    "edit look: draw 500,000 all flagged",
+    "stitches tab: counts and rows, 2,000,000",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -187,7 +194,7 @@ pub const ROWS: [&str; 75] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 75] = [
+const BUDGETS: [f64; 82] = [
     400.0,
     100.0,
     100.0,
@@ -263,6 +270,14 @@ const BUDGETS: [f64; 75] = [
     EDIT_ALONE_BUDGETS[2],
     CONVERT_PARTS_BUDGETS[0],
     CONVERT_PARTS_BUDGETS[1],
+    NEEDLE_INDEX_BUDGETS[0],
+    NEEDLE_INDEX_BUDGETS[1],
+    NEEDLE_INDEX_BUDGETS[2],
+    NEEDLE_INDEX_BUDGETS[3],
+    NEEDLE_INDEX_BUDGETS[4],
+    // Set in the run, beside the same picture drawn plain ([`FLAGGED_FRAME_RATIO`]).
+    f64::INFINITY,
+    TAB_ROWS_MS,
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -445,6 +460,9 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend([moved, paged, selected, alone]);
     ms.extend(many_runs(&literal)?);
     ms.extend(convert_parts(&largest)?);
+    ms.extend(needle_index(&literal)?);
+    ms.push(flagged(&stitch_picture(500_000)));
+    ms.push(tab_rows(&literal)?);
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;
@@ -453,6 +471,12 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
         && let (Some(plain_ms), Some(budget)) = (ms.get(plain).copied(), budgets.get_mut(aimed))
     {
         *budget = budget.min(RINGS_TOWARD_EXIT_RATIO * plain_ms);
+    }
+    // The edit look over every stitch flagged, beside the same picture drawn plain in the same run.
+    if let (Some(plain), Some(flagged)) = (at("stitches: draw 500,000 at fit"), at("edit look: draw 500,000 all flagged"))
+        && let (Some(plain_ms), Some(budget)) = (ms.get(plain).copied(), budgets.get_mut(flagged))
+    {
+        *budget = FLAGGED_FRAME_RATIO * plain_ms + FLAGGED_FRAME_MS;
     }
     // A row with nothing to measure (no corpus) is left out.
     Ok(ROWS.iter().zip(ms).zip(budgets).filter(|((_, ms), _)| !ms.is_nan()).map(|((name, ms), budget)| (*name, ms, budget)).collect())
@@ -828,6 +852,93 @@ fn convert_parts(doc: &Document) -> Result<[f64; 2], String> {
         reads.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     Ok([parts, middle(reads)])
+}
+
+/// The needle-point index's rows' budgets, milliseconds (estimates): the index of 2 million needle
+/// points built (once, when stitch editing starts on them) and a marquee over half the design
+/// selecting its needle points, about 2.5 times what they measured ([`NEEDLE_INDEX_MS`]); the
+/// nearest needle point to a press, its 95th percentile within a quarter of the 1 ms a press on the
+/// stitches may take (a hover asks for it twice a frame), its slowest of [`NEEDLE_QUERIES`] presses
+/// anywhere over the design (misses included) within that 1 ms, at 100 % and zoomed out to
+/// [`NEEDLE_ZOOMED_OUT`] alike.
+const NEEDLE_INDEX_BUDGETS: [f64; 5] = [NEEDLE_INDEX_MS[0] * 2.5, NEEDLE_PRESS_P95_MS, NEEDLE_PRESS_MS, NEEDLE_INDEX_MS[3] * 2.5, NEEDLE_PRESS_MS];
+/// A press's nearest needle point: its 95th percentile's budget and its slowest's, milliseconds
+/// (see [`NEEDLE_INDEX_BUDGETS`]).
+const NEEDLE_PRESS_P95_MS: f64 = 0.25;
+const NEEDLE_PRESS_MS: f64 = 1.0;
+/// What the needle-point index's rows measured at the end of the second part's review round
+/// (2026-11-01, release, 12-core Apple Silicon, load about 2.1 to 2.8, twice), milliseconds: built
+/// 16.2 to 17.5, the nearest needle point 0.05 at the 95th percentile and 0.16 to 0.17 at worst, the
+/// marquee 78.2 to 78.4 (it writes a million needle points into the selection). On 2026-10-31: 15.8,
+/// 0.04, 0.17 and 158; on 2026-10-27: 16.3, 0.04, 0.15 and 156.
+const NEEDLE_INDEX_MS: [f64; 4] = [16.8, 0.05, 0.17, 78.3];
+/// How many presses the nearest needle point's rows time, at points spread over the design's box
+/// and as far again round it (misses included).
+const NEEDLE_QUERIES: usize = 1000;
+/// The presses' places over the design: press `k` at `k × prime` modulo [`NEEDLE_QUERIES`] along x
+/// and along y, two primes (the 1,000th and the 10,000th) that share no factor with it, so the
+/// presses cover the box evenly and in no row.
+const SPREAD_PRIMES: [usize; 2] = [7919, 104_729];
+/// How far a press reaches, points: the selection tolerance's default at 100 %.
+const NEEDLE_REACH_PT: f64 = 3.0;
+/// The zoom the slowest press is timed at again, zoomed out (10 %): a press reaches the selection
+/// tolerance over it, ten times as far, and the search narrows as it finds nearer needle points.
+const NEEDLE_ZOOMED_OUT: f64 = 0.1;
+
+/// The needle-point index's rows on `doc` (literal runs, [`literal_runs`]): the index of every path
+/// of stitches in its layers built; the nearest needle point to [`NEEDLE_QUERIES`] presses (the
+/// 95th percentile and the slowest); `embroidery.selectNeedlePoints {rect}` over the left half of
+/// the design, its layer isolated, the median of [`DRAW_RUNS`]; the slowest of the presses again,
+/// zoomed out to [`NEEDLE_ZOOMED_OUT`].
+fn needle_index(doc: &Document) -> Result<[f64; 5], String> {
+    use vectorcraft_engine::cmd::embroidery::needle_index::NeedleIndex;
+    let roots: Vec<_> = doc.layers.iter().map(|l| l.id).collect();
+    let mut built = Vec::with_capacity(DRAW_RUNS);
+    let mut index = None;
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        index = NeedleIndex::of(doc, &roots, None);
+        built.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    let index = index.ok_or("needle points: the design holds no path of stitches")?;
+    let b = index.scope().bounds.ok_or("needle points: none")?;
+    // Spread over the design's box and as far again round it: a fixed sequence, the same each run.
+    let presses = |reach: f64| {
+        let mut times = Vec::with_capacity(NEEDLE_QUERIES);
+        let mut hits = 0usize;
+        for k in 0..NEEDLE_QUERIES {
+            let spread = |prime: usize| (k * prime % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64;
+            let (u, v) = (spread(SPREAD_PRIMES[0]), spread(SPREAD_PRIMES[1]));
+            let at = Point::new(b.x0 - b.width() / 2.0 + 2.0 * b.width() * u, b.y0 - b.height() / 2.0 + 2.0 * b.height() * v);
+            let t = Instant::now();
+            hits += usize::from(index.needle_at(at, reach).is_some());
+            times.push(t.elapsed().as_secs_f64() * 1000.0);
+        }
+        times.sort_by(f64::total_cmp);
+        (hits, times)
+    };
+    let (hits, times) = presses(NEEDLE_REACH_PT);
+    if hits == 0 || hits == NEEDLE_QUERIES {
+        return Err(format!("needle points: {hits} of {NEEDLE_QUERIES} presses found one; the row needs hits and misses"));
+    }
+    let p95 = times.get(NEEDLE_QUERIES * 95 / 100).copied().unwrap_or(f64::NAN);
+    let slowest = times.last().copied().unwrap_or(f64::NAN);
+    let (_, far) = presses(NEEDLE_REACH_PT / NEEDLE_ZOOMED_OUT);
+    let slowest_far = far.last().copied().unwrap_or(f64::NAN);
+    let mut s = fresh(doc);
+    let layer = roots.first().ok_or("needle points: no layer")?;
+    s.execute("object.isolate", &json!({"id": layer.0})).map_err(err)?;
+    let mm = |v: f64| v / PT_PER_MM;
+    let rect = json!([mm(b.x0), mm(b.y0), mm(b.center().x), mm(b.y1)]);
+    let mut marquee = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let (ms, done) = timed(&mut s, "embroidery.selectNeedlePoints", &json!({ "rect": rect }))?;
+        if done["selectedCount"].as_u64().unwrap_or(0) == 0 {
+            return Err(format!("needle points: the marquee selected nothing: {done}"));
+        }
+        marquee.push(ms);
+    }
+    Ok([middle(built), p95, slowest, middle(marquee), slowest_far])
 }
 
 /// The width of a literal run's line, points: a thread's 0.4 mm, as opening a machine file draws it.
@@ -1468,6 +1579,63 @@ fn draw_with(picture: &LinePicture, zoom: f64, threads: Option<u16>, batch: usiz
     let (style, view) = framed(picture, zoom);
     let (w, h) = CANVAS;
     // A first frame makes the contexts.
+    drop(r.render(picture, w, h, view, &style));
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        drop(r.render(picture, w, h, view, &style));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    middle(samples)
+}
+
+/// The most a frame of a picture whose every stitch breaks a rule may take, in the edit look (each
+/// flagged stitch dashed, at most [`vectorcraft_render::lines::MAX_FLAG_DASHES`] of them), beside
+/// the same picture drawn plain in the same run: that share of it, and a few milliseconds more for
+/// the dashes and marks drawn. Estimates: before the dashes were culled, batched and capped, each
+/// flagged stitch was two strokes of its own, half a million of them a frame.
+const FLAGGED_FRAME_RATIO: f64 = 1.5;
+const FLAGGED_FRAME_MS: f64 = 10.0;
+
+/// The Stitches tab's rows' budget, milliseconds: each filter's count over the whole design, and the
+/// rows of a filter that lists few records, worked out on the interface thread once a plan comes,
+/// within half the 8 ms a frame may spend. An estimate.
+const TAB_ROWS_MS: f64 = 4.0;
+
+/// Milliseconds the Stitches tab takes on the interface thread, once a plan of `doc` comes, to work
+/// out each filter's count over the whole design and the rows of the Jumps filter, from the records'
+/// flags (built on the planning thread, not timed), the median of [`DRAW_RUNS`].
+fn tab_rows(doc: &Document) -> Result<f64, String> {
+    use vectorcraft_engine::cmd::embroidery::stitch_list::{Filter, Flags};
+    let mut s = fresh(doc);
+    let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
+    let limits = vectorcraft_engine::cmd::embroidery::StitchLimits::of(doc, None);
+    let flags = Flags::of(&plan, &limits);
+    let whole = 1..flags.len() + 1;
+    let mut samples = Vec::with_capacity(DRAW_RUNS);
+    for _ in 0..DRAW_RUNS {
+        let t = Instant::now();
+        let counts = flags.counts(whole.clone());
+        let mut rows = Vec::new();
+        flags.each_listed(whole.clone(), Filter::Jumps, |n| rows.push(n));
+        samples.push(t.elapsed().as_secs_f64() * 1000.0);
+        std::hint::black_box((counts, rows));
+    }
+    Ok(middle(samples))
+}
+
+/// Milliseconds a frame of `picture` takes at fit in the edit look with every stitch flagged (each
+/// shorter than a rule's shortest), the median of [`DRAW_RUNS`].
+fn flagged(picture: &LinePicture) -> f64 {
+    use vectorcraft_doc::embroidery::StitchRule;
+    use vectorcraft_render::lines::{EditLook, TagSet};
+    let mut r = LineRenderer::new();
+    let (style, view) = framed(picture, FIT);
+    // Every stitch shorter than the shortest, every line's units edited.
+    let rule = StitchRule { shortest: f64::MAX, longest: f64::MAX, step: f64::MAX };
+    let edit = EditLook { tags: TagSet::of(picture.lines().iter().map(|l| l.tag)), circles: None, rule };
+    let style = LineStyle { edit: Some(edit), ..style };
+    let (w, h) = CANVAS;
     drop(r.render(picture, w, h, view, &style));
     let mut samples = Vec::with_capacity(DRAW_RUNS);
     for _ in 0..DRAW_RUNS {

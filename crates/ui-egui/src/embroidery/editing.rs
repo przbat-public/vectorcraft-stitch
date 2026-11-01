@@ -198,8 +198,10 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) {
     }
     let id = Id::new("embroidery-stitch-editing");
     let words = std::iter::once(title).chain(said).collect::<Vec<_>>().join(". ");
+    // Said as it changes ("15 selected"), politely.
     ui.ctx().accesskit_node_builder(id, |node| {
         node.set_role(egui::accesskit::Role::Status);
+        node.set_live(egui::accesskit::Live::Polite);
         node.set_label(words);
     });
     if art {

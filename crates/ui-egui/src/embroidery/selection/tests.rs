@@ -561,3 +561,55 @@ fn what_editing_kept_goes_when_it_ends() {
         assert!(!app.embroidery.layer.keeps_edited(), "{end}: the units edited go");
     }
 }
+
+/// The chip and the live check are said as they change, politely; the live check not at each step
+/// of a drag, but once it is let go.
+#[test]
+fn the_chip_and_the_live_check_are_said() {
+    let (mut app, object) = editing();
+    let ctx = context();
+    ctx.enable_accesskit();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let at = on_screen(&app, needle(&app, object, 4));
+    for e in [Event::PointerMoved(at), press(at, true), press(at, false)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    // The two nodes' live settings in a frame with `events`.
+    let live = |app: &mut VectorcraftApp, time: f64, events: Vec<Event>| {
+        let raw = egui::RawInput {
+            time: Some(time),
+            screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(1000.0, 700.0))),
+            events,
+            ..Default::default()
+        };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            crate::shortcuts::handle(app, ui.ctx());
+            canvas::show(app, ui);
+            crate::embroidery::canvas_controls(app, ui);
+            stitch_preview::schedule(app, ui.ctx());
+        });
+        out.textures_delta.clear();
+        let update = out.platform_output.accesskit_update.expect("a tree");
+        let of = |name: &str| update.nodes.iter().find(|(id, _)| *id == egui::Id::new(name).accesskit_id()).and_then(|(_, n)| n.live());
+        (of("embroidery-stitch-editing"), of("embroidery-live-check"))
+    };
+    time += 0.05;
+    let polite = Some(egui::accesskit::Live::Polite);
+    assert_eq!(live(&mut app, time, vec![]), (polite, polite), "the chip and the live check, at rest");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![press(at, true)]);
+    for k in 1..=3 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![Event::PointerMoved(at + egui::vec2(6.0 * k as f32, 0.0))]);
+    }
+    time += 0.05;
+    let dragging = live(&mut app, time, vec![Event::PointerMoved(at + egui::vec2(24.0, 0.0))]);
+    assert_eq!(dragging.1, Some(egui::accesskit::Live::Off), "not at each step of the drag");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![press(at + egui::vec2(24.0, 0.0), false)]);
+    time += 0.05;
+    assert_eq!(live(&mut app, time, vec![]).1, polite, "said once let go");
+}

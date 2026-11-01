@@ -504,12 +504,22 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     });
     let Some(lines) = bubble(app) else { return };
     let Some(sel) = box_on_screen else { return };
-    draw_bubble(ui, painter, &t, clip, sel, &lines);
+    // Said at the release, not at every step of the drag.
+    let live = if dragged.is_some() { egui::accesskit::Live::Off } else { egui::accesskit::Live::Polite };
+    draw_bubble(ui, painter, &t, clip, sel, &lines, live);
 }
 
 /// The live check's card beside the selection's box on screen (`sel`), on the side with the most
 /// room, within the canvas (`clip`), never over the Contextual Task Bar.
-fn draw_bubble(ui: &egui::Ui, painter: &egui::Painter, t: &Tokens, clip: ERect, sel: ERect, lines: &[(Option<Mark>, String)]) {
+fn draw_bubble(
+    ui: &egui::Ui,
+    painter: &egui::Painter,
+    t: &Tokens,
+    clip: ERect,
+    sel: ERect,
+    lines: &[(Option<Mark>, String)],
+    live: egui::accesskit::Live,
+) {
     let font = FontId::proportional(BUBBLE_TEXT);
     let galleys: Vec<_> = lines.iter().map(|(_, w)| painter.layout_no_wrap(w.clone(), font.clone(), t.text)).collect();
     let indent = BUBBLE_MARK + BUBBLE_PAD / 2.0;
@@ -543,6 +553,7 @@ fn draw_bubble(ui: &egui::Ui, painter: &egui::Painter, t: &Tokens, clip: ERect, 
     let words = lines.iter().map(|(_, w)| w.as_str()).collect::<Vec<_>>().join(". ");
     ui.ctx().accesskit_node_builder(Id::new("embroidery-live-check"), |node| {
         node.set_role(egui::accesskit::Role::Status);
+        node.set_live(live);
         node.set_label(words);
     });
 }

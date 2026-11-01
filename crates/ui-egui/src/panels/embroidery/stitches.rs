@@ -130,7 +130,8 @@ pub struct DocList {
     pub shown: Option<usize>,
     move_by: [f64; 2],
     goto: String,
-    said: Option<String>,
+    /// Go to's answer, and the rows listed it was said of: shown while they are.
+    said: Option<(String, ListKey)>,
     /// Scroll to the focus in the next frame, and give the list the keyboard (Go to's Enter).
     reveal: bool,
     /// The generation of the plan the record numbers above (focus, anchor, shown) are of: a newer

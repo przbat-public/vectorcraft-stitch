@@ -463,7 +463,7 @@ fn go_to_takes_a_number_and_refuses_junk() {
         if ok {
             assert_eq!(d.focus, Some(first), "{typed}");
         } else {
-            assert!(d.said.as_deref().is_some_and(|s| s.starts_with("No record numbered")), "{typed}: {:?}", d.said);
+            assert!(d.said.as_ref().is_some_and(|(s, _)| s.starts_with("No record numbered")), "{typed}: {:?}", d.said);
         }
     }
 }
@@ -957,8 +957,20 @@ fn go_to_says_when_the_filter_leaves_the_record_out() {
     frame(&mut app, &ctx, time, vec![focus]);
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(hidden.to_string()), key(Key::Enter)]);
-    let said = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.said.clone());
+    let said = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.said.clone()).map(|(s, _)| s);
     assert_eq!(said.as_deref(), Some(format!("Record #{hidden} is left out by the filter chosen.").as_str()));
+    // Said politely and tied to its field; gone once the filter lists other rows.
+    let update = output(&mut app, &ctx, time + 0.05, vec![]).platform_output.accesskit_update.expect("a tree");
+    let left_out = format!("Record #{hidden} is left out");
+    let answer =
+        update.nodes.iter().find(|(_, n)| n.role() == Role::Status && n.value().is_some_and(|v| v.starts_with(&left_out))).expect("the answer");
+    assert_eq!(answer.1.live(), Some(egui::accesskit::Live::Polite));
+    let tied = update.nodes.iter().find(|(id, _)| *id == field).is_some_and(|(_, n)| n.described_by().contains(&answer.0));
+    assert!(tied, "the field is described by its answer");
+    app.run("ui.embroideryPanel", json!({"filter": "all"})).unwrap();
+    let mut time = time + 0.1;
+    settle(&mut app, &ctx, &mut time);
+    assert!(app.embroidery.stitches.docs.get(&uid).is_some_and(|d| d.said.is_none()), "the answer goes with the rows it was of");
 }
 
 /// The list's keys while editing, as the design note set them: Shift+↓ extends the selection from

@@ -221,19 +221,33 @@ pub(super) fn keys(app: &mut VectorcraftApp, ui: &Ui, list: egui::Id, uid: u64, 
 /// its first).
 pub(super) fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Listed) {
     let lang = crate::i18n::current();
+    // The rows listed now: an answer said of others (another scope, filter or plan) is gone.
+    let listing = app.embroidery.stitches.list.as_ref().map(|(k, _)| k.clone());
     let d = app.embroidery.stitches.docs.entry(uid).or_default();
+    if d.said.as_ref().is_some_and(|(_, of)| Some(of) != listing.as_ref()) {
+        d.said = None;
+    }
     let mut text = d.goto.clone();
-    let said = d.said.clone();
+    let said = d.said.as_ref().map(|(s, _)| s.clone());
     let mut go = false;
-    ui.horizontal(|ui| {
-        ui.label(egui::RichText::new(crate::et!("Go to #")).size(TEXT));
-        let resp = ui.add(egui::TextEdit::singleline(&mut text).desired_width(GO_TO_FIELD).char_limit(GO_TO_CHARS));
-        // Its name for screen readers (the words before it are only "Go to #").
-        ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(crate::et!("Record number")));
-        go = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
-    });
+    let field = ui
+        .horizontal(|ui| {
+            ui.label(egui::RichText::new(crate::et!("Go to #")).size(TEXT));
+            let resp = ui.add(egui::TextEdit::singleline(&mut text).desired_width(GO_TO_FIELD).char_limit(GO_TO_CHARS));
+            // Its name for screen readers (the words before it are only "Go to #").
+            ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(crate::et!("Record number")));
+            go = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+            resp.id
+        })
+        .inner;
     if let Some(s) = said {
-        ui.label(egui::RichText::new(s).size(TEXT).color(dim(&Tokens::get(ui.ctx()))));
+        // Said when it comes, and tied to the field it answers.
+        let answer = ui.label(egui::RichText::new(s).size(TEXT).color(dim(&Tokens::get(ui.ctx())))).id;
+        ui.ctx().accesskit_node_builder(answer, |node| {
+            node.set_role(egui::accesskit::Role::Status);
+            node.set_live(egui::accesskit::Live::Polite);
+        });
+        ui.ctx().accesskit_node_builder(field, |node| node.push_described_by(answer.accesskit_id()));
     }
     let d = app.embroidery.stitches.docs.entry(uid).or_default();
     d.goto = text.clone();
@@ -253,17 +267,23 @@ pub(super) fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Li
         }
         // In the scope, but not among the rows the filter lists.
         Some((n, None)) if (a..=b).contains(&n) => {
-            d.said = Some(crate::embroidery::text::fill(
-                crate::et!("Record #{value} is left out by the filter chosen."),
-                &[("value", &numbers::count(lang, n as u64))],
-            ));
+            d.said = listing.map(|of| {
+                let words = crate::embroidery::text::fill(
+                    crate::et!("Record #{value} is left out by the filter chosen."),
+                    &[("value", &numbers::count(lang, n as u64))],
+                );
+                (words, of)
+            });
         }
         _ => {
             let typed: String = first.chars().take(GO_TO_CHARS).collect();
-            d.said = Some(crate::embroidery::text::fill(
-                crate::et!("No record numbered {value} here: these are #{first}–{last}."),
-                &[("value", &typed), ("first", &numbers::count(lang, a as u64)), ("last", &numbers::count(lang, b as u64))],
-            ));
+            d.said = listing.map(|of| {
+                let words = crate::embroidery::text::fill(
+                    crate::et!("No record numbered {value} here: these are #{first}–{last}."),
+                    &[("value", &typed), ("first", &numbers::count(lang, a as u64)), ("last", &numbers::count(lang, b as u64))],
+                );
+                (words, of)
+            });
         }
     }
 }

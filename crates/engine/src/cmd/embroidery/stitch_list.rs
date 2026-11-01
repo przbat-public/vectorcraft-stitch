@@ -125,6 +125,13 @@ fn bit_matches(b: u8, filter: Filter) -> bool {
     }
 }
 
+/// How a record's stitch stands to the limits ([`Flags::judged`]): too short, too long.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Judgement {
+    pub short: bool,
+    pub long: bool,
+}
+
 impl Flags {
     /// The flags of `plan`'s records judged against `limits`: one walk, stopped early (and then
     /// incomplete) when the work is cancelled.
@@ -236,10 +243,10 @@ impl Flags {
         number.checked_sub(1).and_then(|i| self.bits.get(i)).is_some_and(|b| bit_matches(*b, filter))
     }
 
-    /// Whether record `number`'s stitch breaks the limits: too short, too long.
-    pub fn judged(&self, number: usize) -> [bool; 2] {
+    /// Whether record `number`'s stitch breaks the limits.
+    pub fn judged(&self, number: usize) -> Judgement {
         let b = number.checked_sub(1).and_then(|i| self.bits.get(i)).copied().unwrap_or(0);
-        [b & SHORT_BIT != 0, b & LONG_BIT != 0]
+        Judgement { short: b & SHORT_BIT != 0, long: b & LONG_BIT != 0 }
     }
 
     /// About how many bytes it holds.

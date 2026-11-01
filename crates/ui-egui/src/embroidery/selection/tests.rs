@@ -417,8 +417,8 @@ fn a_stitch_on_a_limit_is_judged_alike_everywhere() {
     app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "selection", "filter": "all"})).unwrap();
     let uid = app.session.active().unwrap().uid;
     app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::Dst);
-    let centre = (x0 + x) / 2.0 * super::PT_PER_MM;
-    app.run("view.setZoom", json!({"zoom": 100, "center": [centre, y * super::PT_PER_MM]})).unwrap();
+    let centre = vectorcraft_engine::cmd::embroidery::mm_to_pt((x0 + x) / 2.0);
+    app.run("view.setZoom", json!({"zoom": 100, "center": [centre, vectorcraft_engine::cmd::embroidery::mm_to_pt(y)]})).unwrap();
     app.run("select.all", json!({})).unwrap();
     let ctx = context();
     let mut time = 0.0;
@@ -527,7 +527,7 @@ fn the_task_bar_sits_under_the_selected_needle_points() {
     let mut time = 0.0;
     app.run("view.setZoom", json!({"zoom": 1000, "center": [70, 105]})).unwrap();
     settle(&mut app, &ctx, &mut time);
-    let mm = |v: f64| v / super::PT_PER_MM;
+    let mm = vectorcraft_engine::cmd::embroidery::pt_to_mm;
     let mut bars = vec![];
     for (from, to) in [(60.0, 75.0), (95.0, 110.0)] {
         app.run("embroidery.selectNeedlePoints", json!({"rect": [mm(from), mm(60.0), mm(to), mm(150.0)]})).unwrap();

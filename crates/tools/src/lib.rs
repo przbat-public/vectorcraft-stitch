@@ -556,10 +556,13 @@ pub enum Cursor {
     WidthPoint,
     // VectorCraft Stitch: the embroidery tool's cursors.
     /// The embroidery tool away from every entry and exit point: a click selects the object under
-    /// the pointer, in the stitch view by its stitches, else by its art (over an object
-    /// that takes no points the tool shows [`Cursor::NotAllowed`]).
+    /// the pointer, in the stitch view by its stitches, else by its art, and a double-click on
+    /// stitches starts editing their needle points (over an object that takes no points and holds
+    /// no stitches the tool shows [`Cursor::NotAllowed`]). While it edits stitches: away from every
+    /// needle point and stitch, and while drawing a marquee.
     Embroidery,
-    /// The embroidery tool over an entry or exit point and while dragging one (a drag moves it).
+    /// The embroidery tool over an entry or exit point and while dragging one (a drag moves it);
+    /// while it edits stitches, over a needle point or a stitch and while dragging them.
     EmbroideryPoint,
     /// The Blend tool away from art: a crosshair with a hollow square.
     Blend,

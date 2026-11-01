@@ -93,7 +93,7 @@ const ANGLE_DECIMALS: usize = 1;
 /// How far the labels sit from their handle, points (the passive markers' labels').
 const LABEL_OFFSET: f32 = super::overlay::LABEL_OFFSET;
 /// The dark edge round a label's pill, points wide: the pill reads on fabric of its own colour.
-const LABEL_EDGE_PT: f32 = 1.0;
+pub(super) const LABEL_EDGE_PT: f32 = 1.0;
 
 /// What the handles are found for ([`Cache`]): the document's uid and revision, the generation of
 /// the plan shown, the view's zoom and turn (an arrow's head and an exit moved apart from its entry

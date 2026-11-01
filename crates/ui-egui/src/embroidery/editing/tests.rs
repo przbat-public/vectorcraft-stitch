@@ -271,3 +271,13 @@ fn the_chip_asks_to_zoom_in_while_the_circles_dont_show() {
     settle(&mut app, &ctx, &mut time);
     assert!(says(&mut app), "under 250 %");
 }
+
+/// What the tool's hint and the stitch preview say of stitch editing is what the tool does: the
+/// arrows move by one step of its grid, and a drag of many needle points rests as long as the
+/// stitch preview pauses before it plans.
+#[test]
+fn the_hint_and_the_pause_are_the_tools() {
+    let step = format!("move by {} mm", vectorcraft_tools::embroidery::NEEDLE_STEP_MM);
+    assert!(crate::embroidery::tool_bar::EDITING_HINT.iter().any(|(words, _)| words.contains(&step)), "the hint says {step}");
+    assert_eq!(vectorcraft_tools::embroidery::PAUSE_PREVIEW_SECS, crate::embroidery::stitch_preview::PAUSE_TO_PLAN_SECS);
+}

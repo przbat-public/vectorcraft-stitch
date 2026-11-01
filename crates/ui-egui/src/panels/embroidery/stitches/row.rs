@@ -62,10 +62,37 @@ pub(super) fn chip_words(filter: Filter, count: usize, limits: &StitchLimits, la
 /// language drawn), else the kind as a glyph, else without X and Y (in the row's name for screen
 /// readers). A head wider than its column is cut short with "…", whole for screen readers.
 pub(super) struct Columns {
-    xy: bool,
-    words: bool,
-    widths: [f32; 5],
+    layout: Layout,
+    widths: [f32; COLUMNS],
 }
+
+/// How the columns are laid out at a width ([`Columns::fit`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Layout {
+    /// Every column, the kinds in words.
+    Words,
+    /// Every column, the kinds as glyphs.
+    Glyphs,
+    /// The kinds as glyphs and no X and Y (they go in the row's name for screen readers).
+    Narrow,
+}
+
+/// A hairline's width, points: the head's rule, the chip's edge, the focus ring's inset and the
+/// panel's colour inside it.
+const HAIRLINE: f32 = 1.0;
+/// The corners of the chip and of the focus ring, points.
+const ROUND: u8 = 2;
+
+/// The columns, in order: the chip and the number, the kind, X, Y and the length.
+const COLUMNS: usize = 5;
+/// Each column's place ([`COLUMNS`]' order).
+const NUMBER: usize = 0;
+const KIND: usize = 1;
+const X: usize = 2;
+const Y: usize = 3;
+const LENGTH: usize = 4;
+/// The columns the narrow layout draws: the number, the kind and the length.
+const NARROW_COLUMNS: usize = 3;
 
 /// The column widths, points, of the widest layout: the chip and the number, the kind, X, Y and
 /// the length, then a glyph's kind; estimates the language tests check at 220, 256 and 300 pt.
@@ -84,19 +111,19 @@ impl Columns {
         let widest =
             kinds.iter().map(|k| ui.painter().layout_no_wrap(kind_word(*k).to_string(), font.clone(), Color32::WHITE).size().x).fold(0.0, f32::max);
         let mut c = if width >= all && widest + 2.0 * CELL_PAD <= KIND_W {
-            Self { xy: true, words: true, widths: [NUMBER_W, KIND_W, PLACE_W, PLACE_W, LENGTH_W] }
+            Self { layout: Layout::Words, widths: [NUMBER_W, KIND_W, PLACE_W, PLACE_W, LENGTH_W] }
         } else if width >= glyphs {
-            Self { xy: true, words: false, widths: [NUMBER_W, KIND_GLYPH_W, PLACE_W, PLACE_W, LENGTH_W] }
+            Self { layout: Layout::Glyphs, widths: [NUMBER_W, KIND_GLYPH_W, PLACE_W, PLACE_W, LENGTH_W] }
         } else {
-            Self { xy: false, words: false, widths: [NUMBER_W, KIND_GLYPH_W, 0.0, 0.0, LENGTH_W] }
+            Self { layout: Layout::Narrow, widths: [NUMBER_W, KIND_GLYPH_W, 0.0, 0.0, LENGTH_W] }
         };
         // The room left over goes to the heads cut short, each column widened to its head in turn:
         // the length, X, Y, then the kind.
         let heads = heads();
         let mut spare = width - c.widths.iter().sum::<f32>();
-        for k in [4, 2, 3, 1] {
+        for k in [LENGTH, X, Y, KIND] {
             let (Some(head), Some(w)) = (heads.get(k), c.widths.get(k).copied()) else { continue };
-            if spare <= 0.0 || w <= 0.0 || (k == 1 && !c.words) {
+            if spare <= 0.0 || w <= 0.0 || (k == KIND && c.layout != Layout::Words) {
                 continue;
             }
             let need = ui.painter().layout_no_wrap(head.to_string(), font.clone(), Color32::WHITE).size().x + 2.0 * CELL_PAD - w;
@@ -112,7 +139,7 @@ impl Columns {
     }
 
     pub(super) fn count(&self) -> usize {
-        if self.xy { 5 } else { 3 }
+        if self.layout == Layout::Narrow { NARROW_COLUMNS } else { COLUMNS }
     }
 }
 
@@ -127,7 +154,7 @@ pub(super) fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
     let heads = heads();
     let mut x = rect.left();
     for (k, (head, w)) in heads.iter().zip(columns.widths).enumerate() {
-        if w <= 0.0 || (k == 1 && !columns.words) {
+        if w <= 0.0 || (k == KIND && columns.layout != Layout::Words) {
             x += w;
             continue;
         }
@@ -145,7 +172,7 @@ pub(super) fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
         });
         x += w;
     }
-    ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(1.0, t.divider));
+    ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(HAIRLINE, t.divider));
 }
 
 /// How a row is marked as the list's focus: not at all, quietly (the list doesn't have the
@@ -190,22 +217,22 @@ pub(super) fn draw_row(
     let faded = |c: Color32| if dimmed { c.gamma_multiply(super::super::STALE_INK) } else { c };
     let ink = faded(if selected { t.text_strong } else { t.text });
     let origin = app.ruler_origin();
-    let x_mm = (mm_to_pt(row.at.x) - origin.x) / PT_PER_MM;
-    let y_mm = (mm_to_pt(row.at.y) - origin.y) / PT_PER_MM;
-    let [short, long] = flags.judged(row.record);
+    let x_mm = pt_to_mm(mm_to_pt(row.at.x) - origin.x);
+    let y_mm = pt_to_mm(mm_to_pt(row.at.y) - origin.y);
+    let stitch_list::Judgement { short, long } = flags.judged(row.record);
     let mut x = rect.left();
     // The thread chip (of the plan the row is of) and the number.
     let colour = plan.blocks.get(row.block).map(|b| b.thread.color()).map_or(t.text_dim, |[r, g, b]| faded(Color32::from_rgb(r, g, b)));
     let chip = Rect::from_center_size(pos2(x + CELL_PAD + CHIP / 2.0, rect.center().y), vec2(CHIP, CHIP));
-    p.rect(chip, CornerRadius::same(2), colour, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
+    p.rect(chip, CornerRadius::same(ROUND), colour, Stroke::new(HAIRLINE, t.border), egui::StrokeKind::Inside);
     let number = numbers::count(lang, row.record as u64);
-    p.text(pos2(x + columns.widths[0] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &number, font.clone(), ink);
-    x += columns.widths[0];
+    p.text(pos2(x + columns.widths[NUMBER] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &number, font.clone(), ink);
+    x += columns.widths[NUMBER];
     let kind = kind_word(row.kind);
     let dim = faded(marks::readable_text(t.text_dim, &[if selected { t.row_selected } else { t.panel }], t.dark));
-    if columns.words {
+    if columns.layout == Layout::Words {
         let colour = if row.kind == RecordKind::Stitch { ink } else { dim };
-        p.text(pos2(x + columns.widths[1] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, kind, font.clone(), colour);
+        p.text(pos2(x + columns.widths[KIND] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, kind, font.clone(), colour);
     } else {
         let glyph = match row.kind {
             RecordKind::Stitch => "·",
@@ -213,30 +240,32 @@ pub(super) fn draw_row(
             RecordKind::Trim => "✂",
             RecordKind::Stop => "■",
         };
-        p.text(pos2(x + columns.widths[1] / 2.0, rect.center().y), egui::Align2::CENTER_CENTER, glyph, font.clone(), dim);
+        p.text(pos2(x + columns.widths[KIND] / 2.0, rect.center().y), egui::Align2::CENTER_CENTER, glyph, font.clone(), dim);
     }
-    x += columns.widths[1];
+    x += columns.widths[KIND];
     let (xs, ys) = (numbers::fixed(lang, x_mm, PLACE_DECIMALS), numbers::fixed(lang, y_mm, PLACE_DECIMALS));
-    if columns.xy {
-        p.text(pos2(x + columns.widths[2] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &xs, font.clone(), ink);
-        x += columns.widths[2];
-        p.text(pos2(x + columns.widths[3] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &ys, font.clone(), ink);
-        x += columns.widths[3];
+    if columns.layout != Layout::Narrow {
+        p.text(pos2(x + columns.widths[X] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &xs, font.clone(), ink);
+        x += columns.widths[X];
+        p.text(pos2(x + columns.widths[Y] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &ys, font.clone(), ink);
+        x += columns.widths[Y];
     }
     let length = row.length.map(|l| numbers::fixed(lang, l, LENGTH_DECIMALS));
     let shown = length.clone().unwrap_or_else(|| "–".to_string());
-    p.text(pos2(x + columns.widths[4] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &shown, font, ink);
+    p.text(pos2(x + columns.widths[LENGTH] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, &shown, font, ink);
     if short || long {
         marks::paint(p, pos2(x + MARK / 2.0, rect.center().y), MARK, Mark::Warning, t);
     }
     match focus {
         FocusMark::Ring => {
             let ring = marks::readable(t.accent, &[if selected { t.row_selected } else { t.panel }], t.dark);
-            p.rect_stroke(rect.shrink(1.0), CornerRadius::same(2), Stroke::new(FOCUS_RING_PT, ring), egui::StrokeKind::Inside);
-            p.rect_stroke(rect.shrink(3.0), CornerRadius::same(2), Stroke::new(1.0, t.panel), egui::StrokeKind::Inside);
+            p.rect_stroke(rect.shrink(HAIRLINE), CornerRadius::same(ROUND), Stroke::new(FOCUS_RING_PT, ring), egui::StrokeKind::Inside);
+            // The panel's colour inside it: the ring reads on a selected row's colour too.
+            let inner = HAIRLINE + FOCUS_RING_PT;
+            p.rect_stroke(rect.shrink(inner), CornerRadius::same(ROUND), Stroke::new(HAIRLINE, t.panel), egui::StrokeKind::Inside);
         }
         FocusMark::Quiet => {
-            p.rect_stroke(rect.shrink(1.0), CornerRadius::same(2), Stroke::new(FOCUS_QUIET_PT, t.border), egui::StrokeKind::Inside);
+            p.rect_stroke(rect.shrink(HAIRLINE), CornerRadius::same(ROUND), Stroke::new(FOCUS_QUIET_PT, t.border), egui::StrokeKind::Inside);
         }
         FocusMark::None => {}
     }

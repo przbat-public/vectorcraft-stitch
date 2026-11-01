@@ -136,7 +136,7 @@ pub use service::Planned;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
 pub use vectorcraft_stitch::format::Format;
-pub use vectorcraft_stitch::mm_to_pt;
+pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
 
 /// The marked upstream hooks of the stitch commands: Delete with needle points selected
 /// (`path::delete_anchors`, which the Delete key, Edit › Clear, Edit › Cut and `path.deleteAnchors`

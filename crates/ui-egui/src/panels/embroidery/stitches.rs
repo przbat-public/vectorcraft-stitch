@@ -32,7 +32,7 @@ use serde_json::json;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::plan::DesignPlan;
 use vectorcraft_engine::cmd::embroidery::stitch_list::{self, Filter, Flags, Listed, RecordKind, listed};
-use vectorcraft_engine::cmd::embroidery::{LimitsKey, StitchLimits, mm_to_pt};
+use vectorcraft_engine::cmd::embroidery::{LimitsKey, StitchLimits, mm_to_pt, pt_to_mm};
 use vectorcraft_geom::Point;
 use vectorcraft_tools::embroidery::{NeedleRef, SelectMode};
 
@@ -52,9 +52,9 @@ pub const MAX_SCROLLED_ROWS: usize = 400_000;
 /// hundredth, as the commands give lengths).
 const PLACE_DECIMALS: usize = 1;
 const LENGTH_DECIMALS: usize = 2;
-/// The words' size, a column's room either side, the thread chip's size and the marks' size,
-/// points.
-const TEXT: f32 = 12.0;
+/// The words' size ([`crate::embroidery::WORDS_PT`]), a column's room either side, the thread
+/// chip's size and the marks' size, points.
+const TEXT: f32 = crate::embroidery::WORDS_PT;
 const CELL_PAD: f32 = 4.0;
 const CHIP: f32 = 8.0;
 const MARK: f32 = 11.0;
@@ -64,8 +64,6 @@ const MIN_LIST: f32 = 6.0 * ROW_HEIGHT;
 /// hasn't, points (the canvas's selection rings' weights).
 const FOCUS_RING_PT: f32 = 2.0;
 const FOCUS_QUIET_PT: f32 = 1.0;
-/// Points in a millimetre.
-const PT_PER_MM: f64 = 72.0 / 25.4;
 /// The most rows a Shift-click's range selects at once (the status line says so past it): the
 /// stitch commands' bound on a call's addresses is far above, this keeps one click's work and params
 /// small.
@@ -147,9 +145,24 @@ pub struct StitchesState {
     drawn: Option<(u64, Shown)>,
     /// How many times the rows were worked out (the tests count them: never on an idle frame).
     pub(crate) builds: usize,
-    /// The foot's height as last drawn, points, outside stitch editing and while editing (0: not
-    /// drawn yet): the room kept for it under the list.
-    foot: [f32; 2],
+    /// The foot's height as last drawn, outside stitch editing and while editing: the room kept for
+    /// it under the list.
+    foot: Foot,
+}
+
+/// The foot's heights as last drawn, points (0: not drawn yet), outside stitch editing and while
+/// editing.
+#[derive(Default)]
+struct Foot {
+    outside: f32,
+    editing: f32,
+}
+
+impl Foot {
+    /// The height kept for the foot outside editing, or while editing (`editing`).
+    fn of(&mut self, editing: bool) -> &mut f32 {
+        if editing { &mut self.editing } else { &mut self.outside }
+    }
 }
 
 /// A unit's numbering: the path, its first needle point's place, each record's ordinal, and the
@@ -453,7 +466,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let columns = Columns::fit(ui, width);
     header(ui, &columns, &t);
     let in_page = (total - (page * MAX_SCROLLED_ROWS).min(total)).min(MAX_SCROLLED_ROWS);
-    let drawn = app.embroidery.stitches.foot[usize::from(editing.is_some())];
+    let drawn = *app.embroidery.stitches.foot.of(editing.is_some());
     let foot = if drawn > 0.0 { drawn } else { foot_height(editing.is_some()) };
     // Whole rows: none cut by the foot's words under the list.
     let room = (((ui.available_height() - foot) / ROW_HEIGHT).floor() * ROW_HEIGHT).max(MIN_LIST);
@@ -539,9 +552,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     // The room the next frame keeps for it; a frame at once when it changed (the list drawn this
     // frame had the old room), so the list never lies over the foot past one frame.
     let used = ui.cursor().top() - top;
-    if let Some(kept) = app.embroidery.stitches.foot.get_mut(usize::from(editing.is_some()))
-        && (*kept - used).abs() > FOOT_SETTLED
-    {
+    let kept = app.embroidery.stitches.foot.of(editing.is_some());
+    if (*kept - used).abs() > FOOT_SETTLED {
         *kept = used;
         ui.ctx().request_repaint();
     }

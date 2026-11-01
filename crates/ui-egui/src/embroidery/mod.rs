@@ -107,6 +107,10 @@ pub struct Embroidery {
 /// after the fork's controls (`chrome::isolation_bar`), points: as it draws it.
 const ISOLATION_BAR: f32 = 24.0;
 
+/// The size of the words stitch editing's chip and live check and the Stitches tab draw, points:
+/// the interface's small text, one size over the panels' smallest. An estimate.
+pub(crate) const WORDS_PT: f32 = 12.0;
+
 /// The one set of limits the active document's stitches are judged by: the document's, for the
 /// format the Check tab checks for (the thread palette's unless one is chosen). The Stitches tab,
 /// the canvas's edit look, the selection's live check and the Contextual Task Bar read them here.

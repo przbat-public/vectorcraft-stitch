@@ -261,7 +261,7 @@ impl Memo {
             Some(None) => self.records.saturating_mul(SCENE_BYTES_PER_RECORD),
             None => 0,
         };
-        let flags = self.plan.as_ref().ok().and_then(|p| p.flags.lock().ok().and_then(|f| f.as_ref().map(|f| f.byte_size()))).unwrap_or(0);
+        let flags = self.plan.as_ref().ok().and_then(|p| p.kept_flags().map(|f| f.byte_size())).unwrap_or(0);
         self.bytes.saturating_add(scene).saturating_add(flags)
     }
 }
@@ -301,10 +301,8 @@ impl Planned {
         }
         let made = Arc::new(super::stitch_list::Flags::of(&self.plan, limits));
         // A walk cut short by a cancel is incomplete: never kept.
-        if !vectorcraft_doc::cancel::is_cancelled()
-            && let Ok(mut kept) = self.flags.lock()
-        {
-            *kept = Some(made.clone());
+        if !vectorcraft_doc::cancel::is_cancelled() {
+            *self.flags_lock() = Some(made.clone());
         }
         made
     }
@@ -312,7 +310,18 @@ impl Planned {
     /// The flags for `limits` when they have been built already.
     pub fn built_stitch_flags(&self, limits: &super::check::StitchLimits) -> Option<Arc<super::stitch_list::Flags>> {
         let key = limits.key();
-        self.flags.lock().ok()?.as_ref().filter(|f| f.limits() == key).cloned()
+        self.kept_flags().filter(|f| f.limits() == key)
+    }
+
+    /// The flags kept, for whichever limits.
+    fn kept_flags(&self) -> Option<Arc<super::stitch_list::Flags>> {
+        self.flags_lock().clone()
+    }
+
+    /// The flags' lock. One poisoned by a panic elsewhere is taken as it is: what it guards is only
+    /// ever replaced whole, so it is never left half written, and the tab keeps listing.
+    fn flags_lock(&self) -> std::sync::MutexGuard<'_, Option<Arc<super::stitch_list::Flags>>> {
+        self.flags.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// The plan's stitch scene, built the first time it is asked for (on the asking thread, outside

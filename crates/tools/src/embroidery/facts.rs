@@ -220,7 +220,8 @@ pub trait NeedlePoints {
     fn of_anchor(&self, id: NodeId, anchor: (usize, usize)) -> Option<usize>;
     /// How many needle points path `id` holds (0: not one being edited).
     fn count(&self, id: NodeId) -> usize;
-    /// Path `id`'s place among the paths being edited, in the order they are sewn.
+    /// Path `id`'s place among the paths being edited, in document order: the order the plan sews
+    /// them in (its Sewing order is the document's).
     fn order(&self, id: NodeId) -> Option<usize>;
     /// The record number the plan the canvas shows gives needle point `n`, when that plan is of
     /// its path as it is now; `None` while the plan lags behind an edit of it.

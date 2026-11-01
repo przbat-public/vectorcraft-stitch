@@ -29,7 +29,7 @@ use vectorcraft_doc::hit::{HitKind, hit_test};
 use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
 pub(crate) use editing::Editing;
-pub use editing::{LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, contains_stitches, stitch_object};
+pub use editing::{LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, contains_stitches, stitch_object};
 pub use facts::{
     FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, Refusal, Refused, SelectMode, SelectedSpan, ThreadHit,
 };
@@ -80,7 +80,8 @@ pub const POINT_DIALOG: &str = "embroideryPoint";
 /// Gradient tool's).
 pub const DRAG_START_PX: f64 = 3.0;
 
-/// How many keyboard increments an arrow with Shift nudges a point.
+/// How many keyboard increments (or angle steps, or needle-point steps) an arrow with Shift nudges
+/// by.
 const SHIFT_NUDGE: f64 = 10.0;
 
 /// A handle held by a press: which, where the press began and where its point was then, whether it
@@ -428,6 +429,9 @@ impl Tool for EmbroideryTool {
                     self.grab = None;
                     self.dialog(&h)
                 }
+                // With Double Click to Isolate off, a double-click isolates nothing, as the Selection
+                // tool's: Edit Stitches (the Object and the Stitches tabs) still enters.
+                None if !cx.double_click_isolate => vec![],
                 // On stitches: their object's needle points edited, in isolation, in the stitch view
                 // (the project owner's choice, 2026-10-27: editing stitches is the tool in isolation
                 // of a stitch object; entering it shows the stitches). Planned art beside them in a
@@ -527,7 +531,7 @@ impl Tool for EmbroideryTool {
         match held {
             Some(Kind::Entry | Kind::Exit) => Cursor::EmbroideryPoint,
             Some(Kind::Angle) => Cursor::Rotate,
-            // Over an object a press wouldn't select (type, an image, stitches read from a file).
+            // Over an object a press wouldn't select (type, an image: no points, and no stitches).
             None if Self::found(cx, p).is_some_and(|(id, _)| !Self::takes(cx, id)) => Cursor::NotAllowed,
             None => Cursor::Embroidery,
         }
@@ -602,9 +606,7 @@ impl Tool for EmbroideryTool {
         if self.grab.as_ref().is_some_and(|g| g.begun) {
             self.grab = None;
         }
-        if self.editing.busy() {
-            self.editing.let_go();
-        }
+        self.editing.drag_ended();
         vec![]
     }
 

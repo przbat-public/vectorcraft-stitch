@@ -24,7 +24,9 @@ use crate::VectorcraftApp;
 use crate::theme::Tokens;
 
 /// The zoom from which needle points show as circles (the project owner's choice, 2026-10-27:
-/// „nakłucia jako dwutonowe kółka od 250 %”): where a 1 mm stitch shows its two circles apart.
+/// „nakłucia jako dwutonowe kółka od 250 %”): where a 1 mm stitch shows its two circles apart. The
+/// view's own zoom, the stitches' size on screen (7 pt a millimetre): with Preferences › Display
+/// Print Size on, the zoom field shows another percent for it (187.5 % on a display at 100 %).
 pub const NEEDLE_CIRCLES_MIN_ZOOM: f64 = 2.5;
 
 /// Room between the chip and the canvas's left edge, and under isolation mode's bar, points.
@@ -32,8 +34,8 @@ const INSET: f32 = 10.0;
 /// The room either side of the chip's words, and between its lines, points.
 const PAD: f32 = 10.0;
 const LINE_GAP: f32 = 2.0;
-/// The size of its words, points: the interface's small text, its title a size over it.
-const TEXT_SIZE: f32 = 12.0;
+/// The size of its words, points ([`super::WORDS_PT`]), its title a size over it.
+const TEXT_SIZE: f32 = super::WORDS_PT;
 const TITLE_SIZE: f32 = 12.5;
 /// The widest the chip is drawn, points: longer words wrap within it.
 const MAX_WIDTH: f32 = 360.0;

@@ -332,7 +332,10 @@ fn a_click_while_the_plan_lags_an_edit_only_shows_the_stitch() {
     let (node, anchors) = st.selection.anchors.iter().next().expect("a needle point selected");
     let &(s, a) = anchors.iter().next().unwrap();
     let p = st.doc.node(*node).unwrap().path_data().unwrap().subpaths[s].anchors[a].p;
-    let shown = vectorcraft_geom::Point::new(row.at.x * super::PT_PER_MM, row.at.y * super::PT_PER_MM);
+    let shown = vectorcraft_geom::Point::new(
+        vectorcraft_engine::cmd::embroidery::mm_to_pt(row.at.x),
+        vectorcraft_engine::cmd::embroidery::mm_to_pt(row.at.y),
+    );
     assert!(p.distance(shown) < 1e-6, "the needle point the row shows: {p:?} vs {shown:?}");
 }
 

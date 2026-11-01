@@ -40,17 +40,14 @@ const SELECT: &str = "embroidery.selectNeedlePoints";
 const INSERT: &str = "embroidery.insertNeedlePoints";
 const DELETE: &str = "embroidery.deleteNeedlePoints";
 
-/// The grid a needle-point drag and the arrows move on, millimetres: the formats' 0.1 mm (a DST,
-/// PES or JEF record's unit), the project owner's choice (2026-10-27: the arrows by 0.1 mm).
-pub const NEEDLE_STEP_MM: f64 = 0.1;
-/// The steps in a millimetre ([`NEEDLE_STEP_MM`]'s reciprocal): a move is a whole number of steps
-/// divided by it, so that it is the nearest double to a tenth.
+/// The steps in a millimetre of the grid a needle-point drag and the arrows move on: the formats'
+/// 0.1 mm (a DST, PES or JEF record's unit), the project owner's choice (2026-10-27: the arrows by
+/// 0.1 mm). A move is a whole number of steps divided by it, so that it is the nearest double to a
+/// tenth.
 const STEPS_PER_MM: f64 = 10.0;
-/// How many steps an arrow with Shift moves: 1 mm (the project owner's choice).
-pub const SHIFT_STEPS: f64 = 10.0;
-/// The steps Shift constrains a drag to, degrees from Constrain Angle: as every Shift-constrained
-/// drag in the app.
-const SHIFT_ANGLE: f64 = 45.0;
+/// One step of that grid, millimetres: what an arrow moves by (Shift ten times that, as every
+/// Shift-nudge of the tool), as the tool's hint says.
+pub const NEEDLE_STEP_MM: f64 = 1.0 / STEPS_PER_MM;
 /// Past this many needle points selected, a drag previews only once it rests or at the release
 /// (the project owner's choice, 2026-10-27: above 20,000 selected points the stitches refresh on a
 /// pause or release).
@@ -243,6 +240,16 @@ impl Editing {
         self.hover = None;
     }
 
+    /// A command ran outside the tool: a drag of needle points under way is let go (the command
+    /// settled its undo step, or Undo took it back). A marquee holds no step (it edits nothing
+    /// until its release), so one run under it (an agent's, Undo) leaves it be.
+    pub fn drag_ended(&mut self) {
+        if self.drag.as_ref().is_some_and(|d| d.begun) {
+            self.drag = None;
+            self.hover = None;
+        }
+    }
+
     /// What lies under `p`: a needle point within the anchors' reach, else a stitch within the
     /// selection tolerance (as Direct Selection catches anchors before the segments through them).
     pub fn under(cx: &ToolContext, needles: &dyn NeedlePoints, p: Point) -> Option<Hover> {
@@ -369,7 +376,7 @@ impl Editing {
             out.push(Action::Begin(MOVE_LABEL.into()));
         }
         let by: Vec2 = pos - d.from;
-        let by = if ev.mods.shift { constrain_angle_from(by, SHIFT_ANGLE, cx.constrain_angle) } else { by };
+        let by = if ev.mods.shift { constrain_angle_from(by, super::SHIFT_ANGLE_STEP, cx.constrain_angle) } else { by };
         let delta = [on_grid(by.x), on_grid(by.y)];
         if delta != d.delta {
             d.delta = delta;
@@ -451,7 +458,7 @@ impl Editing {
         if self.drag.is_some() {
             return vec![];
         }
-        let steps = if mods.shift { SHIFT_STEPS } else { 1.0 };
+        let steps = if mods.shift { super::SHIFT_NUDGE } else { 1.0 };
         let by = steps / STEPS_PER_MM;
         let (dx, dy) = match key {
             ToolKey::Left => (-by, 0.0),

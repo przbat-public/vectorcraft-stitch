@@ -7,9 +7,14 @@ use super::*;
 /// less than a pixel.
 pub(super) const FOOT_SETTLED: f32 = 0.5;
 
-/// The foot's height before it is first drawn, points: room kept under the list.
+/// The foot's height before it is first drawn, points: room kept under the list, rows of
+/// [`ROW_HEIGHT`] for its lines (while editing: the selection, Move by and up to three of stitch
+/// actions; else a line of words and a button). An estimate; the frame drawn keeps the real one.
 pub(super) fn foot_height(editing: bool) -> f32 {
-    if editing { 5.0 * ROW_HEIGHT } else { 3.0 * ROW_HEIGHT }
+    /// The rows kept while editing, and outside it.
+    const EDITING_ROWS: f32 = 5.0;
+    const OUTSIDE_ROWS: f32 = 3.0;
+    if editing { EDITING_ROWS * ROW_HEIGHT } else { OUTSIDE_ROWS * ROW_HEIGHT }
 }
 
 /// The foot: while stitches are edited, the selection, Move by X and Y with Apply, and the stitch
@@ -73,7 +78,7 @@ pub(super) fn foot_ui(
             app.embroidery.stitches.docs.entry(uid).or_default().move_by = by;
             if apply
                 && by != [0.0, 0.0]
-                && let Err(err) = app.run("embroidery.moveNeedlePoints", json!({"dx": by[0], "dy": by[1]}))
+                && let Err(err) = app.run(vectorcraft_tools::embroidery::MOVE, json!({"dx": by[0], "dy": by[1]}))
             {
                 app.status(err);
             }

@@ -312,9 +312,13 @@ pub struct NeedleIndex {
     unfit: HashMap<NodeId, (Arc<Node>, Refusal)>,
 }
 
-/// A node found for the index: the node, whether a clip group holds it, and whether the walk
-/// sews what is above it (shown, on a layer that prints: [`digitize::shows`], [`digitize::printed`]).
-type Found = (Arc<Node>, bool, bool);
+/// A node found for the index: the node, whether a clip group holds it, and whether the walk sews
+/// what is above it (shown, on a layer that prints: [`digitize::shows`], [`digitize::printed`]).
+struct Found {
+    node: Arc<Node>,
+    clipped: bool,
+    sewn: bool,
+}
 
 /// The node at index path `path` of `doc`, as its parent holds it (its identity is what an edit
 /// changes), whether a clip group above it holds it, and whether the walk sews what is above it.
@@ -328,7 +332,7 @@ fn arc_at(doc: &Document, path: &[usize]) -> Option<Found> {
         sewn &= digitize::shows(n) && digitize::printed(n);
         nodes = n.children()?;
     }
-    nodes.get(*last).map(|n| (n.clone(), clipped, sewn))
+    nodes.get(*last).map(|n| Found { node: n.clone(), clipped, sewn })
 }
 
 /// `roots` of `doc` each once, and only the outermost (one inside another is walked with it), with
@@ -385,7 +389,7 @@ impl NeedleIndex {
             let sewn = sewn && digitize::shows(n) && digitize::printed(n);
             if needles::is_stitches(n) {
                 let guide = matches!(n.kind, NodeKind::Path { guide: true, .. });
-                out.push((n.clone(), clipped, sewn && !guide && digitize::run_colour(n).is_some()));
+                out.push(Found { node: n.clone(), clipped, sewn: sewn && !guide && digitize::run_colour(n).is_some() });
                 return;
             }
             if !matches!(n.kind, NodeKind::Layer { .. } | NodeKind::Group { .. }) {
@@ -397,8 +401,8 @@ impl NeedleIndex {
             }
         }
         let mut found: Vec<Found> = Vec::new();
-        for (n, clipped, sewn) in outermost(doc, roots) {
-            walk(&n, clipped, sewn, &mut found);
+        for f in outermost(doc, roots) {
+            walk(&f.node, f.clipped, f.sewn, &mut found);
         }
         if found.is_empty() {
             return None;
@@ -410,7 +414,7 @@ impl NeedleIndex {
             refused.add(why);
             refusals.insert(id, why);
         }
-        for (n, clipped, sewn) in found {
+        for Found { node: n, clipped, sewn } in found {
             if order.contains_key(&n.id) || refusals.contains_key(&n.id) {
                 continue;
             }
@@ -501,7 +505,8 @@ impl NeedleIndex {
         self.paths.iter().map(|(id, _)| *id)
     }
 
-    /// Path `id`'s place among the paths being edited (the order they are sewn in).
+    /// Path `id`'s place among the paths being edited, in document order (the order the plan sews
+    /// them in).
     pub(crate) fn order_of(&self, id: NodeId) -> Option<usize> {
         self.order.get(&id).copied()
     }

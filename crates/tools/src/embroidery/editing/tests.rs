@@ -376,6 +376,12 @@ fn the_marquee_selects_the_needle_points_inside_it() {
     );
     t.pointer(&c, &ev(PointerKind::Down, 50.0, 50.0));
     assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 50.0, 50.0)), vec![exec("select.none", json!({}))], "a click away from them");
+    // A command run under a marquee (an agent's, Undo) leaves it be: it holds no undo step.
+    t.pointer(&c, &ev(PointerKind::Down, 50.0, 50.0));
+    t.pointer(&c, &ev(PointerKind::Drag, 250.0, 150.0));
+    assert_eq!(t.after_command(&c), vec![]);
+    assert_eq!(t.options()["stitches"]["marquee"], json!([50.0, 50.0, 250.0, 150.0]), "the marquee kept through a command");
+    t.pointer(&c, &ev(PointerKind::Up, 250.0, 150.0));
     // Dragged far off, it stops at the document's edge; a corner that isn't a number leaves it.
     let max = vectorcraft_doc::MAX_COORD;
     t.pointer(&c, &ev(PointerKind::Down, 50.0, 50.0));
@@ -496,6 +502,9 @@ fn a_double_click_on_a_stitch_object_starts_editing() {
         t.pointer(&c, &ev(PointerKind::DoubleClick, 150.0, 100.0)),
         vec![exec("object.isolate", json!({"id": g.0})), exec("view.stitchPreview", json!({"on": true}))]
     );
+    // With Double Click to Isolate off, as the Selection tool's: nothing isolated.
+    let off = ToolContext { embroidery: Some(&f), double_click_isolate: false, ..cx(&d, &s, &p) };
+    assert_eq!(t.pointer(&off, &ev(PointerKind::DoubleClick, 150.0, 100.0)), vec![], "Double Click to Isolate off");
     assert_eq!(t.cursor(&c, Point::new(150.0, 100.0), Mods::default()), Cursor::Embroidery, "not Not Allowed: it can be edited");
     assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 150.0, 100.0)), vec![exec("select.set", json!({"ids": [a.0]}))]);
     let f = Editing { needles: None, under: None };

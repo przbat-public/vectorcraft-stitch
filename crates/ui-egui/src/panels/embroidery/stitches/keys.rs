@@ -227,7 +227,7 @@ pub(super) fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Li
     let mut go = false;
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(crate::et!("Go to #")).size(TEXT));
-        let resp = ui.add(egui::TextEdit::singleline(&mut text).desired_width(90.0).char_limit(GO_TO_CHARS));
+        let resp = ui.add(egui::TextEdit::singleline(&mut text).desired_width(GO_TO_FIELD).char_limit(GO_TO_CHARS));
         // Its name for screen readers (the words before it are only "Go to #").
         ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(crate::et!("Record number")));
         go = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
@@ -271,6 +271,8 @@ pub(super) fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Li
 /// The most characters Go to # takes, and so says back: a record number of the largest design,
 /// grouped, with a `#` before it and room to spare. An estimate.
 pub(super) const GO_TO_CHARS: usize = 24;
+/// The Go to # field's width, points: room for a seven-digit record number grouped.
+const GO_TO_FIELD: f32 = 90.0;
 
 /// The record number Go to # was given as `text`: a whole number as `lang` writes one (its group
 /// mark or a space between threes), a `#` before it allowed; `None` for anything else ("1e9",

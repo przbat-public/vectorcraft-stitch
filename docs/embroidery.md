@@ -241,7 +241,8 @@ answers the lengths of the stitches it made or changed, against the document's s
 and the 12.7 mm a machine sews well ([mcp.md](mcp.md) › Editing stitches).
 
 **Editing stitches on the canvas.** Edit Stitches (the Object tab's button on manual or opened
-stitches, or a double-click on them with the Embroidery Tool) isolates the object and switches to
+stitches, or a double-click on them with the Embroidery Tool, while Preferences › Double Click to
+Isolate is on, as for the Selection tool) isolates the object and switches to
 the stitch view: the rest of the design fades, the object's stitches are drawn 1 pt wide over it,
 and from 250 % zoom each needle point is a two-tone circle. With the Embroidery Tool, a click on a
 needle point selects it (Shift-click adds or takes it away), a click on a stitch its two needle

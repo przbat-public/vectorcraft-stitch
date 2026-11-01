@@ -106,6 +106,9 @@ pub const NEEDLE_CIRCLE_EDGE_PT: f64 = 1.0;
 /// dashes), and its mark's half size at its middle, screen points (a mark's).
 pub const FLAG_DASH_PT: f64 = LINK_DASH_PT;
 pub const FLAG_LINE_PT: f64 = 1.5;
+/// How much wider than the dashed line its dark line under it is, screen points: half a point of
+/// dark either side, so that the dashes read on any thread.
+const FLAG_EDGE_PT: f64 = 1.0;
 pub const FLAG_MARK_PT: f64 = MARK_PT;
 /// The mark's base below its middle, a share of its half size: a triangle standing on the stitch.
 const FLAG_MARK_BASE: f64 = 0.8;
@@ -582,6 +585,16 @@ pub struct LineStyle {
     pub edit: Option<EditLook>,
 }
 
+/// Which of the lines a pass of [`LineRenderer`] draws: the edit look's lines are left out of the
+/// first and drawn alone in a second, over everything else.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Pass {
+    /// Every line but the edit look's.
+    Base,
+    /// The edit look's lines alone.
+    Edited,
+}
+
 /// The edit look: the lines of `tags` (the units being edited) drawn [`EDIT_LINE_PT`] wide after
 /// every other line, so nothing sewn later buries them; their needle points as two-tone circles
 /// when `circles` says how many may show (none past it: more can't sit side by side); and each of
@@ -777,9 +790,9 @@ impl LineRenderer {
         let scale = to_device.determinant().abs().sqrt();
         if scale.is_finite() && scale > 0.0 {
             let visible = offsets.inverse().transform_rect_bbox(Rect::new(0.0, 0.0, f64::from(w), f64::from(h)));
-            self.draw_lines(&mut ctx, picture, offsets, scale, visible, style, false);
+            self.draw_lines(&mut ctx, picture, offsets, scale, visible, style, Pass::Base);
             if style.edit.is_some() {
-                self.draw_lines(&mut ctx, picture, offsets, scale, visible, style, true);
+                self.draw_lines(&mut ctx, picture, offsets, scale, visible, style, Pass::Edited);
                 self.draw_flags(&mut ctx, picture, offsets, w, h, style);
                 self.draw_circles(&mut ctx, picture, offsets, w, h, style);
             }
@@ -801,12 +814,11 @@ impl LineRenderer {
         Rendered { width: u32::from(w), height: u32::from(h), pixels: pm.data_as_u8_slice().to_vec() }
     }
 
-    /// The lines, in order: runs of lines of one colour slot (and fade) batched into paths; a slot
-    /// with an edge has all its run's edges drawn first, then its colour over them, so the edge
-    /// never shows between two lines of one colour. The edit look's lines are left out of the first
-    /// pass and drawn alone in a second (`edited`), over everything else.
+    /// The lines of `pass`, in order: runs of lines of one colour slot (and fade) batched into paths;
+    /// a slot with an edge has all its run's edges drawn first, then its colour over them, so the
+    /// edge never shows between two lines of one colour.
     #[allow(clippy::too_many_arguments)]
-    fn draw_lines(&mut self, ctx: &mut RenderContext, p: &LinePicture, offsets: Affine, scale: f64, visible: Rect, style: &LineStyle, edited: bool) {
+    fn draw_lines(&mut self, ctx: &mut RenderContext, p: &LinePicture, offsets: Affine, scale: f64, visible: Rect, style: &LineStyle, pass: Pass) {
         ctx.set_transform(offsets);
         let lines = p.lines();
         let mut i = 0;
@@ -818,7 +830,7 @@ impl LineRenderer {
             let end =
                 lines.get(i..).map_or(i, |rest| i + rest.iter().take_while(|l| (l.group, style.fades(l.tag), style.edited(l.tag)) == key).count());
             let run = lines.get(i..end).unwrap_or_default();
-            if key.2 != edited {
+            if key.2 != (pass == Pass::Edited) {
                 i = end.max(i + 1);
                 continue;
             }
@@ -1117,7 +1129,7 @@ impl LineRenderer {
             }
         }
         if !under.elements().is_empty() {
-            stroke_path(ctx, &under, style.dark, (FLAG_LINE_PT + 1.0) * pt, None);
+            stroke_path(ctx, &under, style.dark, (FLAG_LINE_PT + FLAG_EDGE_PT) * pt, None);
             stroke_path(ctx, &dashes, style.light, FLAG_LINE_PT * pt, Some(FLAG_DASH_PT * pt));
         }
         if !marks.elements().is_empty() {

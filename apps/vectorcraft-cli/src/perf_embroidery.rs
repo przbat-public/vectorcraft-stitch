@@ -875,6 +875,10 @@ const NEEDLE_INDEX_MS: [f64; 4] = [15.8, 0.04, 0.17, 158.0];
 /// How many presses the nearest needle point's rows time, at points spread over the design's box
 /// and as far again round it (misses included).
 const NEEDLE_QUERIES: usize = 1000;
+/// The presses' places over the design: press `k` at `k × prime` modulo [`NEEDLE_QUERIES`] along x
+/// and along y, two primes (the 1,000th and the 10,000th) that share no factor with it, so the
+/// presses cover the box evenly and in no row.
+const SPREAD_PRIMES: [usize; 2] = [7919, 104_729];
 /// How far a press reaches, points: the selection tolerance's default at 100 %.
 const NEEDLE_REACH_PT: f64 = 3.0;
 /// The zoom the slowest press is timed at again, zoomed out (10 %): a press reaches the selection
@@ -903,7 +907,8 @@ fn needle_index(doc: &Document) -> Result<[f64; 5], String> {
         let mut times = Vec::with_capacity(NEEDLE_QUERIES);
         let mut hits = 0usize;
         for k in 0..NEEDLE_QUERIES {
-            let (u, v) = ((k * 7919 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64, (k * 104_729 % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64);
+            let spread = |prime: usize| (k * prime % NEEDLE_QUERIES) as f64 / NEEDLE_QUERIES as f64;
+            let (u, v) = (spread(SPREAD_PRIMES[0]), spread(SPREAD_PRIMES[1]));
             let at = Point::new(b.x0 - b.width() / 2.0 + 2.0 * b.width() * u, b.y0 - b.height() / 2.0 + 2.0 * b.height() * v);
             let t = Instant::now();
             hits += usize::from(index.needle_at(at, reach).is_some());

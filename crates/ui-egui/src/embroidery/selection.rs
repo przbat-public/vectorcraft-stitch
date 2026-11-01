@@ -23,7 +23,7 @@
 
 use egui::{Align2, Color32, CornerRadius, FontId, Id, Pos2, Rect as ERect, Shape, Stroke, StrokeKind, pos2, vec2};
 use vectorcraft_doc::{Document, NodeId, NodeKind, Selection};
-use vectorcraft_engine::cmd::embroidery::{LimitsKey, StitchEditing, StitchLimits};
+use vectorcraft_engine::cmd::embroidery::{LimitsKey, StitchEditing, StitchLimits, mm_to_pt, pt_to_mm};
 use vectorcraft_geom::{Point, Rect, Vec2};
 use vectorcraft_tools::embroidery::NeedleRef;
 
@@ -55,9 +55,9 @@ const RING_PT: [f32; 3] = [4.0, 2.5, 1.0];
 /// The marquee's and the selection box's dashes and gaps, points, and the most dashes a frame.
 const DASH: (f32, f32) = (4.0, 3.0);
 const DASHES_MAX: usize = 2_000;
-/// The live check: its words' size, its padding, its distance from the selection's box, and its
+/// The live check: its words' size ([`super::WORDS_PT`]), its padding, its distance from the selection's box, and its
 /// marks' size, points.
-const BUBBLE_TEXT: f32 = 12.0;
+const BUBBLE_TEXT: f32 = super::WORDS_PT;
 const BUBBLE_PAD: f32 = 8.0;
 const BUBBLE_GAP: f32 = 14.0;
 const BUBBLE_MARK: f32 = 12.0;
@@ -65,8 +65,6 @@ const BUBBLE_MARK: f32 = 12.0;
 /// move to a tenth (the formats' grid).
 const LENGTH_DECIMALS: usize = 2;
 const MOVE_DECIMALS: usize = 1;
-/// Points in a millimetre.
-const PT_PER_MM: f64 = 72.0 / 25.4;
 
 /// A stitch touching the selection: its ends (document points) and which of them are selected.
 #[derive(Clone, Copy, Debug)]
@@ -90,7 +88,7 @@ pub struct Judged {
 impl Judged {
     /// Count the stitch from `a` to `b` (document points) against `limits`.
     fn add(&mut self, a: Point, b: Point, limits: &StitchLimits) {
-        let (dx, dy) = ((b.x - a.x) / PT_PER_MM, (b.y - a.y) / PT_PER_MM);
+        let (dx, dy) = (pt_to_mm(b.x - a.x), pt_to_mm(b.y - a.y));
         let mm = dx.hypot(dy);
         if !mm.is_finite() {
             return;
@@ -284,7 +282,7 @@ pub fn selected_box(app: &mut VectorcraftApp) -> Option<Rect> {
 fn moved(app: &VectorcraftApp) -> Option<Vec2> {
     let m = app.session.tool_options().get(vectorcraft_tools::embroidery::EDITING_OPTIONS)?.get("moved")?.as_array()?.clone();
     let (x, y) = (m.first()?.as_f64()?, m.get(1)?.as_f64()?);
-    Some(Vec2::new(x * PT_PER_MM, y * PT_PER_MM))
+    Some(Vec2::new(mm_to_pt(x), mm_to_pt(y)))
 }
 
 /// What the live check says: how many needle points are selected and their numbers, the drag's
@@ -303,8 +301,8 @@ pub fn bubble(app: &mut VectorcraftApp) -> Option<Vec<(Option<Mark>, String)>> {
         let words = super::text::fill(
             crate::et!("Moved X {x} · Y {y} mm"),
             &[
-                ("x", &super::numbers::decimal(lang, d.x / PT_PER_MM, MOVE_DECIMALS)),
-                ("y", &super::numbers::decimal(lang, d.y / PT_PER_MM, MOVE_DECIMALS)),
+                ("x", &super::numbers::decimal(lang, pt_to_mm(d.x), MOVE_DECIMALS)),
+                ("y", &super::numbers::decimal(lang, pt_to_mm(d.y), MOVE_DECIMALS)),
             ],
         );
         lines.push((None, words));
@@ -490,7 +488,7 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
     if let Some([(a, na), (b, nb)]) = editing.ends {
         let lang = crate::i18n::current();
         let pill = |n: Option<usize>| n.map_or_else(|| "#…".to_string(), |n| format!("#{}", super::numbers::count(lang, n as u64)));
-        let ink_edge = Stroke::new(1.0, dark());
+        let ink_edge = Stroke::new(super::handles::LABEL_EDGE_PT, dark());
         if let Some(pa) = first.map(screen) {
             super::overlay::label(painter, pa + vec2(-RING_OUT_PT, -RING_OUT_PT), Align2::RIGHT_BOTTOM, &pill(na), ink, ink_edge);
         }

@@ -613,3 +613,44 @@ fn the_chip_and_the_live_check_are_said() {
     time += 0.05;
     assert_eq!(live(&mut app, time, vec![]).1, polite, "said once let go");
 }
+
+/// Alt-click on a stitch of a path's later run inserts the needle point into that run, where it was
+/// pressed: the stitch named is that run's own, not one of the first run's.
+#[test]
+fn an_alt_click_on_a_later_runs_stitch_inserts_into_that_run() {
+    let (mut app, object) = editing();
+    let run = {
+        let st = app.session.active().unwrap();
+        st.doc.node(NodeId(object)).unwrap().children().unwrap().first().unwrap().id
+    };
+    app.run("embroidery.splitRun", json!({"needlePoints": [{"id": run.0, "index": 6}], "ties": false})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let anchors = |app: &VectorcraftApp, s: usize| {
+        let st = app.session.active().unwrap();
+        st.doc.node(run).unwrap().path_data().unwrap().subpaths[s].anchors.iter().map(|a| a.p).collect::<Vec<_>>()
+    };
+    let (first, later) = (anchors(&app, 0).len(), anchors(&app, 1));
+    assert!(later.len() > 3, "a later run of {} needle points", later.len());
+    let (a, b) = (later[1], later[2]);
+    app.run("view.setZoom", json!({"zoom": 1600, "center": [a.x, a.y]})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let mid = Point::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
+    let at = on_screen(&app, mid);
+    let alt_press = |pressed: bool| Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::ALT };
+    for e in [
+        Event::ModifiersChanged(Modifiers::ALT),
+        Event::PointerMoved(at),
+        alt_press(true),
+        alt_press(false),
+        Event::ModifiersChanged(Modifiers::NONE),
+    ] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    assert_eq!(anchors(&app, 0).len(), first, "the first run as it was");
+    let now = anchors(&app, 1);
+    assert_eq!(now.len(), later.len() + 1, "one needle point more, in the later run");
+    assert!(now[2].distance(mid) < 0.3, "between the stitch's two needle points, where it was pressed: {:?}", now[2]);
+}

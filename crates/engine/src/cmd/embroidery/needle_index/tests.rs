@@ -82,7 +82,10 @@ fn queries_find_what_brute_force_finds() {
         for at in [p, p + vectorcraft_geom::Vec2::new(0.7, -0.4), p + vectorcraft_geom::Vec2::new(5.0, 5.0)] {
             let near = all.iter().filter(|(_, q)| q.distance(at) <= tol).map(|(_, q)| q.distance(at)).fold(f64::INFINITY, f64::min);
             match index.needle_at(at, tol) {
-                Some(h) => assert!((h.point.distance(at) - near).abs() < 1e-9, "{n:?} at {at:?}: {h:?}, nearest {near}"),
+                Some(h) => {
+                    assert!((h.point.distance(at) - near).abs() < 1e-9, "{n:?} at {at:?}: {h:?}, nearest {near}");
+                    assert_eq!(index.point(h.needle), Some(h.point), "the needle point it names is where it was found");
+                }
                 None => assert!(near.is_infinite(), "{n:?} at {at:?}: missed one {near} away"),
             }
         }
@@ -107,6 +110,9 @@ fn queries_find_what_brute_force_finds() {
         let near = segments.iter().map(|&(a, b)| off(a, b, at)).filter(|d| *d <= tol).fold(f64::INFINITY, f64::min);
         let hit = index.thread_at(at, tol).expect("a stitch");
         assert!((hit.point.distance(at) - near).abs() < 1e-9, "{hit:?}: nearest {near}");
+        // The stitch it names runs from needle point `from` to the next of its path.
+        let next = NeedleRef { index: hit.from.index + 1, ..hit.from };
+        assert_eq!((index.point(hit.from), index.point(next)), (Some(hit.ends[0]), Some(hit.ends[1])), "{hit:?}");
         assert!((off(hit.ends[0], hit.ends[1], at) - near).abs() < 1e-9, "the place lies on the stitch: {hit:?}");
     }
     assert_eq!(index.thread_at(Point::new(-5000.0, -5000.0), 1.0), None);
@@ -609,4 +615,40 @@ fn needle_points_and_anchors_map_as_the_stitch_commands_map_them() {
     }
     let last = index.count(lone) - 1;
     assert_eq!(index.anchors(NeedleRef { id: lone, index: last }).len(), 2, "a run of one anchor: both of its anchors");
+}
+
+/// A needle point's run is the run the stitch commands read it in: its first and last needle
+/// points' places in the path, for every needle point of the fixture's paths.
+#[test]
+fn a_needle_points_run_is_the_commands_run() {
+    let mut s = Session::new();
+    fx::manual(&mut runner(&mut s));
+    let index = whole(&s);
+    let doc = s.doc().unwrap().doc.clone();
+    for id in index.ids() {
+        let st = needles::read(doc.node(id).unwrap()).unwrap();
+        let mut first = 0;
+        for r in st.runs.iter().filter(|r| !r.needles.is_empty()) {
+            let last = first + r.needles.len() - 1;
+            for k in first..=last {
+                assert_eq!(index.run(NeedleRef { id, index: k }), Some((first, last)), "{id:?} needle point {k}");
+            }
+            first = last + 1;
+        }
+        assert_eq!(index.run(NeedleRef { id, index: first }), None, "past the last");
+    }
+}
+
+/// Of needle points equally near, the one sewn later is found: a press on the tack (two needle
+/// points at one spot) names its second.
+#[test]
+fn a_press_on_the_tack_names_the_needle_point_sewn_later() {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    let index = whole(&s);
+    let tack = NodeId(m.double_point);
+    let points = read_points(&s, tack);
+    assert!(points.len() >= 2 && points[0] == points[1], "a tack: {points:?}");
+    let hit = index.needle_at(points[0], 1.0).expect("a needle point");
+    assert_eq!(hit.needle, NeedleRef { id: tack, index: 1 }, "sewn later wins");
 }

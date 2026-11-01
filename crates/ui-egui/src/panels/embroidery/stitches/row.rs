@@ -148,6 +148,17 @@ pub(super) fn heads() -> [&'static str; 5] {
     ["#", crate::et!("Type"), crate::et!("X (mm)"), crate::et!("Y (mm)"), crate::et!("Length (mm)")]
 }
 
+/// A record kind's glyph, where its words don't fit: each one the interface's fonts hold (the web
+/// build has no system fonts to fall back on).
+pub(super) fn kind_glyph(kind: RecordKind) -> &'static str {
+    match kind {
+        RecordKind::Stitch => "·",
+        RecordKind::Jump => "→",
+        RecordKind::Trim => "✂",
+        RecordKind::Stop => "■",
+    }
+}
+
 /// The column heads.
 pub(super) fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), ROW_HEIGHT), Sense::hover());
@@ -239,12 +250,7 @@ pub(super) fn draw_row(
         let colour = if row.kind == RecordKind::Stitch { ink } else { dim };
         p.text(pos2(x + columns.widths[KIND] - CELL_PAD, rect.center().y), egui::Align2::RIGHT_CENTER, kind, font.clone(), colour);
     } else {
-        let glyph = match row.kind {
-            RecordKind::Stitch => "·",
-            RecordKind::Jump => "⤳",
-            RecordKind::Trim => "✂",
-            RecordKind::Stop => "■",
-        };
+        let glyph = kind_glyph(row.kind);
         p.text(pos2(x + columns.widths[KIND] / 2.0, rect.center().y), egui::Align2::CENTER_CENTER, glyph, font.clone(), dim);
     }
     x += columns.widths[KIND];

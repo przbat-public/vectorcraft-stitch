@@ -1237,3 +1237,20 @@ fn the_dim_words_read_in_every_theme() {
         }
     }
 }
+
+/// The kinds' glyphs (where their words don't fit) are in the interface's own fonts: none is drawn as
+/// the replacement box, with no system font to fall back on (the web build).
+#[test]
+fn the_kinds_glyphs_are_in_the_interfaces_fonts() {
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    let mut output = ctx.run_ui(egui::RawInput::default(), |_| {});
+    output.textures_delta.clear();
+    ctx.fonts_mut(|fonts| {
+        let chars = fonts.fonts.font(&egui::FontFamily::Proportional).characters().clone();
+        for kind in [stitch_list::RecordKind::Stitch, stitch_list::RecordKind::Jump, stitch_list::RecordKind::Trim, stitch_list::RecordKind::Stop] {
+            let glyph = super::kind_glyph(kind);
+            assert!(glyph.chars().all(|ch| chars.contains_key(&ch)), "{kind:?}'s {glyph} isn't in the interface's fonts");
+        }
+    });
+}

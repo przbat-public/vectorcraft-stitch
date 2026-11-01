@@ -413,7 +413,7 @@ fn a_stitch_on_a_limit_is_judged_alike_everywhere() {
     app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
     app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "selection", "filter": "all"})).unwrap();
     let uid = app.session.active().unwrap().uid;
-    app.embroidery.check.format.insert(uid, "dst");
+    app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::Dst);
     let centre = (x0 + x) / 2.0 * super::PT_PER_MM;
     app.run("view.setZoom", json!({"zoom": 100, "center": [centre, y * super::PT_PER_MM]})).unwrap();
     app.run("select.all", json!({})).unwrap();

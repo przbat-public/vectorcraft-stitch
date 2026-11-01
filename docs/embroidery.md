@@ -2700,9 +2700,9 @@ Limits:
   new frame. A drag of more than 20,000 needle points moves the selection's box and previews only
   on a pause or the release.
 - **The Stitches tab** (`panels/embroidery/stitches.rs`, `cmd/embroidery/stitch_list.rs`): each
-  record's kind and judgement is one byte, built with the plan on the planning thread (the marker
-  query `stitchList.flags`: one walk of 2 million records is 11.7 to 15.7 ms, past the 8 ms a frame
-  may spend) and kept with it, with each filter's running count every 4,096 records; the rows a
+  record's kind and judgement is one byte, built with the plan on the planning thread (a query of
+  the planning thread's own, `Query::StitchFlags`, carrying the limits: one walk of 2 million
+  records is 11.7 to 15.7 ms, past the 8 ms a frame may spend) and kept with it, with each filter's running count every 4,096 records; the rows a
   scope and a filter list, with every filter's count, are worked out once per plan, scope, filter
   and limits (a counting test proves idle frames work out nothing), the counts from those running
   counts (a scope's ends walked, its middle not) and a filter's rows from the chunks it lists any of,

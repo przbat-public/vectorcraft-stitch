@@ -66,6 +66,36 @@ pub trait PlanFacts {
     }
 }
 
+/// How a selection of needle points meets what was selected (`embroidery.selectNeedlePoints`'
+/// `mode`): in its place, added to it, each needle point taken in or out, or taken from it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SelectMode {
+    Set,
+    Add,
+    Toggle,
+    Subtract,
+}
+
+impl SelectMode {
+    /// Every mode, as the command lists them.
+    pub const ALL: [Self; 4] = [Self::Set, Self::Add, Self::Toggle, Self::Subtract];
+
+    /// As the command's `mode` names it.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Set => "set",
+            Self::Add => "add",
+            Self::Toggle => "toggle",
+            Self::Subtract => "subtract",
+        }
+    }
+
+    /// The mode the command's `mode` `id` names.
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|m| m.id() == id)
+    }
+}
+
 /// A needle point of a path of stitches (opened from a machine file, or converted to manual
 /// stitches), as the stitch commands address it: the path and the needle point's place in it,
 /// from 0 across its runs (`{id, index}`).

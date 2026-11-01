@@ -3634,7 +3634,7 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
     let none = || json!({});
     if let Some(own) = stitch_items.clone() {
         // VectorCraft Stitch: the stitch actions in place of upstream's.
-        items = own;
+        items = own.into_iter().map(crate::embroidery::task_bar::Item::upstream).collect();
     } else if on_artboards {
         // As in the reference app, the Artboard tool offers to resize, duplicate and export the
         // artboards (<https://community.adobe.com/questions-652/contextual-task-bar-in-illustrator-2025-quick-actions-when-you-need-them-1546580>),

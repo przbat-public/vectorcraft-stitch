@@ -15,6 +15,7 @@ use std::collections::{BTreeSet, HashMap};
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_stitch::Command;
+use vectorcraft_tools::embroidery::SelectMode;
 
 use super::measure;
 use super::needles;
@@ -365,11 +366,8 @@ const BY_SHAPE: [&str; 2] = ["rect", "polygon"];
 pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> {
     let o = super::object(p, SELECT)?;
     let mode = match o.get("mode") {
-        None | Some(Value::Null) => "set",
-        Some(v) => ["set", "add", "toggle", "subtract"]
-            .into_iter()
-            .find(|m| v.as_str() == Some(m))
-            .ok_or_else(|| bad(SELECT, format!("`mode` {v}: set, add, toggle or subtract")))?,
+        None | Some(Value::Null) => SelectMode::Set,
+        Some(v) => v.as_str().and_then(SelectMode::from_id).ok_or_else(|| bad(SELECT, format!("`mode` {v}: set, add, toggle or subtract")))?,
     };
     let by_shape = BY_SHAPE.iter().any(|k| o.contains_key(*k));
     let by_records = !by_shape && BY_RECORDS.iter().any(|k| o.contains_key(*k));
@@ -452,7 +450,7 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
     }
     let mut selected = 0usize;
     s.select(|d, sel| {
-        if mode == "set" {
+        if mode == SelectMode::Set {
             sel.clear();
         }
         let mut selecting = needles::Selecting::new(std::mem::take(sel));
@@ -461,9 +459,9 @@ pub(super) fn select(s: &mut crate::Session, p: &Value) -> crate::Result<Value> 
             let ix = st.index();
             let now = selecting.selected_in(*id, &ix);
             let next: BTreeSet<usize> = match mode {
-                "toggle" => now.symmetric_difference(k).copied().collect(),
-                "subtract" => now.difference(k).copied().collect(),
-                _ => now.union(k).copied().collect(),
+                SelectMode::Toggle => now.symmetric_difference(k).copied().collect(),
+                SelectMode::Subtract => now.difference(k).copied().collect(),
+                SelectMode::Set | SelectMode::Add => now.union(k).copied().collect(),
             };
             selected += next.len();
             selecting.select_in(*id, &ix, &next);

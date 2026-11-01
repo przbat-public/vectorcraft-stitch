@@ -24,7 +24,7 @@ use std::collections::{HashMap, HashSet};
 use egui::{Color32, FontId, Rect, Sense, Ui, pos2, vec2};
 use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
-use vectorcraft_engine::cmd::embroidery::{check_formats, mm_to_pt};
+use vectorcraft_engine::cmd::embroidery::{Format, check_formats, mm_to_pt};
 use vectorcraft_geom::{Point, Rect as DocRect};
 
 use crate::VectorcraftApp;
@@ -93,8 +93,8 @@ pub const WORDED: [&str; 17] = [
 /// The tab's own state: the format chosen per document and the rules opened.
 #[derive(Default)]
 pub struct CheckState {
-    /// The format chosen for each document (by uid), for the session: an id of [`check_formats`].
-    pub(crate) format: HashMap<u64, &'static str>,
+    /// The format chosen for each document (by uid), for the session: one of [`check_formats`].
+    pub(crate) format: HashMap<u64, Format>,
     /// The rules opened, by id.
     pub(crate) open: HashSet<String>,
     /// Since when the check asked for has been waiting (seconds, the frame's clock), for the busy
@@ -128,9 +128,9 @@ pub(crate) struct Focus {
 pub fn query(state: &CheckState, uid: u64) -> Query {
     let mut params = json!({ "limit": CHECK_LIST_LIMIT });
     if let Some(format) = state.format.get(&uid) {
-        params["format"] = json!(format);
+        params["format"] = json!(format.id());
     }
-    Query { cmd: "embroidery.check", params }
+    Query::read("embroidery.check", params)
 }
 
 /// What the tab shows: the check's reply for the plan shown (and whether it is that plan's), and
@@ -506,7 +506,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     ui.label(egui::RichText::new(summary(reply)).size(SMALL).color(if stale { t.text_dim } else { t.text }));
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(crate::et!("Checked for")).size(SMALL).color(t.text_dim));
-        let chosen = app.embroidery.check.format.get(&shown.uid).copied().unwrap_or(format);
+        let chosen = app.embroidery.check.format.get(&shown.uid).map_or(format, |f| f.id());
         egui::ComboBox::from_id_salt(("embroidery-check-format", shown.uid)).selected_text(format_label(chosen)).show_ui(ui, |ui| {
             for (id, label) in check_formats() {
                 if ui.selectable_label(id == chosen, label).clicked() {
@@ -566,7 +566,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
                 }
             }
             Act::Format(id) => {
-                app.embroidery.check.format.insert(shown.uid, id);
+                if let Some(format) = Format::from_id(id) {
+                    app.embroidery.check.format.insert(shown.uid, format);
+                }
             }
             Act::Open(url) => app.open_url(&url),
             Act::Show(id, hit) => {

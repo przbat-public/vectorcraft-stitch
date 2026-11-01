@@ -28,7 +28,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId, Selection, Unit};
 use vectorcraft_geom::{Point, Rect, Vec2, constrain_angle_from};
 
-use super::{DRAG_START_PX, NeedlePoints, NeedleRef};
+use super::{DRAG_START_PX, NeedlePoints, NeedleRef, SelectMode};
 use crate::{Action, Cursor, Mods, PointerEvent, PointerKind, ToolContext, ToolKey};
 
 /// The command a drag, the arrows and the Stitches tab's Move by run, and the undo step it makes
@@ -89,7 +89,7 @@ struct Drag {
 struct Marquee {
     from: Point,
     to: Point,
-    mode: &'static str,
+    mode: SelectMode,
     dragged: bool,
 }
 
@@ -126,9 +126,9 @@ fn address(n: NeedleRef) -> Value {
     json!({"id": n.id.0, "index": n.index})
 }
 
-/// Select `needles` (`mode`: set, add or toggle).
-fn select(needles: &[NeedleRef], mode: &str) -> Action {
-    Action::Exec(SELECT.into(), json!({"needlePoints": needles.iter().copied().map(address).collect::<Vec<_>>(), "mode": mode}))
+/// Select `needles` by `mode`.
+fn select(needles: &[NeedleRef], mode: SelectMode) -> Action {
+    Action::Exec(SELECT.into(), json!({"needlePoints": needles.iter().copied().map(address).collect::<Vec<_>>(), "mode": mode.id()}))
 }
 
 /// Whether needle point `n` is selected, by the rule every reader of the selection keeps
@@ -264,7 +264,7 @@ impl Editing {
                         self.current = Some(NeedleRef { id: n.id, index: first });
                         vec![Action::Exec(
                             SELECT.into(),
-                            json!({"ranges": [{"id": n.id.0, "from": first, "to": last}], "mode": if ev.mods.shift { "add" } else { "set" }}),
+                            json!({"ranges": [{"id": n.id.0, "from": first, "to": last}], "mode": if ev.mods.shift { SelectMode::Add } else { SelectMode::Set }.id()}),
                         )]
                     }
                     None => vec![],
@@ -307,14 +307,14 @@ impl Editing {
                 self.current = Some(n);
                 let selected = is_selected(cx.selection, needles, n);
                 if ev.mods.shift {
-                    out.push(select(&[n], "toggle"));
+                    out.push(select(&[n], SelectMode::Toggle));
                     if !selected {
                         self.drag = Some(drag(None, selected_count(cx.selection, needles) + 1));
                     }
                 } else if selected {
                     self.drag = Some(drag(Some(n), selected_count(cx.selection, needles)));
                 } else {
-                    out.push(select(&[n], "set"));
+                    out.push(select(&[n], SelectMode::Set));
                     self.drag = Some(drag(None, 1));
                 }
             }
@@ -323,11 +323,11 @@ impl Editing {
                 self.current = Some(n);
                 let both = pair.iter().all(|m| is_selected(cx.selection, needles, *m));
                 if ev.mods.shift {
-                    out.push(select(&pair, "toggle"));
+                    out.push(select(&pair, SelectMode::Toggle));
                 } else if both {
                     self.drag = Some(drag(None, selected_count(cx.selection, needles)));
                 } else {
-                    out.push(select(&pair, "set"));
+                    out.push(select(&pair, SelectMode::Set));
                     self.drag = Some(drag(None, pair.len()));
                 }
             }
@@ -335,7 +335,8 @@ impl Editing {
                 // Kept within the document's coordinates, as anything the marquee's box reaches is
                 // drawn and sent: a pointer from far off (an agent's) stops at the edge.
                 if let Some(at) = super::within(ev.pos) {
-                    self.marquee = Some(Marquee { from: at, to: at, mode: if ev.mods.shift { "add" } else { "set" }, dragged: false });
+                    self.marquee =
+                        Some(Marquee { from: at, to: at, mode: if ev.mods.shift { SelectMode::Add } else { SelectMode::Set }, dragged: false });
                 }
             }
         }
@@ -397,15 +398,15 @@ impl Editing {
                 (true, mode) => {
                     let r = Rect::from_points(m.from, m.to);
                     let (a, b) = (mm(Point::new(r.x0, r.y0)), mm(Point::new(r.x1, r.y1)));
-                    vec![Action::Exec(SELECT.into(), json!({"rect": [a[0], a[1], b[0], b[1]], "mode": mode}))]
+                    vec![Action::Exec(SELECT.into(), json!({"rect": [a[0], a[1], b[0], b[1]], "mode": mode.id()}))]
                 }
-                (false, "set") => vec![Action::Exec("select.none".into(), json!({}))],
+                (false, SelectMode::Set) => vec![Action::Exec("select.none".into(), json!({}))],
                 (false, _) => vec![],
             };
         }
         let Some(d) = self.drag.take() else { return vec![] };
         if !d.begun {
-            return d.alone.map_or_else(Vec::new, |n| vec![select(&[n], "set")]);
+            return d.alone.map_or_else(Vec::new, |n| vec![select(&[n], SelectMode::Set)]);
         }
         let mut out = Vec::new();
         let mut previewed = d.previewed;
@@ -460,7 +461,7 @@ impl Editing {
                 };
                 let Some(next) = next else { return vec![] };
                 self.current = Some(next);
-                return vec![select(&[next], if mods.shift { "add" } else { "set" })];
+                return vec![select(&[next], if mods.shift { SelectMode::Add } else { SelectMode::Set })];
             }
             _ => return vec![],
         };

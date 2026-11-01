@@ -7,7 +7,7 @@
 //!   which rows it shows.
 //! - **Filters with counts:** all, jumps, cuts, stops, and the stitches too short or too long by the
 //!   one set of limits the canvas marks ([`stitch_limits`]). Each record's kind and judgement is one
-//!   byte built with the plan on the planning thread ([`STITCH_FLAGS`]); the rows a scope and filter
+//!   byte built with the plan on the planning thread ([`Query::StitchFlags`]); the rows a scope and filter
 //!   list are worked out once per (plan, scope, filter, limits), never per frame ([`Listed`]).
 //! - **Columns:** the record's number, its kind, X and Y in millimetres from the rulers' zero point
 //!   (the project owner's choice), and the thread its stitch lays; a stitch past the limits carries
@@ -33,14 +33,14 @@ use serde_json::json;
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::plan::DesignPlan;
 use vectorcraft_engine::cmd::embroidery::stitch_list::{self, Filter, Flags, RecordKind};
-use vectorcraft_engine::cmd::embroidery::{StitchLimits, mm_to_pt, stitch_limits};
+use vectorcraft_engine::cmd::embroidery::{LimitsKey, StitchLimits, mm_to_pt};
 use vectorcraft_geom::Point;
-use vectorcraft_tools::embroidery::NeedleRef;
+use vectorcraft_tools::embroidery::{NeedleRef, SelectMode};
 
 use crate::VectorcraftApp;
 use crate::embroidery::marks::{self, Mark};
 use crate::embroidery::numbers;
-use crate::embroidery::plan_worker::{Query, STITCH_FLAGS};
+use crate::embroidery::plan_worker::Query;
 use crate::i18n::Lang;
 use crate::theme::Tokens;
 
@@ -197,8 +197,22 @@ pub fn listed(flags: &Flags, ranges: Option<&[Range<usize>]>, filter: Filter) ->
 }
 
 /// What [`Listed`] is of: the document, the plan's generation, the scope's objects (`None`: the
-/// whole design), the filter and the limits' bits.
-type ListKey = (u64, u64, Option<Vec<NodeId>>, Filter, [u64; 3]);
+/// whole design), the filter and the limits it judges by.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ListKey {
+    pub(crate) uid: u64,
+    generation: u64,
+    ids: Option<Vec<NodeId>>,
+    filter: Filter,
+    pub(crate) limits: LimitsKey,
+}
+
+/// The numberings worked out for document `uid`'s plan of `generation`.
+struct KeptNumberings {
+    uid: u64,
+    generation: u64,
+    numberings: Numberings,
+}
 
 /// One document's place in the list: the record in focus and the one a Shift-click's range starts
 /// from, the page shown, the stitch shown on the canvas, Move by's two fields (millimetres), Go
@@ -225,7 +239,7 @@ pub struct DocList {
 pub struct StitchesState {
     pub(crate) docs: HashMap<u64, DocList>,
     pub(crate) list: Option<(ListKey, Arc<Listed>)>,
-    numbering: Option<(u64, u64, Numberings)>,
+    numbering: Option<KeptNumberings>,
     /// The pass the tab was last drawn in (`egui::Context::cumulative_pass_nr`): the canvas rings the
     /// record shown only while the tab shows, as the Check tab's marks.
     drawn_pass: Option<u64>,
@@ -267,15 +281,15 @@ struct Address {
     of: usize,
 }
 
-/// The limits the tab, the canvas and the Check tab's format judge by, for the active document.
+/// The limits the tab, the canvas and the Check tab's format judge by, for the active document
+/// ([`crate::embroidery::limits`]).
 pub fn limits_of(app: &VectorcraftApp) -> Option<StitchLimits> {
-    let st = app.session.active()?;
-    Some(stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied()))
+    crate::embroidery::limits(app)
 }
 
 /// What the tab asks the planning thread for besides the figures: its records' flags for the limits.
 pub fn query(app: &VectorcraftApp) -> Option<Query> {
-    limits_of(app).map(|l| Query { cmd: STITCH_FLAGS, params: stitch_list::limits_params(&l) })
+    limits_of(app).map(Query::StitchFlags)
 }
 
 /// The objects the Selection scope lists: while stitches are edited the object edited, else the
@@ -294,7 +308,7 @@ fn rows(app: &mut VectorcraftApp, plan: &DesignPlan, generation: u64, flags: &Ar
     let filter = app.ui.embroidery_panel.stitches_filter;
     let ids = (scope == Scope::Selection).then(|| scope_ids(app));
     let Some(st) = app.session.active() else { return Arc::new(listed(flags, Some(&[]), filter)) };
-    let key: ListKey = (st.uid, generation, ids.clone(), filter, flags.limits());
+    let key = ListKey { uid: st.uid, generation, ids: ids.clone(), filter, limits: flags.limits() };
     if let Some((k, l)) = &app.embroidery.stitches.list
         && *k == key
     {
@@ -314,10 +328,10 @@ fn rows(app: &mut VectorcraftApp, plan: &DesignPlan, generation: u64, flags: &Ar
 fn edited_by(app: &mut VectorcraftApp, shown: &Shown, unit: usize, number: usize, kind: RecordKind) -> Option<Address> {
     let st = app.session.active()?;
     let kept = &mut app.embroidery.stitches.numbering;
-    if kept.as_ref().is_none_or(|(u, g, _)| *u != st.uid || *g != shown.generation) {
-        *kept = Some((st.uid, shown.generation, Numberings::default()));
+    if kept.as_ref().is_none_or(|k| k.uid != st.uid || k.generation != shown.generation) {
+        *kept = Some(KeptNumberings { uid: st.uid, generation: shown.generation, numberings: Numberings::default() });
     }
-    let (_, _, numberings) = kept.as_mut()?;
+    let numberings = &mut kept.as_mut()?.numberings;
     let (plan, then) = (&shown.plan, &shown.document);
     let n = numberings
         .units
@@ -471,10 +485,10 @@ pub fn forget_closed(app: &mut VectorcraftApp) {
     let open: std::collections::HashSet<u64> = app.session.documents().iter().map(|d| d.uid).collect();
     let kept = &mut app.embroidery.stitches;
     kept.docs.retain(|uid, _| open.contains(uid));
-    if kept.list.as_ref().is_some_and(|((uid, ..), _)| !open.contains(uid)) {
+    if kept.list.as_ref().is_some_and(|(key, _)| !open.contains(&key.uid)) {
         kept.list = None;
     }
-    if kept.numbering.as_ref().is_some_and(|(uid, ..)| !open.contains(uid)) {
+    if kept.numbering.as_ref().is_some_and(|k| !open.contains(&k.uid)) {
         kept.numbering = None;
     }
     if kept.drawn.as_ref().is_some_and(|(uid, _)| !open.contains(uid)) {
@@ -958,8 +972,8 @@ fn click(app: &mut VectorcraftApp, shown: &Shown, listed: &Listed, number: usize
         }
         return;
     }
-    let mode = if mods.command || mods.ctrl { "toggle" } else { "set" };
-    match app.run("embroidery.selectNeedlePoints", json!({"ranges": ranges, "mode": mode})) {
+    let mode = if mods.command || mods.ctrl { SelectMode::Toggle } else { SelectMode::Set };
+    match app.run("embroidery.selectNeedlePoints", json!({"ranges": ranges, "mode": mode.id()})) {
         Err(e) => app.status(e),
         Ok(_) if cut => {
             let count = numbers::count(crate::i18n::current(), RANGE_MAX as u64);
@@ -1257,8 +1271,8 @@ fn foot_ui(
             let full = ui.available_width();
             let mut rows: Vec<Vec<usize>> = Vec::new();
             let mut used = 0.0;
-            for (k, (label, ..)) in items.iter().enumerate() {
-                let w = width(ui, label, egui::TextStyle::Button) + 2.0 * ui.spacing().button_padding.x;
+            for (k, item) in items.iter().enumerate() {
+                let w = width(ui, item.label, egui::TextStyle::Button) + 2.0 * ui.spacing().button_padding.x;
                 match rows.last_mut() {
                     Some(row) if used + gap + w <= full => {
                         row.push(k);
@@ -1272,13 +1286,13 @@ fn foot_ui(
             }
             let mut chosen = None;
             // Each action as the ≡ menu offers it: off when its command can't run now.
-            let on: Vec<bool> = items.iter().map(|(_, _, id, _)| crate::menus::enabled(app, id)).collect();
+            let on: Vec<bool> = items.iter().map(|item| crate::menus::enabled(app, item.command)).collect();
             for row in rows {
                 ui.horizontal(|ui| {
                     for k in row {
-                        let (Some((label, _, id, params)), Some(&on)) = (items.get(k), on.get(k)) else { continue };
-                        if ui.add_enabled(on, egui::Button::new(*label).wrap()).clicked() {
-                            chosen = Some((*id, params.clone()));
+                        let (Some(item), Some(&on)) = (items.get(k), on.get(k)) else { continue };
+                        if ui.add_enabled(on, egui::Button::new(item.label).wrap()).clicked() {
+                            chosen = Some((item.command, item.params.clone()));
                         }
                     }
                 });
@@ -1397,7 +1411,7 @@ pub fn inspect(app: &VectorcraftApp) -> serde_json::Value {
         .stitches
         .list
         .as_ref()
-        .filter(|(k, _)| Some(k.0) == uid && k.3 == filter && k.2.is_some() == (scope == Scope::Selection))
+        .filter(|(k, _)| Some(k.uid) == uid && k.filter == filter && k.ids.is_some() == (scope == Scope::Selection))
         .map(|(_, l)| l.len());
     json!({
         "scope": app.ui.embroidery_panel.stitches_scope.id(),

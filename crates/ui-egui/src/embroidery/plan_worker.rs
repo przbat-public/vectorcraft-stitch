@@ -18,22 +18,29 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
 use serde_json::Value;
+use vectorcraft_engine::cmd::embroidery::StitchLimits;
 use vectorcraft_engine::cmd::fileio::progress::{self, Progress};
 use vectorcraft_engine::{EmbroideryOptions, EmbroideryPlanned, EmbroideryPlanner, EngineError};
 
-/// A read command's reply a job makes after its plan: `cmd` (`embroidery.stats`, `sequence`,
-/// `check` or `threads`) with `params`, which hold the job's options so the reply is of its plan.
+/// What a job is asked to make after its plan.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Query {
-    pub cmd: &'static str,
-    pub params: Value,
+pub enum Query {
+    /// A read command's reply: `cmd` (`embroidery.stats`, `sequence`, `check` or `threads`) with
+    /// `params`, which hold the job's options so the reply is of its plan.
+    Read { cmd: &'static str, params: Value },
+    /// The Stitches tab's records' flags judged against these limits: built on the planning thread
+    /// with the plan ([`vectorcraft_engine::EmbroideryPlanned::stitch_flags`]), so the interface
+    /// thread never walks the records; its reply says nothing (the tab reads the flags off the
+    /// plan).
+    StitchFlags(StitchLimits),
 }
 
-/// The Stitches tab's records' flags, asked of a job as one of its queries: built on the planning
-/// thread with the plan ([`vectorcraft_engine::EmbroideryPlanned::stitch_flags`], for the limits
-/// its params carry), so the interface thread never walks the records; its reply says nothing
-/// (the tab reads the flags off the plan).
-pub const STITCH_FLAGS: &str = "stitchList.flags";
+impl Query {
+    /// Read command `cmd`'s reply, with `params`.
+    pub fn read(cmd: &'static str, params: Value) -> Self {
+        Self::Read { cmd, params }
+    }
+}
 
 /// What a job's step hands over.
 #[derive(Debug)]
@@ -142,15 +149,13 @@ pub fn run(job: &Job, send: &mut dyn FnMut(Done)) {
         if job.progress.cancelled() {
             return send(job.done(Outcome::Cancelled, t1, true));
         }
-        let ask = || {
-            if q.cmd != STITCH_FLAGS {
-                return job.planner.query(q.cmd, &q.params);
+        let ask = || match q {
+            Query::Read { cmd, params } => job.planner.query(cmd, params),
+            Query::StitchFlags(limits) => {
+                drop(kept.stitch_flags(limits));
+                vectorcraft_doc::cancel::check()?;
+                Ok(Value::Null)
             }
-            let limits = vectorcraft_engine::cmd::embroidery::stitch_list::limits_from(&q.params)
-                .ok_or_else(|| EngineError::Other("the stitch list's limits aren't numbers".into()))?;
-            drop(kept.stitch_flags(&limits));
-            vectorcraft_doc::cancel::check()?;
-            Ok(Value::Null)
         };
         let reply = match progress::scope(&job.progress, || vectorcraft_engine::guard::catch_panic(ask)) {
             Ok(Ok(v)) => Ok(v),

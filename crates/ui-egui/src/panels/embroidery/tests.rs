@@ -110,11 +110,11 @@ fn ui_embroidery_panel_shows_it_at_a_tab() {
     app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
     let uid = app.session.active().unwrap().uid;
     assert_eq!(app.run("ui.embroideryPanel", json!({"format": "dst"})).unwrap()["format"], "dst");
-    assert_eq!(app.embroidery.check.format.get(&uid), Some(&"dst"));
+    assert_eq!(app.embroidery.check.format.get(&uid), Some(&vectorcraft_engine::cmd::embroidery::Format::Dst));
     for bad in [json!({"format": "zzz"}), json!({"format": 5})] {
         assert!(app.run("ui.embroideryPanel", bad.clone()).is_err(), "{bad}");
     }
-    assert_eq!(app.embroidery.check.format.get(&uid), Some(&"dst"), "a refused format changes nothing");
+    assert_eq!(app.embroidery.check.format.get(&uid), Some(&vectorcraft_engine::cmd::embroidery::Format::Dst), "a refused format changes nothing");
     assert_eq!(app.run("ui.embroideryPanel", json!({"format": null})).unwrap()["format"], none, "back to the palette's");
     assert!(!app.embroidery.check.format.contains_key(&uid));
 }

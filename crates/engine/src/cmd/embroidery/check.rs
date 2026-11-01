@@ -141,7 +141,22 @@ pub struct StitchLimits {
     pub format: Format,
 }
 
+/// What a judgement against [`StitchLimits`] is kept for ([`StitchLimits::key`]): the bits of their
+/// three lines, which are all a stitch is judged by.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct LimitsKey {
+    shortest: u64,
+    longest: u64,
+    step: u64,
+}
+
 impl StitchLimits {
+    /// What a judgement against these limits is kept for: built here only, so that a line added to
+    /// them goes into every cache keyed by it.
+    pub fn key(&self) -> LimitsKey {
+        LimitsKey { shortest: self.shortest.to_bits(), longest: self.longest.to_bits(), step: self.step.to_bits() }
+    }
+
     /// The limits of document `doc`, for `format` (`None`: the thread palette's).
     pub fn of(doc: &vectorcraft_doc::Document, format: Option<Format>) -> Self {
         let format = format.unwrap_or_else(|| super::thread_palette(doc).format());
@@ -166,12 +181,6 @@ impl StitchLimits {
     pub fn long(&self, dx: f64, dy: f64) -> bool {
         self.rule().long(dx, dy)
     }
-}
-
-/// [`StitchLimits`] of `doc` for the format of id `format` (`None` or an id no format has: the
-/// thread palette's): what the interface judges stitches by.
-pub fn stitch_limits(doc: &vectorcraft_doc::Document, format: Option<&str>) -> StitchLimits {
-    StitchLimits::of(doc, format.and_then(Format::from_id))
 }
 
 /// How far a unit's stitches may miss the entry or exit point it was planned toward before the

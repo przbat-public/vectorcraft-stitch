@@ -106,7 +106,7 @@ mod tests_view;
 mod tests_walk;
 pub mod threadlib;
 pub(crate) mod tool;
-pub use check::{StitchLimits, stitch_limits};
+pub use check::{LimitsKey, StitchLimits};
 pub use needles::{needle_count, needle_points_in, needle_points_of};
 pub use tool::StitchEditing;
 mod unit;
@@ -135,6 +135,7 @@ pub use options::Options;
 pub use service::Planned;
 pub(crate) use service::Services;
 pub(crate) use unit::PlanError;
+pub use vectorcraft_stitch::format::Format;
 pub use vectorcraft_stitch::mm_to_pt;
 
 /// The marked upstream hooks of the stitch commands: Delete with needle points selected

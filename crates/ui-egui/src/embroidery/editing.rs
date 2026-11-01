@@ -53,7 +53,15 @@ pub struct Editing {
 /// What [`Editing`] is of: the document and its revision (which moves with every change of it, of
 /// the selection and of isolation), the generation of the plan shown, the tool, whether the stitch
 /// view and the outline view are on.
-type Key = (u64, u64, Option<u64>, &'static str, bool, bool);
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Key {
+    uid: u64,
+    revision: u64,
+    shown: Option<u64>,
+    tool: &'static str,
+    stitch_view: bool,
+    outline: bool,
+}
 
 /// What stitch editing edits now, asked of the engine only when its [`Key`] changed, and not while
 /// a gesture is under way (its previews move the revision every frame): the last answer stands.
@@ -64,9 +72,10 @@ pub fn editing(app: &mut VectorcraftApp) -> Option<StitchEditing> {
     let lent = app.session.lent_from() == Some(vectorcraft_tools::embroidery::ID);
     let (uid, revision, gesture) = (st.uid, st.revision, st.interaction.is_some() || lent);
     let shown = app.embroidery.preview.shown(uid).map(|s| s.planned.generation);
-    let key = (uid, revision, shown, app.session.tool_id(), app.session.stitch_view_of(uid).on, app.ui.view.outline);
+    let key =
+        Key { uid, revision, shown, tool: app.session.tool_id(), stitch_view: app.session.stitch_view_of(uid).on, outline: app.ui.view.outline };
     let kept = &app.embroidery.editing;
-    if kept.key == Some(key) || (gesture && kept.key.is_some_and(|k| k.0 == uid)) {
+    if kept.key == Some(key) || (gesture && kept.key.is_some_and(|k| k.uid == uid)) {
         return kept.editing;
     }
     let view = app.view_info();

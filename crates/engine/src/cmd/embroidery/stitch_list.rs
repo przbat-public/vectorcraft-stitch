@@ -20,7 +20,7 @@ use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::Command;
 
-use super::check::StitchLimits;
+use super::check::{LimitsKey, StitchLimits};
 use super::plan::DesignPlan;
 
 pub use super::records::RecordKind;
@@ -88,7 +88,7 @@ const LONG_BIT: u8 = 0b1000;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Flags {
     bits: Vec<u8>,
-    limits: [u64; 3],
+    limits: LimitsKey,
     counted: Vec<[u32; Filter::ALL.len()]>,
 }
 
@@ -125,25 +125,6 @@ fn bit_matches(b: u8, filter: Filter) -> bool {
     }
 }
 
-/// `limits` as a query's params carry them to the planning thread: `{shortest, longest, step,
-/// format}` (millimetres, the format's id).
-pub fn limits_params(limits: &StitchLimits) -> serde_json::Value {
-    serde_json::json!({"shortest": limits.shortest, "longest": limits.longest, "step": limits.step, "format": limits.format.id()})
-}
-
-/// The limits `params` carry ([`limits_params`]); `None` when they don't (a number missing or not
-/// finite, a format no format has).
-pub fn limits_from(params: &serde_json::Value) -> Option<StitchLimits> {
-    let number = |k: &str| params.get(k).and_then(serde_json::Value::as_f64).filter(|v| v.is_finite());
-    let format = params.get("format").and_then(serde_json::Value::as_str).and_then(vectorcraft_stitch::format::Format::from_id)?;
-    Some(StitchLimits { shortest: number("shortest")?, longest: number("longest")?, step: number("step")?, format })
-}
-
-/// The bits of `limits`, what flags are kept for.
-pub fn limits_key(limits: &StitchLimits) -> [u64; 3] {
-    [limits.shortest.to_bits(), limits.longest.to_bits(), limits.step.to_bits()]
-}
-
 impl Flags {
     /// The flags of `plan`'s records judged against `limits`: one walk, stopped early (and then
     /// incomplete) when the work is cancelled.
@@ -172,7 +153,7 @@ impl Flags {
             }
         });
         let counted = counted(&bits);
-        Self { bits, limits: limits_key(limits), counted }
+        Self { bits, limits: limits.key(), counted }
     }
 
     /// How many of records `range` (numbers, from 1) each filter lists, in [`Filter::ALL`]'s order:
@@ -231,8 +212,8 @@ impl Flags {
         }
     }
 
-    /// The limits' bits it was built with.
-    pub fn limits(&self) -> [u64; 3] {
+    /// What the limits it was built with are kept for.
+    pub fn limits(&self) -> LimitsKey {
         self.limits
     }
 

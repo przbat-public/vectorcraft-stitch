@@ -297,8 +297,12 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
         Some(v) if v.is_null() => Some(None),
         Some(v) => {
             let ids: Vec<&'static str> = vectorcraft_engine::cmd::embroidery::check_formats().into_iter().map(|(id, _)| id).collect();
-            let id = v.as_str().and_then(|g| ids.iter().find(|id| **id == g)).ok_or_else(|| format!("`format` must be one of {}", ids.join(", ")))?;
-            Some(Some(*id))
+            let format = v
+                .as_str()
+                .filter(|g| ids.contains(g))
+                .and_then(vectorcraft_engine::cmd::embroidery::Format::from_id)
+                .ok_or_else(|| format!("`format` must be one of {}", ids.join(", ")))?;
+            Some(Some(format))
         }
     };
     let uid = app.session.active().map(|st| st.uid);
@@ -330,7 +334,7 @@ fn panel_command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
         };
     }
     show_panel(app)?;
-    let format = app.session.active().and_then(|st| app.embroidery.check.format.get(&st.uid).copied());
+    let format = app.session.active().and_then(|st| app.embroidery.check.format.get(&st.uid)).map(|f| f.id());
     // The part the Object tab shows: the one chosen, or the other where the objects don't paint it.
     let part = object::shown_part(app);
     let (scope, filter) = (app.ui.embroidery_panel.stitches_scope.id(), app.ui.embroidery_panel.stitches_filter.id());
@@ -474,14 +478,10 @@ fn tab_group(root: &Option<craft_ui::docking::Node<String>>, panel: &str) -> Vec
 /// blocks collapsed or expanded; the next or previous finding of the check.
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     if let Some(items) = crate::embroidery::task_bar::items(app) {
-        for (_, _, id, params) in items {
-            let label = match params["function"].as_str() {
-                Some("trim") => crate::et!("Trim After the Selected Needle Points").to_string(),
-                Some("stop") => crate::et!("Stop After the Selected Needle Points").to_string(),
-                _ => command_label(app, id),
-            };
-            if crate::widgets::menu_item_name(ui, &label, crate::menus::enabled(app, id), false) {
-                crate::menus::invoke(app, id, params);
+        for item in items {
+            let label = item.menu_label.map_or_else(|| command_label(app, item.command), str::to_string);
+            if crate::widgets::menu_item_name(ui, &label, crate::menus::enabled(app, item.command), false) {
+                crate::menus::invoke(app, item.command, item.params);
             }
         }
         ui.separator();

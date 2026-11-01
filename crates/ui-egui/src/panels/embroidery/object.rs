@@ -232,6 +232,8 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let count = count(app, uid, &ids, now);
     let lang = crate::i18n::current();
     let mut commands: Vec<Command> = Vec::new();
+    // The object Edit Stitches was pressed for, if it was: the mode is isolation, no command.
+    let mut edit: Option<NodeId> = None;
     header(app, ui, &ids, info.as_ref().ok().map(|i| i.as_ref()), &count, lang);
     ui.add_space(GAP);
     let info = match info {
@@ -257,13 +259,13 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         takes_none(ui, &info);
         let restore = super::command_label(app, RESTORE);
         manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next, &restore);
-        edit_stitches(ui, stitches, &mut commands);
+        edit = edit.or(edit_stitches(ui, stitches));
         trim_after(ui, &info, &ids, &mut commands);
         stop_after(ui, &info, &ids, &mut commands);
     } else {
         let restore = super::command_label(app, RESTORE);
         manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next, &restore);
-        edit_stitches(ui, stitches, &mut commands);
+        edit = edit.or(edit_stitches(ui, stitches));
         let chosen = app.ui.embroidery_panel.part;
         let shown = shown(chosen, &info);
         if let Some(part) = part_switch(ui, &info, shown) {
@@ -311,12 +313,6 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             crate::embroidery::convert_job::start(app, &params);
             continue;
         }
-        if cmd == EDIT_STITCHES {
-            if let Some(id) = params["id"].as_u64() {
-                crate::embroidery::editing::start(app, NodeId(id));
-            }
-            continue;
-        }
         if cmd == RESTORE {
             // Asking first when their stitches were edited since converting.
             let ids = params.get_mut("ids").map(Value::take).unwrap_or_default();
@@ -327,6 +323,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         if let Err(e) = app.run(cmd, params) {
             app.status(e);
         }
+    }
+    if let Some(id) = edit {
+        crate::embroidery::editing::start(app, id);
     }
 }
 
@@ -877,21 +876,16 @@ fn stop_after(ui: &mut Ui, info: &ObjectSettings, ids: &[NodeId], commands: &mut
 /// The commands the tab runs that it says more of, and the Restore question's own.
 const CONVERT: &str = "embroidery.convertToManual";
 const RESTORE: &str = "embroidery.restoreObject";
-/// Edit Stitches, which starts editing an object's needle points: no command (the mode is
-/// isolation), so it is the tab's own.
-const EDIT_STITCHES: &str = "embroidery-edit-stitches";
-
 /// Edit Stitches for object `id` holding stitches (manual stitches, a machine file's runs): its
 /// needle points edited on the canvas with the Embroidery Tool, in isolation, in the stitch view.
-fn edit_stitches(ui: &mut Ui, id: Option<NodeId>, commands: &mut Vec<Command>) {
-    let Some(id) = id else { return };
+/// → `id` when it was pressed (the tab starts editing once its rows are drawn).
+fn edit_stitches(ui: &mut Ui, id: Option<NodeId>) -> Option<NodeId> {
+    let id = id?;
     ui.add_space(GAP / 2.0);
     let tip = crate::et!("Move, insert and delete these needle points on the canvas with the Embroidery Tool.");
     let resp = ui.add(egui::Button::new(crate::et!("Edit Stitches")));
     rows::keyboard_tip(ui, resp.id, tip);
-    if resp.on_hover_text(tip).clicked() {
-        commands.push((EDIT_STITCHES, json!({"id": id.0})));
-    }
+    resp.on_hover_text(tip).clicked().then_some(id)
 }
 /// How far from 100 % a scale since converting must be for the tab to say it, percent: what its
 /// words round to (a whole percent), so that a scale undone by rounding isn't said.

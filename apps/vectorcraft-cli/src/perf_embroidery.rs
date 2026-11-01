@@ -1604,7 +1604,7 @@ fn tab_rows(doc: &Document) -> Result<f64, String> {
     use vectorcraft_engine::cmd::embroidery::stitch_list::{Filter, Flags};
     let mut s = fresh(doc);
     let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).map_err(err)?;
-    let limits = vectorcraft_engine::cmd::embroidery::stitch_limits(doc, None);
+    let limits = vectorcraft_engine::cmd::embroidery::StitchLimits::of(doc, None);
     let flags = Flags::of(&plan, &limits);
     let whole = 1..flags.len() + 1;
     let mut samples = Vec::with_capacity(DRAW_RUNS);

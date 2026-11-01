@@ -26,7 +26,6 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 use egui::{Color32, Pos2, Shape, pos2};
 use vectorcraft_doc::{Document, NodeId};
 use vectorcraft_engine::cmd::embroidery::scene::{StitchScene, fabric_color};
-use vectorcraft_engine::cmd::embroidery::stitch_limits;
 use vectorcraft_engine::cmd::embroidery::view::{Layers, layers, paused};
 use vectorcraft_geom::{Affine, Point, Rect};
 use vectorcraft_render::Rendered;
@@ -88,9 +87,18 @@ struct LayerKey {
     anti_alias: bool,
     /// The fabric the stitches are drawn on: the edges of threads close to it follow it.
     fabric: [u8; 3],
-    /// Stitch editing's look ([`edit_look`]): the object edited, whether needle points show as
-    /// circles at this zoom, and the limits' bits (shortest, longest, step).
-    edit: Option<(u64, bool, [u64; 3])>,
+    /// Stitch editing's look, while stitches are edited ([`EditKey`]).
+    edit: Option<EditKey>,
+}
+
+/// What the edit look is drawn for ([`LayerKey::edit`]): the object edited, whether its needle
+/// points are drawn as circles (from [`NEEDLE_CIRCLES_MIN_ZOOM`]), and the limits its stitches are
+/// judged by.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct EditKey {
+    object: u64,
+    circles: bool,
+    limits: vectorcraft_engine::cmd::embroidery::LimitsKey,
 }
 
 /// A frame of stitches to draw on the thread, numbered in the order frames are made; or, with
@@ -522,8 +530,8 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         // Editing ended: the units it edited go.
         app.embroidery.layer.edited = None;
     }
+    let limits = editing.and_then(|_| super::limits(app));
     let Some(st) = app.session.active() else { return };
-    let limits = editing.map(|_| stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied()));
     let (uid, isolated, doc) = (st.uid, st.isolation, st.doc.clone());
     let view = app.session.stitch_view_of(uid);
     let anti_alias = app.session.prefs.anti_aliased_artwork;
@@ -553,9 +561,7 @@ fn draw_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::
         isolated: isolated.map(|i| i.0),
         anti_alias,
         fabric: fabric_color(&doc),
-        edit: editing
-            .zip(limits)
-            .map(|(object, l)| (object.0, v.zoom >= NEEDLE_CIRCLES_MIN_ZOOM, [l.shortest.to_bits(), l.longest.to_bits(), l.step.to_bits()])),
+        edit: editing.zip(limits).map(|(object, l)| EditKey { object: object.0, circles: v.zoom >= NEEDLE_CIRCLES_MIN_ZOOM, limits: l.key() }),
     };
     // A frame the thread finished: shown when it is of this document and newer than the frame shown
     // (one drawn in line since may be). An emphasis it finished: shown when it is of the units

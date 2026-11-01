@@ -311,7 +311,7 @@ impl Planned {
 
     /// The flags for `limits` when they have been built already.
     pub fn built_stitch_flags(&self, limits: &super::check::StitchLimits) -> Option<Arc<super::stitch_list::Flags>> {
-        let key = super::stitch_list::limits_key(limits);
+        let key = limits.key();
         self.flags.lock().ok()?.as_ref().filter(|f| f.limits() == key).cloned()
     }
 
@@ -614,7 +614,11 @@ pub(crate) struct Services {
 
 /// The needle points kept for a document ([`Services::needle_index`]): the snapshot and the object
 /// isolated they are of, and the index (`None`: the object holds no path of stitches).
-type KeptNeedles = (Arc<Document>, NodeId, Option<Arc<super::needle_index::NeedleIndex>>);
+struct KeptNeedles {
+    doc: Arc<Document>,
+    scope: NodeId,
+    index: Option<Arc<super::needle_index::NeedleIndex>>,
+}
 
 impl Services {
     /// Document `uid`'s service, made when it is first asked for.
@@ -669,15 +673,15 @@ impl Services {
         };
         // The one kept, while it is of the document as it is, and through a gesture under way: a
         // drag's previews move needle points, which the drag doesn't read again until it ends.
-        if let Some((doc, kept_scope, index)) = self.needles.get(&st.uid)
-            && (Arc::ptr_eq(doc, &st.doc) || st.interaction.is_some())
-            && *kept_scope == scope
+        if let Some(kept) = self.needles.get(&st.uid)
+            && (Arc::ptr_eq(&kept.doc, &st.doc) || st.interaction.is_some())
+            && kept.scope == scope
         {
-            return index.clone();
+            return kept.index.clone();
         }
-        let kept = self.needles.remove(&st.uid).and_then(|(_, s, i)| i.filter(|_| s == scope));
+        let kept = self.needles.remove(&st.uid).and_then(|k| k.index.filter(|_| k.scope == scope));
         let index = super::needle_index::NeedleIndex::of(&st.doc, &[scope], kept.as_deref()).map(Arc::new);
-        self.needles.insert(st.uid, (st.doc.clone(), scope, index.clone()));
+        self.needles.insert(st.uid, KeptNeedles { doc: st.doc.clone(), scope, index: index.clone() });
         index
     }
 

@@ -107,6 +107,14 @@ pub struct Embroidery {
 /// after the fork's controls (`chrome::isolation_bar`), points: as it draws it.
 const ISOLATION_BAR: f32 = 24.0;
 
+/// The one set of limits the active document's stitches are judged by: the document's, for the
+/// format the Check tab checks for (the thread palette's unless one is chosen). The Stitches tab,
+/// the canvas's edit look, the selection's live check and the Contextual Task Bar read them here.
+pub fn limits(app: &VectorcraftApp) -> Option<vectorcraft_engine::cmd::embroidery::StitchLimits> {
+    let st = app.session.active()?;
+    Some(vectorcraft_engine::cmd::embroidery::StitchLimits::of(&st.doc, app.embroidery.check.format.get(&st.uid).copied()))
+}
+
 /// Each frame, before it is drawn: the stitch preview's plans taken in
 /// ([`stitch_preview::poll`]), Nearest Connection's search and a convert under way looked at
 /// ([`nearest::poll`], [`convert_job::poll`]), and what the Stitches tab keeps of a document closed

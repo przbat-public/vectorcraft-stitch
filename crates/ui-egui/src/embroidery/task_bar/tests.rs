@@ -24,10 +24,11 @@ fn the_stitch_actions_show_only_while_needle_points_are_selected() {
     app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 1}]})).unwrap();
     let items = super::items(&mut app).expect("the stitch actions");
     assert_eq!(items.len(), 7);
-    let long = |app: &mut VectorcraftApp| super::items(app).unwrap().into_iter().find(|i| i.2 == "embroidery.splitLongStitches").unwrap().3;
+    let long =
+        |app: &mut VectorcraftApp| super::items(app).unwrap().into_iter().find(|i| i.command == "embroidery.splitLongStitches").unwrap().params;
     assert_eq!(long(&mut app), json!({}), "Janome's JEF, the default palette's format: its records as long as the longest stitch");
     let uid = app.session.active().unwrap().uid;
-    app.embroidery.check.format.insert(uid, "dst");
+    app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::Dst);
     assert_eq!(
         long(&mut app),
         json!({"format": "dst", "maxLength": 12.7}),

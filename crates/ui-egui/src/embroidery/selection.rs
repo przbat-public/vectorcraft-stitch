@@ -23,7 +23,7 @@
 
 use egui::{Align2, Color32, CornerRadius, FontId, Id, Pos2, Rect as ERect, Shape, Stroke, StrokeKind, pos2, vec2};
 use vectorcraft_doc::{Document, NodeId, NodeKind, Selection};
-use vectorcraft_engine::cmd::embroidery::{StitchEditing, StitchLimits, stitch_limits};
+use vectorcraft_engine::cmd::embroidery::{LimitsKey, StitchEditing, StitchLimits};
 use vectorcraft_geom::{Point, Rect, Vec2};
 use vectorcraft_tools::embroidery::NeedleRef;
 
@@ -118,10 +118,19 @@ impl Judged {
     }
 }
 
+/// What [`Kept`] was built for: the document, its revision and the limits the stitches touching the
+/// selection are judged by.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct SelectionKey {
+    uid: u64,
+    revision: u64,
+    limits: LimitsKey,
+}
+
 /// The selection as drawn, built from the document once a revision ([`Kept::key`]).
 #[derive(Default)]
 pub struct Kept {
-    key: Option<(u64, u64, [u64; 3])>,
+    key: Option<SelectionKey>,
     /// How many needle points being edited are selected, and the box they fall in.
     count: usize,
     bounds: Option<Rect>,
@@ -249,10 +258,10 @@ impl Kept {
 /// changed, but not while a gesture is under way.
 fn kept<'a>(app: &'a mut VectorcraftApp, limits: &StitchLimits) -> Option<&'a Kept> {
     let st = app.session.active()?;
-    let key = (st.uid, st.revision, [limits.shortest.to_bits(), limits.longest.to_bits(), limits.step.to_bits()]);
+    let key = SelectionKey { uid: st.uid, revision: st.revision, limits: limits.key() };
     let gesture = st.interaction.is_some();
     let k = &app.embroidery.selection;
-    if !(k.key == Some(key) || (gesture && k.key.is_some_and(|(u, ..)| u == st.uid))) {
+    if !(k.key == Some(key) || (gesture && k.key.is_some_and(|k| k.uid == st.uid))) {
         let view = app.view_info();
         let paths = app.session.stitch_selected_paths(view).unwrap_or_default();
         let st = app.session.active()?;
@@ -267,8 +276,7 @@ fn kept<'a>(app: &'a mut VectorcraftApp, limits: &StitchLimits) -> Option<&'a Ke
 /// The box the needle points being edited that are selected fall in (document points), while
 /// stitches are edited: the Contextual Task Bar sits under it.
 pub fn selected_box(app: &mut VectorcraftApp) -> Option<Rect> {
-    let st = app.session.active()?;
-    let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
+    let limits = super::limits(app)?;
     kept(app, &limits)?.bounds
 }
 
@@ -283,8 +291,7 @@ fn moved(app: &VectorcraftApp) -> Option<Vec2> {
 /// move, and the stitches touching them, judged; `None` with nothing selected.
 pub fn bubble(app: &mut VectorcraftApp) -> Option<Vec<(Option<Mark>, String)>> {
     let editing = super::editing::editing(app)?;
-    let st = app.session.active()?;
-    let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
+    let limits = super::limits(app)?;
     let by = moved(app);
     let lang = crate::i18n::current();
     let k = kept(app, &limits)?;
@@ -390,8 +397,8 @@ pub fn draw(app: &mut VectorcraftApp, ui: &egui::Ui, painter: &egui::Painter, xf
         app.embroidery.selection.forget();
         return;
     };
+    let Some(limits) = super::limits(app) else { return };
     let Some(st) = app.session.active() else { return };
-    let limits = stitch_limits(&st.doc, app.embroidery.check.format.get(&st.uid).copied());
     let options = app.session.tool_options().get(vectorcraft_tools::embroidery::EDITING_OPTIONS).cloned().unwrap_or_default();
     let dragged = moved(app);
     let by = dragged.unwrap_or(Vec2::ZERO);

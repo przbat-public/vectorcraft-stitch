@@ -537,7 +537,7 @@ fn the_last_rows_stay_dimmed_until_the_new_flags_come() {
     };
     let fresh = colour(&shapes).expect("the row drawn");
     let uid = app.session.active().unwrap().uid;
-    app.embroidery.check.format.insert(uid, "dst");
+    app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::Dst);
     time += 0.05;
     let (shapes, nodes) = frame(&mut app, &ctx, time, vec![]);
     let words: Vec<String> = shapes.iter().filter_map(|s| if let Shape::Text(t) = s { Some(t.galley.text().to_string()) } else { None }).collect();
@@ -559,13 +559,13 @@ fn a_format_changed_back_lists_its_rows_again() {
     settle(&mut app, &ctx, &mut time);
     let uid = app.session.active().unwrap().uid;
     for format in ["pes", "dst", "pes", "dst"] {
-        app.embroidery.check.format.insert(uid, format);
+        app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::from_id(format).unwrap());
         settle(&mut app, &ctx, &mut time);
         let limits = super::limits_of(&app).unwrap();
         let shown = app.embroidery.preview.shown(uid).unwrap();
         assert!(shown.planned.built_stitch_flags(&limits).is_some(), "{format}: its flags built");
         let (key, _) = app.embroidery.stitches.list.as_ref().unwrap();
-        assert_eq!(key.4, vectorcraft_engine::cmd::embroidery::stitch_list::limits_key(&limits), "{format}: listed with its limits");
+        assert_eq!(key.limits, limits.key(), "{format}: listed with its limits");
     }
 }
 
@@ -759,7 +759,7 @@ fn every_filters_count_in_one_pass() {
     let opts = vectorcraft_engine::EmbroideryOptions::default();
     let plan = s.embroidery_plan(&opts).unwrap();
     let doc = s.doc().unwrap().doc.clone();
-    let limits = vectorcraft_engine::cmd::embroidery::stitch_limits(&doc, None);
+    let limits = vectorcraft_engine::cmd::embroidery::StitchLimits::of(&doc, None);
     let flags = vectorcraft_engine::cmd::embroidery::stitch_list::Flags::of(&plan, &limits);
     let all = listed(&flags, None, Filter::All);
     for (k, f) in Filter::ALL.into_iter().enumerate() {
@@ -926,7 +926,7 @@ fn the_long_filter_says_its_lines() {
     s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
     let doc = s.doc().unwrap().doc.clone();
     let words = |format: &str| {
-        let limits = vectorcraft_engine::cmd::embroidery::stitch_limits(&doc, Some(format));
+        let limits = vectorcraft_engine::cmd::embroidery::StitchLimits::of(&doc, vectorcraft_engine::cmd::embroidery::Format::from_id(format));
         super::chip_words(Filter::Long, 3, &limits, crate::i18n::Lang::EN).1
     };
     assert_eq!(words("dst"), "Longer than 12.7 mm, or along x or y than one Tajima DST record (12.1 mm) 3");
@@ -1142,7 +1142,7 @@ fn the_foots_actions_are_on_as_their_commands_can_run() {
     let mut time = 0.0;
     let (_, nodes) = settle(&mut app, &ctx, &mut time);
     let items = crate::embroidery::task_bar::items(&mut app).unwrap();
-    for (label, _, command, _) in items {
+    for crate::embroidery::task_bar::Item { label, command, .. } in items {
         let on = crate::menus::enabled(&app, command);
         let button = nodes.iter().find(|n| n.1 == Role::Button && n.2 == label).unwrap_or_else(|| panic!("no {label} button"));
         assert_eq!(!button.5, on, "{label}: as {command} can run");

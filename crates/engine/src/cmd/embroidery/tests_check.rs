@@ -473,17 +473,16 @@ fn one_set_of_limits_judges_a_stitch() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
     let doc = s.doc().unwrap().doc.clone();
-    let limits = check::stitch_limits(&doc, None);
+    let limits = check::StitchLimits::of(&doc, None);
     assert_eq!((limits.shortest, limits.longest), (0.4, 12.7));
     assert!(limits.short(0.39) && !limits.short(0.4));
     assert!(limits.long(12.71, 0.0) && !limits.long(12.0, 3.0));
-    let pes = check::stitch_limits(&doc, Some("pes"));
+    let pes = check::StitchLimits::of(&doc, Some(Format::Pes));
     assert!(pes.step > 12.7 && pes.long(13.0, 0.0), "the 12.7 mm still applies: {pes:?}");
-    let dst = check::stitch_limits(&doc, Some("dst"));
+    let dst = check::StitchLimits::of(&doc, Some(Format::Dst));
     assert!(dst.step < 12.7 && dst.long(0.0, dst.step + 0.05) && !dst.long(dst.step - 0.05, 0.0), "{dst:?}");
-    assert_eq!(check::stitch_limits(&doc, Some("no such format")).format, limits.format, "the thread palette's");
     s.execute("embroidery.setup", &json!({"machine": {"minStitch": 0.6}})).unwrap();
-    let set = check::stitch_limits(&s.doc().unwrap().doc, None);
+    let set = check::StitchLimits::of(&s.doc().unwrap().doc, None);
     assert!(set.short(0.55) && !set.short(0.6), "{set:?}");
     // On a line within the tolerance passes, and a grid step past it breaks it.
     let tol = vectorcraft_doc::embroidery::LIMIT_TOLERANCE_MM;

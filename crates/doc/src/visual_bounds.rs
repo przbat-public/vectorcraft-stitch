@@ -11,12 +11,18 @@
 //! at the address it was measured at is the object as measured, and its bounds stand; any other
 //! object is measured again. A container is measured by upstream's own arms, through
 //! `Node::visual_by`, which asks for each member's bounds: the cache hands over those it kept and
-//! measures again only the members that changed. The entries hold their objects weakly: an
-//! object's allocation outlives it while its entry does, so no other object can take its address,
-//! and `Arc::make_mut` moves an object it changes to a new allocation while weak references to it
-//! remain (the crate has no unsafe code that could change one in place). The bounds of symbol
-//! instances and Repeats read the document's symbols: another set of symbols (by name and art)
-//! starts the measures over.
+//! measures again only the members that changed.
+//!
+//! The entries hold their objects weakly, and compare an object's address with the one kept only
+//! while the weak reference still has a strong one, as std defines `Weak::as_ptr`. Then the
+//! comparison rests on what std documents: a weak reference keeps its allocation, so no other
+//! object can take that address while the entry lives; safe code reaches `&mut Node` behind an
+//! `Arc` only through `Arc::get_mut`, which refuses while a weak reference exists, or
+//! `Arc::make_mut`, which clones a shared object into a new allocation and otherwise dissociates
+//! the weak references (they no longer have a strong one); and unsafe code is denied
+//! workspace-wide. So an object at a live entry's address is the object as measured. The bounds of
+//! symbol instances and Repeats read the document's symbols: another set of symbols (by name and
+//! art) starts the measures over.
 //!
 //! The entries mirror the last document measured, down to the objects measured whole (all but
 //! layers and groups without a clipping mask, and Intertwine groups, which `Node::visual_by`
@@ -32,7 +38,8 @@ use crate::{Document, Node, NodeId, SymbolBoxes};
 
 /// The visual bounds of a document's objects as last measured, which [`VisualBounds::art_bounds`]
 /// and [`VisualBounds::bounds_of`] measure again only where the document changed. They answer as
-/// [`Document::art_bounds`] and [`Document::bounds_of`] (with `visual`) do, bit for bit.
+/// [`Document::art_bounds`] and [`Document::bounds_of`] (with `visual`) do: the same measures,
+/// folded in the same order, so the answers are equal (`==`).
 #[derive(Default)]
 pub struct VisualBounds {
     /// The entries of the layers of the document last measured, in order.
@@ -74,7 +81,8 @@ impl VisualBounds {
     }
 
     /// How many objects this has measured since it was made, each container once for the union of
-    /// its members: what the edits between two measures cost.
+    /// its members: what the edits between two measures cost. A diagnostic count for tests and
+    /// gates, with no meaning to rely on beyond that.
     pub fn measured(&self) -> u64 {
         self.measured
     }
@@ -92,8 +100,8 @@ impl VisualBounds {
     /// Brings the entries up to `doc`: those of the objects still at their address stand, the
     /// others are measured again, all of them when the symbols changed.
     fn update(&mut self, doc: &Document, symbols: &SymbolBoxes) {
-        let same = self.symbols.len() == doc.symbols.len()
-            && self.symbols.iter().zip(&doc.symbols).all(|((name, art), s)| *name == s.name && std::ptr::eq(art.as_ptr(), Arc::as_ptr(&s.art)));
+        let kept = self.symbols.iter().map(|(name, art)| (name.as_str(), live(art)));
+        let same = kept.eq(doc.symbols.iter().map(|s| (s.name.as_str(), Arc::as_ptr(&s.art))));
         if !same {
             self.layers.clear();
             self.symbols = doc.symbols.iter().map(|s| (s.name.clone(), Arc::downgrade(&s.art))).collect();
@@ -141,9 +149,9 @@ impl Entry {
         Self { node: None, id: n.id, bounds: None, members: Vec::new() }
     }
 
-    /// Whether this is the entry of `n` as it is: measured at its address.
+    /// Whether this is the entry of `n` as it is: measured at its address, which is still its.
     fn holds(&self, n: &Node) -> bool {
-        self.node.as_ref().is_some_and(|w| std::ptr::eq(w.as_ptr(), n))
+        self.node.as_ref().is_some_and(|w| std::ptr::eq(live(w), n))
     }
 
     /// Measures `n` into this entry by `Node::visual_by`: a container's members are handed the
@@ -155,6 +163,13 @@ impl Entry {
         self.members = members.finish();
         self.node = Some(Arc::downgrade(n));
     }
+}
+
+/// The address `w` refers to while it has a strong reference, else null, which no object's address
+/// equals: std defines `Weak::as_ptr` only while a strong reference exists, and a weak reference
+/// `Arc::make_mut` dissociated has none.
+fn live(w: &Weak<Node>) -> *const Node {
+    if w.strong_count() > 0 { w.as_ptr() } else { std::ptr::null() }
 }
 
 /// The entries of a list of objects as last measured (a container's members, or the layers), lined

@@ -9,8 +9,11 @@
 //!   point selects it alone (on release, when it was selected already and no drag followed),
 //!   Shift-click adds or takes it away; a click on a stitch selects its two needle points; a
 //!   double-click on a stitch its run; a drag from where no needle point lies draws a marquee whose
-//!   needle points are selected at the release (Shift adds); a click there selects nothing. `[` and
-//!   `]` step to the needle point before or after along the thread, alone selected (Shift adds it).
+//!   needle points are selected at the release (Shift adds); a click there selects nothing. Below
+//!   [`NEEDLE_CIRCLES_MIN_ZOOM`], where needle points aren't drawn, a press on a needle point or a
+//!   stitch not selected selects it only at the release, so that a drag from it draws a marquee
+//!   (the project owner's choice, 2026-10-31: „Przeciągnięcie rysuje ramkę”). `[` and `]` step to
+//!   the needle point before or after along the thread, alone selected (Shift adds it).
 //!   The lasso is the Lasso tool's, which selects needle points as it selects anchors in isolation.
 //! - **Editing** (one undo step a gesture): a drag of selected needle points moves them in
 //!   [`NEEDLE_STEP_MM`] steps (the formats' grid), Shift at 45° steps from Constrain Angle, a preview
@@ -56,6 +59,13 @@ pub const LIVE_DRAG_POINTS_MAX: usize = 20_000;
 /// pause before it plans a design slow to plan (`PAUSE_TO_PLAN_SECS`, 0.3 s, an estimate).
 pub const PAUSE_PREVIEW_SECS: f64 = 0.3;
 
+/// The zoom from which needle points are drawn as circles (the project owner's choice, 2026-10-27:
+/// „nakłucia jako dwutonowe kółka od 250 %”): where a 1 mm stitch shows its two circles apart. The
+/// view's own zoom, the stitches' size on screen (7 pt a millimetre): with Preferences › Display
+/// Print Size on, the zoom field shows another percent for it (187.5 % on a display at 100 %).
+/// Below it, a press on what isn't selected waits for the release (a drag from it draws a marquee).
+pub const NEEDLE_CIRCLES_MIN_ZOOM: f64 = 2.5;
+
 /// What lies under the pointer while editing: a needle point, or a place on a stitch (the needle
 /// point it leaves, and the place, document points).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -81,13 +91,30 @@ struct Drag {
 }
 
 /// A marquee: where it started and where it is now (document points), what it does at the release
-/// (set or add), and whether it has been dragged.
+/// (set or add), whether it has been dragged, and what a click there selects instead (from a press
+/// on what isn't selected while needle points aren't drawn; none: a click selects nothing).
 #[derive(Clone, Copy, Debug)]
 struct Marquee {
     from: Point,
     to: Point,
     mode: SelectMode,
     dragged: bool,
+    click: Option<Click>,
+}
+
+/// What a click selects at its release, as a press there selects it at any zoom where needle
+/// points are drawn: a needle point or a stitch's two, set or toggled (Shift).
+#[derive(Clone, Copy, Debug)]
+struct Click {
+    first: NeedleRef,
+    second: Option<NeedleRef>,
+    mode: SelectMode,
+}
+
+impl Click {
+    fn needles(&self) -> Vec<NeedleRef> {
+        std::iter::once(self.first).chain(self.second).collect()
+    }
 }
 
 /// The gesture under way while editing stitches, and what the pointer is over.
@@ -294,11 +321,41 @@ impl Editing {
         }
     }
 
+    /// What a press on `under` selects at its release instead of at the press: below the zoom
+    /// needle points are drawn from, a needle point, or a stitch's two, not selected already (Alt
+    /// on a stitch inserts at the press, as at any zoom).
+    fn waits(cx: &ToolContext, needles: &dyn NeedlePoints, under: Option<Hover>, mods: Mods) -> Option<Click> {
+        if cx.zoom >= NEEDLE_CIRCLES_MIN_ZOOM {
+            return None;
+        }
+        let mode = if mods.shift { SelectMode::Toggle } else { SelectMode::Set };
+        match under? {
+            Hover::Needle(n) => (!is_selected(cx.selection, needles, n)).then_some(Click { first: n, second: None, mode }),
+            Hover::Thread(..) if mods.alt => None,
+            Hover::Thread(n, _) => {
+                let second = NeedleRef { id: n.id, index: n.index.saturating_add(1) };
+                let both = [n, second].iter().all(|m| is_selected(cx.selection, needles, *m));
+                (!both).then_some(Click { first: n, second: Some(second), mode })
+            }
+        }
+    }
+
     /// A press: on a needle point or a stitch, select it (Shift: add it or take it away) and hold it
-    /// for a drag; Alt on a stitch, a needle point inserted there; elsewhere, a marquee.
+    /// for a drag; Alt on a stitch, a needle point inserted there; elsewhere, a marquee. Below the
+    /// zoom needle points are drawn from, one not selected is selected at the release instead, and
+    /// a drag from it draws a marquee.
     fn press(&mut self, cx: &ToolContext, needles: &dyn NeedlePoints, ev: &PointerEvent) -> Vec<Action> {
         let mut out = self.release();
         self.marquee = None;
+        let under = Self::under(cx, needles, ev.pos);
+        let mode = if ev.mods.shift { SelectMode::Add } else { SelectMode::Set };
+        if let Some(click) = Self::waits(cx, needles, under, ev.mods)
+            && let Some(at) = super::within(ev.pos)
+        {
+            self.current = Some(click.first);
+            self.marquee = Some(Marquee { from: at, to: at, mode, dragged: false, click: Some(click) });
+            return out;
+        }
         let drag = |alone: Option<NeedleRef>, count: usize| Drag {
             from: ev.pos,
             alone,
@@ -308,7 +365,7 @@ impl Editing {
             rested: 0.0,
             many: count > LIVE_DRAG_POINTS_MAX,
         };
-        match Self::under(cx, needles, ev.pos) {
+        match under {
             Some(Hover::Thread(n, at)) if ev.mods.alt => {
                 // A new needle point on the stitch, where it is pressed: before the needle point the
                 // stitch arrives at, left selected.
@@ -348,8 +405,7 @@ impl Editing {
                 // Kept within the document's coordinates, as anything the marquee's box reaches is
                 // drawn and sent: a pointer from far off (an agent's) stops at the edge.
                 if let Some(at) = super::within(ev.pos) {
-                    self.marquee =
-                        Some(Marquee { from: at, to: at, mode: if ev.mods.shift { SelectMode::Add } else { SelectMode::Set }, dragged: false });
+                    self.marquee = Some(Marquee { from: at, to: at, mode, dragged: false, click: None });
                 }
             }
         }
@@ -404,17 +460,18 @@ impl Editing {
 
     /// The release: a drag kept (its last move previewed first), a click on a selected needle point
     /// selecting it alone, a marquee's needle points selected (a click away from them selecting
-    /// none).
+    /// none, a click on what a press waited to select selecting it).
     pub fn release(&mut self) -> Vec<Action> {
         if let Some(m) = self.marquee.take() {
-            return match (m.dragged, m.mode) {
-                (true, mode) => {
+            return match (m.dragged, m.click, m.mode) {
+                (true, _, mode) => {
                     let r = Rect::from_points(m.from, m.to);
                     let (a, b) = (mm(Point::new(r.x0, r.y0)), mm(Point::new(r.x1, r.y1)));
                     vec![Action::Exec(SELECT.into(), json!({"rect": [a[0], a[1], b[0], b[1]], "mode": mode.id()}))]
                 }
-                (false, SelectMode::Set) => vec![Action::Exec("select.none".into(), json!({}))],
-                (false, _) => vec![],
+                (false, Some(c), _) => vec![select(&c.needles(), c.mode)],
+                (false, None, SelectMode::Set) => vec![Action::Exec("select.none".into(), json!({}))],
+                (false, None, _) => vec![],
             };
         }
         let Some(d) = self.drag.take() else { return vec![] };

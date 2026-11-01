@@ -433,7 +433,8 @@ fn the_index_is_built_again_only_for_what_changed() {
     run(&mut s, "object.isolate", json!({"id": group}));
     run(&mut s, "view.stitchPreview", json!({"on": true}));
     run(&mut s, "embroidery.sequence", json!({}));
-    let view = crate::ViewInfo::default();
+    // Where needle points are drawn: a press on one selects it, and a drag from it moves it.
+    let view = crate::ViewInfo { zoom: vectorcraft_tools::embroidery::NEEDLE_CIRCLES_MIN_ZOOM, ..crate::ViewInfo::default() };
     s.select_tool("embroidery", view).unwrap();
     let index = s.kept_needle_index().expect("editing");
     let id = index.ids().next().unwrap();

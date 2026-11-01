@@ -213,12 +213,13 @@ fn exec(cmd: &str, params: Value) -> Action {
 
 /// A click on a needle point selects it alone; Shift-click adds it or takes it away; a click on a
 /// stitch selects its two needle points; Alt-click on a needle point selects it as a click does.
+/// Where needle points are drawn, at the press.
 #[test]
 fn a_click_selects_a_needle_point_or_a_stitchs_two() {
     let (d, g, ids) = doc();
     let [a, _] = ids;
     let (s, p, f) = (Selection::default(), PaintDefaults::default(), Editing { needles: Some(needles(g, ids)), under: None });
-    let c = editing(&d, &s, &p, &f, g);
+    let c = ToolContext { zoom: NEEDLE_CIRCLES_MIN_ZOOM, ..editing(&d, &s, &p, &f, g) };
     let mut t = EmbroideryTool::default();
     let one = |k: usize, mode: &str| exec("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": a.0, "index": k}], "mode": mode}));
     assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 201.0, 101.0)), vec![one(1, "set")]);
@@ -232,6 +233,70 @@ fn a_click_selects_a_needle_point_or_a_stitchs_two() {
         t.pointer(&c, &ev(PointerKind::Down, 150.0, 101.0)),
         vec![exec("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": a.0, "index": 0}, {"id": a.0, "index": 1}], "mode": "set"}))]
     );
+}
+
+/// Below the zoom needle points are drawn from (the project owner's choice, 2026-10-31:
+/// „Przeciągnięcie rysuje ramkę”), a press on a needle point or a stitch not selected selects it
+/// only at the release, and a drag from it draws a marquee (Shift adds) and moves nothing; a drag
+/// from a needle point selected moves the selection. From that zoom a press selects at once and a
+/// drag moves what it pressed.
+#[test]
+fn below_the_circles_zoom_a_drag_from_what_isnt_selected_draws_a_marquee() {
+    let (d, g, ids) = doc();
+    let [a, _] = ids;
+    let (none, p, f) = (Selection::default(), PaintDefaults::default(), Editing { needles: Some(needles(g, ids)), under: None });
+    // 249 %, the last zoom below the circles' 250 %.
+    let below = NEEDLE_CIRCLES_MIN_ZOOM - 0.01;
+    let select = |p: Value| exec("embroidery.selectNeedlePoints", p);
+    let one = |k: usize, mode: &str| select(json!({"needlePoints": [{"id": a.0, "index": k}], "mode": mode}));
+    let mm = |v: f64| v / (72.0 / 25.4);
+    let c = ToolContext { zoom: below, ..editing(&d, &none, &p, &f, g) };
+    let mut t = EmbroideryTool::default();
+    // A click: selected at the release; Shift-click, added then.
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 200.0, 100.0)), vec![], "nothing at the press");
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 200.0, 100.0)), vec![one(1, "set")]);
+    assert_eq!(t.pointer(&c, &with(PointerKind::Down, 300.0, 100.0, SHIFT)), vec![]);
+    assert_eq!(t.pointer(&c, &with(PointerKind::Up, 300.0, 100.0, SHIFT)), vec![one(2, "toggle")]);
+    // A click on a stitch: its two needle points, at the release.
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 150.0, 100.0)), vec![]);
+    assert_eq!(
+        t.pointer(&c, &ev(PointerKind::Up, 150.0, 100.0)),
+        vec![select(json!({"needlePoints": [{"id": a.0, "index": 0}, {"id": a.0, "index": 1}], "mode": "set"}))]
+    );
+    // A drag from a needle point not selected: a marquee from the press, nothing moved.
+    t.pointer(&c, &ev(PointerKind::Down, 200.0, 100.0));
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Drag, 260.0, 160.0)), vec![], "no move begun");
+    assert_eq!(t.options()["stitches"]["marquee"], json!([200.0, 100.0, 260.0, 160.0]));
+    assert!(!t.wants_ticks(), "nothing to preview");
+    assert_eq!(
+        t.pointer(&c, &ev(PointerKind::Up, 260.0, 160.0)),
+        vec![select(json!({"rect": [mm(200.0), mm(100.0), mm(260.0), mm(160.0)], "mode": "set"}))]
+    );
+    // From a stitch whose needle points aren't selected, with Shift: a marquee that adds.
+    t.pointer(&c, &with(PointerKind::Down, 150.0, 100.0, SHIFT));
+    t.pointer(&c, &with(PointerKind::Drag, 150.0, 260.0, SHIFT));
+    assert_eq!(
+        t.pointer(&c, &with(PointerKind::Up, 150.0, 260.0, SHIFT)),
+        vec![select(json!({"rect": [mm(150.0), mm(100.0), mm(150.0), mm(260.0)], "mode": "add"}))]
+    );
+    // Escape drops a press that waits: nothing selected at the release.
+    t.pointer(&c, &ev(PointerKind::Down, 200.0, 100.0));
+    assert!(t.claims_key(&c, ToolKey::Escape));
+    t.key(&c, ToolKey::Escape, Mods::default());
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 200.0, 100.0)), vec![], "dropped by Escape");
+    // A drag from a needle point selected (drawn, as the selection is): the selection moves.
+    let s = selected(a, &[(0, 1)]);
+    let c = ToolContext { zoom: below, ..editing(&d, &s, &p, &f, g) };
+    let mut t = EmbroideryTool::default();
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 200.0, 100.0)), vec![]);
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Drag, 220.0, 100.0)), vec![Action::Begin("Move Needle Points".into())]);
+    assert_eq!(t.options()["stitches"]["marquee"], Value::Null);
+    // At 250 %: selected at the press, and a drag moves it.
+    let c = ToolContext { zoom: NEEDLE_CIRCLES_MIN_ZOOM, ..editing(&d, &none, &p, &f, g) };
+    let mut t = EmbroideryTool::default();
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 200.0, 100.0)), vec![one(1, "set")]);
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Drag, 220.0, 100.0)), vec![Action::Begin("Move Needle Points".into())]);
+    assert_eq!(t.options()["stitches"]["marquee"], Value::Null);
 }
 
 /// A press on a needle point selected already keeps the selection (a drag moves them all); let go

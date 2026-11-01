@@ -23,11 +23,9 @@ use vectorcraft_tools::embroidery::Refusal;
 use crate::VectorcraftApp;
 use crate::theme::Tokens;
 
-/// The zoom from which needle points show as circles (the project owner's choice, 2026-10-27:
-/// „nakłucia jako dwutonowe kółka od 250 %”): where a 1 mm stitch shows its two circles apart. The
-/// view's own zoom, the stitches' size on screen (7 pt a millimetre): with Preferences › Display
-/// Print Size on, the zoom field shows another percent for it (187.5 % on a display at 100 %).
-pub const NEEDLE_CIRCLES_MIN_ZOOM: f64 = 2.5;
+/// The zoom from which needle points show as circles, the tool's (below it a press on what isn't
+/// selected selects it at the release, so that a drag from it draws a marquee).
+pub use vectorcraft_tools::embroidery::NEEDLE_CIRCLES_MIN_ZOOM;
 
 /// Room between the chip and the canvas's left edge, and under isolation mode's bar, points.
 const INSET: f32 = 10.0;

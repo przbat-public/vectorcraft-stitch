@@ -246,8 +246,10 @@ Isolate is on, as for the Selection tool) isolates the object and switches to
 the stitch view: the rest of the design fades, the object's stitches are drawn 1 pt wide over it,
 and from 250 % zoom each needle point is a two-tone circle. With the Embroidery Tool, a click on a
 needle point selects it (Shift-click adds or takes it away), a click on a stitch its two needle
-points, a double-click its run; a drag from where nothing lies draws a marquee, and the Lasso tool
-selects by a shape. Dragging moves the selected needle points (past 20,000 of them the stitches
+points, a double-click its run; a drag from where nothing lies draws a marquee, and so, below 250 %
+where needle points aren't drawn, does a drag from a needle point or a stitch not selected (a click
+there still selects it, at the release); the Lasso tool selects by a shape. Dragging moves the
+selected needle points (past 20,000 of them the stitches
 follow on a pause or on release, the selection's box moving with the pointer meanwhile); the
 arrows move them 0.1 mm, with Shift 1 mm; `[` and `]` step to the needle point before or after;
 Alt-click on a stitch inserts a needle point there; Delete merges the stitches either side.

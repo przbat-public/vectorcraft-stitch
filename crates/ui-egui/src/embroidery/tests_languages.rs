@@ -582,3 +582,22 @@ fn the_editing_hint_is_in_every_language() {
         }
     }
 }
+
+/// The Polish words the project owner chose for stitch editing hold as chosen: Edit Stitches and
+/// the chip's title (the plan's decisions table), and the actions' „Dodaj cięcie” and „Dodaj stop”
+/// on the Contextual Task Bar with their ≡ menu forms (2026-10-31: „„Dodaj cięcie” / „Dodaj stop”
+/// (polecam)”). Changing one in the catalogue fails here, not only English left in it.
+#[test]
+fn the_owners_polish_words_for_stitch_editing() {
+    let pl = Lang::from_code("pl").unwrap();
+    for (english, polish) in [
+        ("Edit Stitches", "Edytuj ściegi"),
+        ("Editing stitches", "Edycja ściegów"),
+        ("Trim", "Dodaj cięcie"),
+        ("Stop", "Dodaj stop"),
+        ("Trim After the Selected Needle Points", "Dodaj cięcie po zaznaczonych nakłuciach"),
+        ("Stop After the Selected Needle Points", "Dodaj stop po zaznaczonych nakłuciach"),
+    ] {
+        assert_eq!(crate::i18n::tr_ctx(pl, crate::embroidery::text::CONTEXT, english), polish, "{english}");
+    }
+}

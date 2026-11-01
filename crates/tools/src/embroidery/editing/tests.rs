@@ -298,11 +298,7 @@ fn shift_keeps_45_degrees_and_a_drag_back_to_the_start_keeps_nothing() {
     t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0));
     t.pointer(&c, &ev(PointerKind::Drag, 110.0, 100.0));
     t.pointer(&c, &ev(PointerKind::Drag, 100.0, 100.0));
-    assert_eq!(
-        t.pointer(&c, &ev(PointerKind::Up, 100.0, 100.0)),
-        vec![Action::Begin("Move Needle Points".into()), Action::Cancel].split_off(1),
-        "never previewed: cancelled"
-    );
+    assert_eq!(t.pointer(&c, &ev(PointerKind::Up, 100.0, 100.0)), vec![Action::Cancel], "never previewed: cancelled");
 }
 
 /// Up to the project owner's 20,000 needle points selected ([`LIVE_DRAG_POINTS_MAX`]), a drag

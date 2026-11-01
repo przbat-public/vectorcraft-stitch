@@ -406,7 +406,19 @@ fn the_stitches_tab_in_every_language() {
             let mut app = app_with_findings();
             let drawn = stitches_tab(&mut app, &ctx, width);
             let names = names(&app, lang);
+            // Each state reached, by what only it draws: the hint with nothing selected, the first
+            // row of the whole design, the planned square's foot, and the edited one's Move by.
+            let marks = [
+                crate::et!("Select objects to list their stitches.").to_string(),
+                crate::embroidery::numbers::count(lang, 1),
+                crate::et!("Planned from the shape: convert the object to manual stitches to edit them.").to_string(),
+                crate::et!("Move by").to_string(),
+            ];
             crate::i18n::set_current(Lang::EN);
+            assert_eq!(drawn.len(), marks.len(), "{}: the states", info.code);
+            for (state, (texts, mark)) in drawn.iter().zip(&marks).enumerate() {
+                assert!(texts.iter().any(|(t, _)| t == mark), "{} at {width}, state {state}: {mark:?} isn't drawn", info.code);
+            }
             let panel = Rect::from_min_max(Pos2::new(WINDOW - width, 0.0), Pos2::new(WINDOW, HEIGHT - 24.0));
             for (state, texts) in drawn.iter().enumerate() {
                 let inside: Vec<&(String, Rect)> = texts.iter().filter(|(_, r)| panel.intersects(*r)).collect();

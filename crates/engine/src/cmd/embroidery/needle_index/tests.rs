@@ -260,7 +260,10 @@ fn repeated_and_nested_roots_are_walked_once() {
     let doc = s.doc().unwrap().doc.clone();
     let layers: Vec<NodeId> = doc.layers.iter().map(|l| l.id).collect();
     let alone = NeedleIndex::of(&doc, &layers, None).unwrap();
-    assert!(alone.scope().refused.total() >= 2, "the fixture's locked and hidden runs: {:?}", alone.scope());
+    let mut locked_and_hidden = vectorcraft_tools::embroidery::Refused::default();
+    locked_and_hidden.add(vectorcraft_tools::embroidery::Refusal::Locked);
+    locked_and_hidden.add(vectorcraft_tools::embroidery::Refusal::Locked);
+    assert_eq!(alone.scope().refused, locked_and_hidden, "the fixture's locked and hidden runs, and no other: {:?}", alone.scope());
     let mut roots: Vec<NodeId> = layers.iter().copied().cycle().take(layers.len() * 300).collect();
     roots.extend([NodeId(m.converted.group), NodeId(m.one_point), NodeId(u64::MAX), NodeId(m.locked), NodeId(m.hidden)]);
     roots.extend(&layers);

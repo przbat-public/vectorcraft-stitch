@@ -135,6 +135,25 @@ fn the_open_tab_is_read_leniently() {
         let s: Settings = serde_json::from_value(saved.clone()).unwrap();
         assert_eq!((s.tab, s.part), (tab, part), "{saved}");
     }
+    // The Stitches tab's scope and filter: written by their ids under their own names and read
+    // back so; anything else reads as the first of each.
+    use stitches::Scope;
+    use vectorcraft_engine::cmd::embroidery::stitch_list::Filter;
+    for (scope, filter) in [(Scope::Design, Filter::Jumps), (Scope::Selection, Filter::Long)] {
+        let written = serde_json::to_value(Settings { stitches_scope: scope, stitches_filter: filter, ..Settings::default() }).unwrap();
+        assert_eq!((&written["stitchesScope"], &written["stitchesFilter"]), (&json!(scope.id()), &json!(filter.id())), "{written}");
+        let read: Settings = serde_json::from_value(written.clone()).unwrap();
+        assert_eq!((read.stitches_scope, read.stitches_filter), (scope, filter), "{written}");
+    }
+    for saved in [
+        json!({"stitchesScope": "everything", "stitchesFilter": "knots"}),
+        json!({"stitchesScope": 5, "stitchesFilter": {"jumps": true}}),
+        json!({"stitchesScope": null, "stitchesFilter": ["trims"]}),
+        json!({"stitches_scope": "design", "stitches_filter": "jumps"}),
+    ] {
+        let s: Settings = serde_json::from_value(saved.clone()).unwrap();
+        assert_eq!((s.stitches_scope, s.stitches_filter), (Scope::Selection, Filter::All), "{saved}");
+    }
     // Whatever is saved for the panel, the rest of the interface's state loads.
     let mut ui = serde_json::to_value(crate::state::UiState::default()).unwrap();
     ui["recent_files"] = json!(["kept.svg"]);

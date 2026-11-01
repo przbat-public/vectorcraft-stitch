@@ -11,8 +11,8 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+use std::cell::Cell;
 use std::sync::Once;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use proptest::prelude::*;
 use serde_json::json;
@@ -23,17 +23,20 @@ use vectorcraft_testkit::embroidery as fx;
 use vectorcraft_testkit::invariants::check_session;
 use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
-/// The panics the engine caught since the sweep began: a tool's Preview that fails is only logged,
-/// so the sweep counts every panic through the panic hook, which still runs when the engine catches
-/// one.
-static CAUGHT: AtomicUsize = AtomicUsize::new(0);
+thread_local! {
+    /// The panics the engine caught on this thread since the sweep began: a tool's Preview that
+    /// fails is only logged, so the sweep counts every panic through the panic hook, which still runs
+    /// when the engine catches one, on the thread that panicked (the engine's work runs on the
+    /// caller's), so a test running beside the sweep counts none of its own here.
+    static CAUGHT: Cell<usize> = const { Cell::new(0) };
+}
 
 fn count_panics() {
     static HOOK: Once = Once::new();
     HOOK.call_once(|| {
         let printed = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |info| {
-            CAUGHT.fetch_add(1, Ordering::SeqCst);
+            CAUGHT.with(|c| c.set(c.get() + 1));
             printed(info);
         }));
     });
@@ -179,7 +182,7 @@ proptest! {
         steps in prop::collection::vec(arb_step(), 1..40),
     ) {
         count_panics();
-        let caught = CAUGHT.load(Ordering::SeqCst);
+        let caught = CAUGHT.with(Cell::get);
         let (mut s, objects) = fixture();
         // A second document, to switch to and back.
         no_panic(s.execute("file.new", &json!({"width": 100, "height": 100, "artboards": 1})))?;
@@ -273,7 +276,7 @@ proptest! {
         }
         no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, 0.0, 0.0), view))?;
         no_panic(s.tool_key(ToolKey::Escape, Mods::default(), view))?;
-        prop_assert_eq!(CAUGHT.load(Ordering::SeqCst), caught, "a panic was caught (a Preview's, say) after {:?}", steps);
+        prop_assert_eq!(CAUGHT.with(Cell::get), caught, "a panic was caught (a Preview's, say) after {:?}", steps);
         prop_assert!(!s.in_interaction(), "a drag left open after {steps:?}");
         prop_assert!(check_session(&s).is_ok());
     }

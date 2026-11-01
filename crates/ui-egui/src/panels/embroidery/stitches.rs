@@ -64,6 +64,12 @@ const MIN_LIST: f32 = 6.0 * ROW_HEIGHT;
 /// hasn't, points (the canvas's selection rings' weights).
 const FOCUS_RING_PT: f32 = 2.0;
 const FOCUS_QUIET_PT: f32 = 1.0;
+/// The tab's dim words' colour in theme `t`: the theme's, lifted where it needs to be to read by
+/// 4.5:1 on the panel (12 pt words), as every dim word of the fork's panels is.
+pub(crate) fn dim(t: &Tokens) -> Color32 {
+    marks::readable_text(t.text_dim, &[t.panel], t.dark)
+}
+
 /// The corners of the list's outline while it has the keyboard, points.
 const LIST_ROUND: u8 = 2;
 
@@ -393,7 +399,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         }
         (None, Some((_, last))) => Shown { stale: true, ..last.clone() },
         (None, None) => {
-            ui.label(egui::RichText::new(crate::et!("Listing stitches…")).size(TEXT).color(t.text_dim));
+            ui.label(egui::RichText::new(crate::et!("Listing stitches…")).size(TEXT).color(dim(&t)));
             let editing = crate::embroidery::editing::editing(app);
             foot_ui(app, ui, editing, &Listed::default(), lang, &t);
             return;
@@ -417,7 +423,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         for (k, f) in Filter::ALL.into_iter().enumerate() {
             let count = listed.counts.get(k).copied().unwrap_or(0);
             let (words, named) = chip_words(f, count, &limits, lang);
-            let text = egui::RichText::new(words).size(TEXT).color(if count == 0 && f != filter { t.text_dim } else { t.text });
+            let text = egui::RichText::new(words).size(TEXT).color(if count == 0 && f != filter { dim(&t) } else { t.text });
             let resp = ui.selectable_label(f == filter, text);
             resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::RadioButton, true, f == filter, &named));
             if resp.on_hover_text(&named).clicked() {

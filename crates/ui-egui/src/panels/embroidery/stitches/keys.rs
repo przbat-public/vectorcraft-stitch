@@ -233,7 +233,7 @@ pub(super) fn go_to(app: &mut VectorcraftApp, ui: &mut Ui, uid: u64, listed: &Li
         go = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
     });
     if let Some(s) = said {
-        ui.label(egui::RichText::new(s).size(TEXT).color(Tokens::get(ui.ctx()).text_dim));
+        ui.label(egui::RichText::new(s).size(TEXT).color(dim(&Tokens::get(ui.ctx()))));
     }
     let d = app.embroidery.stitches.docs.entry(uid).or_default();
     d.goto = text.clone();

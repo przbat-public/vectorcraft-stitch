@@ -1221,3 +1221,19 @@ fn the_list_is_one_grid_that_follows_the_keys() {
     let rows = update.nodes.iter().filter(|(_, n)| n.role() == Role::Row);
     assert!(rows.clone().all(|(_, n)| !n.supports_action(Action::Focus)), "no row is a Tab stop");
 }
+
+/// The tab's dim words (the column heads, the empty filters, Listing stitches…, Go to's answer and
+/// the foot's hints) read by 4.5:1 on the panel in every theme.
+#[test]
+fn the_dim_words_read_in_every_theme() {
+    use crate::theme::{Accent, Brightness, Scheme, Tokens};
+    for scheme in Scheme::ALL {
+        for b in Brightness::ALL {
+            for accent in Accent::ALL {
+                let t = Tokens::for_scheme(scheme, b, accent);
+                let ratio = crate::embroidery::marks::contrast(super::dim(&t), t.panel);
+                assert!(ratio >= crate::embroidery::marks::TEXT_CONTRAST - 0.01, "{scheme:?} {b:?} {accent:?}: {ratio}");
+            }
+        }
+    }
+}

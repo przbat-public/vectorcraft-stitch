@@ -118,7 +118,7 @@ pub(super) fn foot_ui(
                 crate::menus::invoke(app, id, params);
             }
         } else {
-            ui.label(egui::RichText::new(crate::et!("Click a row or a needle point to select it.")).size(TEXT).color(t.text_dim));
+            ui.label(egui::RichText::new(crate::et!("Click a row or a needle point to select it.")).size(TEXT).color(dim(t)));
         }
         return;
     }
@@ -132,9 +132,7 @@ pub(super) fn foot_ui(
         }
     } else if planned && listed.span.is_some() {
         ui.label(
-            egui::RichText::new(crate::et!("Planned from the shape: convert the object to manual stitches to edit them."))
-                .size(TEXT)
-                .color(t.text_dim),
+            egui::RichText::new(crate::et!("Planned from the shape: convert the object to manual stitches to edit them.")).size(TEXT).color(dim(t)),
         );
         let label = super::super::command_label(app, "embroidery.convertToManual");
         if ui.add(egui::Button::new(label).wrap()).clicked() {

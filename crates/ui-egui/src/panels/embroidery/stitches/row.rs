@@ -170,12 +170,12 @@ pub(super) fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
         if k == KIND && columns.layout != Layout::Words {
             continue;
         }
-        let mut job = egui::text::LayoutJob::simple_singleline(head.to_string(), egui::FontId::proportional(TEXT), t.text_dim);
+        let mut job = egui::text::LayoutJob::simple_singleline(head.to_string(), egui::FontId::proportional(TEXT), dim(t));
         job.wrap =
             egui::text::TextWrapping { max_width: (w - 2.0 * CELL_PAD).max(0.0), max_rows: 1, break_anywhere: true, overflow_character: Some('…') };
         let galley = ui.painter().layout_job(job);
         let size = galley.size();
-        ui.painter().galley(at.right_center() - vec2(CELL_PAD + size.x, size.y / 2.0), galley, t.text_dim);
+        ui.painter().galley(at.right_center() - vec2(CELL_PAD + size.x, size.y / 2.0), galley, dim(t));
     }
     ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(HAIRLINE, t.divider));
 }

@@ -263,6 +263,13 @@ proptest! {
             if !s.in_interaction() {
                 prop_assert!(check_session(&s).is_ok(), "{:?} after {step:?}", check_session(&s));
             }
+            // What is being edited, asked after every step as the interface asks it after every
+            // change: never more selected than the object holds, record numbers only of a
+            // selection.
+            if let Some(e) = s.stitch_editing(view) {
+                prop_assert!(e.selected <= e.scope.needles, "{} selected of {} after {step:?}", e.selected, e.scope.needles);
+                prop_assert!(e.ends.is_none() || e.selected > 0, "the ends of nothing selected after {step:?}");
+            }
         }
         no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, 0.0, 0.0), view))?;
         no_panic(s.tool_key(ToolKey::Escape, Mods::default(), view))?;

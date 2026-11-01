@@ -839,7 +839,7 @@ fn a_move_inside_of_exactly_the_jump_length_is_one_stitch() {
     let outlines: Vec<&SubPath> = subs.iter().collect();
     let mut travels = Travels::new(Area { outlines: &outlines, rule: FillRule::NonZero, grid: None });
     let p = Params::for_style(Style::Fill).sane();
-    let mut runs = Runs::from(None);
+    let mut runs = Runs::from(None, &p);
     runs.push(vec![Point::new(1.0, 5.0)], Travel::Sew);
     let here = Point::new(1.0, 5.0);
     let to = here + Vec2::new(p.jump, 0.0);
@@ -985,7 +985,7 @@ fn the_moves_counted_are_the_moves_sewn() {
             let p = Params { underlay, ..Params::for_style(Style::Fill) }.sane();
             let runs = fill::fill_runs(shape, FillRule::NonZero, &p, Aim::from_needle(None));
             let moves = runs.moves;
-            let out = runs.join(&p);
+            let out = runs.join();
             let count = |c: Command| out.iter().filter(|s| s.command == c).count();
             assert_eq!(moves.lifts, count(Command::Jump), "{name}, underlay {underlay:?}: lifts");
             assert_eq!(moves.trims, count(Command::Trim), "{name}, underlay {underlay:?}: cuts");
@@ -995,12 +995,13 @@ fn the_moves_counted_are_the_moves_sewn() {
     }
 }
 
-/// A lead that must jump (no way inside from where the needle goes in to the first row: across
-/// the gap between two squares, 0.35 mm) ties on first with a stitch that stays inside, here turned
-/// a quarter turn from the row along the square's edge, and the needle jumps from that stitch's
-/// end, 1.06 mm from the row: counted so, the lift is one, as `Runs::join` sews it. Counted from
-/// where the needle went in, the move is shorter than the shortest stitch and is none, and an aimed
-/// plan that lifts once more passes the guard toward an exit as no worse.
+/// A lead that must jump (no way inside from where the needle goes in to the first row: two squares
+/// 0.2 mm apart, the needle in one 0.35 mm from the row in the other) ties on first with a stitch
+/// that stays inside, here turned a quarter turn from the row along the square's edge, and the
+/// needle jumps from that stitch's end, 1.06 mm from the row: counted so, the lift is one, as
+/// `Runs::join` sews it. Counted from where the needle went in, the move is shorter than the
+/// shortest stitch and is none, and an aimed plan that lifts once more passes the guard toward an
+/// exit as no worse.
 #[test]
 fn a_leads_lift_is_counted_from_its_tie_stitch() {
     use super::area::{Area, Travels};
@@ -1014,16 +1015,199 @@ fn a_leads_lift_is_counted_from_its_tie_stitch() {
     let p = Params { underlay: Underlay::None, ..Params::for_style(Style::Fill) }.sane();
     let (here, to) = (Point::new(9.95, 5.0), Point::new(10.3, 5.0));
     assert!(here.distance(to) < p.min_stitch, "a move too short to lift for");
-    let mut runs = Runs::from(None);
+    let mut runs = Runs::from(None, &p);
     runs.lead_from(here, None);
     assert_eq!(runs.approach(&mut travels, to, to, f64::INFINITY, &|_| 0.0, &p), Travel::Lift);
     runs.push(vec![to, Point::new(15.0, 5.0), Point::new(19.0, 5.0)], Travel::Lift);
     let moves = runs.moves;
-    let out = runs.join(&p);
+    let out = runs.join();
     let jumps = out.iter().filter(|s| s.command == Command::Jump).count();
     assert_eq!(jumps, 1, "the needle jumps from the tie stitch's end: {out:?}");
     assert_eq!(moves.lifts, jumps, "lifts counted");
     assert_eq!(moves.trims, 0, "no cut");
+}
+
+/// The shortest stitches the sweeps below plan with, millimetres: the default and longer ones, up
+/// toward the top of its range (3 mm), where `Runs::join` leaves out more of the points planned.
+const SHORTEST_STITCHES: [f64; 4] = [0.4, 1.0, 1.5, 2.5];
+
+/// How far past a shape's bounds the sweeps' starts and exits lie (millimetres), and how many of
+/// them lie along each side of the grid they make.
+const SWEEP_MARGIN: f64 = 2.0;
+const SWEEP_GRID: usize = 5;
+
+/// Point `(i, j)` of a [`SWEEP_GRID`] by [`SWEEP_GRID`] grid over `b` grown by [`SWEEP_MARGIN`].
+fn sweep_point(b: vectorcraft_geom::Rect, i: usize, j: usize) -> Point {
+    let last = (SWEEP_GRID - 1) as f64;
+    let (w, h) = (b.width() + 2.0 * SWEEP_MARGIN, b.height() + 2.0 * SWEEP_MARGIN);
+    Point::new(b.x0 - SWEEP_MARGIN + w * i as f64 / last, b.y0 - SWEEP_MARGIN + h * j as f64 / last)
+}
+
+/// Where a sweep starts a shape: from nowhere, and from each point of the grid over it
+/// ([`sweep_point`]) as an entry point (a lead, without underlay) and as where the needle is.
+fn sweep_starts(b: vectorcraft_geom::Rect) -> Vec<Start> {
+    let mut starts = vec![Start::Nowhere];
+    for i in 0..SWEEP_GRID {
+        for j in 0..SWEEP_GRID {
+            starts.push(Start::Entry(sweep_point(b, i, j)));
+            starts.push(Start::Needle(sweep_point(b, i, j)));
+        }
+    }
+    starts
+}
+
+/// An outline that crosses itself, found by `prop_plan`'s exit property: its first rows lie across
+/// the crossing from where the plain plan starts, so a lead there must jump (`tests/prop_plan.rs`'s
+/// `a_lead_whose_tie_stitch_turns_away_lifts_no_more_toward_an_exit`).
+fn crossed() -> BezPath {
+    let mut p = BezPath::new();
+    p.move_to((63.36266559615397, 185.33820763106368));
+    p.line_to((118.04835245024549, 47.30949329697991));
+    p.curve_to((118.04835245024549, 47.30949329697991), (148.5465550693259, 56.134504663611125), (125.18563732144057, 56.134504663611125));
+    p.line_to((159.63820341722754, 129.12404958621005));
+    p.curve_to((159.63820341722754, 129.12404958621005), (39.75410442147457, 4.8641282708484805), (68.0219208638132, 13.301219126152619));
+    p.curve_to((82.52915567621409, 31.67083694357511), (63.36266559615397, 185.33820763106368), (63.36266559615397, 185.33820763106368));
+    p.close_path();
+    p
+}
+
+/// Three corners, a small loop by the first: the other outline the exit property found ([`crossed`]).
+fn looped() -> BezPath {
+    let mut p = BezPath::new();
+    p.move_to((16.460968339368534, 76.52400440854944));
+    p.curve_to((16.460968339368534, 83.31999079496487), (128.75683586839207, 72.38719493829879), (128.75683586839207, 72.38719493829879));
+    p.line_to((96.01805626449706, 167.60918571206832));
+    p.curve_to((92.15850251002615, 167.60918571206832), (25.565015044542825, 63.408316908392464), (16.460968339368534, 76.52400440854944));
+    p.close_path();
+    p
+}
+
+/// Two squares 10 mm wide side by side, `gap` mm apart (none of the fill's travels cross a gap).
+fn two_squares(gap: f64) -> (String, BezPath) {
+    let mut two = rect(0.0, 0.0, 10.0, 10.0);
+    two.extend(rect(10.0 + gap, 0.0, 10.0, 10.0));
+    (format!("two squares {gap} mm apart"), two)
+}
+
+/// A ring: a rectangle with a square hole.
+fn ring() -> (String, BezPath) {
+    let mut ring = rect(0.0, 0.0, 40.0, 30.0);
+    ring.extend(polygon([(13.0, 13.0), (13.0, 17.0), (17.0, 17.0), (17.0, 13.0)]));
+    ("ring".into(), ring)
+}
+
+/// An L, its arms 6 mm wide.
+fn l_shape() -> (String, BezPath) {
+    ("L".into(), polygon([(0.0, 0.0), (30.0, 0.0), (30.0, 6.0), (6.0, 6.0), (6.0, 30.0), (0.0, 30.0)]))
+}
+
+/// The moves a fill counts are the moves it sews, `Runs::join`'s jumps and cuts, from any start
+/// (nowhere, the needle, an entry point and so a lead), toward any exit or none, with underlay or
+/// none, at any shortest stitch ([`SHORTEST_STITCHES`]): the guard toward an exit compares counts,
+/// so a miscount lets an aimed plan that lifts more pass. Counted from a run's last point, as they
+/// were, two squares 0.45 or 0.8 mm apart counted a lift they don't sew and an L missed one it sews,
+/// at a 1.5 mm shortest stitch: `join` leaves out an edge run's last stitch shorter than that, and
+/// the next move starts where it leaves the needle.
+///
+/// The shapes lift, cut and travel: two squares at gaps from 0.05 mm (under any shortest stitch) to
+/// 12 mm (past the trim length), a ring and an L, from every start; and the two outlines that cross
+/// themselves ([`crossed`], [`looped`]) from nowhere, where a fill toward its exit leads from where
+/// the plain one starts. (`the_moves_counted_are_the_moves_sewn` sews a comb.)
+#[test]
+fn the_moves_counted_are_the_moves_sewn_from_any_start_toward_any_exit() {
+    use vectorcraft_geom::Shape;
+    let mut shapes: Vec<((String, BezPath), bool)> = [0.05, 0.35, 0.45, 0.8, 4.0, 12.0].into_iter().map(|gap| (two_squares(gap), true)).collect();
+    shapes.extend([(ring(), true), (l_shape(), true), (("crossed".into(), crossed()), false), (("looped".into(), looped()), false)]);
+    let mut wrong: Vec<String> = Vec::new();
+    let mut plans = 0usize;
+    for ((name, shape), every_start) in shapes {
+        let b = shape.bounding_box();
+        let starts = if every_start { sweep_starts(b) } else { vec![Start::Nowhere] };
+        for underlay in [Underlay::None, Underlay::Auto] {
+            for min_stitch in SHORTEST_STITCHES {
+                let p = Params { underlay, min_stitch, ..Params::for_style(Style::Fill) }.sane();
+                for &start in &starts {
+                    for exit in [None, Some(Point::new(b.x1, b.y1))] {
+                        let runs = fill::fill_runs(&shape, FillRule::NonZero, &p, Aim { start, exit });
+                        let moves = runs.moves;
+                        let out = runs.join();
+                        plans += 1;
+                        let count = |c: Command| out.iter().filter(|s| s.command == c).count();
+                        let (jumps, cuts) = (count(Command::Jump), count(Command::Trim));
+                        if (moves.lifts, moves.trims) != (jumps, cuts) {
+                            wrong.push(format!(
+                                "{name}, underlay {underlay:?}, shortest {min_stitch} mm, {start:?}, exit {exit:?}: {} lifts and {} cuts counted, {jumps} and {cuts} sewn",
+                                moves.lifts, moves.trims
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{} of {plans} plans count other moves than they sew:\n{}", wrong.len(), wrong.join("\n"));
+}
+
+/// Toward an exit, a fill as sewn lifts the needle and cuts the thread no more often than without
+/// it, the move in from the needle counted as the sequence joins objects (a lift past the jump
+/// length, a cut past the trim length), and ends no farther from the exit: what the guard promises,
+/// from any start, toward exits all round (the grid's corners and the middles of its sides), with
+/// underlay or none, at any shortest stitch ([`SHORTEST_STITCHES`]), on squares apart, a ring, an L
+/// and a U. (`prop_plan`'s exit properties draw shapes at random, at the default shortest stitch
+/// only.)
+#[test]
+fn an_exit_never_makes_a_fill_worse_as_sewn() {
+    use vectorcraft_geom::Shape;
+    let u = polygon([(0.0, 0.0), (6.0, 0.0), (6.0, 20.0), (14.0, 20.0), (14.0, 0.0), (20.0, 0.0), (20.0, 26.0), (0.0, 26.0)]);
+    let mut shapes: Vec<(String, BezPath)> = [0.3, 0.8, 4.0].into_iter().map(two_squares).collect();
+    shapes.extend([ring(), l_shape(), ("U".into(), u)]);
+    // Lifts and cuts as sewn, the move in from `from` counted, and the last needle point.
+    let judged = |out: &[Stitch], from: Option<Point>, p: &Params| {
+        let mut lifts = out.iter().filter(|s| s.command == Command::Jump).count();
+        let mut cuts = out.iter().filter(|s| s.command == Command::Trim).count();
+        if let (Some(a), Some(first)) = (from, out.iter().find(|s| s.command == Command::Stitch)) {
+            let d = a.distance(first.point());
+            lifts += usize::from(d > p.jump);
+            cuts += usize::from(d > p.trim);
+        }
+        (lifts, cuts, out.iter().rev().find(|s| s.command == Command::Stitch).map(|s| s.point()))
+    };
+    let mut worse: Vec<String> = Vec::new();
+    let mut plans = 0usize;
+    for (name, shape) in &shapes {
+        let b = shape.bounding_box();
+        let (mid, last) = (SWEEP_GRID / 2, SWEEP_GRID - 1);
+        let round = [(0, 0), (mid, 0), (last, 0), (last, mid), (last, last), (mid, last), (0, last), (0, mid)];
+        let exits: Vec<Point> = round.into_iter().map(|(i, j)| sweep_point(b, i, j)).collect();
+        for underlay in [Underlay::None, Underlay::Auto] {
+            for min_stitch in SHORTEST_STITCHES {
+                let p = Params { underlay, min_stitch, ..Params::for_style(Style::Fill) }.sane();
+                for start in sweep_starts(b) {
+                    let from = match start {
+                        Start::Needle(q) => Some(q),
+                        _ => None,
+                    };
+                    let (lifts, cuts, end) = judged(&fill::fill(shape, FillRule::NonZero, &p, Aim { start, exit: None }), from, &p);
+                    for &exit in &exits {
+                        let (aimed_lifts, aimed_cuts, aimed_end) =
+                            judged(&fill::fill(shape, FillRule::NonZero, &p, Aim { start, exit: Some(exit) }), from, &p);
+                        plans += 1;
+                        let farther = match (end, aimed_end) {
+                            (Some(a), Some(b)) => b.distance(exit) > a.distance(exit) + crate::SAME_POINT,
+                            (Some(_), None) => true,
+                            _ => false,
+                        };
+                        if aimed_lifts > lifts || aimed_cuts > cuts || farther {
+                            worse.push(format!(
+                                "{name}, underlay {underlay:?}, shortest {min_stitch} mm, {start:?}, exit {exit:?}: {aimed_lifts} lifts, {aimed_cuts} cuts, end {aimed_end:?} toward it; {lifts}, {cuts}, {end:?} without"
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(worse.is_empty(), "{} of {plans} aimed plans are worse as sewn:\n{}", worse.len(), worse.join("\n"));
 }
 
 /// Shapes whose regions branch (a U, combs, rings, an H) are sewn in one go at any angle, underlay

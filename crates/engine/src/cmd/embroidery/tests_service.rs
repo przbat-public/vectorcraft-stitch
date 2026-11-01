@@ -289,7 +289,7 @@ fn apply(s: &mut Session, ids: &mut Vec<u64>, opts: &mut Options, e: &Edit) {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]
 
     /// A plan made with the stitches and areas kept from the plans before it, after every edit, is
     /// the plan made afresh, whatever the cache had room for.

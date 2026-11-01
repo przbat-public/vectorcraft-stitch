@@ -263,6 +263,25 @@ mod tests {
     use super::*;
     use crate::embroidery::{PartKey, PartKind, PartValue};
 
+    /// The seed this crate's property suite runs with unless `PROPTEST_RNG_SEED` is set: the one
+    /// the fork's other suites run with (`vectorcraft_testkit::embroidery::proptest_config`, out of
+    /// reach here: the test kit depends on this crate).
+    const PROPTEST_SEED: u64 = 0x5717_c4ed;
+
+    /// `cases` cases from [`PROPTEST_SEED`], so that a CI run never fails at random, as the test
+    /// kit gives the fork's other suites: explore further locally with `PROPTEST_CASES` and
+    /// `PROPTEST_RNG_SEED`, and keep a minimal failure found that way as a test of its own.
+    fn seeded(cases: u32) -> ProptestConfig {
+        let mut c = ProptestConfig { failure_persistence: None, ..ProptestConfig::default() };
+        if std::env::var_os("PROPTEST_CASES").is_none() {
+            c.cases = cases;
+        }
+        if std::env::var_os("PROPTEST_RNG_SEED").is_none() {
+            c.rng_seed = proptest::test_runner::RngSeed::Fixed(PROPTEST_SEED);
+        }
+        c
+    }
+
     /// A turn by `degrees` counter-clockwise on the page, about the origin (the document's y axis
     /// points down, so in its coordinates the turn is clockwise).
     fn turn(degrees: f64) -> Affine {
@@ -541,7 +560,7 @@ mod tests {
     }
 
     proptest! {
-        #![proptest_config(ProptestConfig { cases: 256, failure_persistence: None, ..ProptestConfig::default() })]
+        #![proptest_config(seeded(256))]
 
         /// A transform followed by its inverse gives the settings back.
         #[test]

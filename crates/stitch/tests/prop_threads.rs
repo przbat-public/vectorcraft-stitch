@@ -28,7 +28,7 @@ fn arb_thread() -> impl Strategy<Value = Thread> {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 512, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(512))]
 
     #[test]
     fn each_block_gets_a_thread_by_the_rules(palette in arb_palette(), threads in prop::collection::vec(arb_thread(), 1..8)) {

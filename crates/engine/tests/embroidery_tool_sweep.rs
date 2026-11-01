@@ -151,7 +151,7 @@ fn fixture() -> (Session, fx::Points, Vec<u64>) {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 48, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(48))]
 
     #[test]
     fn the_embroidery_tool_never_breaks_a_session(

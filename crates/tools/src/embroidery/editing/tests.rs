@@ -604,13 +604,21 @@ fn the_cursors_and_options_while_editing() {
     let (d, g, ids) = doc();
     let [a, _] = ids;
     let (s, p, f) = (selected(a, &[(0, 0)]), PaintDefaults::default(), Editing { needles: Some(needles(g, ids)), under: None });
-    let c = editing(&d, &s, &p, &f, g);
+    // Where needle points are drawn.
+    let c = ToolContext { zoom: NEEDLE_CIRCLES_MIN_ZOOM, ..editing(&d, &s, &p, &f, g) };
     let mut t = EmbroideryTool::default();
     assert_eq!(t.cursor(&c, Point::new(100.0, 100.0), Mods::default()), Cursor::EmbroideryPoint);
     assert_eq!(t.cursor(&c, Point::new(150.0, 100.0), Mods::default()), Cursor::EmbroideryPoint);
     assert_eq!(t.cursor(&c, Point::new(150.0, 100.0), ALT), Cursor::PenAdd);
     assert_eq!(t.cursor(&c, Point::new(100.0, 100.0), ALT), Cursor::EmbroideryPoint, "Alt on a point: a click");
     assert_eq!(t.cursor(&c, Point::new(550.0, 550.0), Mods::default()), Cursor::Embroidery);
+    // Below them, over what isn't selected a drag draws a marquee: the tool's own cursor there, the
+    // point cursor over a needle point selected, and Alt on a stitch still inserts.
+    let below = ToolContext { zoom: NEEDLE_CIRCLES_MIN_ZOOM - 0.01, ..editing(&d, &s, &p, &f, g) };
+    assert_eq!(t.cursor(&below, Point::new(100.0, 100.0), Mods::default()), Cursor::EmbroideryPoint, "selected");
+    assert_eq!(t.cursor(&below, Point::new(200.0, 100.0), Mods::default()), Cursor::Embroidery, "not selected");
+    assert_eq!(t.cursor(&below, Point::new(150.0, 100.0), Mods::default()), Cursor::Embroidery, "a stitch not selected whole");
+    assert_eq!(t.cursor(&below, Point::new(150.0, 100.0), ALT), Cursor::PenAdd);
     t.pointer(&c, &ev(PointerKind::Move, 100.0, 100.0));
     assert_eq!(t.options()["stitches"]["hover"], json!({"needlePoint": {"id": a.0, "index": 0}}));
     t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0));

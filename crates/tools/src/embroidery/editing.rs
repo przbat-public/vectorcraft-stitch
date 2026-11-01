@@ -552,7 +552,8 @@ impl Editing {
 
     /// The cursor while editing: the point cursor over a needle point or a stitch and while dragging
     /// them, the Pen's add cursor with Alt over a stitch (a click inserts there), the tool's own
-    /// elsewhere (a drag draws a marquee).
+    /// elsewhere (a drag draws a marquee), and so below the zoom needle points are drawn from over
+    /// what isn't selected, where a drag draws a marquee too.
     pub fn cursor(&self, cx: &ToolContext, needles: &dyn NeedlePoints, p: Point, mods: Mods) -> Cursor {
         if self.drag.is_some() {
             return Cursor::EmbroideryPoint;
@@ -560,8 +561,10 @@ impl Editing {
         if self.marquee.is_some() {
             return Cursor::Embroidery;
         }
-        match Self::under(cx, needles, p) {
+        let under = Self::under(cx, needles, p);
+        match under {
             Some(Hover::Thread(..)) if mods.alt => Cursor::PenAdd,
+            Some(_) if Self::waits(cx, needles, under, mods).is_some() => Cursor::Embroidery,
             Some(_) => Cursor::EmbroideryPoint,
             None => Cursor::Embroidery,
         }

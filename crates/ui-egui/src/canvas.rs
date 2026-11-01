@@ -3599,7 +3599,7 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
     // VectorCraft Stitch: the stitch actions while the Embroidery Tool edits stitches.
     let stitch_items = crate::embroidery::task_bar::items(app);
     if !on_artboards
-        && stitch_items.is_none()
+        && stitch_items.is_none() // VectorCraft Stitch: not while the stitch actions show.
         && (app.session.active().is_none_or(|st| st.selection.is_empty())
             || !matches!(app.session.tool_id(), "selection" | "directSelection" | "groupSelection"))
     {

@@ -2,8 +2,8 @@
 //! the selected needle points, the stitch actions in place of upstream's (the project owner's
 //! choice, 2026-10-27: the actions live in the Contextual Task Bar, the Stitches tab and the menus,
 //! not in a bar of their own). Each runs its stitch command on the selection, one undo step. The
-//! bar is upstream's, reached by three marked lines in `canvas.rs` (the hook list in FORK.md); it
-//! hides itself while a drag is under way, as always.
+//! bar is upstream's, reached by five marked places in `canvas.rs`'s `task_bar` (13 lines in, 4 out;
+//! the hook list in FORK.md); it hides itself while a drag is under way, as always.
 
 use serde_json::{Value, json};
 

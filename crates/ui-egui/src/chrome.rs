@@ -1166,12 +1166,8 @@ pub fn hint_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     vec![(crate::dialogs::revolve_gizmo::hint(d).into(), false)]
                 } else {
                     let tool = app.session.tool_id();
-                    // VectorCraft Stitch: the Embroidery Tool's hint while it edits stitches.
-                    let hint = if tool == "zoom" && crate::canvas::animated_zoom(&app.session.prefs) {
-                        ANIMATED_ZOOM_HINT
-                    } else {
-                        crate::embroidery::tool_bar::hint_id(app, tool)
-                    };
+                    let tool = crate::embroidery::tool_bar::hint_id(app, tool); // VectorCraft Stitch: the hint while stitches are edited.
+                    let hint = if tool == "zoom" && crate::canvas::animated_zoom(&app.session.prefs) { ANIMATED_ZOOM_HINT } else { tool };
                     hint_segments(hint)
                 };
                 for (txt, bold) in segments {

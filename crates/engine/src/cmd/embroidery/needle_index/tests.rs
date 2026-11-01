@@ -515,8 +515,8 @@ fn the_session_finds_needle_points_by_the_index_it_keeps() {
 }
 
 /// Editing ends out of the stitch view, with the tool still in isolation: the needle points kept
-/// for the document (and the snapshot they hold) go then, not when the tool does. Outline draws the
-/// stitches still: editing goes on there.
+/// for the document (and the snapshot they hold) go then, not when the tool does, and so with the
+/// Lasso tool, which keeps editing's look. Outline draws the stitches still: editing goes on there.
 #[test]
 fn the_needle_points_kept_go_when_editing_ends_with_the_stitch_view() {
     let mut s = Session::new();
@@ -533,6 +533,13 @@ fn the_needle_points_kept_go_when_editing_ends_with_the_stitch_view() {
     run(&mut s, "view.stitchPreview", json!({"on": true}));
     assert!(s.stitch_editing(crate::ViewInfo { outline: true, ..view }).is_some(), "Outline");
     assert_eq!(s.embroidery_plans.kept_needles(), 1);
+    // The Lasso tool: kept in the stitch view, gone out of it.
+    s.select_tool(vectorcraft_tools::embroidery::LASSO, view).unwrap();
+    assert!(s.stitch_editing(view).is_some(), "the Lasso keeps editing's answers");
+    assert_eq!(s.embroidery_plans.kept_needles(), 1);
+    run(&mut s, "view.stitchPreview", json!({"on": false}));
+    assert!(s.stitch_editing(view).is_none());
+    assert_eq!(s.embroidery_plans.kept_needles(), 0, "the stitch view turned off with the Lasso");
 }
 
 /// A path of many short runs (one needle point a run, as a machine file may hold millions of, a run

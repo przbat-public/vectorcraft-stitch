@@ -399,7 +399,12 @@ impl super::service::Services {
         // in the stitch view alone, and the plan's (the record numbers) only as the Embroidery Tool
         // kept them, never built for it: putting that tool away lets them go, and nothing would
         // let go of the Lasso's.
-        if lasso && !(drawn && st.isolation.and_then(|i| st.doc.node(i)).is_some_and(vectorcraft_tools::embroidery::contains_stitches)) {
+        if lasso && !drawn {
+            // Out of the stitch view nothing is edited: what stitch editing kept goes, as below.
+            self.drop_needles(st.uid);
+            return None;
+        }
+        if lasso && !st.isolation.and_then(|i| st.doc.node(i)).is_some_and(vectorcraft_tools::embroidery::contains_stitches) {
             return None;
         }
         let facts =

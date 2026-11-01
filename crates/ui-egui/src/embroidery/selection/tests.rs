@@ -661,8 +661,9 @@ fn an_alt_click_on_a_later_runs_stitch_inserts_into_that_run() {
 }
 
 /// An app editing one run of `n` needle points (rows of a hundred a millimetre apart, two
-/// millimetres between rows, back and forth), in a group of its own → the app and the run.
-fn editing_run(n: usize) -> (VectorcraftApp, NodeId) {
+/// millimetres between rows, back and forth), in a group of its own → the app and the run. The
+/// Stitches tab's tests use it too.
+pub(crate) fn editing_run(n: usize) -> (VectorcraftApp, NodeId) {
     const ROW: usize = 100;
     let mut app = VectorcraftApp::new(Session::new(), Services::default());
     app.embroidery.preview.pin_light();

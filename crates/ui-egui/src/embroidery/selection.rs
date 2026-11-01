@@ -559,4 +559,4 @@ fn draw_bubble(
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

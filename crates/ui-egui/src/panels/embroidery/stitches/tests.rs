@@ -1278,3 +1278,156 @@ fn the_list_is_split_into_pages_past_its_rows() {
     assert_eq!(pages::rows(2, 450_000), 450_000..450_000, "a page past the last holds none");
     assert_eq!((pages::of(per - 1), pages::of(per), pages::of(449_999)), (0, 1, 1));
 }
+
+/// The stitch actions run when clicked where the interface offers them: the panel's ≡ menu (Trim
+/// After the Selected Needle Points adds a cut after the needle point) and the tab's foot (Delete
+/// deletes it).
+#[test]
+fn the_menu_and_the_foot_run_the_stitch_actions() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 3}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let click =
+        |node| Event::AccessKitActionRequest(ActionRequest { action: Action::Click, target_node: node, target_tree: TreeId::ROOT, data: None });
+    // The ≡ menu, drawn as the panel draws it.
+    let menu = |app: &mut VectorcraftApp, events: Vec<Event>| {
+        let mut out = ctx.run_ui(egui::RawInput { events, ..Default::default() }, |ui| super::super::menu(app, ui));
+        out.textures_delta.clear();
+        let tree = out.platform_output.accesskit_update.expect("a tree");
+        tree.nodes.iter().map(|(id, n)| (*id, n.label().unwrap_or_default().trim().to_string())).collect::<Vec<_>>()
+    };
+    let cuts = |app: &mut VectorcraftApp| {
+        app.run("embroidery.stitches", json!({"ids": [id], "kinds": ["trim"], "limit": 0})).unwrap()["matchedCount"].as_u64()
+    };
+    let before = cuts(&mut app);
+    let items = menu(&mut app, vec![]);
+    let trim = items.iter().find(|(_, l)| l == "Trim After the Selected Needle Points").map(|(n, _)| *n).expect("the menu's Trim");
+    menu(&mut app, vec![click(trim)]);
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(cuts(&mut app), before.map(|n| n + 1), "a cut after the needle point");
+    // The foot's Delete.
+    let count = |app: &VectorcraftApp| {
+        app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths.iter().map(|s| s.anchors.len()).sum::<usize>()
+    };
+    let anchors = count(&app);
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let delete = nodes.iter().find(|n| n.1 == Role::Button && n.2 == "Delete").map(|n| n.0).expect("the foot's Delete");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![click(delete)]);
+    settle(&mut app, &ctx, &mut time);
+    assert!(count(&app) < anchors, "the needle point deleted: {anchors} → {}", count(&app));
+}
+
+/// Move by Y moves the selected needle points down by the millimetres typed, and not sideways.
+#[test]
+fn move_by_y_moves_them_down() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 2}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let at = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[2].p;
+    let before = at(&app);
+    let field = nodes.iter().find(|n| n.2 == "Move by Y").map(|n| n.0).expect("the Move by Y field");
+    time += 0.05;
+    frame(
+        &mut app,
+        &ctx,
+        time,
+        vec![Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None })],
+    );
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text("0.5".into()), key(Key::Enter)]);
+    settle(&mut app, &ctx, &mut time);
+    let after = at(&app);
+    assert!(
+        (after.y - before.y - vectorcraft_engine::cmd::embroidery::mm_to_pt(0.5)).abs() < 1e-6 && (after.x - before.x).abs() < 1e-9,
+        "{before:?} → {after:?}"
+    );
+}
+
+/// The tab never builds its records' flags itself: until the planning thread has built them it
+/// says it is listing, whatever the frames; a walk of them cancelled is never kept.
+#[test]
+fn the_flags_come_from_the_planning_thread_and_a_cancelled_walk_is_dropped() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    let held = crate::embroidery::stitch_preview::Held::default();
+    app.embroidery.preview = crate::embroidery::stitch_preview::StitchPreview::with_runner(Box::new(held.clone()));
+    app.run("file.new", json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    app.run("shape.rectangle", json!({"x": 60, "y": 60, "width": 120, "height": 90})).unwrap();
+    app.run("ui.embroideryPanel", json!({"tab": "object"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    held.release();
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    assert!(app.embroidery.preview.shown(uid).is_some(), "a plan shown");
+    // The tab opened: its flags asked of the planning thread, which holds them.
+    app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "design"})).unwrap();
+    let mut listing = false;
+    for _ in 0..4 {
+        time += 0.05;
+        let (shapes, _) = frame(&mut app, &ctx, time, vec![]);
+        listing |= shapes.iter().any(|s| matches!(s, Shape::Text(t) if t.galley.text() == "Listing stitches…"));
+    }
+    let limits = super::limits_of(&app).unwrap();
+    let planned = app.embroidery.preview.shown(uid).unwrap().planned.clone();
+    assert!(listing && planned.built_stitch_flags(&limits).is_none(), "the tab waits for the planning thread's flags");
+    held.release();
+    settle(&mut app, &ctx, &mut time);
+    assert!(planned.built_stitch_flags(&limits).is_some(), "built on the planning thread");
+    // A walk of the flags cancelled is never kept.
+    let other = vectorcraft_engine::cmd::embroidery::StitchLimits::of(
+        &app.session.active().unwrap().doc,
+        Some(vectorcraft_engine::cmd::embroidery::Format::Dst),
+    );
+    let cancelled = vectorcraft_engine::doc::cancel::CancelToken::new();
+    cancelled.cancel();
+    drop(vectorcraft_engine::doc::cancel::scope(&cancelled, None, || planned.stitch_flags(&other)));
+    assert!(planned.built_stitch_flags(&other).is_none(), "a cancelled walk is never kept");
+}
+
+/// A Shift range takes at most [`super::RANGE_MAX`] rows (Shift+End from the first row of a longer
+/// list): those rows' needle points selected, as the command selects them by their records, and
+/// the status saying no more were.
+#[test]
+fn a_shift_range_past_its_limit_takes_its_first_rows_and_says_so() {
+    let points = super::RANGE_MAX + 10;
+    let (mut app, run) = crate::embroidery::selection::tests::editing_run(points);
+    app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "selection", "filter": "all"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    assert!(list.len() > super::RANGE_MAX, "{} rows", list.len());
+    let (first, limit) = (list.record(0).unwrap(), list.record(super::RANGE_MAX - 1).unwrap());
+    app.run("embroidery.selectNeedlePoints", json!({"records": [first, limit]})).unwrap();
+    let wanted = app.session.active().unwrap().selection.anchors.get(&run).cloned().unwrap_or_default();
+    assert!(!wanted.is_empty() && wanted.len() < points, "{} of {points}", wanted.len());
+    app.run("select.none", json!({})).unwrap();
+    let at = row_at(&shapes, first);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    for e in [vec![Event::ModifiersChanged(Modifiers::SHIFT), key_with(Key::End, Modifiers::SHIFT)], vec![Event::ModifiersChanged(Modifiers::NONE)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+    }
+    // Compared whole, said by their counts and ends (a hundred thousand of them).
+    let got = app.session.active().unwrap().selection.anchors.get(&run).cloned().unwrap_or_default();
+    let said = |s: &std::collections::BTreeSet<_>| (s.len(), s.first().copied(), s.last().copied());
+    assert!(got == wanted, "the range's first rows' needle points: {:?} selected, {:?} wanted", said(&got), said(&wanted));
+    assert_eq!(app.ui.status, "Only the first 100,000 rows of the range are selected: a click selects no more.");
+}

@@ -45,6 +45,8 @@ const PLAN_IN_FRAMES: usize = 6;
 const MARQUEE_OUTSIDE: f32 = 24.0;
 /// Bytes in a megabyte, for the uploads' report.
 const BYTES_PER_MB: f64 = 1e6;
+/// Pointer moves along each side of the stitch-editing gate's lasso, a move a frame.
+const LASSO_SIDE_FRAMES: usize = 20;
 /// Edits timed per design.
 const EDITS: usize = 10;
 /// The window, points, and its pixels a point: a laptop's display.
@@ -825,7 +827,9 @@ type EditTick<'a> = dyn FnMut(&mut VectorcraftApp, Vec<Event>) -> (f64, u64, f64
 ///   frame), a marquee over half of it (its release frame timed), a drag of what it selected (a
 ///   million needle points: previewed only on a pause, the selection's box moving with the pointer,
 ///   planned at most once), its frames timed, then held still for the pause preview (its slowest
-///   frame printed), and one needle point dragged on its own, its frames printed.
+///   frame printed), and one needle point dragged on its own, its frames printed; then the Lasso
+///   tool round the marquee's box (upstream's per-anchor selection, the edit look kept: the project
+///   owner's choice, 2026-10-31), its frames and its release frame timed and what it sends measured.
 ///
 /// Each drag is checked to have moved its needle points, and a drag of one to have kept the
 /// selection: the gesture timed is the drag, not a marquee.
@@ -991,6 +995,39 @@ fn stitch_editing_gate() {
             tick(&mut app, vec![button(to, false)]);
             settle(&mut app, &mut tick);
             println!("{name}: one needle point dragged, a frame p95 {:.2} ms, max {:.2} ms", percentile(alone.clone(), 0.95), percentile(alone, 1.0));
+            // The Lasso tool round the marquee's box: each needle point tested against its loop at
+            // the release and named in the command it sends, as upstream's tool selects anchors.
+            app.run("select.none", json!({})).unwrap();
+            app.run("tool.select", json!({"tool": vectorcraft_tools::embroidery::LASSO})).unwrap();
+            settle(&mut app, &mut tick);
+            let corners = [from, egui::pos2(to.x, from.y), to, egui::pos2(from.x, to.y), from];
+            tick(&mut app, vec![Event::PointerMoved(from), button(from, true)]);
+            let mut looped = vec![];
+            for side in corners.windows(2) {
+                for k in 1..=LASSO_SIDE_FRAMES {
+                    let at = side[0].lerp(side[1], k as f32 / LASSO_SIDE_FRAMES as f32);
+                    looped.push(tick(&mut app, vec![Event::PointerMoved(at)]).0);
+                }
+            }
+            let released = tick(&mut app, vec![button(from, false)]).0;
+            settle(&mut app, &mut tick);
+            let st = app.session.active().unwrap();
+            let lassoed: usize = st.selection.anchors.values().map(std::collections::BTreeSet::len).sum();
+            // What it sent, as upstream's tool writes it: each path's anchors as [subpath, anchor].
+            let items: Vec<serde_json::Value> = st
+                .selection
+                .anchors
+                .iter()
+                .map(|(id, set)| json!({"id": id.0, "anchors": set.iter().map(|(s, a)| json!([s, a])).collect::<Vec<_>>()}))
+                .collect();
+            let sent = json!({"items": items, "mode": "set"}).to_string().len() as f64 / BYTES_PER_MB;
+            assert!(lassoed > vectorcraft_tools::embroidery::LIVE_DRAG_POINTS_MAX, "{name}: the Lasso selected {lassoed} needle points");
+            assert!(crate::embroidery::editing::editing(&mut app).is_some_and(|e| e.selected == lassoed), "{name}: the Lasso's selection edited");
+            println!(
+                "{name}: the Lasso round the same box: {lassoed} needle points selected; its frames p95 {:.2} ms, its release frame {released:.0} ms, {sent:.1} MB sent",
+                percentile(looped, 0.95)
+            );
+            app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
         }
         let (p50, p95, pmax) = (percentile(drag.clone(), 0.5), percentile(drag.clone(), 0.95), percentile(drag, 1.0));
         let per_frame = uploaded as f64 / DRAG_FRAMES as f64 / BYTES_PER_MB;

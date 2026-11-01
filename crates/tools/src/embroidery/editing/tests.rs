@@ -651,3 +651,12 @@ fn outside_editing_nothing_changes() {
     assert!(!t.claims_key(&c, ToolKey::BracketRight) && !t.claims_key(&c, ToolKey::Left));
     assert_eq!(t.pointer(&c, &ev(PointerKind::Down, 100.0, 100.0)), vec![exec("select.set", json!({"ids": [a.0]}))]);
 }
+
+/// The Lasso tool whose look stitch editing keeps is upstream's, named by its id; it and the
+/// Embroidery Tool edit stitches, no other tool does.
+#[test]
+fn the_lasso_is_upstreams_lasso_tool() {
+    assert_eq!(crate::create(LASSO).id(), LASSO);
+    assert!(edits_stitches(LASSO) && edits_stitches(super::super::ID));
+    assert!(!edits_stitches("directSelection") && !edits_stitches("selection"));
+}

@@ -138,12 +138,13 @@ impl crate::Session {
     }
 
     /// What stitch editing edits now (the embroidery tool working inside isolation of an object
-    /// holding paths of stitches, in the stitch view, `view`): the object, its paths of stitches and
-    /// needle points, how many of them are selected and the selection's first and last along the
-    /// thread with their record numbers in the plan shown; `None` while it isn't editing. Never
-    /// plans; walks the selected needle points once (the interface asks once a revision).
+    /// holding paths of stitches, in the stitch view, `view`, or the Lasso tool selecting needle
+    /// points there): the object, its paths of stitches and needle points, how many of them are
+    /// selected and the selection's first and last along the thread with their record numbers in
+    /// the plan shown; `None` while it isn't editing. Never plans; walks the selected needle points
+    /// once (the interface asks once a revision).
     pub fn stitch_editing(&mut self, view: crate::ViewInfo) -> Option<StitchEditing> {
-        if self.tool_id() != vectorcraft_tools::embroidery::ID {
+        if !vectorcraft_tools::embroidery::edits_stitches(self.tool_id()) {
             return None;
         }
         self.with_tool_cx(view, |_, cx| {
@@ -216,7 +217,7 @@ impl crate::Session {
     /// The needle points stitch editing keeps, while it edits (the embroidery tool's, in the stitch
     /// view, `view`).
     fn editing_index(&mut self, view: crate::ViewInfo) -> Option<Arc<NeedleIndex>> {
-        let editing = self.tool_id() == vectorcraft_tools::embroidery::ID
+        let editing = vectorcraft_tools::embroidery::edits_stitches(self.tool_id())
             && self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).is_some());
         editing.then(|| self.kept_needle_index()).flatten()
     }
@@ -226,7 +227,7 @@ impl crate::Session {
     /// holding it, selected whole) or those whose anchors it selects; `None` while it isn't
     /// editing. What the canvas draws the selection from.
     pub fn stitch_selected_paths(&mut self, view: crate::ViewInfo) -> Option<Vec<(NodeId, bool)>> {
-        if self.tool_id() != vectorcraft_tools::embroidery::ID {
+        if !vectorcraft_tools::embroidery::edits_stitches(self.tool_id()) {
             return None;
         }
         self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| n.selected_paths(cx.selection)))
@@ -248,7 +249,7 @@ impl crate::Session {
     /// Which of `ids` stitch editing edits now (the needle index holds them), in order; all `false`
     /// while it isn't editing. The Stitches tab selects only these from its rows.
     pub fn stitch_edits(&mut self, view: crate::ViewInfo, ids: &[NodeId]) -> Vec<bool> {
-        let held = if self.tool_id() == vectorcraft_tools::embroidery::ID {
+        let held = if vectorcraft_tools::embroidery::edits_stitches(self.tool_id()) {
             self.with_tool_cx(view, |_, cx| cx.embroidery.and_then(|f| f.needle_points()).map(|n| ids.iter().map(|id| n.holds(*id)).collect()))
         } else {
             None
@@ -388,11 +389,21 @@ impl super::service::Services {
     /// for another tool): from a plan already made with the stitch preview's options, and whether
     /// the canvas draws the stitches (`outline`: the outline view, which draws none).
     pub(crate) fn facts_now<'a>(&mut self, tool: &str, st: &'a crate::DocState, outline: bool) -> Option<FactsNow<'a>> {
-        if tool != vectorcraft_tools::embroidery::ID {
+        let lasso = tool == vectorcraft_tools::embroidery::LASSO;
+        if tool != vectorcraft_tools::embroidery::ID && !lasso {
             return None;
         }
-        let facts = self.tool_facts(st.uid, &super::Options::default());
         let drawn = super::view::layers(self.view(st.uid), super::view::paused(&st.doc), outline).stitches;
+        // The Lasso tool keeps stitch editing's look while it selects needle points (the project
+        // owner's choice, 2026-10-31): their answers inside isolation of an object holding stitches,
+        // in the stitch view alone, and the plan's (the record numbers) only as the Embroidery Tool
+        // kept them, never built for it: putting that tool away lets them go, and nothing would
+        // let go of the Lasso's.
+        if lasso && !(drawn && st.isolation.and_then(|i| st.doc.node(i)).is_some_and(vectorcraft_tools::embroidery::contains_stitches)) {
+            return None;
+        }
+        let facts =
+            if lasso { self.kept_tool_facts(st.uid, &super::Options::default()) } else { self.tool_facts(st.uid, &super::Options::default()) };
         // Needle points are edited where they are drawn: in the stitch view (out of it, editing
         // ended, those kept for the document go).
         let needles = if drawn {

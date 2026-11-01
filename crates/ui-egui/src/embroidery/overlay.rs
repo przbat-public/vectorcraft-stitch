@@ -74,9 +74,11 @@ type EndsKey = (u64, u64, Vec<NodeId>);
 type PendingKey = (u64, u64, u64);
 
 /// Whether the canvas draws only the selection's frame and the key object's outline: the Selection
-/// tool, or the embroidery tool (its handles over the stitches, no anchors), in the stitch view.
+/// tool, or the embroidery tool (its handles over the stitches, no anchors), in the stitch view; and
+/// the Lasso tool while it selects needle points there (stitch editing's look kept, no anchor
+/// squares over them).
 pub fn frame_only(app: &VectorcraftApp) -> bool {
-    app.embroidery.layer.drawn() && (app.session.tool_id() == "selection" || super::handles::active(app))
+    app.embroidery.layer.drawn() && (app.session.tool_id() == "selection" || super::handles::active(app) || super::editing::lasso_edits(app))
 }
 
 /// The active document's selected objects' ends in the plan shown, found again only when the

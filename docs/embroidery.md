@@ -248,8 +248,9 @@ and from 250 % zoom each needle point is a two-tone circle. With the Embroidery 
 needle point selects it (Shift-click adds or takes it away), a click on a stitch its two needle
 points, a double-click its run; a drag from where nothing lies draws a marquee, and so, below 250 %
 where needle points aren't drawn, does a drag from a needle point or a stitch not selected (a click
-there still selects it, at the release); the Lasso tool selects by a shape. Dragging moves the
-selected needle points (past 20,000 of them the stitches
+there still selects it, at the release); the Lasso tool selects the needle points inside its loop
+as it selects anchors, the edit look kept while it does (the circles, the selection drawn and its
+live check, no anchor squares). Dragging moves the selected needle points (past 20,000 of them the stitches
 follow on a pause or on release, the selection's box moving with the pointer meanwhile); the
 arrows move them 0.1 mm, with Shift 1 mm; `[` and `]` step to the needle point before or after;
 Alt-click on a stitch inserts a needle point there; Delete merges the stitches either side.
@@ -2696,7 +2697,10 @@ Limits:
   asks through `PlanFacts::needle_points()` (a trait the engine answers); record numbers come from
   the plan drawn only while it is of the path as it is.
 - **No mode of its own:** stitch editing is the Embroidery Tool while an object holding stitches is
-  isolated and the stitch view is on (`Session::stitch_editing`). The stitch layer draws the edit
+  isolated and the stitch view is on (`Session::stitch_editing`), and the Lasso tool there, which
+  keeps its look: the engine answers for it in `facts_now` (never building the plan's answers, which
+  only the Embroidery Tool lets go of), and the canvas leaves its anchor squares out
+  (`overlay::frame_only`). The stitch layer draws the edit
   look (`render::lines::EditLook`: the units edited thin and on top, needle points as circles from
   250 %, the limits' breakers marked) as part of its frame, keyed with the view; the selection is
   drawn by the canvas's controls from the document's selection, apart from it, so selecting draws no

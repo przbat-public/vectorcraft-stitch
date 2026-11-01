@@ -29,7 +29,9 @@ use vectorcraft_doc::hit::{HitKind, hit_test};
 use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
 pub(crate) use editing::Editing;
-pub use editing::{LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_CIRCLES_MIN_ZOOM, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, contains_stitches, stitch_object};
+pub use editing::{
+    LASSO, LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_CIRCLES_MIN_ZOOM, NEEDLE_STEP_MM, PAUSE_PREVIEW_SECS, contains_stitches, edits_stitches, stitch_object,
+};
 pub use facts::{
     FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, Refusal, Refused, SelectMode, SelectedSpan, ThreadHit,
 };

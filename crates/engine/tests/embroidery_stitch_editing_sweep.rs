@@ -326,8 +326,10 @@ fn a_drag_is_the_move_command() {
 }
 
 /// The lasso of stitch editing is the Lasso tool (the project owner's choice, 2026-10-27): in
-/// isolation of a converted object it selects the needle points inside its loop, and back with the
-/// Embroidery Tool they are being edited (a drag moves them).
+/// isolation of a converted object it selects the needle points inside its loop, which stitch
+/// editing counts while the Lasso is still the tool (its look kept, the owner's choice of
+/// 2026-10-31) but not out of the stitch view; back with the Embroidery Tool they are being edited
+/// (a drag moves them).
 #[test]
 fn the_lasso_tool_selects_needle_points_while_editing() {
     let (mut s, objects) = fixture();
@@ -356,6 +358,11 @@ fn the_lasso_tool_selects_needle_points_while_editing() {
     let inside = points.iter().filter(|p| p.x < mid).count();
     let selected: usize = s.doc().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum();
     assert!(inside > 0 && selected == inside, "the lasso selected {selected} of the {inside} anchors inside it");
+    let lassoed = s.stitch_editing(view).expect("the Lasso keeps stitch editing's answers");
+    assert_eq!(lassoed.selected, inside, "counted while the Lasso is the tool: {lassoed:?}");
+    s.execute("view.stitchPreview", &json!({"on": false})).unwrap();
+    assert!(s.stitch_editing(view).is_none(), "out of the stitch view the Lasso is upstream's");
+    s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
     s.select_tool("embroidery", view).unwrap();
     let editing = s.stitch_editing(view).expect("editing");
     assert_eq!(editing.selected, inside, "back with the Embroidery Tool, the lasso's needle points are selected: {editing:?}");

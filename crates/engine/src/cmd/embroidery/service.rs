@@ -711,6 +711,16 @@ impl Services {
         self.facts.len()
     }
 
+    /// The plan's answers for the tool when they are kept for the plan shown (or, without one, the
+    /// newest), never built.
+    pub(crate) fn kept_tool_facts(&self, uid: u64, opts: &Options) -> Option<Arc<super::tool::ToolFacts>> {
+        let generation = match self.shown.get(&uid) {
+            Some((_, planned)) => planned.generation,
+            None => self.plans.get(&uid)?.newest(opts)?.1.generation,
+        };
+        self.facts.get(&uid).filter(|f| f.generation == generation).cloned()
+    }
+
     /// The embroidery tool's answers for document `uid`: of the plan the interface draws of it
     /// ([`Services::show`]: what is drawn is what is caught), else, with no interface (an agent, a
     /// test), of the newest plan its service remembers of the whole document with `opts` (the stitch

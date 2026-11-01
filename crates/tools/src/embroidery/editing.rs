@@ -14,7 +14,8 @@
 //!   stitch not selected selects it only at the release, so that a drag from it draws a marquee
 //!   (the project owner's choice, 2026-10-31: „Przeciągnięcie rysuje ramkę”). `[` and `]` step to
 //!   the needle point before or after along the thread, alone selected (Shift adds it).
-//!   The lasso is the Lasso tool's, which selects needle points as it selects anchors in isolation.
+//!   The lasso is the Lasso tool's, which selects needle points as it selects anchors in isolation,
+//!   the edit look kept while it does ([`LASSO`]).
 //! - **Editing** (one undo step a gesture): a drag of selected needle points moves them in
 //!   [`NEEDLE_STEP_MM`] steps (the formats' grid), Shift at 45° steps from Constrain Angle, a preview
 //!   at most once a frame ([`crate::Tool::tick`]), and past [`LIVE_DRAG_POINTS_MAX`] selected only
@@ -58,6 +59,17 @@ pub const LIVE_DRAG_POINTS_MAX: usize = 20_000;
 /// How long a drag of many needle points rests before it previews, seconds: the stitch preview's
 /// pause before it plans a design slow to plan (`PAUSE_TO_PLAN_SECS`, 0.3 s, an estimate).
 pub const PAUSE_PREVIEW_SECS: f64 = 0.3;
+
+/// The Lasso tool's id (upstream's `xform::wand`). While stitches are edited it selects needle
+/// points as it selects anchors, through upstream's `select.anchorsMany`, and the edit look stays
+/// (the project owner's choice, 2026-10-31: „Wygląd edycji zostaje, Lasso bez zmian w upstreamie”).
+pub const LASSO: &str = "lasso";
+
+/// Whether tool `id` works on needle points while stitches are edited: the Embroidery Tool, or the
+/// Lasso tool selecting them.
+pub fn edits_stitches(id: &str) -> bool {
+    id == super::ID || id == LASSO
+}
 
 /// The zoom from which needle points are drawn as circles (the project owner's choice, 2026-10-27:
 /// „nakłucia jako dwutonowe kółka od 250 %”): where a 1 mm stitch shows its two circles apart. The

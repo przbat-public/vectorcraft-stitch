@@ -771,3 +771,62 @@ fn past_20000_stretched_the_live_check_says_updating_during_a_drag() {
     settle(&mut app, &ctx, &mut time);
     assert!(!updating(&mut app), "judged again once let go");
 }
+
+/// While stitches are edited the Lasso tool keeps the edit look (the project owner's choice,
+/// 2026-10-31: „Wygląd edycji zostaje, Lasso bez zmian w upstreamie”): a loop drawn with the mouse
+/// selects the needle points inside it, each drawn filled by the selection layer with none of
+/// upstream's anchor squares on it, the units edited drawn on top, and stitch editing counting
+/// them; out of the stitch view the Lasso is upstream's again.
+#[test]
+fn the_lasso_tool_keeps_the_edit_look() {
+    let (mut app, _) = editing();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    app.run("tool.select", json!({"tool": "lasso"})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    assert!(app.embroidery.layer.keeps_edited(), "the units edited drawn on top");
+    // A loop round the object's left part, with the mouse.
+    let corners = [Point::new(40.0, 40.0), Point::new(110.0, 40.0), Point::new(110.0, 170.0), Point::new(40.0, 170.0)];
+    let screen: Vec<Pos2> = corners.iter().map(|p| on_screen(&app, *p)).collect();
+    let mut events = vec![Event::PointerMoved(screen[0]), press(screen[0], true)];
+    events.extend(screen[1..].iter().chain([&screen[0]]).map(|p| Event::PointerMoved(*p)));
+    events.push(press(screen[0], false));
+    for e in events {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let shapes = settle(&mut app, &ctx, &mut time);
+    let st = app.session.active().unwrap();
+    let points: Vec<Point> = st
+        .selection
+        .anchors
+        .iter()
+        .flat_map(|(id, set)| {
+            let path = st.doc.node(*id).unwrap().path_data().unwrap().clone();
+            set.iter().map(move |&(s, a)| path.subpaths[s].anchors[a].p).collect::<Vec<_>>()
+        })
+        .collect();
+    let editing = crate::embroidery::editing::editing(&mut app).expect("editing while the Lasso is the tool");
+    assert!(!points.is_empty() && editing.selected == points.len(), "{} counted, {} selected", editing.selected, points.len());
+    assert!(crate::embroidery::overlay::frame_only(&app), "upstream's anchors left out");
+    for p in points {
+        let at = on_screen(&app, p);
+        assert!(
+            shapes.iter().any(|s| matches!(s, Shape::Circle(c) if c.center.distance(at) < 0.5 && c.fill != egui::Color32::TRANSPARENT)),
+            "the needle point at {at:?} drawn filled"
+        );
+        assert!(
+            !shapes.iter().any(|s| matches!(s, Shape::Rect(r) if r.rect.center().distance(at) < 0.5 && r.rect.width() <= ANCHOR_SQUARE_MAX_PT)),
+            "no anchor square at {at:?}"
+        );
+    }
+    // Out of the stitch view: upstream's Lasso, its anchors drawn.
+    app.run("view.stitchPreview", json!({"on": false})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    assert!(crate::embroidery::editing::editing(&mut app).is_none() && !crate::embroidery::overlay::frame_only(&app));
+}
+
+/// The widest upstream draws an anchor square, points: 5 at Selection & Anchor Display's default
+/// size, 4 more at its largest, and a point to spare.
+const ANCHOR_SQUARE_MAX_PT: f32 = 10.0;

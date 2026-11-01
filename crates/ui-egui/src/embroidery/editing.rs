@@ -13,6 +13,8 @@
 //!   a gesture is under way (a drag's previews move the revision every frame).
 //! - **Starting:** a double-click on a stitch object with the tool, or Edit Stitches (the Object
 //!   tab) ([`start`]): the object isolated, the tool taken up, the stitches shown.
+//! - **The Lasso tool** keeps the look while it selects needle points there ([`lasso_edits`]: the
+//!   project owner's choice, 2026-10-31: „Wygląd edycji zostaje, Lasso bez zmian w upstreamie”).
 
 use egui::{CornerRadius, FontId, Id, Rect, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::json;
@@ -70,7 +72,7 @@ pub fn editing(app: &mut VectorcraftApp) -> Option<StitchEditing> {
     let st = app.session.active()?;
     // A Cmd-press lends the Selection tool for the press: editing holds through it, as through a
     // gesture of its own.
-    let lent = app.session.lent_from() == Some(vectorcraft_tools::embroidery::ID);
+    let lent = app.session.lent_from().is_some_and(vectorcraft_tools::embroidery::edits_stitches);
     let (uid, revision, gesture) = (st.uid, st.revision, st.interaction.is_some() || lent);
     let shown = app.embroidery.preview.shown(uid).map(|s| s.planned.generation);
     let key =
@@ -212,6 +214,15 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) {
             app.status(e);
         }
     }
+}
+
+/// Whether the Lasso tool works inside isolation of an object holding stitches: in the stitch view
+/// it selects needle points there with stitch editing's look kept, upstream's anchor squares left
+/// out.
+pub fn lasso_edits(app: &VectorcraftApp) -> bool {
+    let Some(st) = app.session.active() else { return false };
+    app.session.tool_id() == vectorcraft_tools::embroidery::LASSO
+        && st.isolation.and_then(|i| st.doc.node(i)).is_some_and(vectorcraft_tools::embroidery::contains_stitches)
 }
 
 /// Whether the Embroidery Tool is the tool now, or lent the Selection tool for the press under way

@@ -21,8 +21,9 @@
 //! `Arc::make_mut`, which clones a shared object into a new allocation and otherwise dissociates
 //! the weak references (they no longer have a strong one); and unsafe code is denied
 //! workspace-wide. So an object at a live entry's address is the object as measured. The bounds of
-//! symbol instances and Repeats read the document's symbols: another set of symbols (by name and
-//! art) starts the measures over.
+//! symbol instances and Repeats (which count the instances nested in their source) read the
+//! document's symbols: when the symbols differ (by name and art), the bounds of the objects that
+//! show an instance or hold a Repeat, and of the containers holding them, are measured again.
 //!
 //! The entries mirror the last document measured, down to the objects measured whole (all but
 //! layers and groups without a clipping mask, and Intertwine groups, which `Node::visual_by`
@@ -34,7 +35,7 @@ use std::sync::{Arc, Weak};
 use vectorcraft_geom::{Rect, union_opt};
 
 use crate::id_index::IdMap;
-use crate::{Document, Node, NodeId, SymbolBoxes};
+use crate::{Document, Node, NodeId, NodeKind, SymbolBoxes};
 
 /// The visual bounds of a document's objects as last measured, which [`VisualBounds::art_bounds`]
 /// and [`VisualBounds::bounds_of`] measure again only where the document changed. They answer as
@@ -98,12 +99,12 @@ impl VisualBounds {
     }
 
     /// Brings the entries up to `doc`: those of the objects still at their address stand, the
-    /// others are measured again, all of them when the symbols changed.
+    /// others are measured again, and so are those that read the symbols when they changed.
     fn update(&mut self, doc: &Document, symbols: &SymbolBoxes) {
         let kept = self.symbols.iter().map(|(name, art)| (name.as_str(), live(art)));
         let same = kept.eq(doc.symbols.iter().map(|s| (s.name.as_str(), Arc::as_ptr(&s.art))));
         if !same {
-            self.layers.clear();
+            forget_symbol_readers(&mut self.layers);
             self.symbols = doc.symbols.iter().map(|s| (s.name.clone(), Arc::downgrade(&s.art))).collect();
         }
         let mut layers = LineUp::new(std::mem::take(&mut self.layers));
@@ -163,6 +164,34 @@ impl Entry {
         self.members = members.finish();
         self.node = Some(Arc::downgrade(n));
     }
+}
+
+/// Forgets the bounds of `entries` that read the symbols, so that they are measured again: an
+/// object measured whole that shows a symbol instance or holds a Repeat anywhere in it, and a
+/// container measured by its members when one of them reads them (a container's own part reads
+/// none). Its other members keep their entries. Returns whether any of `entries` reads them.
+fn forget_symbol_readers(entries: &mut [Entry]) -> bool {
+    let mut any = false;
+    for e in entries {
+        let reads = if e.members.is_empty() {
+            e.node.as_ref().and_then(Weak::upgrade).is_some_and(|n| shows_symbols(&n))
+        } else {
+            forget_symbol_readers(&mut e.members)
+        };
+        if reads {
+            e.node = None;
+            any = true;
+        }
+    }
+    any
+}
+
+/// Whether `n` or anything in it is a symbol instance or a Repeat, whose bounds read the document's
+/// symbols.
+fn shows_symbols(n: &Node) -> bool {
+    let mut found = false;
+    n.walk(&mut |c| found |= matches!(c.kind, NodeKind::SymbolInstance { .. } | NodeKind::Repeat(_)));
+    found
 }
 
 /// The address `w` refers to while it has a strong reference, else null, which no object's address

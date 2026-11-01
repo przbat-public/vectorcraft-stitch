@@ -109,10 +109,27 @@ fn adding_removing_and_restacking_measure_only_the_containers_and_whats_new() {
     doc.remove(group(&doc, 12).unwrap()).unwrap();
     expect(&mut cache, &doc, 1, "group removed");
     assert_eq!(cache.entries(), 2021 + 1 - 1 - 101);
-    // Another set of symbols: everything is measured again (instances measure by their art).
+    // Another set of symbols, with no instance and no Repeat in the design: nothing reads them.
     let art = zig_zag(&mut doc, 0.0, 0.0, 3, 1.0, 1.0);
     doc.symbols.push(Symbol { name: "A".into(), art: Arc::new(art) });
-    expect(&mut cache, &doc, 1920, "symbols changed");
+    expect(&mut cache, &doc, 0, "a symbol added");
+    // An instance of it added to a group: the instance, its group and the layer.
+    let instance = Node::new(doc.alloc_id(), NodeKind::SymbolInstance { symbol: "A".into(), xf: Affine::translate((300.0, 0.0)) });
+    doc.insert(group(&doc, 4), 7, instance).unwrap();
+    expect(&mut cache, &doc, 3, "an instance added");
+    // The symbol's art replaced: what reads the symbols, the instance and the containers on its
+    // way up, measured again; the 1,918 other objects keep their bounds.
+    let art = zig_zag(&mut doc, 0.0, 0.0, 5, 40.0, 3.0);
+    if let Some(s) = doc.symbols.first_mut() {
+        s.art = Arc::new(art);
+    }
+    expect(&mut cache, &doc, 3, "the symbol's art replaced");
+    assert_eq!(cache.entries(), 1921);
+    // Renamed: its instance no longer shows it (the 20 × 20 square stands in), measured again.
+    if let Some(s) = doc.symbols.first_mut() {
+        s.name = "B".into();
+    }
+    expect(&mut cache, &doc, 3, "the symbol renamed");
 }
 
 #[test]

@@ -64,6 +64,9 @@ const MIN_LIST: f32 = 6.0 * ROW_HEIGHT;
 /// hasn't, points (the canvas's selection rings' weights).
 const FOCUS_RING_PT: f32 = 2.0;
 const FOCUS_QUIET_PT: f32 = 1.0;
+/// The corners of the list's outline while it has the keyboard, points.
+const LIST_ROUND: u8 = 2;
+
 /// The most rows a Shift-click's range selects at once (the status line says so past it): the
 /// stitch commands' bound on a call's addresses is far above, this keeps one click's work and params
 /// small.
@@ -448,13 +451,19 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
                     ("total", &numbers::count(lang, total as u64)),
                 ],
             );
-            if ui.add_enabled(page > 0, egui::Button::new("‹")).on_hover_text(crate::et!("Previous rows")).clicked()
+            // The arrows named for screen readers by what they do, as their tooltips say it.
+            let arrow = |ui: &mut Ui, on: bool, glyph: &str, name: &'static str| {
+                let resp = ui.add_enabled(on, egui::Button::new(glyph)).on_hover_text(name);
+                ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(name));
+                resp.clicked()
+            };
+            if arrow(ui, page > 0, "‹", crate::et!("Previous rows"))
                 && let Some(d) = app.embroidery.stitches.docs.get_mut(&uid)
             {
                 d.page = page - 1;
             }
             ui.label(egui::RichText::new(words).size(TEXT));
-            if ui.add_enabled(page + 1 < pages, egui::Button::new("›")).on_hover_text(crate::et!("Next rows")).clicked()
+            if arrow(ui, page + 1 < pages, "›", crate::et!("Next rows"))
                 && let Some(d) = app.embroidery.stitches.docs.get_mut(&uid)
             {
                 d.page = page + 1;
@@ -464,13 +473,31 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     // The column heads, then the rows in view.
     let width = ui.available_width();
     let columns = Columns::fit(ui, width);
-    header(ui, &columns, &t);
     let in_page = (total - (page * MAX_SCROLLED_ROWS).min(total)).min(MAX_SCROLLED_ROWS);
     let drawn = *app.embroidery.stitches.foot.of(editing.is_some());
     let foot = if drawn > 0.0 { drawn } else { foot_height(editing.is_some()) };
     // Whole rows: none cut by the foot's words under the list.
-    let room = (((ui.available_height() - foot) / ROW_HEIGHT).floor() * ROW_HEIGHT).max(MIN_LIST);
+    let room = (((ui.available_height() - ROW_HEIGHT - foot) / ROW_HEIGHT).floor() * ROW_HEIGHT).max(MIN_LIST);
     let list_id = ui.id().with("embroidery-stitch-list");
+    // The list itself takes the keyboard's focus (a row clicked gives it), so its keys are its own:
+    // for screen readers it is the grid, its heads and rows under it and its row in focus its
+    // active descendant. Its node is made before theirs, which hang under the first ancestor with
+    // one.
+    let list_rect = Rect::from_min_size(ui.cursor().min, vec2(width, ROW_HEIGHT + room));
+    let list = ui.interact(list_rect, list_id, Sense::focusable_noninteractive());
+    ui.ctx().accesskit_node_builder(list_id, |node| {
+        node.set_role(egui::accesskit::Role::Grid);
+        node.set_label(crate::et!("Stitches"));
+        node.set_row_count(total);
+        node.set_column_count(columns.count());
+    });
+    // Under it, as a grid holds them: the heads in a row of their own, the rows in a group.
+    let under_list = || egui::UiBuilder::new().accessibility_parent(list_id);
+    let role = |ui: &Ui, role: egui::accesskit::Role| ui.ctx().accesskit_node_builder(ui.unique_id(), |node| node.set_role(role));
+    ui.scope_builder(under_list(), |ui| {
+        role(ui, egui::accesskit::Role::Row);
+        header(ui, &columns, &t);
+    });
     // Whether the list has the keyboard: its row in focus is ringed only then (its keys are the
     // list's), else marked quietly (they reach the canvas).
     let has_keys = ui.memory(|m| m.has_focus(list_id));
@@ -481,58 +508,66 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     if reveal && let Some(row) = focus.and_then(|f| listed.row_of(f)).filter(|r| r / MAX_SCROLLED_ROWS == page) {
         area = area.vertical_scroll_offset(((row % MAX_SCROLLED_ROWS) as f32 * ROW_HEIGHT - room / 2.0).max(0.0));
     }
-    let grid = list_id.with("grid");
-    ui.ctx().accesskit_node_builder(grid, |node| {
-        node.set_role(egui::accesskit::Role::Grid);
-        node.set_label(crate::et!("Stitches"));
-        node.set_row_count(total);
-        node.set_column_count(columns.count());
-    });
     // No spacing between rows, in the list as in egui's sums: it places a row and works out the
     // rows in view from its height plus the spacing of the ui it is given.
     let spacing = ui.spacing().item_spacing.y;
     ui.spacing_mut().item_spacing.y = 0.0;
+    let mut focus_row: Option<egui::Id> = None;
     let scrolled = area.show_rows(ui, ROW_HEIGHT, in_page, |ui, range| {
-        // The rows in view, each with whether the needle point it is edited by is selected: those
-        // asked of the session together, a look-up each.
-        let rows: Vec<(usize, usize, stitch_list::Row, Option<NeedleRef>)> = range
-            .filter_map(|i| {
-                let row_index = page * MAX_SCROLLED_ROWS + i;
-                let number = listed.record(row_index)?;
-                let row = stitch_list::row(&shown.plan, number)?;
-                let address = editing.and_then(|_| edited_by(app, &shown, row.unit, number, row.kind));
-                Some((row_index, number, row, address.map(|a| NeedleRef { id: a.node, index: a.index })))
-            })
-            .collect();
-        let edited: Vec<NeedleRef> = rows.iter().filter_map(|(.., n)| *n).collect();
-        let view = app.view_info();
-        let mut selected_now = app.session.stitch_needles_selected(view, &edited).into_iter();
-        for (row_index, number, row, address) in rows {
-            let selected = address.is_some() && selected_now.next().unwrap_or(false);
-            let (rect, resp) = ui.allocate_exact_size(vec2(width, ROW_HEIGHT), Sense::click());
-            let focus = match (focus == Some(number), has_keys) {
-                (false, _) => FocusMark::None,
-                (true, true) => FocusMark::Ring,
-                (true, false) => FocusMark::Quiet,
-            };
-            let look = RowLook { selected, focus, dimmed: shown.stale };
-            let words = draw_row(app, ui, rect, &shown.plan, &row, &columns, &flags, look, lang, &t);
-            ui.ctx().accesskit_node_builder(resp.id, |node| {
-                node.set_role(egui::accesskit::Role::Row);
-                node.set_row_index(row_index);
-                node.set_selected(selected);
-                node.set_label(words.clone());
-            });
-            if resp.double_clicked() {
-                clicked = Some((number, ui.input(|i| i.modifiers), true));
-            } else if resp.clicked() {
-                clicked = Some((number, ui.input(|i| i.modifiers), false));
+        ui.scope_builder(under_list(), |ui| {
+            role(ui, egui::accesskit::Role::RowGroup);
+            // The rows in view, each with whether the needle point it is edited by is selected: those
+            // asked of the session together, a look-up each.
+            let rows: Vec<(usize, usize, stitch_list::Row, Option<NeedleRef>)> = range
+                .filter_map(|i| {
+                    let row_index = page * MAX_SCROLLED_ROWS + i;
+                    let number = listed.record(row_index)?;
+                    let row = stitch_list::row(&shown.plan, number)?;
+                    let address = editing.and_then(|_| edited_by(app, &shown, row.unit, number, row.kind));
+                    Some((row_index, number, row, address.map(|a| NeedleRef { id: a.node, index: a.index })))
+                })
+                .collect();
+            let edited: Vec<NeedleRef> = rows.iter().filter_map(|(.., n)| *n).collect();
+            let view = app.view_info();
+            let mut selected_now = app.session.stitch_needles_selected(view, &edited).into_iter();
+            for (row_index, number, row, address) in rows {
+                let selected = address.is_some() && selected_now.next().unwrap_or(false);
+                // A click selects, a double-click shows, but the rows are no Tab stops: the list takes
+                // the keyboard, a row at a time.
+                let (rect, resp) = ui.allocate_exact_size(vec2(width, ROW_HEIGHT), Sense::CLICK);
+                if focus == Some(number) {
+                    focus_row = Some(resp.id);
+                }
+                let focus = match (focus == Some(number), has_keys) {
+                    (false, _) => FocusMark::None,
+                    (true, true) => FocusMark::Ring,
+                    (true, false) => FocusMark::Quiet,
+                };
+                let look = RowLook { selected, focus, dimmed: shown.stale };
+                let words = draw_row(app, ui, rect, &shown.plan, &row, &columns, &flags, look, lang, &t);
+                ui.ctx().accesskit_node_builder(resp.id, |node| {
+                    node.set_role(egui::accesskit::Role::Row);
+                    node.set_row_index(row_index);
+                    node.set_selected(selected);
+                    node.set_label(words.clone());
+                });
+                if resp.double_clicked() {
+                    clicked = Some((number, ui.input(|i| i.modifiers), true));
+                } else if resp.clicked() {
+                    clicked = Some((number, ui.input(|i| i.modifiers), false));
+                }
             }
-        }
+        })
     });
     ui.spacing_mut().item_spacing.y = spacing;
-    // The list itself takes the keyboard's focus (a row clicked gives it), so its keys are its own.
-    let list = ui.interact(scrolled.inner_rect, list_id, Sense::focusable_noninteractive());
+    if let Some(row) = focus_row {
+        ui.ctx().accesskit_node_builder(list_id, |node| node.set_active_descendant(row.accesskit_id()));
+    }
+    // Outlined while it has the keyboard: its keys are the list's then, not the canvas's.
+    if has_keys {
+        let around = egui::Rect::from_min_max(list_rect.min, scrolled.inner_rect.max);
+        ui.painter().rect_stroke(around, CornerRadius::same(LIST_ROUND), Stroke::new(FOCUS_RING_PT, t.accent), egui::StrokeKind::Inside);
+    }
     if clicked.is_some() || reveal {
         list.request_focus();
     }

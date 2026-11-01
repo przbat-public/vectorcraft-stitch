@@ -36,21 +36,7 @@ type Node = (egui::accesskit::NodeId, Role, String, Option<usize>, Option<bool>,
 /// One frame: the shortcuts, the panel on the right and the canvas → the shapes drawn and the
 /// accessibility tree's nodes.
 fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> (Vec<Shape>, Vec<Node>) {
-    let raw = egui::RawInput {
-        time: Some(time),
-        screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(1100.0, 700.0))),
-        events,
-        ..Default::default()
-    };
-    let mut out = ctx.run_ui(raw, |ui| {
-        app.logic(ui.ctx());
-        crate::shortcuts::handle(app, ui.ctx());
-        egui::Panel::right("embroidery-test").exact_size(300.0).resizable(false).show(ui, |ui| super::super::show(app, ui));
-        crate::canvas::show(app, ui);
-        crate::embroidery::canvas_controls(app, ui);
-        crate::embroidery::stitch_preview::schedule(app, ui.ctx());
-    });
-    out.textures_delta.clear();
+    let out = output(app, ctx, time, events);
     let nodes = out
         .platform_output
         .accesskit_update
@@ -70,6 +56,26 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
         }
     }
     (all, nodes)
+}
+
+/// One frame, as [`frame`] runs it → all it gave.
+fn output(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> egui::FullOutput {
+    let raw = egui::RawInput {
+        time: Some(time),
+        screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(1100.0, 700.0))),
+        events,
+        ..Default::default()
+    };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::shortcuts::handle(app, ui.ctx());
+        egui::Panel::right("embroidery-test").exact_size(300.0).resizable(false).show(ui, |ui| super::super::show(app, ui));
+        crate::canvas::show(app, ui);
+        crate::embroidery::canvas_controls(app, ui);
+        crate::embroidery::stitch_preview::schedule(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    out
 }
 
 fn context() -> egui::Context {
@@ -129,8 +135,10 @@ fn the_tab_lists_the_selections_records_once() {
     let (_, list) = app.embroidery.stitches.list.as_ref().expect("the rows listed");
     assert_eq!(list.len(), want);
     assert_eq!(list.counts[0], want, "All");
-    let rows: Vec<_> = nodes.iter().filter(|n| n.1 == Role::Row).collect();
-    assert!(!rows.is_empty() && rows.iter().all(|r| r.3.is_some() && r.2.starts_with("Record ")), "{rows:?}");
+    // The records' rows, and the heads' row (no index, no words of its own).
+    let (rows, heads): (Vec<_>, Vec<_>) = nodes.iter().filter(|n| n.1 == Role::Row).partition(|n| n.3.is_some());
+    assert!(!rows.is_empty() && rows.iter().all(|r| r.2.starts_with("Record ")), "{rows:?}");
+    assert_eq!(heads.len(), 1, "{heads:?}");
     let builds = app.embroidery.stitches.builds;
     for k in 0..10 {
         time += 0.05;
@@ -1172,4 +1180,44 @@ fn a_closed_documents_rows_go_with_it() {
     settle(&mut app, &ctx, &mut time);
     let kept = &app.embroidery.stitches;
     assert!(kept.list.is_none() && kept.numbering.is_none() && kept.drawn.is_none() && !kept.docs.contains_key(&uid), "gone with it");
+}
+
+/// For screen readers the list is one grid, its column heads and the rows in view under it, which
+/// takes the keyboard (a row clicked gives it), named, its row in focus its active descendant: ↓
+/// moves that to the next row. The rows are no Tab stops of their own.
+#[test]
+fn the_list_is_one_grid_that_follows_the_keys() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let (first, next) = (list.record(2).unwrap(), list.record(3).unwrap());
+    let at = row_at(&shapes, first);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::ArrowDown)]);
+    time += 0.05;
+    let update = output(&mut app, &ctx, time, vec![]).platform_output.accesskit_update.expect("a tree");
+    let nodes: std::collections::HashMap<_, _> = update.nodes.iter().map(|(id, n)| (*id, n)).collect();
+    let (grid_id, grid) = update.nodes.iter().find(|(_, n)| n.role() == Role::Grid).expect("a grid");
+    assert_eq!((grid.label(), update.focus), (Some("Stitches"), *grid_id), "the grid, named, has the keyboard");
+    // A row of heads and a group of rows, as a grid holds them.
+    let under = |id: &egui::accesskit::NodeId| {
+        nodes.get(id).map(|n| (n.role(), n.children().iter().filter_map(|c| nodes.get(c).map(|n| n.role())).collect::<Vec<_>>()))
+    };
+    let parts: Vec<_> = grid.children().iter().filter_map(under).collect();
+    let heads = parts.iter().find(|(r, _)| *r == Role::Row).map_or(0, |(_, c)| c.iter().filter(|r| **r == Role::ColumnHeader).count());
+    assert!(heads >= 3, "the heads are the grid's, in a row: {parts:?}");
+    assert_eq!(grid.column_count(), Some(heads), "as many columns as heads");
+    let rows = parts.iter().find(|(r, _)| *r == Role::RowGroup).map_or(0, |(_, c)| c.iter().filter(|r| **r == Role::Row).count());
+    assert!(rows > 4, "the rows in view are the grid's, in a group: {parts:?}");
+    let active = grid.active_descendant().and_then(|id| nodes.get(&id)).expect("an active row");
+    assert_eq!(active.role(), Role::Row);
+    assert!(active.label().is_some_and(|l| l.starts_with(&format!("Record {next}:"))), "↓ moved it to the next row: {:?}", active.label());
+    let rows = update.nodes.iter().filter(|(_, n)| n.role() == Role::Row);
+    assert!(rows.clone().all(|(_, n)| !n.supports_action(Action::Focus)), "no row is a Tab stop");
 }

@@ -154,23 +154,28 @@ pub(super) fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
     let heads = heads();
     let mut x = rect.left();
     for (k, (head, w)) in heads.iter().zip(columns.widths).enumerate() {
-        if w <= 0.0 || (k == KIND && columns.layout != Layout::Words) {
-            x += w;
+        if w <= 0.0 {
             continue;
         }
         let at = egui::Rect::from_min_size(pos2(x, rect.top()), vec2(w, ROW_HEIGHT));
+        x += w;
+        // A widget of the heads' row, so that its node hangs under the grid the row is drawn for:
+        // every column with room has its head for screen readers, as many as the grid says.
+        let id = ui.interact(at, ui.id().with(("embroidery-stitch-head", k)), Sense::hover()).id;
+        ui.ctx().accesskit_node_builder(id, |node| {
+            node.set_role(egui::accesskit::Role::ColumnHeader);
+            node.set_label(*head);
+        });
+        // The kind's head drawn only where its words are (a glyph's column is too narrow for it).
+        if k == KIND && columns.layout != Layout::Words {
+            continue;
+        }
         let mut job = egui::text::LayoutJob::simple_singleline(head.to_string(), egui::FontId::proportional(TEXT), t.text_dim);
         job.wrap =
             egui::text::TextWrapping { max_width: (w - 2.0 * CELL_PAD).max(0.0), max_rows: 1, break_anywhere: true, overflow_character: Some('…') };
         let galley = ui.painter().layout_job(job);
         let size = galley.size();
         ui.painter().galley(at.right_center() - vec2(CELL_PAD + size.x, size.y / 2.0), galley, t.text_dim);
-        let id = ui.id().with(("embroidery-stitch-head", k));
-        ui.ctx().accesskit_node_builder(id, |node| {
-            node.set_role(egui::accesskit::Role::ColumnHeader);
-            node.set_label(*head);
-        });
-        x += w;
     }
     ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(HAIRLINE, t.divider));
 }

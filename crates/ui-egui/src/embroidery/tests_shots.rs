@@ -95,12 +95,21 @@ fn editing(app: &mut VectorcraftApp, id: u64) {
 }
 
 /// Zoomed in on the disc's left side (its needle points drawn as circles), the needle points in a
-/// box there selected (the Contextual Task Bar under them, their rows lit in the Stitches tab).
+/// box there selected (the Contextual Task Bar under them), and the first of them in focus in the
+/// Stitches tab, its row in view and lit (the others' records lie further down the list).
 fn zoomed_and_selected(app: &mut VectorcraftApp, _: u64) {
     app.run("view.zoomTo", json!({"rect": EDIT_VIEW, "margin": 0})).unwrap();
     let mm = |v: f64| v * 25.4 / 72.0;
     let [x0, y0, x1, y1] = EDIT_SELECTED;
     app.run("embroidery.selectNeedlePoints", json!({"rect": [mm(x0), mm(y0), mm(x1), mm(y1)]})).unwrap();
+    let view = app.view_info();
+    let first = app.session.stitch_editing(view).and_then(|e| e.ends).and_then(|[(_, a), _]| a).expect("the selection's first record");
+    crate::panels::embroidery::stitches::reveal(app, first);
+    // In focus, not shown: a click on a row while stitches are edited selects, and marks nothing.
+    let uid = app.session.active().unwrap().uid;
+    if let Some(d) = app.embroidery.stitches.docs.get_mut(&uid) {
+        d.shown = None;
+    }
 }
 
 /// The box the editing pictures zoom to, and the box whose needle points they select, document

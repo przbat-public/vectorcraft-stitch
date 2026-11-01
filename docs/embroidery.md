@@ -266,6 +266,10 @@ Trim, Stop, Split Long Stitches) are in the Contextual Task Bar under it, in the
 [Manual stitches and needle points](#manual-stitches-and-needle-points) › Limits of stitch editing,
 under Architecture.
 
+![Editing stitches, zoomed in on the red disc's edge: its needle points as two-tone circles, those in a box selected with the live check beside them, the Contextual Task Bar under them, the first one's row lit and in focus in the Stitches tab](images/embroidery-stitch-editing.png)
+
+![The same in Polish](images/embroidery-stitch-editing-polish.png)
+
 **The Stitches tab.** The Embroidery panel's fourth tab lists the design's records as the Sewing
 order and the Check tab number them: for the selection (while stitches are edited, the object
 edited) or the whole design, filtered to jumps, cuts, stops or the stitches too short or too long,
@@ -289,8 +293,10 @@ list has the keyboard and marked quietly while the keys reach the canvas. While 
 records are being judged (after an edit, or the Check tab's format changed), the rows drawn last
 stay, dimmed, with Go to and the foot. The tab strip's names are short so that four tabs fit in
 every language ("Order" for Sewing Order, whole in its tooltip). The words of stitch editing and the
-Stitches tab, in English and Polish and the terms every language chose: [Manual stitches: the
-words](manual-stitches-words.md).
+Stitches tab, in English and Polish and the terms every language chose:
+[Manual stitches: the words](manual-stitches-words.md).
+
+![The Stitches tab outside editing: the whole design's records, one in the middle in focus and marked on the canvas](images/embroidery-stitches-tab.png)
 
 **Settings on objects.** Each object keeps settings for its fills and for its strokes (one set
 for all of its fills, one for all its strokes), which beat an export's options, the document's

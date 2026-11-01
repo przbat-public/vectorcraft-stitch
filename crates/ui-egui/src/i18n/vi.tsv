@@ -5732,7 +5732,6 @@ embroidery	Show Stitches	Hiện mũi thêu
 embroidery	Edit Stitches	Sửa mũi thêu
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Di chuyển, chèn và xóa các điểm đâm kim này trên vùng vẽ bằng Công cụ Thêu.
 @plural	{count} selected|{count} selected	{count} đã chọn
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} đoạn không sửa được: bị khóa, bị ẩn hoặc bị mặt nạ cắt cắt bớt
 	 needle points, or a frame round them  |  	 các điểm đâm kim, hoặc một khung quanh chúng  |  
 	 a stitch to insert a needle point  |  	 vào một mũi thêu để chèn điểm đâm kim  |  
 	←↑→↓	←↑→↓
@@ -5795,3 +5794,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Bản ghi số {value} bị bộ lọc đã chọn bỏ qua.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Hiện bản ghi
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} đoạn không sửa được: bị khóa, bị ẩn hoặc không được thêu
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} đoạn không sửa được: bị mặt nạ cắt cắt bớt
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} đoạn không sửa được: các điểm nằm ngoài tài liệu
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} đoạn không sửa được: nhiều điểm đâm kim hơn mức một thiết kế được phép có

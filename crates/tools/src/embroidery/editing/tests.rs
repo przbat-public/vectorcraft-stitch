@@ -47,7 +47,7 @@ impl NeedlePoints for Needles {
             paths: self.paths.len(),
             needles: self.paths.iter().map(|(_, r)| r.concat().len()).sum(),
             bounds: None,
-            refused: 0,
+            refused: Refused::default(),
         }
     }
     fn holds(&self, id: NodeId) -> bool {

@@ -131,18 +131,62 @@ pub struct SelectedSpan {
     pub last: usize,
 }
 
+/// Why a path of stitches shown in the object edited can't be edited ([`NeedleScope::refused`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Refusal {
+    /// Locked or hidden (or in a locked layer, group or artboard), or not sewn: at no opacity, on a
+    /// layer that doesn't print, a guide, or a run with no colour.
+    Locked,
+    /// A machine file's run cut by a clip group: what is sewn of it is what the mask leaves.
+    Clipped,
+    /// Anchors that aren't numbers, or lie outside the document's coordinates.
+    OutOfRange,
+    /// More needle points than a design may have: the path's own, or with the paths before it in
+    /// the object.
+    TooMany,
+}
+
+impl Refusal {
+    /// Every reason, in the order they are said.
+    pub const ALL: [Self; 4] = [Self::Locked, Self::Clipped, Self::OutOfRange, Self::TooMany];
+}
+
+/// How many paths of stitches shown in the object edited can't be edited, by why ([`Refusal`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Refused {
+    counts: [usize; Refusal::ALL.len()],
+}
+
+impl Refused {
+    /// One more refused for `why`.
+    pub fn add(&mut self, why: Refusal) {
+        if let Some(c) = self.counts.get_mut(why as usize) {
+            *c = c.saturating_add(1);
+        }
+    }
+
+    /// How many are refused for `why`.
+    pub fn of(&self, why: Refusal) -> usize {
+        self.counts.get(why as usize).copied().unwrap_or(0)
+    }
+
+    /// How many are refused, for every reason.
+    pub fn total(&self) -> usize {
+        self.counts.iter().sum()
+    }
+}
+
 /// What stitch editing edits: the object isolated (a stitch object: a converted object, an opened
 /// design's thread block, a run), the paths of stitches in it whose needle points can be edited and
-/// how many needle points they hold, the box those fall in (document points), and the paths of
-/// stitches in it that are shown but can't be edited (locked or hidden, cut by a clip group, with
-/// anchors that aren't numbers, or more needle points than a design may have).
+/// how many needle points they hold, the box those fall in (document points), and how many paths of
+/// stitches in it are shown but can't be edited, by why.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct NeedleScope {
     pub object: NodeId,
     pub paths: usize,
     pub needles: usize,
     pub bounds: Option<vectorcraft_geom::Rect>,
-    pub refused: usize,
+    pub refused: Refused,
 }
 
 /// The needle points stitch editing works on, answered by the engine from the document as it is

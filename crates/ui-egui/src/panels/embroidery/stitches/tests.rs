@@ -1083,7 +1083,7 @@ fn the_tabs_small_rules() {
         time += 0.05;
         frame(&mut app, &ctx, time, vec![e]);
     }
-    assert_eq!(app.ui.status, "1 run can't be edited: locked, hidden or cut by a clipping mask");
+    assert_eq!(app.ui.status, "1 run can't be edited: locked, hidden or not sewn", "its reason, as the chip says it");
     // A document closed: its place goes.
     app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
     settle(&mut app, &ctx, &mut time);

@@ -6092,7 +6092,6 @@ embroidery	Show Stitches	Vis sting
 embroidery	Edit Stitches	Rediger sting
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Flyt, indsæt og slet disse nålestik på lærredet med Broderiværktøjet.
 @plural	{count} selected|{count} selected	{count} valgt|{count} valgte
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} række kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske|{count} rækker kan ikke redigeres: låst, skjult eller beskåret af en beskæringsmaske
 	 needle points, or a frame round them  |  	 nålestik eller en ramme om dem  |  
 	 a stitch to insert a needle point  |  	 på et sting for at indsætte et nålestik  |  
 	←↑→↓	←↑→↓
@@ -6155,3 +6154,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Post nr. {value} udelades af det valgte filter.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Vis post
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} række kan ikke redigeres: låst, skjult eller sys ikke|{count} rækker kan ikke redigeres: låst, skjult eller sys ikke
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} række kan ikke redigeres: beskåret af en beskæringsmaske|{count} rækker kan ikke redigeres: beskåret af en beskæringsmaske
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} række kan ikke redigeres: dens punkter ligger uden for dokumentet|{count} rækker kan ikke redigeres: deres punkter ligger uden for dokumentet
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} række kan ikke redigeres: flere nålestik, end et design må have|{count} rækker kan ikke redigeres: flere nålestik, end et design må have

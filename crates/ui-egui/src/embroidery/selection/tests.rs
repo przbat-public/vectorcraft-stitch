@@ -315,7 +315,10 @@ fn a_run_out_of_range_is_left_out_of_the_selection_and_its_box() {
     app.run("select.all", json!({})).unwrap();
     settle(&mut app, &ctx, &mut time);
     let editing = app.session.stitch_editing(app.view_info()).unwrap();
-    assert_eq!(editing.scope.refused, 1, "{:?}", editing.scope);
+    assert_eq!(editing.scope.refused.of(vectorcraft_tools::embroidery::Refusal::OutOfRange), 1, "{:?}", editing.scope);
+    let (_, said) = crate::embroidery::editing::lines(&mut app).unwrap();
+    assert!(said.iter().any(|l| l == "1 run can't be edited: its points lie outside the document"), "the chip says why: {said:?}");
+    assert!(!said.iter().any(|l| l.contains("locked")), "and no other reason: {said:?}");
     assert!(editing.selected > super::SELECTION_SHAPES_MAX, "the box is drawn: {}", editing.selected);
     assert_eq!(editing.selected, editing.scope.needles, "every needle point being edited, the far run's left out");
     let k = &app.embroidery.selection;

@@ -5771,7 +5771,6 @@ embroidery	Show Stitches	顯示針跡
 embroidery	Edit Stitches	編輯針跡
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	用刺繡工具在畫布上移動、插入和刪除這些落針點。
 @plural	{count} selected|{count} selected	已選 {count} 個
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} 個針段無法編輯：已鎖定、已隱藏或被剪裁遮色片裁切
 	 needle points, or a frame round them  |  	落針點，或在其周圍拖出選框  |  
 	 a stitch to insert a needle point  |  	針跡以插入落針點  |  
 	←↑→↓	←↑→↓
@@ -5834,3 +5833,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	第 {value} 筆記錄被所選篩選條件排除了。
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	顯示記錄
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} 個針段無法編輯：已鎖定、已隱藏或不縫製
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} 個針段無法編輯：被剪裁遮色片裁切
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} 個針段無法編輯：其點位於文件之外
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} 個針段無法編輯：落針點多於一個設計允許的數量

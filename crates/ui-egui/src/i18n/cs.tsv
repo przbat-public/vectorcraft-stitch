@@ -6137,7 +6137,6 @@ embroidery	Show Stitches	Zobrazit stehy
 embroidery	Edit Stitches	Upravit stehy
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Přesouvejte, vkládejte a mažte tyto vpichy na plátně nástrojem Výšivka.
 @plural	{count} selected|{count} selected	{count} vybraný|{count} vybrané|{count} vybraných
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} řadu nelze upravit: je zamčená, skrytá nebo oříznutá ořezovou maskou|{count} řady nelze upravit: jsou zamčené, skryté nebo oříznuté ořezovou maskou|{count} řad nelze upravit: jsou zamčené, skryté nebo oříznuté ořezovou maskou
 	 needle points, or a frame round them  |  	 vpichy nebo rámeček kolem nich  |  
 	 a stitch to insert a needle point  |  	 na steh pro vložení vpichu  |  
 	←↑→↓	←↑→↓
@@ -6200,3 +6199,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Záznam č. {value} vynechává zvolený filtr.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Zobrazit záznam
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} řadu nelze upravit: je zamčená, skrytá nebo se nešije|{count} řady nelze upravit: jsou zamčené, skryté nebo se nešijí|{count} řad nelze upravit: jsou zamčené, skryté nebo se nešijí
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} řadu nelze upravit: je oříznutá ořezovou maskou|{count} řady nelze upravit: jsou oříznuté ořezovou maskou|{count} řad nelze upravit: jsou oříznuté ořezovou maskou
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} řadu nelze upravit: její body leží mimo dokument|{count} řady nelze upravit: jejich body leží mimo dokument|{count} řad nelze upravit: jejich body leží mimo dokument
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} řadu nelze upravit: má více vpichů, než smí mít návrh|{count} řady nelze upravit: mají více vpichů, než smí mít návrh|{count} řad nelze upravit: mají více vpichů, než smí mít návrh

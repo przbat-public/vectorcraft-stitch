@@ -5814,7 +5814,6 @@ embroidery	Show Stitches	ステッチを表示
 embroidery	Edit Stitches	ステッチを編集
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	刺繍ツールでカンバス上のこれらの針落ち点を移動、挿入、削除します。
 @plural	{count} selected|{count} selected	選択 {count}
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	編集できない区間 {count}: ロック、非表示、またはクリッピングマスクで切り取られています
 	 needle points, or a frame round them  |  	：針落ち点、またはそれを囲む枠  |  
 	 a stitch to insert a needle point  |  	：ステッチに針落ち点を挿入  |  
 	←↑→↓	←↑→↓
@@ -5877,3 +5876,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	レコード {value} は選んだフィルターで除かれています。
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	レコードを表示
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	編集できない区間 {count}: ロック、非表示、または縫われません
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	編集できない区間 {count}: クリッピングマスクで切り取られています
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	編集できない区間 {count}: 点がドキュメントの外にあります
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	編集できない区間 {count}: デザインに入れられる数より多い針落ち点があります

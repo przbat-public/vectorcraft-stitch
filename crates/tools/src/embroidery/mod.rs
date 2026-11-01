@@ -30,7 +30,9 @@ use vectorcraft_geom::{Point, Vec2, constrain_angle_from, normalize_deg};
 
 pub(crate) use editing::Editing;
 pub use editing::{LIVE_DRAG_POINTS_MAX, MOVE, NEEDLE_STEP_MM, contains_stitches, stitch_object};
-pub use facts::{FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, SelectMode, SelectedSpan, ThreadHit};
+pub use facts::{
+    FillAngle, NeedleHit, NeedlePoints, NeedleRef, NeedleScope, PlanFacts, PlannedEnds, Refusal, Refused, SelectMode, SelectedSpan, ThreadHit,
+};
 pub use handles::{
     APART_PX, ARROW_HEAD_PX, ARROW_REACH_PX, Arrow, CATCH_MIN_PX, CATCH_PAST_PX, ENTRY_MARKER_PX, EXIT_MARKER_PX, HANDLED_OBJECTS_MAX, Handle,
     HandleId, Kind, Owner, State, direction, handle_walks, handles, hit, hit_after,

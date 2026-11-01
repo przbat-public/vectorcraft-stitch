@@ -6136,7 +6136,6 @@ embroidery	Show Stitches	Afficher les points
 embroidery	Edit Stitches	Modifier les points
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Déplacez, insérez et supprimez ces points de piqûre sur la toile avec l’outil Broderie.
 @plural	{count} selected|{count} selected	{count} sélectionné|{count} sélectionnés
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} suite ne peut pas être modifiée : verrouillée, masquée ou découpée par un masque d’écrêtage|{count} suites ne peuvent pas être modifiées : verrouillées, masquées ou découpées par un masque d’écrêtage
 	 needle points, or a frame round them  |  	 des points de piqûre, ou un cadre autour  |  
 	 a stitch to insert a needle point  |  	 sur un point pour insérer un point de piqûre  |  
 	←↑→↓	←↑→↓
@@ -6199,3 +6198,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Le filtre choisi laisse de côté l’enregistrement n° {value}.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Afficher l’enregistrement
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} suite ne peut pas être modifiée : verrouillée, masquée ou non brodée|{count} suites ne peuvent pas être modifiées : verrouillées, masquées ou non brodées
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} suite ne peut pas être modifiée : découpée par un masque d’écrêtage|{count} suites ne peuvent pas être modifiées : découpées par un masque d’écrêtage
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} suite ne peut pas être modifiée : ses points sont hors du document|{count} suites ne peuvent pas être modifiées : leurs points sont hors du document
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} suite ne peut pas être modifiée : plus de points de piqûre qu’un motif ne peut en avoir|{count} suites ne peuvent pas être modifiées : plus de points de piqûre qu’un motif ne peut en avoir

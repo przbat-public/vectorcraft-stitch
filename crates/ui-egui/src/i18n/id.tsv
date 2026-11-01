@@ -6092,7 +6092,6 @@ embroidery	Show Stitches	Tampilkan jahitan
 embroidery	Edit Stitches	Edit jahitan
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Pindahkan, sisipkan, dan hapus titik tusukan ini di kanvas dengan Alat bordir.
 @plural	{count} selected|{count} selected	{count} dipilih
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} rangkaian tidak dapat diedit: terkunci, tersembunyi, atau terpotong masker kliping
 	 needle points, or a frame round them  |  	 titik tusukan, atau bingkai di sekelilingnya  |  
 	 a stitch to insert a needle point  |  	 jahitan untuk menyisipkan titik tusukan  |  
 	←↑→↓	←↑→↓
@@ -6155,3 +6154,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Rekaman no. {value} tidak disertakan oleh filter yang dipilih.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Tampilkan rekaman
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} rangkaian tidak dapat diedit: terkunci, tersembunyi, atau tidak dijahit
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} rangkaian tidak dapat diedit: terpotong masker kliping
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} rangkaian tidak dapat diedit: titiknya berada di luar dokumen
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} rangkaian tidak dapat diedit: titik tusukan lebih banyak daripada yang boleh dimiliki desain

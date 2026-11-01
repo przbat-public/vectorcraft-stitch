@@ -5988,7 +5988,6 @@ embroidery	Show Stitches	Pokaż ściegi
 embroidery	Edit Stitches	Edytuj ściegi
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Przesuwaj, wstawiaj i usuwaj te nakłucia na płótnie narzędziem Haft.
 @plural	{count} selected|{count} selected	{count} zaznaczone|{count} zaznaczone|{count} zaznaczonych
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} odcinek bez możliwości edycji: zablokowany, ukryty lub przycięty maską przycinającą|{count} odcinki bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą|{count} odcinków bez możliwości edycji: zablokowane, ukryte lub przycięte maską przycinającą
 	 needle points, or a frame round them  |  	 nakłucia albo ramkę wokół nich  |  
 	 a stitch to insert a needle point  |  	 ścieg, aby wstawić nakłucie  |  
 	←↑→↓	←↑→↓
@@ -6051,3 +6050,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Rekord nr {value} pomija wybrany filtr.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Pokaż rekord
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} odcinek bez możliwości edycji: zablokowany, ukryty lub nieszyty|{count} odcinki bez możliwości edycji: zablokowane, ukryte lub nieszyte|{count} odcinków bez możliwości edycji: zablokowane, ukryte lub nieszyte
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} odcinek bez możliwości edycji: przycięty maską przycinającą|{count} odcinki bez możliwości edycji: przycięte maską przycinającą|{count} odcinków bez możliwości edycji: przycięte maską przycinającą
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} odcinek bez możliwości edycji: jego punkty leżą poza dokumentem|{count} odcinki bez możliwości edycji: ich punkty leżą poza dokumentem|{count} odcinków bez możliwości edycji: ich punkty leżą poza dokumentem
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} odcinek bez możliwości edycji: więcej nakłuć, niż może mieć projekt|{count} odcinki bez możliwości edycji: więcej nakłuć, niż może mieć projekt|{count} odcinków bez możliwości edycji: więcej nakłuć, niż może mieć projekt

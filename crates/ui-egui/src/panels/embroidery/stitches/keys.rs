@@ -66,11 +66,11 @@ pub(super) fn click(app: &mut VectorcraftApp, shown: &Shown, listed: &Listed, nu
         if planned {
             app.status(crate::et!("This stitch can't be edited: it is planned from its object's shape."));
         } else {
-            app.status(crate::etn!(
-                1,
-                "{count} run can't be edited: locked, hidden or cut by a clipping mask",
-                "{count} runs can't be edited: locked, hidden or cut by a clipping mask"
-            ));
+            // Why its run can't be, as the chip says it (a run the index doesn't name: as a locked
+            // one, the commonest).
+            let view = app.view_info();
+            let why = stitch_list::row(&shown.plan, number).and_then(|r| app.session.stitch_refusal(view, r.node));
+            app.status(crate::embroidery::editing::refused_words(why.unwrap_or(vectorcraft_tools::embroidery::Refusal::Locked), 1));
         }
         return;
     }

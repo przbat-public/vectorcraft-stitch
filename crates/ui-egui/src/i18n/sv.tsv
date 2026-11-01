@@ -6093,7 +6093,6 @@ embroidery	Show Stitches	Visa stygn
 embroidery	Edit Stitches	Redigera stygn
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Flytta, infoga och ta bort dessa nålstick på arbetsytan med Broderiverktyget.
 @plural	{count} selected|{count} selected	{count} markerat|{count} markerade
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} rad kan inte redigeras: låst, dold eller beskuren av en klippmask|{count} rader kan inte redigeras: låsta, dolda eller beskurna av en klippmask
 	 needle points, or a frame round them  |  	 nålstick, eller en ram runt dem  |  
 	 a stitch to insert a needle point  |  	 på ett stygn för att infoga ett nålstick  |  
 	←↑→↓	←↑→↓
@@ -6156,3 +6155,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Post nr {value} utelämnas av det valda filtret.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Visa post
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} rad kan inte redigeras: låst, dold eller sys inte|{count} rader kan inte redigeras: låsta, dolda eller sys inte
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} rad kan inte redigeras: beskuren av en klippmask|{count} rader kan inte redigeras: beskurna av en klippmask
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} rad kan inte redigeras: dess punkter ligger utanför dokumentet|{count} rader kan inte redigeras: deras punkter ligger utanför dokumentet
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} rad kan inte redigeras: fler nålstick än en design får ha|{count} rader kan inte redigeras: fler nålstick än en design får ha

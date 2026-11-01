@@ -5732,7 +5732,6 @@ embroidery	Show Stitches	Показати стібки
 embroidery	Edit Stitches	Редагувати стібки
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Переміщуйте, вставляйте й видаляйте ці проколи на полотні інструментом «Вишивка».
 @plural	{count} selected|{count} selected	{count} вибраний|{count} вибрані|{count} вибраних
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} ряд не можна редагувати: заблокований, прихований або обрізаний відсічною маскою|{count} ряди не можна редагувати: заблоковані, приховані або обрізані відсічною маскою|{count} рядів не можна редагувати: заблоковані, приховані або обрізані відсічною маскою
 	 needle points, or a frame round them  |  	 проколи або рамку навколо них  |  
 	 a stitch to insert a needle point  |  	 по стібку, щоб вставити прокол  |  
 	←↑→↓	←↑→↓
@@ -5795,3 +5794,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Запис № {value} виключено вибраним фільтром.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Показати запис
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} ряд не можна редагувати: заблокований, прихований або не вишивається|{count} ряди не можна редагувати: заблоковані, приховані або не вишиваються|{count} рядів не можна редагувати: заблоковані, приховані або не вишиваються
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} ряд не можна редагувати: обрізаний відсічною маскою|{count} ряди не можна редагувати: обрізані відсічною маскою|{count} рядів не можна редагувати: обрізані відсічною маскою
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} ряд не можна редагувати: його точки лежать поза документом|{count} ряди не можна редагувати: їхні точки лежать поза документом|{count} рядів не можна редагувати: їхні точки лежать поза документом
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} ряд не можна редагувати: проколів більше, ніж може бути в дизайні|{count} ряди не можна редагувати: проколів більше, ніж може бути в дизайні|{count} рядів не можна редагувати: проколів більше, ніж може бути в дизайні

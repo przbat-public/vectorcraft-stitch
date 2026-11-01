@@ -6078,7 +6078,6 @@ embroidery	Show Stitches	Mostrar puntadas
 embroidery	Edit Stitches	Editar puntadas
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Mueva, inserte y elimine estos puntos de aguja en el lienzo con la herramienta Bordado.
 @plural	{count} selected|{count} selected	{count} seleccionado|{count} seleccionados
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} serie no se puede editar: bloqueada, oculta o recortada por una máscara de recorte|{count} series no se pueden editar: bloqueadas, ocultas o recortadas por una máscara de recorte
 	 needle points, or a frame round them  |  	 puntos de aguja, o un marco a su alrededor  |  
 	 a stitch to insert a needle point  |  	 en una puntada para insertar un punto de aguja  |  
 	←↑→↓	←↑→↓
@@ -6141,3 +6140,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	El filtro elegido deja fuera el registro n.º {value}.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Mostrar registro
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} serie no se puede editar: bloqueada, oculta o no se borda|{count} series no se pueden editar: bloqueadas, ocultas o no se bordan
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} serie no se puede editar: recortada por una máscara de recorte|{count} series no se pueden editar: recortadas por una máscara de recorte
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} serie no se puede editar: sus puntos quedan fuera del documento|{count} series no se pueden editar: sus puntos quedan fuera del documento
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} serie no se puede editar: más puntos de aguja de los que puede tener un diseño|{count} series no se pueden editar: más puntos de aguja de los que puede tener un diseño

@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::NodeId;
 use vectorcraft_geom::{Point, Rect};
 use vectorcraft_testkit::embroidery as fx;
-use vectorcraft_tools::embroidery::{NeedleRef, PlanFacts};
+use vectorcraft_tools::embroidery::{NeedleRef, PlanFacts, Refusal};
 
 use super::super::needles;
 use super::super::test_support::{PT_PER_MM, blank, run};
@@ -43,7 +43,8 @@ fn it_holds_the_needle_points_the_stitch_commands_edit() {
     let index = whole(&s);
     let doc = s.doc().unwrap().doc.clone();
     assert!(!index.holds(NodeId(m.locked)) && !index.holds(NodeId(m.hidden)), "locked and hidden runs aren't edited");
-    assert!(index.scope().refused >= 2, "{:?}", index.scope());
+    assert!(index.scope().refused.of(Refusal::Locked) >= 2, "{:?}", index.scope());
+    assert_eq!((index.refusal(NodeId(m.locked)), index.refusal(NodeId(m.hidden))), (Some(Refusal::Locked), Some(Refusal::Locked)));
     let mut total = 0;
     for id in index.ids().collect::<Vec<_>>() {
         let points = read_points(&s, id);
@@ -253,7 +254,7 @@ fn repeated_and_nested_roots_are_walked_once() {
     let doc = s.doc().unwrap().doc.clone();
     let layers: Vec<NodeId> = doc.layers.iter().map(|l| l.id).collect();
     let alone = NeedleIndex::of(&doc, &layers, None).unwrap();
-    assert!(alone.scope().refused >= 2, "the fixture's locked and hidden runs: {:?}", alone.scope());
+    assert!(alone.scope().refused.total() >= 2, "the fixture's locked and hidden runs: {:?}", alone.scope());
     let mut roots: Vec<NodeId> = layers.iter().copied().cycle().take(layers.len() * 300).collect();
     roots.extend([NodeId(m.converted.group), NodeId(m.one_point), NodeId(u64::MAX), NodeId(m.locked), NodeId(m.hidden)]);
     roots.extend(&layers);
@@ -274,7 +275,7 @@ fn repeated_and_nested_roots_are_walked_once() {
     let once = run(&mut s, "embroidery.selectNeedlePoints", json!({"rect": rect, "ids": ids(1)}));
     let repeated = run(&mut s, "embroidery.selectNeedlePoints", json!({"rect": rect, "ids": ids(needles::MAX_PATHS / layers.len())}));
     assert_eq!(repeated, once);
-    assert_eq!(once["passedOver"].as_u64().unwrap() as usize, alone.scope().refused, "{once}");
+    assert_eq!(once["passedOver"].as_u64().unwrap() as usize, alone.scope().refused.total(), "{once}");
 }
 
 /// Through the session: the embroidery tool's answers hold the needle points only while it works
@@ -365,7 +366,8 @@ fn what_the_walk_doesnt_sew_is_left_out() {
     .unwrap();
     let after = whole(&s);
     assert!(!after.holds(clear) && !after.holds(unpainted), "neither is sewn");
-    assert_eq!(after.scope().refused, before.scope().refused + 2, "{:?}", after.scope());
+    let locked = |i: &NeedleIndex| i.scope().refused.of(Refusal::Locked);
+    assert_eq!(locked(&after), locked(&before) + 2, "not sewn, said with the locked and the hidden: {:?}", after.scope());
     // The run the machine stops in, after its second needle point: the lift to the third isn't a
     // stitch (a stitch sewn later over the same place may be); one in its middle is.
     let stopped = NodeId(m.stopped);

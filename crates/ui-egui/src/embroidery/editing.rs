@@ -18,6 +18,7 @@ use egui::{CornerRadius, FontId, Id, Rect, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::json;
 use vectorcraft_doc::NodeId;
 use vectorcraft_engine::cmd::embroidery::StitchEditing;
+use vectorcraft_tools::embroidery::Refusal;
 
 use crate::VectorcraftApp;
 use crate::theme::Tokens;
@@ -127,17 +128,40 @@ pub fn lines(app: &mut VectorcraftApp) -> Option<(String, Vec<String>)> {
         if app.view().is_some_and(|v| v.zoom < NEEDLE_CIRCLES_MIN_ZOOM) || app.embroidery.layer.stats().circles_capped {
             lines.push(crate::et!("Zoom in to see the needle points.").to_string());
         }
-        if e.scope.refused > 0 {
-            lines.push(crate::etn!(
-                e.scope.refused as u64,
-                "{count} run can't be edited: locked, hidden or cut by a clipping mask",
-                "{count} runs can't be edited: locked, hidden or cut by a clipping mask"
-            ));
+        for why in Refusal::ALL {
+            let count = e.scope.refused.of(why);
+            if count > 0 {
+                lines.push(refused_words(why, count));
+            }
         }
         return Some((title, lines));
     }
     in_art_view(app)?;
     Some((crate::et!("Editing stitches").to_string(), vec![crate::et!("Needle points are edited in the Stitches view.").to_string()]))
+}
+
+/// Why `count` runs of the object edited can't be edited, for `why`: what the chip says of them, and
+/// the Stitches tab of a row of one.
+pub(crate) fn refused_words(why: Refusal, count: usize) -> String {
+    let n = count as u64;
+    match why {
+        Refusal::Locked => {
+            crate::etn!(n, "{count} run can't be edited: locked, hidden or not sewn", "{count} runs can't be edited: locked, hidden or not sewn")
+        }
+        Refusal::Clipped => {
+            crate::etn!(n, "{count} run can't be edited: cut by a clipping mask", "{count} runs can't be edited: cut by a clipping mask")
+        }
+        Refusal::OutOfRange => crate::etn!(
+            n,
+            "{count} run can't be edited: its points lie outside the document",
+            "{count} runs can't be edited: their points lie outside the document"
+        ),
+        Refusal::TooMany => crate::etn!(
+            n,
+            "{count} run can't be edited: more needle points than a design may have",
+            "{count} runs can't be edited: more needle points than a design may have"
+        ),
+    }
 }
 
 /// Draw the chip over the canvas `canvas` (below isolation mode's bar), when stitches are being

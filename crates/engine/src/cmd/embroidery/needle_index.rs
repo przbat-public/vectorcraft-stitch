@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use vectorcraft_doc::{Document, Node, NodeId, NodeKind, Selection};
 use vectorcraft_geom::{Point, Rect};
-use vectorcraft_tools::embroidery::{NeedleHit, NeedleRef, NeedleScope, SelectedSpan, ThreadHit};
+use vectorcraft_tools::embroidery::{NeedleHit, NeedleRef, NeedleScope, Refusal, Refused, SelectedSpan, ThreadHit};
 
 use super::digitize;
 use super::needles::{self, MAX_NEEDLE_POINTS, Unfit};
@@ -273,6 +273,17 @@ impl PathIndex {
     }
 }
 
+/// Why the stitch commands can't edit a path ([`needles::Unfit`]), as stitch editing says it: not a
+/// run at all (which the walk never reaches) and a run that can't be joined count as what it holds.
+fn refusal(why: Unfit) -> Refusal {
+    match why {
+        Unfit::Locked => Refusal::Locked,
+        Unfit::Clipped => Refusal::Clipped,
+        Unfit::TooMany => Refusal::TooMany,
+        Unfit::OutOfRange | Unfit::NotStitches | Unfit::NotJoinable => Refusal::OutOfRange,
+    }
+}
+
 /// Whether a search near `at` within `tol` can be made: both finite, `tol` not below 0.
 fn searchable(at: Point, tol: f64) -> bool {
     at.x.is_finite() && at.y.is_finite() && tol.is_finite() && tol >= 0.0
@@ -291,12 +302,14 @@ pub struct NeedleIndex {
     object: NodeId,
     paths: Vec<(NodeId, Arc<PathIndex>)>,
     order: HashMap<NodeId, usize>,
-    refused: usize,
+    /// How many paths shown in the scope can't be edited, by why, and why each can't.
+    refused: Refused,
+    refusals: HashMap<NodeId, Refusal>,
     needles: usize,
     bounds: Option<Rect>,
     /// The paths refused for what they hold (out of range, too many needle points, not a run),
-    /// by node: refused again without a look while they are the same node.
-    unfit: HashMap<NodeId, Arc<Node>>,
+    /// by node, and why: refused again without a look while they are the same node.
+    unfit: HashMap<NodeId, (Arc<Node>, Refusal)>,
 }
 
 /// A node found for the index: the node, whether a clip group holds it, and whether the walk
@@ -361,8 +374,9 @@ impl NeedleIndex {
         let editable = doc.editable();
         let mut paths: Vec<(NodeId, Arc<PathIndex>)> = Vec::new();
         let mut order = HashMap::new();
-        let mut refused = 0usize;
-        let mut unfit: HashMap<NodeId, Arc<Node>> = HashMap::new();
+        let mut refused = Refused::default();
+        let mut refusals: HashMap<NodeId, Refusal> = HashMap::new();
+        let mut unfit: HashMap<NodeId, (Arc<Node>, Refusal)> = HashMap::new();
         // The paths of stitches under a node, each with whether a clip group holds it and whether
         // the walk sews it, by the walk's own rules: into layers and groups only (a compound path is
         // sewn as a shape; blends, envelopes and repeats aren't sewn), nothing hidden, at no
@@ -391,19 +405,25 @@ impl NeedleIndex {
         }
         let mut needles = 0usize;
         let mut bounds: Option<Rect> = None;
+        // Refused for `why`: counted, and why kept for the path.
+        fn refuse(refused: &mut Refused, refusals: &mut HashMap<NodeId, Refusal>, id: NodeId, why: Refusal) {
+            refused.add(why);
+            refusals.insert(id, why);
+        }
         for (n, clipped, sewn) in found {
-            if order.contains_key(&n.id) {
+            if order.contains_key(&n.id) || refusals.contains_key(&n.id) {
                 continue;
             }
             // Sewn and drawn, where it lies as the stitch commands judge it (its needle points
             // next), and within what the budget has left: past it, a path isn't indexed at all.
-            if !sewn || needles::placed_unfit(&n, editable(n.id), clipped).is_some() || needles.saturating_add(needles_in(&n)) > MAX_NEEDLE_POINTS {
-                refused += 1;
+            let placed = if sewn { needles::placed_unfit(&n, editable(n.id), clipped).map(refusal) } else { Some(Refusal::Locked) };
+            if let Some(why) = placed.or_else(|| (needles.saturating_add(needles_in(&n)) > MAX_NEEDLE_POINTS).then_some(Refusal::TooMany)) {
+                refuse(&mut refused, &mut refusals, n.id, why);
                 continue;
             }
-            if kept.and_then(|k| k.unfit.get(&n.id)).is_some_and(|u| Arc::ptr_eq(u, &n)) {
-                refused += 1;
-                unfit.insert(n.id, n);
+            if let Some(&(_, why)) = kept.and_then(|k| k.unfit.get(&n.id)).filter(|(u, _)| Arc::ptr_eq(u, &n)) {
+                refuse(&mut refused, &mut refusals, n.id, why);
+                unfit.insert(n.id, (n, why));
                 continue;
             }
             let reused = kept.and_then(|k| k.path(n.id)).filter(|p| Arc::ptr_eq(&p.node, &n)).cloned();
@@ -411,9 +431,10 @@ impl NeedleIndex {
                 Some(p) => p,
                 None => match PathIndex::of(&n) {
                     Ok(p) => Arc::new(p),
-                    Err(_) => {
-                        refused += 1;
-                        unfit.insert(n.id, n);
+                    Err(e) => {
+                        let why = refusal(e);
+                        refuse(&mut refused, &mut refusals, n.id, why);
+                        unfit.insert(n.id, (n, why));
                         continue;
                     }
                 },
@@ -426,7 +447,7 @@ impl NeedleIndex {
             order.insert(n.id, paths.len());
             paths.push((n.id, path));
         }
-        Some(Self { object: roots.first().copied().unwrap_or(NodeId(0)), paths, order, refused, needles, bounds, unfit })
+        Some(Self { object: roots.first().copied().unwrap_or(NodeId(0)), paths, order, refused, refusals, needles, bounds, unfit })
     }
 
     /// The paths being edited that `sel` selects, in the selection's order, each with whether it
@@ -462,6 +483,11 @@ impl NeedleIndex {
     /// What it edits.
     pub fn scope(&self) -> NeedleScope {
         NeedleScope { object: self.object, paths: self.paths.len(), needles: self.needles, bounds: self.bounds, refused: self.refused }
+    }
+
+    /// Why path `id`, shown in the scope, can't be edited (`None`: it can, or it isn't one).
+    pub(crate) fn refusal(&self, id: NodeId) -> Option<Refusal> {
+        self.refusals.get(&id).copied()
     }
 
     /// Whether path `id` is one being edited.

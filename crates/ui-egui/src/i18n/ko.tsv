@@ -5715,7 +5715,6 @@ embroidery	Show Stitches	스티치 표시
 embroidery	Edit Stitches	스티치 편집하기
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	자수 도구로 캔버스에서 이 바늘 위치를 이동, 삽입, 삭제합니다.
 @plural	{count} selected|{count} selected	{count}개 선택됨
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	편집할 수 없는 구간 {count}개: 잠김, 숨김 또는 클리핑 마스크로 잘림
 	 needle points, or a frame round them  |  	: 바늘 위치 또는 그 주위의 틀  |  
 	 a stitch to insert a needle point  |  	: 스티치에 바늘 위치 삽입  |  
 	←↑→↓	←↑→↓
@@ -5778,3 +5777,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	{value}번 레코드는 선택한 필터에서 빠져 있습니다.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	레코드 보기
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	편집할 수 없는 구간 {count}개: 잠김, 숨김 또는 바느질되지 않음
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	편집할 수 없는 구간 {count}개: 클리핑 마스크로 잘림
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	편집할 수 없는 구간 {count}개: 점이 문서 밖에 있음
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	편집할 수 없는 구간 {count}개: 디자인에 허용되는 것보다 바늘 위치가 많음

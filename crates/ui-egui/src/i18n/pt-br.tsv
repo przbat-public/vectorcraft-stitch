@@ -6053,7 +6053,6 @@ embroidery	Show Stitches	Mostrar pontos
 embroidery	Edit Stitches	Editar pontos
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Mova, insira e exclua estes pontos de agulha na tela com a ferramenta Bordado.
 @plural	{count} selected|{count} selected	{count} selecionado|{count} selecionados
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} sequência não pode ser editada: bloqueada, oculta ou cortada por uma máscara de recorte|{count} sequências não podem ser editadas: bloqueadas, ocultas ou cortadas por uma máscara de recorte
 	 needle points, or a frame round them  |  	 pontos de agulha, ou um quadro em volta deles  |  
 	 a stitch to insert a needle point  |  	 em um ponto para inserir um ponto de agulha  |  
 	←↑→↓	←↑→↓
@@ -6116,3 +6115,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	O registro nº {value} fica de fora do filtro escolhido.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Mostrar registro
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} sequência não pode ser editada: bloqueada, oculta ou não bordada|{count} sequências não podem ser editadas: bloqueadas, ocultas ou não bordadas
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} sequência não pode ser editada: cortada por uma máscara de recorte|{count} sequências não podem ser editadas: cortadas por uma máscara de recorte
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} sequência não pode ser editada: seus pontos ficam fora do documento|{count} sequências não podem ser editadas: seus pontos ficam fora do documento
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} sequência não pode ser editada: mais pontos de agulha do que um desenho pode ter|{count} sequências não podem ser editadas: mais pontos de agulha do que um desenho pode ter

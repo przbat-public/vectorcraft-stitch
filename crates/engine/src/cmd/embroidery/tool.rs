@@ -206,6 +206,13 @@ impl crate::Session {
             .collect()
     }
 
+    /// Why path `id` of the object edited can't be edited, while stitches are edited (`None`: it can,
+    /// it isn't a path of stitches shown in the object, or nothing is edited). What the Stitches tab
+    /// says of a row of it.
+    pub fn stitch_refusal(&mut self, view: crate::ViewInfo, id: NodeId) -> Option<vectorcraft_tools::embroidery::Refusal> {
+        self.editing_index(view)?.refusal(id)
+    }
+
     /// The needle points stitch editing keeps, while it edits (the embroidery tool's, in the stitch
     /// view, `view`).
     fn editing_index(&mut self, view: crate::ViewInfo) -> Option<Arc<NeedleIndex>> {

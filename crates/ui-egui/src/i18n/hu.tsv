@@ -6123,7 +6123,6 @@ embroidery	Show Stitches	Öltések megjelenítése
 embroidery	Edit Stitches	Öltések szerkesztése
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Helyezze át, szúrja be és törölje ezeket a tűszúrásokat a vásznon a Hímzés eszközzel.
 @plural	{count} selected|{count} selected	{count} kijelölve
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} öltéssor nem szerkeszthető: zárolt, rejtett vagy vágómaszk vágja
 	 needle points, or a frame round them  |  	 – tűszúrások vagy egy keret köréjük  |  
 	 a stitch to insert a needle point  |  	 egy öltésre – tűszúrás beszúrása  |  
 	←↑→↓	←↑→↓
@@ -6186,3 +6185,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	A választott szűrő kihagyja a(z) {value}. rekordot.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Rekord megjelenítése
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} öltéssor nem szerkeszthető: zárolt, rejtett vagy nincs varrva
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} öltéssor nem szerkeszthető: vágómaszk vágja
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} öltéssor nem szerkeszthető: pontjai a dokumentumon kívül esnek
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} öltéssor nem szerkeszthető: több tűszúrás, mint amennyi egy mintában lehet

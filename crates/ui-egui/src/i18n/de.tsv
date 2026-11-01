@@ -5718,7 +5718,6 @@ embroidery	Show Stitches	Stiche zeigen
 embroidery	Edit Stitches	Stiche bearbeiten
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Diese Einstichpunkte auf der Leinwand mit dem Stickwerkzeug verschieben, einfügen und löschen.
 @plural	{count} selected|{count} selected	{count} ausgewählt|{count} ausgewählt
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} Stichfolge kann nicht bearbeitet werden: gesperrt, ausgeblendet oder von einer Schnittmaske beschnitten|{count} Stichfolgen können nicht bearbeitet werden: gesperrt, ausgeblendet oder von einer Schnittmaske beschnitten
 	 needle points, or a frame round them  |  	 Einstichpunkte oder einen Rahmen um sie  |  
 	 a stitch to insert a needle point  |  	 auf einen Stich, um einen Einstichpunkt einzufügen  |  
 	←↑→↓	←↑→↓
@@ -5781,3 +5780,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Datensatz Nr. {value} wird vom gewählten Filter ausgelassen.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Datensatz zeigen
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} Stichfolge kann nicht bearbeitet werden: gesperrt, ausgeblendet oder nicht gestickt|{count} Stichfolgen können nicht bearbeitet werden: gesperrt, ausgeblendet oder nicht gestickt
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} Stichfolge kann nicht bearbeitet werden: von einer Schnittmaske beschnitten|{count} Stichfolgen können nicht bearbeitet werden: von einer Schnittmaske beschnitten
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} Stichfolge kann nicht bearbeitet werden: ihre Punkte liegen außerhalb des Dokuments|{count} Stichfolgen können nicht bearbeitet werden: ihre Punkte liegen außerhalb des Dokuments
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} Stichfolge kann nicht bearbeitet werden: mehr Einstichpunkte, als ein Design haben darf|{count} Stichfolgen können nicht bearbeitet werden: mehr Einstichpunkte, als ein Design haben darf

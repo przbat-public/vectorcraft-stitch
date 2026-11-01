@@ -6089,7 +6089,6 @@ embroidery	Show Stitches	Εμφάνιση βελονιών
 embroidery	Edit Stitches	Επεξεργασία των βελονιών
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	Μετακινήστε, εισαγάγετε και διαγράψτε αυτά τα σημεία βελόνας στον καμβά με το Εργαλείο κεντήματος.
 @plural	{count} selected|{count} selected	{count} επιλεγμένο|{count} επιλεγμένα
-@plural	{count} run can't be edited: locked, hidden or cut by a clipping mask|{count} runs can't be edited: locked, hidden or cut by a clipping mask	{count} σειρά δεν μπορεί να επεξεργαστεί: κλειδωμένη, κρυφή ή αποκομμένη από μάσκα αποκοπής|{count} σειρές δεν μπορούν να επεξεργαστούν: κλειδωμένες, κρυφές ή αποκομμένες από μάσκα αποκοπής
 	 needle points, or a frame round them  |  	 σημεία βελόνας ή ένα πλαίσιο γύρω τους  |  
 	 a stitch to insert a needle point  |  	 σε βελονιά για εισαγωγή σημείου βελόνας  |  
 	←↑→↓	←↑→↓
@@ -6152,3 +6151,8 @@ embroidery	Longer than {longest} mm, or along x or y than one {format} record ({
 embroidery	Record #{value} is left out by the filter chosen.	Η εγγραφή αρ. {value} παραλείπεται από το επιλεγμένο φίλτρο.
 # VectorCraft Stitch: the command that shows a record of the Stitches tab (its label in the command palette)
 	Show Record	Εμφάνιση εγγραφής
+# VectorCraft Stitch: stitch editing's chip and the Stitches tab: why runs of the object edited can't be edited, one reason a line
+@plural	{count} run can't be edited: locked, hidden or not sewn|{count} runs can't be edited: locked, hidden or not sewn	{count} σειρά δεν μπορεί να επεξεργαστεί: κλειδωμένη, κρυφή ή δεν ράβεται|{count} σειρές δεν μπορούν να επεξεργαστούν: κλειδωμένες, κρυφές ή δεν ράβονται
+@plural	{count} run can't be edited: cut by a clipping mask|{count} runs can't be edited: cut by a clipping mask	{count} σειρά δεν μπορεί να επεξεργαστεί: αποκομμένη από μάσκα αποκοπής|{count} σειρές δεν μπορούν να επεξεργαστούν: αποκομμένες από μάσκα αποκοπής
+@plural	{count} run can't be edited: its points lie outside the document|{count} runs can't be edited: their points lie outside the document	{count} σειρά δεν μπορεί να επεξεργαστεί: τα σημεία της βρίσκονται έξω από το έγγραφο|{count} σειρές δεν μπορούν να επεξεργαστούν: τα σημεία τους βρίσκονται έξω από το έγγραφο
+@plural	{count} run can't be edited: more needle points than a design may have|{count} runs can't be edited: more needle points than a design may have	{count} σειρά δεν μπορεί να επεξεργαστεί: περισσότερα σημεία βελόνας απ’ όσα επιτρέπονται σε ένα σχέδιο|{count} σειρές δεν μπορούν να επεξεργαστούν: περισσότερα σημεία βελόνας απ’ όσα επιτρέπονται σε ένα σχέδιο

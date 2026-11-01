@@ -6000,10 +6000,10 @@ embroidery	Delete	Usuń
 embroidery	Split Run	Podziel odcinek
 embroidery	Join Runs	Połącz odcinki
 embroidery	Split Long Stitches	Podziel długie ściegi
-embroidery	Trim	Cięcie
-embroidery	Stop	Stop
-embroidery	Trim After the Selected Needle Points	Cięcie po zaznaczonych nakłuciach
-embroidery	Stop After the Selected Needle Points	Stop po zaznaczonych nakłuciach
+embroidery	Trim	Dodaj cięcie
+embroidery	Stop	Dodaj stop
+embroidery	Trim After the Selected Needle Points	Dodaj cięcie po zaznaczonych nakłuciach
+embroidery	Stop After the Selected Needle Points	Dodaj stop po zaznaczonych nakłuciach
 @plural	{count} stitch shorter than {value} mm|{count} stitches shorter than {value} mm	{count} ścieg krótszy niż {value} mm|{count} ściegi krótsze niż {value} mm|{count} ściegów krótszych niż {value} mm
 @plural	{count} stitch too long|{count} stitches too long	{count} za długi ścieg|{count} za długie ściegi|{count} za długich ściegów
 # VectorCraft Stitch: the Embroidery panel's Stitches tab (the design's records: the scope switch, the filters with their counts, the columns, Go to, Move by and what screen readers hear of a row) and the strip's short name for Sewing Order

@@ -140,10 +140,10 @@ pull request).
 | Split Run | Podziel odcinek |
 | Join Runs | Połącz odcinki |
 | Split Long Stitches | Podziel długie ściegi |
-| Trim | Cięcie |
-| Stop | Stop |
-| Trim After the Selected Needle Points | Cięcie po zaznaczonych nakłuciach |
-| Stop After the Selected Needle Points | Stop po zaznaczonych nakłuciach |
+| Trim | Dodaj cięcie |
+| Stop | Dodaj stop |
+| Trim After the Selected Needle Points | Dodaj cięcie po zaznaczonych nakłuciach |
+| Stop After the Selected Needle Points | Dodaj stop po zaznaczonych nakłuciach |
 | {count} stitch shorter than {value} mm / {count} stitches shorter than {value} mm | {count} ścieg krótszy niż {value} mm / {count} ściegi krótsze niż {value} mm / {count} ściegów krótszych niż {value} mm |
 | {count} stitch too long / {count} stitches too long | {count} za długi ścieg / {count} za długie ściegi / {count} za długich ściegów |
 

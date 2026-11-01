@@ -11,11 +11,13 @@ use vectorcraft_geom::{Affine, BezPath, PathData, Rect, shapes};
 use crate::embroidery::seeded::seeded;
 use crate::pattern::RepeatSpec;
 use crate::visual_bounds::VisualBounds;
-use crate::{Appearance, Document, LAYER_COLORS, LayerColor, LineCap, LineJoin, Node, NodeId, NodeKind, Symbol};
+use crate::{Appearance, Document, ImageObject, LAYER_COLORS, LayerColor, LineCap, LineJoin, Node, NodeId, NodeKind, Symbol};
 
-/// The bounds as bits, so that two answers compare exactly (the sign of a zero, a NaN).
+/// The bounds as bits, so that two answers compare exactly: equal coordinates as `==` has them
+/// (`f64::min` and `max` may give either zero of two that compare equal), every NaN as one.
 fn bits(r: Option<Rect>) -> Option<[u64; 4]> {
-    r.map(|r| [r.x0, r.y0, r.x1, r.y1].map(f64::to_bits))
+    let exact = |v: f64| if v.is_nan() { f64::NAN.to_bits() } else { (v + 0.0).to_bits() };
+    r.map(|r| [r.x0, r.y0, r.x1, r.y1].map(exact))
 }
 
 /// A zig-zag of `points` points from `(x, y)`, `step` apart, stroked `width` pt wide with mitred
@@ -155,6 +157,148 @@ fn objects_inside_one_measured_whole_are_measured_on_their_own() {
     assert_eq!(cache.measured(), 3);
 }
 
+/// A group whose first child its bounds leave out (a Shaper group's source, as `Node::editing_children`
+/// gives it): its members are answered from their entries, the child left out is measured on its own.
+#[test]
+fn a_shaper_groups_members_are_answered_from_their_entries() {
+    let (mut doc, ids) = design(1, 4);
+    let group = doc.parent_of(ids[0][0]).unwrap();
+    doc.node_mut(group).unwrap().extras_mut().shaper = Some(Box::default());
+    let mut cache = VisualBounds::default();
+    assert_eq!(bits(cache.art_bounds(&doc)), bits(doc.art_bounds()));
+    // The layer, the group and the three paths after the source.
+    assert_eq!((cache.measured(), cache.entries()), (5, 5));
+    for id in &ids[0][1..] {
+        assert_eq!(bits(cache.bounds_of(&doc, &[*id])), bits(doc.bounds_of(&[*id], true)));
+    }
+    assert_eq!(cache.measured(), 5, "the members came from their entries");
+    assert_eq!(bits(cache.bounds_of(&doc, &[ids[0][0]])), bits(doc.bounds_of(&[ids[0][0]], true)));
+    assert_eq!(cache.measured(), 6, "the source, left out of the group's bounds, measured on its own");
+}
+
+/// A group whose clipping mask is turned on is measured whole from then on: its members' entries
+/// go, and come back when the mask is turned off.
+#[test]
+fn a_clipping_mask_turned_on_and_off_drops_and_keeps_member_entries() {
+    let (mut doc, ids) = design(2, 5);
+    let group = doc.parent_of(ids[1][0]).unwrap();
+    let mut cache = VisualBounds::default();
+    cache.art_bounds(&doc);
+    assert_eq!(cache.entries(), 13);
+    let set_clip = |doc: &mut Document, on: bool| {
+        if let NodeKind::Group { clip, .. } = &mut doc.node_mut(group).unwrap().kind {
+            *clip = on;
+        }
+    };
+    set_clip(&mut doc, true);
+    assert_eq!(bits(cache.art_bounds(&doc)), bits(doc.art_bounds()));
+    assert_eq!(cache.entries(), 8, "the clipping group measured whole, its five paths' entries gone");
+    set_clip(&mut doc, false);
+    assert_eq!(bits(cache.art_bounds(&doc)), bits(doc.art_bounds()));
+    assert_eq!(cache.entries(), 13);
+}
+
+/// Measuring another document with the same cache lets the last one go: none of its objects is
+/// held, even weakly, once the next is measured.
+#[test]
+fn measuring_another_document_lets_the_last_one_go() {
+    let (first, ids) = design(3, 10);
+    let (second, _) = design(2, 4);
+    let mut cache = VisualBounds::default();
+    cache.art_bounds(&first);
+    let path = first.node_arc(ids[2][9]).unwrap().clone();
+    let (layer, held) = (first.layers.first().unwrap().clone(), Arc::weak_count(&path));
+    assert_eq!((Arc::weak_count(&layer), held), (1, 1), "the cache holds the first document's objects weakly");
+    assert_eq!(bits(cache.art_bounds(&second)), bits(second.art_bounds()));
+    assert_eq!((Arc::weak_count(&layer), Arc::weak_count(&path)), (0, 0), "and none once the second is measured");
+    assert_eq!(cache.entries(), 1 + 2 + 2 * 4);
+}
+
+/// The minimal failure the property suite found when the selection's ids were looked up in one
+/// walk: an id that appears twice (a damaged file keeps its ids) while the document's id index
+/// still holds the place it had when the id was unique. `Document::index_path` then finds the copy
+/// at that place, a walk finds the first in tree order; the cache looks ids up as
+/// `Document::bounds_of` does, so both measure the same copy.
+#[test]
+fn a_repeated_id_means_the_object_document_bounds_of_finds() {
+    let mut doc = Document::new(100.0, 100.0);
+    let layer = doc.layers.first().map(|l| l.id);
+    let first = Node::group(doc.alloc_id(), vec![]);
+    let first_group = doc.insert(layer, usize::MAX, first).unwrap();
+    let path = zig_zag(&mut doc, 10.0, 10.0, 4, 2.0, 1.0);
+    let (id, original) = (path.id, path.clone());
+    let second = Node::group(doc.alloc_id(), vec![Arc::new(path)]);
+    doc.insert(layer, usize::MAX, second).unwrap();
+    // The index made afresh while the id is unique, then a copy, moved elsewhere, put first in tree
+    // order without moving the original.
+    doc.drop_lookup_cache();
+    assert_eq!(doc.index_path(id), Some(vec![0, 1, 0]));
+    assert!(doc.has_lookup_cache());
+    let mut copy = original;
+    copy.transform(Affine::translate((60.0, 40.0)), false);
+    doc.children_mut(Some(first_group)).unwrap().push(Arc::new(copy));
+    assert_eq!(doc.index_path(id), Some(vec![0, 1, 0]), "the index still finds the original");
+    assert_eq!(doc.index_paths([id]).get(&id), Some(&vec![0, 0, 0]), "a walk finds the copy");
+    let mut cache = VisualBounds::default();
+    assert_eq!(bits(cache.bounds_of(&doc, &[id])), bits(doc.bounds_of(&[id], true)));
+}
+
+/// A damaged or hand-made native file keeps its ids (the reader only moves the id counter), so
+/// siblings may share one: through an edit, a restack and a removal every answer is the full walk's
+/// and the entries are exactly the objects the cache keeps one for.
+#[test]
+fn siblings_sharing_an_id_answer_as_the_full_walk() {
+    let (mut doc, ids) = design(3, 6);
+    let shared = ids[1][0];
+    for id in &ids[1][1..] {
+        doc.node_mut(*id).unwrap().id = shared;
+    }
+    let mut cache = VisualBounds::default();
+    let check = |cache: &mut VisualBounds, doc: &Document, what: &str| {
+        assert_eq!(bits(cache.art_bounds(doc)), bits(doc.art_bounds()), "{what}");
+        let (mine, walked) = both_bounds_of(cache, doc, &[shared]);
+        assert_eq!(mine, walked, "{what}");
+        assert_eq!(cache.entries(), doc.layers.iter().map(|l| mirrored(l)).sum::<usize>(), "{what}");
+    };
+    check(&mut cache, &doc, "made");
+    doc.node_mut(shared).unwrap().transform(Affine::translate((50.0, 0.0)), false);
+    check(&mut cache, &doc, "the first moved");
+    // All six still share the id: the addresses alone tell them apart.
+    let group = doc.parent_of(shared);
+    doc.move_node(shared, group, usize::MAX).unwrap();
+    check(&mut cache, &doc, "the first restacked to the front");
+    doc.remove(shared).unwrap();
+    check(&mut cache, &doc, "one removed");
+}
+
+/// The cache's walk on a document as deep as one may be, on a thread with the 1 MB stack of a
+/// Windows main thread (the web build's stack is 1 MB too).
+#[test]
+fn a_document_as_deep_as_allowed_is_measured_on_a_1_mb_stack() {
+    /// The stack of the thread the test measures on, bytes: a Windows main thread's, and the web
+    /// build's.
+    const STACK_BYTES: usize = 1 << 20;
+    std::thread::Builder::new()
+        .stack_size(STACK_BYTES)
+        .spawn(|| {
+            let mut doc = Document::new(100.0, 100.0);
+            let mut n = zig_zag(&mut doc, 0.0, 0.0, 3, 1.0, 1.0);
+            // A path in groups nested as deep as a document may nest them, with its layer.
+            for _ in 0..crate::MAX_DEPTH - 2 {
+                n = Node::group(doc.alloc_id(), vec![Arc::new(n)]);
+            }
+            let layer = doc.layers.first().map(|l| l.id);
+            doc.insert(layer, usize::MAX, n).unwrap();
+            assert!(!doc.too_deep(None));
+            let mut cache = VisualBounds::default();
+            assert_eq!(bits(cache.art_bounds(&doc)), bits(doc.art_bounds()));
+            assert_eq!(cache.entries(), crate::MAX_DEPTH);
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
 /// A small random number generator (SplitMix64), so that one proptest seed makes a document and a
 /// session of edits.
 struct Rng(u64);
@@ -177,8 +321,13 @@ impl Rng {
     }
 }
 
-/// Symbol names the random instances show: two in the document, one missing.
+/// Symbol names the random instances show: two in the document, one missing (its instances drawn
+/// as the 20 × 20 square until a symbol is renamed to it).
 const SYMBOL_NAMES: [&str; 3] = ["A", "B", "missing"];
+
+/// The Image Trace views a random live trace shows (its source image left out of its bounds
+/// unless the view shows it).
+const TRACE_VIEWS: [&str; 4] = ["result", "outlines", "outlinesWithSource", "source"];
 
 /// A random stroked path: a rectangle or a zig-zag, its stroke 0 to 4 pt wide, mitred or round,
 /// butt or square capped.
@@ -200,11 +349,12 @@ fn random_path(r: &mut Rng, d: &mut Document) -> Node {
 }
 
 /// A random object, containers nested at most `depth` more deep: paths, symbol instances, groups
-/// (some stroked, some clipping), Intertwine groups, compound paths, sublayers and Repeats, some
-/// hidden.
+/// (some stroked, some clipping), Intertwine groups, compound paths, sublayers (some stroked, some
+/// clipping), Repeats, Shaper groups and live traces (whose first child is left out of their
+/// bounds), some hidden.
 fn random_object(r: &mut Rng, d: &mut Document, depth: usize) -> Node {
     let members = |r: &mut Rng, d: &mut Document, k: usize| -> Vec<Arc<Node>> { (0..k).map(|_| Arc::new(random_object(r, d, depth - 1))).collect() };
-    let mut n = match if depth == 0 { r.below(3) } else { r.below(10) } {
+    let mut n = match if depth == 0 { r.below(3) } else { r.below(12) } {
         0 | 1 => random_path(r, d),
         2 => {
             let symbol = SYMBOL_NAMES[r.below(SYMBOL_NAMES.len())].to_string();
@@ -237,11 +387,46 @@ fn random_object(r: &mut Rng, d: &mut Document, depth: usize) -> Node {
         }
         8 => {
             let mut l = Node::layer(d.alloc_id(), "sublayer", LayerColor::Preset(1));
+            let clipping = r.below(3) == 0;
+            let mut kids = if clipping { vec![Arc::new(random_path(r, d))] } else { vec![] };
             let k = r.below(4);
-            if let Some(c) = l.children_mut() {
-                c.extend(members(r, d, k));
+            kids.extend(members(r, d, k));
+            if let NodeKind::Layer { children, clip, .. } = &mut l.kind {
+                (*children, *clip) = (kids, clipping);
+            }
+            if r.below(3) == 0 {
+                l.appearance = Appearance::basic(Paint::None, Paint::solid(Color::BLACK), r.between(0.0, 6.0)).into();
             }
             l
+        }
+        9 => {
+            let k = 1 + r.below(3);
+            let mut g = Node::group(d.alloc_id(), members(r, d, k));
+            g.extras_mut().shaper = Some(Box::default());
+            g
+        }
+        10 => {
+            // A live trace: its hidden source image first, then the traced art.
+            let mut source = Node::new(
+                d.alloc_id(),
+                NodeKind::Image(Box::new(ImageObject {
+                    key: "traced".into(),
+                    width: 1 + r.below(300) as u32,
+                    height: 1 + r.below(300) as u32,
+                    xf: Affine::translate((r.between(-50.0, 50.0), r.between(-50.0, 50.0))),
+                    link: None,
+                    placement: Default::default(),
+                    pixels: None,
+                })),
+            );
+            source.visible = false;
+            let mut children = vec![Arc::new(source)];
+            let k = r.below(3);
+            children.extend(members(r, d, k));
+            let mut g = Node::group(d.alloc_id(), children);
+            let view = TRACE_VIEWS[r.below(TRACE_VIEWS.len())];
+            g.extras_mut().trace = Some(Box::new(serde_json::json!({ "view": view })));
+            g
         }
         _ => {
             let source = vec![Arc::new(random_path(r, d))];
@@ -289,114 +474,241 @@ fn objects(doc: &Document) -> (Vec<NodeId>, Vec<NodeId>) {
     (all, containers)
 }
 
-/// One random edit of `doc`: an object moved, restroked, hidden or shown, added, removed or
-/// restacked, or a symbol's art replaced.
-fn random_edit(r: &mut Rng, doc: &mut Document) {
+/// One random edit of `doc`, named for the failure message: an object moved, restroked, hidden or
+/// shown, added, removed or restacked, a group's or layer's clipping mask turned on or off, a copy
+/// of an object that keeps its id added, an object put at a second place, a top-level layer added,
+/// removed or restacked, or the symbols changed (an art replaced, one renamed, deleted or added,
+/// or two swapped).
+fn random_edit(r: &mut Rng, doc: &mut Document) -> String {
     let (all, containers) = objects(doc);
     let pick = all.get(r.below(all.len())).copied();
     let into = containers.get(r.below(containers.len())).copied();
-    match r.below(7) {
+    let top = |doc: &Document, id: NodeId| doc.layers.iter().any(|l| l.id == id);
+    // Not into itself or an object inside it.
+    let fits = |doc: &Document, id: NodeId, c: NodeId| doc.ancestry(c).is_some_and(|a| !a.contains(&id));
+    match r.below(15) {
         0 => {
             if let Some(n) = pick.and_then(|id| doc.node_mut(id)) {
                 n.transform(Affine::translate((r.between(-30.0, 30.0), r.between(-30.0, 30.0))) * Affine::scale(r.between(0.8, 1.2)), true);
             }
+            format!("{pick:?} moved")
         }
         1 => {
             let width = r.between(0.0, 8.0);
             if let Some(s) = pick.and_then(|id| doc.node_mut(id)).and_then(|n| n.appearance.stroke_mut()) {
                 s.width = width;
             }
+            format!("{pick:?} restroked {width}")
         }
         2 => {
             if let Some(n) = pick.and_then(|id| doc.node_mut(id)) {
                 n.visible = !n.visible;
             }
+            format!("{pick:?} hidden or shown")
         }
         3 => {
             let n = random_object(r, doc, 2);
             let at = r.below(4);
             if let Some(c) = into {
-                doc.insert(Some(c), at, n).unwrap();
+                // Refused when a repeated id's places disagree: an edit made, or none.
+                let _ = doc.insert(Some(c), at, n);
             }
+            format!("an object added to {into:?} at {at}")
         }
         4 => {
-            if let Some(id) = pick.filter(|id| doc.layers.iter().all(|l| l.id != *id)) {
-                doc.remove(id).unwrap();
+            if let Some(id) = pick.filter(|id| !top(doc, *id)) {
+                // Refused when a repeated id's places disagree: an edit made, or none.
+                let _ = doc.remove(id);
             }
+            format!("{pick:?} removed")
         }
         5 => {
             let at = r.below(4);
             if let (Some(id), Some(c)) = (pick, into)
-                && doc.layers.iter().all(|l| l.id != id)
+                && !top(doc, id)
             {
                 // Refused when it would move an object into itself.
                 let _ = doc.move_node(id, Some(c), at);
             }
+            format!("{pick:?} moved into {into:?} at {at}")
+        }
+        6 => {
+            if let Some(n) = into.and_then(|id| doc.node_mut(id))
+                && let NodeKind::Group { clip, .. } | NodeKind::Layer { clip, .. } = &mut n.kind
+            {
+                *clip = !*clip;
+            }
+            format!("{into:?}'s clipping mask turned on or off")
+        }
+        7 => {
+            let at = r.below(4);
+            if let (Some(id), Some(c)) = (pick, into)
+                && !top(doc, id)
+                && fits(doc, id, c)
+                && let Some(copy) = doc.node(id).cloned()
+            {
+                // Refused when a repeated id's places disagree: an edit made, or none.
+                let _ = doc.insert(Some(c), at, copy);
+            }
+            format!("a copy of {pick:?}, its id kept, added to {into:?} at {at}")
+        }
+        8 => {
+            if let (Some(id), Some(c)) = (pick, into)
+                && !top(doc, id)
+                && fits(doc, id, c)
+                && let Some(shared) = doc.node_arc(id).cloned()
+                && let Ok(children) = doc.children_mut(Some(c))
+            {
+                children.push(shared);
+            }
+            format!("{pick:?} put at a second place, in {into:?}")
+        }
+        9 => {
+            let id = doc.alloc_id();
+            let mut l = Node::layer(id, "layer", LayerColor::Preset(3));
+            let k = r.below(3);
+            if let Some(c) = l.children_mut() {
+                for _ in 0..k {
+                    c.push(Arc::new(random_object(r, doc, 2)));
+                }
+            }
+            let at = r.below(doc.layers.len() + 1);
+            doc.layers.insert(at, Arc::new(l));
+            format!("a top-level layer added at {at}")
+        }
+        10 => {
+            let at = r.below(doc.layers.len());
+            if doc.layers.len() > 1 {
+                doc.layers.remove(at);
+            }
+            format!("top-level layer {at} removed")
+        }
+        11 => {
+            let (a, b) = (r.below(doc.layers.len()), r.below(doc.layers.len()));
+            if a < doc.layers.len() && b < doc.layers.len() {
+                doc.layers.swap(a, b);
+            }
+            format!("top-level layers {a} and {b} swapped")
+        }
+        12 => {
+            let name = SYMBOL_NAMES[r.below(SYMBOL_NAMES.len())];
+            let to = SYMBOL_NAMES[r.below(SYMBOL_NAMES.len())];
+            if let Some(s) = doc.symbols.iter_mut().find(|s| s.name == name) {
+                s.name = to.into();
+            }
+            format!("symbol {name} renamed {to}")
+        }
+        13 => {
+            let at = r.below(doc.symbols.len() + 1);
+            if at < doc.symbols.len() {
+                doc.symbols.remove(at);
+            } else {
+                let name = SYMBOL_NAMES[r.below(SYMBOL_NAMES.len())];
+                let s = random_symbol(r, doc, name);
+                doc.symbols.push(s);
+            }
+            format!("symbol {at} deleted, or one added")
         }
         _ => {
+            if r.below(2) == 0 && doc.symbols.len() > 1 {
+                let (a, b) = (r.below(doc.symbols.len()), r.below(doc.symbols.len()));
+                doc.symbols.swap(a, b);
+                return format!("symbols {a} and {b} swapped");
+            }
             let name = ["A", "B"][r.below(2)];
             let s = random_symbol(r, doc, name);
             if let Some(old) = doc.symbols.iter_mut().find(|s| s.name == name) {
                 *old = s;
             }
+            format!("symbol {name}'s art replaced")
         }
     }
 }
 
-/// How many objects `doc` holds.
-fn object_count(doc: &Document) -> usize {
-    objects(doc).0.len()
+/// The objects the cache keeps an entry for in `n`, counted again by the test: `n`, and the
+/// members of a layer or group without a clipping mask (all but a first child it leaves out) and of
+/// an Intertwine group, each counted the same way. The rule `Node::visual` measures containers by,
+/// stated again: should upstream change it, this count says so.
+fn mirrored(n: &Node) -> usize {
+    1 + match &n.kind {
+        NodeKind::Layer { clip: false, .. } | NodeKind::Group { clip: false, .. } => n.editing_children().iter().map(|c| mirrored(c)).sum(),
+        NodeKind::Intertwine { children } => children.iter().map(|c| mirrored(c)).sum::<usize>(),
+        _ => 0,
+    }
 }
 
 /// The property suite's cases, and the most edits a case makes: a random document then up to
-/// [`MOST_EDITS`] edits, every answer checked before the first edit and after each one. Estimates:
-/// the suite runs in about a second.
+/// [`MOST_EDITS`] edits, every answer checked before the first edit and after each one. One step
+/// in [`ANOTHER_DOCUMENT_EVERY`] also measures another random document with the same cache, as the
+/// canvas measures each document it shows. Estimates: the suite runs in a second or two.
 const CASES: u32 = 96;
 const MOST_EDITS: usize = 24;
+const ANOTHER_DOCUMENT_EVERY: usize = 6;
 
 proptest! {
     #![proptest_config(seeded(CASES))]
-    /// On a random document through a random session of edits, each answer is the full walk's, bit
-    /// for bit: the art's bounds, every object's on its own and all of them at once. Some edits keep
-    /// the version before (as the undo history does), some don't, and some go back to it (undo).
-    /// The entries never outnumber the document's objects.
+    /// On a random document through a random session of edits, each answer is the full walk's: the
+    /// art's bounds, every object's on its own and all of them at once. Some edits keep the version
+    /// before (as the undo history does), some don't, and some go back to it (undo); now and then
+    /// another document is measured in between. The entries are exactly the objects the cache
+    /// keeps one for.
     #[test]
     fn bounds_measured_from_what_changed_are_the_full_walks(seed in any::<u64>(), steps in 0usize..=MOST_EDITS) {
         let mut r = Rng(seed);
         let mut doc = random_document(&mut r);
         let mut cache = VisualBounds::default();
         let mut history: Vec<Document> = vec![];
-        check(&mut cache, &doc, 0)?;
+        check(&mut cache, &doc, 0, "the document as made")?;
         for step in 1..=steps {
-            match r.below(4) {
+            let what = match r.below(4) {
                 1 if !history.is_empty() => {
                     if let Some(before) = history.pop() {
                         doc = before;
                     }
+                    "undo".to_string()
                 }
                 0 => {
                     history.clear();
-                    random_edit(&mut r, &mut doc);
+                    random_edit(&mut r, &mut doc)
                 }
                 _ => {
                     history.push(doc.clone());
-                    random_edit(&mut r, &mut doc);
+                    random_edit(&mut r, &mut doc)
                 }
+            };
+            if r.below(ANOTHER_DOCUMENT_EVERY) == 0 {
+                let other = random_document(&mut r);
+                check(&mut cache, &other, step, "another document")?;
             }
-            check(&mut cache, &doc, step)?;
+            check(&mut cache, &doc, step, &what)?;
         }
     }
 }
 
-/// Every answer of `cache` on `doc` after `step` edits: the art's bounds, every object's on its
-/// own and all of them at once, as the full walk gives them.
-fn check(cache: &mut VisualBounds, doc: &Document, step: usize) -> Result<(), TestCaseError> {
-    prop_assert_eq!(bits(cache.art_bounds(doc)), bits(doc.art_bounds()), "art, step {}", step);
+/// `cache`'s and the full walk's bounds of `ids` in `doc`, each looked up from the same state of
+/// the document's id index. Which copy of a repeated id `Document::index_path` finds depends on that
+/// state (a place it still holds from when the id was unique, or the first in tree order), and a
+/// lookup can rebuild it, so two calls in a row may look a repeated id up differently: each side
+/// looks its ids up on a clone of `doc`, which shares the index as it is (and shares every object,
+/// so the cache's entries still hold).
+fn both_bounds_of(cache: &mut VisualBounds, doc: &Document, ids: &[NodeId]) -> (Option<[u64; 4]>, Option<[u64; 4]>) {
+    let (mine, walked) = (doc.clone(), doc.clone());
+    (bits(cache.bounds_of(&mine, ids)), bits(walked.bounds_of(ids, true)))
+}
+
+/// Every answer of `cache` on `doc` after `step` edits, the last `what`: the art's bounds, every
+/// object's on its own and all of them at once, as the full walk gives them, and one entry for
+/// each object the cache keeps one for.
+fn check(cache: &mut VisualBounds, doc: &Document, step: usize, what: &str) -> Result<(), TestCaseError> {
+    prop_assert_eq!(bits(cache.art_bounds(doc)), bits(doc.art_bounds()), "art, step {} ({})", step, what);
     let (all, _) = objects(doc);
     for id in &all {
-        prop_assert_eq!(bits(cache.bounds_of(doc, &[*id])), bits(doc.bounds_of(&[*id], true)), "object {}, step {}", id, step);
+        let (mine, walked) = both_bounds_of(cache, doc, &[*id]);
+        prop_assert_eq!(mine, walked, "object {}, step {} ({})", id, step, what);
     }
-    prop_assert_eq!(bits(cache.bounds_of(doc, &all)), bits(doc.bounds_of(&all, true)), "all, step {}", step);
-    prop_assert!(cache.entries() <= object_count(doc), "{} entries for {} objects", cache.entries(), object_count(doc));
+    let (mine, walked) = both_bounds_of(cache, doc, &all);
+    prop_assert_eq!(mine, walked, "all, step {} ({})", step, what);
+    let want: usize = doc.layers.iter().map(|l| mirrored(l)).sum();
+    prop_assert_eq!(cache.entries(), want, "entries, step {} ({})", step, what);
     Ok(())
 }

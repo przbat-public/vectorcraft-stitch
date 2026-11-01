@@ -645,9 +645,7 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
 - **The stitch commands' hooks in upstream files** (the commands are `cmd/embroidery/needles.rs`
   and `needle_edits.rs`, the hooks' bodies `hooks.rs`), each marked "VectorCraft Stitch": one
   statement each, but two for each cut (the run as it was taken before the cut, then its marks on
-  the pieces after). Upstream has since moved `cmd/draw2.rs` into a module (`replace_with_pieces`
-  now in `cmd/draw2/common.rs`, `split` in `cmd/draw2/cut.rs`) and `dialogs/mod.rs` to
-  `dialogs.rs`: the hooks move with the functions they sit in.
+  the pieces after).
   - `engine/src/cmd/path.rs`: at the top of `delete_anchors` (which the Delete key, Edit › Clear and
     Edit › Cut with anchors selected, and `path.deleteAnchors` all reach), needle points of runs of
     stitches selected are deleted as stitches (`embroidery::delete_needle_points_selected`: when
@@ -668,16 +666,56 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     that no form of `path.join` reverses a run; in
     `cut_at_anchors`, on a path of several subpaths, the run as it was taken before its pieces are
     put in place and `embroidery::runs_cut_in_place` after.
+- **Upstream split its large files into modules on 2026-10-26, after the fork's last sync** (some
+  fifty commits, each titled `refactor(<crate>): move <file> items to …`): the next sync meets the
+  hooks above in files that no longer hold their functions, all of a file's marked lines
+  conflicting at once. The hooks move with the functions they sit in, and the lists above keep the
+  old file names until that sync rewrites them. The files holding the fork's hooks, and where
+  upstream put what they hook:
+  - `ui-egui/src/canvas.rs` → `canvas/`: `task_bar` and `task_bar_rect` in `canvas/task_bar.rs`
+    (`task_bar_rect` re-exported from `canvas.rs`), `cursor_icon` in `canvas/cursor.rs`;
+  - `ui-egui/src/chrome.rs` → `chrome/`: `hint_for`, `hint_strings` and `hint_bar` in
+    `chrome/hints.rs`;
+  - `ui-egui/src/menus.rs` → `menus/`: `UI_COMMANDS` in `menus/ui_commands.rs`, `invoke` in
+    `menus/invoke.rs`, the menu tree in `menus/tree.rs`;
+  - `ui-egui/src/lib.rs` → `app/` and others (`selection_bounds` in `app/view.rs`);
+    `ui-egui/src/widgets.rs` → `widgets/` (`recessed_text` and `select_all_on_focus` in
+    `widgets/text.rs`, `step_value` in `widgets/numeric.rs`); `ui-egui/src/io.rs` → `io/`
+    (`asks_options` in `io/save.rs`); `dialogs/mod.rs` → `dialogs.rs`;
+  - `engine/src/lib.rs` → `session/` and others (`close_document` in `session/documents.rs`);
+    `cmd/draw2.rs` → `cmd/draw2/` (`replace_with_pieces` in `cmd/draw2/common.rs`, `split` in
+    `cmd/draw2/cut.rs`); `cmd/object.rs` → `cmd/object/` (`ungroup` in `cmd/object/arrange.rs`,
+    `compound_make` in `cmd/object/compound.rs`); `cmd/brushsym.rs` → `cmd/brushsym/`
+    (`break_links` in `cmd/brushsym/symbols.rs`); `cmd/buildcmds.rs` → `cmd/buildcmds/`
+    (`sb_merge` in `cmd/buildcmds/shape_builder.rs`);
+  - `doc/src/lib.rs` → `document.rs` and others (`same_outside_layers`), `doc/src/node.rs` →
+    `node/`; `render/src/lib.rs` and `tools/src/lib.rs` into modules of their own (`ToolContext`
+    in `tools/src/context.rs`, `Cursor` in `tools/src/cursor.rs`).
 - **Upstream's internals the fork reads without a hook** (nothing to resolve, but a sync that
-  changes them breaks a feature quietly): Window › Embroidery's dock-width fit
-  (`panels::embroidery::fit_dock_tabs`) reads the shared dock's area id
-  `"vectorcraft-panel-docking"` (`panel_docking.rs`), craft-ui's tab ids under it (`("tab",
-  panel)`), `dock::shared_dock_default_width` and `clamp_shared_dock_width`, and sets
-  `UiState::dock_width` and `dock_width_pending`. If they change, the fit finds no tabs and does
-  nothing; `the_docks_four_tabs_show_their_labels_whole` then fails. The embroidery checkbox
-  (`embroidery/rows.rs`'s `check`) draws as upstream's `widgets::check_row_named` does (its box,
-  tick and dash), its words wrapped and its colours read on what it lies on: when a sync restyles
-  upstream's checkboxes, restyle it too.
+  changes them breaks a feature quietly):
+  - Window › Embroidery's dock-width fit (`panels::embroidery::fit_dock_tabs`) reads the shared
+    dock's area id `"vectorcraft-panel-docking"` (`panel_docking.rs`), craft-ui's tab ids under it
+    (`("tab", panel)`), `dock::shared_dock_default_width` and `clamp_shared_dock_width`, and sets
+    `UiState::dock_width` and `dock_width_pending`. If they change, the fit finds no tabs and does
+    nothing; `the_docks_four_tabs_show_their_labels_whole` then fails.
+  - The embroidery checkbox (`embroidery/rows.rs`'s `check`) draws as upstream's
+    `widgets::check_row_named` does (its box, tick and dash), its words wrapped and its colours
+    read on what it lies on: when a sync restyles upstream's checkboxes, restyle it too.
+  - Stitch editing is upstream's isolation mode: its fade of the rest of the document, its bar
+    (‹ and the object's name) and the ways it ends (Escape, ‹, a double-click outside). The chip
+    sits under the bar (`embroidery/editing.rs`); a sync that changes the bar's place or how
+    isolation ends changes stitch editing with it
+    (`a_double_click_starts_editing_and_escape_deselects_then_leaves`).
+  - The Contextual Task Bar: the hook hands upstream's `task_bar` the selected needle points' box
+    in place of `selection_bounds()`, and upstream places the bar under whatever box it is given
+    (centred on it, below its lowest corner on screen, kept within the canvas): a sync that places
+    it otherwise moves stitch editing's bar too
+    (`the_task_bar_sits_under_the_selected_needle_points`). The live check keeps clear of the bar
+    by reading `canvas::task_bar_rect` (`embroidery/selection.rs`).
+  - The Lasso tool selects needle points as it selects anchors, by `select.anchorsMany`
+    (`tools/src/xform/wand.rs`): while stitches are edited the Lasso is upstream's, as the project
+    owner chose on 2026-10-31 (the Decisions register); a sync that changes what it sends changes
+    it (`the_lasso_tool_selects_needle_points_while_editing`).
 - **Opening a file's steps for each object reach Restore Object too.** Restore puts back the object
   the fork kept as the file saved it (`embroidery.original.node`), read without
   `vectorcraft_format::load`. So `cmd/embroidery/manual.rs` repeats on it what opening a file does

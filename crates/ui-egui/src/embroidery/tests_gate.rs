@@ -828,8 +828,9 @@ type EditTick<'a> = dyn FnMut(&mut VectorcraftApp, Vec<Event>) -> (f64, u64, f64
 ///   million needle points: previewed only on a pause, the selection's box moving with the pointer,
 ///   planned at most once), its frames timed, then held still for the pause preview (its slowest
 ///   frame printed), and one needle point dragged on its own, its frames printed; then the Lasso
-///   tool round the marquee's box (upstream's per-anchor selection, the edit look kept: the project
-///   owner's choice, 2026-10-31), its frames and its release frame timed and what it sends measured.
+///   tool round the marquee's box, the drags undone (upstream's per-anchor selection, the edit look
+///   kept: the project owner's choice, 2026-10-31), selecting what the marquee did, its frames and
+///   its release frame timed and what it sends measured.
 ///
 /// Each drag is checked to have moved its needle points, and a drag of one to have kept the
 /// selection: the gesture timed is the drag, not a marquee.
@@ -919,7 +920,20 @@ fn stitch_editing_gate() {
             assert!(app.session.active().unwrap().selection.anchors.values().any(|a| !a.is_empty()), "{name}: the click selected nothing");
             let taken = app.embroidery.preview.log.taken.len();
             let uploads = app.embroidery.layer.uploaded_bytes;
-            let (before, selection) = (anchor(&app, anchors / 2), app.session.active().unwrap().selection.anchors.clone());
+            // What the click selected: where needle points lie on one another (a tack), a press names
+            // the one sewn later, not always the anchor pressed.
+            let selected_points = |app: &VectorcraftApp| -> Vec<vectorcraft_geom::Point> {
+                let st = app.session.active().unwrap();
+                st.selection
+                    .anchors
+                    .iter()
+                    .flat_map(|(id, set)| {
+                        let path = st.doc.node(*id).unwrap().path_data().unwrap().clone();
+                        set.iter().map(move |&(s, a)| path.subpaths[s].anchors[a].p).collect::<Vec<_>>()
+                    })
+                    .collect()
+            };
+            let (before, selection) = (selected_points(&app), app.session.active().unwrap().selection.anchors.clone());
             tick(&mut app, vec![button(at, true)]);
             let mut to = at;
             for _ in 0..DRAG_FRAMES {
@@ -931,7 +945,8 @@ fn stitch_editing_gate() {
             tick(&mut app, vec![button(to, false)]);
             fresh = settle(&mut app, &mut tick);
             // The gesture timed was the drag: the needle point moved, the selection as it was.
-            assert!(anchor(&app, anchors / 2).distance(before) > 1.0, "{name}: the drag moved nothing");
+            let after = selected_points(&app);
+            assert!(!before.is_empty() && before.iter().zip(&after).all(|(a, b)| a.distance(*b) > 1.0), "{name}: the drag moved nothing");
             assert_eq!(app.session.active().unwrap().selection.anchors, selection, "{name}: the drag changed the selection");
         }
         // A marquee over the object (or half of the design), its release frame timed.
@@ -949,6 +964,11 @@ fn stitch_editing_gate() {
         let selected: usize = app.session.active().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum();
         if many {
             assert!(selected > vectorcraft_tools::embroidery::LIVE_DRAG_POINTS_MAX, "{name}: the marquee selected {selected} needle points");
+            // The needle points it selected by stitch editing's rule (a path selected whole stands
+            // for all of them), to set the Lasso's beside.
+            let marqueed = crate::embroidery::editing::editing(&mut app).map_or(0, |e| e.selected);
+            // The marquee's far corner, kept for the Lasso: the drags below end elsewhere.
+            let marquee_to = to;
             // Hover frames over the design, then a drag of what the marquee selected.
             let mut hover = vec![];
             for k in 0..DRAG_FRAMES {
@@ -996,11 +1016,15 @@ fn stitch_editing_gate() {
             settle(&mut app, &mut tick);
             println!("{name}: one needle point dragged, a frame p95 {:.2} ms, max {:.2} ms", percentile(alone.clone(), 0.95), percentile(alone, 1.0));
             // The Lasso tool round the marquee's box: each needle point tested against its loop at
-            // the release and named in the command it sends, as upstream's tool selects anchors.
+            // the release and named in the command it sends, as upstream's tool selects anchors. The
+            // two drags undone first, so that it loops round what the marquee selected.
+            app.run("edit.undo", json!({})).unwrap();
+            app.run("edit.undo", json!({})).unwrap();
+            settle(&mut app, &mut tick);
             app.run("select.none", json!({})).unwrap();
             app.run("tool.select", json!({"tool": vectorcraft_tools::embroidery::LASSO})).unwrap();
             settle(&mut app, &mut tick);
-            let corners = [from, egui::pos2(to.x, from.y), to, egui::pos2(from.x, to.y), from];
+            let corners = [from, egui::pos2(marquee_to.x, from.y), marquee_to, egui::pos2(from.x, marquee_to.y), from];
             tick(&mut app, vec![Event::PointerMoved(from), button(from, true)]);
             let mut looped = vec![];
             for side in corners.windows(2) {
@@ -1011,18 +1035,25 @@ fn stitch_editing_gate() {
             }
             let released = tick(&mut app, vec![button(from, false)]).0;
             settle(&mut app, &mut tick);
+            // What it sent, as upstream's tool writes it: each path's anchors inside the loop as
+            // [subpath, anchor], every one of a path all inside it (then selected whole).
             let st = app.session.active().unwrap();
-            let lassoed: usize = st.selection.anchors.values().map(std::collections::BTreeSet::len).sum();
-            // What it sent, as upstream's tool writes it: each path's anchors as [subpath, anchor].
             let items: Vec<serde_json::Value> = st
                 .selection
-                .anchors
+                .objects
                 .iter()
-                .map(|(id, set)| json!({"id": id.0, "anchors": set.iter().map(|(s, a)| json!([s, a])).collect::<Vec<_>>()}))
+                .filter_map(|id| {
+                    let path = st.doc.node(*id)?.path_data()?;
+                    let anchors: Vec<serde_json::Value> = match st.selection.anchors.get(id) {
+                        Some(set) => set.iter().map(|(s, a)| json!([s, a])).collect(),
+                        None => path.anchors().map(|(s, a, _)| json!([s, a])).collect(),
+                    };
+                    Some(json!({"id": id.0, "anchors": anchors}))
+                })
                 .collect();
             let sent = json!({"items": items, "mode": "set"}).to_string().len() as f64 / BYTES_PER_MB;
-            assert!(lassoed > vectorcraft_tools::embroidery::LIVE_DRAG_POINTS_MAX, "{name}: the Lasso selected {lassoed} needle points");
-            assert!(crate::embroidery::editing::editing(&mut app).is_some_and(|e| e.selected == lassoed), "{name}: the Lasso's selection edited");
+            let lassoed = crate::embroidery::editing::editing(&mut app).map_or(0, |e| e.selected);
+            assert_eq!(lassoed, marqueed, "{name}: the Lasso and the marquee round one box select alike");
             println!(
                 "{name}: the Lasso round the same box: {lassoed} needle points selected; its frames p95 {:.2} ms, its release frame {released:.0} ms, {sent:.1} MB sent",
                 percentile(looped, 0.95)

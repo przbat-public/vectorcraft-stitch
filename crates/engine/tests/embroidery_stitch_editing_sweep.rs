@@ -64,6 +64,11 @@ enum Step {
     Tick(f64),
     /// The selection deleted (`edit.clear`).
     Delete,
+    /// Undo, and Redo.
+    Undo,
+    Redo,
+    /// The other document made active, and this one again.
+    SwitchDocument,
     /// A drag from a spot, by each offset (screen pixels) in turn, ticked after each, ended so.
     Drag(Spot, Vec<(f64, f64)>, End),
 }
@@ -73,6 +78,8 @@ enum End {
     Release,
     Escape,
     Delete,
+    /// Undo while the drag goes on, then the release.
+    Undo,
 }
 
 /// The zooms the sweep views the design at: far out, as drawn, the mockup's 3,100 %, the closest.
@@ -109,7 +116,14 @@ fn arb_step() -> impl Strategy<Value = Step> {
         3 => (key, arb_mods()).prop_map(|(k, m)| Step::Key(k, m)),
         1 => (0.0..1.0f64).prop_map(Step::Tick),
         1 => Just(Step::Delete),
-        4 => (arb_spot(), prop::collection::vec((-80.0..80.0f64, -80.0..80.0f64), 1..5), prop::sample::select(vec![End::Release, End::Escape, End::Delete]))
+        1 => Just(Step::Undo),
+        1 => Just(Step::Redo),
+        1 => Just(Step::SwitchDocument),
+        4 => (
+            arb_spot(),
+            prop::collection::vec((-80.0..80.0f64, -80.0..80.0f64), 1..5),
+            prop::sample::select(vec![End::Release, End::Escape, End::Delete, End::Undo])
+        )
             .prop_map(|(s, moves, end)| Step::Drag(s, moves, end)),
     ]
 }
@@ -167,6 +181,9 @@ proptest! {
         count_panics();
         let caught = CAUGHT.load(Ordering::SeqCst);
         let (mut s, objects) = fixture();
+        // A second document, to switch to and back.
+        no_panic(s.execute("file.new", &json!({"width": 100, "height": 100, "artboards": 1})))?;
+        prop_assert!(s.set_active(0));
         let id = objects[object % objects.len()];
         no_panic(s.execute("object.isolate", &json!({"id": id})))?;
         no_panic(s.execute("view.stitchPreview", &json!({"on": true})))?;
@@ -191,6 +208,16 @@ proptest! {
                 }
                 Step::Delete => {
                     no_panic(s.execute("edit.clear", &json!({})))?;
+                }
+                Step::Undo => {
+                    no_panic(s.execute("edit.undo", &json!({})))?;
+                }
+                Step::Redo => {
+                    no_panic(s.execute("edit.redo", &json!({})))?;
+                }
+                Step::SwitchDocument => {
+                    prop_assert!(s.set_active(1) && s.stitch_editing(view).is_none(), "the other document edits nothing");
+                    prop_assert!(s.set_active(0));
                 }
                 Step::Drag(spot, moves, end) => {
                     // A gesture of its own: whatever the steps before left open ends first.
@@ -224,6 +251,11 @@ proptest! {
                         End::Delete => {
                             no_panic(s.execute("edit.clear", &json!({})))?;
                             no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, to.0, to.1), view))?;
+                        }
+                        End::Undo => {
+                            no_panic(s.execute("edit.undo", &json!({})))?;
+                            no_panic(s.pointer(&PointerEvent::new(PointerKind::Up, to.0, to.1), view))?;
+                            prop_assert!(!s.in_interaction(), "an undo mid-drag left the drag open: {steps:?}");
                         }
                     }
                 }
@@ -429,4 +461,74 @@ fn an_edit_of_a_path_sewn_before_takes_the_numbers_away() {
     s.execute("embroidery.selectNeedlePoints", &json!({"needlePoints": [{"id": p2, "index": 3}]})).unwrap();
     s.execute("embroidery.deleteNeedlePoints", &json!({"needlePoints": [{"id": p1, "index": 2}]})).unwrap();
     assert_eq!(numbered(&mut s), Some(None), "no number until planned again");
+}
+
+/// After an Undo the needle points are found where they are now: a needle point moved, the move
+/// undone, a press where it was before the move selects it.
+#[test]
+fn after_an_undo_a_press_finds_the_needle_point_where_it_is() {
+    let (mut s, objects) = fixture();
+    let id = objects[0];
+    s.execute("object.isolate", &json!({"id": id})).unwrap();
+    s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
+    let view = ViewInfo::default();
+    s.select_tool("embroidery", view).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let mut run = None;
+    doc.node(NodeId(id)).unwrap().walk(&mut |c| {
+        if run.is_none() && c.extras().embroidery.as_deref().is_some_and(|e| e.stitches.is_some()) {
+            run = Some(c.id);
+        }
+    });
+    let run = run.expect("a run");
+    let at = doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[3].p;
+    s.execute("embroidery.moveNeedlePoints", &json!({"needlePoints": [{"id": run.0, "index": 3}], "dx": 5.0})).unwrap();
+    s.stitch_editing(view);
+    s.execute("edit.undo", &json!({})).unwrap();
+    s.pointer(&PointerEvent::new(PointerKind::Down, at.x, at.y), view).unwrap();
+    s.pointer(&PointerEvent::new(PointerKind::Up, at.x, at.y), view).unwrap();
+    let selected = s.doc().unwrap().selection.anchors.get(&run).cloned().unwrap_or_default();
+    assert!(selected.contains(&(0, 3)), "the needle point back where it was is selected: {selected:?}");
+}
+
+/// Editing ends however it is left mid-drag, with nothing left open: an agent's exit from
+/// isolation, the convert undone (the object is art again), another tool.
+#[test]
+fn editing_left_mid_drag_by_other_means_leaves_nothing_open() {
+    let view = ViewInfo::default();
+    for leave in ["exit", "undo the convert", "another tool"] {
+        let mut s = Session::new();
+        s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+        s.execute("paint.setStroke", &json!({"none": true})).unwrap();
+        s.execute("paint.setFill", &json!({"color": "#c81e1e"})).unwrap();
+        let id = s.execute("shape.rectangle", &json!({"x": 60, "y": 60, "width": 120, "height": 90})).unwrap()["id"].as_u64().unwrap();
+        s.execute("select.set", &json!({"ids": [id]})).unwrap();
+        s.execute("embroidery.convertToManual", &json!({})).unwrap();
+        s.execute("object.isolate", &json!({"id": id})).unwrap();
+        s.execute("view.stitchPreview", &json!({"on": true})).unwrap();
+        s.select_tool("embroidery", view).unwrap();
+        assert!(s.stitch_editing(view).is_some(), "{leave}: editing");
+        let points = needle_points(&s, id);
+        let p = points[4];
+        s.pointer(&PointerEvent::new(PointerKind::Down, p.x, p.y), view).unwrap();
+        for k in 1..=4 {
+            s.pointer(&PointerEvent::new(PointerKind::Drag, p.x + 3.0 * f64::from(k), p.y), view).unwrap();
+            s.tool_tick(1.0 / 60.0, view).unwrap();
+        }
+        match leave {
+            "exit" => {
+                s.execute("object.exitIsolation", &json!({})).unwrap();
+            }
+            "undo the convert" => {
+                // The drag's own step, then the convert's.
+                s.execute("edit.undo", &json!({})).unwrap();
+                s.execute("edit.undo", &json!({})).unwrap();
+            }
+            _ => s.select_tool("selection", view).unwrap(),
+        }
+        s.pointer(&PointerEvent::new(PointerKind::Up, p.x + 12.0, p.y), view).unwrap();
+        assert!(!s.in_interaction(), "{leave}: no drag left open");
+        assert!(s.stitch_editing(view).is_none(), "{leave}: editing ended");
+        assert!(check_session(&s).is_ok(), "{leave}: {:?}", check_session(&s));
+    }
 }

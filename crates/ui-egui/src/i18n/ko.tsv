@@ -5715,11 +5715,11 @@ embroidery	Show Stitches	스티치 표시
 embroidery	Edit Stitches	스티치 편집하기
 embroidery	Move, insert and delete these needle points on the canvas with the Embroidery Tool.	자수 도구로 캔버스에서 이 바늘 위치를 이동, 삽입, 삭제합니다.
 @plural	{count} selected|{count} selected	{count}개 선택됨
-	 needle points, or a frame round them  |  	: 바늘 위치 또는 그 주위의 틀  |  
-	 a stitch to insert a needle point  |  	: 스티치에 바늘 위치 삽입  |  
+	 needle points, or a frame round them  |  	 바늘 위치 또는 그 주위의 틀  |  
+	 a stitch to insert a needle point  |  	 스티치에 바늘 위치 삽입  |  
 	←↑→↓	←↑→↓
-	 move by 0.1 mm  |  	: 0.1mm 이동  |  
-	 deselects, then ends editing	: 선택 해제 후 편집 끝내기
+	 move by 0.1 mm  |  	 0.1mm 이동  |  
+	 deselects, then ends editing	 선택 해제 후 편집 끝내기
 # VectorCraft Stitch: stitch editing on the canvas: the Contextual Task Bar's and the panel menu's stitch actions, and the live check beside the selected needle points
 embroidery	Moved X {x} · Y {y} mm	이동 X {x} · Y {y} mm
 embroidery	Insert	삽입

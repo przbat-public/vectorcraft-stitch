@@ -547,3 +547,26 @@ fn screen_readers_hear_the_embroidery_interface() {
     let items = nodes.iter().filter(|n| n.role() == Role::TreeItem).count();
     assert!(tree.children().len() >= items, "{} children for {items} rows", tree.children().len());
 }
+
+/// Stitch editing's hint is translated in every language, fragment by fragment (its keys as
+/// upstream's hints take them: the key after a `+`), and spaced as the language spaces upstream's
+/// own hint fragments: a fragment starts with a space where theirs do, and ends with the separator.
+#[test]
+fn the_editing_hint_is_in_every_language() {
+    /// A fragment of upstream's hints: how each language spaces them.
+    const UPSTREAM: &str = " a point to edit it  |  ";
+    const SEPARATOR: &str = "  |  ";
+    for lang in Lang::all().filter(|l| *l != Lang::EN) {
+        let theirs = crate::i18n::tr(lang, UPSTREAM);
+        for &(text, bold) in crate::embroidery::tool_bar::EDITING_HINT {
+            let key = if bold { text.rsplit_once('+').map_or(text, |(_, k)| k) } else { text };
+            assert!(crate::i18n::has(lang, key), "{}: {key:?} isn't translated", lang.code());
+            if bold {
+                continue;
+            }
+            let ours = crate::i18n::tr(lang, text);
+            assert_eq!(ours.starts_with(' '), theirs.starts_with(' '), "{}: {ours:?} starts as {theirs:?} does", lang.code());
+            assert_eq!(ours.ends_with(SEPARATOR), text.ends_with(SEPARATOR), "{}: {ours:?} ends as {text:?} does", lang.code());
+        }
+    }
+}

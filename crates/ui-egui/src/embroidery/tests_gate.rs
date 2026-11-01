@@ -32,6 +32,14 @@ const EDIT_TO_FRESH_BUDGET_MS: f64 = 100.0;
 /// Pointer moves in a drag, and how far each goes, points.
 const DRAG_FRAMES: usize = 90;
 const DRAG_STEP: f32 = 2.0;
+/// The frames a drag of many needle points rests for, to time its pause preview: its
+/// [`vectorcraft_tools::embroidery::PAUSE_PREVIEW_SECS`] in frames of [`FRAME_BUDGET_MS`], and
+/// [`PLAN_IN_FRAMES`] more.
+const PAUSE_FRAMES: usize = (vectorcraft_tools::embroidery::PAUSE_PREVIEW_SECS * MS_PER_SEC / FRAME_BUDGET_MS) as usize + PLAN_IN_FRAMES;
+/// Milliseconds in a second.
+const MS_PER_SEC: f64 = 1000.0;
+/// The frames a plan asked for on a pause takes to come in and be drawn. An estimate.
+const PLAN_IN_FRAMES: usize = 6;
 /// How far outside an object's box the stitch-editing gate starts and ends a marquee, points: past
 /// the reach of a press on a needle point or a stitch (a few points).
 const MARQUEE_OUTSIDE: f32 = 24.0;
@@ -726,13 +734,25 @@ fn manual_stitches_gate() {
         page.push(t0.elapsed().as_secs_f64() * 1000.0);
         assert_eq!(listed["records"].as_array().map_or(0, Vec::len), LIST_PAGE);
     }
+    // The Stitches tab's flags, as the planning thread builds them with the plan: every record judged.
+    let plan = s.embroidery_plan(&vectorcraft_engine::EmbroideryOptions::default()).unwrap();
+    let limits = vectorcraft_engine::cmd::embroidery::StitchLimits::of(&s.doc().unwrap().doc, None);
+    let mut flags = vec![];
+    for _ in 0..TIMED_RUNS {
+        let t0 = Instant::now();
+        let built = vectorcraft_engine::cmd::embroidery::stitch_list::Flags::of(&plan, &limits);
+        flags.push(t0.elapsed().as_secs_f64() * 1000.0);
+        assert_eq!(built.len(), records, "every record flagged");
+    }
     println!(
-        "stitch list, {records} records: first (planned) {first_ms:.0} ms, every record walked {:.2} ms, a page of {LIST_PAGE} from the middle {:.2} ms (medians of {TIMED_RUNS})",
+        "stitch list, {records} records: first (planned) {first_ms:.0} ms, the command's walk of every record {:.2} ms, a page of {LIST_PAGE} from the middle {:.2} ms, the tab's flags built (on the planning thread) {:.2} ms (medians of {TIMED_RUNS})",
         median(walk),
-        median(page)
+        median(page),
+        median(flags)
     );
 
-    // Frames at 3,100 % with the needle points shown, drawn in line (no layer thread).
+    // Frames at 3,100 % in stitch editing's look (isolated, the Embroidery Tool: the edited lines,
+    // their circles and marks over the rest), drawn in line (no layer thread).
     let mut designs: Vec<(String, Session, vectorcraft_geom::Point)> = Vec::new();
     if let Some((path, at)) = close_up {
         let mut s = Session::new();
@@ -753,7 +773,11 @@ fn manual_stitches_gate() {
         let plans = PlanWorker::start(&ctx).expect("the planning thread starts");
         app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(plans)));
         app.run("view.stitchPreview", json!({"on": true})).unwrap();
-        app.run("view.stitchPreview.needlePoints", json!({"on": true})).unwrap();
+        // Editing the object holding the largest path (the design's layer for the 2 million).
+        let doc = app.session.active().unwrap().doc.clone();
+        let scope = largest_run(&doc).and_then(|(run, _)| doc.ancestry(run)).and_then(|a| a.get(1).copied()).expect("a stitch object");
+        app.run("object.isolate", json!({"id": scope.0})).unwrap();
+        app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
         let mut time = 0.0;
         let mut tick = |app: &mut VectorcraftApp, events: Vec<Event>| {
             time += 1.0 / 60.0;
@@ -775,10 +799,7 @@ fn manual_stitches_gate() {
             app.run("view.setZoom", json!({"zoom": CLOSE_UP_ZOOM_PERCENT, "center": center})).unwrap();
             frames.push(tick(&mut app, vec![]).0);
         }
-        println!(
-            "a frame at {CLOSE_UP_ZOOM_PERCENT} % with the needle points shown, {name}: {:.2} ms (median of {TIMED_RUNS}, drawn in line)",
-            median(frames)
-        );
+        println!("a frame at {CLOSE_UP_ZOOM_PERCENT} % in the edit look, {name}: {:.2} ms (median of {TIMED_RUNS}, drawn in line)", median(frames));
     }
     assert!(worst_p95 <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
 }
@@ -799,10 +820,15 @@ type EditTick<'a> = dyn FnMut(&mut VectorcraftApp, Vec<Event>) -> (f64, u64, f64
 ///   frame for [`DRAG_FRAMES`] frames (each frame timed: the 95th percentile within a 60 Hz frame;
 ///   the plans taken in counted) and let go, timed until the stitches drawn are of the document as
 ///   it is (within 100 ms); then a marquee over the object, its release frame timed;
-/// - on the design of 2 million needle points, its layer isolated: hover frames with the pointer
-///   moving over it, a marquee over half of it (its release frame timed), and a drag of what it
-///   selected (a million needle points: previewed only on a pause, the selection's box moving with
-///   the pointer), its frames timed.
+/// - on the design of 2 million needle points, its layer isolated and the Stitches tab open on the
+///   whole design: hover frames with the pointer moving over it (the 95th percentile within a
+///   frame), a marquee over half of it (its release frame timed), a drag of what it selected (a
+///   million needle points: previewed only on a pause, the selection's box moving with the pointer,
+///   planned at most once), its frames timed, then held still for the pause preview (its slowest
+///   frame printed), and one needle point dragged on its own, its frames printed.
+///
+/// Each drag is checked to have moved its needle points, and a drag of one to have kept the
+/// selection: the gesture timed is the drag, not a marquee.
 #[test]
 #[ignore = "a measurement, run by hand on an idle machine"]
 fn stitch_editing_gate() {
@@ -812,7 +838,7 @@ fn stitch_editing_gate() {
         .unwrap_or_default();
     files.sort();
     let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Default::default() };
-    let (mut worst_p95, mut worst_fresh, mut worst_marquee) = (0.0_f64, 0.0_f64, 0.0_f64);
+    let (mut worst_p95, mut worst_fresh, mut worst_marquee, mut worst_hover) = (0.0_f64, 0.0_f64, 0.0_f64, 0.0_f64);
     println!(
         "{:<52} {:>6} {:>8} {:>9} {:>9} {:>9} {:>6} {:>9} {:>11} {:>10}",
         "design", "light", "points", "drag p50", "drag p95", "drag max", "plans", "upl/fr", "to fresh", "marquee"
@@ -831,7 +857,14 @@ fn stitch_editing_gate() {
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
         let mut app = VectorcraftApp::new(session, Services::default());
-        app.ui.embroidery_panel.tab = crate::panels::embroidery::Tab::Object;
+        // The design at a design's limit with the Stitches tab open on all of it: its rows worked out
+        // on the interface thread after each plan.
+        if many {
+            app.ui.embroidery_panel.tab = crate::panels::embroidery::Tab::Stitches;
+            app.ui.embroidery_panel.stitches_scope = crate::panels::embroidery::stitches::Scope::Design;
+        } else {
+            app.ui.embroidery_panel.tab = crate::panels::embroidery::Tab::Object;
+        }
         let plans = PlanWorker::start(&ctx).expect("the planning thread starts");
         let lines = LineWorker::start(&ctx).expect("the stitch layer's thread starts");
         app.embroidery.preview = StitchPreview::with_runner(Box::new(Driver::Thread(plans)));
@@ -882,6 +915,7 @@ fn stitch_editing_gate() {
             assert!(app.session.active().unwrap().selection.anchors.values().any(|a| !a.is_empty()), "{name}: the click selected nothing");
             let taken = app.embroidery.preview.log.taken.len();
             let uploads = app.embroidery.layer.uploaded_bytes;
+            let (before, selection) = (anchor(&app, anchors / 2), app.session.active().unwrap().selection.anchors.clone());
             tick(&mut app, vec![button(at, true)]);
             let mut to = at;
             for _ in 0..DRAG_FRAMES {
@@ -892,6 +926,9 @@ fn stitch_editing_gate() {
             uploaded = app.embroidery.layer.uploaded_bytes - uploads;
             tick(&mut app, vec![button(to, false)]);
             fresh = settle(&mut app, &mut tick);
+            // The gesture timed was the drag: the needle point moved, the selection as it was.
+            assert!(anchor(&app, anchors / 2).distance(before) > 1.0, "{name}: the drag moved nothing");
+            assert_eq!(app.session.active().unwrap().selection.anchors, selection, "{name}: the drag changed the selection");
         }
         // A marquee over the object (or half of the design), its release frame timed.
         let b = app.session.active().unwrap().doc.bounds_of(&[scope], false).unwrap();
@@ -915,6 +952,7 @@ fn stitch_editing_gate() {
                 hover.push(tick(&mut app, vec![Event::PointerMoved(at)]).0);
             }
             let at = xf.to_screen(anchor(&app, 1));
+            let before = anchor(&app, 1);
             let taken = app.embroidery.preview.log.taken.len();
             tick(&mut app, vec![Event::PointerMoved(at), button(at, true)]);
             let mut to = at;
@@ -923,13 +961,36 @@ fn stitch_editing_gate() {
                 drag.push(tick(&mut app, vec![Event::PointerMoved(to)]).0);
             }
             plans = app.embroidery.preview.log.taken.len() - taken;
+            // A rest mid-drag: the owner's pause preview, the million moved once.
+            let mut rest = vec![];
+            for _ in 0..PAUSE_FRAMES {
+                rest.push(tick(&mut app, vec![]).0);
+            }
             tick(&mut app, vec![button(to, false)]);
             fresh = settle(&mut app, &mut tick);
+            assert!(plans <= 1, "{name}: a drag of {selected} needle points planned {plans} times");
+            assert!(anchor(&app, 1).distance(before) > 1.0, "{name}: the drag moved nothing");
+            let hover_p95 = percentile(hover.clone(), 0.95);
+            worst_hover = worst_hover.max(hover_p95);
             println!(
-                "{name}: {selected} needle points selected by the marquee; hover p95 {:.2} ms, max {:.2} ms",
-                percentile(hover.clone(), 0.95),
-                percentile(hover, 1.0)
+                "{name}: {selected} needle points selected by the marquee; hover p95 {hover_p95:.2} ms, max {:.2} ms; the drag's rest (the pause preview) {:.2} ms at its slowest frame",
+                percentile(hover, 1.0),
+                percentile(rest, 1.0)
             );
+            // One needle point of the 2 million dragged: what each frame costs for one point.
+            let one = xf.to_screen(anchor(&app, anchors / 2));
+            tick(&mut app, vec![Event::PointerMoved(one), button(one, true)]);
+            tick(&mut app, vec![button(one, false)]);
+            settle(&mut app, &mut tick);
+            tick(&mut app, vec![button(one, true)]);
+            let (mut alone, mut to) = (vec![], one);
+            for _ in 0..DRAG_FRAMES {
+                to += egui::vec2(DRAG_STEP, DRAG_STEP / 2.0);
+                alone.push(tick(&mut app, vec![Event::PointerMoved(to)]).0);
+            }
+            tick(&mut app, vec![button(to, false)]);
+            settle(&mut app, &mut tick);
+            println!("{name}: one needle point dragged, a frame p95 {:.2} ms, max {:.2} ms", percentile(alone.clone(), 0.95), percentile(alone, 1.0));
         }
         let (p50, p95, pmax) = (percentile(drag.clone(), 0.5), percentile(drag.clone(), 0.95), percentile(drag, 1.0));
         let per_frame = uploaded as f64 / DRAG_FRAMES as f64 / BYTES_PER_MB;
@@ -958,7 +1019,7 @@ fn stitch_editing_gate() {
     s.add_document(two_million_needle_points(), None);
     gated(s, "2,000,000 needle points", &|doc: &vectorcraft_doc::Document| doc.layers.first().map(|l| l.id), true);
     println!(
-        "worst: drag p95 {worst_p95:.2} ms (budget {FRAME_BUDGET_MS:.1}), light designs' release to fresh {worst_fresh:.2} ms (budget {EDIT_TO_FRESH_BUDGET_MS}), a marquee's release frame {worst_marquee:.2} ms"
+        "worst: drag p95 {worst_p95:.2} ms (budget {FRAME_BUDGET_MS:.1}), hover p95 {worst_hover:.2} ms (budget {FRAME_BUDGET_MS:.1}), light designs' release to fresh {worst_fresh:.2} ms (budget {EDIT_TO_FRESH_BUDGET_MS}), a marquee's release frame {worst_marquee:.2} ms"
     );
-    assert!(worst_p95 <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
+    assert!(worst_p95 <= FRAME_BUDGET_MS && worst_hover <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
 }

@@ -1,29 +1,33 @@
 //! VectorCraft Stitch: visual bounds kept from one measure to the next ([`VisualBounds`]), so that
-//! measuring a document again after an edit costs what the edit changed, not the size of the
-//! document. The canvas measures the art (its scroll bars' span) and the selection (its frame) at
-//! every revision, and a drag makes a revision a frame: on a design of 2 million needle points the
-//! walk over every object took about 40 ms of each frame.
+//! measuring a document again after an edit measures only the objects the edit replaced, not the
+//! whole document; on the way up to each of them it compares each sibling's address with the one
+//! kept. The canvas measures the art (its scroll bars' span) and the selection (its frame) at every
+//! revision, and a drag makes a revision a frame: on a design of 2 million needle points the walk
+//! over every object was nearly all of each frame (`docs/embroidery.md` › Editing a large design
+//! has the figures).
 //!
 //! An edit replaces the objects it changes and the containers on the way up to their layer
 //! (`Arc::make_mut`, copy on write), and keeps every other object where it was. So an object found
 //! at the address it was measured at is the object as measured, and its bounds stand; any other
-//! object is measured again, a layer or group as the union of its members' bounds, most of them
-//! kept. The entries hold their objects weakly: an object's allocation outlives it while its entry
-//! does, so no other object can take its address, and `Arc::make_mut` moves an object it changes
-//! to a new allocation while weak references to it remain (the crate has no unsafe code that could
-//! change one in place). The bounds of symbol instances and Repeats read the document's symbols:
-//! another set of symbols (by name and art) starts the measures over.
+//! object is measured again. A container is measured by upstream's own arms, through
+//! `Node::visual_by`, which asks for each member's bounds: the cache hands over those it kept and
+//! measures again only the members that changed. The entries hold their objects weakly: an
+//! object's allocation outlives it while its entry does, so no other object can take its address,
+//! and `Arc::make_mut` moves an object it changes to a new allocation while weak references to it
+//! remain (the crate has no unsafe code that could change one in place). The bounds of symbol
+//! instances and Repeats read the document's symbols: another set of symbols (by name and art)
+//! starts the measures over.
 //!
 //! The entries mirror the last document measured, down to the objects measured whole (all but
-//! layers, groups without a clipping mask and Intertwine groups, [`Node::visual_members`]): one
-//! entry an object, and nothing of a version of it once the next version is measured.
+//! layers and groups without a clipping mask, and Intertwine groups, which `Node::visual_by`
+//! measures by their members): one entry an object, and nothing of a version of it once the next
+//! version is measured.
 
-use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
 use vectorcraft_geom::{Rect, union_opt};
 
-use crate::node::grown;
+use crate::id_index::IdMap;
 use crate::{Document, Node, NodeId, SymbolBoxes};
 
 /// The visual bounds of a document's objects as last measured, which [`VisualBounds::art_bounds`]
@@ -94,7 +98,11 @@ impl VisualBounds {
             self.layers.clear();
             self.symbols = doc.symbols.iter().map(|s| (s.name.clone(), Arc::downgrade(&s.art))).collect();
         }
-        update(&mut self.layers, &doc.layers, symbols, &mut self.measured);
+        let mut layers = LineUp::new(std::mem::take(&mut self.layers));
+        for l in &doc.layers {
+            layers.measure(l, symbols, &mut self.measured);
+        }
+        self.layers = layers.finish();
     }
 
     /// The entry of the object at index path `path` in `doc` ([`Document::index_path`]) when it is
@@ -103,11 +111,10 @@ impl VisualBounds {
         let (first, rest) = path.split_first()?;
         let (mut node, mut entry): (&Node, &Entry) = (doc.layers.get(*first)?, self.layers.get(*first)?);
         for &i in rest {
-            let (members, _) = node.visual_members()?;
             let children = node.children()?;
-            // The members are the children after those a container leaves out
-            // ([`Node::editing_children`]).
-            let left_out = children.len().saturating_sub(members.len());
+            // A container's members are a tail of its children (`Node::visual_by`): those it leaves
+            // out come first. An object measured whole has no member entries, so none is found.
+            let left_out = children.len().saturating_sub(entry.members.len());
             node = children.get(i)?;
             entry = entry.members.get(i.checked_sub(left_out)?)?;
         }
@@ -123,8 +130,8 @@ struct Entry {
     /// keep theirs.
     id: NodeId,
     bounds: Option<Rect>,
-    /// The entries of its members ([`Node::visual_members`]), in order: none for an object measured
-    /// whole.
+    /// The entries of the members `Node::visual_by` measured it by, in order: none for an object
+    /// measured whole.
     members: Vec<Entry>,
 }
 
@@ -139,49 +146,109 @@ impl Entry {
         self.node.as_ref().is_some_and(|w| std::ptr::eq(w.as_ptr(), n))
     }
 
-    /// Measures `n` into this entry: a container as the union of its members' bounds, each
-    /// measured again only when it changed; any other object whole.
+    /// Measures `n` into this entry by `Node::visual_by`: a container's members are handed the
+    /// bounds kept for them, each measured again only when it changed.
     fn measure(&mut self, n: &Arc<Node>, symbols: &SymbolBoxes, measured: &mut u64) {
         *measured += 1;
-        self.bounds = match n.visual_members() {
-            Some((members, grow)) => {
-                update(&mut self.members, members, symbols, measured);
-                grown(self.members.iter().fold(None, |acc, e| union_opt(acc, e.bounds)), grow)
-            }
-            None => {
-                self.members = Vec::new();
-                n.visual(Some(symbols))
-            }
-        };
-        (self.node, self.id) = (Some(Arc::downgrade(n)), n.id);
+        let mut members = LineUp::new(std::mem::take(&mut self.members));
+        self.bounds = n.visual_by(Some(symbols), &mut |c| members.measure(c, symbols, measured));
+        self.members = members.finish();
+        self.node = Some(Arc::downgrade(n));
     }
 }
 
-/// Brings `entries` up to `nodes` (a container's members, or the layers): an object at its entry's
-/// address keeps the entry as it is, any other object is measured again.
-fn update(entries: &mut Vec<Entry>, nodes: &[Arc<Node>], symbols: &SymbolBoxes, measured: &mut u64) {
-    if entries.len() != nodes.len() || entries.iter().zip(nodes).any(|(e, n)| e.id != n.id) {
-        restack(entries, nodes);
+/// The entries of a list of objects as last measured (a container's members, or the layers), lined
+/// up with the objects as they come, in their order. While the objects come in their old order,
+/// each keeps its entry where it is: its address is the first thing compared, and its id only
+/// when the address differs. From the first object out of that order (one added, removed or
+/// restacked), the entries left are looked up: first the one after the last taken, so that the
+/// objects after a moved one keep their order cheaply, then by id.
+struct LineUp {
+    /// The entries lined up so far; while no object has come out of the old order, followed by the
+    /// old entries still to come.
+    entries: Vec<Entry>,
+    /// How many objects have come.
+    at: usize,
+    /// The old entries left, once an object came out of the old order.
+    left: Option<Left>,
+}
+
+impl LineUp {
+    fn new(entries: Vec<Entry>) -> Self {
+        Self { entries, at: 0, left: None }
     }
-    for (e, n) in entries.iter_mut().zip(nodes) {
-        if !e.holds(n) {
-            e.measure(n, symbols, measured);
+
+    /// The entry for `c`, the next object of the list, measured again unless it holds `c`: its
+    /// bounds.
+    fn measure(&mut self, c: &Arc<Node>, symbols: &SymbolBoxes, measured: &mut u64) -> Option<Rect> {
+        if self.left.is_none() {
+            if let Some(e) = self.entries.get_mut(self.at)
+                && (e.holds(c) || e.id == c.id)
+            {
+                self.at += 1;
+                if !e.holds(c) {
+                    e.measure(c, symbols, measured);
+                }
+                return e.bounds;
+            }
+            let rest = self.entries.split_off(self.at.min(self.entries.len()));
+            self.left = Some(Left { old: rest.into_iter().map(Some).collect(), next: 0, by_id: None });
+        }
+        let mut e = self.left.as_mut().map_or_else(|| Entry::blank(c), |left| left.take(c));
+        if !e.holds(c) {
+            e.measure(c, symbols, measured);
+        }
+        let b = e.bounds;
+        self.entries.push(e);
+        self.at += 1;
+        b
+    }
+
+    /// The entries lined up: those of objects no longer in the list are gone.
+    fn finish(mut self) -> Vec<Entry> {
+        self.entries.truncate(self.at);
+        self.entries
+    }
+}
+
+/// The old entries left once an object came out of its list's old order ([`LineUp`]).
+struct Left {
+    /// The old entries, each taken at most once.
+    old: Vec<Option<Entry>>,
+    /// Where the next object is looked for first: after the entry the last one took.
+    next: usize,
+    /// The old entries' places by id (the first, where ids repeat), made the first time an object
+    /// isn't found where it is looked for first.
+    by_id: Option<IdMap<usize>>,
+}
+
+impl Left {
+    /// The old entry for `c` (its address compared first, then its id), or a blank one.
+    fn take(&mut self, c: &Node) -> Entry {
+        if let Some(slot) = self.old.get_mut(self.next)
+            && slot.as_ref().is_some_and(|e| e.holds(c) || e.id == c.id)
+            && let Some(e) = slot.take()
+        {
+            self.next += 1;
+            return e;
+        }
+        let old = &self.old;
+        let by_id = self.by_id.get_or_insert_with(|| {
+            let mut places = IdMap::default();
+            for (k, e) in old.iter().enumerate() {
+                if let Some(e) = e {
+                    places.entry(e.id).or_insert(k);
+                }
+            }
+            places
+        });
+        let found = by_id.get(&c.id).copied().and_then(|k| Some((k, self.old.get_mut(k)?.take()?)));
+        match found {
+            Some((k, e)) => {
+                self.next = k + 1;
+                e
+            }
+            None => Entry::blank(c),
         }
     }
-}
-
-/// Lines `entries` up with `nodes` after objects were added, removed or moved among them: the
-/// objects in the same order at the start and at the end keep their entries where they are; each
-/// object between takes the entry of the object of its id among those between, if any, else a
-/// blank one. An object added or removed costs a look at each of the others.
-fn restack(entries: &mut Vec<Entry>, nodes: &[Arc<Node>]) {
-    let head = entries.iter().zip(nodes).take_while(|(e, n)| e.id == n.id).count();
-    let tail = entries.iter().skip(head).rev().zip(nodes.iter().skip(head).rev()).take_while(|(e, n)| e.id == n.id).count();
-    let mut kept = std::mem::take(entries);
-    let end = kept.split_off(kept.len().saturating_sub(tail));
-    let mut between: HashMap<NodeId, Entry> = kept.split_off(head.min(kept.len())).into_iter().map(|e| (e.id, e)).collect();
-    let middle = nodes.len().saturating_sub(head + tail);
-    kept.extend(nodes.iter().skip(head).take(middle).map(|n| between.remove(&n.id).unwrap_or_else(|| Entry::blank(n))));
-    kept.extend(end);
-    *entries = kept;
 }

@@ -372,15 +372,6 @@ fn moves_only(a: Affine) -> bool {
     (a0 - 1.0).abs() < 1e-12 && a1.abs() < 1e-12 && a2.abs() < 1e-12 && (a3 - 1.0).abs() < 1e-12
 }
 
-/// VectorCraft Stitch: the union `members` of a container's members' visual bounds grown as
-/// [`Node::visual_members`] says: by `by` on every side, or not at all when `by` is `None`.
-pub(crate) fn grown(members: Option<Rect>, by: Option<f64>) -> Option<Rect> {
-    match by {
-        Some(o) => members.map(|b| b.inflate(o, o)),
-        None => members,
-    }
-}
-
 /// Scale corner radii in document units by the mean scale of `a`, applied to their path. True
 /// when the path must be cut again: some corner is cut and `a` does more than move it (an
 /// uneven scale would otherwise make the cuts elliptical).
@@ -1279,6 +1270,17 @@ impl Node {
     /// The box of [`Node::visual_bounds`], or of [`Node::visual_bounds_with`] when `symbols` is
     /// given.
     pub(crate) fn visual(&self, symbols: Option<&SymbolBoxes>) -> Option<Rect> {
+        // VectorCraft Stitch: a container's members measured by `visual` itself (`visual_by`).
+        self.visual_by(symbols, &mut |c| c.visual(symbols))
+    }
+    /// VectorCraft Stitch: [`Node::visual`], with the members of a layer, a group and an
+    /// Intertwine group whose bounds it unions measured by `member` (`visual` measures them by
+    /// itself; `crate::visual_bounds::VisualBounds` hands over the bounds it kept for each, so a
+    /// container is measured by upstream's own arms). It reads only the object and the document's
+    /// symbols (`symbols`), and the members it hands `member`, in order, are a tail of
+    /// [`Node::children`] (all of them, or all but the first that [`Node::editing_children`] leaves
+    /// out): the cache relies on both.
+    pub(crate) fn visual_by(&self, symbols: Option<&SymbolBoxes>, member: &mut impl FnMut(&Arc<Node>) -> Option<Rect>) -> Option<Rect> {
         match &self.kind {
             NodeKind::Group { children, clip: true } | NodeKind::Layer { children, clip: true, .. } => {
                 // A clipping path that paints (see `clip_paint`) strokes over the clip edge.
@@ -1289,11 +1291,12 @@ impl Node {
                     clip.geometric(symbols)
                 }
             }
-            // VectorCraft Stitch: the rule for containers measured as their members are lives in
-            // `visual_members`, which `crate::visual_bounds::VisualBounds` measures by too.
-            NodeKind::Intertwine { .. } | NodeKind::Layer { .. } | NodeKind::Group { .. } => {
-                let (members, grow) = self.visual_members()?;
-                grown(members.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.visual(symbols))), grow)
+            // VectorCraft Stitch: `member(c)` in these two arms only, where upstream calls `c.visual(symbols)`.
+            NodeKind::Intertwine { children } => children.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, member(c))),
+            NodeKind::Layer { .. } | NodeKind::Group { .. } => {
+                // The container's own strokes paint around its members.
+                let o = self.appearance.outset();
+                self.editing_children().iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, member(c))).map(|b| b.inflate(o, o))
             }
             NodeKind::Blend { children, spec } => {
                 let b = children.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.visual(symbols)));
@@ -1335,20 +1338,6 @@ impl Node {
                 let o = self.appearance.outset();
                 self.geometric(symbols).map(|b| b.inflate(o, o))
             }
-        }
-    }
-    /// VectorCraft Stitch: the members whose visual bounds make up a container's
-    /// ([`Node::visual`]), and how far the container's own strokes grow their union ([`grown`]): a
-    /// layer's or group's members ([`Node::editing_children`]), grown by its strokes' outset, and
-    /// an Intertwine group's, not grown. `None` for every other object, a layer or group with a
-    /// clipping mask included: those are measured whole.
-    pub(crate) fn visual_members(&self) -> Option<(&[Arc<Node>], Option<f64>)> {
-        match &self.kind {
-            NodeKind::Group { clip: true, .. } | NodeKind::Layer { clip: true, .. } => None,
-            NodeKind::Intertwine { children } => Some((children, None)),
-            // The container's own strokes paint around its members.
-            NodeKind::Layer { .. } | NodeKind::Group { .. } => Some((self.editing_children(), Some(self.appearance.outset()))),
-            _ => None,
         }
     }
     /// Apply an affine transform to the geometry (and gradients) of this node and its descendants.

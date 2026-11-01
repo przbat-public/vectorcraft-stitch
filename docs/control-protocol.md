@@ -1,6 +1,6 @@
 # Control protocol
 
-> **Last updated:** 2026-10-23 · **Change:** symbol library panels (`window.symbolLibrary`, `window.symbolLibrary.other`, `ui.saveSymbolLibrary`); previously: synthetic input budgets (#1709); bounded transport waits (#1726).
+> **Last updated:** 2026-10-31 · **Change:** (VectorCraft Stitch) the Embroidery panel's Stitches tab in `ui.embroideryPanel` and `ui.inspect`; previously: symbol library panels (`window.symbolLibrary`, `window.symbolLibrary.other`, `ui.saveSymbolLibrary`); previously: synthetic input budgets (#1709); bounded transport waits (#1726).
 
 `vectorcraft --control <port>` listens on `127.0.0.1:<port>` (loopback only). The port must be a number
 from 1 to 65535 (`--control=<port>` works too), given once; otherwise the app prints an error and exits
@@ -421,18 +421,26 @@ it), `generation` (another plan, another number), `notice` (what the canvas's no
 active document's stitch view on or off (`view.stitchPreview`). `ui.screenshot` waits, while the stitch view's plan of
 the document as it is is waiting or under way or its stitches are being drawn, for them (at most 5 s more).
 `ui.render {stitchPreview: true}` draws the artboard's embroidery stitches instead of its art, as the stitch preview
-and `embroidery.render` draw them, marked as the document's stitch view marks them (jumps and cuts, needle points).
+and `embroidery.render` draw them, marked as the document's stitch view marks them (jumps and cuts, needle points),
+without stitch editing's look.
 
 `window.panel {panel: "embroidery"}` shows the Embroidery panel, the first time docked as the
 last tab beside Properties, Layers and Libraries (the dock turns into the shared layout then), after that where it
-was left; `ui.embroideryPanel {tab?: "object"|"order"|"check", part?: "fill"|"stroke", format?}` shows it at a
-tab, `part` being the part of the selected objects the Object tab shows and `format` (a format's id as
-`embroidery.check` takes it, or `null` for the thread palette's) the one the active document's Check tab checks for,
-and answers `{tab, part, format}` (`part`: the part the Object tab shows, the one chosen or, where the objects don't
-paint it, the other). `ui.inspect` reports the open tab and the part chosen as `ui.embroidery_panel`, and what the
-Object tab shows as `embroideryPanel.object` (`ids`, `part`, and its `rows`: each one's `key`, `value` as
-`embroidery.info` gives it, `source`, whether every object `set` it, and whether they differ, `mixed`); `object` is
-null until the tab has been drawn for the active document's selection as it is. `embroidery.copySettings {}`
+was left; `ui.embroideryPanel {tab?: "object"|"order"|"check"|"stitches", part?: "fill"|"stroke", format?, scope?:
+"selection"|"design", filter?: "all"|"jumps"|"trims"|"stops"|"short"|"long"}` shows it at a tab, `part` being the part
+of the selected objects the Object tab shows, `format` (a format's id as `embroidery.check` takes it, or `null` for the
+thread palette's) the one the active document's Check tab checks for, and `scope` and `filter` the rows the Stitches
+tab lists (the selection's records, or while stitches are edited the object edited's, or the whole design's; every
+record, one kind, or the stitches too short or too long), and answers `{tab, part, format, scope, filter}` (`part`:
+the part the Object tab shows, the one chosen or, where the objects don't paint it, the other). `ui.inspect` reports
+the open tab, the part chosen and the Stitches tab's scope and filter as `ui.embroidery_panel` (`tab`, `part`,
+`stitchesScope`, `stitchesFilter`: saved with the interface's state, each read as the first when it isn't one this
+version knows), what the Object tab shows as `embroideryPanel.object` (`ids`, `part`, and its `rows`: each one's
+`key`, `value` as `embroidery.info` gives it, `source`, whether every object `set` it, and whether they differ,
+`mixed`), and the Stitches tab as `embroideryPanel.stitches` (`scope`, `filter`, `rowCount`: the rows listed, null
+until they are worked out for that scope and filter; `focus`: the record whose row is in focus, which the list's
+keys move from; `shown`: the record shown on the canvas; `page`: the page of rows drawn, from 0); `object` is null
+until the tab has been drawn for the active document's selection as it is. `embroidery.copySettings {}`
 takes the settings of the one object selected (a path or a compound path) as they are now, both parts, answering
 `{source, passedOver}` (values this version doesn't take, left out), and `embroidery.pasteSettings {part?}` gives
 the selected objects, in any document, those settings as one `embroidery.set` a part in one `command.batch`, one undo
@@ -480,7 +488,12 @@ or previous listed hit of that rule (round from the end), answering `{rule, hit}
 rule's listed `hits`, unlike the replies' block, unit and record numbers, which count from 1). They are refused while no
 finding is shown or while the check is of an older plan than the document's. `view.checkMarks {on?: bool}` turns the
 check's marks on the canvas off or on for the session (no `on`: the other way; no other key), answering `{on}` as the
-other view switches do.
+other view switches do. In the Stitches tab, `embroidery.showRecord {record, zoom?}` puts a record in focus, scrolls
+its row into view and shows its stitch on the canvas (a ring, the view panned to it, or with `zoom` zoomed to it), as
+Go to # and a click outside stitch editing do, answering `{record, row}` (`row` from 0); it is refused when the
+scope or the filter (`ui.embroideryPanel`'s) leaves the record out, and while the plan's records are still being
+judged. `ui.inspect.embroideryPanel.stitches` reports `scope`, `filter`, `rowCount` (`null` until the tab has listed
+the rows for that scope and filter), `focus`, `shown` and `page`.
 
 `view.zoomTo {rect: [left, top, right, bottom], margin?}` centres a box of document points in the window and zooms
 so that it fills it less `margin` screen points on each side (default 30, as Fit Artboard in Window leaves), within

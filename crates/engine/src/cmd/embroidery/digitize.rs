@@ -454,7 +454,7 @@ impl<'a> Digitizer<'a> {
         // Nothing more is planned once the design can't be (too many stitches, cancelled): the
         // rest of the walk would only copy symbol art.
         // Nothing at no opacity prints.
-        if !n.visible || n.opacity <= 0.0 || self.failed.is_some() {
+        if !shows(n) || self.failed.is_some() {
             return;
         }
         let added = self.seq.added();
@@ -491,7 +491,7 @@ impl<'a> Digitizer<'a> {
         match &n.kind {
             // Template and non-printing layers are references, not art: a machine sews only what
             // would print.
-            NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. } => {}
+            NodeKind::Layer { .. } if !printed(n) => {}
             NodeKind::Layer { children, clip: true, .. } | NodeKind::Group { children, clip: true } => self.clip_group(children),
             NodeKind::Layer { children, .. } | NodeKind::Group { children, .. } => {
                 let outer = self.owner.replace(n.id);
@@ -557,15 +557,8 @@ impl<'a> Digitizer<'a> {
         if !self.step() {
             return;
         }
-        let paint = n.appearance.items.iter().filter(|i| i.visible()).find_map(|i| match i {
-            AppearanceItem::Stroke(s) => Some(&s.paint),
-            AppearanceItem::Fill(_) => None,
-        });
-        let color = match paint.map(solid) {
-            Some(Colour::Solid(c) | Colour::Approx(c)) => c,
-            // Unpainted (or a pattern): it shows nothing, so it sews nothing.
-            _ => return,
-        };
+        // Unpainted (or a pattern): it shows nothing, so it sews nothing.
+        let Some(color) = run_colour(n) else { return };
         // Each subpath's needle points, in order (an empty subpath kept, so that the marks naming
         // subpaths by their place still find theirs), in millimetres as the planner counts them.
         let to_mm = Affine::scale(vectorcraft_stitch::MM_PER_PT);
@@ -1105,6 +1098,33 @@ fn paints_off_its_path(st: &StrokeLayer, bp: &BezPath) -> bool {
 /// a person selects.
 pub(crate) fn is_converted(n: &Node) -> bool {
     matches!(n.kind, NodeKind::Group { clip: false, .. }) && n.extras().embroidery.as_deref().is_some_and(|e| e.original.is_some())
+}
+
+/// Whether the walk goes into node `n` at all: shown (visible, not at no opacity). The needle index
+/// asks it too, so that what can be picked is what is sewn.
+pub(crate) fn shows(n: &Node) -> bool {
+    // Opacity that isn't a number is walked, as it always was.
+    n.visible && (n.opacity > 0.0 || n.opacity.is_nan())
+}
+
+/// Whether what node `n` holds would print: not a template or non-printing layer (references, not
+/// art). The needle index asks it too.
+pub(crate) fn printed(n: &Node) -> bool {
+    !matches!(n.kind, NodeKind::Layer { template: true, .. } | NodeKind::Layer { printable: false, .. })
+}
+
+/// The colour a run of literal stitches is sewn in: its first visible stroke's, when it is one
+/// colour (or a gradient's first stop); `None`, unpainted or a pattern, when it shows nothing and
+/// so sews nothing. The needle index asks it too.
+pub(crate) fn run_colour(n: &Node) -> Option<[u8; 3]> {
+    let paint = n.appearance.items.iter().filter(|i| i.visible()).find_map(|i| match i {
+        AppearanceItem::Stroke(s) => Some(&s.paint),
+        AppearanceItem::Fill(_) => None,
+    })?;
+    match solid(paint) {
+        Colour::Solid(c) | Colour::Approx(c) => Some(c),
+        Colour::None | Colour::Pattern => None,
+    }
 }
 
 /// Whether an appearance item is painted at all (not `none`): only painted items are sewn, and

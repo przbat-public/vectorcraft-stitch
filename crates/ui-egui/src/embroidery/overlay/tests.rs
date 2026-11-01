@@ -224,6 +224,42 @@ fn dashes_are_drawn_on_the_canvas_only_and_capped() {
     );
 }
 
+/// A marquee dragged far off the canvas, as an agent's pointer can send it: each frame ends. Its
+/// edges within the screen's range are dashed where they cross the canvas; one reaching past it is
+/// left out, as is one that isn't a number.
+#[test]
+fn a_line_from_far_off_the_canvas_ends_and_draws_within_the_budget() {
+    let ctx = egui::Context::default();
+    for far in [1e9_f32, 5e16, 1e17, 3e17, 9e17, 2e18, f32::MAX, f32::INFINITY, f32::NAN] {
+        let (mut spent, mut closing) = (0, 0);
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            let p = ui.painter().with_clip_rect(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1000.0, 800.0)));
+            let clip = p.clip_rect();
+            // The marquee's corners, the far one off to the right as a drag there leaves it.
+            let corners =
+                [egui::pos2(500.0, 300.0), egui::pos2(far, 300.0), egui::pos2(far, 320.0), egui::pos2(500.0, 320.0), egui::pos2(500.0, 300.0)];
+            let mut budget = PENDING_DASHES_MAX;
+            dash(&p, &corners, Stroke::new(1.0, Color32::RED), (DASH, GAP), clip, &mut budget);
+            spent = PENDING_DASHES_MAX - budget;
+            let mut budget = PENDING_DASHES_MAX;
+            dash(&p, &corners[3..], Stroke::new(1.0, Color32::RED), (DASH, GAP), clip, &mut budget);
+            closing = PENDING_DASHES_MAX - budget;
+        });
+        out.textures_delta.clear();
+        // The edge back at x = 500 is always dashed; the two long ones only while they are within
+        // the range, each across the 500 points of canvas it crosses.
+        let across = (500.0 / f64::from(DASH + GAP)).ceil() as usize;
+        let within = f64::from(far.abs()) <= SCREEN_RANGE_PT;
+        assert!(closing > 0, "{far}: the short edge is dashed");
+        if within {
+            let long = spent.saturating_sub(closing);
+            assert!((2 * across - 4..=2 * across + 4).contains(&long), "{far}: {spent} dashes, {closing} on the short edge");
+        } else {
+            assert_eq!(spent, closing, "{far}: the edges past the range are left out");
+        }
+    }
+}
+
 /// Selected objects that sew nothing are counted, and the canvas's notice says so.
 #[test]
 fn the_notice_counts_selected_objects_that_arent_sewn() {
@@ -241,4 +277,32 @@ fn the_notice_counts_selected_objects_that_arent_sewn() {
     app.run("select.all", json!({})).unwrap();
     settle(&mut app, &ctx, &mut time);
     assert_eq!(not_sewn(&app, time), 1);
+}
+
+/// While stitches are edited, a run changed since the plan shown (a needle point moved) isn't
+/// outlined dashed over the edit look: the selection layer draws what moved.
+#[test]
+fn no_changed_outline_while_stitches_are_edited() {
+    let mut app = app();
+    let ctx = egui::Context::default();
+    // The chip's words while editing.
+    crate::theme::install_fonts(&ctx);
+    let id = app.session.doc().unwrap().doc.layers[0].children().unwrap()[0].id;
+    app.run("select.set", json!({"ids": [id.0]})).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": id.0})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let run = app.session.doc().unwrap().doc.node(id).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 2}]})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    app.embroidery.preview.set_plan_ms(uid, 1000.0);
+    app.run("embroidery.moveNeedlePoints", json!({"dx": 1})).unwrap();
+    time += 0.01;
+    frame(&mut app, &ctx, time);
+    assert_eq!(pending(&app), [run], "the run changed since the plan shown");
+    assert!(app.embroidery.ends.pending.is_none(), "not outlined while editing");
 }

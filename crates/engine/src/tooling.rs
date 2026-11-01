@@ -598,9 +598,12 @@ impl Session {
     /// the Type tool and the Eyedropper clear a character range whose text is no longer selected.
     pub(crate) fn after_command(&mut self) {
         // VectorCraft Stitch: and the embroidery tool lets a handle go whose drag a command ended
-        // (Undo settles the interaction and takes it back).
-        let drag_ended =
-            self.tool.id() == vectorcraft_tools::embroidery::ID && self.tool.busy() && self.active().is_some_and(|st| st.interaction.is_none());
+        // (Undo settles the interaction and takes it back), and keeps up with what is edited.
+        let embroidery = self.tool.id() == vectorcraft_tools::embroidery::ID;
+        if embroidery && !self.in_tool_actions {
+            self.with_tool_cx(self.last_view, |t, cx| t.notify(cx, vectorcraft_tools::embroidery::COMMAND_RAN));
+        }
+        let drag_ended = embroidery && self.tool.busy() && self.active().is_some_and(|st| st.interaction.is_none());
         if self.in_tool_actions || (!self.tool.wants_text() && self.tool.id() != "eyedropper" && !drag_ended) {
             return;
         }

@@ -227,7 +227,7 @@ type Covered = Arc<HashSet<u64>>;
 
 /// The query the tab asks the preview for: the whole order (as many units as a reply may list).
 pub(crate) fn query() -> crate::embroidery::plan_worker::Query {
-    crate::embroidery::plan_worker::Query { cmd: "embroidery.sequence", params: json!({ "limit": MAX_LIST_UNITS }) }
+    crate::embroidery::plan_worker::Query::read("embroidery.sequence", json!({ "limit": MAX_LIST_UNITS }))
 }
 
 /// The most units the tab lists: as many as `embroidery.sequence` lists at most.

@@ -1,0 +1,1433 @@
+//! The Stitches tab: its rows against `embroidery.stitches`, worked out once a change and never on
+//! an idle frame; a click outside stitch editing showing the stitch, inside it selecting the needle
+//! point (lit in the list); the list's keys moving its focus without nudging the canvas; Go to
+//! refusing junk; Move by moving the selected needle points one undo step; the grid for screen
+//! readers. Headless frames with real input.
+
+use egui::accesskit::{Action, ActionRequest, Role, TreeId};
+use egui::{Event, Key, Modifiers, PointerButton, Pos2, Shape};
+use serde_json::json;
+use vectorcraft_doc::NodeId;
+use vectorcraft_engine::Session;
+use vectorcraft_engine::cmd::embroidery::stitch_list::{self, Filter};
+
+use super::Scope;
+use crate::{Services, VectorcraftApp};
+
+/// An app with a filled square converted to manual stitches and selected, the Embroidery panel at
+/// its Stitches tab → the app and the converted object.
+fn app() -> (VectorcraftApp, u64) {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.embroidery.preview.pin_light();
+    app.run("file.new", json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    app.run("paint.setStroke", json!({"none": true})).unwrap();
+    app.run("paint.setFill", json!({"color": "#c81e1e"})).unwrap();
+    let id = app.run("shape.rectangle", json!({"x": 60, "y": 60, "width": 120, "height": 90})).unwrap()["id"].as_u64().unwrap();
+    app.run("select.set", json!({"ids": [id]})).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "selection", "filter": "all"})).unwrap();
+    (app, id)
+}
+
+/// A node of the accessibility tree: its id, role, name, row index, whether it is selected, and
+/// whether it is off.
+type Node = (egui::accesskit::NodeId, Role, String, Option<usize>, Option<bool>, bool);
+
+/// One frame: the shortcuts, the panel on the right and the canvas → the shapes drawn and the
+/// accessibility tree's nodes.
+fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> (Vec<Shape>, Vec<Node>) {
+    let out = output(app, ctx, time, events);
+    let nodes = out
+        .platform_output
+        .accesskit_update
+        .map(|t| {
+            t.nodes
+                .iter()
+                .map(|(id, n)| (*id, n.role(), n.label().unwrap_or_default().to_string(), n.row_index(), n.is_selected(), n.is_disabled()))
+                .collect()
+        })
+        .unwrap_or_default();
+    let mut all = vec![];
+    let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+    while let Some(s) = pending.pop() {
+        match s {
+            Shape::Vec(v) => pending.extend(v),
+            s => all.push(s),
+        }
+    }
+    (all, nodes)
+}
+
+/// One frame, as [`frame`] runs it → all it gave.
+fn output(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> egui::FullOutput {
+    let raw = egui::RawInput {
+        time: Some(time),
+        screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(1100.0, 700.0))),
+        events,
+        ..Default::default()
+    };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::shortcuts::handle(app, ui.ctx());
+        egui::Panel::right("embroidery-test").exact_size(300.0).resizable(false).show(ui, |ui| super::super::show(app, ui));
+        crate::canvas::show(app, ui);
+        crate::embroidery::canvas_controls(app, ui);
+        crate::embroidery::stitch_preview::schedule(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    out
+}
+
+fn context() -> egui::Context {
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    ctx.enable_accesskit();
+    ctx
+}
+
+fn settle(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> (Vec<Shape>, Vec<Node>) {
+    let mut last = (vec![], vec![]);
+    for _ in 0..5 {
+        *time += 0.05;
+        last = frame(app, ctx, *time, vec![]);
+    }
+    last
+}
+
+/// Where the row of record `number` is drawn: its number's words, as the language drawn writes them
+/// ("1,000" in English).
+fn row_at(shapes: &[Shape], number: usize) -> Pos2 {
+    let words = crate::embroidery::numbers::count(crate::i18n::current(), number as u64);
+    shapes
+        .iter()
+        .find_map(|s| match s {
+            Shape::Text(t) if t.galley.text() == words && t.pos.x > 800.0 => Some(t.visual_bounding_rect().center()),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no row {number}"))
+}
+
+fn press(at: Pos2, pressed: bool, modifiers: Modifiers) -> Event {
+    Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers }
+}
+
+fn key(k: Key) -> Event {
+    key_with(k, Modifiers::NONE)
+}
+
+fn key_with(k: Key, modifiers: Modifiers) -> Event {
+    Event::Key { key: k, physical_key: None, pressed: true, repeat: false, modifiers }
+}
+
+/// The rows the tab lists for the selection are `embroidery.stitches`' records of it; each filter's
+/// count is what that filter lists; they are worked out once, and idle and hover frames work out
+/// nothing; the grid tells screen readers how many rows there are.
+#[test]
+fn the_tab_lists_the_selections_records_once() {
+    let (mut app, id) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let listed_rows = app.run("embroidery.stitches", json!({"ids": [id], "limit": 10000})).unwrap();
+    let want = listed_rows["matchedCount"].as_u64().unwrap() as usize;
+    let grid = nodes.iter().find(|n| n.1 == Role::Grid).expect("a grid");
+    assert_eq!(grid.2, "Stitches");
+    let (_, list) = app.embroidery.stitches.list.as_ref().expect("the rows listed");
+    assert_eq!(list.len(), want);
+    assert_eq!(list.counts[0], want, "All");
+    // The records' rows, and the heads' row (no index, no words of its own).
+    let (rows, heads): (Vec<_>, Vec<_>) = nodes.iter().filter(|n| n.1 == Role::Row).partition(|n| n.3.is_some());
+    assert!(!rows.is_empty() && rows.iter().all(|r| r.2.starts_with("Record ")), "{rows:?}");
+    assert_eq!(heads.len(), 1, "{heads:?}");
+    let builds = app.embroidery.stitches.builds;
+    for k in 0..10 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![Event::PointerMoved(Pos2::new(900.0, 300.0 + k as f32))]);
+    }
+    assert_eq!(app.embroidery.stitches.builds, builds, "idle and hover frames work out nothing");
+    // The whole design and the jumps: worked out once more each.
+    app.run("ui.embroideryPanel", json!({"scope": "design", "filter": "jumps"})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(app.embroidery.stitches.builds, builds + 1);
+    let jumps = app.run("embroidery.stitches", json!({"kinds": ["jump"], "limit": 0})).unwrap()["matchedCount"].as_u64().unwrap() as usize;
+    assert_eq!(app.embroidery.stitches.list.as_ref().unwrap().1.len(), jumps);
+    assert_eq!(app.ui.embroidery_panel.stitches_scope, Scope::Design);
+    assert_eq!(app.ui.embroidery_panel.stitches_filter, Filter::Jumps);
+}
+
+/// Outside stitch editing a click on a row only shows the stitch (the project owner's choice): the
+/// stitch marked, nothing selected or changed.
+#[test]
+fn a_click_outside_editing_shows_the_stitch() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let first = app.embroidery.stitches.list.as_ref().unwrap().1.record(3).unwrap();
+    let at = row_at(&shapes, first);
+    let (selection, revision) = (app.session.active().unwrap().selection.clone(), app.session.active().unwrap().doc.clone());
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let uid = app.session.active().unwrap().uid;
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.shown), Some(first), "shown");
+    assert_eq!(app.session.active().unwrap().selection, selection, "nothing selected");
+    assert!(app.session.active().unwrap().doc == revision, "nothing changed");
+}
+
+/// While stitches are edited a click on a row selects its needle point, lit in the list; the list's
+/// ↓ moves its focus and leaves the document as it is (no nudge on the canvas); Escape gives the
+/// focus back.
+#[test]
+fn while_editing_a_click_selects_the_needle_point_and_the_keys_stay_the_lists() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    // A needle point of the first run: a stitch record past the first few.
+    let number = (0..list.len()).filter_map(|i| list.record(i)).find(|n| {
+        let r = vectorcraft_engine::cmd::embroidery::stitch_list::row(
+            &app.embroidery.preview.shown(app.session.active().unwrap().uid).unwrap().planned.plan,
+            *n,
+        )
+        .unwrap();
+        r.kind == vectorcraft_engine::cmd::embroidery::stitch_list::RecordKind::Stitch && r.length.is_some()
+    });
+    let number = number.expect("a stitch");
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let selected: usize = app.session.active().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum();
+    assert_eq!(selected, 1, "{:?}", app.session.active().unwrap().selection);
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    assert!(nodes.iter().any(|n| n.1 == Role::Row && n.4 == Some(true) && n.2.starts_with(&format!("Record {number}"))), "lit");
+    let doc = app.session.active().unwrap().doc.clone();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::ArrowDown)]);
+    let uid = app.session.active().unwrap().uid;
+    let focus = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus);
+    assert_eq!(focus, list.row_of(number).and_then(|r| list.record(r + 1)), "↓ moves the list's focus");
+    assert!(app.session.active().unwrap().doc == doc, "the canvas's arrow didn't nudge the needle point");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Escape)]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::ArrowRight)]);
+    assert!(app.session.active().unwrap().doc != doc, "the focus given back: the canvas's arrow nudges again");
+}
+
+/// Page Down moves the focus a screenful: as many rows as the list shows, the rows drawn.
+#[test]
+fn page_down_moves_a_screenful() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let first = list.record(0).unwrap();
+    let at = row_at(&shapes, first);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let rows = nodes.iter().filter(|n| n.1 == Role::Row).count();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::PageDown)]);
+    let uid = app.session.active().unwrap().uid;
+    let focus = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus).and_then(|f| list.row_of(f));
+    // The rows drawn are those in view, and a part row at either end at most.
+    assert!(focus.is_some_and(|r| r + 2 >= rows && r <= rows), "{focus:?} of {rows} drawn");
+}
+
+/// While stitches are edited a click on a cut's row selects the needle point the cut follows, as
+/// `embroidery.selectNeedlePoints` selects it by that record (and once: Cmd takes it away again).
+#[test]
+fn a_click_on_a_cuts_row_selects_the_needle_point_it_follows() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.setMachineFunction", json!({"needlePoints": [{"id": run.0, "index": 5}], "function": "trim"})).unwrap();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let cuts = app.run("embroidery.stitches", json!({"ids": [id], "kinds": ["trim"]})).unwrap();
+    let cut = cuts["records"].as_array().unwrap().iter().find(|r| r["index"].is_u64()).expect("a cut the commands edit by a needle point").clone();
+    let number = cut["record"].as_u64().unwrap() as usize;
+    // What the command selects by that record.
+    app.run("embroidery.selectNeedlePoints", json!({"records": [number, number]})).unwrap();
+    let wanted = app.session.active().unwrap().selection.anchors.clone();
+    assert_eq!(wanted.values().map(std::collections::BTreeSet::len).sum::<usize>(), 1, "{wanted:?}");
+    app.run("select.set", json!({"ids": []})).unwrap();
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 0}]})).unwrap();
+    // The cut's row, clicked.
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    assert_eq!(app.session.active().unwrap().selection.anchors, wanted);
+    // Cmd on it again, a second later (not a double-click), takes it away.
+    time += 1.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let at = row_at(&shapes, number);
+    // Cmd held as a keyboard says it (egui reads the keys held from these).
+    let cmd = [Event::ModifiersChanged(Modifiers::COMMAND), Event::PointerMoved(at), press(at, true, Modifiers::COMMAND)];
+    for e in [cmd.to_vec(), vec![press(at, false, Modifiers::COMMAND)], vec![Event::ModifiersChanged(Modifiers::NONE)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+    }
+    let left: usize = app.session.active().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum();
+    assert_eq!(left, 0);
+}
+
+/// While the plan shown lags an edit (a heavy design waits for the document to rest), a click on a
+/// row only shows its stitch, as the needle points it numbers may have moved; once the plan comes,
+/// the row selects the needle point it shows.
+#[test]
+fn a_click_while_the_plan_lags_an_edit_only_shows_the_stitch() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    // A stitch well into the first run: its record, and its needle point.
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let stitch = |n: &usize| stitch_list::row(&plan, *n).is_some_and(|r| r.kind == stitch_list::RecordKind::Stitch && r.length.is_some());
+    let number = (0..list.len()).filter_map(|i| list.record(i)).filter(stitch).nth(8).expect("a stitch");
+    // The design made heavy: the next edit is planned once the document rests.
+    let generation = app.embroidery.preview.shown(uid).unwrap().planned.generation;
+    app.embroidery.preview.set_plan_ms(uid, 1000.0);
+    app.run("embroidery.insertNeedlePoints", json!({"id": run.0, "index": 1})).unwrap();
+    app.run("select.none", json!({})).unwrap();
+    time += 0.01;
+    let (shapes, _) = frame(&mut app, &ctx, time, vec![]);
+    assert_eq!(app.embroidery.preview.shown(uid).unwrap().planned.generation, generation, "still the plan before the edit");
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.01;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let selection = &app.session.active().unwrap().selection;
+    assert!(selection.anchors.is_empty() && selection.objects.is_empty(), "nothing selected: {selection:?}");
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.shown), Some(number), "the stitch shown");
+    // Planned: the row selects the needle point it shows.
+    time += 1.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let row = stitch_list::row(&plan, number).unwrap();
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let st = app.session.active().unwrap();
+    let (node, anchors) = st.selection.anchors.iter().next().expect("a needle point selected");
+    let &(s, a) = anchors.iter().next().unwrap();
+    let p = st.doc.node(*node).unwrap().path_data().unwrap().subpaths[s].anchors[a].p;
+    let shown = vectorcraft_geom::Point::new(
+        vectorcraft_engine::cmd::embroidery::mm_to_pt(row.at.x),
+        vectorcraft_engine::cmd::embroidery::mm_to_pt(row.at.y),
+    );
+    assert!(p.distance(shown) < 1e-6, "the needle point the row shows: {p:?} vs {shown:?}");
+}
+
+/// While stitches are edited, a row of another object (the Whole design scope lists it) only shows
+/// its stitch, as outside editing: its needle points aren't the ones being edited.
+#[test]
+fn while_editing_a_row_of_another_object_only_shows_its_stitch() {
+    let (mut app, id) = app();
+    let other = app.run("shape.rectangle", json!({"x": 200, "y": 200, "width": 60, "height": 50})).unwrap()["id"].as_u64().unwrap();
+    app.run("select.set", json!({"ids": [other]})).unwrap();
+    app.run("embroidery.convertToManual", json!({})).unwrap();
+    // Sewn first, so its rows come first in the list.
+    app.run("embroidery.sewFirst", json!({"ids": [other]})).unwrap();
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let of_other = |n: &usize| {
+        stitch_list::row(&plan, *n).is_some_and(|r| r.kind == stitch_list::RecordKind::Stitch && r.length.is_some() && r.object == NodeId(other))
+    };
+    let number = (0..list.len()).filter_map(|i| list.record(i)).filter(of_other).nth(4).expect("a stitch of the other object");
+    let at = row_at(&shapes, number);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let selection = &app.session.active().unwrap().selection;
+    assert!(selection.anchors.is_empty() && selection.objects.is_empty(), "nothing selected: {selection:?}");
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.shown), Some(number), "the stitch shown");
+    assert_eq!(app.ui.status, "", "no word that it can't be edited");
+}
+
+/// A Shift-click selects the needle points of the rows listed between the two, as the filter lists
+/// them, not of every record between: with the cuts listed, the two needle points they follow.
+#[test]
+fn a_shift_range_takes_the_rows_the_filter_lists() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    for k in [5, 20] {
+        app.run("embroidery.setMachineFunction", json!({"needlePoints": [{"id": run.0, "index": k}], "function": "trim"})).unwrap();
+    }
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    assert_eq!(list.len(), 2, "the two cuts listed");
+    let (first, last) = (list.record(0).unwrap(), list.record(1).unwrap());
+    assert!(last > first + 10, "records between them that the filter leaves out");
+    // What the command selects by those two records.
+    let mut wanted = std::collections::BTreeSet::new();
+    for n in [first, last] {
+        app.run("embroidery.selectNeedlePoints", json!({"records": [n, n]})).unwrap();
+        wanted.extend(app.session.active().unwrap().selection.anchors.get(&run).cloned().unwrap_or_default());
+    }
+    assert_eq!(wanted.len(), 2, "{wanted:?}");
+    app.run("select.none", json!({})).unwrap();
+    let (a, b) = (row_at(&shapes, first), row_at(&shapes, last));
+    for e in [Event::PointerMoved(a), press(a, true, Modifiers::NONE), press(a, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    time += 1.0;
+    // Shift held as a keyboard says it.
+    let shift = [Event::ModifiersChanged(Modifiers::SHIFT), Event::PointerMoved(b), press(b, true, Modifiers::SHIFT)];
+    for e in [shift.to_vec(), vec![press(b, false, Modifiers::SHIFT)], vec![Event::ModifiersChanged(Modifiers::NONE)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+    }
+    let anchors = &app.session.active().unwrap().selection.anchors;
+    assert_eq!(anchors.get(&run), Some(&wanted), "the needle points the two cuts follow: {anchors:?}");
+    assert_eq!(anchors.len(), 1);
+}
+
+/// The needle points picked go as `ranges`: each run of consecutive needle points of a path one
+/// entry, with the path's count.
+#[test]
+fn picked_needle_points_go_as_ranges() {
+    let picked: std::collections::BTreeSet<(u64, usize, usize)> =
+        [(4, 0, 9), (4, 1, 9), (4, 2, 9), (4, 7, 9), (6, 3, 5), (6, 4, 5)].into_iter().collect();
+    assert_eq!(
+        super::ranges_of(&picked),
+        [json!({"id": 4, "from": 0, "to": 2, "of": 9}), json!({"id": 4, "from": 7, "to": 7, "of": 9}), json!({"id": 6, "from": 3, "to": 4, "of": 5})]
+    );
+    assert!(super::ranges_of(&Default::default()).is_empty());
+}
+
+/// Go to takes a number in the scope (the focus moves to it), and says so when one isn't there;
+/// junk and huge numbers are refused without a panic.
+#[test]
+fn go_to_takes_a_number_and_refuses_junk() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let field = nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0).expect("the field");
+    let uid = app.session.active().unwrap().uid;
+    let first = app.embroidery.stitches.list.as_ref().unwrap().1.record(5).unwrap();
+    for (typed, ok) in [(first.to_string(), true), ("abc".to_string(), false), ("99999999999999999999".to_string(), false), ("0".to_string(), false)]
+    {
+        time += 0.05;
+        let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+        frame(&mut app, &ctx, time, vec![focus]);
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(typed.clone()), key(Key::Enter)]);
+        let d = app.embroidery.stitches.docs.get(&uid).unwrap();
+        if ok {
+            assert_eq!(d.focus, Some(first), "{typed}");
+        } else {
+            assert!(d.said.as_ref().is_some_and(|(s, _)| s.starts_with("No record numbered")), "{typed}: {:?}", d.said);
+        }
+    }
+}
+
+/// The rings drawn round a row in focus, and the quiet marks: rectangles a row high (less the
+/// mark's inset) stroked at the ring's weight, or at the quiet mark's in the border's colour.
+fn focus_marks(shapes: &[Shape], border: egui::Color32) -> (usize, usize) {
+    let row = |r: &egui::epaint::RectShape| (r.rect.height() - (super::ROW_HEIGHT - 2.0)).abs() < 0.01 && r.rect.min.x > 800.0;
+    let rings = shapes.iter().filter(|s| matches!(s, Shape::Rect(r) if row(r) && r.stroke.width == super::FOCUS_RING_PT)).count();
+    let quiet = shapes
+        .iter()
+        .filter(|s| matches!(s, Shape::Rect(r) if row(r) && r.stroke.width == super::FOCUS_QUIET_PT && r.stroke.color == border))
+        .count();
+    (rings, quiet)
+}
+
+/// Go to's Enter gives the list the keyboard: ↓ then moves its focus, not the needle points
+/// selected. The row in focus is ringed only while the list has the keyboard; Escape gives it back
+/// to the canvas and the row is marked quietly.
+#[test]
+fn go_to_gives_the_list_the_keyboard_and_the_ring_says_who_has_it() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    // A needle point selected: the canvas's ↓ would nudge it.
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 3}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let border = crate::theme::Tokens::get(&ctx).border;
+    let uid = app.session.active().unwrap().uid;
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let target = list.record(5).unwrap();
+    let field = nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0).expect("the field");
+    time += 0.05;
+    let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+    frame(&mut app, &ctx, time, vec![focus]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(target.to_string()), key(Key::Enter)]);
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), Some(target));
+    assert_eq!(focus_marks(&shapes, border), (1, 0), "ringed: the list has the keyboard");
+    let doc = app.session.active().unwrap().doc.clone();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::ArrowDown)]);
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), list.record(6), "↓ moves the list's focus");
+    assert!(app.session.active().unwrap().doc == doc, "the needle point wasn't nudged");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Escape)]);
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(focus_marks(&shapes, border), (0, 1), "marked quietly: the keys reach the canvas");
+}
+
+/// While a newer plan's flags are being built (the Check tab's format changed the limits), the tab
+/// keeps the rows it drew, dimmed, with Go to and the foot; then it draws the new ones.
+#[test]
+fn the_last_rows_stay_dimmed_until_the_new_flags_come() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let number = app.embroidery.stitches.list.as_ref().unwrap().1.record(2).unwrap();
+    let colour = |shapes: &[Shape]| {
+        let words = number.to_string();
+        shapes.iter().find_map(|s| match s {
+            Shape::Text(t) if t.galley.text() == words && t.pos.x > 800.0 => t.galley.job.sections.first().map(|s| s.format.color),
+            _ => None,
+        })
+    };
+    let fresh = colour(&shapes).expect("the row drawn");
+    let uid = app.session.active().unwrap().uid;
+    app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::Dst);
+    time += 0.05;
+    let (shapes, nodes) = frame(&mut app, &ctx, time, vec![]);
+    let words: Vec<String> = shapes.iter().filter_map(|s| if let Shape::Text(t) = s { Some(t.galley.text().to_string()) } else { None }).collect();
+    assert!(!words.iter().any(|w| w == "Listing stitches…"), "the rows stay");
+    let dimmed = colour(&shapes).expect("the row still drawn");
+    assert_ne!(dimmed, fresh, "dimmed");
+    assert!(nodes.iter().any(|n| n.2 == "Record number"), "Go to stays");
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(colour(&shapes), Some(fresh), "the new flags' rows");
+}
+
+/// The Check tab's format changed and changed back (PES, DST, PES): each time the records are judged
+/// again for its limits and the tab lists them fresh, never stuck on the rows of another format's.
+#[test]
+fn a_format_changed_back_lists_its_rows_again() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    for format in ["pes", "dst", "pes", "dst"] {
+        app.embroidery.check.format.insert(uid, vectorcraft_engine::cmd::embroidery::Format::from_id(format).unwrap());
+        settle(&mut app, &ctx, &mut time);
+        let limits = super::limits_of(&app).unwrap();
+        let shown = app.embroidery.preview.shown(uid).unwrap();
+        assert!(shown.planned.built_stitch_flags(&limits).is_some(), "{format}: its flags built");
+        let (key, _) = app.embroidery.stitches.list.as_ref().unwrap();
+        assert_eq!(key.limits, limits.key(), "{format}: listed with its limits");
+    }
+}
+
+/// Go to a record far down the list (in its middle, so the end's clamp can't bring it in) scrolls
+/// its row into view.
+#[test]
+fn go_to_scrolls_the_record_into_view() {
+    let (mut app, _) = app();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, nodes) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let last = list.record(list.len() / 2).unwrap();
+    assert!(!shapes.iter().any(|s| matches!(s, Shape::Text(t) if t.galley.text() == last.to_string())), "not in view at first");
+    let field = nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0).expect("the field");
+    let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![focus]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(last.to_string()), key(Key::Enter)]);
+    let (shapes, nodes) = settle(&mut app, &ctx, &mut time);
+    row_at(&shapes, last);
+    // Rows are numbered for screen readers by their place: the one shown is the one in focus.
+    let shown = nodes.iter().find(|n| n.1 == Role::Row && n.2.starts_with(&format!("Record {last}:"))).and_then(|n| n.3);
+    assert_eq!(shown, list.row_of(last));
+}
+
+/// A record shown from the list: its row in view, ringed in focus, and its needle point ringed on
+/// the canvas while the tab shows.
+#[test]
+fn a_record_shown_is_in_view_and_marked_on_the_canvas() {
+    let (mut app, _) = app();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let number = list.record(list.len() / 2).unwrap();
+    let shown = app.run("embroidery.showRecord", json!({"record": number})).unwrap();
+    assert_eq!(shown, json!({"record": number, "row": list.len() / 2}));
+    let (shapes, nodes) = settle(&mut app, &ctx, &mut time);
+    row_at(&shapes, number);
+    assert!(nodes.iter().any(|n| n.1 == Role::Row && n.2.starts_with(&format!("Record {number}:"))));
+    // Rings round the needle point, where the canvas draws it.
+    let uid = app.session.active().unwrap().uid;
+    let row = vectorcraft_engine::cmd::embroidery::stitch_list::row(&app.embroidery.preview.shown(uid).unwrap().planned.plan, number).unwrap();
+    let pt = vectorcraft_engine::cmd::embroidery::mm_to_pt;
+    let at =
+        crate::canvas::Xf::new(app.canvas_rect.unwrap(), app.view().unwrap()).to_screen(vectorcraft_geom::Point::new(pt(row.at.x), pt(row.at.y)));
+    let rings = |shapes: &[Shape]| {
+        shapes.iter().filter(|s| matches!(s, Shape::Circle(c) if c.radius == super::MARK_RING && c.center.distance(at) < 0.5)).count()
+    };
+    assert_eq!(rings(&shapes), 2, "a two-tone ring");
+    // The panel closed (the tab not drawn), Hide Edges, presentation mode: none.
+    let canvas_alone = |app: &mut VectorcraftApp, time: f64| {
+        let raw = egui::RawInput {
+            time: Some(time),
+            screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(1100.0, 700.0))),
+            ..Default::default()
+        };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            crate::canvas::show(app, ui);
+            crate::embroidery::canvas_controls(app, ui);
+        });
+        out.textures_delta.clear();
+        let mut all = vec![];
+        let mut pending: Vec<Shape> = out.shapes.into_iter().map(|c| c.shape).collect();
+        while let Some(s) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v),
+                s => all.push(s),
+            }
+        }
+        all
+    };
+    for _ in 0..2 {
+        time += 0.05;
+        canvas_alone(&mut app, time);
+    }
+    time += 0.05;
+    assert_eq!(rings(&canvas_alone(&mut app, time)), 0, "the panel closed");
+    settle(&mut app, &ctx, &mut time);
+    app.ui.view.edges = false;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(rings(&shapes), 0, "Hide Edges");
+    app.ui.view.edges = true;
+    app.ui.screen_mode = 3;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(rings(&shapes), 0, "presentation mode");
+    app.ui.screen_mode = 0;
+    app.run("ui.embroideryPanel", json!({"tab": "check"})).unwrap();
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    assert_eq!(rings(&shapes), 0, "only while the tab shows");
+}
+
+/// X and Y are millimetres from the rulers' zero point (the project owner's choice): moved an inch
+/// right and half an inch down, every row's X is 25.4 less and its Y 12.7 less.
+#[test]
+fn x_and_y_are_measured_from_the_rulers_zero() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let places = |nodes: &[Node]| -> Vec<(String, f64, f64)> {
+        let mut out: Vec<(String, f64, f64)> = nodes
+            .iter()
+            .filter(|n| n.1 == Role::Row)
+            .filter_map(|n| {
+                let (head, rest) = n.2.split_once(", X ")?;
+                let (x, rest) = rest.split_once(" mm, Y ")?;
+                let y = rest.split(" mm").next()?;
+                Some((head.to_string(), x.parse().ok()?, y.parse().ok()?))
+            })
+            .collect();
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        out
+    };
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let before = places(&nodes);
+    assert!(before.len() > 5, "{nodes:?}");
+    app.run("document.setRulerOrigin", json!({"x": 72, "y": 36})).unwrap();
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let after = places(&nodes);
+    assert_eq!(before.len(), after.len());
+    for ((name, x0, y0), (same, x1, y1)) in before.iter().zip(&after) {
+        assert_eq!(name, same);
+        assert!((x0 - x1 - 25.4).abs() < 0.051 && (y0 - y1 - 12.7).abs() < 0.051, "{name}: {x0},{y0} → {x1},{y1}");
+    }
+}
+
+/// With needle points selected, Move by X 0,3 typed in Polish (a comma) moves them 0.3 mm in one undo
+/// step.
+#[test]
+fn move_by_moves_the_selected_needle_points() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 2}]})).unwrap();
+    let before = app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[2].p;
+    // The interface in Polish (the app sets the language from its preference each frame).
+    app.session.prefs.interface_language = "pl".into();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let field = nodes.iter().find(|n| n.2 == "Przesuń o X").map(|n| n.0).expect("the Move by X field, named in Polish");
+    let steps = app.session.active().unwrap().history.undo.len();
+    let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![focus]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text("0,3".into()), key(Key::Enter)]);
+    settle(&mut app, &ctx, &mut time);
+    crate::i18n::set_current(crate::i18n::Lang::EN);
+    let after = app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[2].p;
+    assert!((after.x - before.x - vectorcraft_engine::cmd::embroidery::mm_to_pt(0.3)).abs() < 1e-6, "{before:?} → {after:?}");
+    assert_eq!(app.session.active().unwrap().history.undo.len(), steps + 1);
+    // Enter again, the value unchanged: the move again.
+    let enter_in = |app: &mut VectorcraftApp, time: &mut f64, events: Vec<Event>| {
+        *time += 0.05;
+        frame(
+            app,
+            &ctx,
+            *time,
+            vec![Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None })],
+        );
+        *time += 0.05;
+        frame(app, &ctx, *time, events);
+        settle(app, &ctx, time);
+    };
+    enter_in(&mut app, &mut time, vec![key(Key::Enter)]);
+    let again = app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[2].p;
+    assert!((again.x - after.x - vectorcraft_engine::cmd::embroidery::mm_to_pt(0.3)).abs() < 1e-6, "{after:?} → {again:?}");
+    assert_eq!(app.session.active().unwrap().history.undo.len(), steps + 2);
+    // A value typed past the range is held to it.
+    enter_in(&mut app, &mut time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text("5000".into()), key(Key::Enter)]);
+    let uid = app.session.active().unwrap().uid;
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).unwrap().move_by[0], super::MOVE_BY_MAX_MM);
+}
+
+/// A seeded sweep, as a property test would (this crate has no proptest): clicks on the rows drawn
+/// (with Shift, Cmd or neither), the list's keys and others, words typed into Go to, the scope and
+/// the filter switched, needle points moved and deleted, undo and redo, the selection changed and
+/// stitch editing started and left, a frame after each. Nothing panics, caught by the engine or not
+/// (the panic hook counts them on this thread, where the light designs are planned), and at the end
+/// the whole design's rows are `embroidery.stitches`' records.
+#[test]
+fn random_input_never_breaks_the_tab() {
+    use std::cell::Cell;
+    thread_local!(static CAUGHT: Cell<usize> = const { Cell::new(0) });
+    static HOOK: std::sync::Once = std::sync::Once::new();
+    HOOK.call_once(|| {
+        let printed = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            CAUGHT.with(|c| c.set(c.get() + 1));
+            printed(info);
+        }));
+    });
+    /// A small linear congruential generator: the same numbers every run.
+    struct Seeded(u64);
+    impl Seeded {
+        fn next(&mut self) -> u64 {
+            self.0 = self.0.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
+            self.0 >> 33
+        }
+        fn pick<'a, T>(&mut self, of: &'a [T]) -> &'a T {
+            &of[(self.next() as usize) % of.len()]
+        }
+    }
+    const RUNS: u64 = 4;
+    const STEPS: usize = 160;
+    let keys = [
+        Key::ArrowUp,
+        Key::ArrowDown,
+        Key::ArrowLeft,
+        Key::ArrowRight,
+        Key::PageUp,
+        Key::PageDown,
+        Key::Home,
+        Key::End,
+        Key::Space,
+        Key::Enter,
+        Key::Escape,
+        Key::Delete,
+        Key::Tab,
+    ];
+    let mods = [Modifiers::NONE, Modifiers::SHIFT, Modifiers::COMMAND, Modifiers::ALT];
+    let typed = ["12", "abc", "0", "-3", "99999999999999999999", "4–9", "١٢", "", " 7 ", "1e9"];
+    let scopes = ["selection", "design"];
+    let filters = ["all", "jumps", "trims", "stops", "short", "long"];
+    CAUGHT.with(|c| c.set(0));
+    for seed in 0..RUNS {
+        let (mut app, id) = app();
+        let other = app.run("shape.rectangle", json!({"x": 200, "y": 160, "width": 60, "height": 50})).unwrap()["id"].as_u64().unwrap();
+        let ctx = context();
+        let mut time = 0.0;
+        let mut rng = Seeded(seed + 1);
+        let (mut shapes, mut nodes) = settle(&mut app, &ctx, &mut time);
+        for step in 0..STEPS {
+            let events = match rng.next() % 10 {
+                0 | 1 => {
+                    let rows: Vec<Pos2> = shapes
+                        .iter()
+                        .filter_map(|s| match s {
+                            Shape::Text(t)
+                                if t.pos.x > 800.0
+                                    && !t.galley.text().is_empty()
+                                    && t.galley.text().chars().all(|c| c.is_ascii_digit() || c == ',') =>
+                            {
+                                Some(t.visual_bounding_rect().center())
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    match rows.is_empty() {
+                        true => vec![],
+                        false => {
+                            let at = *rng.pick(&rows);
+                            let m = *rng.pick(&mods);
+                            vec![
+                                Event::PointerMoved(at),
+                                Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: true, modifiers: m },
+                                Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: false, modifiers: m },
+                            ]
+                        }
+                    }
+                }
+                2 | 3 => vec![key_with(*rng.pick(&keys), *rng.pick(&mods))],
+                4 => match nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0) {
+                    Some(field) => {
+                        let focus = Event::AccessKitActionRequest(ActionRequest {
+                            action: Action::Focus,
+                            target_node: field,
+                            target_tree: TreeId::ROOT,
+                            data: None,
+                        });
+                        time += 0.05;
+                        frame(&mut app, &ctx, time, vec![focus]);
+                        vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(rng.pick(&typed).to_string()), key(Key::Enter)]
+                    }
+                    None => vec![],
+                },
+                5 => {
+                    let p = json!({"scope": rng.pick(&scopes), "filter": rng.pick(&filters)});
+                    app.run("ui.embroideryPanel", p).unwrap();
+                    vec![]
+                }
+                6 => {
+                    let dx = (rng.next() % 9) as f64 - 4.0;
+                    let cmd = *rng.pick(&["embroidery.moveNeedlePoints", "embroidery.deleteNeedlePoints", "edit.undo", "edit.redo"]);
+                    let p = if cmd == "embroidery.moveNeedlePoints" { json!({"dx": dx}) } else { json!({}) };
+                    if let Err(e) = app.run(cmd, p) {
+                        assert!(!e.contains("internal"), "seed {seed}, step {step}: {cmd}: {e}");
+                    }
+                    vec![]
+                }
+                7 => {
+                    let ids = match rng.next() % 3 {
+                        0 => json!([id]),
+                        1 => json!([other]),
+                        _ => json!([]),
+                    };
+                    let _ = app.run("select.set", json!({ "ids": ids }));
+                    vec![]
+                }
+                _ => {
+                    if app.session.active().is_some_and(|st| st.isolation.is_some()) {
+                        let _ = app.run("object.exitIsolation", json!({}));
+                    } else if app.session.active().is_some_and(|st| st.doc.node(NodeId(id)).is_some()) {
+                        let _ = app.run("object.isolate", json!({ "id": id }));
+                        let _ = app.run("view.stitchPreview", json!({"on": true}));
+                        let _ = app.run("tool.select", json!({"tool": "embroidery"}));
+                    }
+                    vec![]
+                }
+            };
+            time += 0.05;
+            (shapes, nodes) = frame(&mut app, &ctx, time, events);
+            assert_eq!(CAUGHT.with(Cell::get), 0, "seed {seed}, step {step}: a panic");
+        }
+        // The whole design's rows are the command's records.
+        app.run("ui.embroideryPanel", json!({"scope": "design", "filter": "all"})).unwrap();
+        settle(&mut app, &ctx, &mut time);
+        let want = app.run("embroidery.stitches", json!({"limit": 0})).unwrap()["recordCount"].as_u64().unwrap() as usize;
+        let got = app.embroidery.stitches.list.as_ref().map(|(_, l)| l.len());
+        assert_eq!(got, Some(want), "seed {seed}");
+    }
+}
+
+/// The Too long filter names its rule: with DST's records the nearer line, both lines (a diagonal
+/// within DST's records can still be past 12.7 mm); else the longest stitch alone.
+#[test]
+fn the_long_filter_says_its_lines() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let words = |format: &str| {
+        let limits = vectorcraft_engine::cmd::embroidery::StitchLimits::of(&doc, vectorcraft_engine::cmd::embroidery::Format::from_id(format));
+        super::chip_words(Filter::Long, 3, &limits, crate::i18n::Lang::EN).1
+    };
+    assert_eq!(words("dst"), "Longer than 12.7 mm, or along x or y than one Tajima DST record (12.1 mm) 3");
+    assert_eq!(words("pes"), "Longer than 12.7 mm 3");
+}
+
+/// Go to # reads a whole number as the language writes one (its group mark or a space between
+/// threes, a `#` before it), and nothing else: not "1e9" as #19, nor "4.5" as #45.
+#[test]
+fn go_to_reads_a_whole_number_only() {
+    use crate::i18n::Lang;
+    let (en, pl, de) = (Lang::EN, Lang::from_code("pl").unwrap(), Lang::from_code("de").unwrap());
+    for (text, lang, want) in [
+        ("4695", en, Some(4695)),
+        (" #4,695 ", en, Some(4695)),
+        ("14 752", pl, Some(14_752)),
+        ("4.695", de, Some(4695)),
+        ("1e9", en, None),
+        ("4.5", en, None),
+        ("4,69", en, None),
+        ("46,95", en, None),
+        ("#", en, None),
+        ("", en, None),
+        ("99999999999999999999", en, None),
+    ] {
+        assert_eq!(super::record_number(text, lang), want, "{text:?} in {}", lang.code());
+    }
+}
+
+/// A record in the scope that the filter chosen leaves out: Go to # says so, not that it isn't
+/// there.
+#[test]
+fn go_to_says_when_the_filter_leaves_the_record_out() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.setMachineFunction", json!({"needlePoints": [{"id": run.0, "index": 5}], "function": "trim"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let (a, _) = list.span.unwrap();
+    let hidden = (a..).find(|n| list.row_of(*n).is_none()).unwrap();
+    let field = nodes.iter().find(|n| n.2 == "Record number").map(|n| n.0).expect("the field");
+    time += 0.05;
+    let focus = Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None });
+    frame(&mut app, &ctx, time, vec![focus]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text(hidden.to_string()), key(Key::Enter)]);
+    let said = app.embroidery.stitches.docs.get(&uid).and_then(|d| d.said.clone()).map(|(s, _)| s);
+    assert_eq!(said.as_deref(), Some(format!("Record #{hidden} is left out by the filter chosen.").as_str()));
+    // Said politely and tied to its field; gone once the filter lists other rows.
+    let update = output(&mut app, &ctx, time + 0.05, vec![]).platform_output.accesskit_update.expect("a tree");
+    let left_out = format!("Record #{hidden} is left out");
+    let answer =
+        update.nodes.iter().find(|(_, n)| n.role() == Role::Status && n.value().is_some_and(|v| v.starts_with(&left_out))).expect("the answer");
+    assert_eq!(answer.1.live(), Some(egui::accesskit::Live::Polite));
+    let tied = update.nodes.iter().find(|(id, _)| *id == field).is_some_and(|(_, n)| n.described_by().contains(&answer.0));
+    assert!(tied, "the field is described by its answer");
+    app.run("ui.embroideryPanel", json!({"filter": "all"})).unwrap();
+    let mut time = time + 0.1;
+    settle(&mut app, &ctx, &mut time);
+    assert!(app.embroidery.stitches.docs.get(&uid).is_some_and(|d| d.said.is_none()), "the answer goes with the rows it was of");
+}
+
+/// The list's keys while editing, as the design note set them: Shift+↓ extends the selection from
+/// the row clicked, Cmd+Space takes the row in focus out, Ctrl+End goes to the last row.
+#[test]
+fn shift_and_cmd_keys_extend_and_toggle_from_the_keyboard() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let plan = app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    // A run of stitch rows: each its own needle point.
+    let stitch = |r: usize| list.record(r).and_then(|n| stitch_list::row(&plan, n)).is_some_and(|row| row.kind == stitch_list::RecordKind::Stitch);
+    let start = (2..list.len()).find(|r| (*r..r + 4).all(stitch)).expect("four stitch rows in a row");
+    let at = row_at(&shapes, list.record(start).unwrap());
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    let selected =
+        |app: &VectorcraftApp| -> usize { app.session.active().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum() };
+    assert_eq!(selected(&app), 1);
+    let held = |m: Modifiers, k: Key| vec![Event::ModifiersChanged(m), key_with(k, m)];
+    for _ in 0..3 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, held(Modifiers::SHIFT, Key::ArrowDown));
+    }
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::ModifiersChanged(Modifiers::NONE)]);
+    assert_eq!(selected(&app), 4, "Shift+↓ three times: four rows");
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), list.record(start + 3));
+    time += 0.05;
+    frame(&mut app, &ctx, time, held(Modifiers::COMMAND, Key::Space));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::ModifiersChanged(Modifiers::NONE)]);
+    assert_eq!(selected(&app), 3, "Cmd+Space takes the row in focus out");
+    time += 0.05;
+    frame(&mut app, &ctx, time, held(Modifiers::CTRL, Key::End));
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).and_then(|d| d.focus), list.record(list.len() - 1), "Ctrl+End: the last row");
+}
+
+/// A plan's record numbers are its own: after an edit, the row in focus (and the stitch shown) is
+/// the same stitch while stitches are edited, found again by its needle point (an insert before
+/// it moves its record on), and let go outside editing.
+#[test]
+fn the_focus_follows_its_needle_point_into_a_new_plan() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let plan = |app: &VectorcraftApp| app.embroidery.preview.shown(uid).unwrap().planned.plan.clone();
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let before = plan(&app);
+    let stitch = |n: &usize| stitch_list::row(&before, *n).is_some_and(|r| r.kind == stitch_list::RecordKind::Stitch);
+    let number = (0..list.len()).filter_map(|i| list.record(i)).filter(stitch).nth(8).unwrap();
+    let at = stitch_list::row(&before, number).unwrap().at;
+    app.run("embroidery.showRecord", json!({"record": number})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    app.run("embroidery.insertNeedlePoints", json!({"id": run.0, "index": 1})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let d = app.embroidery.stitches.docs.get(&uid).unwrap();
+    let (focus, shown) = (d.focus.expect("found again"), d.shown.expect("found again"));
+    assert_eq!((focus, shown), (number + 1, number + 1), "its record moved on by the needle point inserted before it");
+    assert_eq!(stitch_list::row(&plan(&app), focus).unwrap().at, at, "the same stitch");
+    // Outside editing, an edit lets them go.
+    app.run("object.exitIsolation", json!({})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    app.run("object.move", json!({"ids": [id], "dx": 5, "dy": 0})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let d = app.embroidery.stitches.docs.get(&uid).unwrap();
+    assert_eq!((d.focus, d.shown), (None, None));
+}
+
+/// `embroidery.showRecord` refuses junk, and a record the filter leaves out, saying which; a record
+/// listed is in focus and shown.
+#[test]
+fn show_record_refuses_what_isnt_listed() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let number = list.record(3).unwrap();
+    for junk in [json!({}), json!({"record": 0}), json!({"record": "four"}), json!({"record": 4, "zoomed": true}), json!({"record": 4, "zoom": 1})] {
+        assert!(app.run("embroidery.showRecord", junk.clone()).is_err(), "{junk}");
+    }
+    app.run("ui.embroideryPanel", json!({"filter": "trims"})).unwrap();
+    let e = app.run("embroidery.showRecord", json!({"record": number})).unwrap_err();
+    assert!(e.contains("isn't listed") && e.contains("filter trims"), "{e}");
+    app.run("ui.embroideryPanel", json!({"filter": "all"})).unwrap();
+    assert_eq!(app.run("embroidery.showRecord", json!({"record": number, "zoom": true})).unwrap()["row"], json!(3));
+    let uid = app.session.active().unwrap().uid;
+    let d = app.embroidery.stitches.docs.get(&uid).unwrap();
+    assert_eq!((d.focus, d.shown), (Some(number), Some(number)));
+}
+
+/// The tab's small rules: a bad `format` given to `ui.embroideryPanel` changes nothing (the filter
+/// given with it neither), and a filter given goes back to the first page as the chips do; a closed
+/// document's place in the list goes with it; a row of a locked run says why it can't be edited.
+#[test]
+fn the_tabs_small_rules() {
+    let (mut app, id) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    assert!(app.run("ui.embroideryPanel", json!({"filter": "trims", "format": "svg"})).is_err());
+    assert_eq!(app.ui.embroidery_panel.stitches_filter, Filter::All, "nothing changed");
+    app.embroidery.stitches.docs.get_mut(&uid).unwrap().page = 3;
+    app.run("ui.embroideryPanel", json!({"filter": "stops"})).unwrap();
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).unwrap().page, 0, "back to the first page");
+    app.run("ui.embroideryPanel", json!({"filter": "all"})).unwrap();
+    // A locked run of the object edited: its rows say so, not that it is planned from a shape.
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("object.lock", json!({"ids": [run.0]})).unwrap();
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let at = row_at(&shapes, list.record(4).unwrap());
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    assert_eq!(app.ui.status, "1 run can't be edited: locked, hidden or not sewn", "its reason, as the chip says it");
+    // A document closed: its place goes.
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    app.run("document.switch", json!({"uid": uid})).ok();
+    let other = app.session.documents().iter().map(|d| d.uid).find(|u| *u != uid).unwrap();
+    assert!(app.embroidery.stitches.docs.contains_key(&uid));
+    app.run("file.close", json!({})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let open: Vec<u64> = app.session.documents().iter().map(|d| d.uid).collect();
+    assert!(app.embroidery.stitches.docs.keys().all(|u| open.contains(u)), "only open documents: {open:?}, {other}");
+}
+
+/// The foot's stitch actions are on and off as the ≡ menu's: as their commands can run (each needs
+/// only a document today, so all are on here; the test holds the wiring for a command that gains a
+/// condition).
+#[test]
+fn the_foots_actions_are_on_as_their_commands_can_run() {
+    let (mut app, id) = app();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 3}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let items = crate::embroidery::task_bar::items(&mut app).unwrap();
+    for crate::embroidery::task_bar::Item { label, command, .. } in items {
+        let on = crate::menus::enabled(&app, command);
+        let button = nodes.iter().find(|n| n.1 == Role::Button && n.2 == label).unwrap_or_else(|| panic!("no {label} button"));
+        assert_eq!(!button.5, on, "{label}: as {command} can run");
+    }
+}
+
+/// While editing, the object edited selected whole lights the rows of its needle points, by the rule
+/// every reader of the selection keeps (an object holding a path selected whole selects all of it);
+/// with nothing selected, none is lit.
+#[test]
+fn while_editing_the_object_selected_whole_lights_its_rows() {
+    let (mut app, id) = app();
+    app.run("select.none", json!({})).unwrap();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    app.run("ui.embroideryPanel", json!({"scope": "design"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let lit = |nodes: &[Node]| nodes.iter().filter(|n| n.1 == Role::Row && n.4 == Some(true)).count();
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let rows = nodes.iter().filter(|n| n.1 == Role::Row).count();
+    assert!(rows > 4, "rows listed: {rows}");
+    assert_eq!(lit(&nodes), 0, "nothing selected");
+    app.run("select.set", json!({"ids": [id]})).unwrap();
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    assert!(lit(&nodes) > 4, "the rows of the needle points it holds lit: {} of {rows}", lit(&nodes));
+}
+
+/// What the tab keeps of a document goes when it closes, though the tab isn't drawn after: its place
+/// in the list, its rows listed, their numberings and its last plan drawn.
+#[test]
+fn a_closed_documents_rows_go_with_it() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let at = row_at(&shapes, list.record(3).unwrap());
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    let kept = &app.embroidery.stitches;
+    assert!(kept.list.is_some() && kept.numbering.is_some() && kept.drawn.is_some() && kept.docs.contains_key(&uid), "kept while it is open");
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    // Closed by the engine's command (the interface's asks to save first).
+    let index = app.session.documents().iter().position(|d| d.uid == uid).unwrap();
+    app.session.execute("file.close", &json!({"index": index})).unwrap();
+    settle(&mut app, &ctx, &mut time);
+    let kept = &app.embroidery.stitches;
+    assert!(kept.list.is_none() && kept.numbering.is_none() && kept.drawn.is_none() && !kept.docs.contains_key(&uid), "gone with it");
+}
+
+/// For screen readers the list is one grid, its column heads and the rows in view under it, which
+/// takes the keyboard (a row clicked gives it), named, its row in focus its active descendant: ↓
+/// moves that to the next row. The rows are no Tab stops of their own.
+#[test]
+fn the_list_is_one_grid_that_follows_the_keys() {
+    let (mut app, _) = app();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    let (first, next) = (list.record(2).unwrap(), list.record(3).unwrap());
+    let at = row_at(&shapes, first);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::ArrowDown)]);
+    time += 0.05;
+    let update = output(&mut app, &ctx, time, vec![]).platform_output.accesskit_update.expect("a tree");
+    let nodes: std::collections::HashMap<_, _> = update.nodes.iter().map(|(id, n)| (*id, n)).collect();
+    let (grid_id, grid) = update.nodes.iter().find(|(_, n)| n.role() == Role::Grid).expect("a grid");
+    assert_eq!((grid.label(), update.focus), (Some("Stitches"), *grid_id), "the grid, named, has the keyboard");
+    // A row of heads and a group of rows, as a grid holds them.
+    let under = |id: &egui::accesskit::NodeId| {
+        nodes.get(id).map(|n| (n.role(), n.children().iter().filter_map(|c| nodes.get(c).map(|n| n.role())).collect::<Vec<_>>()))
+    };
+    let parts: Vec<_> = grid.children().iter().filter_map(under).collect();
+    let heads = parts.iter().find(|(r, _)| *r == Role::Row).map_or(0, |(_, c)| c.iter().filter(|r| **r == Role::ColumnHeader).count());
+    assert!(heads >= 3, "the heads are the grid's, in a row: {parts:?}");
+    assert_eq!(grid.column_count(), Some(heads), "as many columns as heads");
+    let rows = parts.iter().find(|(r, _)| *r == Role::RowGroup).map_or(0, |(_, c)| c.iter().filter(|r| **r == Role::Row).count());
+    assert!(rows > 4, "the rows in view are the grid's, in a group: {parts:?}");
+    let active = grid.active_descendant().and_then(|id| nodes.get(&id)).expect("an active row");
+    assert_eq!(active.role(), Role::Row);
+    assert!(active.label().is_some_and(|l| l.starts_with(&format!("Record {next}:"))), "↓ moved it to the next row: {:?}", active.label());
+    let rows = update.nodes.iter().filter(|(_, n)| n.role() == Role::Row);
+    assert!(rows.clone().all(|(_, n)| !n.supports_action(Action::Focus)), "no row is a Tab stop");
+}
+
+/// The tab's dim words (the column heads, the empty filters, Listing stitches…, Go to's answer and
+/// the foot's hints) read by 4.5:1 on the panel in every theme.
+#[test]
+fn the_dim_words_read_in_every_theme() {
+    use crate::theme::{Accent, Brightness, Scheme, Tokens};
+    for scheme in Scheme::ALL {
+        for b in Brightness::ALL {
+            for accent in Accent::ALL {
+                let t = Tokens::for_scheme(scheme, b, accent);
+                let ratio = crate::embroidery::marks::contrast(super::dim(&t), t.panel);
+                assert!(ratio >= crate::embroidery::marks::TEXT_CONTRAST - 0.01, "{scheme:?} {b:?} {accent:?}: {ratio}");
+            }
+        }
+    }
+}
+
+/// The kinds' glyphs (where their words don't fit) are in the interface's own fonts: none is drawn as
+/// the replacement box, with no system font to fall back on (the web build).
+#[test]
+fn the_kinds_glyphs_are_in_the_interfaces_fonts() {
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    let mut output = ctx.run_ui(egui::RawInput::default(), |_| {});
+    output.textures_delta.clear();
+    ctx.fonts_mut(|fonts| {
+        let chars = fonts.fonts.font(&egui::FontFamily::Proportional).characters().clone();
+        for kind in [stitch_list::RecordKind::Stitch, stitch_list::RecordKind::Jump, stitch_list::RecordKind::Trim, stitch_list::RecordKind::Stop] {
+            let glyph = super::kind_glyph(kind);
+            assert!(glyph.chars().all(|ch| chars.contains_key(&ch)), "{kind:?}'s {glyph} isn't in the interface's fonts");
+        }
+    });
+}
+
+/// Past [`super::MAX_SCROLLED_ROWS`] rows the list is split into pages: 450,000 rows are two, the
+/// second holding the 50,000 left; a row is on the page its place says; none is one page.
+#[test]
+fn the_list_is_split_into_pages_past_its_rows() {
+    use super::pages;
+    let per = super::MAX_SCROLLED_ROWS;
+    assert_eq!((pages::count(0), pages::count(per), pages::count(per + 1), pages::count(450_000)), (1, 1, 2, 2));
+    assert_eq!((pages::rows(0, 450_000), pages::rows(1, 450_000)), (0..per, per..450_000));
+    assert_eq!(pages::rows(2, 450_000), 450_000..450_000, "a page past the last holds none");
+    assert_eq!((pages::of(per - 1), pages::of(per), pages::of(449_999)), (0, 1, 1));
+}
+
+/// The stitch actions run when clicked where the interface offers them: the panel's ≡ menu (Trim
+/// After the Selected Needle Points adds a cut after the needle point) and the tab's foot (Delete
+/// deletes it).
+#[test]
+fn the_menu_and_the_foot_run_the_stitch_actions() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 3}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    let click =
+        |node| Event::AccessKitActionRequest(ActionRequest { action: Action::Click, target_node: node, target_tree: TreeId::ROOT, data: None });
+    // The ≡ menu, drawn as the panel draws it.
+    let menu = |app: &mut VectorcraftApp, events: Vec<Event>| {
+        let mut out = ctx.run_ui(egui::RawInput { events, ..Default::default() }, |ui| super::super::menu(app, ui));
+        out.textures_delta.clear();
+        let tree = out.platform_output.accesskit_update.expect("a tree");
+        tree.nodes.iter().map(|(id, n)| (*id, n.label().unwrap_or_default().trim().to_string())).collect::<Vec<_>>()
+    };
+    let cuts = |app: &mut VectorcraftApp| {
+        app.run("embroidery.stitches", json!({"ids": [id], "kinds": ["trim"], "limit": 0})).unwrap()["matchedCount"].as_u64()
+    };
+    let before = cuts(&mut app);
+    let items = menu(&mut app, vec![]);
+    let trim = items.iter().find(|(_, l)| l == "Trim After the Selected Needle Points").map(|(n, _)| *n).expect("the menu's Trim");
+    menu(&mut app, vec![click(trim)]);
+    settle(&mut app, &ctx, &mut time);
+    assert_eq!(cuts(&mut app), before.map(|n| n + 1), "a cut after the needle point");
+    // The foot's Delete.
+    let count = |app: &VectorcraftApp| {
+        app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths.iter().map(|s| s.anchors.len()).sum::<usize>()
+    };
+    let anchors = count(&app);
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let delete = nodes.iter().find(|n| n.1 == Role::Button && n.2 == "Delete").map(|n| n.0).expect("the foot's Delete");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![click(delete)]);
+    settle(&mut app, &ctx, &mut time);
+    assert!(count(&app) < anchors, "the needle point deleted: {anchors} → {}", count(&app));
+}
+
+/// Move by Y moves the selected needle points down by the millimetres typed, and not sideways.
+#[test]
+fn move_by_y_moves_them_down() {
+    let (mut app, id) = app();
+    app.run("object.isolate", json!({"id": id})).unwrap();
+    app.run("view.stitchPreview", json!({"on": true})).unwrap();
+    app.run("tool.select", json!({"tool": "embroidery"})).unwrap();
+    let run = app.session.active().unwrap().doc.node(NodeId(id)).unwrap().children().unwrap()[0].id;
+    app.run("embroidery.selectNeedlePoints", json!({"needlePoints": [{"id": run.0, "index": 2}]})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (_, nodes) = settle(&mut app, &ctx, &mut time);
+    let at = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(run).unwrap().path_data().unwrap().subpaths[0].anchors[2].p;
+    let before = at(&app);
+    let field = nodes.iter().find(|n| n.2 == "Move by Y").map(|n| n.0).expect("the Move by Y field");
+    time += 0.05;
+    frame(
+        &mut app,
+        &ctx,
+        time,
+        vec![Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: field, target_tree: TreeId::ROOT, data: None })],
+    );
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text("0.5".into()), key(Key::Enter)]);
+    settle(&mut app, &ctx, &mut time);
+    let after = at(&app);
+    assert!(
+        (after.y - before.y - vectorcraft_engine::cmd::embroidery::mm_to_pt(0.5)).abs() < 1e-6 && (after.x - before.x).abs() < 1e-9,
+        "{before:?} → {after:?}"
+    );
+}
+
+/// The tab never builds its records' flags itself: until the planning thread has built them it
+/// says it is listing, whatever the frames; a walk of them cancelled is never kept.
+#[test]
+fn the_flags_come_from_the_planning_thread_and_a_cancelled_walk_is_dropped() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    let held = crate::embroidery::stitch_preview::Held::default();
+    app.embroidery.preview = crate::embroidery::stitch_preview::StitchPreview::with_runner(Box::new(held.clone()));
+    app.run("file.new", json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    app.run("shape.rectangle", json!({"x": 60, "y": 60, "width": 120, "height": 90})).unwrap();
+    app.run("ui.embroideryPanel", json!({"tab": "object"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    settle(&mut app, &ctx, &mut time);
+    held.release();
+    settle(&mut app, &ctx, &mut time);
+    let uid = app.session.active().unwrap().uid;
+    assert!(app.embroidery.preview.shown(uid).is_some(), "a plan shown");
+    // The tab opened: its flags asked of the planning thread, which holds them.
+    app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "design"})).unwrap();
+    let mut listing = false;
+    for _ in 0..4 {
+        time += 0.05;
+        let (shapes, _) = frame(&mut app, &ctx, time, vec![]);
+        listing |= shapes.iter().any(|s| matches!(s, Shape::Text(t) if t.galley.text() == "Listing stitches…"));
+    }
+    let limits = super::limits_of(&app).unwrap();
+    let planned = app.embroidery.preview.shown(uid).unwrap().planned.clone();
+    assert!(listing && planned.built_stitch_flags(&limits).is_none(), "the tab waits for the planning thread's flags");
+    held.release();
+    settle(&mut app, &ctx, &mut time);
+    assert!(planned.built_stitch_flags(&limits).is_some(), "built on the planning thread");
+    // A walk of the flags cancelled is never kept.
+    let other = vectorcraft_engine::cmd::embroidery::StitchLimits::of(
+        &app.session.active().unwrap().doc,
+        Some(vectorcraft_engine::cmd::embroidery::Format::Dst),
+    );
+    let cancelled = vectorcraft_engine::doc::cancel::CancelToken::new();
+    cancelled.cancel();
+    drop(vectorcraft_engine::doc::cancel::scope(&cancelled, None, || planned.stitch_flags(&other)));
+    assert!(planned.built_stitch_flags(&other).is_none(), "a cancelled walk is never kept");
+}
+
+/// A Shift range takes at most [`super::RANGE_MAX`] rows (Shift+End from the first row of a longer
+/// list): those rows' needle points selected, as the command selects them by their records, and
+/// the status saying no more were.
+#[test]
+fn a_shift_range_past_its_limit_takes_its_first_rows_and_says_so() {
+    let points = super::RANGE_MAX + 10;
+    let (mut app, run) = crate::embroidery::selection::tests::editing_run(points);
+    app.run("ui.embroideryPanel", json!({"tab": "stitches", "scope": "selection", "filter": "all"})).unwrap();
+    let ctx = context();
+    let mut time = 0.0;
+    let (shapes, _) = settle(&mut app, &ctx, &mut time);
+    let list = app.embroidery.stitches.list.as_ref().unwrap().1.clone();
+    assert!(list.len() > super::RANGE_MAX, "{} rows", list.len());
+    let (first, limit) = (list.record(0).unwrap(), list.record(super::RANGE_MAX - 1).unwrap());
+    app.run("embroidery.selectNeedlePoints", json!({"records": [first, limit]})).unwrap();
+    let wanted = app.session.active().unwrap().selection.anchors.get(&run).cloned().unwrap_or_default();
+    assert!(!wanted.is_empty() && wanted.len() < points, "{} of {points}", wanted.len());
+    app.run("select.none", json!({})).unwrap();
+    let at = row_at(&shapes, first);
+    for e in [Event::PointerMoved(at), press(at, true, Modifiers::NONE), press(at, false, Modifiers::NONE)] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![e]);
+    }
+    for e in [vec![Event::ModifiersChanged(Modifiers::SHIFT), key_with(Key::End, Modifiers::SHIFT)], vec![Event::ModifiersChanged(Modifiers::NONE)]] {
+        time += 0.05;
+        frame(&mut app, &ctx, time, e);
+    }
+    // Compared whole, said by their counts and ends (a hundred thousand of them).
+    let got = app.session.active().unwrap().selection.anchors.get(&run).cloned().unwrap_or_default();
+    let said = |s: &std::collections::BTreeSet<_>| (s.len(), s.first().copied(), s.last().copied());
+    assert!(got == wanted, "the range's first rows' needle points: {:?} selected, {:?} wanted", said(&got), said(&wanted));
+    assert_eq!(app.ui.status, "Only the first 100,000 rows of the range are selected: a click selects no more.");
+}

@@ -127,6 +127,62 @@ const TINY: f64 = 0.3;
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Quality/quality/quality-15.htm>), a
 /// setting of that effect, not a quality limit: background for the estimate.
 const MOST_SHORT_IN_A_ROW: usize = 5;
+/// The one set of lines a stitch is judged by while stitches are edited, on the canvas, in the
+/// live check and in the Stitches tab (the project owner's choice, 2026-10-27: one set of
+/// thresholds everywhere): shorter than the document's shortest stitch (Document Setup's
+/// `minStitch`, else the planner's 0.4 mm), longer than Melco's 12.7 mm (`stitchTooLong`), or
+/// longer along x or y than one record of the format the Check tab checks for (`formatStep`; the
+/// thread palette's format unless one is chosen). Millimetres.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StitchLimits {
+    pub shortest: f64,
+    pub longest: f64,
+    pub step: f64,
+    pub format: Format,
+}
+
+/// What a judgement against [`StitchLimits`] is kept for ([`StitchLimits::key`]): the bits of their
+/// three lines, which are all a stitch is judged by.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct LimitsKey {
+    shortest: u64,
+    longest: u64,
+    step: u64,
+}
+
+impl StitchLimits {
+    /// What a judgement against these limits is kept for: built here only, so that a line added to
+    /// them goes into every cache keyed by it.
+    pub fn key(&self) -> LimitsKey {
+        LimitsKey { shortest: self.shortest.to_bits(), longest: self.longest.to_bits(), step: self.step.to_bits() }
+    }
+
+    /// The limits of document `doc`, for `format` (`None`: the thread palette's).
+    pub fn of(doc: &vectorcraft_doc::Document, format: Option<Format>) -> Self {
+        let format = format.unwrap_or_else(|| super::thread_palette(doc).format());
+        Self { shortest: super::needles::shortest_stitch(doc), longest: LONGEST_STITCH, step: format.max_step(), format }
+    }
+
+    /// The lines themselves, as the canvas judges by them too.
+    pub fn rule(&self) -> vectorcraft_doc::embroidery::StitchRule {
+        vectorcraft_doc::embroidery::StitchRule { shortest: self.shortest, longest: self.longest, step: self.step }
+    }
+
+    /// Whether a stitch `length` millimetres long is too short ([`StitchRule::short`]).
+    ///
+    /// [`StitchRule::short`]: vectorcraft_doc::embroidery::StitchRule::short
+    pub fn short(&self, length: f64) -> bool {
+        self.rule().short(length)
+    }
+
+    /// Whether a stitch moving `dx`, `dy` millimetres is too long ([`StitchRule::long`]).
+    ///
+    /// [`StitchRule::long`]: vectorcraft_doc::embroidery::StitchRule::long
+    pub fn long(&self, dx: f64, dy: f64) -> bool {
+        self.rule().long(dx, dy)
+    }
+}
+
 /// How far a unit's stitches may miss the entry or exit point it was planned toward before the
 /// miss is pointed out (millimetres): the planner's own threshold, which it also keeps an aimed
 /// plan by (at least this much nearer the exit).

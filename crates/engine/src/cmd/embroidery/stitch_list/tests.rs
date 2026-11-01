@@ -1,0 +1,167 @@
+//! The Stitches tab's read side against `embroidery.stitches`, which lists the same records with
+//! the commands' own code: each row's kind, place and length, the filters' picks and counts, a
+//! scope's records, and the needle point each record is edited by.
+
+use serde_json::{Value, json};
+use vectorcraft_doc::NodeId;
+use vectorcraft_testkit::embroidery as fx;
+
+use super::super::check::StitchLimits;
+use super::super::test_support::run;
+use super::{Filter, Flags, Listed, edited_by, leading, listed, numbering, ordinals, row, scope};
+use crate::Session;
+
+fn runner(s: &mut Session) -> impl FnMut(&str, Value) -> Value + '_ {
+    |c, p| s.execute(c, &p).unwrap_or_else(|e| panic!("{c} {p}: {e}"))
+}
+
+/// The manual fixture, planned, and its plan.
+fn planned() -> (Session, fx::Manual, std::sync::Arc<super::super::plan::DesignPlan>) {
+    let mut s = Session::new();
+    let m = fx::manual(&mut runner(&mut s));
+    run(&mut s, "embroidery.sequence", json!({}));
+    let uid = s.doc().unwrap().uid;
+    let facts = s.embroidery_plans.tool_facts(uid, &super::super::Options::default()).unwrap();
+    let plan = facts.plan();
+    (s, m, plan)
+}
+
+/// Every record's row equals what `embroidery.stitches` lists for it: its kind, place, length,
+/// object and path; and the needle point it is edited by, where the list names one.
+#[test]
+fn rows_are_what_the_stitch_list_lists() {
+    let (mut s, _, plan) = planned();
+    let doc = s.doc().unwrap().doc.clone();
+    let listed = run(&mut s, "embroidery.stitches", json!({"limit": 10000}));
+    let records = listed["records"].as_array().unwrap();
+    assert!(records.len() > 100);
+    let mut numbered: std::collections::HashMap<usize, Option<(NodeId, usize)>> = std::collections::HashMap::new();
+    for r in records {
+        let n = r["record"].as_u64().unwrap() as usize;
+        let row = row(&plan, n).unwrap();
+        assert_eq!(row.kind.name(), r["kind"].as_str().unwrap(), "record {n}");
+        let mm = |v: &Value| v.as_f64().unwrap();
+        assert!((row.at.x - mm(&r["at"][0])).abs() < 1e-9 && (row.at.y - mm(&r["at"][1])).abs() < 1e-9, "record {n}");
+        match (row.length, r["length"].as_f64()) {
+            (Some(a), Some(b)) => assert!((a - b).abs() < 1e-9, "record {n}: {a} {b}"),
+            (a, b) => assert_eq!(a, b, "record {n}"),
+        }
+        // The needle point it is edited by, from the unit's numbering and ordinals; before the
+        // unit's own records (an opened design's run), from the needle points they lead from, and
+        // a cut there is the path's whose needle point it follows.
+        let unit = row.unit;
+        let edited = *numbered.entry(unit).or_insert_with(|| numbering(&plan, &doc, unit));
+        let lead = edited.map(|(_, first)| leading(&plan, &doc, unit, first)).unwrap_or_default();
+        let address = match lead.iter().find(|(at, _)| *at == n) {
+            Some((_, a)) => Some(*a),
+            None => edited.and_then(|(node, first)| edited_by(&plan, unit, first, &ordinals(&plan, unit), n, row.kind).map(|k| (node, k))),
+        };
+        let node = address.map_or(row.node, |(node, _)| node);
+        assert_eq!((row.object.0, node.0), (r["id"].as_u64().unwrap(), r["node"].as_u64().unwrap()), "record {n}");
+        assert_eq!(address.map(|(_, k)| k as u64), r["index"].as_u64(), "record {n}: {r}");
+    }
+    assert_eq!(row(&plan, 0), None);
+    assert_eq!(row(&plan, usize::MAX), None);
+}
+
+/// The filters pick what `embroidery.stitches` picks for each kind; the short and long ones, the
+/// stitches the limits flag.
+#[test]
+fn the_filters_pick_what_the_list_picks() {
+    let (mut s, _, plan) = planned();
+    let doc = s.doc().unwrap().doc.clone();
+    let limits = StitchLimits::of(&doc, None);
+    let flags = Flags::of(&plan, &limits);
+    let total = run(&mut s, "embroidery.stitches", json!({"limit": 0}))["recordCount"].as_u64().unwrap() as usize;
+    assert_eq!(flags.len(), total);
+    for (filter, kinds) in [(Filter::Jumps, "jump"), (Filter::Trims, "trim"), (Filter::Stops, "stop")] {
+        let want = run(&mut s, "embroidery.stitches", json!({"kinds": [kinds], "limit": 10000}))["matchedCount"].as_u64().unwrap() as usize;
+        let got = (1..=total).filter(|n| flags.matches(*n, filter)).count();
+        assert_eq!(got, want, "{filter:?}");
+    }
+    let short = run(&mut s, "embroidery.stitches", json!({"shorterThan": limits.shortest, "kinds": ["stitch"], "limit": 0}))["matchedCount"]
+        .as_u64()
+        .unwrap() as usize;
+    assert_eq!((1..=total).filter(|n| flags.matches(*n, Filter::Short)).count(), short);
+    assert_eq!((1..=total).filter(|n| flags.matches(*n, Filter::All)).count(), total);
+    assert!(!flags.matches(0, Filter::All) && !flags.matches(total + 1, Filter::All));
+}
+
+/// A scope is the records of the units sewing the objects given and what they hold: a converted
+/// object's runs' records, a file's run's, a group's members', as `embroidery.stitches {ids}`
+/// lists them for the objects themselves.
+#[test]
+fn a_scope_is_its_objects_records() {
+    let (mut s, m, plan) = planned();
+    let doc = s.doc().unwrap().doc.clone();
+    let members: Vec<u64> = doc.node(NodeId(m.converted.group)).unwrap().children().unwrap().iter().map(|c| c.id.0).collect();
+    for (given, ids) in
+        [(vec![m.converted.fill], vec![m.converted.fill]), (vec![m.trim_after], vec![m.trim_after]), (vec![m.converted.group], members)]
+    {
+        let given: Vec<NodeId> = given.into_iter().map(NodeId).collect();
+        let ranges = scope(&plan, &doc, &given);
+        let got: Vec<usize> = ranges.iter().flat_map(|r| r.clone()).collect();
+        let id = given[0].0;
+        let listed = run(&mut s, "embroidery.stitches", json!({"ids": ids, "limit": 10000}));
+        let want: Vec<usize> = listed["records"].as_array().unwrap().iter().map(|r| r["record"].as_u64().unwrap() as usize).collect();
+        assert_eq!(got, want, "object {id}");
+    }
+    assert!(scope(&plan, &doc, &[]).is_empty());
+}
+
+/// Each filter's count by chunks, and its records skipping the chunks it lists none of, are what a
+/// walk of every record finds: over the whole design, a range inside one chunk, ranges across
+/// chunk edges, and ones past the records' ends.
+#[test]
+fn counts_by_chunk_are_a_walks() {
+    let (s, _, plan) = planned();
+    let limits = StitchLimits::of(&s.doc().unwrap().doc, None);
+    let flags = Flags::of(&plan, &limits);
+    let n = flags.len();
+    let chunk = super::COUNT_CHUNK;
+    let mut ranges = vec![1..n + 1, 3..10, 0..n + 50, n..n + 1, n + 5..n + 9];
+    if n > chunk + 10 {
+        ranges.extend([chunk - 3..chunk + 4, chunk..chunk + 1, 2..n - 1]);
+    }
+    for r in ranges {
+        let walked: Vec<usize> = Filter::ALL.iter().map(|f| r.clone().filter(|m| flags.matches(*m, *f)).count()).collect();
+        assert_eq!(flags.counts(r.clone()).to_vec(), walked, "{r:?} of {n}");
+        for f in Filter::ALL {
+            let mut listed = vec![];
+            flags.each_listed(r.clone(), f, |m| listed.push(m));
+            let want: Vec<usize> = r.clone().filter(|m| flags.matches(*m, f)).collect();
+            assert_eq!(listed, want, "{f:?} over {r:?}");
+        }
+    }
+}
+
+/// Rows as ranges and as picked numbers: row to record and back.
+#[test]
+fn rows_and_records_round_trip() {
+    let all = Listed { rows: super::Rows::Ranges(vec![3..7, 10..12], vec![0, 4]), counts: [0; 6], span: Some((3, 11)) };
+    assert_eq!(all.len(), 6);
+    assert_eq!((0..6).map(|i| all.record(i).unwrap()).collect::<Vec<_>>(), [3, 4, 5, 6, 10, 11]);
+    assert_eq!((all.row_of(10), all.row_of(7), all.row_of(2), all.record(6)), (Some(4), None, None, None));
+    let picked = Listed { rows: super::Rows::Picked(vec![2, 9, 40]), counts: [0; 6], span: Some((2, 40)) };
+    assert_eq!((picked.record(1), picked.row_of(40), picked.row_of(3)), (Some(9), Some(2), None));
+}
+
+/// One pass over the scope gives every filter's count; a filter's rows are its matches.
+#[test]
+fn every_filters_count_in_one_pass() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 20, "y": 20, "width": 100, "height": 60})).unwrap();
+    s.execute("shape.rectangle", &json!({"x": 180, "y": 20, "width": 60, "height": 60})).unwrap();
+    let opts = crate::EmbroideryOptions::default();
+    let plan = s.embroidery_plan(&opts).unwrap();
+    let doc = s.doc().unwrap().doc.clone();
+    let limits = StitchLimits::of(&doc, None);
+    let flags = Flags::of(&plan, &limits);
+    let all = listed(&flags, None, Filter::All);
+    for (k, f) in Filter::ALL.into_iter().enumerate() {
+        let picked = listed(&flags, None, f);
+        assert_eq!(picked.len(), all.counts[k], "{f:?}");
+        assert!((0..picked.len()).all(|i| flags.matches(picked.record(i).unwrap(), f)), "{f:?}");
+    }
+}

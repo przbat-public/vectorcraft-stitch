@@ -74,9 +74,11 @@ type EndsKey = (u64, u64, Vec<NodeId>);
 type PendingKey = (u64, u64, u64);
 
 /// Whether the canvas draws only the selection's frame and the key object's outline: the Selection
-/// tool, or the embroidery tool (its handles over the stitches, no anchors), in the stitch view.
+/// tool, or the embroidery tool (its handles over the stitches, no anchors), in the stitch view; and
+/// the Lasso tool while it selects needle points there (stitch editing's look kept, no anchor
+/// squares over them).
 pub fn frame_only(app: &VectorcraftApp) -> bool {
-    app.embroidery.layer.drawn() && (app.session.tool_id() == "selection" || super::handles::active(app))
+    app.embroidery.layer.drawn() && (app.session.tool_id() == "selection" || super::handles::active(app) || super::editing::lasso_edits(app))
 }
 
 /// The active document's selected objects' ends in the plan shown, found again only when the
@@ -106,7 +108,7 @@ pub fn not_sewn(app: &VectorcraftApp, now: f64) -> usize {
     let Some(generation) = app.embroidery.preview.shown(st.uid).map(|s| s.planned.generation) else { return 0 };
     match &app.embroidery.ends.of {
         Some(((uid, g, selected), ends)) if (*uid, *g) == (st.uid, generation) && *selected == st.selection.objects => {
-            ends.iter().filter(|e| e.units.is_empty()).count()
+            ends.iter().filter(|e| !e.sewn).count()
         }
         _ => 0,
     }
@@ -170,9 +172,16 @@ fn anchors_within(nodes: &[&Node], max: usize) -> bool {
     true
 }
 
+/// The farthest from the canvas's origin a dashed line may reach, screen points. A document's art
+/// stays within [`vectorcraft_doc::MAX_COORD`], 3.4 billion screen points at the closest zoom
+/// (64,000 % with Display Print Size), and the renderer leaves art past this range undrawn: a
+/// segment reaching past it comes from input out of range (a pointer sent from far off, a file's
+/// run) and is left undrawn too. Within it an f64 places every dash to well under a point.
+const SCREEN_RANGE_PT: f64 = 1e10;
+
 /// Dash `line` (screen points) with `stroke`, `pattern` its dashes' and gaps' lengths, where it
 /// crosses `clip`, at most `budget` dashes, taken from it: a long line far outside the canvas costs
-/// nothing.
+/// nothing, and a segment past [`SCREEN_RANGE_PT`] is left out.
 pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f32, f32), clip: egui::Rect, budget: &mut usize) {
     let (dash, period) = (f64::from(pattern.0), f64::from(pattern.0 + pattern.1));
     // How far along the line this segment starts, folded into one period (the dashes go on from one
@@ -180,8 +189,9 @@ pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f
     let mut phase = 0.0_f64;
     for w in line.windows(2) {
         let [a, b] = w else { continue };
+        let in_range = [a.x, a.y, b.x, b.y].iter().all(|v| v.is_finite() && f64::from(v.abs()) <= SCREEN_RANGE_PT);
         let len = f64::from(a.distance(*b));
-        if !len.is_finite() || len <= 0.0 {
+        if !in_range || !len.is_finite() || len <= 0.0 {
             continue;
         }
         if let Some((t0, t1)) = clip_segment(*a, *b, clip) {
@@ -190,16 +200,23 @@ pub(super) fn dash(p: &egui::Painter, line: &[Pos2], stroke: Stroke, pattern: (f
             let [ax, ay, bx, by] = [a.x, a.y, b.x, b.y].map(f64::from);
             let (dx, dy) = (bx - ax, by - ay);
             let at = |x: f64| pos2((ax + dx * x / len) as f32, (ay + dy * x / len) as f32);
-            // The dashes over [x0, x1] of the segment, the first one starting at or before x0.
-            let mut d0 = x0 - (x0 + phase).rem_euclid(period);
-            while d0 < x1 {
-                let (u0, u1) = (d0.max(x0), (d0 + dash).min(x1));
+            // The dashes over [x0, x1] of the segment, the first one starting at or before x0 (and
+            // perhaps ending before it). Counted rather than stepped until past x1, so the loop ends
+            // whatever the floats do, and never more than the budget can draw.
+            let d0 = x0 - (x0 + phase).rem_euclid(period);
+            let steps = ((x1 - d0) / period).ceil();
+            if !steps.is_finite() {
+                continue;
+            }
+            let most = budget.saturating_add(1) as f64;
+            for k in 0..steps.clamp(0.0, most) as usize {
+                let d = d0 + k as f64 * period;
+                let (u0, u1) = (d.max(x0), (d + dash).min(x1));
                 if u1 > u0 {
                     let Some(left) = budget.checked_sub(1) else { return };
                     *budget = left;
                     p.line_segment([at(u0), at(u1)], stroke);
                 }
-                d0 += period;
             }
         }
         phase = (phase + len).rem_euclid(period);
@@ -245,7 +262,10 @@ pub fn draw(app: &mut VectorcraftApp, painter: &egui::Painter, xf: &Xf) {
         return;
     }
     let Some(ends) = ends(app) else { return };
-    let pending = pending_outlines(app, &ends);
+    // While stitches are edited the selection layer draws what moved (the needle points and the
+    // stitches they stretch): no dashed outline of the runs over it, rebuilt each frame of a drag.
+    let editing = super::editing::editing(app).is_some();
+    let pending = if editing { None } else { pending_outlines(app, &ends) };
     let Some(st) = app.session.active() else { return };
     let t = Tokens::get(painter.ctx());
     // A stroke's width past the canvas, so that a dash on its edge isn't cut.

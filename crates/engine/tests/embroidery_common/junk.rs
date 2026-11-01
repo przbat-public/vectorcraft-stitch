@@ -85,6 +85,30 @@ pub fn structured() -> Vec<(&'static str, Value)> {
         ("embroidery.selectNeedlePoints", json!({"records": [1, 1e308], "mode": "toggle"})),
         ("embroidery.selectNeedlePoints", json!({"records": "all", "needlePoints": [{"id": 1, "index": 0}]})),
         ("embroidery.selectNeedlePoints", json!({"shorterThan": 1e308, "mode": "subtract", "stitchStyle": "satin"})),
+        // A selection by a shape (a marquee, a lasso) given as nothing, as words, nested, both at
+        // once, beside addresses or records, with points that aren't numbers, and with ids repeated,
+        // nested in lists or too many.
+        ("embroidery.selectNeedlePoints", json!({"rect": null})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": null, "mode": "add"})),
+        ("embroidery.selectNeedlePoints", json!({"rect": "all", "mode": "toggle"})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": "lasso"})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [[0, 0], [100, 100]]})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[[0, 0]], [[100, 0]], [[100, 100]]]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, null, "x", 1e308]})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], null, [1e308, 0], "x", [5, f64::NAN]]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, 100, 100], "polygon": [[0, 0], [100, 0], [100, 100]]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, 100, 100], "needlePoints": [{"id": 1, "index": 0}]})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], [100, 0], [100, 100]], "ranges": [{"id": 1, "from": 0, "to": 3}]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [0, 0, 100, 100], "records": [1, 2], "kinds": ["trim"]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": [1, 1, 1, 2, 2, 3]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": [[1], [2, [3]], {"id": 4}]})),
+        ("embroidery.selectNeedlePoints", json!({"rect": [-1e6, -1e6, 1e6, 1e6], "ids": too_many_ids(), "mode": "subtract"})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": [[0, 0], [1e6, 0], [0, 1e6]], "ids": [u64::MAX, 0, 1, 2, 3, 4, 5, 6, 7, 8]})),
+        // A lasso of as many points as one may have, zigzagging: each edge across half its height
+        // (refused as too intricate) and each across a sliver of it (taken); and one point more.
+        ("embroidery.selectNeedlePoints", json!({"polygon": zigzag(LASSO_POINTS_MAX, ZIGZAG_DEEP_MM)})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": zigzag(LASSO_POINTS_MAX, ZIGZAG_SHALLOW_MM)})),
+        ("embroidery.selectNeedlePoints", json!({"polygon": zigzag(LASSO_POINTS_MAX + 1, ZIGZAG_SHALLOW_MM), "mode": "add"})),
         ("embroidery.sewEarlier", json!({"ids": "all"})),
         ("embroidery.sewEarlier", json!({"ids": [1e308, -1, null, "x", {"id": 1}]})),
         ("embroidery.sewLater", json!({"ids": [u64::MAX, u64::MAX], "density": 1e308})),
@@ -147,4 +171,22 @@ pub fn structured() -> Vec<(&'static str, Value)> {
 /// More ids than a move takes: refused before anything is looked up.
 fn too_many_ids() -> Vec<u64> {
     (0..100_001).collect()
+}
+
+/// The most points a lasso may have: the engine's own limit (a selection by `polygon`).
+const LASSO_POINTS_MAX: usize = 4096;
+/// A zigzag's step along its base and the height of the point that closes it, millimetres.
+const ZIGZAG_STEP_MM: f64 = 0.02;
+const ZIGZAG_CLOSE_MM: f64 = 100.0;
+/// A zigzag whose every edge spans half the lasso's height, and one whose edges span a sliver of
+/// it, millimetres.
+const ZIGZAG_DEEP_MM: f64 = 100.0;
+const ZIGZAG_SHALLOW_MM: f64 = 0.05;
+
+/// A lasso of `n` points: a zigzag `depth` millimetres deep along its base, closed by a point above
+/// it.
+fn zigzag(n: usize, depth: f64) -> Vec<[f64; 2]> {
+    let mut points: Vec<[f64; 2]> = (0..n.saturating_sub(1)).map(|k| [k as f64 * ZIGZAG_STEP_MM, if k % 2 == 0 { 0.0 } else { depth }]).collect();
+    points.push([0.0, -ZIGZAG_CLOSE_MM]);
+    points
 }

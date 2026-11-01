@@ -299,8 +299,12 @@ fn the_lasso_tool_selects_needle_points_while_editing() {
         (Point::new(lo.x.min(p.x), lo.y.min(p.y)), Point::new(hi.x.max(p.x), hi.y.max(p.y)))
     });
     s.select_tool("lasso", view).unwrap();
-    // A loop round the object's left half.
-    let mid = (lo.x + hi.x) / 2.0;
+    // A loop round the object's left half, its right edge between two columns of needle points.
+    let mut xs: Vec<f64> = points.iter().map(|p| p.x).collect();
+    xs.sort_by(f64::total_cmp);
+    xs.dedup();
+    let at = xs.len() / 2;
+    let mid = (xs[at - 1] + xs[at]) / 2.0;
     let path = [(lo.x - 5.0, lo.y - 5.0), (mid, lo.y - 5.0), (mid, hi.y + 5.0), (lo.x - 5.0, hi.y + 5.0), (lo.x - 5.0, lo.y - 5.0)];
     s.pointer(&PointerEvent::new(PointerKind::Down, path[0].0, path[0].1), view).unwrap();
     for (x, y) in &path[1..] {
@@ -309,10 +313,22 @@ fn the_lasso_tool_selects_needle_points_while_editing() {
     s.pointer(&PointerEvent::new(PointerKind::Up, path[0].0, path[0].1), view).unwrap();
     let inside = points.iter().filter(|p| p.x < mid).count();
     let selected: usize = s.doc().unwrap().selection.anchors.values().map(std::collections::BTreeSet::len).sum();
-    assert!(selected > 0 && selected <= inside, "the lasso selected {selected} of the {inside} anchors inside it");
+    assert!(inside > 0 && selected == inside, "the lasso selected {selected} of the {inside} anchors inside it");
     s.select_tool("embroidery", view).unwrap();
     let editing = s.stitch_editing(view).expect("editing");
-    assert!(editing.selected > 0, "back with the Embroidery Tool, the lasso's needle points are selected: {editing:?}");
+    assert_eq!(editing.selected, inside, "back with the Embroidery Tool, the lasso's needle points are selected: {editing:?}");
+    // And a drag moves them, those outside the loop left where they were.
+    let grip = *points.iter().filter(|p| p.x < mid).min_by(|a, b| a.x.total_cmp(&b.x)).unwrap();
+    s.pointer(&PointerEvent::new(PointerKind::Down, grip.x, grip.y), view).unwrap();
+    for step in 1..=4 {
+        s.pointer(&PointerEvent::new(PointerKind::Drag, grip.x + 2.5 * f64::from(step), grip.y), view).unwrap();
+        s.tool_tick(1.0, view).unwrap();
+    }
+    s.pointer(&PointerEvent::new(PointerKind::Up, grip.x + 10.0, grip.y), view).unwrap();
+    let after = needle_points(&s, id);
+    let moved = points.iter().zip(&after).filter(|(a, b)| a != b).count();
+    assert_eq!(moved, inside, "the drag moved the lasso's needle points and no other");
+    assert!(points.iter().zip(&after).filter(|(a, _)| a.x < mid).all(|(a, b)| b.x > a.x + 1.0), "to the right");
 }
 
 /// Select All in isolation of a converted group of two objects selects the two converted objects

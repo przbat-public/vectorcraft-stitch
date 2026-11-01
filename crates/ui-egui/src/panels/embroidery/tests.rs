@@ -157,8 +157,12 @@ fn its_states() {
     // Not planned yet: blank (the strip only), then planned and ready.
     let mut app = with_art();
     let words = frame(&mut app, &ctx, 1.0);
-    // The strip's short names (the project owner's choice): "Order" for Sewing Order.
-    assert!(has(&words, "Order") && has(&words, "Check") && has(&words, "Stitches"), "{words:?}");
+    // The strip's short names (the project owner's choice): "Order" for Sewing Order, each drawn
+    // whole as it is.
+    for name in ["Object", "Order", "Check", "Stitches"] {
+        assert!(words.iter().any(|w| w == name), "{name}: {words:?}");
+    }
+    assert!(!words.iter().any(|w| w == "Sewing Order"), "the short name, not the label: {words:?}");
     assert!(!has(&words, "Planning"), "no busy mark at once: {words:?}");
     frame(&mut app, &ctx, 1.05);
     let words = frame(&mut app, &ctx, 1.1);

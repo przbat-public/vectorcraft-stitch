@@ -26,12 +26,16 @@ use super::stitch_preview::{Freshness, LIVE_PLAN_MS, StitchPreview};
 use crate::{Services, VectorcraftApp};
 
 /// A frame at 60 Hz, milliseconds: the 95th percentile of the frames while dragging stays within it.
-const FRAME_BUDGET_MS: f64 = 1000.0 / 60.0;
+pub(super) const FRAME_BUDGET_MS: f64 = 1000.0 / 60.0;
 /// From an edit to the stitches of the document as it is drawn, milliseconds.
 const EDIT_TO_FRESH_BUDGET_MS: f64 = 100.0;
 /// Pointer moves in a drag, and how far each goes, points.
-const DRAG_FRAMES: usize = 90;
-const DRAG_STEP: f32 = 2.0;
+pub(super) const DRAG_FRAMES: usize = 90;
+pub(super) const DRAG_STEP: f32 = 2.0;
+/// One needle point dragged on the design of 2 million needle points, the 95th percentile of its
+/// frames: within a frame at 60 Hz, as every other drag (the project owner's choice, 2026-11-01,
+/// once the canvas measured only what an edit changed).
+const ONE_POINT_ON_2M_BUDGET_MS: f64 = FRAME_BUDGET_MS;
 /// The frames a drag of many needle points rests for, to time its pause preview: its
 /// [`vectorcraft_tools::embroidery::PAUSE_PREVIEW_SECS`] in frames of [`FRAME_BUDGET_MS`], and
 /// [`PLAN_IN_FRAMES`] more.
@@ -74,7 +78,7 @@ fn corpus() -> std::path::PathBuf {
 /// One frame at `time` with `events`, as the app runs one (the status bar, the Embroidery panel on
 /// the right, the canvas in the rest), tessellated → its wall time, ms, and the bytes it uploads as
 /// textures.
-fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> (f64, u64) {
+pub(super) fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) -> (f64, u64) {
     let raw = egui::RawInput {
         time: Some(time),
         screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, egui::vec2(WINDOW[0], WINDOW[1]))),
@@ -104,7 +108,7 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
 }
 
 /// The value below which `p` of `samples` lie.
-fn percentile(mut samples: Vec<f64>, p: f64) -> f64 {
+pub(super) fn percentile(mut samples: Vec<f64>, p: f64) -> f64 {
     samples.sort_by(f64::total_cmp);
     let i = ((samples.len() as f64 - 1.0) * p).round() as usize;
     samples.get(i).copied().unwrap_or(f64::NAN)
@@ -533,9 +537,9 @@ const NEEDLE_DRAG_STEP_MM: f64 = 0.1;
 const CLOSE_UP_ZOOM_PERCENT: f64 = 3100.0;
 /// The synthetic design of 2 million needle points ([`two_million_needle_points`]): its runs, the
 /// needle points of each, the threads they are sewn in, and its stitches' and rows' spacing, mm.
-const BIG_RUNS: usize = 2000;
-const BIG_RUN_POINTS: usize = 1000;
-const BIG_THREADS: usize = 20;
+pub(super) const BIG_RUNS: usize = 2000;
+pub(super) const BIG_RUN_POINTS: usize = 1000;
+pub(super) const BIG_THREADS: usize = 20;
 const BIG_STITCH_MM: f64 = 0.4;
 const BIG_ROW_MM: f64 = 0.2;
 /// The page of the stitch list read, records: `embroidery.stitches`' default page.
@@ -565,7 +569,7 @@ fn largest_run(doc: &vectorcraft_doc::Document) -> Option<(vectorcraft_doc::Node
 /// million in all: as many as a design may have), as opening a machine file makes them: a group a
 /// thread, a path a run, each a zig-zag row [`BIG_STITCH_MM`] long a stitch, the rows
 /// [`BIG_ROW_MM`] apart.
-fn two_million_needle_points() -> vectorcraft_doc::Document {
+pub(super) fn two_million_needle_points() -> vectorcraft_doc::Document {
     use vectorcraft_color::{Color, Paint};
     use vectorcraft_doc::embroidery::{Embroidery, StitchRun};
     use vectorcraft_doc::{Appearance, Document, Node};
@@ -827,7 +831,9 @@ type EditTick<'a> = dyn FnMut(&mut VectorcraftApp, Vec<Event>) -> (f64, u64, f64
 ///   frame), a marquee over half of it (its release frame timed), a drag of what it selected (a
 ///   million needle points: previewed only on a pause, the selection's box moving with the pointer,
 ///   planned at most once), its frames timed, then held still for the pause preview (its slowest
-///   frame printed), and one needle point dragged on its own, its frames printed; then the Lasso
+///   frame printed), and one needle point dragged on its own (the 95th percentile of its frames
+///   within a frame, [`ONE_POINT_ON_2M_BUDGET_MS`]; the time until the stitches are fresh after it
+///   printed); then the Lasso
 ///   tool round the marquee's box, the drags undone (upstream's per-anchor selection, the edit look
 ///   kept: the project owner's choice, 2026-10-31), selecting what the marquee did, its frames and
 ///   its release frame timed and what it sends measured.
@@ -844,6 +850,7 @@ fn stitch_editing_gate() {
     files.sort();
     let button = |pos: Pos2, pressed| Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Default::default() };
     let (mut worst_p95, mut worst_fresh, mut worst_marquee, mut worst_hover) = (0.0_f64, 0.0_f64, 0.0_f64, 0.0_f64);
+    let mut one_point_p95 = f64::NAN;
     println!(
         "{:<52} {:>6} {:>8} {:>9} {:>9} {:>9} {:>6} {:>9} {:>11} {:>10}",
         "design", "light", "points", "drag p50", "drag p95", "drag max", "plans", "upl/fr", "to fresh", "marquee"
@@ -1013,8 +1020,12 @@ fn stitch_editing_gate() {
                 alone.push(tick(&mut app, vec![Event::PointerMoved(to)]).0);
             }
             tick(&mut app, vec![button(to, false)]);
-            settle(&mut app, &mut tick);
-            println!("{name}: one needle point dragged, a frame p95 {:.2} ms, max {:.2} ms", percentile(alone.clone(), 0.95), percentile(alone, 1.0));
+            let one_fresh = settle(&mut app, &mut tick);
+            one_point_p95 = percentile(alone.clone(), 0.95);
+            println!(
+                "{name}: one needle point dragged, a frame p95 {one_point_p95:.2} ms (budget {ONE_POINT_ON_2M_BUDGET_MS:.1}), max {:.2} ms; the stitches fresh {one_fresh:.2} ms after its release",
+                percentile(alone, 1.0)
+            );
             // The Lasso tool round the marquee's box: each needle point tested against its loop at
             // the release and named in the command it sends, as upstream's tool selects anchors. The
             // two drags undone first, so that it loops round what the marquee selected.
@@ -1090,4 +1101,5 @@ fn stitch_editing_gate() {
         "worst: drag p95 {worst_p95:.2} ms (budget {FRAME_BUDGET_MS:.1}), hover p95 {worst_hover:.2} ms (budget {FRAME_BUDGET_MS:.1}), light designs' release to fresh {worst_fresh:.2} ms (budget {EDIT_TO_FRESH_BUDGET_MS}), a marquee's release frame {worst_marquee:.2} ms"
     );
     assert!(worst_p95 <= FRAME_BUDGET_MS && worst_hover <= FRAME_BUDGET_MS && worst_fresh <= EDIT_TO_FRESH_BUDGET_MS);
+    assert!(one_point_p95 <= ONE_POINT_ON_2M_BUDGET_MS, "one needle point dragged on 2 million: a frame p95 {one_point_p95:.2} ms");
 }

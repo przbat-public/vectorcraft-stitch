@@ -8,6 +8,7 @@ use proptest::prelude::*;
 use vectorcraft_color::{Color, Paint};
 use vectorcraft_geom::{Affine, BezPath, PathData, Rect, shapes};
 
+use crate::embroidery::seeded::seeded;
 use crate::pattern::RepeatSpec;
 use crate::visual_bounds::VisualBounds;
 use crate::{Appearance, Document, LAYER_COLORS, LayerColor, LineCap, LineJoin, Node, NodeId, NodeKind, Symbol};
@@ -347,37 +348,55 @@ fn object_count(doc: &Document) -> usize {
     objects(doc).0.len()
 }
 
+/// The property suite's cases, and the most edits a case makes: a random document then up to
+/// [`MOST_EDITS`] edits, every answer checked before the first edit and after each one. Estimates:
+/// the suite runs in about a second.
+const CASES: u32 = 96;
+const MOST_EDITS: usize = 24;
+
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(96))]
+    #![proptest_config(seeded(CASES))]
     /// On a random document through a random session of edits, each answer is the full walk's, bit
     /// for bit: the art's bounds, every object's on its own and all of them at once. Some edits keep
     /// the version before (as the undo history does), some don't, and some go back to it (undo).
     /// The entries never outnumber the document's objects.
     #[test]
-    fn bounds_measured_from_what_changed_are_the_full_walks(seed in any::<u64>(), steps in 0usize..24) {
+    fn bounds_measured_from_what_changed_are_the_full_walks(seed in any::<u64>(), steps in 0usize..=MOST_EDITS) {
         let mut r = Rng(seed);
         let mut doc = random_document(&mut r);
         let mut cache = VisualBounds::default();
         let mut history: Vec<Document> = vec![];
-        for step in 0..=steps {
-            prop_assert_eq!(bits(cache.art_bounds(&doc)), bits(doc.art_bounds()), "art, step {}", step);
-            let (all, _) = objects(&doc);
-            for id in &all {
-                prop_assert_eq!(bits(cache.bounds_of(&doc, &[*id])), bits(doc.bounds_of(&[*id], true)), "object {}, step {}", id, step);
-            }
-            prop_assert_eq!(bits(cache.bounds_of(&doc, &all)), bits(doc.bounds_of(&all, true)), "all, step {}", step);
-            prop_assert!(cache.entries() <= object_count(&doc), "{} entries for {} objects", cache.entries(), object_count(&doc));
+        check(&mut cache, &doc, 0)?;
+        for step in 1..=steps {
             match r.below(4) {
-                0 => history.clear(),
                 1 if !history.is_empty() => {
                     if let Some(before) = history.pop() {
                         doc = before;
                     }
-                    continue;
                 }
-                _ => history.push(doc.clone()),
+                0 => {
+                    history.clear();
+                    random_edit(&mut r, &mut doc);
+                }
+                _ => {
+                    history.push(doc.clone());
+                    random_edit(&mut r, &mut doc);
+                }
             }
-            random_edit(&mut r, &mut doc);
+            check(&mut cache, &doc, step)?;
         }
     }
+}
+
+/// Every answer of `cache` on `doc` after `step` edits: the art's bounds, every object's on its
+/// own and all of them at once, as the full walk gives them.
+fn check(cache: &mut VisualBounds, doc: &Document, step: usize) -> Result<(), TestCaseError> {
+    prop_assert_eq!(bits(cache.art_bounds(doc)), bits(doc.art_bounds()), "art, step {}", step);
+    let (all, _) = objects(doc);
+    for id in &all {
+        prop_assert_eq!(bits(cache.bounds_of(doc, &[*id])), bits(doc.bounds_of(&[*id], true)), "object {}, step {}", id, step);
+    }
+    prop_assert_eq!(bits(cache.bounds_of(doc, &all)), bits(doc.bounds_of(&all, true)), "all, step {}", step);
+    prop_assert!(cache.entries() <= object_count(doc), "{} entries for {} objects", cache.entries(), object_count(doc));
+    Ok(())
 }

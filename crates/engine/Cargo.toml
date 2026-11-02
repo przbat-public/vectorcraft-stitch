@@ -64,3 +64,6 @@ vectorcraft-text = { workspace = true, features = ["test-fonts"] }
 wat = { workspace = true }
 # Zstandard streams for the Illustrator editing data fuzz tests.
 ruzstd = { workspace = true }
+# VectorCraft Stitch: one maths library on every system for the embroidery golden corpus
+# (tests/one_maths).
+libm = "0.2"

@@ -20,6 +20,12 @@
 //! The editing the corpus is generated from is pinned by its hash (`CORPUS_OPS`), so that a change
 //! to the random editing or to proptest reads as the corpus changing, not the exports.
 //!
+//! The corpus is computed with one maths library on every system (`one_maths`, the `libm` crate in
+//! place of the system's `sin`, `pow`…), so that its hashes are the same on macOS, Linux and
+//! FreeBSD: the systems' libraries differ in the last bit of some results, which moved a stitch of
+//! document 30 on Linux and on FreeBSD. Its 8 lines were recorded again for that (2026-11-02, the
+//! project owner's choice); every other line was the same with either library.
+//!
 //! To record the hashes again (only for a change meant to move the stitches of designs that use
 //! nothing new, or a corpus upstream's random editing changed, said in its commit):
 //! `VECTORCRAFT_EMBROIDERY_GOLDEN_RECORD=1 cargo test -p vectorcraft-engine --test embroidery_golden_corpus the_corpus_exports_as_recorded`,
@@ -33,6 +39,9 @@ use serde_json::{Value, json};
 use vectorcraft_engine::{EngineError, Session};
 use vectorcraft_testkit::fixtures;
 use vectorcraft_testkit::strategies::{Op, arb_ops};
+
+#[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
+mod one_maths;
 
 /// How many documents the corpus holds, and how many editing steps each is made with.
 const DOCS: usize = 40;

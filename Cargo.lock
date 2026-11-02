@@ -6223,6 +6223,7 @@ dependencies = [
  "hayro-jpeg2000",
  "image",
  "kurbo 0.13.1",
+ "libm",
  "log",
  "proptest",
  "roxmltree 0.21.2",

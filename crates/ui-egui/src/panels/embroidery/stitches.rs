@@ -396,7 +396,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let items: Vec<super::Segment<'_>> = scopes
         .iter()
         .map(|(s, label)| super::Segment {
-            id: ui.id().with(("embroidery-stitches-scope", s.id())),
+            id: ui.scope_id().with(("embroidery-stitches-scope", s.id())),
             label,
             full: label,
             selected: app.ui.embroidery_panel.stitches_scope == *s,
@@ -447,7 +447,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
             let (words, named) = chip_words(f, count, &limits, lang);
             let text = egui::RichText::new(words).size(TEXT).color(if count == 0 && f != filter { dim(&t) } else { t.text });
             let resp = ui.selectable_label(f == filter, text);
-            resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::RadioButton, true, f == filter, &named));
+            resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::RadioButton, true, f == filter, &named));
             if resp.on_hover_text(&named).clicked() {
                 chosen = Some(f);
             }
@@ -506,7 +506,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     let foot = if drawn > 0.0 { drawn } else { foot_height(editing.is_some()) };
     // Whole rows: none cut by the foot's words under the list.
     let room = (((ui.available_height() - ROW_HEIGHT - foot) / ROW_HEIGHT).floor() * ROW_HEIGHT).max(MIN_LIST);
-    let list_id = ui.id().with("embroidery-stitch-list");
+    let list_id = ui.scope_id().with("embroidery-stitch-list");
     // The list itself takes the keyboard's focus (a row clicked gives it), so its keys are its own:
     // for screen readers it is the grid, its heads and rows under it and its row in focus its
     // active descendant. Its node is made before theirs, which hang under the first ancestor with
@@ -720,8 +720,8 @@ mod row;
 #[cfg(test)]
 mod tests;
 
-use foot::*;
+use foot::{FOOT_SETTLED, foot_height, foot_ui};
 #[cfg(test)]
 pub(crate) use keys::reveal;
-use keys::*;
-use row::*;
+use keys::{click, go_to, keys, show_stitch};
+use row::{Columns, FocusMark, RowLook, chip_words, draw_row, header};

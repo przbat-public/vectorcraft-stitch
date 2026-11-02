@@ -598,7 +598,7 @@ fn the_chip_and_the_live_check_are_said() {
         });
         out.textures_delta.clear();
         let update = out.platform_output.accesskit_update.expect("a tree");
-        let of = |name: &str| update.nodes.iter().find(|(id, _)| *id == egui::Id::new(name).accesskit_id()).and_then(|(_, n)| n.live());
+        let of = |name: &str| update.nodes.iter().find(|(id, _)| *id == egui::Id::unique(name).accesskit_id()).and_then(|(_, n)| n.live());
         (of("embroidery-stitch-editing"), of("embroidery-live-check"))
     };
     time += 0.05;

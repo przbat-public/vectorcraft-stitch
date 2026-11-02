@@ -196,7 +196,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) {
         ui.painter().galley(pos2(rect.left() + PAD, y), g.clone(), t.text);
         y += g.size().y + LINE_GAP;
     }
-    let id = Id::new("embroidery-stitch-editing");
+    let id = Id::unique("embroidery-stitch-editing");
     let words = std::iter::once(title).chain(said).collect::<Vec<_>>().join(". ");
     // Said as it changes ("15 selected"), politely.
     ui.ctx().accesskit_node_builder(id, |node| {

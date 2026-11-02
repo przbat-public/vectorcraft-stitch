@@ -449,7 +449,7 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
     match &row.field {
         Field::Number { value, format, bounds, hint } => {
             // The id `number_field` gives its text box.
-            let id = ui.id().with((row.key, "number"));
+            let id = ui.scope_id().with((row.key, "number"));
             let edit = fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds);
             keyboard_tip(ui, id, row.tip);
             // Its label, which Tab stops on too (upstream's scrub senses clicks and drags on it).
@@ -479,7 +479,7 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
             if cut {
                 // Over the combo, sensing hover alone (egui marks a hover-only widget hovered only
                 // when it lies on top), so the combo still takes the clicks.
-                ui.interact(cell.response.rect, ui.id().with((row.key, "cut")), Sense::hover()).on_hover_text(*shown);
+                ui.interact(cell.response.rect, ui.scope_id().with((row.key, "cut")), Sense::hover()).on_hover_text(*shown);
             }
             cell.inner.map(Edit::Choice)
         }
@@ -510,7 +510,7 @@ fn button_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Col
     ui.painter().galley(at, galley, colour);
     focus_ring(ui, &resp, rect, t.input);
     let said = crate::embroidery::text::fill(crate::et!("{section}: {setting}"), &[("section", row.name), ("setting", words)]);
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, said.clone()));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, said.clone()));
     ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(row.description.clone()));
     keyboard_tip(ui, resp.id, row.tip);
     let resp = resp.on_hover_text(row.tip);
@@ -533,7 +533,7 @@ fn words_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Colo
     ui.painter().galley(at, galley, colour);
     // The language's own punctuation between a name and its value (French spaces its colon).
     let said = crate::embroidery::text::fill(crate::et!("{section}: {setting}"), &[("section", row.name), ("setting", words)]);
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, said.clone()));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, said.clone()));
     ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(row.description.clone()));
 }
 
@@ -609,7 +609,7 @@ fn restore(ui: &mut Ui, name: &str, tip: &str) -> egui::Response {
     }
     crate::icons::paint(ui, "rotate-ccw", rect.shrink(RESTORE_INSET), t.icon);
     focus_ring(ui, &resp, rect, t.panel);
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), name));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), name));
     resp.on_hover_text(tip)
 }
 
@@ -682,8 +682,8 @@ fn check_response(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32) 
         Some(false) => {}
     }
     resp.widget_info(|| match value {
-        Some(on) => egui::WidgetInfo::selected(egui::WidgetType::Checkbox, ui.is_enabled(), on, words),
-        None => egui::WidgetInfo::labeled(egui::WidgetType::Checkbox, ui.is_enabled(), words),
+        Some(on) => egui::WidgetInfo::selected(egui::Role::CheckBox, ui.is_enabled(), on, words),
+        None => egui::WidgetInfo::labeled(egui::Role::CheckBox, ui.is_enabled(), words),
     });
     resp
 }
@@ -698,7 +698,7 @@ pub(crate) fn keyboard_tip(ui: &Ui, id: egui::Id, tip: &str) {
     let key = id.with("focus-from-keyboard");
     // The last pass a key that moves the focus was pressed in, as any row saw it: Tab moves it in
     // that pass, Shift+Tab and the arrows in the next.
-    let keyed = egui::Id::new("embroidery-rows-focus-key-pass");
+    let keyed = egui::Id::unique("embroidery-rows-focus-key-pass");
     let pass = ui.ctx().cumulative_pass_nr();
     let (pressed, reader) = ui.input(|i| {
         let reader = i.events.iter().any(|e| matches!(e, egui::Event::AccessKitActionRequest(r) if r.action == egui::accesskit::Action::Focus));

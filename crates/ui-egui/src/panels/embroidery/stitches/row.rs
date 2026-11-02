@@ -2,7 +2,11 @@
 //! words, its marks, the focus and the selection), and the words of a record's kind and of the
 //! filters' chips.
 
-use super::*;
+use super::{
+    CELL_PAD, CHIP, Color32, CornerRadius, DesignPlan, FOCUS_QUIET_PT, FOCUS_RING_PT, Filter, Flags, LENGTH_DECIMALS, Lang, MARK, Mark,
+    PLACE_DECIMALS, ROW_HEIGHT, RecordKind, Rect, Sense, StitchLimits, Stroke, TEXT, Tokens, Ui, VectorcraftApp, dim, marks, mm_to_pt, numbers, pos2,
+    pt_to_mm, stitch_list, vec2,
+};
 
 /// A kind's word.
 pub(super) fn kind_word(kind: RecordKind) -> &'static str {
@@ -172,7 +176,7 @@ pub(super) fn header(ui: &mut Ui, columns: &Columns, t: &Tokens) {
         x += w;
         // A widget of the heads' row, so that its node hangs under the grid the row is drawn for:
         // every column with room has its head for screen readers, as many as the grid says.
-        let id = ui.interact(at, ui.id().with(("embroidery-stitch-head", k)), Sense::hover()).id;
+        let id = ui.interact(at, ui.scope_id().with(("embroidery-stitch-head", k)), Sense::hover()).id;
         ui.ctx().accesskit_node_builder(id, |node| {
             node.set_role(egui::accesskit::Role::ColumnHeader);
             node.set_label(*head);

@@ -153,7 +153,8 @@ fn laid_out(t: &vectorcraft_doc::TextObject) -> (Vec<kurbo::BezPath>, kurbo::Bez
     let layout = vectorcraft_text::layout(db, t);
     let mut runs = vec![kurbo::BezPath::new(); t.runs.len()];
     let mut all = kurbo::BezPath::new();
-    for g in &layout.glyphs {
+    // Ruby (furigana) glyphs are painted with their base text's run, as the renderer paints them.
+    for g in layout.glyphs.iter().chain(&layout.ruby) {
         if let Some(r) = runs.get_mut(g.run) {
             r.extend(g.outline.iter());
         }
@@ -430,6 +431,22 @@ pub(crate) fn reshape_leaves_within(art: &mut Node, fx: &[&Effect], budget: Budg
     if fx.is_empty() {
         return;
     }
+    let mut leaves_safe = true;
+    for_each_leaf(art, &mut |leaf| {
+        if !leaves_safe {
+            return;
+        }
+        if let Some((_, rule)) = leaf_geometry(leaf) {
+            let has_stroke = leaf.appearance.stroke().is_some_and(|s| !s.paint.is_none() && s.width > 0.0);
+            if rule != FillRule::NonZero || has_stroke {
+                leaves_safe = false;
+            }
+        }
+    });
+    let art_stroke = art.appearance.stroke().is_some_and(|s| !s.paint.is_none() && s.width > 0.0);
+    let style_safe = leaves_safe && !art_stroke;
+    let opt_fx = crate::geometry::optimize_geometry_effects(fx, style_safe);
+    let fx = opt_fx.as_slice();
     let seed = art.id.0;
     // The placed gradients of type's outlines in `art` (`outline_text`) move and scale with the
     // pieces, from the outlines' bounds before the effects to their bounds after them.

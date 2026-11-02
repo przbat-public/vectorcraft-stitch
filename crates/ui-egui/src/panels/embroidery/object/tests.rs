@@ -991,7 +991,8 @@ fn the_hint_moves_into_restores_tooltip_where_the_panel_is_narrow() {
     let mut time = 0.0;
     let wide = at(&mut app, 480.0, &mut time);
     let hint = wide.words.iter().find(|(w, _)| w.starts_with("default ")).map(|(w, _)| w.clone()).expect("the hint after ↺ where there is room");
-    assert_eq!(wide.node(&restore).description(), None, "shown, so not in ↺'s description");
+    // egui gives a widget its tooltip as its description: ↺'s is its name alone.
+    assert!(wide.node(&restore).description().is_none_or(|d| !d.contains(hint.as_str())), "shown, so not in ↺'s description");
     let narrow = at(&mut app, 240.0, &mut time);
     assert!(!narrow.words.iter().any(|(w, _)| *w == hint), "not after ↺ where there is no room");
     assert_eq!(narrow.node(&restore).description(), Some(hint.as_str()), "in ↺'s tooltip and description");

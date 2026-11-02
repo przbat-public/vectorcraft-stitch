@@ -21,7 +21,7 @@ const TEXT_SIZE: f32 = 12.0;
 
 /// The switch's id; its segments' are `.with(stitches)`.
 pub(crate) fn group_id() -> Id {
-    Id::new("embroidery-view-switch")
+    Id::unique("embroidery-view-switch")
 }
 
 /// The switch's segments, left to right: the word, and whether it shows the stitches.
@@ -66,7 +66,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, canvas: Rect) -> bool {
         // A drag too, so that the canvas under it never takes a press there (it drags), also while
         // the switch is disabled.
         let resp = segments_ui.interact(rect, id, Sense::click_and_drag());
-        resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::RadioButton, enabled, selected, word));
+        resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::RadioButton, enabled, selected, word));
         ui.ctx().accesskit_node_builder(id, |node| {
             node.set_role(egui::accesskit::Role::RadioButton);
             node.set_toggled(if selected { egui::accesskit::Toggled::True } else { egui::accesskit::Toggled::False });

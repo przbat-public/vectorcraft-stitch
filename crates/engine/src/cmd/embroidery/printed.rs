@@ -2,8 +2,8 @@
 //! object whose appearance is more than one fill and one stroke (fills and strokes of its own
 //! opacity or blend, several of them, live effects, brushes, a group's own fills and strokes) is
 //! expanded as `effect.expandAppearance` expands it, on a copy of the document: each fill and
-//! stroke an object of its own (strokes outlined, brushed ones their brush art), geometry effects
-//! baked. Symbols' art is expanded the same way. What still can't be sewn is said: raster effects
+//! stroke an object of its own (a stroke on its own copy of the path, a brushed one its brush's
+//! art), geometry effects baked. Symbols' art is expanded the same way. What still can't be sewn is said: raster effects
 //! (shadows, glows, blurs) are left off, the art under them sewn; opacity masks are not sewn, the
 //! masked art is, whole.
 //!
@@ -16,14 +16,17 @@
 //! art takes its stain there too.
 //!
 //! A stroke of an expanded object, or of an object in an expanded group, that nothing reshapes (no
-//! brush, no effect of its own or of the object's) is not outlined: it becomes an object of its own, the object's path with that stroke
-//! alone and the object's stroke settings ([`split_strokes`]), so that the walk sews it as it sews
-//! a basic object's stroke: a satin column or a running line along its path, by its width or as
-//! its settings ask, the area it paints for dashes, alignment, a width profile or arrowheads (the
-//! project owner's choice, 2026-10-24: a stroke set to running sews one line along its path, not
-//! two round its outline). A stroke a brush or an effect reshapes is outlined as before, and when a
-//! running or satin stitch is set on it, or given to the export, the plan says that the stitch
-//! can't follow its path.
+//! brush, no effect of its own or of the object's) is not expanded with the rest: it becomes an
+//! object of its own, the object's path with that stroke alone and the object's stroke settings
+//! ([`split_strokes`]), so that the walk sews it as it sews a basic object's stroke: a satin column
+//! or a running line along its path, by its width or as its settings ask, the area it paints for
+//! dashes, alignment, a width profile or arrowheads (the project owner's choice, 2026-10-24: a
+//! stroke set to running sews one line along its path, not two round its outline). A stroke an
+//! effect reshapes is sewn the same way along its reshaped path: Expand Appearance leaves it a
+//! stroke on its own copy of the path (upstream's #3089), and the walk sews it as it is (the
+//! project owner's choice, 2026-11-02; tatami set on it sews the area it paints). A stroke drawn
+//! with a brush is its brush's art, sewn as the area it paints, and when a running or satin stitch
+//! is set on it, or given to the export, the plan says that the stitch can't follow its path.
 
 use std::borrow::Cow;
 use std::collections::HashSet;
@@ -40,7 +43,8 @@ use crate::cmd::rasterfx::strip_raster;
 pub(super) const RASTER_LEFT_OUT: &str = "shadows, glows, blurs and other raster effects are not stitched: the art under them is";
 pub(super) const MASKS_LEFT_OUT: &str = "opacity masks are not stitched: the masked art is sewn whole";
 pub(super) const RUN_LOOK_LEFT_OUT: &str = "effects, brushes and extra fills or strokes on manual stitches or stitches from a file (or on a group holding them) are not stitched: the stitches are sewn as they are";
-pub(super) const STROKE_LOSES_ITS_PATH: &str = "strokes drawn with a brush or reshaped by an effect are sewn as the area they paint: a running or satin stitch set on them can't follow their path";
+pub(super) const STROKE_LOSES_ITS_PATH: &str =
+    "strokes drawn with a brush are sewn as the area they paint: a running or satin stitch set on them can't follow their path";
 
 /// The document as the walk sews it, the objects expanded in it (the person selects each of them,
 /// whatever pieces it became), and what was left off or approximated, with the objects a warning
@@ -211,16 +215,15 @@ fn split_strokes(d: &mut Document, n: &Node) -> Option<Node> {
 }
 
 /// `n` with [`split_strokes`] done to it and to every path in it (a group's members) that the walk
-/// expands, `None` when none of them changed. Sets `lost` when one of them has a stroke a brush or
-/// an effect of its own reshapes whose stitch would follow its path (`forced`: the export's style).
-/// A group's own effects reshape its members' paths, and their strokes follow the reshaped paths,
-/// as a basic member's do.
+/// expands, `None` when none of them changed. Sets `lost` when one of them has a stroke drawn with
+/// a brush (sewn as its brush's art) whose stitch would follow its path (`forced`: the export's
+/// style). A stroke an effect reshapes, of its own, the object's or a group's, follows the
+/// reshaped path, as a basic object's stroke follows its path.
 fn split_inside(d: &mut Document, n: &Node, forced: Option<Style>, lost: &mut bool) -> Option<Node> {
     match &n.kind {
         NodeKind::Path { .. } | NodeKind::Compound { .. } if needs_expanding(n) => {
-            let reshaped =
-                n.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Stroke(_)) && i.visible() && !keeps_its_path(&n.appearance, i));
-            *lost |= reshaped && follows_its_path(n, forced);
+            let brushed = n.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Stroke(s) if s.brush.is_some()) && i.visible());
+            *lost |= brushed && follows_its_path(n, forced);
             split_strokes(d, n)
         }
         NodeKind::Group { children, .. } | NodeKind::Layer { children, .. } => {
@@ -257,8 +260,8 @@ fn copy_with(d: &mut Document, n: &Node, items: Vec<AppearanceItem>, embroidery:
 
 /// Expand object `id` of `d` for sewing: the strokes that keep their path of every path in it made
 /// objects of their own ([`split_inside`]) and the rest expanded as `effect.expandAppearance`
-/// expands it. A stroke reshaped by a brush or an effect whose stitch would follow its path
-/// (`forced`: the export's style) is said, about `object` (the object a person selects, when it is
+/// expands it. A stroke drawn with a brush whose stitch would follow its path (`forced`: the
+/// export's style) is said, about `object` (the object a person selects, when it is
 /// in the document).
 fn expand_for_sewing(
     d: &mut Document,

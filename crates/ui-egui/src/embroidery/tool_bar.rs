@@ -65,7 +65,7 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
     let items: Vec<Segment<'_>> = labels
         .iter()
         .map(|(part, label)| Segment {
-            id: ui.id().with(("embroidery-tool-part", part.id())),
+            id: ui.scope_id().with(("embroidery-tool-part", part.id())),
             label,
             full: label,
             selected: shown == *part,

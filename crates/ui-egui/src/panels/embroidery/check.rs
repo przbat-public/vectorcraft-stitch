@@ -507,7 +507,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(crate::et!("Checked for")).size(SMALL).color(t.text_dim));
         let chosen = app.embroidery.check.format.get(&shown.uid).map_or(format, |f| f.id());
-        egui::ComboBox::from_id_salt(("embroidery-check-format", shown.uid)).selected_text(format_label(chosen)).show_ui(ui, |ui| {
+        craft_ui::ComboBox::from_id_salt(("embroidery-check-format", shown.uid)).selected_text(format_label(chosen)).show_ui(ui, |ui| {
             for (id, label) in check_formats() {
                 if ui.selectable_label(id == chosen, label).clicked() {
                     acts.push(Act::Format(id));
@@ -636,15 +636,15 @@ fn row(
     let chevron = Rect::from_center_size(pos2(rect.right() - ROW_PAD - CHEVRON / 2.0, top + first_line / 2.0), vec2(CHEVRON, CHEVRON));
     crate::icons::paint(ui, if open { "chevron-down" } else { "chevron-right" }, chevron, ink(t.text_dim));
     let said = format!("{}: {heading}. {below}", severity_name(mark));
-    resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::CollapsingHeader, true, open, &said));
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::DisclosureTriangle, true, open, &said));
     // Show sits over the row, so it takes the clicks on it.
     let mut showing = false;
     if let Some(g) = show_g {
         let at = Rect::from_min_size(pos2(chevron.left() - ROW_PAD - g.rect.width(), top), g.rect.size()).expand(SHOW_PAD);
-        let button = ui.interact(at, ui.id().with(("embroidery-check-show", &id)), Sense::click());
+        let button = ui.interact(at, ui.scope_id().with(("embroidery-check-show", &id)), Sense::click());
         let words = if button.hovered() { ink(t.accent_strong) } else { ink(t.accent) };
         ui.painter().galley(at.min + vec2(SHOW_PAD, SHOW_PAD), g, words);
-        button.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, format!("{show_words}: {heading}")));
+        button.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, !stale, format!("{show_words}: {heading}")));
         if button.clicked() && !stale {
             acts.push(Act::Show(id.clone(), None));
             showing = true;
@@ -688,7 +688,7 @@ fn details(
                 // What the source says, as it says it.
                 let says = source["value"].as_str().unwrap_or_default();
                 let link = ui.add(egui::Label::new(egui::RichText::new(&words).size(SMALL).color(ink(t.accent))).sense(Sense::click()));
-                link.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Link, true, &words));
+                link.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Link, true, &words));
                 let link = link.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(format!("{says}\n{url}"));
                 if link.clicked() {
                     acts.push(Act::Open(url.to_string()));
@@ -705,12 +705,12 @@ fn details(
                 ui.horizontal(|ui| {
                     let (previous, next) = (super::command_label(app, "embroidery.previousHit"), super::command_label(app, "embroidery.nextHit"));
                     let back = ui.add_enabled(!stale, egui::Button::new(egui::RichText::new("‹").size(SMALL)).small()).on_hover_text(&previous);
-                    back.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, &previous));
+                    back.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, !stale, &previous));
                     let place = f.hit.map_or_else(|| "–".to_string(), |k| numbers::count(lang, k as u64 + 1));
                     let of = fill(crate::et!("{index} of {count}"), &[("index", &place), ("count", &numbers::count(lang, hits.len() as u64))]);
                     ui.label(egui::RichText::new(of).size(SMALL).color(ink(t.text_dim)));
                     let on = ui.add_enabled(!stale, egui::Button::new(egui::RichText::new("›").size(SMALL)).small()).on_hover_text(&next);
-                    on.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, &next));
+                    on.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, !stale, &next));
                     if back.clicked() {
                         acts.push(Act::Step(false));
                     }
@@ -732,7 +732,7 @@ fn details(
                 let text = if current == Some(k) { text.background_color(t.row_selected) } else { text };
                 // A button for a screen reader: it shows the hit.
                 let hit = ui.add(egui::Label::new(text).sense(Sense::click()));
-                hit.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, !stale, &line));
+                hit.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, !stale, &line));
                 let clicked = hit.on_hover_cursor(egui::CursorIcon::PointingHand).clicked();
                 if clicked && !stale {
                     acts.push(Act::Show(id.to_string(), Some(k)));

@@ -1,7 +1,7 @@
 //! The Stitches tab's foot: while stitches are edited, Move by and the stitch actions in rows of
 //! whole buttons; else Edit Stitches, or why the scope's stitches can't be edited.
 
-use super::*;
+use super::{CELL_PAD, Color32, Lang, Listed, PLACE_DECIMALS, ROW_HEIGHT, TEXT, Tokens, Ui, VectorcraftApp, dim, json, scope_ids};
 
 /// How much the foot's height may change, points, before the next frame lays the list out again:
 /// less than a pixel.
@@ -57,7 +57,7 @@ pub(super) fn foot_ui(
                     let look = crate::embroidery::fields::Look { name: Some(&name), ..Default::default() };
                     // Enter in the field moves them, by the value typed or, unchanged, by the one
                     // shown again.
-                    let field = ui.id().with(("embroidery-move-by", k));
+                    let field = ui.scope_id().with(("embroidery-move-by", k));
                     apply |= ui.memory(|m| m.has_focus(field)) && ui.input(|i| i.key_pressed(egui::Key::Enter));
                     if let Some(v) =
                         crate::embroidery::fields::number_field(ui, ("embroidery-move-by", k), Some(by[k]), &format, &look, MOVE_BY_FIELD, &bounds)

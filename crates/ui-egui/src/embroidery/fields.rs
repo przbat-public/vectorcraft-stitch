@@ -126,7 +126,7 @@ fn grouped(text: &str) -> bool {
 /// Under egui's memory: the words for the status bar when a field's typed text held no number
 /// ([`take_unreadable`]).
 fn unreadable_id() -> egui::Id {
-    egui::Id::new("embroidery-field-unreadable")
+    egui::Id::unique("embroidery-field-unreadable")
 }
 
 /// The words a field left this frame for the status bar, when its typed text held no number: the
@@ -220,10 +220,13 @@ pub(crate) fn number_field(
     width: f32,
     bounds: &RangeInclusive<f64>,
 ) -> Option<f64> {
-    let id = ui.id().with(id);
+    // The label drawn right before the field names it for screen readers, as upstream's field
+    // takes it (the look's own name, when it gives one, is set over it).
+    let label = widgets::take_previous_label(ui);
+    let id = ui.scope_id().with(id);
     let shown = value.map(|v| format.show(v)).unwrap_or_default();
     widgets::take_dialog_focus(ui, id, &shown);
-    let (mut buf, commit, resp, rect) = widgets::recessed_text(ui, id, &shown, width, 1);
+    let (mut buf, commit, resp, rect) = widgets::recessed_text(ui, id, &shown, width, 1, label, None);
     paint_look(ui, &resp, rect, &buf, look);
     widgets::select_all_on_focus(ui, &resp, &buf);
     // Upstream steps whole numbers (a tenth with Ctrl/Cmd, ten with Shift): it is handed the value
@@ -234,7 +237,7 @@ pub(crate) fn number_field(
     let decimals = format.decimals.min(6) as i32;
     let read = |text: &str| format.read(text).map(in_steps);
     let show = |steps: f64| format.show(steps * size);
-    let stepped = widgets::step_value(ui, &resp, &mut buf, &steps_bounds, read, show).map(|n| widgets::round_to(n * size, decimals));
+    let stepped = widgets::step_value(ui, &resp, &mut buf, &steps_bounds, (read, show), None, &[]).map(|n| widgets::round_to(n * size, decimals));
     let scrubbed = crate::scrub::field(ui, id, rect, &buf, value.map(in_steps), (decimals + format.step).max(0), &steps_bounds)
         .map(|n| widgets::round_to(n * size, decimals));
     if commit && buf != shown {
@@ -271,7 +274,8 @@ fn paint_look(ui: &Ui, resp: &egui::Response, rect: egui::Rect, text: &str, look
     if !text.is_empty() {
         painter.rect_filled(resp.rect.expand(1.0), 0.0, t.input);
     }
-    painter.text(resp.rect.left_top(), egui::Align2::LEFT_TOP, words, FontId::proportional(FIELD_TEXT), colour);
+    // Upstream's one-line text edit centres its words in the row's height.
+    painter.text(resp.rect.left_center(), egui::Align2::LEFT_CENTER, words, FontId::proportional(FIELD_TEXT), colour);
 }
 
 /// A choice showing `current`, drawn with `look` (the value's colour, its name for screen readers):
@@ -289,18 +293,19 @@ pub(crate) fn choice<R>(
     if let Some(colour) = look.text {
         ui.visuals_mut().override_text_color = Some(colour);
     }
-    let chosen = widgets::combo(ui, id, current, width, false, list);
+    let chosen = widgets::combo(ui, id, current, width, list);
     ui.visuals_mut().override_text_color = before;
     look.name(ui, combo_button(ui, id));
     chosen
 }
 
 /// The id of the button `widgets::combo` draws for `id` in `ui`: egui's combo box's, in the frame
-/// it is drawn in (egui gives a frame's contents the id of its ui with "child"), as `combo` itself
-/// finds it to tell whether it has the keyboard.
+/// it is drawn in (egui gives a frame's contents the scope of its ui with "child"), as `combo`
+/// itself finds it to tell whether it has the keyboard (`widgets::combo_button_id`, `id`'s salt in
+/// that scope).
 pub(crate) fn combo_button(ui: &Ui, id: impl Hash + std::fmt::Debug) -> egui::Id {
-    let frame = ui.id().with(egui::IdSalt::new("child"));
-    frame.with(egui::IdSalt::new(frame.with(id)))
+    let frame = ui.scope_id().with(egui::IdSalt::new("child"));
+    frame.with(egui::IdSalt::new(id))
 }
 
 #[cfg(test)]

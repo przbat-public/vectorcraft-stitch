@@ -119,7 +119,7 @@ pub fn tint_node(n: &mut Node, color: &Color, amount: f32) {
         for r in &mut t.runs {
             for p in [&mut r.style.fill, &mut r.style.stroke] {
                 if let Paint::Solid { color: c, .. } = p {
-                    *c = c.lerp(color, amount);
+                    *p = Paint::solid(c.lerp(color, amount));
                 }
             }
         }
@@ -138,9 +138,10 @@ pub fn stain(inst: &Node) -> Option<(Color, f32)> {
     Some((f.paint.color()?, f.opacity))
 }
 
-/// A symbol's art for instance `inst`, stained by the instance's fill ([`stain`]).
+/// A symbol's art for instance `inst`: with the instance's own appearance changes to it (a dynamic
+/// symbol's, [`vectorcraft_doc::symbol_overrides`]), stained by the instance's fill ([`stain`]).
 pub fn instance_art(art: &Node, inst: &Node) -> Node {
-    let mut a = art.clone();
+    let mut a = vectorcraft_doc::symbol_overrides::dynamic_art(art, inst);
     if let Some((c, amount)) = stain(inst) {
         tint_node(&mut a, &c, amount);
     }

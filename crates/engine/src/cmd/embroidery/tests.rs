@@ -703,7 +703,7 @@ fn art_out_of_range_is_left_out_with_a_warning() {
     square.line_to((10.0, 10.0));
     square.close_path();
     let art = Node::path(doc.alloc_id(), PathData::from_bezpath(&square), red.clone());
-    doc.symbols.push(Symbol { name: "huge".into(), art: Arc::new(art) });
+    doc.symbols.push(Symbol { name: "huge".into(), art: Arc::new(art), dynamic: false });
     let id = doc.alloc_id();
     doc.insert(layer, usize::MAX, Node::new(id, NodeKind::SymbolInstance { symbol: "huge".into(), xf: Affine::scale(1e14) })).unwrap();
     // And a square that is in range.

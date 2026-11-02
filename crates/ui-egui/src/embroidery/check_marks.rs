@@ -152,7 +152,7 @@ pub fn draw(app: &VectorcraftApp, ctx: &egui::Context, painter: &egui::Painter, 
     if let Some((_, m)) = hovered
         && let Some(words) = words(app, m)
     {
-        let id = egui::Id::new("embroidery-check-mark");
+        let id = egui::Id::unique("embroidery-check-mark");
         egui::Tooltip::always_open(ctx.clone(), painter.layer_id(), id, egui::PopupAnchor::Pointer).show(|ui| ui.label(words));
     }
 }

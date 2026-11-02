@@ -108,7 +108,7 @@ struct Events {
 /// The asset tiles: thumbnail, name (a text field while renaming), selection.
 fn tiles(ui: &mut Ui, st: &DocState, sel: &[u64], ev: &mut Events) {
     let t = Tokens::get(ui.ctx());
-    let rename_id = egui::Id::new("asset-export-rename");
+    let rename_id = egui::Id::unique("asset-export-rename");
     let renaming: Option<(u64, String)> = ui.data(|d| d.get_temp(rename_id));
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = vec2(4.0, 4.0);
@@ -130,8 +130,13 @@ fn tiles(ui: &mut Ui, st: &DocState, sel: &[u64], ev: &mut Events) {
                     let field = rename_id.with("field");
                     let kept = widgets::own_field_shift_enter(ui, field, &mut buf, &a.name);
                     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(name_rect));
-                    let te = child
-                        .add(egui::TextEdit::singleline(&mut buf).id(field).desired_width(name_rect.width()).font(egui::FontId::proportional(11.5)));
+                    let te = child.add(
+                        egui::TextEdit::singleline(&mut buf)
+                            .id(field)
+                            .align(egui::Align2::LEFT_CENTER)
+                            .desired_width(name_rect.width())
+                            .font(egui::FontId::proportional(11.5)),
+                    );
                     // Enter or a click elsewhere commits, Escape cancels; Shift+Enter commits and
                     // keeps the field open.
                     if te.lost_focus() {
@@ -258,7 +263,7 @@ fn settings(ui: &mut Ui, st: &DocState) -> (Option<Settings>, usize) {
     let preset = preset.unwrap_or_default().to_string();
     let n = rows.len();
     let mut d = Dialog::new(EXPORT_FOR_SCREENS, json!({ "formats": &rows, "preset": preset, "__settings": "" }));
-    screen_formats(ui, &mut d);
+    screen_formats(ui, &mut d, None);
     let (shown, picked) = (d.str("__settings"), d.str("preset"));
     let formats = d.fields.remove("formats").unwrap_or(Value::Null);
     let change = if !shown.is_empty() {
@@ -297,7 +302,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 tiles(ui, st, &sel, &mut ev);
             }
         });
-        let zone = ui.interact(out.inner_rect, ui.id().with("asset-export-drop"), Sense::hover());
+        let zone = ui.interact(out.inner_rect, ui.scope_id().with("asset-export-drop"), Sense::hover());
         drop_zone(ui, &zone, &mut ev);
     });
     ui.add_space(6.0);

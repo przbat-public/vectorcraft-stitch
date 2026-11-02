@@ -404,8 +404,9 @@ fn a_member_of_an_expanded_group_turns_with_its_own_box() {
     assert!(fill_angles(&plan_with(&s, json!({}))).contains(&alone[0]), "a stroke of the group's own");
 }
 
-/// An object the walk expands (two fills, a stroke an effect reshapes) turned: each of its pieces,
-/// the stroke's outline included, turns its unset rows with the object.
+/// An object the walk expands (two fills, a stroke an effect reshapes) turned: each of its pieces
+/// turns its unset rows with the object, the stroke's area too where tatami is set on it (a stroke
+/// along its reshaped path otherwise).
 #[test]
 fn an_expanded_objects_pieces_turn_with_it() {
     let mut s = blank();
@@ -415,9 +416,12 @@ fn an_expanded_objects_pieces_turn_with_it() {
     let stroke = items.iter().position(|i| matches!(i, vectorcraft_doc::AppearanceItem::Stroke(_))).unwrap();
     run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [id], "item": stroke}));
     run(&mut s, "object.rotate", json!({"ids": [id], "angle": 30}));
+    let turned = |angles: &[f64]| angles.iter().all(|a| (a - options::planner_angle(135.0 + 30.0)).abs() < 1e-9);
     let angles = fill_angles(&plan_with(&s, json!({})));
-    assert_eq!(angles.len(), 3, "two fills and the stroke's area");
-    assert!(angles.iter().all(|a| (a - options::planner_angle(135.0 + 30.0)).abs() < 1e-9), "{angles:?}");
+    assert!(angles.len() == 2 && turned(&angles), "two fills: {angles:?}");
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "tatami"}));
+    let angles = fill_angles(&plan_with(&s, json!({})));
+    assert!(angles.len() == 3 && turned(&angles), "two fills and the stroke's area: {angles:?}");
 }
 
 /// A symbol placed twice, one instance turned: the turned instance's art turns its unset rows with

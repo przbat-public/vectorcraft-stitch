@@ -23,7 +23,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::{Document, NodeId};
 
 use super::plan::{DesignPlan, Part, Unit};
-use super::*;
+use super::{CommandSpec, Result, Session, cmd, has_selection};
 use crate::cmd::layer::{MAX_ROWS, accepts, locked_within};
 
 /// The undo step's name for every change of the sewing order (drags, keys, commands).

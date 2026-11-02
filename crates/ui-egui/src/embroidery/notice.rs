@@ -71,7 +71,7 @@ pub fn show(app: &VectorcraftApp, ui: &Ui, canvas: Rect) {
             Rect::from_min_size(pos2(rect.left() + 1.0, rect.bottom() - BAR - 1.0), vec2((rect.width() - 2.0) * done.clamp(0.0, 1.0) as f32, BAR));
         ui.painter().rect_filled(bar, 0.0, t.accent);
     }
-    let id = Id::new("embroidery-notice");
+    let id = Id::unique("embroidery-notice");
     ui.ctx().accesskit_node_builder(id, |node| {
         node.set_role(egui::accesskit::Role::Status);
         node.set_label(words);

@@ -15,7 +15,7 @@
 
 use serde_json::{Value, json};
 
-use super::*;
+use super::{CommandSpec, Document, Result, Session, bad, cmd, has_doc, object};
 
 /// The stitch preview's setting for one document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

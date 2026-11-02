@@ -31,7 +31,7 @@ use vectorcraft_doc::{Appearance, Document, ImageBlob, ImageObject, LinkInfo, No
 use vectorcraft_geom::{Affine, Rect, shapes};
 
 use super::fileio::{self, RasterImage, absolute_path, file_created, file_stamp, read_file, write_file};
-use super::*;
+use super::{CommandSpec, EngineError, Result, Session, bad, bool_or, cmd, has_doc, id_param, ids_param, str_param};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
@@ -76,7 +76,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Links",
             [],
             None,
-            "{show?: all (default)|missing|modified|embedded, sort?: name|kind (file format)|status (missing, modified, ok, embedded); default: stacking order; top first} every image object and placed document in the layers, as the Links panel lists them → {links: [{id, name, linked, status: ok|modified|missing|embedded, format, pixelWidth, pixelHeight, path?, found?: path (found away from its path), page?, preview?: true (showing the saved preview), note?: said of an image too large to draw, document?: true (a placed document: pageWidth and pageHeight in pt instead of pixels)}], missing, modified, embedded}",
+            "{show?: all (default)|missing|modified|embedded, sort?: name|kind (file format)|status (missing, modified, ok, embedded); default: stacking order; top first} every image object and placed document in the layers, as the Links panel lists them → {links: [{id, name, linked, status: ok|modified|missing|embedded, format, pixelWidth, pixelHeight, path?, found?: path (found away from its path), page?, preview?: true (showing the saved preview), note?: said of an image past the decode allowance (shown at reduced size, or too large to draw), document?: true (a placed document: pageWidth and pageHeight in pt instead of pixels)}], missing, modified, embedded}",
             has_doc,
             list
         ),
@@ -231,7 +231,12 @@ impl Found {
 
     /// `base` pointing at this file as read now (`bytes`).
     fn link(&self, bytes: &[u8], base: &LinkInfo) -> LinkInfo {
-        LinkInfo { path: self.path.clone(), size: Some(self.size), modified: self.modified, hash: Some(hash_bytes(bytes)), ..base.clone() }
+        self.link_hashed(hash_bytes(bytes), base)
+    }
+
+    /// [`Self::link`] with the bytes' hash already taken.
+    fn link_hashed(&self, hash: String, base: &LinkInfo) -> LinkInfo {
+        LinkInfo { path: self.path.clone(), size: Some(self.size), modified: self.modified, hash: Some(hash), ..base.clone() }
     }
 }
 
@@ -369,7 +374,11 @@ pub(crate) fn full_linked_images<'a>(d: &'a Document, doc_path: Option<&str>) ->
             continue;
         };
         let preview = d.images.get(&key).map(|b| b.bytes.clone());
-        let mime = fileio::format_for_name(g.link.name()).map(|f| f.mime.to_string()).unwrap_or_else(|| img.blob.mime.clone());
+        // A file read as it is keeps its own type; one turned upright (EXIF orientation) is the PNG it became.
+        let mime = match fileio::format_for_name(g.link.name()) {
+            Some(f) if img.blob.bytes.as_slice() == bytes.as_slice() => f.mime.to_string(),
+            _ => img.blob.mime.clone(),
+        };
         out.images.insert(key, ImageBlob { mime, bytes: img.blob.bytes, proxy: preview });
     }
     let mut warnings = vec![];
@@ -394,14 +403,56 @@ pub(crate) fn files_to_find(st: &crate::DocState, ids: Option<&[NodeId]>) -> Vec
 // ---------- reading files into the document ----------
 
 /// Keep `full` (a file's pixels) as image `key` of `d`, unless pixels are there already; a
-/// preview there is kept, and a linked image gets one (the one `full` carries, when it has one).
+/// preview there is kept, and a linked image gets the one `full` carries ([`readable`] makes it
+/// when the file is read). Nothing is decoded here.
 pub(crate) fn store_image(d: &mut Document, key: &str, full: ImageBlob, linked: bool) {
     let made = full.proxy.clone().filter(|_| linked);
     let blob = match d.images.get(key) {
-        Some(b) if !b.is_proxy() => b.clone(),
+        Some(b) if !b.is_proxy() => ImageBlob { proxy: b.proxy.clone().or(made), ..b.clone() },
         old => ImageBlob { proxy: old.and_then(|b| b.proxy.clone()).or(made), ..full },
     };
-    d.images.insert(key.to_string(), if linked { blob.with_proxy() } else { blob });
+    d.images.insert(key.to_string(), blob);
+}
+
+/// Whether `bytes` are a PNG, JPEG, GIF or WebP file: the formats [`fileio::raster_image`] keeps
+/// as they are after reading only their header.
+pub(crate) fn kept_unread(bytes: &[u8]) -> bool {
+    use image::ImageFormat as F;
+    matches!(image::guess_format(bytes), Ok(F::Png | F::Jpeg | F::Gif | F::WebP))
+}
+
+/// `blob`, an image [`fileio::raster_image`] read from a file, ready to keep. When `unread` (the
+/// file is one [`kept_unread`] names), its pixels are decoded once to check that they can be read,
+/// and a `linked` image's preview is made from that decode ([`ImageBlob::checked_with_proxy`]);
+/// otherwise a `linked` image gets its preview ([`ImageBlob::with_proxy`]). An error when the
+/// pixels can't be read.
+pub(crate) fn readable(blob: ImageBlob, unread: bool, linked: bool) -> Result<ImageBlob> {
+    if !unread {
+        return Ok(if linked { blob.with_proxy() } else { blob });
+    }
+    blob.checked_with_proxy(linked).ok_or_else(|| EngineError::Other("the image's pixels can't be read".into()))
+}
+
+/// [`readable`], and the pixels it decoded are kept in the image store the renderers share
+/// ([`vectorcraft_render::keep_decoded_image`]), so the first frame that draws the image finds
+/// them there and does not decode the file again.
+pub(crate) fn readable_and_kept(blob: ImageBlob, unread: bool, linked: bool) -> Result<ImageBlob> {
+    if !unread {
+        return readable(blob, unread, linked);
+    }
+    let (blob, pixels) = blob.checked_with_pixels(linked).ok_or_else(|| EngineError::Other("the image's pixels can't be read".into()))?;
+    if let Some(pixels) = pixels {
+        vectorcraft_render::keep_decoded_image(&blob, pixels);
+    }
+    Ok(blob)
+}
+
+/// The linked image file `bytes`, read ([`fileio::raster_image`]) with its preview; an error when
+/// its pixels can't be read ([`readable`]).
+fn linked_image(bytes: &[u8]) -> Result<RasterImage> {
+    let mut img = fileio::raster_image(bytes)?;
+    img.blob = readable(img.blob, kept_unread(bytes), true)?;
+    Ok(img)
 }
 
 /// The file read for a link: the link to it and its image.
@@ -410,7 +461,7 @@ type FileRead = (LinkInfo, RasterImage);
 /// The file at `f` read for a link like `base` (its image decoded).
 fn read_image(f: &mut Found, base: &LinkInfo) -> Result<FileRead> {
     let bytes = f.read()?;
-    Ok((f.link(&bytes, base), fileio::raster_image(&bytes)?))
+    Ok((f.link(&bytes, base), linked_image(&bytes)?))
 }
 
 /// A linked file read for the objects that show it.
@@ -542,10 +593,13 @@ fn clip_image(d: &mut Document, id: NodeId, (frame, room): Clip) -> Result<()> {
 /// Replace image `id` with the raster at `path`, keeping the object's bounds (what an image
 /// variable does on `dataset.select`). The file is linked; a missing or unreadable path is an
 /// error so the dataset application can skip that binding.
-pub(crate) fn set_image_from_path(d: &mut Document, id: NodeId, path: &str) -> Result<()> {
-    let path = absolute_path(path);
+pub(crate) fn set_image_from_path(d: &mut Document, id: NodeId, path: &str, doc_path: Option<&str>) -> Result<()> {
+    // A path stored in the document (a data set's value) is followed as its other stored paths
+    // are: on this computer or the document's own share only, so choosing a data set can't make
+    // the app connect to another computer.
+    let path = fileio::document_path(path, doc_path).map_err(|r| EngineError::Other(format!("the image `{path}` isn't followed: {r}")))?;
     let bytes = read_file(&path)?;
-    let read = (link_info(&path, &bytes), fileio::raster_image(&bytes)?);
+    let read = (link_info(&path, &bytes), linked_image(&bytes)?);
     install(d, &[id], read, Some(Preserve::Bounds))
 }
 
@@ -618,6 +672,10 @@ impl Resolved {
 /// image's bounds, which isn't a change to report. Nothing here is an undo step.
 pub fn resolve(d: &mut Document, doc_path: Option<&str>, update: bool, low_res_proxy_eps: bool) -> Resolved {
     let mut out = Resolved::default();
+    // The image (with its preview) and hash of each file read for a preview here, by path: images
+    // of other keys linking to the same file share them, rather than each reading, decoding and
+    // keeping a copy of its own.
+    let mut read_images: BTreeMap<String, (ImageBlob, String)> = BTreeMap::new();
     for g in groups(d, None) {
         let row = rows(std::iter::once(&g), doc_path);
         let unread = g.document.is_none() && g.link.hash.is_none() && g.link.size.is_none() && previewing(d, &g.key);
@@ -655,14 +713,24 @@ pub fn resolve(d: &mut Document, doc_path: Option<&str>, update: bool, low_res_p
             }
             (Status::Ok, Some(mut f)) => {
                 let preview = previewing(d, &g.key);
+                if let Some((blob, hash)) = read_images.get(&f.path).filter(|_| preview && !eps_preview).cloned() {
+                    store_image(d, &g.key, blob, true);
+                    let link = f.link_hashed(hash, &g.link);
+                    if link != g.link {
+                        set_links(d, &g.ids, &link);
+                    }
+                    continue;
+                }
                 // Read when the images show the preview, or when the file's details changed.
                 let bytes = if (preview && !eps_preview) || f.bytes.is_some() { f.read().ok() } else { None };
                 if preview && !eps_preview {
-                    let Some(img) = bytes.as_deref().and_then(|b| fileio::raster_image(b).ok()) else {
+                    let Some((b, img)) = bytes.as_deref().and_then(|b| Some((b, linked_image(b).ok()?))) else {
                         out.missing.extend(row);
                         continue;
                     };
-                    store_image(d, &g.key, img.blob, true);
+                    let blob = img.blob;
+                    read_images.insert(f.path.clone(), (blob.clone(), hash_bytes(b)));
+                    store_image(d, &g.key, blob, true);
                 } else if let Some(b) = d.images.get(&g.key).filter(|b| b.proxy.is_none()) {
                     // Linked before links kept a preview.
                     let b = b.clone().with_proxy();
@@ -913,7 +981,7 @@ fn relink(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
         // Read before it is copied: a file that can't be shown isn't copied.
-        let img = if images.is_empty() { None } else { Some(fileio::raster_image(&bytes).map_err(|e| bad(C, format!("{path}: {e}")))?) };
+        let img = if images.is_empty() { None } else { Some(linked_image(&bytes).map_err(|e| bad(C, format!("{path}: {e}")))?) };
         let mut sources = vec![];
         for ((page, bounding, page_box), ids) in documents {
             sources.push((page, ids, super::place::document::source(&path, &bytes, Some(&path), page, bounding, page_box, C)?));
@@ -1106,7 +1174,7 @@ fn list(s: &mut Session, p: &Value) -> Result<Value> {
                 // Only an image that could be past the decode allowance (at 16 bytes a pixel, the
                 // most a decoder gives) has its header read for this.
                 let large = im.width as u64 * im.height as u64 > fileio::MAX_RASTER_ALLOC / 16;
-                if let Some(note) = st.doc.images.get(&im.key).filter(|_| large).and_then(|b| fileio::too_large_note(&b.bytes)) {
+                if let Some(note) = st.doc.images.get(&im.key).filter(|_| large).and_then(|b| fileio::size_note(&b.bytes)) {
                     row["note"] = json!(note);
                 }
                 (im.link.as_ref(), row)
@@ -1253,8 +1321,10 @@ fn unembed(s: &mut Session, p: &Value) -> Result<Value> {
         return Ok(json!({ "name": format!("{stem}.{ext}"), "dataBase64": vectorcraft_format::base64_encode(&bytes) }));
     };
     let path = absolute_path(&if fileio::extension(path).is_empty() { format!("{path}.{ext}") } else { path.to_string() });
+    // Read before writing: pixels that can't be read leave no file behind.
+    let img = linked_image(&bytes)?;
     write_file(&path, &bytes)?;
-    let read = (link_info(&path, &bytes), fileio::raster_image(&bytes)?);
+    let read = (link_info(&path, &bytes), img);
     s.edit("Unembed", |d, _| install(d, &[id], read, Some(Preserve::Bounds)))?;
     Ok(json!({ "id": id.0, "path": path }))
 }
@@ -1266,6 +1336,11 @@ fn placement_json(o: PlacementOptions) -> Value {
 
 /// Link Info's fields of the linked file `l` (of object `id` of `st`) into `out`.
 fn file_fields(st: &crate::DocState, id: NodeId, l: &LinkInfo, out: &mut Value) {
+    // Within what the caller that opened the document may read, whoever asks.
+    crate::file_access::confine(st.opened_by.as_ref(), || file_fields_here(st, id, l, out));
+}
+
+fn file_fields_here(st: &crate::DocState, id: NodeId, l: &LinkInfo, out: &mut Value) {
     let status = groups(&st.doc, Some(&[id])).first().map_or(Status::Missing, |g| probe(g, st.path.as_deref()).0);
     let doc_path = st.path.as_deref();
     let path = fileio::document_path(&l.path, doc_path).ok();

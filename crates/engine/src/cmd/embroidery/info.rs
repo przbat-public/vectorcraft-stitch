@@ -26,7 +26,7 @@ use super::digitize::{outlined_rule, part_rule, sews};
 use super::objects::{MAX_IDS, MAX_SKIPPED, has_part, part_kind, takers, value_json};
 use super::options::stitch_id;
 use super::plan::{Choice, DesignPlan, Part};
-use super::printed::{keeps_its_path, needs_expanding};
+use super::printed::needs_expanding;
 use super::resolve::report::{REPORTED, Resolved, Source};
 use super::resolve::{DocLayer, Found, PartLayer, Stitch, UnitSettings};
 use super::stats::{LIST_LIMIT, Page};
@@ -596,11 +596,12 @@ fn part_section(
 
 /// How part `kind` of `n` is sewn with `settings`, without a plan: the stitch's id (`none` when it
 /// isn't), the rule that chose it, why it isn't sewn, and its style. The part's first item of the
-/// kind the walk sews says how: as it is, or, for a stroke the walk outlines first (on an object it
-/// expands, reshaped by a brush or an effect), as the area it paints.
+/// kind the walk sews says how: as it is, or, for a stroke drawn with a brush on an object the walk
+/// expands (its brush's art), as the area it paints.
 fn sewn_as(doc: &Document, n: &Node, kind: PartKind, settings: &UnitSettings) -> (&'static str, Option<&'static str>, Option<&'static str>, Style) {
     let item = n.appearance.items.iter().find(|i| part_kind(i) == kind && sews(i));
-    let outlined = |item: &AppearanceItem| kind == PartKind::Stroke && needs_expanding(n) && !keeps_its_path(&n.appearance, item);
+    let outlined =
+        |item: &AppearanceItem| kind == PartKind::Stroke && needs_expanding(n) && matches!(item, AppearanceItem::Stroke(s) if s.brush.is_some());
     match (unprinted(doc, n), item) {
         (Some(why), _) => ("none", None, Some(why), Style::Fill),
         (None, _) if !settings.sewn() => ("none", None, Some("off"), Style::Fill),

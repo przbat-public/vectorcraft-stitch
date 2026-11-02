@@ -31,7 +31,7 @@ use serde_json::Value;
 use vectorcraft_doc::Document;
 use vectorcraft_stitch::format::Format as StitchFormat;
 
-use super::super::*;
+use super::super::{EngineError, Result, bad};
 use super::{Encoded, Format, FormatOption};
 use crate::cmd::embroidery::options::Others;
 use crate::cmd::embroidery::{Options, PlanError, service};
@@ -247,6 +247,14 @@ mod tests {
         assert_eq!((satin.narrow, running.narrow), (0.0, 0.0));
         assert!(NARROW.description.contains("0 to 12"));
         assert_eq!(Options { narrow_as_satin: Some(99.0), ..Options::default() }.params(Style::Fill, 0.0).narrow, 12.0);
+    }
+
+    /// The thread's, the underlay's, the limits' and the stitch lengths' defaults `document.formats`
+    /// lists are the planner's too, and with nothing given each style plans with its own values.
+    #[test]
+    fn limits_and_lengths_default_to_the_planners() {
+        let num = |o: &FormatOption| o.default.parse::<f64>().unwrap();
+        let (fill, satin, running) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin), Params::for_style(Style::Running));
         // The spacings the thread weight's description gives are the planner's.
         for (weight, rows) in [(30.0, "0.44 mm rows for 30 wt"), (60.0, "0.31 for 60")] {
             let spacing = Params::for_thread(Style::Fill, weight).density;

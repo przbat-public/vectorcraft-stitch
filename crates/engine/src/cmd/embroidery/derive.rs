@@ -113,11 +113,26 @@ pub(crate) fn whole(e: &Embroidery) -> Option<Box<Embroidery>> {
     (!stand_in.is_empty()).then(|| Box::new(stand_in))
 }
 
-/// The settings a piece made of part `part` of an object takes: that part's, as a fill (every
-/// piece is filled art: a stroke's outline, a fill's copy). `None` when the part has none.
+/// The settings a piece made of part `part` of an object takes as filled art (a fill's copy, a
+/// stroke's outline, a brush's art): that part's, as a fill. `None` when the part has none.
 fn piece(part: Option<&PartSettings>) -> Option<Box<Embroidery>> {
     let part = part?.clone();
     Some(Box::new(Embroidery { fill: Some(Box::new(part)), ..Embroidery::default() }))
+}
+
+/// The settings a stroke's copy of an object takes (the object's path stroked by that stroke
+/// alone): the object's stroke settings, as a stroke. `None` when it has none.
+fn stroke_piece(e: &Embroidery) -> Option<Box<Embroidery>> {
+    let stroke = e.stroke.clone()?;
+    Some(Box::new(Embroidery { stroke: Some(stroke), ..Embroidery::default() }))
+}
+
+/// Whether `n` is a stroke's copy of a path or compound path: stroked, with no fill.
+fn stroked_copy(n: &Node) -> bool {
+    let items = &n.appearance.items;
+    matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. })
+        && items.iter().any(|i| matches!(i, AppearanceItem::Stroke(_)))
+        && !items.iter().any(|i| matches!(i, AppearanceItem::Fill(_)))
 }
 
 /// Release Compound Path of `n`: its parts (in stacking order) take its settings, each its own
@@ -303,40 +318,49 @@ impl Expanding {
 
     /// `result`, what the object became, with each piece sewn with the settings of the part it
     /// came from and the cut after the object on what stands for it, so that the object is cut
-    /// once, after its last piece. A fill's piece is a copy of the object (it holds the object's
-    /// settings as they were); every other piece is a stroke's (its outline, or its brush's art,
-    /// whose paths take the settings: the walk reads them from the paths it sews). A single piece
-    /// in the object's place is a fill's when the object has a fill that paints. Every piece takes
-    /// the object's bounding box's angle, so that a stroke's outline (a new path, upright) turns
-    /// its unset rows as the object did.
+    /// once, after its last piece. A fill's or a stroke's piece is a copy of the object painted by
+    /// that fill or stroke alone (it holds the object's settings as they were): a fill's takes the
+    /// fill's settings, a stroke's the stroke's, as a stroke (upstream's Expand Appearance leaves a
+    /// stroke a stroke since its #3089). A brushed stroke's art is new paths, which take the
+    /// stroke's settings as fills: the walk reads them from the paths it sews. A single piece in
+    /// the object's place is the stroke's when it is a stroked copy, else a fill's when the object
+    /// has a fill that paints. Every piece takes the object's bounding box's angle, so that a
+    /// brush's art (new paths, upright) turns its unset rows as the object did.
     pub(crate) fn apply(&self, result: &mut Node) {
         if !self.leaf {
             return;
         }
         let e = self.settings.as_deref();
         let of = |fill: bool| e.and_then(|e| piece(e.part(if fill { PartKind::Fill } else { PartKind::Stroke })));
+        let stroked = || e.and_then(stroke_piece);
         result.bbox_angle = self.angle;
         if matches!(result.kind, NodeKind::Group { .. }) {
             for c in result.children_mut().into_iter().flatten() {
-                let came_from_fill = e.is_some() && c.extras().embroidery.as_deref() == e;
-                let settings = e.map(|_| of(came_from_fill));
+                let copy = e.is_some() && c.extras().embroidery.as_deref() == e;
+                let settings = e.map(|_| match (copy, stroked_copy(c)) {
+                    (true, true) => stroked(),
+                    (true, false) => of(true),
+                    (false, _) => of(false),
+                });
                 on_paths(Arc::make_mut(c), settings.as_ref(), self.angle);
             }
             // The pieces of each part keep each of its points on one of them (they lie on one
             // another: the first its entry, the last its exit).
             if e.is_some() {
-                for source in [of(true), of(false)].into_iter().flatten() {
+                let sources = [(of(true), PartKind::Fill), (of(false), PartKind::Fill), (stroked(), PartKind::Stroke)];
+                for (source, kind) in sources.into_iter().filter_map(|(s, k)| s.map(|s| (s, k))) {
                     let mut pieces: Vec<&mut Node> = Vec::new();
                     leaves(result, &mut pieces);
                     let mut of_it: Vec<&mut Node> = pieces.into_iter().filter(|n| n.extras().embroidery.as_deref() == Some(&*source)).collect();
-                    points_on_nearest(&mut of_it, PartKind::Fill);
+                    points_on_nearest(&mut of_it, kind);
                 }
             }
             if let Some(e) = e {
                 result.extras_mut().embroidery = whole(e);
             }
         } else if let Some(e) = e {
-            let mut own = of(self.fills).map(|b| *b).unwrap_or_default();
+            let own = if stroked_copy(result) { stroked() } else { of(self.fills) };
+            let mut own = own.map(|b| *b).unwrap_or_default();
             own.trim_after = e.trim_after;
             own.stop_after = e.stop_after;
             own.extra = e.extra.clone();
@@ -348,8 +372,9 @@ impl Expanding {
 /// The pieces of a path's copies in `result` (each sewn with the settings of the part it came from,
 /// [`Expanding`], its points moved with its copy), the points of each of `e`'s parts back where the
 /// path holds them, kept only on the piece nearest each ([`points_on_nearest`]). A piece is taken
-/// for a part when its settings are the part's but for its points and its angle (which turn with
-/// a copy); a piece that could be either part's (the fill and the stroke set alike) keeps its own.
+/// for a part when the settings it is sewn with (its fill's, as filled art; its stroke's, as a
+/// stroke's copy) are the part's but for its points and its angle (which turn with a copy); a
+/// piece that could be either part's (the fill and the stroke set alike) keeps its own.
 fn copies_points(e: &Embroidery, result: &mut Node) {
     let held = |p: &PartSettings| p.points.as_ref().is_some_and(|q| q.entry.is_some() || q.exit.is_some());
     let parts: Vec<&PartSettings> = [PartKind::Fill, PartKind::Stroke].into_iter().filter_map(|k| e.part(k)).filter(|p| held(p)).collect();
@@ -357,25 +382,25 @@ fn copies_points(e: &Embroidery, result: &mut Node) {
         PartSettings { points: None, angle: None, ..a.clone() } == PartSettings { points: None, angle: None, ..b.clone() }
     };
     for source in &parts {
-        let mut pieces: Vec<&mut Node> = Vec::new();
-        leaves(result, &mut pieces);
-        let mut of_it: Vec<&mut Node> = pieces
-            .into_iter()
-            .filter(|n| {
-                n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill)).is_some_and(|f| held(f) && alike(f, source))
-                    && parts
-                        .iter()
-                        .filter(|p| n.extras().embroidery.as_deref().and_then(|e| e.part(PartKind::Fill)).is_some_and(|f| alike(f, p)))
-                        .count()
-                        == 1
-            })
-            .collect();
-        for piece in of_it.iter_mut() {
-            let Some(mut own) = piece.extras().embroidery.as_deref().cloned() else { continue };
-            own.edit_part(PartKind::Fill, |p| p.points = source.points.clone());
-            piece.extras_mut().embroidery = Some(Box::new(own));
+        for kind in [PartKind::Fill, PartKind::Stroke] {
+            let sewn_with = |n: &Node| n.extras().embroidery.as_deref().and_then(|e| e.part(kind)).cloned();
+            let mut pieces: Vec<&mut Node> = Vec::new();
+            leaves(result, &mut pieces);
+            let mut of_it: Vec<&mut Node> = pieces
+                .into_iter()
+                .filter(|n| {
+                    let own = sewn_with(n);
+                    own.as_ref().is_some_and(|f| held(f) && alike(f, source))
+                        && parts.iter().filter(|p| own.as_ref().is_some_and(|f| alike(f, p))).count() == 1
+                })
+                .collect();
+            for piece in of_it.iter_mut() {
+                let Some(mut own) = piece.extras().embroidery.as_deref().cloned() else { continue };
+                own.edit_part(kind, |p| p.points = source.points.clone());
+                piece.extras_mut().embroidery = Some(Box::new(own));
+            }
+            points_on_nearest(&mut of_it, kind);
         }
-        points_on_nearest(&mut of_it, PartKind::Fill);
     }
 }
 

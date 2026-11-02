@@ -24,9 +24,10 @@ const NARROW_NO_BREAK_SPACE: char = '\u{202f}';
 /// The space each language puts between a number and its percent sign, where it puts one (CLDR's
 /// percent pattern, "#,##0 %", as ICU 78.3 writes it, checked 2026-10-23,
 /// <https://www.unicode.org/cldr/charts/latest/by_type/numbers.number_formatting_patterns.html>):
-/// a no-break space in Czech, Danish, German, Spanish, Finnish, Russian and Swedish, a narrow one
-/// in French. The others write "37%".
+/// a no-break space in Czech, Danish, German, Spanish, Finnish, Russian and Swedish (and Catalan,
+/// checked 2026-11-02), a narrow one in French. The others write "37%".
 pub const PERCENT_SPACES: &[(&str, char)] = &[
+    ("ca", NO_BREAK_SPACE),
     ("cs", NO_BREAK_SPACE),
     ("da", NO_BREAK_SPACE),
     ("de", NO_BREAK_SPACE),
@@ -67,8 +68,8 @@ const COMMA_SPACE_FROM_FIVE: Symbols = Symbols { decimal: ',', group: NO_BREAK_S
 const COMMA_NARROW_SPACE: Symbols = Symbols { decimal: ',', group: NARROW_NO_BREAK_SPACE, min_grouping: 1 };
 
 /// Each interface language's number symbols, by its code (CLDR 48, read through ICU 78.3's
-/// `Intl.NumberFormat` on 2026-10-22, Turkish on 2026-10-24; Polish checked in CLDR's own data:
-/// decimal ",", `minimumGroupingDigits` 2).
+/// `Intl.NumberFormat` on 2026-10-22, Turkish on 2026-10-24, Bosnian and Catalan on 2026-11-02;
+/// Polish checked in CLDR's own data: decimal ",", `minimumGroupingDigits` 2).
 pub const SYMBOLS: &[(&str, Symbols)] = &[
     ("en", ENGLISH),
     ("ja", ENGLISH),
@@ -80,6 +81,8 @@ pub const SYMBOLS: &[(&str, Symbols)] = &[
     ("de", COMMA_POINT),
     ("pt-br", COMMA_POINT),
     ("tr", COMMA_POINT),
+    ("bs", COMMA_POINT),
+    ("ca", COMMA_POINT),
     ("nl", COMMA_POINT),
     ("da", COMMA_POINT),
     ("id", COMMA_POINT),
@@ -283,8 +286,8 @@ mod tests {
             // The monospace font shows coordinates, written with the app's point.
             for (family, first) in families.into_iter().filter(|(_, first)| first.as_deref() != Some("JetBrainsMono")) {
                 let Some(first) = first else { continue };
-                let mut font = fonts.fonts.font(&family);
-                let chars = font.characters();
+                // egui 0.37's public view: the family's characters with the fonts that have each.
+                let chars = fonts.characters(&family);
                 for (_, s) in SYMBOLS {
                     for ch in [s.decimal, s.group] {
                         assert!(chars.get(&ch).is_some_and(|f| f.contains(&first)), "{first} ({family:?}) has no {:?}", ch);

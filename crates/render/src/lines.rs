@@ -31,7 +31,8 @@ use vello_cpu::kurbo::{self, Shape};
 use vello_cpu::peniko;
 use vello_cpu::{Pixmap, RenderContext, Resources};
 
-use crate::{MAX_DEVICE, Rendered};
+use crate::Rendered;
+use crate::node_checks::MAX_DEVICE;
 
 /// The most points a line holds: a run is cut into lines of at most this many, consecutive pieces
 /// sharing their joining point, so that a line's box stays tight for culling (a fill's rows are one
@@ -768,7 +769,7 @@ impl LineRenderer {
     /// Draw `picture` into a `width`×`height` image through `view` (document points to device
     /// pixels), as `style` says.
     pub fn render(&mut self, picture: &LinePicture, width: u32, height: u32, view: Affine, style: &LineStyle) -> Rendered {
-        let start = crate::now();
+        let start = crate::clock::now();
         let (w, h) = (width.clamp(1, u32::from(u16::MAX)) as u16, height.clamp(1, u32::from(u16::MAX)) as u16);
         let threads = self.threads;
         let mut ctx = match self.ctx.take() {
@@ -812,7 +813,7 @@ impl LineRenderer {
         let mut pm = Pixmap::new(w, h);
         ctx.render_with(&mut pm, &mut self.resources, vello_cpu::RasterizerSettings::default());
         self.ctx = Some(ctx);
-        self.stats.micros = crate::now().saturating_sub(start);
+        self.stats.micros = crate::clock::now().saturating_sub(start);
         Rendered { width: u32::from(w), height: u32::from(h), pixels: pm.data_as_u8_slice().to_vec() }
     }
 

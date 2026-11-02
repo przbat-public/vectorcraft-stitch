@@ -252,11 +252,15 @@ fn node_bytes(n: &Node, other: Option<&Node>) -> usize {
     if let Some(e) = n.extras_box() {
         b += ALLOC + size_of::<NodeExtras>();
         b += boxed(&e.mask) + boxed(&e.graph) + boxed(&e.shaper) + boxed(&e.attrs) + boxed(&e.slice) + boxed(&e.perspective);
-        b += boxed(&e.dimension) + boxed(&e.live_paint_gaps);
+        b += boxed(&e.dimension) + boxed(&e.live_paint_gaps) + boxed(&e.colorize);
         // VectorCraft Stitch: the object's embroidery settings.
         b += boxed(&e.embroidery) + e.embroidery.as_deref().map_or(0, crate::embroidery::object_bytes);
         b += e.trace.as_ref().map_or(0, |t| ALLOC + size_of::<Value>() + json_bytes(t));
         b += e.intertwine.as_deref().map_or(0, |a| ALLOC + size_of::<PathData>() + path_bytes(a));
+        if e.intertwine_tiers.capacity() > 0 {
+            b += ALLOC + e.intertwine_tiers.capacity() * size_of::<PathData>() + e.intertwine_tiers.iter().map(path_bytes).sum::<usize>();
+        }
+        b += e.symbol_overrides.capacity() * size_of::<crate::SymbolOverride>();
         b += e.objects_on_path.as_deref().map_or(0, |o| {
             ALLOC + size_of::<crate::objects_on_path::ObjectsOnPath>() + o.members.capacity() * size_of::<crate::objects_on_path::Member>()
         });

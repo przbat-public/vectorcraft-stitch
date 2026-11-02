@@ -80,8 +80,8 @@ pub fn stitch(id: &str, stroke: bool) -> String {
 }
 
 /// What a part sewn by the rule (Auto) is sewn as, in words after "Auto:": `sewn` as
-/// `embroidery.info` reports it, by `rule` (a stroke a brush or an effect reshapes is its outline,
-/// filled).
+/// `embroidery.info` reports it, by `rule` (a stroke drawn with a brush, or one painting off its
+/// path, is its outline, filled).
 pub fn sewn_as(sewn: &str, rule: Option<&str>) -> String {
     match (sewn, rule) {
         (_, Some("strokeOutlined")) => crate::et!("filled outline").to_string(),

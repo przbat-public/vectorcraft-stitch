@@ -1060,8 +1060,8 @@ pub(crate) fn part_rule(item: &AppearanceItem, bp: &BezPath, forced: Option<(Sty
     }
 }
 
-/// How the walk sews a stroke it outlined first (an expanded object's stroke a brush or an effect
-/// reshapes: a piece filled as the area it paints, with the stroke's settings, `forced` their
+/// How the walk sews a stroke it outlined first (an expanded object's stroke drawn with a brush:
+/// its brush's art, filled as the area it paints, with the stroke's settings, `forced` their
 /// style): as a fill is sewn, `StrokeOutlined` where nothing forces a style.
 pub(crate) fn outlined_rule(forced: Option<(Style, ForcedBy)>) -> (Style, Choice) {
     match forced {

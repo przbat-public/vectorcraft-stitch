@@ -173,3 +173,89 @@ fn a_picture_past_a_metre_needs_a_size() {
     let r = digitized(&mut s, json!({"width": 200})).unwrap();
     assert_eq!((&r["image"]["worked"], &r["image"]["limitedBy"]), (&json!([1500, 1000]), &json!("side")));
 }
+
+/// `r` written as `format` by the `image` crate, its pixels as they are (`kind` RGBA, 16 bits a
+/// channel, or grey with alpha).
+fn written(r: &Raster, format: image::ImageFormat, kind: &str) -> Vec<u8> {
+    let rgba = image::DynamicImage::ImageRgba8(image::RgbaImage::from_raw(r.width, r.height, r.rgba.clone()).unwrap());
+    let img = match kind {
+        "rgba16" => image::DynamicImage::ImageRgba16(rgba.to_rgba16()),
+        "grey" => image::DynamicImage::ImageLumaA8(rgba.to_luma_alpha8()),
+        _ => rgba,
+    };
+    let mut out = Vec::new();
+    img.write_to(&mut std::io::Cursor::new(&mut out), format).unwrap();
+    out
+}
+
+/// What a dry run found, for comparing two files of one picture: the colours and the areas' boxes.
+fn found(r: &Value) -> (Value, Vec<Value>) {
+    let colours = json!(r["colors"].as_array().unwrap().iter().map(|c| c["color"].clone()).collect::<Vec<_>>());
+    (colours, r["areas"].as_array().unwrap().iter().map(|a| a["box"].clone()).collect())
+}
+
+/// The same picture as a PNG of 16 bits a channel, a lossless WebP, a TIFF and a BMP is digitized
+/// exactly as its PNG is; as a GIF (its colours chosen by the GIF writer) and in greys with alpha
+/// it is digitized too.
+#[test]
+fn other_formats_are_digitized_as_the_png_is() {
+    let picture = logo(200, 100);
+    let params = json!({"colors": 3});
+    let mut s = placed("logo.png", &picture.encode_png()).unwrap();
+    let png = digitized(&mut s, params.clone()).unwrap();
+    for (name, format, kind) in [
+        ("logo16.png", image::ImageFormat::Png, "rgba16"),
+        ("logo.webp", image::ImageFormat::WebP, "rgba"),
+        ("logo.tif", image::ImageFormat::Tiff, "rgba"),
+        ("logo.bmp", image::ImageFormat::Bmp, "rgba"),
+    ] {
+        let mut s = placed(name, &written(&picture, format, kind)).unwrap_or_else(|| panic!("{name} isn't placed"));
+        let r = digitized(&mut s, params.clone()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert_eq!(found(&r), found(&png), "{name}");
+    }
+    for (name, format, kind) in [("logo.gif", image::ImageFormat::Gif, "rgba"), ("logo-grey.png", image::ImageFormat::Png, "grey")] {
+        let mut s = placed(name, &written(&picture, format, kind)).unwrap_or_else(|| panic!("{name} isn't placed"));
+        let r = digitized(&mut s, params.clone()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(r["areaCount"].as_u64().unwrap() >= 2, "{name}: {}", r["areas"]);
+    }
+}
+
+/// `jpeg` with an EXIF segment (APP1) right after its start of image, saying its orientation is
+/// `orientation` (tag 0x0112, a SHORT in IFD0, as the EXIF specification lays them out, in a
+/// big-endian TIFF structure).
+fn with_orientation(jpeg: &[u8], orientation: u16) -> Vec<u8> {
+    // The TIFF header (big-endian, IFD0 at offset 8), one entry, no next IFD.
+    let mut exif = b"Exif\0\0MM\0\x2a\0\0\0\x08".to_vec();
+    exif.extend_from_slice(&1u16.to_be_bytes());
+    exif.extend_from_slice(&0x0112u16.to_be_bytes());
+    exif.extend_from_slice(&3u16.to_be_bytes());
+    exif.extend_from_slice(&1u32.to_be_bytes());
+    exif.extend_from_slice(&orientation.to_be_bytes());
+    exif.extend_from_slice(&[0, 0]);
+    exif.extend_from_slice(&0u32.to_be_bytes());
+    let mut out = jpeg[..2].to_vec();
+    out.extend_from_slice(&[0xff, 0xe1]);
+    out.extend_from_slice(&u16::try_from(exif.len() + 2).unwrap().to_be_bytes());
+    out.extend(exif);
+    out.extend_from_slice(&jpeg[2..]);
+    out
+}
+
+/// A photo whose EXIF orientation turns it a quarter clockwise (orientation 6, a camera held
+/// upright) is digitized as it is seen, where the canvas shows it: stored 100 pixels wide and 200
+/// tall, orange above navy, it is seen 200 wide, the orange on the right.
+#[test]
+fn a_photo_turned_by_its_exif_orientation_is_digitized_as_seen() {
+    let stored = Raster::from_fn(100, 200, |_, y| if y < 100 { ORANGE } else { NAVY });
+    let mut s = placed("turned.jpg", &with_orientation(&jpeg(&stored), 6)).unwrap();
+    let r = digitized(&mut s, json!({"colors": 2, "background": "none"})).unwrap();
+    assert_eq!(r["image"]["pixels"], json!([200, 100]));
+    let bounds: Vec<f64> = r["image"]["bounds"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+    let middle = (bounds[0] + bounds[2]) / 2.0;
+    // The area nearest orange in colour, and its box.
+    let rgb = |hex: &str| (1..7).step_by(2).map(|k| i64::from_str_radix(&hex[k..k + 2], 16).unwrap()).collect::<Vec<_>>();
+    let far = |a: &Value| rgb(a["color"].as_str().unwrap()).iter().zip(ORANGE).map(|(c, o)| (c - i64::from(o)).pow(2)).sum::<i64>();
+    let orange = r["areas"].as_array().unwrap().iter().min_by_key(|a| far(a)).unwrap();
+    let left = orange["box"][0].as_f64().unwrap();
+    assert!((left - middle).abs() < 1.0, "the orange on the right half: {} in {bounds:?}", orange["box"]);
+}

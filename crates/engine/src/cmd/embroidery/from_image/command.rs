@@ -177,6 +177,16 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         ));
         traced = trace::traced(&w, settings, colors, trace::Palette::Limited)?;
     }
+    if traced.paths.len() > trace::MAX_TRACED_SHAPES {
+        return Err(bad(
+            C,
+            format!(
+                "the image traces as {} shapes, more than {}: raise `minArea`, lower `colors`, or crop the image",
+                traced.paths.len(),
+                trace::MAX_TRACED_SHAPES
+            ),
+        ));
+    }
     let trace_ms = since(started);
     vectorcraft_doc::cancel::check()?;
     vectorcraft_doc::cancel::progress(2, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
@@ -509,14 +519,25 @@ impl DigitizeJob {
             }
             None => return Err(bad(C, NOTHING_TO_MAKE)),
         };
+        let objects_ms = since(started);
+        let started = clock();
         let stats = match &made {
             Some((doc, m)) => stats_of(doc, m.group)?,
             None => Value::Null,
         };
         let stitches_ms = since(started);
         vectorcraft_doc::cancel::progress(DIGITIZE_STAGES, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
-        let reply =
-            reply_json(&d, ReplyOf { id: *target, settings, palette: *palette, listed: *listed, dry_run: *dry_run, stats, warnings, stitches_ms });
+        let of = ReplyOf {
+            id: *target,
+            settings,
+            palette: *palette,
+            listed: *listed,
+            dry_run: *dry_run,
+            stats,
+            warnings,
+            made_ms: [objects_ms, stitches_ms],
+        };
+        let reply = reply_json(&d, of);
         Ok(DigitizeFound { uid: *uid, original: original.clone(), made, reply, dry_run: *dry_run })
     }
 }
@@ -533,12 +554,13 @@ struct ReplyOf<'a> {
     dry_run: bool,
     stats: Value,
     warnings: Vec<String>,
-    stitches_ms: Option<f64>,
+    /// How long making the objects took, and planning their stitches (milliseconds).
+    made_ms: [Option<f64>; 2],
 }
 
 /// The command's reply for what `d` made (`created` null: [`apply`] fills it in).
 fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
-    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, stitches_ms } = of;
+    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms] } = of;
     let w = &d.working;
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
@@ -584,7 +606,7 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
         "warnings": warnings,
         "settings": settings.echo(),
         "table": table(),
-        "timings": {"image": d.timings[0], "trace": d.timings[1], "areas": d.timings[2], "shapes": d.timings[3], "stitches": stitches_ms},
+        "timings": {"image": d.timings[0], "trace": d.timings[1], "areas": d.timings[2], "shapes": d.timings[3], "objects": objects_ms, "stitches": stitches_ms},
     })
 }
 

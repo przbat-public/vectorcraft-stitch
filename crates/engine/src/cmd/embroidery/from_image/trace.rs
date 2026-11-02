@@ -19,14 +19,19 @@ use super::working::Working;
 use crate::cmd::bad;
 use crate::{EngineError, Result};
 
-/// The most anchor points a trace may make before it is refused (a photo traced finely makes
-/// millions): upstream Image Trace's own limit (`MAX_TRACE_ANCHORS`, 8,000,000; 2,000,000 on the
-/// web, where memory is tighter), repeated here because upstream keeps it in a module the fork
-/// can't reach.
-#[cfg(not(target_arch = "wasm32"))]
-pub(super) const MAX_ANCHORS: usize = 8_000_000;
-#[cfg(target_arch = "wasm32")]
+/// The most anchor points a trace may make before it is refused: upstream Image Trace's limit on
+/// the web (`MAX_TRACE_ANCHORS`, 2,000,000, where memory is tighter; 8,000,000 elsewhere), on every
+/// system here, so that an image is digitized on the desktop exactly when it is on the web
+/// (upstream keeps it in a module the fork can't reach). The real designs' artwork and the test
+/// logos trace in at most 2,476; noise of 1,500 pixels a side in 16 colours, in 6.7 million, the
+/// trace giving up a third of the way.
 pub(super) const MAX_ANCHORS: usize = 2_000_000;
+
+/// The most shapes a trace may make before it is refused, ahead of the region map and the rules,
+/// whose work grows with them. An estimate: the real designs' artwork and the test logos trace in
+/// at most 114 shapes, the specks of a JPEG among them; noise of 1,500 pixels a side in 16
+/// colours, in 1.3 million.
+pub(super) const MAX_TRACED_SHAPES: usize = 250_000;
 
 /// The area the trace keeps at least (square millimetres): a thread's footprint, a square as wide
 /// as the thread lies (0.4 mm for 40 wt, `plan::THREAD_WIDTH`): anything smaller can't be sewn as

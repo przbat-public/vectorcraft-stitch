@@ -1263,3 +1263,75 @@ fn delete_cut_path_and_join_treat_runs_as_stitches() {
     run(&mut s, "select.set", json!({"ids": [a]}));
     assert_eq!(said(s.execute("path.join", &json!({}))), super::needle_edits::ONE_RUN, "one run alone");
 }
+
+/// Every form `path.join` takes joins runs of stitches as Join Runs does, in sewing order, or
+/// refuses: none reverses a run. Upstream's `join` joins by the nearest ends when given `subpaths`,
+/// and by the ends named or direct-selected otherwise, any of which can reverse a path; the
+/// fork's hook sits ahead of each of those branches.
+#[test]
+fn no_form_of_join_reverses_a_run() {
+    // Two runs whose nearest ends are the first's start and the second's end: joined by them, one
+    // would be reversed.
+    let two = |s: &mut Session| {
+        let a = path_mm(s, &[(10.0, 10.0), (20.0, 10.0)], StitchRun::default());
+        let b = path_mm(s, &[(40.0, 30.0), (11.0, 11.0)], StitchRun::default());
+        (a, b)
+    };
+    let in_order = [(10.0, 10.0), (20.0, 10.0), (40.0, 30.0), (11.0, 11.0)];
+    let needle_points = |s: &Session, id: u64| -> Vec<(f64, f64)> { (0..needles::read(&node(s, id)).unwrap().len()).map(|k| at(s, id, k)).collect() };
+    // The ids given, with every `ends` and `subpaths` form.
+    let ends = ["first", "last"];
+    let mut forms = vec![json!({}), json!({"subpaths": [0, 0]})];
+    for x in ends {
+        for y in ends {
+            forms.push(json!({ "ends": [x, y] }));
+            forms.push(json!({ "ends": [x, y], "subpaths": [0, 0] }));
+        }
+    }
+    for form in &forms {
+        let mut s = blank();
+        let (a, b) = two(&mut s);
+        let mut params = form.clone();
+        params["ids"] = json!([a, b]);
+        match s.execute("path.join", &params) {
+            Ok(_) => assert_eq!(needle_points(&s, a), in_order, "{form}: in sewing order, never reversed"),
+            Err(e) => assert!(!e.to_string().is_empty(), "{form}: refused with a reason"),
+        }
+    }
+    // The selected paths, and the ends direct-selected (the first's start and the second's end).
+    let mut s = blank();
+    let (a, b) = two(&mut s);
+    run(&mut s, "select.set", json!({"ids": [a, b]}));
+    run(&mut s, "path.join", json!({}));
+    assert_eq!(needle_points(&s, a), in_order, "the selected paths");
+    let mut s = blank();
+    let (a, b) = two(&mut s);
+    run(&mut s, "select.anchors", json!({"id": a, "anchors": [[0, 0]], "mode": "set"}));
+    run(&mut s, "select.anchors", json!({"id": b, "anchors": [[0, 1]], "mode": "add"}));
+    match s.execute("path.join", &json!({})) {
+        Ok(_) => assert_eq!(needle_points(&s, a), in_order, "the ends direct-selected"),
+        Err(e) => assert!(!e.to_string().is_empty(), "the ends direct-selected: refused with a reason"),
+    }
+    // A run's own two ends direct-selected: one run alone is refused, never closed.
+    let mut s = blank();
+    let (a, _) = two(&mut s);
+    run(&mut s, "select.anchors", json!({"id": a, "anchors": [[0, 0], [0, 1]], "mode": "set"}));
+    assert!(s.execute("path.join", &json!({})).is_err(), "one run alone");
+    assert_eq!(needle_points(&s, a), in_order[..2], "the run as it was");
+    // One path of two runs (two subpaths), joined by `subpaths` with its id given twice.
+    let mut s = blank();
+    let mm = |(x, y): (f64, f64)| format!("{} {}", x * PT_PER_MM, y * PT_PER_MM);
+    let d = format!("M {} L {} M {} L {}", mm(in_order[0]), mm(in_order[1]), mm(in_order[2]), mm(in_order[3]));
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#c81e1e"}));
+    let c = run(&mut s, "path.create", json!({ "d": d }))["id"].as_u64().unwrap();
+    s.edit("Stitches", |d, _| {
+        let n = d.node_mut(NodeId(c)).unwrap();
+        n.extras_mut().embroidery =
+            Some(Box::new(vectorcraft_doc::embroidery::Embroidery { stitches: Some(StitchRun::default()), ..Default::default() }));
+        Ok(())
+    })
+    .unwrap();
+    let joined = s.execute("path.join", &json!({"ids": [c, c], "subpaths": [0, 1]}));
+    assert_eq!(needle_points(&s, c), in_order, "one path's runs, joined forwards or left as they were: {joined:?}");
+}

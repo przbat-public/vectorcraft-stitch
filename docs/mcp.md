@@ -6589,6 +6589,39 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   selection after it. One undo step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
   Edit is on ("not while Global Edit is on: stop Global Edit first").
+- `embroidery.digitizeImage {id?, dryRun?, offset?, limit?, regions?, outlines?, at?, …settings}` digitizes an image
+  (`id`, an image or an Image Trace object, whose source image it reads; default: the one object selected) into
+  embroidery objects, every threshold in millimetres (`embroidery.md` › Digitizing from an image). The settings:
+  `width`, `height` or `fit: [w, h]` (mm; default: the image as placed), `crop: [x0, y0, x1, y1]` (the image's own
+  pixels), `background` (`"corners"`, the default: transparency, or the colour three corners agree on; `"none"`;
+  `"#rrggbb"`), `mode` (`color`, `logo`, `grayscale`), `colors` (2 to the palette's threads, default 6),
+  `colorChoices: [{color, thread?: {palette, index}, mergeInto?, job?: "auto"|"fill"|"none"}]` (at most 256),
+  `minArea` (mm², default 1), `smoothing` and `corners` (0 to 100) and `overlap` (mm, 0 to 2, default 0.4); the
+  reply's `table` gives each setting's step, unit, range, default and its source. The image is worked at a copy of at
+  most 10 pixels a millimetre (fewer past 1,500 pixels a side, or where the image has fewer) and traced in its own
+  colours; each colour gets a thread of the document's palette, chosen together (CIEDE2000, flagged past ΔE 10; two
+  colours whose only thread within ΔE 10 is the same one are merged); the background is only what touches the
+  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than 1 mm and at least 2 mm long
+  stays), an island narrower than 4 mm is sewn over the area round it with no hole cut, and where two colours meet the
+  one sewn first reaches `overlap` under the one sewn after, only along the edge they share. Without `dryRun` it
+  creates the objects: one group in the image's place (named as the image is), in it a group for each colour block in
+  sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
+  its thread's own colour, embroidery settings set only where a colour's job asks (`fill`: `narrowAsSatin` 0; `none`:
+  not sewn); the image moves, with its id, to a new template layer below every layer, hidden and locked, scaled as the
+  design is. One undo step "Digitize Image", the new group selected; Nearest Connection is not run. More than 10,000
+  areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
+  {group, layer, objects, blocks} (null for a dry run), image: {id, pixels, decoded, crop, worked, pxPerMm, limitedBy,
+  size, scale, bounds, background}, colorCount, colors: [{color, background, sewn, job, thread, reason, alternatives,
+  area, areaCount, share, sewnShare, mergedInto, choice}], unusedChoices, areaCount, offset, truncated, areas: [{area,
+  at, color, thread, kind, sewn, size, widest, box, inside, sewnOver, joined, touches, grownUnder, outline, order}],
+  areaAt, doubledArea, traced, joined, leftOut, regions, stats, warnings, settings, table, timings}`: `stats` is what
+  `embroidery.stats {selectedOnly: true}` answers with the new group selected (null when nothing is made), a dry run's
+  as Create's. An area's `area` is its number in this reply's sewing order only; its key is `at` (the point deepest
+  inside it, in the image's own pixels) with its colour. `regions` (with `regions: true`) is each working pixel's area
+  number, two bytes little-endian in base64; `outline` (with `outlines: true`) an area's shape as sewn, an SVG path in
+  millimetres from the document's origin. An interface runs it off its thread through the job it is made of
+  (`Session::digitize_image_job`, `DigitizeJob::run`, `Session::apply_digitize_image`), which a document changed
+  meanwhile refuses.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

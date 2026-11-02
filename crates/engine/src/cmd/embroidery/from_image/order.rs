@@ -14,7 +14,7 @@
 //! the least nested, the largest). Each area keeps why it is where it is, and the areas it touches
 //! sewn before it, which the overlap grows under it.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::colours::Colours;
 use super::regions::Regions;
@@ -125,7 +125,7 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> O
         if let Some(b) = areas.get(a).and_then(|x| x.inside) {
             add(b, After::Inside);
         }
-        for (b, _) in regions.neighbours(a as u32) {
+        for &(b, _) in regions.neighbours(a as u32) {
             let b = b as usize;
             if line(a) && !line(b) {
                 add(b, After::Detail);
@@ -141,13 +141,27 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> O
     for &a in &order {
         taken[a] = Some(Taken::NotSewn);
     }
-    let mut done: BTreeSet<usize> = (0..n).filter(|&a| !sewn(a)).collect();
+    // How many of its rules each area still waits on, and the areas waiting on each.
+    let mut waiting: Vec<usize> = after.iter().map(Vec::len).collect();
+    let mut waited_on: Vec<Vec<usize>> = vec![Vec::new(); n];
+    for (a, rules) in after.iter().enumerate() {
+        for &(b, _) in rules {
+            if let Some(w) = waited_on.get_mut(b) {
+                w.push(a);
+            }
+        }
+    }
+    // The areas ready to be sewn, by key and by thread.
+    let mut ready = BTreeSet::new();
+    let mut ready_by_thread: BTreeMap<Option<usize>, BTreeSet<usize>> = BTreeMap::new();
+    for a in (0..n).filter(|&a| sewn(a) && waiting[a] == 0) {
+        ready.insert(key(a));
+        ready_by_thread.entry(thread(a)).or_default().insert(a);
+    }
     let mut current: Option<usize> = None;
     let mut last: Option<(u32, u32)> = None;
-    while done.len() < n {
-        let ready: Vec<usize> = (0..n).filter(|a| !done.contains(a) && after[*a].iter().all(|(b, _)| done.contains(b))).collect();
-        // The keys agree with every rule kept, so one area is always ready.
-        let Some(&first) = ready.iter().min_by_key(|&&a| key(a)) else { break };
+    // The keys agree with every rule kept, so an area is ready until every one is sewn.
+    while let Some(&(.., first)) = ready.first() {
         let distance = |a: usize| {
             let (x, y) = regions.areas.get(a).map_or((0, 0), |s| s.deepest);
             last.map_or(0u64, |(lx, ly)| {
@@ -155,16 +169,28 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> O
                 (dx * dx + dy * dy).unsigned_abs()
             })
         };
-        let same: Vec<usize> = ready.iter().copied().filter(|&a| current.is_some() && thread(a) == current).collect();
-        let (pick, how) = match same.iter().copied().min_by_key(|&a| (distance(a), a)) {
+        let same = current.and_then(|_| ready_by_thread.get(&current)).and_then(|r| r.iter().copied().min_by_key(|&a| (distance(a), a)));
+        let (pick, how) = match same {
             Some(a) => (a, Taken::SameThread),
             None => (first, Taken::NewThread),
         };
+        ready.remove(&key(pick));
+        if let Some(r) = ready_by_thread.get_mut(&thread(pick)) {
+            r.remove(&pick);
+        }
         current = thread(pick);
         last = regions.areas.get(pick).map(|s| s.deepest);
         taken[pick] = Some(how);
-        done.insert(pick);
         order.push(pick);
+        for &a in waited_on.get(pick).map_or(&[][..], Vec::as_slice) {
+            if let Some(w) = waiting.get_mut(a) {
+                *w = w.saturating_sub(1);
+                if *w == 0 {
+                    ready.insert(key(a));
+                    ready_by_thread.entry(thread(a)).or_default().insert(a);
+                }
+            }
+        }
     }
     let mut index: Vec<Option<usize>> = vec![None; n];
     for (i, &a) in order.iter().enumerate() {
@@ -175,7 +201,7 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> O
     let placed = (0..n)
         .map(|a| {
             let mut under: Vec<usize> =
-                regions.neighbours(a as u32).into_iter().map(|(b, _)| b as usize).filter(|&b| sewn(b) && sewn(a) && index[b] < index[a]).collect();
+                regions.neighbours(a as u32).iter().map(|&(b, _)| b as usize).filter(|&b| sewn(b) && sewn(a) && index[b] < index[a]).collect();
             under.sort_by_key(|&b| index[b]);
             Placed { index: index[a], taken: taken[a].unwrap_or(Taken::NewThread), after: after[a].clone(), under }
         })

@@ -1,12 +1,18 @@
 //! `embroidery.digitizeImage`: an image (or an Image Trace object's source image) digitized with
-//! the settings given, answered without changing anything (`dryRun`).
+//! the settings given, and made into embroidery objects (`super::create`), or answered without
+//! changing anything (`dryRun`).
 //!
 //! Its answer gives what a window shows: the working copy the image was measured at, the colours
-//! found with their threads, the areas to sew in their order, the warnings, the settings used with
-//! their defaults, and how long each stage took.
+//! found with their threads, the areas to sew in their order, the design's figures as
+//! `embroidery.stats` gives them, the warnings, the settings used with their defaults, and how long
+//! each stage took. It runs as a job ([`DigitizeJob`]), as Nearest Connection does: prepared on the
+//! document, run on any thread, applied to the document it was prepared on, so that a window's
+//! preview and the command make the same objects.
+
+use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::{ImageObject, NodeId, NodeKind};
+use vectorcraft_doc::{Document, ImageObject, NodeId, NodeKind};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::{Match, Palette, mismatched, shown_delta_e};
@@ -14,6 +20,7 @@ use vectorcraft_trace as tr;
 
 use super::background::{self, Background};
 use super::colours::{self, Colours};
+use super::create::{self, Made};
 use super::order::{self, Order};
 use super::overlap::{self, Shapes};
 use super::regions::Regions;
@@ -25,12 +32,15 @@ use crate::cmd::buildcmds::TRACE_NAME;
 use crate::{EngineError, Result, Session};
 
 /// What digitizing reports to a progress sink as it goes ([`vectorcraft_doc::cancel::progress`]):
-/// the stages done of [`STAGES`].
-pub(crate) const DIGITIZE_PROGRESS: &str = "digitizeImage";
+/// the stages done of [`DIGITIZE_STAGES`]; the stitches' plan reports its own progress as a plan's.
+pub const DIGITIZE_PROGRESS: &str = "digitizeImage";
 
 /// The stages a run goes through, as its progress counts them: the working copy, the trace, the
-/// colours and areas, the shapes.
-const STAGES: u64 = 4;
+/// colours and areas, the shapes, the objects and their stitches.
+pub const DIGITIZE_STAGES: u64 = 5;
+
+/// The undo step Create makes, as the command is named.
+const LABEL: &str = "Digitize Image";
 
 /// The most areas a design is made of: past them, digitizing is refused with advice (an untrusted
 /// image of noise makes hundreds of thousands). An estimate: the real designs' artwork has at most
@@ -133,7 +143,7 @@ pub(super) struct Digitized {
     pub(super) order: Order,
     pub(super) shapes: Shapes,
     pub(super) warnings: Vec<String>,
-    /// Each stage's time (milliseconds), none on the web.
+    /// The time of each stage it went through (milliseconds), none on the web.
     pub(super) timings: [Option<f64>; 4],
 }
 
@@ -141,7 +151,7 @@ pub(super) struct Digitized {
 /// copy, its background, the trace, the colours and their threads, the areas after the rules, and
 /// the order they are sewn in. A cancel stops it between stages (and between the trace's).
 pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, palette: Palette) -> Result<Digitized> {
-    vectorcraft_doc::cancel::progress(0, STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(0, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let w = working::prepare(image, bytes, settings)?;
     let found = match settings.background {
@@ -151,7 +161,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     };
     let image_ms = since(started);
     vectorcraft_doc::cancel::check()?;
-    vectorcraft_doc::cancel::progress(1, STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(1, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     // A background colour takes one of the trace's colours: the design keeps the colours asked.
     let colors = settings.colors + u32::from(matches!(found, Background::Colour(_)));
@@ -169,7 +179,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     }
     let trace_ms = since(started);
     vectorcraft_doc::cancel::check()?;
-    vectorcraft_doc::cancel::progress(2, STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(2, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let traced_background = colours::background_colour(&traced.palette, found);
     if matches!(found, Background::Colour(_)) && traced_background.is_none() {
@@ -204,7 +214,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     }
     let order = order::ordered(&areas.areas, &areas.regions, &colours);
     let colors_ms = since(started);
-    vectorcraft_doc::cancel::progress(3, STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(3, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm)?;
     if shapes.skipped {
@@ -217,7 +227,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         warnings.push(format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed));
     }
     let shapes_ms = since(started);
-    vectorcraft_doc::cancel::progress(STAGES, STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(4, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     if traced.paths.is_empty() {
         warnings.push("nothing in the image was traced: it is empty or transparent".into());
     }
@@ -323,8 +333,8 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 .areas
                 .regions
                 .neighbours(a as u32)
-                .into_iter()
-                .filter_map(|(o, edge)| {
+                .iter()
+                .filter_map(|&(o, edge)| {
                     let o = o as usize;
                     Some(json!({"area": number(o)?, "edge": hundredths(f64::from(edge) / px), "under": placed.under.contains(&o)}))
                 })
@@ -394,43 +404,156 @@ fn area_at(d: &Digitized, at: Point) -> Option<usize> {
     d.order.placed.get(a as usize).and_then(|placed| placed.index).map(|i| i + 1)
 }
 
-/// `embroidery.digitizeImage`.
-pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> Result<Value> {
-    let o = super::super::object(p, C)?;
-    let palette = super::super::thread_palette(&s.doc()?.doc);
-    let settings = Settings::from_params(&o, palette)?;
-    if !flag(&o, "dryRun")? {
-        return Err(bad(C, "give `dryRun: true`: digitizing answers what it would make, and creates nothing yet"));
+/// What a reply lists besides the design: the stretch of areas, whether the region map and the
+/// outlines are given, and the point whose area is asked.
+#[derive(Clone, Copy, Debug)]
+struct Listed {
+    offset: usize,
+    limit: usize,
+    regions: bool,
+    outlines: bool,
+    at: Option<Point>,
+}
+
+/// Digitizing asked for, ready to run on any thread ([`DigitizeJob::run`]): the document as it was
+/// (its uid and snapshot), the image (`target`, an image or an Image Trace object) and its file,
+/// the settings in the document's palette, what the reply lists, and whether it only answers.
+pub struct DigitizeJob {
+    uid: u64,
+    original: Arc<Document>,
+    target: NodeId,
+    image: ImageObject,
+    bytes: Arc<Vec<u8>>,
+    settings: Settings,
+    palette: Palette,
+    listed: Listed,
+    dry_run: bool,
+}
+
+/// What a run made ([`DigitizeJob::run`]), to apply to the document it was made of
+/// ([`Session::apply_digitize_image`]): the document with the objects made and what was made
+/// (`None`: nothing to make, which only a dry run answers), and the reply.
+pub struct DigitizeFound {
+    uid: u64,
+    original: Arc<Document>,
+    made: Option<(Document, Made)>,
+    reply: Value,
+    dry_run: bool,
+}
+
+impl DigitizeFound {
+    /// The document with the objects made, as Create would leave it (the new group selected), for
+    /// a preview: `None` when there is nothing to make.
+    pub fn document(&self) -> Option<(&Document, NodeId)> {
+        self.made.as_ref().map(|(d, m)| (d, m.group))
     }
-    let offset = count(&o, "offset", 0, usize::MAX)?;
-    let limit = count(&o, "limit", AREAS_LISTED, MAX_AREAS_LISTED)?;
-    let with_regions = flag(&o, "regions")?;
-    let with_outlines = flag(&o, "outlines")?;
-    let at = point(&o)?;
-    let (id, image) = target(s, &o)?;
-    let bytes = s
-        .doc()?
-        .doc
-        .images
-        .get(&image.key)
-        .map(|b| std::sync::Arc::clone(&b.bytes))
-        .ok_or_else(|| bad(C, format!("the image's data `{}` is missing", image.key)))?;
-    let d = digitized(&image, &bytes, &settings, palette)?;
+
+    /// The reply the command gives.
+    pub fn reply(&self) -> &Value {
+        &self.reply
+    }
+}
+
+/// The key the read commands take to plan the selection alone, and `embroidery.stats`, whose reply
+/// the dry run gives.
+const SELECTED_ONLY: &str = "selectedOnly";
+const STATS: &str = "embroidery.stats";
+
+/// What `embroidery.stats {selectedOnly: true}` answers for `doc` with `group` selected: the plan
+/// of the group alone, in its layers, made afresh by the same code (the export's plan, which a
+/// planning service gives too).
+fn stats_of(doc: &Document, group: NodeId) -> Result<Value> {
+    let ask = super::super::read_params(STATS, &json!({ SELECTED_ONLY: true }))?;
+    let mut st = crate::DocState::new(doc.clone(), None);
+    st.selection.set([group]);
+    let picked = super::super::to_plan(&st, ask.selected_only)?;
+    let plan = super::super::service::plan_afresh(&picked, &ask.opts).map_err(super::super::PlanError::error)?;
+    super::super::reply(ask.read, &plan, &picked, &ask.opts)
+}
+
+/// The job `p` asks for on the active document: the params checked, the image and its file taken.
+fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
+    let o = super::super::object(p, C)?;
+    let st = s.doc()?;
+    let palette = super::super::thread_palette(&st.doc);
+    let settings = Settings::from_params(&o, palette)?;
+    let dry_run = flag(&o, "dryRun")?;
+    let listed = Listed {
+        offset: count(&o, "offset", 0, usize::MAX)?,
+        limit: count(&o, "limit", AREAS_LISTED, MAX_AREAS_LISTED)?,
+        regions: flag(&o, "regions")?,
+        outlines: flag(&o, "outlines")?,
+        at: point(&o)?,
+    };
+    let (target, image) = target(s, &o)?;
+    let bytes =
+        st.doc.images.get(&image.key).map(|b| Arc::clone(&b.bytes)).ok_or_else(|| bad(C, format!("the image's data `{}` is missing", image.key)))?;
+    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run })
+}
+
+impl DigitizeJob {
+    /// Digitizing, on the document as it was: the image digitized, its objects made on a copy and
+    /// planned for their figures. Any thread runs it; inside a [`vectorcraft_doc::cancel::scope`],
+    /// a cancel stops it between stages or inside one (an error then, nothing made).
+    pub fn run(&self) -> Result<DigitizeFound> {
+        let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run } = self;
+        let d = digitized(image, bytes, settings, *palette)?;
+        let started = clock();
+        let mut doc = Document::clone(original);
+        let mut warnings = d.warnings.clone();
+        let made = match create::made(&mut doc, *target, &d, *palette)? {
+            Some(m) => Some((doc, m)),
+            None if *dry_run => {
+                warnings.push(NOTHING_TO_MAKE.into());
+                None
+            }
+            None => return Err(bad(C, NOTHING_TO_MAKE)),
+        };
+        let stats = match &made {
+            Some((doc, m)) => stats_of(doc, m.group)?,
+            None => Value::Null,
+        };
+        let stitches_ms = since(started);
+        vectorcraft_doc::cancel::progress(DIGITIZE_STAGES, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+        let reply =
+            reply_json(&d, ReplyOf { id: *target, settings, palette: *palette, listed: *listed, dry_run: *dry_run, stats, warnings, stitches_ms });
+        Ok(DigitizeFound { uid: *uid, original: original.clone(), made, reply, dry_run: *dry_run })
+    }
+}
+
+/// Said when every area of the image is its background.
+const NOTHING_TO_MAKE: &str = "the image makes nothing to sew: every area of it is its background (give `background: \"none\"` to sew it all)";
+
+/// What a reply is made of besides what digitizing made.
+struct ReplyOf<'a> {
+    id: NodeId,
+    settings: &'a Settings,
+    palette: Palette,
+    listed: Listed,
+    dry_run: bool,
+    stats: Value,
+    warnings: Vec<String>,
+    stitches_ms: Option<f64>,
+}
+
+/// The command's reply for what `d` made (`created` null: [`apply`] fills it in).
+fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
+    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, stitches_ms } = of;
     let w = &d.working;
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
     let unused: Vec<Value> = d.colours.unused.iter().map(|&i| json!({"choice": i, "reason": "noSuchColor"})).collect();
-    let areas = areas_json(&d, palette, offset, limit, with_outlines);
+    let areas = areas_json(d, palette, listed.offset, listed.limit, listed.outlines);
     let area_count = d.order.sewn.len();
-    let mut warnings = d.warnings.clone();
     if d.areas.joined > 0 {
         warnings.push(format!("{} areas smaller than {} mm² joined their neighbours", d.areas.joined, settings.min_area));
     }
     if d.areas.dropped > 0 {
         warnings.push(format!("{} areas smaller than {} mm² had nothing to join and were left out", d.areas.dropped, settings.min_area));
     }
-    Ok(json!({
-        "dryRun": true,
+    json!({
+        "dryRun": dry_run,
+        "created": Value::Null,
         "image": {
             "id": id.0,
             "pixels": [w.image_px.0, w.image_px.1],
@@ -448,18 +571,69 @@ pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> 
         "colors": colors_json(&d.colours, palette, px_per_mm2, frame_px),
         "unusedChoices": unused,
         "areaCount": area_count,
-        "offset": offset,
-        "truncated": offset.saturating_add(areas.len()) < area_count,
+        "offset": listed.offset,
+        "truncated": listed.offset.saturating_add(areas.len()) < area_count,
         "areas": areas,
-        "areaAt": at.and_then(|p| area_at(&d, p)),
+        "areaAt": listed.at.and_then(|p| area_at(d, p)),
         "traced": {"paths": d.traced.paths.len(), "colors": d.traced.palette.len()},
         "doubledArea": hundredths(d.shapes.doubled_px / px_per_mm2),
         "joined": d.areas.joined,
         "leftOut": d.areas.dropped,
-        "regions": if with_regions { regions_json(&d) } else { Value::Null },
+        "regions": if listed.regions { regions_json(d) } else { Value::Null },
+        "stats": stats,
         "warnings": warnings,
         "settings": settings.echo(),
         "table": table(),
-        "timings": {"image": d.timings[0], "trace": d.timings[1], "areas": d.timings[2], "shapes": d.timings[3]},
-    }))
+        "timings": {"image": d.timings[0], "trace": d.timings[1], "areas": d.timings[2], "shapes": d.timings[3], "stitches": stitches_ms},
+    })
+}
+
+/// What `found` made applied to its document as one undo step (the new group selected), unless it
+/// is a dry run, and the reply: refused when the document changed since the job took it (it was
+/// made of an earlier one, so nothing is applied).
+fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
+    let DigitizeFound { uid, original, made, mut reply, dry_run } = found;
+    if dry_run {
+        return Ok(reply);
+    }
+    let Some((doc, made)) = made else { return Err(bad(C, NOTHING_TO_MAKE)) };
+    let st = s.doc()?;
+    if st.uid != uid || !Arc::ptr_eq(&st.doc, &original) {
+        return Err(bad(C, "the document changed while the image was digitized: nothing was made"));
+    }
+    s.edit(LABEL, |d, sel| {
+        *d = doc;
+        sel.set([made.group]);
+        Ok(())
+    })?;
+    reply["created"] = json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks});
+    Ok(reply)
+}
+
+/// `embroidery.digitizeImage`: prepared, run and applied in one go ([`DigitizeJob`]).
+pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> Result<Value> {
+    let job = prepare(s, p)?;
+    let found = job.run()?;
+    apply(s, found)
+}
+
+impl Session {
+    /// Digitizing on the active document as `embroidery.digitizeImage {params}` takes them, ready
+    /// to run off the interface thread ([`DigitizeJob::run`]); what it makes is applied with
+    /// [`Session::apply_digitize_image`]. The command runs the three in one go.
+    pub fn digitize_image_job(&self, p: &Value) -> Result<DigitizeJob> {
+        prepare(self, p)
+    }
+
+    /// Whether what a run made is of the active document as it is now: the one it was made of,
+    /// unchanged since.
+    pub fn digitize_image_current(&self, found: &DigitizeFound) -> bool {
+        self.doc().is_ok_and(|st| st.uid == found.uid && Arc::ptr_eq(&st.doc, &found.original))
+    }
+
+    /// What a run made applied, as the command applies it (one undo step "Digitize Image"), and the
+    /// command's reply: refused when the document changed meanwhile.
+    pub fn apply_digitize_image(&mut self, found: DigitizeFound) -> Result<Value> {
+        apply(self, found)
+    }
 }

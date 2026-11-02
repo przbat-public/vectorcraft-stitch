@@ -76,8 +76,11 @@ pub(super) struct Working {
     /// How much larger the design is than the crop as placed (1: as placed).
     pub(super) scale: f64,
     /// A working pixel's coordinates to the document's (points): through the image's own pixels
-    /// and its transform, then scaled about the crop's centre by [`Working::scale`].
+    /// and its transform, then [`Working::scaled`].
     pub(super) to_doc: Affine,
+    /// The design's scaling on the page: about the crop's centre by [`Working::scale`]. The image
+    /// moved under the design is scaled by it too.
+    pub(super) scaled: Affine,
     /// A working pixel's coordinates to the image's own pixels: where a point keys an area.
     pub(super) to_image: Affine,
     /// The crop, in the image's own pixels.
@@ -177,7 +180,19 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
         Affine::new([f64::from(cw) / f64::from(ww) / sx, 0.0, 0.0, f64::from(ch) / f64::from(wh) / sy, f64::from(dx0) / sx, f64::from(dy0) / sy]);
     let centre = xf * Point::new(f64::from(x0 + x1) / 2.0, f64::from(y0 + y1) / 2.0);
     let scaled = Affine::translate(centre.to_vec2()) * Affine::scale(scale) * Affine::translate(-centre.to_vec2());
-    Ok(Working { raster, px_per_mm, limit, size_mm, scale, to_doc: scaled * xf * to_image, to_image, crop, image_px: (iw, ih), decoded_px: (dw, dh) })
+    Ok(Working {
+        raster,
+        px_per_mm,
+        limit,
+        size_mm,
+        scale,
+        to_doc: scaled * xf * to_image,
+        scaled,
+        to_image,
+        crop,
+        image_px: (iw, ih),
+        decoded_px: (dw, dh),
+    })
 }
 
 impl Working {

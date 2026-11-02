@@ -255,8 +255,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         if stats.touches_edge || stats.touches_clear {
             continue;
         }
-        let around = regions.neighbours(a as u32);
-        if let [(b, _)] = around.as_slice() {
+        if let [(b, _)] = regions.neighbours(a as u32) {
             let b = *b as usize;
             let narrow = stats.widest_px < island_px;
             let sewn_under = areas.get(b).and_then(|o| colours.rows.get(o.row)).is_some_and(super::colours::Colour::sewn);

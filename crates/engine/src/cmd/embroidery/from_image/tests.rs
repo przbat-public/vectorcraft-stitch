@@ -236,17 +236,16 @@ fn settings_are_checked_against_their_rows() {
     assert_eq!(Settings::from_params(&serde_json::Map::new(), Palette::Pec).unwrap().colors, super::settings::COLORS);
 }
 
-/// Without `dryRun` it creates nothing yet, and says so; anything but an image, or no image chosen,
-/// is refused with what to do.
+/// Anything but an image, or no image chosen, is refused with what to do.
 #[test]
 fn only_an_image_is_digitized() {
     let mut s = blank();
     assert!(refused(&mut s, json!({})).contains("select an image"));
     let id = s.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 10, "height": 10})).unwrap()["id"].clone();
     assert!(refused(&mut s, json!({"id": id})).contains("not an image"));
+    let err = s.execute("embroidery.digitizeImage", &json!({"id": id, "dryRun": "yes"})).unwrap_err().to_string();
+    assert!(err.contains("true or false"), "{err}");
     let picture = image(&mut s, &flat(10, 10, [0, 0, 0, 255]), 0.1);
-    let err = s.execute("embroidery.digitizeImage", &json!({"id": picture.0})).unwrap_err().to_string();
-    assert!(err.contains("dryRun"), "{err}");
     // An Image Trace object digitizes its source image.
     s.execute("imageTrace.make", &json!({"id": picture.0, "preset": "6 Colors"})).unwrap();
     let traced = s.doc().unwrap().selection.objects[0];

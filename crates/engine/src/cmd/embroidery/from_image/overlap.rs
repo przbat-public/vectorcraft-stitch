@@ -13,6 +13,8 @@
 //! upper one) and `expand` (growth all round, details and the outline too) are not used: the visible
 //! edges stay where the picture has them.
 
+use std::collections::BTreeMap;
+
 use vectorcraft_geom::{FillRule, PathData};
 use vectorcraft_pathops::{trap_band, try_unite_all_with};
 
@@ -29,9 +31,10 @@ const PRECISION_PX: f64 = vectorcraft_pathops::DEFAULT_PRECISION;
 const SAME_BOTH_WAYS: f64 = 1.0;
 
 /// The most edges between two sewn areas the overlap grows along: past them it is left out, with a
-/// warning (each is a path operation, and an untrusted image of noise has hundreds of thousands).
-/// An estimate.
-pub(super) const MAX_OVERLAP_EDGES: usize = 20_000;
+/// warning. An estimate: the real designs' artwork and the test logos have at most 43 (a dry run of
+/// them takes at most half a second in all), a busy logo of some hundreds of areas a few hundred,
+/// while an untrusted image of noise has tens of thousands, a path operation a few for each.
+pub(super) const MAX_OVERLAP_EDGES: usize = 2_000;
 
 /// The shapes of a digitized image's areas.
 pub(super) struct Shapes {
@@ -116,11 +119,18 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
             vectorcraft_doc::cancel::check()?;
             let Some(later) = grown_under.get(a).filter(|l| !l.is_empty()) else { continue };
             let Some(base) = own.get(a) else { continue };
-            let mut strips: Vec<PathData> = Vec::new();
+            // The neighbours it grows under, by how far it reaches: as far as asked, or half as wide
+            // as a thin one. Areas never overlap, so one strip reaches into all those of one width
+            // at once, a path operation a width rather than a neighbour.
+            let mut by_width: BTreeMap<u64, PathData> = BTreeMap::new();
             for &b in later {
                 let (Some(into), Some(stats)) = (own.get(b), areas.regions.areas.get(b)) else { continue };
                 let width = overlap_px.min(stats.widest_px / 2.0);
-                let strip = trap_band(base, FillRule::NonZero, into, FillRule::NonZero, width, SAME_BOTH_WAYS, PRECISION_PX);
+                by_width.entry(width.to_bits()).or_default().subpaths.extend(into.subpaths.iter().cloned());
+            }
+            let mut strips: Vec<PathData> = Vec::new();
+            for (width, into) in &by_width {
+                let strip = trap_band(base, FillRule::NonZero, into, FillRule::NonZero, f64::from_bits(*width), SAME_BOTH_WAYS, PRECISION_PX);
                 if !strip.is_empty() {
                     doubled_px += area(&strip);
                     strips.push(strip);

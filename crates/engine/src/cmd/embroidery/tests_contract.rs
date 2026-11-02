@@ -10,7 +10,7 @@ use super::*;
 /// `v`'s shape: an object's keys (sorted) each with its value's shape, an array's items' shapes
 /// (each different one once, sorted, split by `|`), a scalar's type (`int`, `float`, `string`,
 /// `bool`, `null`).
-fn shape(v: &Value) -> String {
+pub(super) fn shape(v: &Value) -> String {
     match v {
         Value::Null => "null".into(),
         Value::Bool(_) => "bool".into(),

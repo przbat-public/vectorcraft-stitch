@@ -62,6 +62,8 @@ pub(super) struct Regions {
     pub(super) areas: Vec<AreaStats>,
     /// The edge two areas share (pixel edges), each pair once, smaller number first.
     pub(super) borders: BTreeMap<(u32, u32), u32>,
+    /// Each area's neighbours by number, with the edge each shares: [`Regions::borders`] by area.
+    adjacent: Vec<Vec<(u32, u32)>>,
 }
 
 /// The straight pieces of `path`'s outline, each `(from, to)`, flattened.
@@ -316,7 +318,19 @@ impl Regions {
             a.widest_px = 2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 };
             a.deepest = (x as u32, y as u32);
         }
-        Self { w, h, labels, areas, borders }
+        let mut adjacent: Vec<Vec<(u32, u32)>> = vec![Vec::new(); count];
+        for (&(a, b), &n) in &borders {
+            if let Some(v) = adjacent.get_mut(a as usize) {
+                v.push((b, n));
+            }
+            if let Some(v) = adjacent.get_mut(b as usize) {
+                v.push((a, n));
+            }
+        }
+        for v in &mut adjacent {
+            v.sort_unstable();
+        }
+        Self { w, h, labels, areas, borders, adjacent }
     }
 
     /// The area under pixel `(x, y)`, if any.
@@ -327,19 +341,8 @@ impl Regions {
         self.labels.get(y as usize * self.w as usize + x as usize).copied().filter(|&l| l != NONE)
     }
 
-    /// The areas area `a` touches, each with the edge they share (pixel edges).
-    pub(super) fn neighbours(&self, a: u32) -> Vec<(u32, u32)> {
-        self.borders
-            .iter()
-            .filter_map(|(&(x, y), &n)| {
-                if x == a {
-                    Some((y, n))
-                } else if y == a {
-                    Some((x, n))
-                } else {
-                    None
-                }
-            })
-            .collect()
+    /// The areas area `a` touches, by number, each with the edge they share (pixel edges).
+    pub(super) fn neighbours(&self, a: u32) -> &[(u32, u32)] {
+        self.adjacent.get(a as usize).map_or(&[], Vec::as_slice)
     }
 }

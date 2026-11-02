@@ -20,6 +20,7 @@
 //! - [`rules`]: the smallest area (long thin lines kept below it), and islands sewn over the area
 //!   round them;
 //! - [`order`]: the order the areas are sewn in;
+//! - [`overlap`]: the shapes they are sewn as, each grown under the neighbours sewn after it;
 //! - [`command`]: `embroidery.digitizeImage` and its answer.
 //!
 //! No upstream file is hooked: the trace crate is called as any caller would, and the command is
@@ -29,6 +30,7 @@ mod background;
 mod colours;
 mod command;
 mod order;
+mod overlap;
 mod regions;
 mod rules;
 mod settings;
@@ -43,3 +45,5 @@ mod tests;
 mod tests_areas;
 #[cfg(test)]
 mod tests_colours;
+#[cfg(test)]
+mod tests_overlap;

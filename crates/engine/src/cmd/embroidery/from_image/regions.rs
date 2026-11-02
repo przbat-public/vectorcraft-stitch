@@ -45,7 +45,7 @@ pub(super) struct AreaStats {
     /// Whether it touches transparency (a pixel in no area beside one of its own).
     pub(super) touches_clear: bool,
     /// Its widest inscribed width (pixels): twice the distance from its deepest pixel to its edge,
-    /// to about a pixel.
+    /// and a pixel more when its middle lies between two pixels as deep; to about a pixel on a slant.
     pub(super) widest_px: f64,
     /// Its deepest pixel: the farthest from its edge, the first in scan order of those as deep.
     pub(super) deepest: (u32, u32),
@@ -304,11 +304,17 @@ impl Regions {
                 *best = (d2[i], i);
             }
         }
-        for (a, (d, i)) in areas.iter_mut().zip(deepest) {
-            if d >= 0.0 {
-                a.widest_px = 2.0 * (d.sqrt() + 0.5);
-                a.deepest = ((i % wu) as u32, (i / wu) as u32);
+        for (l, (a, (d, i))) in areas.iter_mut().zip(deepest).enumerate() {
+            if d < 0.0 {
+                continue;
             }
+            let (x, y) = (i % wu, i / wu);
+            // Its middle between two pixels as deep (an even width): a pixel wider than either's
+            // own distance says.
+            let beside = [(x + 1 < wu).then(|| i + 1), (y + 1 < hu).then(|| i + wu)];
+            let even = beside.into_iter().flatten().any(|j| labels.get(j).is_some_and(|&o| o as usize == l) && d2.get(j) == Some(&d));
+            a.widest_px = 2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 };
+            a.deepest = (x as u32, y as u32);
         }
         Self { w, h, labels, areas, borders }
     }

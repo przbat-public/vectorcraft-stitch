@@ -116,6 +116,17 @@ pub(super) const SMOOTHING: f64 = 50.0;
 /// Corners of 75, a corner at a turn of 49° or more.
 pub(super) const CORNERS: f64 = 75.0;
 
+/// How far the colour sewn first reaches under the one sewn after it, where they meet
+/// (millimetres), unless given: the project owner's choice (2026-11-01, „0,4 mm (polecam)”). One
+/// fill row (0.38 mm, `plan::FILL_SPACING`), the overlap a fill's own regions get, rounded to the
+/// formats' 0.1 mm; it covers the bare wedges of up to 0.35 mm the planner leaves near an edge
+/// square to its rows, and lies between Embird's 0.3 mm example and Wilcom's 0.5 mm default for
+/// pieces cut apart.
+pub(super) const OVERLAP_MM: f64 = 0.4;
+
+/// The range of the overlap (millimetres): none to as much as a fill may grow (`expand`'s 2 mm).
+pub(super) const OVERLAP_RANGE_MM: (f64, f64) = (0.0, super::super::options::MAX_EXPAND);
+
 /// The range of smoothing and corners: upstream's sliders' 0 to 100.
 pub(super) const PERCENT_RANGE: (f64, f64) = (0.0, 100.0);
 
@@ -182,7 +193,7 @@ pub(super) enum BackgroundSetting {
 }
 
 /// Every setting, in the window's order.
-pub(super) const SETTINGS: [Setting; 11] = [
+pub(super) const SETTINGS: [Setting; 12] = [
     Setting {
         name: "width",
         key: "width",
@@ -242,6 +253,13 @@ pub(super) const SETTINGS: [Setting; 11] = [
         kind: Kind::Number { unit: "", range: PERCENT_RANGE, default: Some(CORNERS) },
         source: "upstream Image Trace's default Corners",
     },
+    Setting {
+        name: "overlap",
+        key: "overlap",
+        step: Step::Shapes,
+        kind: Kind::Number { unit: "mm", range: OVERLAP_RANGE_MM, default: Some(OVERLAP_MM) },
+        source: "the project owner's choice (2026-11-01): one fill row, rounded to the formats' 0.1 mm",
+    },
 ];
 
 // Every file key is its setting's name in snake_case.
@@ -254,9 +272,9 @@ const _: () = {
 };
 
 /// The keys the command takes besides the settings: the image (`id`), whether it only answers, the
-/// areas listed (`offset`, `limit`), whether the region map is given (`regions`), and a point whose
-/// area is asked (`at`).
-pub(super) const OTHER_KEYS: [&str; 6] = ["id", "dryRun", "offset", "limit", "regions", "at"];
+/// areas listed (`offset`, `limit`), whether the region map and the areas' outlines are given
+/// (`regions`, `outlines`), and a point whose area is asked (`at`).
+pub(super) const OTHER_KEYS: [&str; 7] = ["id", "dryRun", "offset", "limit", "regions", "outlines", "at"];
 
 /// How large the design is made.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -308,6 +326,8 @@ pub(super) struct Settings {
     pub(super) min_area: f64,
     pub(super) smoothing: f64,
     pub(super) corners: f64,
+    /// Millimetres.
+    pub(super) overlap: f64,
 }
 
 /// The row of setting `name`. Every name the settings read is in [`SETTINGS`] (a test holds it),
@@ -497,6 +517,7 @@ impl Settings {
             min_area: number(o, "minArea")?.unwrap_or(MIN_AREA_MM2),
             smoothing: number(o, "smoothing")?.unwrap_or(SMOOTHING),
             corners: number(o, "corners")?.unwrap_or(CORNERS),
+            overlap: number(o, "overlap")?.unwrap_or(OVERLAP_MM),
         })
     }
 
@@ -530,6 +551,7 @@ impl Settings {
             "minArea": self.min_area,
             "smoothing": self.smoothing,
             "corners": self.corners,
+            "overlap": self.overlap,
         })
     }
 }

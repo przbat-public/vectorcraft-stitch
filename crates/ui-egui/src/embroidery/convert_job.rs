@@ -275,7 +275,11 @@ mod tests {
         let (mut app, a) = app();
         let steps = undo_steps(&app);
         start(&mut app, &json!({"ids": [a]}));
-        assert_eq!(app.ui.status, "Converting to manual stitches… 0% · Esc stops it");
+        // The plan runs on its own thread from the start, so how far it has got when the status bar
+        // first says so is the scheduler's: any whole percent up to the most said before it is done
+        // (two squares can be at 99 % already).
+        let percent = app.ui.status.strip_prefix("Converting to manual stitches… ").and_then(|s| s.strip_suffix("% · Esc stops it"));
+        assert!(percent.and_then(|p| p.parse::<u64>().ok()).is_some_and(|p| p <= MOST_BEFORE_DONE), "{}", app.ui.status);
         let escape = Event::Key { key: Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
         let mut out = ctx.run_ui(egui::RawInput { events: vec![escape], ..Default::default() }, |ui| app.logic(ui.ctx()));
         out.textures_delta.clear();

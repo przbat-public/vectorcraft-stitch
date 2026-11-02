@@ -13,8 +13,13 @@
 //! - [`background`]: what lies round the art, found at the image's corners;
 //! - [`trace`]: upstream's Image Trace (`vectorcraft_trace`, through its public API) with the fixed
 //!   settings digitizing needs: the image's own colours, abutting shapes;
+//! - [`regions`]: the traced areas drawn back into the working copy's pixels, an area for each
+//!   pixel, with which areas touch which, how wide each is, and the point that keys it;
 //! - [`colours`]: each colour matched to a thread of the document's palette, merged, or left
 //!   unsewn;
+//! - [`rules`]: the smallest area (long thin lines kept below it), and islands sewn over the area
+//!   round them;
+//! - [`order`]: the order the areas are sewn in;
 //! - [`command`]: `embroidery.digitizeImage` and its answer.
 //!
 //! No upstream file is hooked: the trace crate is called as any caller would, and the command is
@@ -23,6 +28,9 @@
 mod background;
 mod colours;
 mod command;
+mod order;
+mod regions;
+mod rules;
 mod settings;
 mod trace;
 mod working;
@@ -31,5 +39,7 @@ pub(super) use command::digitize_image;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_areas;
 #[cfg(test)]
 mod tests_colours;

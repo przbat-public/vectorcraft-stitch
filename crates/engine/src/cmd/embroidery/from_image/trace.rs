@@ -6,8 +6,11 @@
 //!   up to 2.3 times the stitches on the real designs' artwork, measured on 2026-11-02);
 //! - filled areas only, and no gradients, shapes or grouping, which embroidery doesn't sew.
 //!
-//! Noise, the one threshold of the trace that is an area, is the smallest area turned into the
-//! working copy's pixels ([`area_px`]).
+//! Noise, the one threshold of the trace that is an area, keeps what a thread's footprint covers
+//! ([`TRACE_AREA_MM2`], turned into the working copy's pixels by [`area_px`]), or the smallest area
+//! when that is smaller: the smallest area itself is applied to the traced areas afterwards
+//! (`super::rules`), where a long thin line below it can be kept, which the trace's noise removal
+//! would merge away before any line is looked for.
 
 use vectorcraft_trace as tr;
 
@@ -24,6 +27,11 @@ use crate::{EngineError, Result};
 pub(super) const MAX_ANCHORS: usize = 8_000_000;
 #[cfg(target_arch = "wasm32")]
 pub(super) const MAX_ANCHORS: usize = 2_000_000;
+
+/// The area the trace keeps at least (square millimetres): a thread's footprint, a square as wide
+/// as the thread lies (0.4 mm for 40 wt, `plan::THREAD_WIDTH`): anything smaller can't be sewn as
+/// anything, a line or a dot.
+pub(super) const TRACE_AREA_MM2: f64 = vectorcraft_stitch::plan::THREAD_WIDTH * vectorcraft_stitch::plan::THREAD_WIDTH;
 
 /// The whole pixels `area_mm2` square millimetres cover at `px_per_mm`, rounded up: ⌈A × r²⌉,
 /// as Image Trace's noise counts them (its threshold is strict: a region of exactly that many
@@ -58,7 +66,7 @@ pub(super) fn params(settings: &Settings, px_per_mm: f64, colors: u32, palette: 
         // Smoothing is upstream's Paths turned round: the higher, the looser the fit.
         paths: PERCENT_RANGE.1 - settings.smoothing,
         corners: settings.corners,
-        noise: area_px(settings.min_area, px_per_mm),
+        noise: area_px(settings.min_area.min(TRACE_AREA_MM2), px_per_mm),
         method: tr::Method::Abutting,
         ignore_white: false,
         ignore_color: None,

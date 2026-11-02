@@ -253,8 +253,10 @@ const _: () = {
     }
 };
 
-/// The keys the command takes besides the settings: the image (`id`), and whether it only answers.
-pub(super) const OTHER_KEYS: [&str; 2] = ["id", "dryRun"];
+/// The keys the command takes besides the settings: the image (`id`), whether it only answers, the
+/// areas listed (`offset`, `limit`), whether the region map is given (`regions`), and a point whose
+/// area is asked (`at`).
+pub(super) const OTHER_KEYS: [&str; 6] = ["id", "dryRun", "offset", "limit", "regions", "at"];
 
 /// How large the design is made.
 #[derive(Clone, Copy, Debug, PartialEq)]

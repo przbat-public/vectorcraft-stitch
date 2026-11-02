@@ -91,7 +91,7 @@ pub(crate) fn options() -> impl Iterator<Item = &'static Setting> {
 
 /// Whether `file` is `name` in snake_case: each capital letter `_` and its small letter, every
 /// other character itself.
-const fn is_snake_case_of(file: &str, name: &str) -> bool {
+pub(super) const fn is_snake_case_of(file: &str, name: &str) -> bool {
     let (file, name) = (file.as_bytes(), name.as_bytes());
     let (mut i, mut j) = (0, 0);
     while j < name.len() {

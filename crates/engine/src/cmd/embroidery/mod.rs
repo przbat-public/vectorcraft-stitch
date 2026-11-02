@@ -22,12 +22,14 @@
 //! `needles` (a path of stitches read as runs of needle points, and written back), `needle_edits`
 //! (the stitch commands), `hooks` (what upstream's Delete, cutting tools and Join do to runs of
 //! stitches, reached through the marked wrappers below) and `records` (`embroidery.stitches`).
+//! Digitizing from an image: `from_image` (`embroidery.digitizeImage`).
 
 mod cache;
 mod check;
 pub(crate) mod derive;
 pub(crate) mod digitize;
 mod fabrics;
+mod from_image;
 mod hooks;
 pub mod info;
 mod manual;
@@ -439,6 +441,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{ids?: [id…] (default: the selection, else every object; groups and compound paths as embroidery.set takes them; at most 100,000), all?: false (true: every object, whatever is selected; not with ids), dryRun?: false (true: plan and answer, change nothing), …the embroidery options (default: none, as the stitch preview plans)} sets the entry and exit points of the parts in scope for the shortest moves between parts, in the sewing order as it is: of the points each part can start and end at by the planner's rules, the ones whose moves cost the least by the planner's weights (a jump 20 mm of move, a cut 50 more; across a colour change or a Trim After only the frame's travel, lightly); a part that can't take points of its own (a symbol's art, a piece of an expanded appearance, a stroke a clip group cuts, a line of several subpaths, a fill with narrow parts sewn as satin) is joined to as it is sewn, and a part outside the scope with no points set as it starts nearest the end before it (its stitches change when that end moves; one with points set sews as it did). Points already set in scope are replaced; every part it joins first gets points where it starts and ends now. The points are written on a copy and planned; a stretch between two cuts that saves less than 0.1 mm as planned (its moves and its needle points weighed together, a needle point as a hidden travel stitch), or comes out longer, keeps its old points, and the search runs again on its own result until a round changes nothing (at most 3 rounds), so a second run changes nothing. One undo step \"Nearest Connection\", none when nothing changes → {applied, changedCount, unchangedCount, skippedCount, skipped: [{id, reason: a settings command's reason, or notSewn|literal|pieces|symbolInstance|clipped|unmodelled|locked}] (at most 1000), restoredCount: stretches that came out longer and were given their old points back, before and after (what the design then sews): {connections: moves between parts inside blocks, jumps, trims, length, longest (mm), stitches: the needle points of the parts joined}, saved: {jumps, trims, length, stitches}, parts: [{id, part, entry: [x, y], exit: [x, y]}] (document points, as embroidery.info gives them; at most 1000)}",
             has_doc,
             nearest::nearest_connection
+        ),
+        cmd!(
+            query "embroidery.digitizeImage",
+            "Digitize Image",
+            [],
+            None,
+            "{id?: an image or an Image Trace object (default: the one object selected), dryRun: true (answer what digitizing would make, changing nothing), width?: mm (the design's width, its height following the picture's proportions), height?: mm (its height, the width following), fit?: [width, height] mm (the largest size within them, the proportions kept; give one of width, height and fit; default: the image as placed), crop?: [x0, y0, x1, y1] (whole pixels of the image; default: all of it), mode?: \"color\" (default: at most `colors` colours that best represent the image) | \"logo\" (flat art in exactly its own colours, rare but distinct ones kept) | \"grayscale\" (`colors` greys), colors?: 2 to the document's palette's threads (default 6), minArea?: mm² (0 to 50, default 1; smaller areas join a neighbour), smoothing?: 0-100 (default 50; how loosely the outlines follow the pixels), corners?: 0-100 (default 75; how sharp a turn is kept as a corner)} the image traced at a working copy of at most 10 pixels a millimetre (fewer past 1500 pixels a side, or where the image has fewer), its thresholds in millimetres turned into that copy's pixels, answered without changing anything → {dryRun, image: {id, pixels: [w, h] (the image's own), decoded: [w, h] (smaller only past 64 megapixels), crop, worked: [w, h] (the working copy), pxPerMm, limitedBy: \"grid\"|\"side\"|\"image\" (what held the resolution down), size: [w, h] mm, scale (the design against the image as placed), bounds: [left, top, right, bottom] (millimetres from the document's origin, y down: where the design lies)}, colorCount, colors: [{color: \"#rrggbb\" (the image's own colour), area: mm², areaCount, share: % of what was traced}], areaCount, warnings, settings: every setting as used, defaults filled in, table: [{name, key, step, unit, range, default, source}] (each setting's row), timings: {image, trace} (milliseconds; null on the web)}",
+            has_doc,
+            from_image::digitize_image
         ),
         cmd!(
             "embroidery.copyFrom",

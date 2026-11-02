@@ -1,7 +1,7 @@
 {
   "id": "vectorcraft",
-  "name": "VectorCraft",
-  "upgradeCode": "601C6437-08AE-4645-ADCC-27F036C2EA2F",
+  "name": "VectorCraft Stitch",
+  "upgradeCode": "FDC2F2FB-D8B7-4B7E-BBE2-CCCC4C06119D",
   "sources": [
     "vectorcraft.wxs"
   ],
@@ -20,19 +20,19 @@
   "registry": [
     [
       "-1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\vectorcraft.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\vectorcraft-stitch.exe",
       "",
       "[#VectorcraftExe]"
     ],
     [
       "-1",
-      "Software\\VectorCraft",
+      "Software\\VectorCraft Stitch",
       "InstallDir",
       "[INSTALLFOLDER]"
     ],
     [
       "-1",
-      "Software\\VectorCraft",
+      "Software\\VectorCraft Stitch",
       "DesktopShortcut",
       "#1"
     ]

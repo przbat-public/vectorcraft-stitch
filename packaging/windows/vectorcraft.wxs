@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  VectorCraft Stitch: the fork's own product name, publisher, upgrade code, install folder,
-  registry key, shortcuts and component GUIDs, so that it installs beside VectorCraft instead of
-  upgrading it (FORK.md, Decisions register). The executables keep VectorCraft's names.
+  VectorCraft Stitch: the fork's own product name, publisher, upgrade code, install folder (its
+  own, not under the ArtCraft suite folder), registry key, Run name (`vectorcraft-stitch`, the App
+  Paths entry), shortcuts and component GUIDs, so that it installs beside VectorCraft instead of
+  upgrading it or installing into its folder (FORK.md, Decisions register). The executables keep
+  VectorCraft's names.
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="VectorCraft Stitch" Manufacturer="VectorCraft Stitch contributors" Version="$(var.Version)" UpgradeCode="FDC2F2FB-D8B7-4B7E-BBE2-CCCC4C06119D" Scope="perUserOrMachine" Compressed="yes" Language="1033">
@@ -20,9 +22,7 @@
     <Property Id="ARPHELPLINK" Value="https://github.com/przbat-public/vectorcraft-stitch/issues" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="CraftSuiteFolder" Name="ArtCraft">
-        <Directory Id="INSTALLFOLDER" Name="VectorCraft Stitch" />
-      </Directory>
+      <Directory Id="INSTALLFOLDER" Name="VectorCraft Stitch" />
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder" />
     <StandardDirectory Id="DesktopFolder" />
@@ -96,7 +96,7 @@
           <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="VectorCraft Stitch" Description="VectorCraft Stitch vector illustration and embroidery app" WorkingDirectory="INSTALLFOLDER" Advertise="yes" Icon="VectorcraftIcon.ico" IconIndex="0" />
         </File>
 
-        <RegistryValue Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\vectorcraft.exe" Value="[#VectorcraftExe]" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\vectorcraft-stitch.exe" Value="[#VectorcraftExe]" Type="string" />
         <RegistryValue Root="HKMU" Key="Software\VectorCraft Stitch" Name="InstallDir" Value="[INSTALLFOLDER]" Type="string" />
       </Component>
 

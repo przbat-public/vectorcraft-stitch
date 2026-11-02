@@ -1,6 +1,9 @@
 # Windows installation policy checks
 
 New installations default to the current account under `Programs\ArtCraft\<App>`.
+VectorCraft Stitch, this fork, installs under `Programs\VectorCraft Stitch` instead (`Program
+Files\VectorCraft Stitch` for everyone), with no ArtCraft suite folder, and finds an earlier copy by
+its own registry key and its own Run name, `vectorcraft-stitch` (FORK.md).
 The first setup page offers installation for everyone. Scope is selected before duplicate
 checks and directory costing. An update uses the existing context's remembered exact folder;
 `INSTALLFOLDER` supplied explicitly is never replaced. It is a secure MSI property so the

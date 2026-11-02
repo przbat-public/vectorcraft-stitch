@@ -435,12 +435,12 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                     break;
                 }
                 let rect = Rect::from_min_size(origin + vec2(0.0, top), vec2(width, row.height()));
-                let id = ui.id().with(("embroidery-row", i));
+                let id = ui.scope_id().with(("embroidery-row", i));
                 let sense = if movable && !matches!(row, Row::Change(_)) { Sense::click_and_drag() } else { Sense::click() };
                 let resp = ui.interact(rect, id, sense);
                 let lit = row_selected(&order, *row, &covered);
                 let label = paint_row(app, ui, &doc, &listed, &folded, *row, rect, lit, resp.hovered(), stale, &t);
-                resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, lit, &label));
+                resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, lit, &label));
                 let collapsed = match row {
                     Row::Header(b) => order.blocks.get(*b).map(|k| folded.contains(&k.block)),
                     _ => None,
@@ -530,7 +530,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown<'_>) {
                             vec2(STEP_BUTTON, STEP_BUTTON),
                         );
                         let b = ui.interact(button, id.with(k), Sense::click()).on_hover_text(tip);
-                        b.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tip));
+                        b.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tip));
                         crate::icons::paint(ui, icon, button, if b.hovered() { t.text_strong } else { t.text_dim });
                         if b.clicked() {
                             step = Some((which, unit.id));

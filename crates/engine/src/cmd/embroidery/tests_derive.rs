@@ -259,8 +259,8 @@ fn outlines_and_broken_links_keep_the_cut() {
 }
 
 /// An object with two fills and a stroke, Trim After on, expanded (Expand Appearance): each fill's
-/// piece takes the fill's settings, the stroke's outline the stroke's, and the cut stays after the
-/// object, once. Sewn without expanding it first, the same: one cut after it, none between its
+/// piece takes the fill's settings, the stroke's copy (a stroke still) the stroke's, and the cut
+/// stays after the object, once. Sewn without expanding it first, the same: one cut after it, none between its
 /// fills (each fill's piece once asked for its own).
 #[test]
 fn an_expanded_appearance_gives_each_piece_its_part_and_cuts_once() {
@@ -277,9 +277,10 @@ fn an_expanded_appearance_gives_each_piece_its_part_and_cuts_once() {
     run(&mut s, "effect.expandAppearance", json!({"ids": [a]}));
     assert!(matches!(node(&s, a).kind, NodeKind::Group { .. }));
     let pieces: Vec<Embroidery> = members(&s, a).into_iter().map(|id| embroidery(&s, id)).collect();
-    assert_eq!(pieces.len(), 3, "two fills and the stroke's outline");
+    assert_eq!(pieces.len(), 3, "two fills and the stroke's copy");
     assert_eq!(pieces.iter().filter(|e| angle(e) == Some(30.0)).count(), 2, "{pieces:?}");
-    assert_eq!(pieces.iter().filter(|e| e.part(PartKind::Fill).and_then(|p| p.stitch.as_deref()) == Some("running")).count(), 1, "{pieces:?}");
+    assert_eq!(pieces.iter().filter(|e| e.part(PartKind::Stroke).and_then(|p| p.stitch.as_deref()) == Some("running")).count(), 1, "{pieces:?}");
+    assert!(pieces.iter().all(|e| e.part(PartKind::Fill).is_none() || e.part(PartKind::Stroke).is_none()), "each piece one part's: {pieces:?}");
     assert!(pieces.iter().all(|e| !e.trim_after) && embroidery(&s, a).trim_after);
     assert_eq!(trims(&mut s), 1, "expanded: still one cut");
 }

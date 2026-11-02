@@ -1,7 +1,10 @@
 //! The Stitches tab's input: a click on a row (the needle point it is edited by selected, or its
 //! stitch shown), the list's keys, Go to #, and the stitch shown on the canvas.
 
-use super::*;
+use super::{
+    Lang, Listed, NodeId, Point, RANGE_MAX, ROW_HEIGHT, SelectMode, Shown, TEXT, Tokens, Ui, VectorcraftApp, dim, edited_by, json, mm_to_pt, numbers,
+    pages, stitch_list,
+};
 
 /// A click on record `number`'s row of `listed`: the row in focus; while stitches are edited the
 /// needle point it is edited by selected, as `embroidery.selectNeedlePoints` selects it by its

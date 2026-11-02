@@ -11,7 +11,7 @@ use vectorcraft_stitch::format::{Format as StitchFormat, Loss};
 use vectorcraft_stitch::plan::THREAD_WIDTH;
 use vectorcraft_stitch::{Block, Command, Stitch, mm_to_pt};
 
-use super::super::super::*;
+use super::super::super::{Result, bad};
 use super::super::{Format, err};
 
 /// The margin round an opened design on its new artboard, millimetres: a little room to see its

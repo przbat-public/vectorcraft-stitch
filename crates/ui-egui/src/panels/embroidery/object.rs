@@ -391,7 +391,7 @@ fn pill_shape(ui: &mut Ui, words: &str, stale: bool) {
     let (rect, resp) = ui.allocate_exact_size(galley.size() + 2.0 * PILL_PAD, Sense::hover());
     ui.painter().rect_filled(rect, CornerRadius::same(PILL_RADIUS), t.divider);
     ui.painter().galley(rect.min + PILL_PAD, galley, colour);
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, words));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, words));
 }
 
 /// What a selected object is, in words: its kind, and for a path its parts ("Path · fill, no stroke").
@@ -473,7 +473,7 @@ fn part_switch(ui: &mut Ui, info: &ObjectSettings, shown: Option<Part>) -> Optio
     let items: Vec<super::Segment<'_>> = labels
         .iter()
         .map(|(part, has, label)| super::Segment {
-            id: ui.id().with(("embroidery-part", part.id())),
+            id: ui.scope_id().with(("embroidery-part", part.id())),
             label,
             full: label,
             selected: shown == Some(*part),

@@ -336,10 +336,10 @@ pub fn show(app: &VectorcraftApp, ui: &mut Ui, area: Rect, keep: f32, timings: f
     };
     counters.slot.set(variant.map(|v| (uid, v, width)));
     let rect = Rect::from_min_max(pos2(area.right() - width, area.top()), area.right_bottom());
-    let resp = ui.interact(rect, ui.id().with("embroidery-counters"), Sense::click());
+    let resp = ui.interact(rect, ui.scope_id().with("embroidery-counters"), Sense::click());
     ui.painter().text(rect.right_center(), Align2::RIGHT_CENTER, &text, FontId::proportional(TEXT), colour);
     let said = format!("{text}. {}", crate::et!("Click to open the Embroidery panel."));
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &said));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, &said));
     let tip = tooltip(&state);
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(tip);
     if resp.clicked() {

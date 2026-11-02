@@ -114,7 +114,7 @@ fn adding_removing_and_restacking_measure_only_the_containers_and_whats_new() {
     assert_eq!(cache.entries(), 2021 + 1 - 1 - 101);
     // Another set of symbols, with no instance and no Repeat in the design: nothing reads them.
     let art = zig_zag(&mut doc, 0.0, 0.0, 3, 1.0, 1.0);
-    doc.symbols.push(Symbol { name: "A".into(), art: Arc::new(art) });
+    doc.symbols.push(Symbol { name: "A".into(), art: Arc::new(art), dynamic: false });
     expect(&mut cache, &doc, 0, "a symbol added");
     // An instance of it added to a group: the instance, its group and the layer.
     let instance = Node::new(doc.alloc_id(), NodeKind::SymbolInstance { symbol: "A".into(), xf: Affine::translate((300.0, 0.0)) });
@@ -564,7 +564,7 @@ fn random_object(r: &mut Rng, d: &mut Document, depth: usize) -> Node {
 
 /// Symbol `name`'s art: a random object (B's may hold an instance of A).
 fn random_symbol(r: &mut Rng, d: &mut Document, name: &str) -> Symbol {
-    Symbol { name: name.into(), art: Arc::new(random_object(r, d, 1)) }
+    Symbol { name: name.into(), art: Arc::new(random_object(r, d, 1)), dynamic: false }
 }
 
 /// A random document: 1 to 3 layers of up to 6 random objects each, and symbols A and B.

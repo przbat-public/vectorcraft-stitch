@@ -551,7 +551,7 @@ fn draw_bubble(
         y += h;
     }
     let words = lines.iter().map(|(_, w)| w.as_str()).collect::<Vec<_>>().join(". ");
-    ui.ctx().accesskit_node_builder(Id::new("embroidery-live-check"), |node| {
+    ui.ctx().accesskit_node_builder(Id::unique("embroidery-live-check"), |node| {
         node.set_role(egui::accesskit::Role::Status);
         node.set_live(live);
         node.set_label(words);

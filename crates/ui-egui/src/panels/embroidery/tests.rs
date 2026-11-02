@@ -58,19 +58,40 @@ fn has(words: &[String], what: &str) -> bool {
     words.iter().any(|w| w.contains(what))
 }
 
+/// The panels of the tabbed group holding `panel` in an expanded column of the layout's dock.
+fn tab_group(root: &Option<craft_ui::docking::Node<String>>, panel: &str) -> Option<Vec<String>> {
+    let mut visit: Vec<&craft_ui::docking::Node<String>> = root.iter().collect();
+    while let Some(node) = visit.pop() {
+        match node {
+            craft_ui::docking::Node::Dock { columns, .. } => {
+                for column in columns.iter().filter(|c| !c.iconic) {
+                    if let Some(group) = column.groups.iter().find(|g| g.panels.iter().any(|p| p == panel)) {
+                        return Some(group.panels.clone());
+                    }
+                }
+            }
+            craft_ui::docking::Node::Split { first, second, .. } => {
+                visit.push(second);
+                visit.push(first);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 /// The first Window › Embroidery docks it as the last tab beside Properties, Layers and Libraries,
-/// turning the dock into the shared layout; the item then closes it, and the next opens it where it
-/// was.
+/// the workspace's layout then one of the person's own; the item then closes it, and the next opens
+/// it where it was.
 #[test]
 fn window_embroidery_docks_it_beside_the_three_tabs() {
     let mut app = blank_app();
-    assert!(app.ui.docking.is_none(), "the classic dock to begin with");
+    assert!(app.ui.docking.is_none(), "the workspace's default layout to begin with");
     let item = json!({"panel": ID, "toggle": true});
     app.run("window.panel", item.clone()).unwrap();
-    let layout = app.ui.docking.as_ref().expect("the shared layout");
-    let root = craft_ui::docking::Layout { root: layout.root.clone(), floating: Vec::new() };
-    let panels: Vec<String> = root.panels().into_iter().cloned().collect();
-    assert_eq!(panels, ["properties", "layers", "libraries", ID], "the last tab of the group");
+    let layout = app.ui.docking.as_ref().expect("a layout of the person's own");
+    let group = tab_group(&layout.root, ID).expect("among the dock's tabs");
+    assert_eq!(group, ["properties", "layers", "libraries", ID], "the last tab of the group");
     let before = app.ui.docking.clone();
     assert_eq!(crate::menus::checked(&app, "window.panel", &item), Some(true));
     app.run("window.panel", item.clone()).unwrap();
@@ -406,8 +427,8 @@ fn dock_tab_labels(app: &mut VectorcraftApp, ctx: &egui::Context, window: egui::
 }
 
 /// Docked as the fourth tab beside Properties, Layers and Libraries, at the dock's usual width,
-/// every tab's label is drawn whole (craft-ui squeezes tabs that don't fit and clips their words),
-/// in English and in Polish.
+/// the four fit and every tab's label is drawn whole, in English and in Polish (craft-ui puts a tab
+/// that doesn't fit in a menu, never cutting its words).
 #[test]
 fn the_docks_four_tabs_show_their_labels_whole() {
     for lang in ["en", "pl"] {
@@ -428,29 +449,6 @@ fn the_docks_four_tabs_show_their_labels_whole() {
             );
         }
     }
-}
-
-/// The dock is widened only in the frames just after Window › Embroidery: a dock that doesn't draw
-/// the panel's tab by then (collapsed, or the panel elsewhere) isn't widened later when it does,
-/// at a moment that has nothing to do with the command; its tabs are then as the dock lays them
-/// out (at its usual width, one is cut).
-#[test]
-fn the_dock_is_widened_only_just_after_window_embroidery() {
-    let ctx = egui::Context::default();
-    crate::theme::install_fonts(&ctx);
-    let mut app = blank_app();
-    app.run("window.panel", json!({"panel": ID})).unwrap();
-    assert!(app.embroidery.fit_dock_frames > 0, "armed by the command");
-    for _ in 0..super::FIT_DOCK_FRAMES {
-        super::widen_dock(&mut app);
-    }
-    assert_eq!(app.embroidery.fit_dock_frames, 0, "the command's frames gone");
-    let labels = ["Properties", "Layers", "Libraries", "Embroidery"];
-    let drawn = dock_tab_labels(&mut app, &ctx, egui::vec2(1440.0, 900.0), &labels);
-    assert!(
-        drawn.iter().any(|(_, words, clip)| words.left() < clip.left() - 0.5 || words.right() > clip.right() + 0.5),
-        "not widened later: {drawn:?}"
-    );
 }
 
 /// Nearest Connection from the ≡ menu, on the whole design with nothing selected: one undo step,

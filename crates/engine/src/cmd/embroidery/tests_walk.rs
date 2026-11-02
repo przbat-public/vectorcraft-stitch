@@ -104,7 +104,7 @@ fn symbols_placing_one_another_are_walked_within_bounds() {
                     .collect()
             };
             let art = std::sync::Arc::new(vectorcraft_doc::Node::group(NodeId(2_000_000 + level), children));
-            d.symbols.push(vectorcraft_doc::Symbol { name, art });
+            d.symbols.push(vectorcraft_doc::Symbol { name, art, dynamic: false });
         }
         let top = vectorcraft_doc::NodeKind::SymbolInstance { symbol: "Level 0".into(), xf: vectorcraft_geom::Affine::IDENTITY };
         d.insert(Some(layer), 0, vectorcraft_doc::Node::new(NodeId(3_000_000), top))?;

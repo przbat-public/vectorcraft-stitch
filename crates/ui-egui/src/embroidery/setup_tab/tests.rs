@@ -618,6 +618,7 @@ fn a_short_window_keeps_ok_on_screen_and_the_rows_scroll() {
             delta: vec2(0.0, -400.0),
             phase: egui::TouchPhase::Move,
             modifiers: Default::default(),
+            source: egui::MouseWheelSource::Unknown,
         };
         frame_in(&mut app, &ctx, size, vec![Event::PointerMoved(middle)]);
         for _ in 0..10 {

@@ -98,11 +98,6 @@ pub struct Embroidery {
     pub(crate) setup: Option<setup_tab::Opened>,
     /// The status bar's counters.
     pub(crate) counters: counters::Counters,
-    /// Window › Embroidery has just docked the panel beside other tabs: the dock is widened for
-    /// their labels once they are drawn, within this many frames (`panels::embroidery::fit_dock_tabs`).
-    pub(crate) fit_dock_frames: u8,
-    /// The dock's width asked for then, given to the dock at the frame's end.
-    pub(crate) dock_width: Option<f32>,
     /// The canvas's bounds of each open document, measured only where an edit changed it
     /// ([`bounds`]).
     pub bounds: bounds::Bounds,
@@ -160,7 +155,6 @@ pub fn canvas_controls(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
 /// the frame asked of the stitch preview planned.
 pub fn end_frame(app: &mut VectorcraftApp, ctx: &egui::Context) {
     counters::act(app);
-    crate::panels::embroidery::widen_dock(app);
     stitch_preview::schedule(app, ctx);
 }
 

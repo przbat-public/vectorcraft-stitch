@@ -72,7 +72,7 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
                 d.fields.insert(key.into(), json!(v));
                 d.fields.insert("auto".into(), json!(false));
             }
-            ui.ctx().accesskit_node_builder(ui.id().with(id), |node| node.set_label(name));
+            ui.ctx().accesskit_node_builder(ui.scope_id().with(id), |node| node.set_label(name));
             ui.end_row();
         }
     });

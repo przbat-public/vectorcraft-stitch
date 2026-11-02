@@ -440,8 +440,13 @@ fn the_index_is_built_again_only_for_what_changed() {
     let id = index.ids().next().unwrap();
     let p = read_points(&s, id)[2];
     // A drag of a needle point: pressed, dragged in steps (each previewed), let go.
-    let ev =
-        |kind, x: f64| vectorcraft_tools::PointerEvent { kind, pos: Point::new(x, p.y), mods: vectorcraft_tools::Mods::default(), pressure: 1.0 };
+    let ev = |kind, x: f64| vectorcraft_tools::PointerEvent {
+        kind,
+        pos: Point::new(x, p.y),
+        mods: vectorcraft_tools::Mods::default(),
+        backquote: false,
+        pressure: 1.0,
+    };
     s.pointer(&ev(vectorcraft_tools::PointerKind::Down, p.x), view).unwrap();
     s.pointer(&ev(vectorcraft_tools::PointerKind::Drag, p.x + 10.0), view).unwrap();
     s.tool_tick(1.0, view).unwrap();

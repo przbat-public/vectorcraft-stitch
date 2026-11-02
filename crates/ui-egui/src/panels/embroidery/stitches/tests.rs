@@ -435,10 +435,10 @@ fn picked_needle_points_go_as_ranges() {
     let picked: std::collections::BTreeSet<(u64, usize, usize)> =
         [(4, 0, 9), (4, 1, 9), (4, 2, 9), (4, 7, 9), (6, 3, 5), (6, 4, 5)].into_iter().collect();
     assert_eq!(
-        super::ranges_of(&picked),
+        super::keys::ranges_of(&picked),
         [json!({"id": 4, "from": 0, "to": 2, "of": 9}), json!({"id": 4, "from": 7, "to": 7, "of": 9}), json!({"id": 6, "from": 3, "to": 4, "of": 5})]
     );
-    assert!(super::ranges_of(&Default::default()).is_empty());
+    assert!(super::keys::ranges_of(&Default::default()).is_empty());
 }
 
 /// Go to takes a number in the scope (the focus moves to it), and says so when one isn't there;
@@ -746,7 +746,7 @@ fn move_by_moves_the_selected_needle_points() {
     // A value typed past the range is held to it.
     enter_in(&mut app, &mut time, vec![key_with(Key::A, Modifiers::COMMAND), Event::Text("5000".into()), key(Key::Enter)]);
     let uid = app.session.active().unwrap().uid;
-    assert_eq!(app.embroidery.stitches.docs.get(&uid).unwrap().move_by[0], super::MOVE_BY_MAX_MM);
+    assert_eq!(app.embroidery.stitches.docs.get(&uid).unwrap().move_by[0], super::foot::MOVE_BY_MAX_MM);
 }
 
 /// A seeded sweep, as a property test would (this crate has no proptest): clicks on the rows drawn
@@ -932,7 +932,7 @@ fn go_to_reads_a_whole_number_only() {
         ("", en, None),
         ("99999999999999999999", en, None),
     ] {
-        assert_eq!(super::record_number(text, lang), want, "{text:?} in {}", lang.code());
+        assert_eq!(super::keys::record_number(text, lang), want, "{text:?} in {}", lang.code());
     }
 }
 
@@ -1259,9 +1259,10 @@ fn the_kinds_glyphs_are_in_the_interfaces_fonts() {
     let mut output = ctx.run_ui(egui::RawInput::default(), |_| {});
     output.textures_delta.clear();
     ctx.fonts_mut(|fonts| {
-        let chars = fonts.fonts.font(&egui::FontFamily::Proportional).characters().clone();
+        // egui 0.37's public view: the family's characters with the fonts that have each.
+        let chars = fonts.characters(&egui::FontFamily::Proportional).clone();
         for kind in [stitch_list::RecordKind::Stitch, stitch_list::RecordKind::Jump, stitch_list::RecordKind::Trim, stitch_list::RecordKind::Stop] {
-            let glyph = super::kind_glyph(kind);
+            let glyph = super::row::kind_glyph(kind);
             assert!(glyph.chars().all(|ch| chars.contains_key(&ch)), "{kind:?}'s {glyph} isn't in the interface's fonts");
         }
     });

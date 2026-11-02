@@ -10,7 +10,7 @@ use vectorcraft_render::lines::LineRenderer;
 use vectorcraft_stitch::mm_to_pt;
 
 use super::scene::fabric_color;
-use super::*;
+use super::{EngineError, Options, Result, Session, bad, object, options_in, with_options};
 
 /// The margin round a design drawn whole, millimetres: as an opened design's artboard has (a little
 /// room to see its edges).

@@ -258,8 +258,13 @@ fn the_wheel_steps_a_field_in_its_own_size() {
     let button = |pressed| Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
     field(&ctx, 0.1, vec![Event::PointerMoved(at), button(true)]);
     field(&ctx, 0.2, vec![button(false)]);
-    let wheel =
-        Event::MouseWheel { unit: egui::MouseWheelUnit::Line, delta: vec2(0.0, 1.0), phase: egui::TouchPhase::Move, modifiers: Modifiers::NONE };
+    let wheel = Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Line,
+        delta: vec2(0.0, 1.0),
+        phase: egui::TouchPhase::Move,
+        modifiers: Modifiers::NONE,
+        source: egui::MouseWheelSource::Unknown,
+    };
     let got = field(&ctx, 0.3, vec![Event::PointerMoved(at), wheel]).0;
     assert!(got.is_some_and(|v| (v - 0.5).abs() < 1e-9), "a notch up: {got:?}");
 }

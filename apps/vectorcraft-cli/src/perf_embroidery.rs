@@ -1919,7 +1919,7 @@ fn symbols(n: usize) -> Result<Document, String> {
     }
     let art = Node::new(d.alloc_id(), NodeKind::Group { children, clip: false });
     let name = "Tile".to_string();
-    d.symbols.push(vectorcraft_doc::Symbol { name: name.clone(), art: std::sync::Arc::new(art) });
+    d.symbols.push(vectorcraft_doc::Symbol { name: name.clone(), art: std::sync::Arc::new(art), dynamic: false });
     let layer = d.layers.first().map(|l| l.id);
     for k in 0..n {
         let xf = kurbo::Affine::translate(((k % PER_ROW) as f64 * PITCH, (k / PER_ROW) as f64 * PITCH));

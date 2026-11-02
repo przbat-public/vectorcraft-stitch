@@ -525,6 +525,9 @@ fn rename(n: &mut Node, prefix: &str) {
     });
 }
 
+/// Most placed documents [`Document::with_placed_art`] reads for one export, nested ones included.
+pub const MAX_PLACED_READS: usize = 256;
+
 impl Document {
     /// This document ready to export its placed documents: their files read (the file read again
     /// when only the preview is stored, else the preview), and the resources their art uses added
@@ -544,9 +547,17 @@ impl Document {
         }
         let mut d = self.clone();
         let mut found: Vec<Arc<ReadDocument>> = vec![];
+        // Placed documents are told apart by the names their art's resources get here, so one
+        // file placed in itself, or many times in a file placed many times, read again in every
+        // branch: past [`MAX_PLACED_READS`] reads, the rest show their previews.
+        let mut reads = 0usize;
         while let Some((p, depth)) = queue.pop() {
             let Some(blob) = d.images.get(&p.key).cloned() else { continue };
-            let full = if depth < MAX_DEPTH { full_bytes(&p, &blob) } else { None };
+            // Top-level placements are distinct already (by key): only reads nested inside placed
+            // documents count, so a catalogue placing many files still reads each of them.
+            let read_full = depth < MAX_DEPTH && (depth == 0 || reads < MAX_PLACED_READS);
+            reads += usize::from(read_full && depth > 0);
+            let full = if read_full { full_bytes(&p, &blob) } else { None };
             if full.and_then(|b| read(&p, &b)).is_none() {
                 let preview = if blob.is_proxy() { Some(blob.bytes.clone()) } else { blob.proxy.clone() };
                 if let Some(bytes) = preview {
@@ -562,7 +573,7 @@ impl Document {
                 .chain(e.doc.symbols.iter().map(|s| &s.art))
                 .chain(e.doc.graph_designs.iter().map(|g| &g.art))
                 .chain(e.doc.patterns.iter().flat_map(|p| &p.art));
-            for root in inner {
+            for root in inner.filter(|_| reads < MAX_PLACED_READS) {
                 walk_all(root, &mut |n| {
                     if let NodeKind::PlacedDocument(q) = &n.kind {
                         let key = format!("{prefix}{}", q.key);
@@ -656,7 +667,7 @@ mod tests {
                 pixels: None,
             })),
         );
-        d.symbols.push(Symbol { name: "Star".into(), art: Arc::new(art) });
+        d.symbols.push(Symbol { dynamic: false, name: "Star".into(), art: Arc::new(art) });
         d.images.insert("pic".into(), ImageBlob::new("image/png", vec![1, 2, 3]));
         let mut children = vec![Arc::new(Node::new(NodeId(51), NodeKind::SymbolInstance { symbol: "Star".into(), xf: Affine::IDENTITY }))];
         if bytes.starts_with(b"nest") {
@@ -691,7 +702,11 @@ mod tests {
     fn the_art_and_its_resources_join_only_a_prepared_copy_under_their_own_names() {
         set_loader(stub_loader);
         let mut d = Document::new(200.0, 200.0);
-        d.symbols.push(Symbol { name: "Star".into(), art: Arc::new(Node::new(NodeId(60), NodeKind::Group { children: vec![], clip: false })) });
+        d.symbols.push(Symbol {
+            dynamic: false,
+            name: "Star".into(),
+            art: Arc::new(Node::new(NodeId(60), NodeKind::Group { children: vec![], clip: false })),
+        });
         d.images.insert("doc1-1".into(), ImageBlob::new("application/json", b"nest".to_vec()));
         let p = placed("doc1-1");
         let layer = d.layers[0].id;

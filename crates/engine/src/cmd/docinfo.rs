@@ -9,7 +9,7 @@ use vectorcraft_doc::{ColorMode, Document, Node, NodeId, NodeKind, RepeatKind, R
 use vectorcraft_geom::{Affine, Rect};
 use vectorcraft_text::embed::Embedding;
 
-use super::*;
+use super::{CommandSpec, Result, Session, bad, bool_or, cmd, has_doc, has_selection, str_param, targets};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
@@ -436,8 +436,11 @@ fn snap_xf(b: Rect, half: bool) -> Affine {
 }
 
 fn pixel_perfect(s: &mut Session, p: &Value) -> Result<Value> {
-    let ids: Vec<NodeId> =
-        if p.get("ids").is_some() { super::edit::outermost(&s.doc()?.doc, targets(s, p)?) } else { super::edit::selected_roots(s)? };
+    let ids: Vec<NodeId> = if p.get("ids").is_some() || p.get("id").is_some() {
+        super::edit::outermost(&s.doc()?.doc, targets(s, p)?)
+    } else {
+        super::edit::selected_roots(s)?
+    };
     let n = ids.len();
     s.edit("Make Pixel Perfect", |d, _| {
         for id in &ids {

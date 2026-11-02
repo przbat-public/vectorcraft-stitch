@@ -1,26 +1,35 @@
 //! The embroidery export of a seeded corpus of random documents (the random editing of the other
-//! property tests, `arb_ops`: shapes, paths, groups, clip groups, compound paths, Pathfinder,
-//! strokes, gradients, transparency, effects, transforms), in all eight formats, against hashes of
-//! the files' bytes recorded with this file at the merge base of manual stitches (commit c8610efe,
-//! before any of their code): an oracle independent of the new code, on documents the pinned
-//! exports don't hold.
+//! property tests, `arb_ops`: shapes, paths, groups, clip groups, compound paths, compound shapes,
+//! Pathfinder, strokes, gradients, transparency, effects, transforms), in all eight formats,
+//! against hashes of the files' bytes, on documents the pinned exports don't hold. The hashes were
+//! first recorded at the merge base of manual stitches (commit c8610efe, before any of their code),
+//! an oracle independent of that code; they were recorded again at the sync with upstream v0.20.0
+//! (2026-11-02, the project owner's choice), whose random editing gained Make Compound Shape (a new
+//! corpus) and whose Expand Appearance leaves a stroke a stroke (#3089). Checked then: the old
+//! corpus, with the old outlining put back, exported every byte as recorded at the merge base; with
+//! the new Expand Appearance, five of its forty documents moved, nothing else.
 //!
-//! - As it is, every document exports as it did at the merge base: nothing manual stitches added
-//!   changes a design that doesn't use them.
+//! - As it is, every document exports as recorded: nothing added since changes a design that
+//!   doesn't use it.
 //! - Every object that can be converted to manual stitches converted, it exports the same bytes,
 //!   whatever its kept original then holds (each original swapped for a rectangle elsewhere before
 //!   the export, which restoring then shows): a converted object is sewn as its stitches, never
 //!   planned again from its original.
 //! - Converted and restored, it exports the same bytes again.
 //!
-//! How they were made: this file and the corpus's generator were added to a checkout of c8610efe
-//! (they build against its interfaces) and the record command below run there; the editing the
-//! corpus is generated from is pinned by its hash (`CORPUS_OPS`), so that a change to the random
-//! editing or to proptest reads as the corpus changing, not the exports.
+//! The editing the corpus is generated from is pinned by its hash (`CORPUS_OPS`), so that a change
+//! to the random editing or to proptest reads as the corpus changing, not the exports.
+//!
+//! The corpus is computed with one maths library on every system (`one_maths`, the `libm` crate in
+//! place of the system's `sin`, `pow`…), so that its hashes are the same on macOS, Linux and
+//! FreeBSD: the systems' libraries differ in the last bit of some results, which moved a stitch of
+//! document 30 on Linux and on FreeBSD. Its 8 lines were recorded again for that (2026-11-02, the
+//! project owner's choice); every other line was the same with either library.
 //!
 //! To record the hashes again (only for a change meant to move the stitches of designs that use
-//! nothing new, said in its commit), at the merge base:
-//! `VECTORCRAFT_EMBROIDERY_GOLDEN_RECORD=1 cargo test -p vectorcraft-engine --test embroidery_golden_corpus the_corpus_exports_as_at_the_merge_base`.
+//! nothing new, or a corpus upstream's random editing changed, said in its commit):
+//! `VECTORCRAFT_EMBROIDERY_GOLDEN_RECORD=1 cargo test -p vectorcraft-engine --test embroidery_golden_corpus the_corpus_exports_as_recorded`,
+//! with `CORPUS_OPS` and `CONVERTED_IN_CORPUS` set to what the tests then say.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -31,13 +40,16 @@ use vectorcraft_engine::{EngineError, Session};
 use vectorcraft_testkit::fixtures;
 use vectorcraft_testkit::strategies::{Op, arb_ops};
 
+#[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
+mod one_maths;
+
 /// How many documents the corpus holds, and how many editing steps each is made with.
 const DOCS: usize = 40;
 const STEPS: std::ops::Range<usize> = 5..40;
 
 /// How many objects converting every document of the corpus converts: pinned, since an object
 /// that stops being converted stays art that exports the same bytes, which no hash would show.
-const CONVERTED_IN_CORPUS: u64 = 132;
+const CONVERTED_IN_CORPUS: u64 = 160;
 
 /// The corpus's seed: any fixed one.
 const SEED: [u8; 32] = *b"vectorcraft-stitch export corpus";
@@ -55,7 +67,7 @@ const FOREIGN_RECT: [f64; 4] = [300.0, 200.0, 40.0, 30.0];
 /// The FNV-1a hash of the corpus's editing as `Debug` prints it: pinned, so that a change to the
 /// random editing (`arb_ops`) or to proptest's value stream fails as the corpus changing, not as
 /// its exports changing (FNV-1a 64's offset basis and prime, from its published definition).
-const CORPUS_OPS: u64 = 0xd457_23ec_2b23_40c3;
+const CORPUS_OPS: u64 = 0x7688_e410_f162_8675;
 const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
 const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
 
@@ -113,7 +125,7 @@ fn exports(k: usize, s: &mut Session) -> Vec<String> {
         .collect()
 }
 
-/// The hashes recorded at the merge base.
+/// The hashes recorded.
 fn golden() -> Vec<String> {
     std::fs::read_to_string(GOLDEN).expect("the recorded hashes").lines().map(str::to_string).collect()
 }
@@ -179,9 +191,9 @@ fn scramble_originals(v: &mut Value, foreign: &Value) -> usize {
     }
 }
 
-/// Every document exports as it did at the merge base (or, recording, the hashes are written).
+/// Every document exports as recorded (or, recording, the hashes are written).
 #[test]
-fn the_corpus_exports_as_at_the_merge_base() {
+fn the_corpus_exports_as_recorded() {
     let got: Vec<String> = corpus().iter().enumerate().flat_map(|(k, ops)| exports(k, &mut document(ops))).collect();
     if std::env::var_os("VECTORCRAFT_EMBROIDERY_GOLDEN_RECORD").is_some() {
         std::fs::write(GOLDEN, got.join("\n") + "\n").unwrap();
@@ -190,8 +202,8 @@ fn the_corpus_exports_as_at_the_merge_base() {
     assert_as_recorded(&got, "as it is");
 }
 
-/// Every object that can be converted converted, each document exports the bytes it did at the
-/// merge base, its kept originals swapped for a rectangle elsewhere first: a converted object is
+/// Every object that can be converted converted, each document exports the bytes recorded, its
+/// kept originals swapped for a rectangle elsewhere first: a converted object is
 /// never planned from its original. Restoring them then changes the exports, so the swap is one an
 /// export planned from the originals would show.
 #[test]
@@ -222,7 +234,7 @@ fn converted_the_corpus_exports_the_same_whatever_its_originals_hold() {
     assert_as_recorded(&got, "converted");
 }
 
-/// Converted, then restored, each document exports the bytes it did at the merge base.
+/// Converted, then restored, each document exports the bytes recorded.
 #[test]
 fn converted_and_restored_the_corpus_exports_the_same() {
     let mut got = Vec::new();

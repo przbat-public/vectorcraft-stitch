@@ -1,0 +1,41 @@
+{
+  "id": "vectorcraft",
+  "name": "VectorCraft Stitch",
+  "upgradeCode": "FDC2F2FB-D8B7-4B7E-BBE2-CCCC4C06119D",
+  "sources": [
+    "vectorcraft.wxs"
+  ],
+  "icon": "assets/app-icon/vectorcraft.ico",
+  "localization": [
+    "vectorcraft.en-us.wxl"
+  ],
+  "extensions": [
+    "UI",
+    "Util"
+  ],
+  "payloads": [
+    "vectorcraft-cli.exe",
+    "vectorcraft.exe"
+  ],
+  "registry": [
+    [
+      "-1",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\vectorcraft-stitch.exe",
+      "",
+      "[#VectorcraftExe]"
+    ],
+    [
+      "-1",
+      "Software\\VectorCraft Stitch",
+      "InstallDir",
+      "[INSTALLFOLDER]"
+    ],
+    [
+      "-1",
+      "Software\\VectorCraft Stitch",
+      "DesktopShortcut",
+      "#1"
+    ]
+  ],
+  "mode": "dualScope"
+}

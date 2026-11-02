@@ -132,7 +132,7 @@ pub fn show(ui: &mut Ui, stats: &Value, too_long: Option<f64>, stale: bool) {
             );
         }
         let said = [Some(title.to_string()), median_words.clone()].into_iter().flatten().collect::<Vec<_>>().join(". ");
-        resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Other, true, &said));
+        resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Unknown, true, &said));
         // A figure for a screen reader, its bins in words (a pointer reads one at a time).
         let described: Vec<String> = bins.iter().filter(|b| b.count > 0).map(bin_words).collect();
         ui.ctx().accesskit_node_builder(resp.id, |node| {

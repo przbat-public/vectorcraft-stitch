@@ -259,9 +259,10 @@ order, so that nothing is left half done:
 2. `crates/stitch/src/format/mod.rs`: the `Format` variant and its row in the format table
    (extension, label, palette, `max_step`, `max_colors`, where it starts the needle, `sniff` when
    its bytes can be told), and `Format::ALL`.
-3. The engine: `FORMATS` and `UNASSOCIATED_EXTS` in `crates/engine/src/cmd/fileio/mod.rs`, and the
-   format lists in the param docs of `document.export`, `document.serialize`, `export.selection`
-   and `embroidery.setTrimAfter`.
+3. The engine: `FORMATS`, `OPEN_EXTS`, `PLACE_EXTS` and `UNASSOCIATED_EXTS` in
+   `crates/engine/src/cmd/fileio/formats.rs`, and the format lists in the param docs of
+   `document.export`, `document.serialize`, `export.selection` (`cmd/fileio/commands.rs`) and
+   `embroidery.setTrimAfter`.
 4. Tests: round trips in the format's module, the `EMBROIDERY` list in
    `crates/engine/tests/import_fuzz.rs`, its pinned exports in
    `crates/engine/tests/embroidery_output.rs` (a new listing, in its own commit), and real files in
@@ -339,7 +340,7 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-10-23 | The rest, accepted together: type takes no settings until lettering sews it; a symbol instance takes only Trim After (its art takes the settings); satin isn't offered for a fill in the interface (the data keeps its meaning); Restore from Fabric clears an object's values but not its entry, exit or Trim After; choosing a fabric replaces the values changed before it; "apply the fabric to N objects too" acts on OK, in the same undo step; the fabric's colour shows in the preview; no embroidery options dialog at export (the save options dialog's unreachable rows removed, `file.formatOptions` reports the options unset; options stay for commands and MCP, one export at a time); a fabric's spacings are for 40 wt and scale with the thread weight, while values typed on an object or given to an export are used as they are; `embroidery.set` takes every part key; one set of settings per kind of part; files saved by upstream lose objects' settings (documented, proposed to upstream); the fork's own app identity; the Polish terms "Kompensacja ściągania", "Poszerzenie wypełnień" and joining by "kolor". The embroidery tool keeps to them: no handles on type or on symbol instances (2026-10-26, below) | the owner accepted them together ("accept all"). Each one's reason and what wasn't chosen: type, because no lettering sews it yet (settings that sew nothing; not: settings on type now); the instance, because its art is what is sewn (not: settings on instances overriding the art's); satin on a fill offered nowhere, because a fill has no width to sew across (not: offering it); Restore from Fabric keeps the points and the cut, which are no fabric's values (not: clearing everything); a new fabric replaces the values changed before it, since a fabric is copied (not: keeping them); applying the fabric to objects in Document Setup's own undo step (not: a step of its own); the fabric's colour in the preview, to see the design on it (not: a neutral ground); no options dialog at export, since the object and the document now hold the settings (not: the dialog); a fabric's spacing for 40 wt, as the presets' sources give it (not: for the thread in use); every part key on both parts, since a stroke can be sewn as an area (not: per-part key lists); one set per kind of part, since each part is one unit's settings (not: one per fill and per stroke, which no file of another tool keeps); files saved by upstream losing objects' settings, since its node reader drops unknown keys (not: a change to upstream's reader in this fork); the app identity (the 2026-10-24 row); the Polish terms the catalogue already used (not: new ones) | `objects.rs`, `setup.rs`, `fabrics.rs`, `scene::fabric_color`, `fileio::embroidery::unset_option`, `io.rs`'s `asks_options`; the catalogues |
 | 2026-10-24 | The fork has an app identity of its own on macOS and Windows: the bundle identifier `ai.storyteller.vectorcraft.stitch`, the name "VectorCraft Stitch" on the bundle (`VectorCraft Stitch.app`) and in the Windows installer (product, install folder, registry key, shortcuts, descriptions), its own MSI upgrade code and component GUIDs, and "VectorCraft Stitch contributors" as the installer's publisher. The `.vectorcraft` document types stay VectorCraft's (both apps open the same files), and the executables keep their names. Linux comes later | macOS takes two apps of one identifier for one app, and an installer with VectorCraft's upgrade code would uninstall VectorCraft; with its own name the fork installs beside it; the publisher doesn't credit upstream's company with a version it doesn't make | Linux now (its id is in about fifteen places and file names that upstream changes often, and the fork builds no Linux packages); the identifiers alone (two apps named VectorCraft can't sit side by side); upstream's publisher | `packaging/macos/Info.plist.in`, `packaging/macos/package.sh`, `xtask/src/bundle.rs`, `packaging/windows/vectorcraft.wxs` |
 | 2026-10-24 | Five choices of the settings PR, accepted together: `embroidery.applyFabric` without ids acts on the selection, else on every object of the document (and with `all: true` on every object whatever is selected: the 2026-10-25 row); a stitch or underlay id an object holds that this version doesn't know reads as unset (the export's, else Auto); `embroidery.set` takes `satin` on a fill (the panel won't offer it); an entry point starts its part at the start its stitches can take nearest to it (superseded: the 2026-10-25 row on the exact entry); the cotton preset is 0.55 mm thick (Melco's broadcloth figure) | ids stand in for the selection in every command; a newer version's value falls through as any unread value does; the data keeps its meaning; the planner's start as it is; a sourced thickness | the whole document always; Auto; refusing satin on a fill; the exact point; the stats default of 0.5 mm | `fabrics::apply_fabric`, `resolve::PartLayer::read`, `objects::value_param`, `Digitizer::plan`'s `from`, `stitch::fabric` |
-| 2026-10-24 | A stroke of an object expanded for sewing that nothing reshapes (no brush, no effect of its own or of the object's) is sewn as a basic object's stroke, along its path, by its own settings; a stroke a brush or an effect reshapes is outlined as before, and a running or satin stitch set on it (or given to the export) is said not to follow its path | a stroke set to running sews one line along its path, not two round its outline | outlining every stroke of an expanded object | `printed::split_strokes`, `printed::STROKE_LOSES_ITS_PATH`; `tests_expanded.rs` |
+| 2026-10-24 | A stroke of an object expanded for sewing that nothing reshapes (no brush, no effect of its own or of the object's) is sewn as a basic object's stroke, along its path, by its own settings; a stroke a brush or an effect reshapes is outlined as before, and a running or satin stitch set on it (or given to the export) is said not to follow its path (for an effect's reshaping, changed on 2026-11-02: the row below) | a stroke set to running sews one line along its path, not two round its outline | outlining every stroke of an expanded object | `printed::split_strokes`, `printed::STROKE_LOSES_ITS_PATH`; `tests_expanded.rs` |
 | 2026-10-24 | The options' earlier name `stitchAngle` keeps its earlier meaning, the planner's clockwise angle (`angle` = 180 − `stitchAngle`); `angle` counts counter-clockwise on the page, and a value recorded with it before is `180 − old` | the alias exists to keep earlier callers working: recorded Actions, scripts and agents that give it sew as before | the alias following `angle`'s new meaning (every old value's rows mirrored, silently) | `options::as_held`; `docs/embroidery.md` and `docs/mcp.md` (the `angle` option) |
 | 2026-10-24 | The settings commands' "invalid parameters" errors stay English, as every command's do; the messages of their other errors are translated | an agent or a script reads them, and upstream's parameter errors are English too | translating them | `crate::cmd::bad`; `tests_embroidery.rs` in the catalogues |
 | 2026-10-24 | Two conventions for what an object's settings keep that a version doesn't read, which every later version keeps to: every `[x, y]` inside a part's `points` object (to a depth of 16) is a position moved with the object, and a `frame` of six numbers is composed with the object's transform; nothing else kept moves | older versions move a newer file's kept data on every transform, so the rule must hold in both directions; a newer version's satin rails and angle lines can be kept under `points` | moving nothing kept (a newer version's positions left behind on the first nudge) | `doc/src/embroidery/transform.rs`; `docs/embroidery.md` › Settings and transforms |
@@ -427,6 +428,12 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-11-01 | One `VisualBounds` per open document, by its uid, in the fork's own state (`ui-egui/src/embroidery/bounds.rs`): a switch between tabs measures nothing again, and a document's cache goes in the frame after it closes; upstream's `CanvasCache` untouched | the project owner's choice („Osobna dla każdego dokumentu”): the app's one cache rebuilt its tree at every switch and kept a closed document's entries, and its objects' allocations through the weak references, until another document was measured. The cost: an entry (80 bytes) for each object of each open document | one cache for the app, started over on a switch and let go with no document open (the review's recommendation) | `embroidery::bounds`; `the_canvas_measures_through_the_cache_and_answers_as_the_full_walk` |
 | 2026-11-01 | In the same PR: the Navigator's region takes the cached bounds (`content_bounds`, one marked hook); `stitch_editing_gate` budgets its one needle point dragged on 2 million, the 95th percentile within a 60 Hz frame (`ONE_POINT_ON_2M_BUDGET_MS`); a change of the symbols forgets only the entries of what reads them (symbol instances and Repeats, and the containers holding one); a container's members lined up through the crate's `IdMap`, each one's address compared before its id | the project owner's choices („Nawigator”, „Budżet w bramce #27”, „Drobne optymalizacje”): with the Navigator open, every revision outside a drag walked every stroke; the one-point drag now fits a frame, and a budget keeps it there; a change of the symbols rebuilt every entry | naming the Navigator in the PR's Not done; the drag printed only; the optimizations left out | `panels/navigator.rs` (`region`), `tests_gate.rs` (`ONE_POINT_ON_2M_BUDGET_MS`), `visual_bounds.rs` (`forget_symbol_readers`, `LineUp`); `adding_removing_and_restacking_measure_only_the_containers_and_whats_new` |
 | 2026-11-01 | The selection's frame looks each selected id up on its own, as `Document::bounds_of` does (`Document::index_path`, through the id index): exact at every moment | the project owner's choice („Szukać każdego osobno (polecam)”): with an id repeated (a damaged file keeps its ids) and the id index stale, one walk (`Document::index_paths`) finds the first copy in tree order, while `Document::node`, which the commands use, may find the copy at the place the index still holds, so the frame could go round another copy than the one the commands move. The per-id lookup costs what upstream's own `Document::bounds_of` costs, and is the quicker way: everything selected on a flat layer of 100,000 paths, nothing else changed, the selection's frame takes 3.6 ms with the ids looked up one by one, 10.6 ms in one walk (which first builds a map of every place), 16 ms by the full walk (a local probe, 2026-11-01) | the selection's ids found in one walk of the document | `VisualBounds::bounds_of`; `a_repeated_id_means_the_object_document_bounds_of_finds` |
+| 2026-11-02 | On Windows the fork installs in a folder of its own, `VectorCraft Stitch`, right under Program Files (for everyone) or under `Programs` in the person's local app data (for one person), not under the ArtCraft suite folder upstream's new install policy puts its apps in; an earlier copy is found by the fork's own registry key (`Software\VectorCraft Stitch`) alone | the project owner's choice at the sync with upstream v0.20.0 („Własny folder (polecam)”): ArtCraft is upstream's mark (`docs/brand/LICENSE-brand.txt`), the fork's own name keeps it beside VectorCraft rather than among upstream's apps, and the folder matches the product name it already had | `Programs\ArtCraft\VectorCraft Stitch`, upstream's place for its apps | `packaging/windows/vectorcraft.wxs`, `install-policy.wxi`, `install-policy.json`, `check-install-policy.ps1`, `INSTALLATION.md`; `.github/workflows/windows-arm64.yml` (`install-relative-path`) |
+| 2026-11-02 | The fork's Run name is its own: the App Paths entry `vectorcraft-stitch.exe` (Win+R `vectorcraft-stitch`) points at its `vectorcraft.exe`, and its installer reads only that entry, never VectorCraft's `vectorcraft.exe`, when it looks for an earlier copy | the project owner's choice at the same sync („Własna nazwa (polecam)”): both apps wrote `vectorcraft.exe`, so the last installed took Win+R `vectorcraft` and uninstalling either removed it (open since 2026-10-24), and upstream's new install policy reads that entry to find an earlier copy's folder, so a shared entry could lead the fork's installer into VectorCraft's folder | sharing `vectorcraft.exe` with VectorCraft | `packaging/windows/vectorcraft.wxs` (the App Paths registry value), `install-policy.wxi`, `install-policy.json` |
+| 2026-11-02 | A stroke an effect reshapes, on an object the walk expands, is sewn along its reshaped path as a basic object's stroke (a satin column or a running line by its width or its settings; tatami set on it sews the area it paints), no longer as the area it paints; a brushed stroke is still its art's area, and only then is a running or satin stitch on it said not to follow its path | the project owner's choice at the sync with upstream v0.20.0 („Wzdłuż linii (polecam)”): upstream's Expand Appearance now leaves a stroke a stroke on its own copy of the path (its #3089), so the walk, which expands as Expand Appearance does (2026-10-22), sews what a person who expands by hand gets, and a stitch set on such a stroke follows its path, as a stroke set to running sews one line (2026-10-24) | keeping the outline in the walk on its own (fork code where upstream just changed, and expanding by hand then sewing unlike sewing at once) | `printed::split_inside` (`brushed`), `info.rs`'s `sewn_as`, `derive::Expanding::apply` (`stroke_piece`); `a_stroke_an_effect_reshapes_is_sewn_along_its_reshaped_path`, `a_stroke_drawn_with_a_brush_is_sewn_as_its_art_and_said`, the pinned `expanded-strokes` |
+| 2026-11-02 | The golden corpus (`tests/embroidery_golden_corpus.rs`) follows upstream's random editing (`arb_ops`, which gained Make Compound Shape) and was recorded again on the merged code, all 320 lines: its reference point is this sync, no longer the merge base of manual stitches | the project owner's choice („Nowy korpus, cały na nowo”): the corpus covers upstream's new live compound shapes too. Checked first: the old corpus, with Expand Appearance's old outlining put back, exported every byte as recorded at the merge base, and with the new one five of its forty documents moved (3, 31, 32, 37, 39), nothing else | freezing the old editing in the test and recording only those five again (a copy of upstream's strategy, but the merge base kept for the other thirty-five, and no new recording when upstream's editing changes) | `CORPUS_OPS`, `CONVERTED_IN_CORPUS`, `embroidery_golden_corpus.txt`; `the_corpus_exports_as_recorded` |
+| 2026-11-02 | The golden corpus computes with one maths library on every system: in its test binary alone, the C maths functions Rust calls (`sin`, `cos`, `pow`…, and `sincos`, `__sincos_stret` and `__exp10`, which the compiler makes of them) are the `libm` crate's, so that its hashes are the same on macOS, Linux and FreeBSD; document 30's 8 lines were recorded again for that, and the app still computes with the system's library | the project owner's choice („Jedna matematyka (polecam)”): the systems' maths libraries round some results differently in the last bit, and the sine in upstream's Rotate (`kurbo::Affine::rotate`) of document 30 moved a stitch on Linux and on FreeBSD, failing the PR's CI; with the `libm` crate on macOS the corpus gives byte for byte what FreeBSD gave, and every other document is the same with either library | leaving document 30 out (how many more differ on Linux unknown, and the next sync could add others); the corpus on macOS alone (CI no longer checking it) | `crates/engine/tests/one_maths/mod.rs`, `libm` in `crates/engine/Cargo.toml`'s dev-dependencies; `this_binary_computes_with_the_libm_crate`, `the_corpus_exports_as_recorded` |
+| 2026-11-02 | Upstream's fix for its render test that raced its background worker (storytold/vectorcraft#5152) is cherry-picked into the sync PR, its three commits as upstream wrote them (`git cherry-pick -x`), instead of waiting for the next sync | the project owner's choice („Wziąć poprawkę (polecam)”): the test failed the fork's FreeBSD CI ("the bitmaps show"), a race upstream fixed after `639c9d6c` in one test file, which the fork doesn't touch | re-running the job alone (the race staying in the fork until the next sync); syncing to a newer upstream (315 more commits) | `crates/render/src/tests/placed_document.rs`; Keeping up with upstream › Syncs so far |
 
 ## Clean-room for embroidery
 
@@ -482,6 +489,16 @@ the same day (upstream `cdba0aac`, PR #5: the ROADMAP's log and `fileio/mod.rs`'
 files, all listed in the merge commit, of which the status bar (upstream's fixed slots) and
 `tab_title` (a parameter of upstream's in the fork's place) were re-ported by hand; Turkish rows
 for every fork string; three fixes in upstream's code for the fork's Rust 1.95 gate (below).
+2026-11-02, before digitizing from an image: upstream `4c82749b..639c9d6c` (v0.20.0), 1905
+commits, 40 conflicting files, all listed in the merge commit. Upstream had split its large files
+into modules (the hooks below name their new homes), rewritten Shape Builder's merge and Join, and
+moved to egui 0.37 (the fork's interface code renamed with it: `Ui::scope_id`, `Id::unique`,
+`Role`); Bosnian and Catalan rows for every fork string; the installer's identity carried into
+upstream's new Windows install policy (below). After its first CI runs, upstream's own fix for a
+render test that raced its background worker on FreeBSD (storytold/vectorcraft#5152, "the bitmaps
+show"; `f4979c7e`, `b903e2e7` and `59992ce1`, one test file, after `639c9d6c`) was cherry-picked
+into it with `git cherry-pick -x`: at the next sync, if `crates/render/src/tests/placed_document.rs`
+conflicts, take upstream's.
 
 **Upstream's CI lints with the stable clippy** (on 2026-10-24, Rust 1.99.1), newer than the fork's
 1.95 gate (`rust-version = "1.95"`), and since that sync the same CI runs on the fork's PRs
@@ -493,21 +510,30 @@ for every fork string; three fixes in upstream's code for the fork's Rust 1.95 g
   `as_chunks`). Fix it there, in a way 1.95 accepts too.
 - So before pushing, also run `cargo +stable clippy --workspace --all-targets --keep-going -- -D
   warnings`.
+- Upstream's workspace lints bind the fork's code as well (since 2026-10-27, `Cargo.toml` and
+  `clippy.toml`): no glob imports outside tests (`wildcard_imports`), no function past a cognitive
+  complexity of 30 (tests too: split a long one), at most seven arguments, and craft-ui's
+  `ComboBox` instead of egui's. Where the fork's hooks take an upstream function past the limit,
+  allow it there, marked, rather than reshape upstream's code (the canvas's `show`).
 
 Where merging `main` (upstream) into the fork conflicts, and how to resolve each so nothing is lost:
 
-- **`crates/doc/src/node.rs`, the node's extras:** the fork's `embroidery` sits after `perspective`
-  in all six lists (`NodeExtras`, `NO_EXTRAS`, `Serialize for Node`'s `skips` and its `field!`
-  calls, `NodeWire`, `From<NodeWire>`), not at their ends, where upstream appends its own extras.
-  `skips` and the `field!` calls pair up by position: keep them in the same order, or a field is
-  written as skipped and the next as `null`. The key-order test in `node.rs` checks it.
+- **The node's extras (`crates/doc/src/node/`):** the fork's `embroidery` sits after `perspective`
+  in all six lists (`NodeExtras` and `NO_EXTRAS` in `node/extras.rs`; `Serialize for Node`'s
+  `skips` and its `field!` calls, `NodeWire` and `From<NodeWire>` in `node/wire.rs`), not at their
+  ends, where upstream appends its own extras. `skips` and the `field!` calls pair up by position:
+  keep them in the same order, or a field is written as skipped and the next as `null`. The
+  key-order test in `node/tests.rs` checks it.
 - **The interface catalogues (`crates/ui-egui/src/i18n/*.tsv`):** both sides add rows at the end.
   `.gitattributes` merges them as a union, so both sides' rows are kept without a conflict. A row
   both sides changed comes back twice: keep the newer (the i18n tests fail on a broken row).
-- **`crates/engine/src/cmd/fileio/mod.rs`:** `UNASSOCIATED_EXTS` is a union of both sides' lists
+- **`crates/engine/src/cmd/fileio/formats.rs`:** `UNASSOCIATED_EXTS` is a union of both sides' lists
   (taking either alone would associate the embroidery extensions with the app, or drop upstream's
-  new ones). In the param docs of `document.serialize`, `document.export` and `export.selection`,
-  take upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again.
+  new ones), with both sides' reasons in its comment; the eight embroidery rows close `FORMATS`, and
+  their extensions follow upstream's in `OPEN_EXTS` and `PLACE_EXTS`. In the param docs of
+  `document.serialize`, `document.export` and `export.selection` (`fileio/commands.rs`), take
+  upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again. The fork's
+  `pub(crate) mod embroidery` and `mod tests_embroidery` are declared in `fileio.rs`.
 - **The generator string** (`crates/format/src/lib.rs`): the fork's files say `VectorCraft Stitch`
   and the version, so a file from the fork can be told from upstream's in a report.
 - **Objects made from others keep their embroidery settings** (`cmd/embroidery/derive.rs`, each
@@ -520,21 +546,28 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   Appearance at any depth, and the embroidery walk's copy of the document as it prints; an
   expanded path's pieces also take its bounding box's angle, so that a stroke's outline turns its
   unset rows as the path did); in `cmd/typecmd.rs`'s
-  `create_outlines`, `outlined_type`; in `cmd/object.rs`, `ungrouped` in `ungroup`, `compound` in
-  `compound_make`, `released` in `compound_release`; in `cmd/brushsym.rs`'s `break_links`,
-  `unlinked`; in `cmd/path.rs`'s `transform_anchors`, `anchors_transformed` (a path whose anchors
-  all move takes its settings along); in `cmd/draw2.rs`, `derive::cut_once` over the pieces in
-  `replace_with_pieces` (the Knife, the Eraser, Scissors on a closed path's pieces, Cut Path at
-  Anchors, Shape Builder's split of a stroke) and over the two halves in `split` (Scissors on an
-  open path); in `cmd/buildcmds.rs`'s `sb_merge`, `derive::cut_once` over what each source object
-  made (its remnants, and the merged shape when it took that object's look), from `made`.
-- **One-line hooks the fork keeps in upstream files**, to keep when resolving: `doc/src/node.rs`'s
+  `create_outlines`, `outlined_type`; in `cmd/object/arrange.rs`, `ungrouped` in `ungroup`, and in
+  `cmd/object/compound.rs`, `compound` in `compound_make`, `released` in `compound_release`; in
+  `cmd/brushsym/symbols.rs`'s `break_links`, `unlinked`; in `cmd/path.rs`'s `transform_anchors`,
+  `anchors_transformed` (a path whose anchors all move takes its settings along); in
+  `cmd/draw2/common.rs`, `derive::cut_once` over the pieces in `replace_with_pieces` (the Knife,
+  the Eraser, Scissors on a closed path's pieces, Cut Path at Anchors, Shape Builder's split of a
+  stroke) and in `cmd/draw2/cut.rs` over the two halves in `split` (Scissors on an open path); in
+  `cmd/buildcmds/shape_builder.rs`'s `sb_merge`, `derive::cut_once` over what each source object
+  made, its `out` before it is pushed (its remnants, and the merged shape when it took that
+  object's look; an object left as it is makes nothing). The moved files name sibling modules as
+  `crate::cmd::…`.
+- **One-line hooks the fork keeps in upstream files**, to keep when resolving: `doc/src/node/ops.rs`'s
   `transform_scaled`, after the bounding box's angle (an object's embroidery settings move and turn
   with it, `Embroidery::transform`), `doc/src/mem.rs`'s document and node estimates (the
   embroidery settings' memory, `embroidery::setup_bytes` and `object_bytes` in
   `doc/src/embroidery/mem.rs`; `ALLOC`, `map_bytes` and `json_bytes` made `pub(crate)` for them), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
-  (`cmd/embroidery/threadlib.rs`), `i18n/mod.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
-  `mod embroidery_common` and `cases.extend(…)`, and the `pub use` lines in `engine/src/lib.rs`.
+  (`cmd/embroidery/threadlib.rs`), `i18n.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
+  `mod embroidery_common` and `cases.extend(…)`, the `pub use` lines in `engine/src/lib.rs`,
+  `cmd/params.rs`'s `nearest` made `pub(crate)` (the embroidery options' misspelt keys,
+  `cmd/embroidery/options.rs`), `mcp/src/lib.rs`'s `mod tests_embroidery` (beside upstream's
+  `mod tests`, its file where it was), and `engine/Cargo.toml`'s `libm` dev-dependency (the golden
+  corpus's one maths library, `tests/one_maths`).
 - **The fork's tests inside upstream's test files**, whole blocks rather than hooks, to keep when
   resolving: `crates/mcp/tests/protocol_props.rs`, the stitch commands' random edits through MCP
   (a `proptest!` block of its own, 31 lines in the middle of the file, before
@@ -547,51 +580,68 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
 - **The stitch preview's hooks in upstream files**, each marked "VectorCraft Stitch" in a comment
   (the fork's own code is under `crates/ui-egui/src/embroidery/`, `panels/embroidery/` and
   `cmd/embroidery/`):
-  - `ui-egui/src/lib.rs`: `pub mod embroidery`, the app's `embroidery` field and its init,
-    `embroidery::poll` after the background jobs (the stitch preview's plans taken in, and Nearest
-    Connection's search looked at), `canvas_controls` after the canvas (before
+  - `ui-egui/src/lib.rs`: `pub mod embroidery`, and the app's `embroidery` field right after
+    `pen_end` (off the struct's end, where upstream adds its own); in `ui-egui/src/app.rs`, the
+    field's init, `embroidery::poll` after the background jobs (the stitch preview's plans taken in,
+    and Nearest Connection's search looked at), `canvas_controls` after the canvas (before
     upstream's isolation bar, which lies over the canvas's top: the switch and the notice move
-    below it), `embroidery::end_frame` at the frame's end (a click on the counters, then
-    `stitch_preview::schedule`), and the screenshot wait (`holds_screenshots`,
-    `MAX_SCREENSHOT_WAIT_MS`);
-  - `canvas.rs`: `art_pass` before the art, `paint_fabric` instead of the paper and the outline's
-    ground, `templates`/`hidden` in the art's key and options, `&& art.render`, `&& !art.stitches`,
-    `stitch_layer::draw` after the art, `to_screen_path` and `node_outline` made `pub(crate)`, the
-    selection overlay's `frame_only`; `fit_zoom` and `FIT_MARGIN` split out of `fit` for View › Zoom
-    to Box (`embroidery/zoom.rs`);
-  - `chrome.rs`: the tab title's mode (`tab_title`'s fifth parameter, `stitches`, after upstream's
-    `display_print_size`), and in `status_readouts` the counters (`embroidery::counters::show`)
-    given the bar's area first: they take its right end and return the rest, and `diagnostics`
-    waits on their answer (`timings &&`), so the timings give way to them. The bar is drawn with
-    the app only read: the counters keep their state in cells and act on a click at the frame's
-    end;
-  - `menus.rs`: View › Stitch Preview and its options after Pixel Preview, the `checked` and
-    `enabled` hooks, Window › Embroidery, the `UI_COMMANDS` rows (`ui.embroideryPanel`,
-    `view.zoomTo`, `view.checkMarks`, `embroidery.showFinding`, `embroidery.nextHit`,
-    `embroidery.previousHit`, `embroidery.copySettings`, `embroidery.pasteSettings`), the
-    `view.zoomTo` arm (into `embroidery::zoom`), `panels::embroidery::command` before the dock's
-    commands, and at the top of `invoke`, `embroidery::menu::invoked` (a person's Convert to Manual
+    below it), and `embroidery::end_frame` at the frame's end (a click on the counters, then
+    `stitch_preview::schedule`), before upstream's guard for a pass egui reruns, as upstream's own
+    `scrub::end_frame`; in `app/screenshot.rs`'s `issue_screenshots`, the wait for the stitch view
+    (`holds_screenshots`, `MAX_SCREENSHOT_WAIT_MS`, within upstream's 8 s capture deadline);
+  - `canvas.rs`: in `show`, `art_pass` before the document is read, the key's `templates` and
+    `hidden` set after upstream's `cache_key`, `&& art.render` on the render, and
+    `stitch_layer::draw` after the art's pass, upstream's `fill_uncovered` and `reproject_frame`
+    skipped in the stitch view (it draws the art's texture itself, a moved view's gaps left as
+    fabric), and `#[allow(clippy::cognitive_complexity)]` on `show`, which these conditions take
+    past the workspace's limit; in `frame_options`, `hide_templates` and `hidden` from the key; in `paint_paper`,
+    `paint_fabric` right after the pasteboard, in place of all of upstream's paper branches (the
+    Hide Artboards one too); `to_screen_path` and `node_outline` made `pub(crate)` in
+    `canvas/outline.rs` and re-exported; the selection overlay's `frame_only` in
+    `canvas/overlays.rs`; `fit_zoom` and `FIT_MARGIN` split out of `fit` in `canvas/view.rs` for
+    View › Zoom to Box (`embroidery/zoom.rs`), re-exported;
+  - `chrome/tabs.rs`: the tab title's mode (`tab_title`'s fifth parameter, `stitches`, after
+    upstream's `display_print_size`, `pub(crate)` and re-exported for the fork's tests), and its
+    call in `doc_tabs`; `chrome/status_bar.rs`: in `status_readouts` the counters
+    (`embroidery::counters::show`) given the bar's area first: they take its right end and return
+    the rest, and `diagnostics` waits on their answer (`timings &&`), so the timings give way to
+    them. The bar is drawn with the app only read: the counters keep their state in cells and act
+    on a click at the frame's end;
+  - `menus/`: in `tree.rs`, View › Stitch Preview and its options after Pixel Preview, Window ›
+    Embroidery; in `state.rs`, the `checked` and `enabled` hooks; in `ui_commands.rs`, the
+    `UI_COMMANDS` rows (`view.zoomTo` after `view.setZoom`; after `ui.flattenerPresetsDialog`,
+    `view.checkMarks`, `embroidery.nextHit`, `embroidery.previousHit`, `ui.embroideryPanel`,
+    `embroidery.copySettings`, `embroidery.pasteSettings`, `embroidery.documentSetup`,
+    `embroidery.showFinding`, `embroidery.showRecord`); in `run.rs`, the `view.zoomTo` arm (into
+    `embroidery::zoom`) and `panels::embroidery::command` before the dock's commands; in
+    `invoke.rs`, at the top of `invoke`, `embroidery::menu::invoked` (a person's Convert to Manual
     Stitches, Restore Object and Nearest Connection from the palette or a shortcut, run as the
     Embroidery panel runs them: off the interface thread, Restore asking after edits);
-  - `control.rs`: `ui.set {stitchPreview}`, `ui.render {stitchPreview}`, `ui.inspect`'s
-    `stitchPreview` and `embroideryPanel`;
-  - `panels/mod.rs`, `dock.rs`, `state.rs`, `icon_data.rs`: the panel's module, its show and menu
+  - `control.rs`: `ui.set {stitchPreview}` (in upstream's `set_ui`), `ui.render {stitchPreview}`
+    (else upstream's rendering with a PNG export's options), `ui.inspect`'s `stitchPreview` and
+    `embroideryPanel`;
+  - `panels.rs`, `dock.rs`, `state.rs`, `icon_data.rs`: the panel's module, its show and menu
     arms, its height, its `ICON_PANELS` row and `UiState::embroidery_panel`, its icon
     (`assets/icons/dc-embroidery.svg`, a row in `ASSETS.md`);
-  - `io.rs`'s `asks_options`: an embroidery format's save never asks for options (they are for
-    commands alone); the engine's `fileio/save.rs`'s `format_options`: `unset_option` reports an
-    embroidery format's options unset;
-  - the engine's `lib.rs`: the `pub use` of `PlanKey` and `Planned`, and in
-    `close_document` the closed document's planning forgotten (in a batch, by `fileio/batch.rs`
-    once the batch holds; its `roll_back` forgets a document the batch opened);
-  - `doc/src/lib.rs`: `Document::same_outside_layers` names the `embroidery` field (upstream's
-    list of every field, for redrawing only what an edit changed);
+  - `io/save.rs`'s `asks_options`: an embroidery format's save never asks for options (they are
+    for commands alone); the engine's `fileio/save.rs`'s `format_options`: `unset_option` reports
+    an embroidery format's options unset;
+  - the engine's `lib.rs`: the `pub use` of `PlanKey` and `Planned`, and the session's
+    `embroidery_plans`; in `session/documents.rs`, its init and, in `close_document`, the closed
+    document's planning forgotten (in a batch, by `fileio/batch.rs` once the batch holds; its
+    `roll_back` forgets a document the batch opened);
+  - `doc/src/document.rs`: `Document::same_outside_layers` names the `embroidery` field (upstream's
+    list of every field, for redrawing only what an edit changed), and the constructor sets it;
   - `xtask/src/main.rs`: the `embroidery-corpus` step before `test`, and `cmd_test`'s `envs`, which
     the gate's test step passes `EMBROIDERY_CORPUS_REQUIRED` through;
-  - for the fork's Rust 1.95 gate: `#[allow(unknown_lints)]` above `effects/src/group.rs`'s
-    `clippy::manual_isolate_lowest_one`, and `#[allow(clippy::neg_cmp_op_on_partial_ord)]` on
-    `brush/src/track.rs`'s `tracks`;
-  - `render/src/lib.rs`: `pub mod lines`; `testkit/src/lib.rs`: `pub mod embroidery`;
+  - for the fork's Rust 1.95 gate: `#[allow(clippy::neg_cmp_op_on_partial_ord)]` on
+    `brush/src/track.rs`'s `tracks`, `#[allow(clippy::nonminimal_bool)]` on `engine/src/cmd.rs`'s
+    `ordinary_isolation`, and `#[allow(clippy::collapsible_match)]` on `cmd/expand.rs`'s
+    `outermost` (the allow on `effects/src/group.rs`'s `clippy::manual_isolate_lowest_one` is
+    upstream's own now);
+  - `render/src/lib.rs`: `pub mod lines`, and `render/src/node_checks.rs`'s `MAX_DEVICE` made
+    `pub(crate)` for it (the stitch view's lines keep within the device range the renderer does);
+    `testkit/src/lib.rs`: `pub mod embroidery`;
     `vectorcraft-cli`'s `main.rs`: `bench` prints the preview's line;
   - `apps/vectorcraft/src/prefs_dir.rs`: `mod stitch_profile`; `profile.rs`'s `prefs_path`: the
     path passed through `stitch_profile::own` (the fork's settings folder).
@@ -599,28 +649,36 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   Document Setup's Embroidery tab; the fork's own code is `panels/embroidery/object.rs` and
   `embroidery/rows.rs`, `fields.rs`, `vocabulary.rs`, `setup_tab.rs`), each marked "VectorCraft
   Stitch":
-  - `ui-egui/src/widgets.rs`: `recessed_text`, `step_value` and `select_all_on_focus` made
-    `pub(crate)` (their bodies as upstream has them), so that the embroidery fields
+  - `ui-egui/src/widgets/text.rs` (`recessed_text`, `select_all_on_focus`) and
+    `widgets/numeric.rs` (`step_value`): made `pub(crate)` (their bodies as upstream has them) and
+    re-exported from `widgets.rs`, so that the embroidery fields
     (`embroidery/fields.rs`: `number_field`, `choice`, `Look`, `NumberFormat`) are drawn by
     upstream's own text box, stepping, scrub (`scrub::field`) and combo (`combo`). The fork's code
     relies on how they behave: on a sync, a change to `recessed_text`'s text placement (the look
     paints the value over it, in its place), to `combo`'s frame (`fields::combo_button` finds its
     button's id as `combo` does) or to how `step_value` and `scrub::field` count steps (the field
     hands them its value counted in its unit's steps) wants a look at `fields.rs`; its tests
-    (`embroidery/tests_fields.rs`) compare it with upstream's field and fail on such a change.
+    (`embroidery/tests_fields.rs`) compare it with upstream's field and fail on such a change. At
+    the 2026-11-02 sync `recessed_text` took the label drawn before the field and a name (the field
+    takes the label as upstream's `bounded_field` does, `widgets::take_previous_label`),
+    `step_value` its read/show pair, a step function and stops (the field passes none, which steps
+    as before), and `combo` lost its `searchable` flag and finds its button by
+    `widgets::combo_button_id` (`fields::combo_button` derives the same id).
   - `ui-egui/src/dialogs/document_setup.rs`: the Embroidery tab (`embroidery/setup_tab.rs`): its
     name in `TABS`, its fields added in `open`, its body as the last arm of `body`'s `match`, and
     in `confirm` the `document.setup` call alone replaced by `setup_tab::run` (which runs it, with
     the tab's changes in one `command.batch`), so upstream's own steps around it still run.
-  - `menus.rs`: the `UI_COMMANDS` row `embroidery.documentSetup` (Embroidery Settings…).
+  - `menus/ui_commands.rs`: the `UI_COMMANDS` row `embroidery.documentSetup` (Embroidery Settings…).
 - **The embroidery tool's hooks in upstream files** (the tool's own code is
   `tools/src/embroidery/`; the rule for which objects take settings is the fork's
   `doc/src/embroidery/takers.rs`), each marked "VectorCraft Stitch":
-  - `tools/src/lib.rs`: `pub mod embroidery`; `ToolContext::embroidery` (the stitch plan's
-    answers for the tool) after `preview_memo`, and `embroidery: None` in the tests' `cx`; the
-    embroidery tool in `create`'s chain after `touchtype`; the `Cursor` variants `Embroidery` and
+  - `tools/src/lib.rs`: `pub mod embroidery`; `embroidery: None` in the tests' `cx`; the
+    embroidery tool at the end of `create`'s chain (after upstream's `addons`); in
+    `tools/src/context.rs`, `ToolContext::embroidery` (the stitch plan's answers for the tool) after
+    `preview_memo`; in `tools/src/cursor.rs`, the `Cursor` variants `Embroidery` and
     `EmbroideryPoint` after `WidthPoint`, and their stand-ins (`Arrow`, `Move`) in `stand_in()`;
-  - `engine/src/tooling.rs`: in `after_command`, the embroidery tool asked too when a command ended
+  - `engine/src/tooling.rs`: in `after_command` (whose `cmd` upstream added for Undo and Redo,
+    which the embroidery tool ignores), the embroidery tool asked too when a command ended
     its drag (Undo mid-drag), and told after each command from outside it (`notify` with
     `embroidery::COMMAND_RAN`) so that what stitch editing keeps follows what is edited; in `with_tool_cx`, the stitch plan's and the settings' answers for
     the embroidery tool, one call (`Services::facts_now` in `cmd/embroidery/tool.rs`: its
@@ -628,28 +686,31 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     context's `embroidery` field set from them; in `switch_tool`, the answers it kept dropped when the tool is put
     away (they hold a plan the plans' memory budget no longer counts);
   - `tools/src/cursors.toml`: the Embroidery section before Blend;
-  - `ui-egui/src/canvas.rs`: the two in `cursor_icon`'s list of cursors not drawn yet;
+  - `ui-egui/src/canvas/cursor.rs`: the two in `cursor_icon`'s list of cursors not drawn yet;
   - `ui-egui/src/cursors.rs`: the two in the tests' `GLYPHS`, whose length is upstream's count
     plus the fork's two: a sync sums it again by hand, since git merges two sides that both raise
     it to the same number without a conflict (upstream's 78 → 80 for its own two cursors would
-    leave 82 entries in a `[Cursor; 80]`, and the tests would not compile);
+    leave 82 entries in a `[Cursor; 80]`, and the tests would not compile). At the 2026-11-02 sync,
+    upstream's 89 and the fork's 2: 91 (count `RotateToward(1)` too);
   - `tools/src/catalog.rs`: the tool's own group at the end of `TOOL_GROUPS` (the Advanced
     toolbar), with no default shortcut;
-  - `ui-egui/src/toolbar.rs`: the Embroidery category at the end of `BASIC`, the index of the
-    Color category's slots in `double_clicking_a_tool_button_opens_its_options`, and in
-    `control_bar_options` the Embroidery Tool's options (`embroidery::tool_bar`);
-  - `ui-egui/src/canvas.rs`: in `task_bar`, the stitch actions while the tool edits stitches
+  - `ui-egui/src/toolbar.rs`: the Embroidery category at the end of `BASIC`, and in
+    `control_bar_options` the Embroidery Tool's options (`embroidery::tool_bar`); in
+    `toolbar/tests.rs`, the index of the Color category's slots in
+    `double_clicking_a_tool_button_opens_its_options`;
+  - `ui-egui/src/canvas/task_bar.rs`: in `task_bar`, the stitch actions while the tool edits stitches
     (`embroidery::task_bar::items`): one line taking them, the early return passed over when there
     are some, and the items replaced by them; the bar placed under the selected needle points'
     box (`embroidery::selection::selected_box`, one line, and the box taken in the line placing
-    it); the Fill, Recolor and Lock buttons left out then (a condition added to their line);
-  - `ui-egui/src/chrome.rs`: the tool's hint in `hint_for`, one line naming `embroidery::tool_bar::HINT`,
+    it); the Fill, Stroke, Recolor and Lock buttons (or a basic shape's properties) left out then
+    (a condition added to their line);
+  - `ui-egui/src/chrome/hints.rs`: the tool's hint in `hint_for`, one line naming `embroidery::tool_bar::HINT`,
     and one naming `EDITING_HINT` for `EDITING_HINT_ID`; in `hint_bar`, the hint's id taken from
     `embroidery::tool_bar::hint_id` (stitch editing's hint while the tool edits stitches), one line;
   - `ui-egui/src/icon_data.rs`: the `dc-embroidery-tool` icon's row;
   - `ui-egui/src/dialogs/tools.rs`: `open_tool_dialog` hands the tool's Entry Point and Exit
     Point dialog (`embroidery/point_dialog.rs`) its params;
-  - `ui-egui/src/dialogs/mod.rs`: that dialog's row at the end of the `registry!` (and
+  - `ui-egui/src/dialogs.rs`: that dialog's row at the end of the `registry!` (and
     `DialogResult` made `pub(crate)` for it), and after it Restore Object's question
     (`embroidery/restore_dialog.rs`).
 - **The stitch commands' hooks in upstream files** (the commands are `cmd/embroidery/needles.rs`
@@ -660,35 +721,37 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     Edit › Cut with anchors selected, and `path.deleteAnchors` all reach), needle points of runs of
     stitches selected are deleted as stitches (`embroidery::delete_needle_points_selected`: when
     every object selected is a path of stitches and no segment is, else upstream's Delete);
-  - `engine/src/cmd/draw2.rs`: in `replace_with_pieces` (Cut Path at Anchors on a path of one
+  - `engine/src/cmd/draw2/common.rs`: in `replace_with_pieces` (Cut Path at Anchors on a path of one
     subpath, the Eraser), the run as it was taken first (`embroidery::stitches_before_cut`), and the
     earlier hook's `derive::cut_once` call replaced by `embroidery::cut_into_pieces` (that cut, then
-    the run's marks on its pieces); in `split` (Scissors), the run as it was taken first, the earlier
+    the run's marks on its pieces); in `draw2/cut.rs`'s `split` (Scissors), the run as it was taken first, the earlier
     hook's `cut_once` of the two halves replaced by `embroidery::cut_in_two`, and after the halves of
     a path of several subpaths are put in place, `embroidery::runs_cut_in_place` (the cut point kept
     once). The Knife cuts closed paths only, and so never a run;
-  - `engine/src/cmd/path.rs`: in `join`, before the ends are chosen, runs of stitches joined as Join
-    Runs joins them (`embroidery::join_runs_of_stitches`: never reversed; with art, refused). The
-    hook must come before every branch of `join` that joins: upstream has since rewritten `join`
-    four times, adding a `subpaths` parameter that joins subpaths of one path by their nearest ends
-    (which can reverse them) and branches for compound paths and direct selections, some of which
-    return before today's hook point. On that sync, put the hook ahead of all of them and add a test
-    that no form of `path.join` reverses a run; in
+  - `engine/src/cmd/path.rs`: in `join`, runs of stitches joined as Join Runs joins them
+    (`embroidery::join_runs_of_stitches`: never reversed; with art, refused), ahead of every branch
+    of `join` that joins, in two places since upstream's rewrite of 2026-10 (a `subpaths`
+    parameter that joins subpaths by their nearest ends, which can reverse them, and branches for
+    compound paths and direct selections): first in the branch with `ids` given, and in the
+    selection flow after upstream's merge of coincident anchors, ahead of the ends and paths
+    selected. `no_form_of_join_reverses_a_run` runs every form of `path.join` on runs; a sync that
+    adds a branch to `join` puts it behind the hooks; in
     `cut_at_anchors`, on a path of several subpaths, the run as it was taken before its pieces are
     put in place and `embroidery::runs_cut_in_place` after.
 - **The canvas's bounds measured only where an edit changed the document** (the fork's own code is
   `doc/src/visual_bounds.rs`, its tests `doc/src/visual_bounds/tests.rs` (declared from it), and
   `ui-egui/src/embroidery/bounds.rs`, one cache per open document; `docs/embroidery.md` › Editing
   a large design), each hook marked "VectorCraft Stitch":
-  - `doc/src/node.rs`: `Node::visual` is upstream's body as `visual_by(symbols, member)`, which
+  - `doc/src/node/ops.rs`: `Node::visual` is upstream's body as `visual_by(symbols, member)`, which
     `visual` calls with `member` measuring each member by `visual` itself (open recursion);
     `c.visual(symbols)` became `member(c)` in the Intertwine arm and the Layer | Group arm only.
     The cache measures a container through `visual_by`, handing over the bounds it kept for each
     member, so it runs upstream's own arms in their order. At each sync, diff upstream's whole
     `Node::visual` (every arm and their order) and carry it into `visual_by`, with `member(c)`
-    wherever an arm unions its members' visual bounds;
+    wherever an arm unions its members' visual bounds (unchanged upstream at the 2026-11-02 sync,
+    as were `children` and `editing_children`);
   - `doc/src/lib.rs`: `pub mod visual_bounds`;
-  - `ui-egui/src/lib.rs`: `content_bounds` and `selection_bounds` measuring through
+  - `ui-egui/src/app/view.rs`: `content_bounds` and `selection_bounds` measuring through
     `app.embroidery.bounds` (one line each) instead of `Document::art_bounds` and `bounds_of`;
   - `ui-egui/src/panels/navigator.rs`: `region` takes the art's bounds handed in instead of
     `doc.art_bounds()` (its parameter and that line), and `show` hands it `content_bounds()`.
@@ -700,41 +763,23 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   test `bounds_measured_from_what_changed_are_the_full_walks` compares the cache with the full walk
   on random documents and edits, and `containers_measure_as_worked_out_by_hand` holds the
   containers' boxes by hand. Upstream could take it as it is (a proposal for upstream, not filed).
-- **Upstream split its large files into modules on 2026-10-26, after the fork's last sync** (some
-  fifty commits, each titled `refactor(<crate>): move <file> items to …`): the next sync meets the
-  hooks above in files that no longer hold their functions, all of a file's marked lines
-  conflicting at once. The hooks move with the functions they sit in, and the lists above keep the
-  old file names until that sync rewrites them. The files holding the fork's hooks, and where
-  upstream put what they hook:
-  - `ui-egui/src/canvas.rs` → `canvas/`: `task_bar` and `task_bar_rect` in `canvas/task_bar.rs`
-    (`task_bar_rect` re-exported from `canvas.rs`), `cursor_icon` in `canvas/cursor.rs`;
-  - `ui-egui/src/chrome.rs` → `chrome/`: `hint_for`, `hint_strings` and `hint_bar` in
-    `chrome/hints.rs`;
-  - `ui-egui/src/menus.rs` → `menus/`: `UI_COMMANDS` in `menus/ui_commands.rs`, `invoke` in
-    `menus/invoke.rs`, the menu tree in `menus/tree.rs`;
-  - `ui-egui/src/lib.rs` → `app/` and others (`selection_bounds` and `content_bounds` in
-    `app/view.rs`);
-    `ui-egui/src/widgets.rs` → `widgets/` (`recessed_text` and `select_all_on_focus` in
-    `widgets/text.rs`, `step_value` in `widgets/numeric.rs`); `ui-egui/src/io.rs` → `io/`
-    (`asks_options` in `io/save.rs`); `dialogs/mod.rs` → `dialogs.rs`;
-  - `engine/src/lib.rs` → `session/` and others (`close_document` in `session/documents.rs`);
-    `cmd/draw2.rs` → `cmd/draw2/` (`replace_with_pieces` in `cmd/draw2/common.rs`, `split` in
-    `cmd/draw2/cut.rs`); `cmd/object.rs` → `cmd/object/` (`ungroup` in `cmd/object/arrange.rs`,
-    `compound_make` in `cmd/object/compound.rs`); `cmd/brushsym.rs` → `cmd/brushsym/`
-    (`break_links` in `cmd/brushsym/symbols.rs`); `cmd/buildcmds.rs` → `cmd/buildcmds/`
-    (`sb_merge` in `cmd/buildcmds/shape_builder.rs`);
-  - `doc/src/lib.rs` → `document.rs` and others (`same_outside_layers`; its test modules became
-    one `mod tests;`, which the canvas's bounds' tests, declared from `visual_bounds.rs`, don't
-    meet), `doc/src/node.rs` → `node/` (`Node::visual`, the fork's `visual_by`, and
-    `editing_children` in `node/ops.rs`); `render/src/lib.rs` and `tools/src/lib.rs` into modules
-    of their own (`ToolContext` in `tools/src/context.rs`, `Cursor` in `tools/src/cursor.rs`).
+- **Upstream split its large files into modules on 2026-10-26** (some fifty commits, each titled
+  `refactor(<crate>): move <file> items to …`); the 2026-11-02 sync moved every hook with the
+  function it sits in, and the lists above name their new homes. A file split again meets the
+  hooks the same way: all of a file's marked lines conflict at once, and each goes where upstream
+  moved its function (the moved files name sibling modules as `crate::…`).
 - **Upstream's internals the fork reads without a hook** (nothing to resolve, but a sync that
   changes them breaks a feature quietly):
-  - Window › Embroidery's dock-width fit (`panels::embroidery::fit_dock_tabs`) reads the shared
-    dock's area id `"vectorcraft-panel-docking"` (`panel_docking.rs`), craft-ui's tab ids under it
-    (`("tab", panel)`), `dock::shared_dock_default_width` and `clamp_shared_dock_width`, and sets
-    `UiState::dock_width` and `dock_width_pending`. If they change, the fit finds no tabs and does
-    nothing; `the_docks_four_tabs_show_their_labels_whole` then fails.
+  - Window › Embroidery shows its panel itself (`panels::embroidery::show_panel`, reached by the
+    `window.panel` hook): `window.panel.activate` where it is (its icon column's flyout opened,
+    `panel_docking::in_iconic_column`), upstream's own `window.panel` handler
+    (`panel_docking::command`, called directly, never through `app.run`, which would hand it back to
+    the hook) where it was closed with a remembered place, and the first time `window.panel.move`
+    beside Libraries, Layers or Properties, reading `panel_docking::layout_of`;
+    `window_embroidery_docks_it_beside_the_three_tabs` holds it. Its tab's label shows whole at the
+    dock's usual width in English and Polish (`the_docks_four_tabs_show_their_labels_whole`): the
+    fork's own widening of the dock for it went at the 2026-11-02 sync, as craft-ui's tabs now put a
+    tab that doesn't fit in a menu instead of cutting its words, and upstream's column is 310 pt.
   - The embroidery checkbox (`embroidery/rows.rs`'s `check`) draws as upstream's
     `widgets::check_row_named` does (its box, tick and dash), its words wrapped and its colours
     read on what it lies on: when a sync restyles upstream's checkboxes, restyle it too.
@@ -775,15 +820,17 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   document types stay upstream's); `APP_NAME` in `packaging/macos/package.sh`; `APP` in
   `xtask/src/bundle.rs`, with the `bundle` line of `xtask/src/main.rs`'s usage and of the README's
   Quick start; in `packaging/windows/vectorcraft.wxs` the product name, publisher, upgrade code,
-  install folder, registry key, shortcuts, descriptions and the two component GUIDs; in the
-  workflows, `windows-arm64.yml`'s `app-dir` (the install test's folder) and `release.yml`'s
-  `app-title`. Still
+  install folder, registry key, Run name (its App Paths entry), shortcuts, descriptions and the
+  two component GUIDs, and no `CraftSuiteFolder` around the install folder (Decisions register,
+  2026-11-02); in upstream's install policy, `install-policy.wxi`'s registry searches (the fork's
+  key and Run name) and default folders and `check-install-policy.ps1`'s folder checks, each
+  marked, and `install-policy.json`'s name, upgrade code and registrations (JSON takes no
+  comment); a paragraph in `INSTALLATION.md`; in the workflows, `windows-arm64.yml`'s `app-dir` and `install-relative-path`
+  (the install test's folder) and `release.yml`'s `app-title`. Still
   upstream's, and open: Linux's app id (the desktop entry and its file names, the window's
   `with_app_id`, metainfo, MIME, Flatpak, FreeBSD); the DMG's Finder layout
   (`packaging/macos/dmg/DS_Store`, from `dmg/generate.py`), which still places `VectorCraft.app`
-  on a volume named VectorCraft, so regenerate it before the fork ships a DMG; and Windows' App
-  Paths entry for `vectorcraft.exe`, which both apps write (the last installed wins, and
-  uninstalling either removes it).
+  on a volume named VectorCraft, so regenerate it before the fork ships a DMG.
 - **The fork's text in upstream's docs**, to put back on upstream's own text when resolving: the
   pointer to this file at the top of `CLAUDE.md`; in `README.md` the fork's note and "Based on
   VectorCraft", with ArtCraft's marks and links left out (`docs/brand/LICENSE-brand.txt`); the
@@ -845,7 +892,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
 - **CI on GitHub: upstream's workflows, since the 2026-10-24 sync.** Every PR to the fork runs
   them: the gate (`cargo xtask ci` on the stable toolchain, with the real designs), Desktop
   printing, Windows ARM64 (builds the MSI, installs it into `Program Files\VectorCraft Stitch` and
-  uninstalls it), Windows 7, FreeBSD, Nix, Packaging lint, SonarCloud and the Affinity 3 corpus.
+  uninstalls it), FreeBSD, Nix, Packaging lint (with the Windows installation policy's metadata
+  checks, since the 2026-11-02 sync), SonarCloud and the Affinity 3 corpus (upstream dropped its
+  Windows 7 build).
   Read them with `gh pr checks <number> --repo przbat-public/vectorcraft-stitch`, and report what
   they say. The release workflow is upstream's too, and it needs signing secrets the fork
   doesn't have.

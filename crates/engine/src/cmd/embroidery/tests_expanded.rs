@@ -1,8 +1,9 @@
-//! An expanded object's strokes (an appearance of two strokes, a stroke reshaped by an effect):
-//! the strokes nothing reshapes are sewn along their path as a basic object's stroke is, by their
-//! width or their settings, one line where a running stitch is set; a stroke an effect reshapes is
-//! sewn as the area it paints, and a running or satin stitch set on it is said not to follow its
-//! path; turned and mirrored objects alike; the cut after the object once, after its last piece;
+//! An expanded object's strokes (an appearance of two strokes, a stroke reshaped by an effect, one
+//! drawn with a brush): the strokes are sewn along their path as a basic object's stroke is, by
+//! their width or their settings, one line where a running stitch is set, a stroke an effect
+//! reshapes along its reshaped path (the project owner's choice, 2026-11-02); a stroke drawn with a
+//! brush is sewn as its art's area, and a running or satin stitch set on it is said not to follow
+//! its path; turned and mirrored objects alike; the cut after the object once, after its last piece;
 //! all of it for an object in a group the walk expands (a group with a stroke of its own), and for
 //! its pieces when Expand Appearance expands that group.
 
@@ -113,27 +114,54 @@ fn a_running_stitch_set_on_an_expanded_objects_strokes_sews_one_line() {
     }
 }
 
-/// A stroke an effect reshapes is sewn as the area it paints, as before; the other stroke stays a
-/// stroke. A running stitch set on the strokes (or given to the export) can't follow the reshaped
-/// one's path, and the plan says so, naming the object; with none set, nothing is said.
+/// A stroke an effect reshapes is sewn along its reshaped path as a stroke, as the other stroke is
+/// along the path (the project owner's choice, 2026-11-02: Expand Appearance leaves a stroke a
+/// stroke): a satin column by its width, a running line where one is set, and nothing is said;
+/// tatami set on them sews the area each paints.
 #[test]
-fn a_stroke_an_effect_reshapes_is_sewn_as_its_area_and_said() {
+fn a_stroke_an_effect_reshapes_is_sewn_along_its_reshaped_path() {
     let mut s = blank();
     let id = two_strokes(&mut s, 20.0);
     // The 3 mm stroke (item 1, above the fill) roughened.
     run(&mut s, "effect.apply", json!({"effect": "distort.roughen", "ids": [id], "item": 1}));
+    let styles = |plan: &DesignPlan| strokes(plan, id).iter().map(|(_, style, why)| (*style, *why)).collect::<Vec<_>>();
     let plan = plan_of(&s, json!({}));
-    let units = strokes(&plan, id);
-    assert_eq!(units.iter().map(|(_, style, _)| *style).collect::<Vec<_>>(), [Some(Style::Running)], "the unreshaped stroke alone a stroke");
-    assert!(
-        plan.units.iter().filter(|u| u.origin.selected() == NodeId(id) && matches!(u.origin.part, Part::Fill(_))).count() >= 2,
-        "the fill and the roughened stroke's area"
+    assert_eq!(
+        styles(&plan),
+        [(Some(Style::Satin), Choice::WideStroke), (Some(Style::Running), Choice::NarrowStroke)],
+        "both strokes, by their width"
+    );
+    assert_eq!(
+        plan.units.iter().filter(|u| u.origin.selected() == NodeId(id) && matches!(u.origin.part, Part::Fill(_))).count(),
+        1,
+        "the fill alone an area"
     );
     assert!(!plan.warnings.iter().any(|w| w == STROKE_LOSES_ITS_PATH));
     run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "running"}));
     let plan = plan_of(&s, json!({}));
-    assert!(plan.warnings.iter().any(|w| w == STROKE_LOSES_ITS_PATH), "{:?}", plan.warnings);
-    assert_eq!(plan.warned.get(STROKE_LOSES_ITS_PATH).map(Vec::as_slice), Some(&[NodeId(id)][..]));
+    assert!(styles(&plan).iter().all(|(style, _)| *style == Some(Style::Running)) && styles(&plan).len() == 2, "{:?}", styles(&plan));
+    assert!(!plan.warnings.iter().any(|w| w == STROKE_LOSES_ITS_PATH), "{:?}", plan.warnings);
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "tatami"}));
+    let plan = plan_of(&s, json!({}));
+    assert!(styles(&plan).iter().all(|(style, why)| *style == Some(Style::Fill) && *why == Choice::StrokeFilled), "{:?}", styles(&plan));
+}
+
+/// A stroke drawn with a brush is its brush's art, sewn as the area it paints: a running stitch set
+/// on the strokes (or given to the export) can't follow its path, and the plan says so, naming the
+/// object; with none set, nothing is said.
+#[test]
+fn a_stroke_drawn_with_a_brush_is_sewn_as_its_art_and_said() {
+    let mut s = blank();
+    let dot = run(&mut s, "shape.rectangle", json!({"x": 300, "y": 20, "width": 6, "height": 6}))["id"].as_u64().unwrap();
+    let brush = run(&mut s, "brush.new", json!({"type": "scatter", "ids": [dot]}))["name"].as_str().unwrap().to_string();
+    run(&mut s, "select.set", json!({"ids": [dot]}));
+    run(&mut s, "edit.clear", json!({}));
+    let id = two_strokes(&mut s, 20.0);
+    run(&mut s, "brush.apply", json!({"name": brush, "ids": [id]}));
+    assert!(!plan_of(&s, json!({})).warnings.iter().any(|w| w == STROKE_LOSES_ITS_PATH));
+    run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "running"}));
+    let plan = plan_of(&s, json!({}));
+    assert_eq!(plan.warned.get(STROKE_LOSES_ITS_PATH).map(Vec::as_slice), Some(&[NodeId(id)][..]), "{:?}", plan.warnings);
     run(&mut s, "embroidery.reset", json!({"ids": [id]}));
     assert!(plan_of(&s, json!({"stitch": "satin"})).warnings.iter().any(|w| w == STROKE_LOSES_ITS_PATH), "the export's satin too");
 }
@@ -199,7 +227,20 @@ fn in_a_stroked_group(s: &mut Session) -> (u64, u64) {
 #[test]
 fn an_object_in_an_expanded_group_keeps_its_settings() {
     let mut s = blank();
-    let (id, _) = in_a_stroked_group(&mut s);
+    let (id, group) = in_a_stroked_group(&mut s);
+    // The group's own stroke unpainted: the walk still expands the group (it has a stroke of its
+    // own), and that stroke, a stroke along its members' outline too, sews nothing to be told from
+    // the object's.
+    s.edit("Unpainted", |d, _| {
+        let n = d.node_mut(NodeId(group)).ok_or(EngineError::NoNode(NodeId(group)))?;
+        for item in n.appearance.items.iter_mut() {
+            if let AppearanceItem::Stroke(st) = item {
+                st.paint = vectorcraft_doc::color::Paint::None;
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
     let path = path_mm(&s, id);
     let stroke_units = |plan: &DesignPlan| -> Vec<(usize, Option<Style>)> {
         plan.units.iter().enumerate().filter(|(_, u)| matches!(u.origin.part, Part::Stroke(_))).map(|(k, u)| (k, u.sewn())).collect()
@@ -213,7 +254,7 @@ fn an_object_in_an_expanded_group_keeps_its_settings() {
     run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "none"}));
     let plan = plan_of(&s, json!({}));
     assert!(stroke_units(&plan).is_empty());
-    assert_eq!(plan.units.len(), all - 2, "its fill and the group's stroke alone");
+    assert_eq!(plan.units.len(), all - 2, "its fill alone");
     // The cut after it: once, after its last piece (its upper stroke).
     run(&mut s, "embroidery.reset", json!({"ids": [id]}));
     let cuts = |plan: &DesignPlan| -> Vec<usize> {
@@ -245,8 +286,11 @@ fn expanding_a_group_gives_its_objects_pieces_their_parts() {
     assert!(e(object).trim_after && e(object).part(PartKind::Fill).is_none(), "the object's stand-in: the cut alone");
     let pieces = object.children().unwrap();
     assert_eq!(pieces.len(), 3, "its fill and its two strokes");
-    let fills: Vec<Option<String>> = pieces.iter().map(|p| e(p).part(PartKind::Fill).and_then(|f| f.stitch.clone())).collect();
-    assert_eq!(fills, [None, Some("none".into()), Some("none".into())], "the fill's copy, then the strokes' outlines");
+    let stitch = |p: &vectorcraft_doc::Node, kind: PartKind| e(p).part(kind).and_then(|f| f.stitch.clone());
+    let fills: Vec<Option<String>> = pieces.iter().map(|p| stitch(p, PartKind::Fill)).collect();
+    let strokes: Vec<Option<String>> = pieces.iter().map(|p| stitch(p, PartKind::Stroke)).collect();
+    assert_eq!(fills, [None, None, None], "the fill's copy, the fill's settings (no stitch set)");
+    assert_eq!(strokes, [None, Some("none".into()), Some("none".into())], "then the strokes' copies, the strokes' settings");
     assert_eq!(e(&pieces[0]).part(PartKind::Fill).and_then(|f| f.angle), Some(10.0));
     assert!(pieces.iter().all(|p| !e(p).trim_after), "no cut between its pieces");
 }

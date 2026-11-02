@@ -176,6 +176,23 @@ fn digits_are_written_as_drawn() {
     assert!(!text.contains("page 4") && !text.contains("page ٥"), "{svg}");
 }
 
+/// A run whose font size measures the cap height is written at the em size it is drawn at: 14 pt
+/// measuring a 0.7 em cap height is `font-size="20"`, after a 12 pt run measuring the em box,
+/// which takes the `<text>` element's 12.
+#[test]
+fn font_height_reference_writes_the_size_drawn() {
+    use vectorcraft_doc::FontHeightReference;
+    use vectorcraft_text::test_fonts::{HEIGHT_FAMILY, height_font};
+    vectorcraft_text::FontDb::global().add_font(height_font(true).unwrap());
+    let em_box = CharStyle { font_family: HEIGHT_FAMILY.into(), ..style(12.0) };
+    let cap = CharStyle { size: 14.0, font_height_reference: FontHeightReference::CapHeight, ..em_box.clone() };
+    let d = area_doc(vec![run("Hx ", em_box), run("Hx", cap)], 280.0, Justify::Left);
+    let svg = export(&d, &ExportOptions::default());
+    assert!(svg.contains("font-size=\"12\" fill"), "{svg}");
+    let sizes: Vec<_> = tspans(&svg).iter().map(|t| attr(t, "font-size")).collect();
+    assert_eq!(sizes, [None, Some(20.0)], "{svg}");
+}
+
 #[test]
 fn fewer_tspans_writes_one_per_line() {
     let bold = CharStyle { font_style: "Bold".into(), ..style(12.0) };
@@ -253,7 +270,12 @@ fn canvas_glyph_positions(d: &Document) -> (Vec<Drawn>, Vec<Arc<vectorcraft_text
     let mut faces: Vec<Arc<vectorcraft_text::FontFace>> = vec![];
     let mut last = None;
     for (i, g) in lay.glyphs.iter().enumerate() {
-        let text = lay.marker_text(i).unwrap_or_else(|| if g.len == 0 { "-" } else { &plain[g.byte..g.byte + g.len] });
+        let mut text = lay.marker_text(i).unwrap_or_else(|| if g.len == 0 { "-" } else { &plain[g.byte..g.byte + g.len] }).to_string();
+        // A list marker's characters each have a glyph of their own in these tests, in order.
+        if let Some(m) = lay.marker_of(i).filter(|m| i != m.tab) {
+            let k = (m.glyphs.start..i).filter(|&j| j != m.tab).count();
+            text = m.text.chars().nth(k).map(String::from).unwrap_or_default();
+        }
         if text.trim().is_empty() || (g.len > 0 && last == Some(g.byte)) {
             continue;
         }
@@ -369,6 +391,40 @@ fn bullets_are_written_as_their_characters_where_they_are_drawn() {
         let warned = out.warnings.iter().any(|w| w.contains("bullets"));
         assert_eq!((out.svg.contains("<textPath"), warned), (list.is_none(), list.is_some()), "{:?}", out.warnings);
     }
+}
+
+/// Numbered lists: live text writes each list paragraph's number and period before the
+/// paragraph's text, and a viewer draws them where the canvas draws them. Type on a path with
+/// numbers is written as outlines, with a warning.
+#[test]
+fn numbers_are_written_as_their_characters_where_they_are_drawn() {
+    use vectorcraft_doc::text::{NumberStyle, ParaList};
+    let doc = |t: TextObject| {
+        let mut d = Document::new(300.0, 200.0);
+        let n = Node::new(d.alloc_id(), NodeKind::Text(Box::new(t)));
+        let l = d.layers[0].id;
+        d.insert(Some(l), 0, n).unwrap();
+        d
+    };
+    let mut t = TextObject::point(Point::new(20.0, 20.0), "alpha beta gamma delta epsilon\nzeta\neta", style(12.0));
+    t.kind = TextKind::Area { frame: shapes::rectangle(Rect::new(0.0, 0.0, 120.0, 160.0)) };
+    t.para.list = Some(ParaList::numbered(NumberStyle::UpperRoman));
+    t.para.left_indent = 18.0;
+    t.para.first_line_indent = -18.0;
+    let d = doc(t);
+    let svg = export(&d, &ExportOptions::default());
+    let at = |s: &str| svg.find(s).unwrap_or_else(|| panic!("{s} in {svg}"));
+    assert!(at(">I.\t<") < at("alpha") && at("alpha") < at(">II.\t<") && at(">II.\t<") < at("zeta") && at("zeta") < at(">III.\t<"), "{svg}");
+    assert!(!svg.contains(">-<"), "{svg}");
+    assert_drawn_in_place(&d);
+    let mut line = BezPath::new();
+    line.move_to((0.0, 50.0));
+    line.line_to((250.0, 50.0));
+    let mut t = TextObject::point(Point::new(20.0, 20.0), "Path", style(12.0));
+    t.kind = TextKind::OnPath { path: PathData::from_bezpath(&line), start: 0.0, end: None };
+    t.para.list = Some(ParaList::numbered(NumberStyle::Arabic));
+    let out = vectorcraft_svg::export_full(&doc(t), &ExportOptions::default(), None);
+    assert!(!out.svg.contains("<textPath") && out.warnings.iter().any(|w| w.contains("numbers")), "{:?}", out.warnings);
 }
 
 /// A Justify All line without word spaces spreads its letters; live text keeps the gaps, with

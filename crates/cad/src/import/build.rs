@@ -495,7 +495,14 @@ impl<'d, 'a> Build<'d, 'a> {
         let path = PathData::from_bezpath(&bp);
         let kind = |path: PathData| NodeKind::Path { path, rule, live: None, clipping: false, guide: false };
         let mut n = if path.subpaths.len() > 1 {
-            // Several loops (a hatch with islands) paint as one compound path.
+            // Several loops (a hatch with islands) paint as one compound path. Each loop is an
+            // object of its own, so it counts against the node limit like any other (`item`
+            // counts the compound path itself).
+            if self.nodes.saturating_add(path.subpaths.len()) >= MAX_NODES {
+                self.warn(TOO_MANY);
+                return None;
+            }
+            self.nodes += path.subpaths.len();
             let children = path
                 .subpaths
                 .into_iter()
@@ -615,7 +622,7 @@ impl<'d, 'a> Build<'d, 'a> {
             let label = self.d.blocks.get(name).map_or(name, |b| b.name.as_str());
             let symbol = unique(label, &mut self.next_suffix, &self.symbol_names);
             self.symbol_names.insert(symbol.clone());
-            self.doc.symbols.push(Symbol { name: symbol.clone(), art: Arc::new(art) });
+            self.doc.symbols.push(Symbol { dynamic: false, name: symbol.clone(), art: Arc::new(art) });
             symbol
         });
         self.symbols.insert(key, made.clone());

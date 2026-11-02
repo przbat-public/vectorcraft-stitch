@@ -36,17 +36,18 @@ pub use craft_fonts::{CRAFT_FONTS, CraftFont, WEB_FONTS, WebFont};
 pub use features::{EXTRA_FEATURES, LIGATURE_TRACKING_LIMITS, OtFeatures, explicit_ligatures, ligatures_suppressed_by};
 pub use fontdb::{
     FALLBACK_FAMILY, FontClass, FontDb, FontFace, FontMatch, FontTraits, IcfMargins, PlatformFontFiles, WantedFont, WantedFonts, app_font_dir,
-    is_font_file, is_suitcase, set_app_font_dir, set_platform_font_files, set_user_font_dirs, style_weight, system_font_dirs, user_font_dirs,
+    is_font_file, is_suitcase, set_app_font_dir, set_platform_font_files, set_user_font_dirs, set_user_font_dirs_confined, style_weight,
+    system_font_dirs, user_font_dirs,
 };
 pub use hyphen::{hyphenation_exceptions, set_hyphenation_exceptions};
 use std::sync::Arc;
 pub use svg_glyph::{SvgGlyphReader, set_svg_glyph_reader};
 
-use kurbo::{Affine, BezPath, Point, Rect, Vec2};
+use kurbo::{Affine, BezPath, Point, Rect, Shape, Vec2};
 pub use layout::{decorations, fit_first_line, layout, layout_with, scaled};
 pub use vectorcraft_doc::TextObject;
 
-pub use vectorcraft_doc::{AreaFit, FirstBaseline, VerticalAlign};
+pub use vectorcraft_doc::{AreaFit, FirstBaseline, TextFlow, VerticalAlign};
 
 /// Paragraph composer; stored per text object in [`vectorcraft_doc::ParaStyle::composer`].
 pub use vectorcraft_doc::Composer;
@@ -55,7 +56,7 @@ pub use vectorcraft_doc::Composer;
 /// composer, OpenType features). [`layout`] takes rows/columns/inset/first baseline from the object.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LayoutOptions {
-    /// Area type rows and columns (text flows down each column, then across). Layout clamps each
+    /// Area type rows and columns (text fills them in [`LayoutOptions::flow`] order). Layout clamps each
     /// count to 1..=[`vectorcraft_doc::AreaOptions::MAX_ROWS_COLUMNS`].
     pub rows: usize,
     pub columns: usize,
@@ -68,6 +69,8 @@ pub struct LayoutOptions {
     pub first_baseline_min: f64,
     /// Vertical alignment of the lines in each row/column (Area Type Options "Align").
     pub vertical_align: VerticalAlign,
+    /// Area Type Options "Text Flow": by columns (down each column, then across) or by rows.
+    pub flow: TextFlow,
     /// Area type only: Shrink Text to Fit scales overflowing text down at layout time (see
     /// [`TextLayout::fit_scale`]); the other fits are the engine's business and lay out as `None`.
     pub fit: AreaFit,
@@ -86,6 +89,7 @@ impl Default for LayoutOptions {
             first_baseline: FirstBaseline::Ascent,
             first_baseline_min: 0.0,
             vertical_align: VerticalAlign::Top,
+            flow: TextFlow::Columns,
             fit: AreaFit::None,
             composer: None,
             features: OtFeatures::default(),
@@ -131,6 +135,31 @@ pub struct PositionedGlyph {
     /// A colour glyph's art (COLR layers, an SVG document's art), drawn through `xf` instead of an
     /// outline: a group in font units (y down). Its `outline` is empty.
     pub colour: Option<Arc<vectorcraft_doc::Node>>,
+    /// Type on a curved path in a script whose letters join: the glyph's `outline` is bent along
+    /// the path ([`GlyphBend`]) so it meets its neighbours, and `xf` is only the straight glyph
+    /// nearest it (for the caret, hit testing and tools). `None`: the glyph is drawn through `xf`.
+    pub bend: Option<GlyphBend>,
+    /// Font units → font units: `xf * unturned` places the glyph as it would be placed without
+    /// its Character Rotation. The identity for a glyph without one.
+    pub unturned: Affine,
+    /// Font units: `xf * pivot` is the point its Character Rotation turns it about, its pen
+    /// position on the baseline moved by its baseline shift.
+    pub pivot: Point,
+}
+
+/// How a glyph on a path is bent along it: a point of its pen space (x along its advance from its
+/// left end, y down from the baseline) goes to `P(s + x · step / advance) + (y + rise) · N` there,
+/// `P` the path's point at a distance along it and `N` its normal on the glyph's lower side.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GlyphBend {
+    /// Where the glyph's left end is along the path.
+    pub s: f64,
+    /// How far along the path the glyph runs.
+    pub step: f64,
+    /// The glyph's advance.
+    pub advance: f64,
+    /// How far down the type moves off the path (Align to Path).
+    pub rise: f64,
 }
 
 impl PositionedGlyph {
@@ -317,6 +346,21 @@ impl TextLayout {
             (self.physical_point(Point::new(l.x0, y)), self.physical_point(Point::new(l.x1, y)))
         };
         self.lines.iter().filter(|l| l.x1 > l.x0).map(line).collect()
+    }
+    /// The ink of the type in text space: its glyphs (and ruby) as drawn, colour glyphs, images and
+    /// inline graphics included, without the lines' em boxes that [`Self::bounds`] also covers.
+    /// What Align to Glyph Bounds aligns. `None` when nothing draws (only spaces, or no text).
+    pub fn ink_bounds(&self) -> Option<Rect> {
+        let outlined = |g: &PositionedGlyph| (!g.outline.elements().is_empty()).then(|| g.outline.bounding_box());
+        let glyphs = self.glyphs.iter().flat_map(|g| {
+            let image = g.placed_image().map(|(image, xf)| xf.transform_rect_bbox(image.rect()));
+            let colour = g.colour.as_ref().and_then(|c| c.geometric_bounds()).map(|b| g.xf.transform_rect_bbox(b));
+            [outlined(g), image, colour]
+        });
+        // Ruby is covered by its line's ascent, but its ink can overhang sideways past the line.
+        let ruby = self.ruby.iter().map(outlined);
+        let inlines = self.inlines.iter().map(|i| Some(i.bounds));
+        glyphs.chain(ruby).chain(inlines).flatten().reduce(|a, b| a.union(b))
     }
     /// All glyph outlines combined (e.g. for Create Outlines).
     pub fn to_bezpath(&self) -> BezPath {
@@ -678,48 +722,6 @@ pub fn logical_order(visual: &str) -> Option<(Vec<usize>, bool)> {
 
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod tests_axes;
-#[cfg(test)]
-mod tests_bidi;
-#[cfg(test)]
-mod tests_bitmaps;
-#[cfg(test)]
-mod tests_colr;
-#[cfg(test)]
-mod tests_combos;
-#[cfg(test)]
-mod tests_devanagari;
-#[cfg(test)]
-mod tests_embed;
-#[cfg(test)]
-mod tests_fit;
-#[cfg(test)]
-mod tests_hang;
-#[cfg(test)]
-mod tests_inline;
-#[cfg(test)]
-mod tests_joiners;
-#[cfg(test)]
-mod tests_justify;
-#[cfg(test)]
-mod tests_ruby;
-#[cfg(test)]
-mod tests_scripts;
-#[cfg(test)]
-mod tests_snap;
-#[cfg(test)]
-mod tests_svg_glyphs;
-#[cfg(test)]
-mod tests_sysfonts;
-#[cfg(test)]
-mod tests_typo;
-#[cfg(test)]
-mod tests_variable;
-#[cfg(test)]
-mod tests_versions;
-#[cfg(test)]
-mod tests_vertical;
 #[cfg(test)]
 #[path = "../build/web_fonts.rs"]
 mod web_fonts_build;

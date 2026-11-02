@@ -7,8 +7,11 @@
 
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::{ImageObject, NodeId, NodeKind};
+use vectorcraft_stitch::thread::{Match, Palette, mismatched, shown_delta_e};
 
-use super::settings::{C, Settings, table};
+use super::background::{self, Background};
+use super::colours::{self, Colours};
+use super::settings::{BackgroundSetting, C, Mode, Settings, table};
 use super::{trace, working};
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
@@ -18,8 +21,9 @@ use crate::{EngineError, Result, Session};
 /// the stages done of [`STAGES`].
 pub(crate) const DIGITIZE_PROGRESS: &str = "digitizeImage";
 
-/// The stages a run goes through, as its progress counts them: the working copy, the trace.
-const STAGES: u64 = 2;
+/// The stages a run goes through, as its progress counts them: the working copy, the trace, the
+/// colours.
+const STAGES: u64 = 3;
 
 /// Hundredths: millimetres, square millimetres and shares are given to two decimals.
 const HUNDREDTHS: f64 = 100.0;
@@ -89,6 +93,63 @@ fn since(_: ()) -> Option<f64> {
     None
 }
 
+/// A thread as a reply gives it: its palette, number, name, colour, and its difference from the
+/// image's colour (shown to two decimals, flagged past the line).
+fn thread_json(palette: Palette, m: Match) -> Value {
+    let (color, name) = palette.get(m.index).unwrap_or(([0, 0, 0], ""));
+    json!({
+        "palette": palette.id(),
+        "index": m.index,
+        "name": name,
+        "color": super::super::hex(color),
+        "deltaE": shown_delta_e(m.delta_e),
+        "mismatch": mismatched(m.delta_e),
+    })
+}
+
+/// The colour list's rows as the reply gives them.
+fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f64) -> Vec<Value> {
+    let sewn_px: usize = colours.rows.iter().filter(|r| r.sewn()).map(|r| r.pixels).sum();
+    colours
+        .rows
+        .iter()
+        .map(|r| {
+            let merged = r.merged_into.and_then(|j| colours.rows.get(j)).map(|t| super::super::hex(t.color));
+            let reason = match (&r.thread, &merged) {
+                (_, Some(_)) => Some("merged"),
+                (Some(m), None) => Some(m.reason.id()),
+                (None, None) => None,
+            };
+            json!({
+                "color": super::super::hex(r.color),
+                "background": r.background,
+                "sewn": r.sewn(),
+                "job": r.job.id(),
+                "thread": r.thread.as_ref().map(|m| thread_json(palette, m.thread)),
+                "reason": reason,
+                "alternatives": r.thread.as_ref().map_or(vec![], |m| m.alternatives.iter().map(|&a| thread_json(palette, a)).collect()),
+                "area": hundredths(r.pixels as f64 / px_per_mm2),
+                "areaCount": r.paths.len(),
+                "share": hundredths(r.pixels as f64 / frame_px.max(1.0) * PERCENT),
+                "sewnShare": r.sewn().then(|| hundredths(r.pixels as f64 / sewn_px.max(1) as f64 * PERCENT)),
+                "mergedInto": merged,
+                "choice": r.choice,
+            })
+        })
+        .collect()
+}
+
+/// The background as a reply gives it: where it came from, and its colour.
+fn background_json(found: Background, setting: BackgroundSetting, traced: Option<[u8; 3]>) -> Value {
+    let from = match (setting, found) {
+        (BackgroundSetting::None, _) | (_, Background::None) => "none",
+        (BackgroundSetting::Colour(_), _) => "given",
+        (BackgroundSetting::Corners, Background::Transparent) => "transparency",
+        (BackgroundSetting::Corners, Background::Colour(_)) => "corners",
+    };
+    json!({"from": from, "color": traced.map(super::super::hex)})
+}
+
 /// `embroidery.digitizeImage`.
 pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> Result<Value> {
     let o = super::super::object(p, C)?;
@@ -108,38 +169,49 @@ pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> 
     vectorcraft_doc::cancel::progress(0, STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let w = working::prepare(&image, &bytes, &settings)?;
+    let found = match settings.background {
+        BackgroundSetting::Corners => background::found(&w.raster),
+        BackgroundSetting::None => Background::None,
+        BackgroundSetting::Colour(c) => Background::Colour(c),
+    };
     let image_ms = since(started);
     vectorcraft_doc::cancel::check()?;
     vectorcraft_doc::cancel::progress(1, STAGES, DIGITIZE_PROGRESS);
     let started = clock();
-    let traced = trace::traced(&w, &settings)?;
-    let trace_ms = since(started);
-    vectorcraft_doc::cancel::progress(STAGES, STAGES, DIGITIZE_PROGRESS);
-    // Each colour's area: its paths' pixels at the working resolution.
-    let px_per_mm2 = w.px_per_mm * w.px_per_mm;
-    let mut colors: Vec<([u8; 3], usize, usize)> = traced.palette.iter().map(|&c| (c, 0, 0)).collect();
-    for path in &traced.paths {
-        if let Some(entry) = colors.iter_mut().find(|e| e.0 == path.color) {
-            entry.1 += path.pixels;
-            entry.2 += 1;
-        }
-    }
-    let total: usize = colors.iter().map(|e| e.1).sum();
-    let colors: Vec<Value> = colors
-        .iter()
-        .map(|&(c, pixels, count)| {
-            json!({
-                "color": super::super::hex(c),
-                "area": hundredths(pixels as f64 / px_per_mm2),
-                "areaCount": count,
-                "share": hundredths(pixels as f64 / total.max(1) as f64 * PERCENT),
-            })
-        })
-        .collect();
+    // A background colour takes one of the trace's colours: the design keeps the colours asked.
+    let colors = settings.colors + u32::from(matches!(found, Background::Colour(_)));
     let mut warnings = w.warnings();
+    let mut traced = trace::traced(&w, &settings, colors, trace::Palette::Mode)?;
+    if settings.mode == Mode::Logo && traced.palette.len() > colors as usize {
+        // The Automatic palette traces an image that isn't flat art (a photo, gradients) in as
+        // many colours as its tones need: traced again in the colours asked.
+        warnings.push(format!(
+            "the image doesn't look like flat art (a photo or gradients?): {} colours were found, so it was traced in the {} that represent it best",
+            traced.palette.len(),
+            settings.colors
+        ));
+        traced = trace::traced(&w, &settings, colors, trace::Palette::Limited)?;
+    }
+    let trace_ms = since(started);
+    vectorcraft_doc::cancel::check()?;
+    vectorcraft_doc::cancel::progress(2, STAGES, DIGITIZE_PROGRESS);
+    let started = clock();
+    let traced_background = colours::background_colour(&traced.palette, found);
+    if matches!(found, Background::Colour(_)) && traced_background.is_none() {
+        warnings.push("no traced colour is the background's: every area is sewn".into());
+    }
+    if settings.background == BackgroundSetting::Corners && found == Background::None {
+        warnings.push("the image's corners don't agree on a background: every area is sewn (give `background` to name one)".into());
+    }
+    let colours = colours::listed(&traced, (w.raster.width, w.raster.height), traced_background, settings.mode, palette, &settings.choices)?;
+    let colors_ms = since(started);
+    vectorcraft_doc::cancel::progress(STAGES, STAGES, DIGITIZE_PROGRESS);
     if traced.paths.is_empty() {
         warnings.push("nothing in the image was traced: it is empty or transparent".into());
     }
+    let px_per_mm2 = w.px_per_mm * w.px_per_mm;
+    let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
+    let unused: Vec<Value> = colours.unused.iter().map(|&i| json!({"choice": i, "reason": "noSuchColor"})).collect();
     Ok(json!({
         "dryRun": true,
         "image": {
@@ -153,13 +225,15 @@ pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> 
             "size": [hundredths(w.size_mm.0), hundredths(w.size_mm.1)],
             "scale": w.scale,
             "bounds": w.bounds_mm().map(hundredths),
+            "background": background_json(found, settings.background, traced_background),
         },
-        "colorCount": colors.len(),
-        "colors": colors,
+        "colorCount": colours.rows.iter().filter(|r| r.sewn() && r.merged_into.is_none()).count(),
+        "colors": colors_json(&colours, palette, px_per_mm2, frame_px),
+        "unusedChoices": unused,
         "areaCount": traced.paths.len(),
         "warnings": warnings,
         "settings": settings.echo(),
         "table": table(),
-        "timings": {"image": image_ms, "trace": trace_ms},
+        "timings": {"image": image_ms, "trace": trace_ms, "colors": colors_ms},
     }))
 }

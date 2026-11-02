@@ -8,7 +8,7 @@
 //! naming the range, rather than clamped, as the other embroidery commands do.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_stitch::thread::Palette;
+use vectorcraft_stitch::thread::{Palette, PaletteThread};
 
 use super::super::vocabulary::is_snake_case_of;
 use crate::Result;
@@ -54,6 +54,10 @@ pub(super) enum Kind {
     Size,
     /// `[x0, y0, x1, y1]`, whole pixels of the image, `x0 < x1` and `y0 < y1`, inside it.
     Rect,
+    /// `"corners"` (found where the image's corners agree), `"none"`, or a colour `"#rrggbb"`.
+    Background,
+    /// A list of choices for the image's colours ([`ColorChoice`]), at most [`MAX_COLOR_CHOICES`].
+    Choices,
 }
 
 /// One setting.
@@ -124,8 +128,61 @@ pub(super) const PERCENT_RANGE: (f64, f64) = (0.0, 100.0);
 /// - `grayscale`: `colors` greys (upstream's Grayscale mode).
 pub(super) const MODES: &[&str] = &["color", "logo", "grayscale"];
 
+/// The most choices for the image's colours one call takes: as many as a trace has colours at most
+/// (upstream Image Trace's 256).
+pub(super) const MAX_COLOR_CHOICES: usize = 256;
+
+/// What a colour of the image is sewn as ([`ColorChoice::job`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Job {
+    /// By the planner's rules: a fill as tatami, its narrow parts as satin or a running line.
+    Auto,
+    /// As tatami, its narrow parts too.
+    Fill,
+    /// Not sewn: its objects are made, set not to be sewn, so that it can be sewn later.
+    None,
+}
+
+impl Job {
+    /// Its id in commands and replies.
+    pub(super) fn id(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Fill => "fill",
+            Self::None => "none",
+        }
+    }
+
+    fn from_id(id: &str) -> Option<Self> {
+        [Self::Auto, Self::Fill, Self::None].into_iter().find(|j| j.id() == id)
+    }
+}
+
+/// A person's choice for one of the image's colours, found again by colour: the thread it is sewn
+/// in, another colour it is merged into, or what it is sewn as.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct ColorChoice {
+    /// The image's colour it is for (the colours within `thread::MISMATCH_DELTA_E` of it take it).
+    pub(super) color: [u8; 3],
+    pub(super) thread: Option<PaletteThread>,
+    /// The colour whose thread and areas it joins.
+    pub(super) merge_into: Option<[u8; 3]>,
+    pub(super) job: Option<Job>,
+}
+
+/// What is round the art and never sewn ([`Kind::Background`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum BackgroundSetting {
+    /// Transparency, or the colour the image's corners agree on.
+    Corners,
+    /// None: every area is sewn.
+    None,
+    /// This colour (its areas touching the image's edge).
+    Colour([u8; 3]),
+}
+
 /// Every setting, in the window's order.
-pub(super) const SETTINGS: [Setting; 9] = [
+pub(super) const SETTINGS: [Setting; 11] = [
     Setting {
         name: "width",
         key: "width",
@@ -148,6 +205,13 @@ pub(super) const SETTINGS: [Setting; 9] = [
         source: "unset: the largest size within [width, height] millimetres, the picture's proportions kept (a sewing field)",
     },
     Setting { name: "crop", key: "crop", step: Step::Image, kind: Kind::Rect, source: "unset: the whole image" },
+    Setting {
+        name: "background",
+        key: "background",
+        step: Step::Image,
+        kind: Kind::Background,
+        source: "the project owner's choice (2026-11-01): only what touches the image's edge, found at its corners",
+    },
     Setting { name: "mode", key: "mode", step: Step::Colors, kind: Kind::Choice { ids: MODES }, source: "the design's Colours mode" },
     Setting {
         name: "colors",
@@ -156,6 +220,7 @@ pub(super) const SETTINGS: [Setting; 9] = [
         kind: Kind::Count { range: (MIN_COLORS, MAX_COLORS), default: COLORS },
         source: "Wilcom's \"most embroidery uses 5–6 colors max\"; upstream Image Trace's default",
     },
+    Setting { name: "colorChoices", key: "color_choices", step: Step::Colors, kind: Kind::Choices, source: "unset: no choices" },
     Setting {
         name: "minArea",
         key: "min_area",
@@ -233,7 +298,9 @@ pub(super) struct Settings {
     pub(super) size: Size,
     /// `[x0, y0, x1, y1]` in the image's own pixels; `None`: the whole image.
     pub(super) crop: Option<[u32; 4]>,
+    pub(super) background: BackgroundSetting,
     pub(super) mode: Mode,
+    pub(super) choices: Vec<ColorChoice>,
     pub(super) colors: u32,
     /// Square millimetres.
     pub(super) min_area: f64,
@@ -261,6 +328,84 @@ fn wants(setting: &Setting) -> String {
         Kind::Choice { ids } => format!("one of {}", ids.join(", ")),
         Kind::Size => format!("[width, height] in mm, each above 0, at most {}", SIZE_RANGE_MM.1),
         Kind::Rect => "[x0, y0, x1, y1]: whole pixels of the image, x0 < x1 and y0 < y1".into(),
+        Kind::Background => "\"corners\", \"none\" or a colour \"#rrggbb\"".into(),
+        Kind::Choices => format!(
+            "a list of at most {MAX_COLOR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"none\"}}, mergeInto alone"
+        ),
+    }
+}
+
+/// The colour `s` writes as `#rrggbb`, exactly.
+pub(super) fn hex_colour(s: &str) -> Option<[u8; 3]> {
+    let ok = s.len() == 7 && s.starts_with('#') && s.bytes().skip(1).all(|b| b.is_ascii_hexdigit());
+    let byte = |k: usize| s.get(k..k + 2).and_then(|h| u8::from_str_radix(h, 16).ok());
+    if !ok {
+        return None;
+    }
+    Some([byte(1)?, byte(3)?, byte(5)?])
+}
+
+/// The background `o` asks for.
+fn background(o: &Map<String, Value>) -> Result<BackgroundSetting> {
+    let s = row("background");
+    match o.get("background") {
+        None | Some(Value::Null) => Ok(BackgroundSetting::Corners),
+        Some(v) => match v.as_str() {
+            Some("corners") => Ok(BackgroundSetting::Corners),
+            Some("none") => Ok(BackgroundSetting::None),
+            Some(h) => hex_colour(h).map(BackgroundSetting::Colour).ok_or_else(|| refused(s, v)),
+            None => Err(refused(s, v)),
+        },
+    }
+}
+
+/// One of the choices `v` gives, or why it is refused.
+fn choice(v: &Value, s: &Setting) -> Result<ColorChoice> {
+    let o = v.as_object().ok_or_else(|| refused(s, v))?;
+    if let Some(k) = o.keys().find(|k| !["color", "thread", "mergeInto", "job"].contains(&k.as_str())) {
+        return Err(bad(C, format!("`colorChoices` {v}: unknown key `{k}`; a choice takes color, thread, mergeInto and job")));
+    }
+    let colour = |key: &str| -> Result<Option<[u8; 3]>> {
+        match o.get(key) {
+            None | Some(Value::Null) => Ok(None),
+            Some(c) => {
+                c.as_str().and_then(hex_colour).map(Some).ok_or_else(|| bad(C, format!("`colorChoices` {v}: `{key}` is a colour \"#rrggbb\"")))
+            }
+        }
+    };
+    let color = colour("color")?.ok_or_else(|| bad(C, format!("`colorChoices` {v}: each choice names the image's `color` it is for")))?;
+    let thread =
+        match o.get("thread") {
+            None | Some(Value::Null) => None,
+            Some(t) => {
+                let palette = t.get("palette").and_then(Value::as_str).and_then(Palette::from_id);
+                let index = t.get("index").and_then(Value::as_u64).and_then(|i| usize::try_from(i).ok());
+                let chosen = palette.zip(index).and_then(|(p, i)| PaletteThread::new(p, i));
+                Some(chosen.ok_or_else(|| {
+                    bad(C, format!("`colorChoices` {v}: `thread` is {{palette: \"pec\"|\"jef\", index}}, a thread of that palette"))
+                })?)
+            }
+        };
+    let job = match o.get("job") {
+        None | Some(Value::Null) => None,
+        Some(j) => {
+            Some(j.as_str().and_then(Job::from_id).ok_or_else(|| bad(C, format!("`colorChoices` {v}: `job` is \"auto\", \"fill\" or \"none\"")))?)
+        }
+    };
+    let merge_into = colour("mergeInto")?;
+    if merge_into.is_some() && (thread.is_some() || job.is_some()) {
+        return Err(bad(C, format!("`colorChoices` {v}: a colour merged into another takes that one's thread and job: give `mergeInto` alone")));
+    }
+    Ok(ColorChoice { color, thread, merge_into, job })
+}
+
+/// The choices for the image's colours `o` gives.
+fn choices(o: &Map<String, Value>) -> Result<Vec<ColorChoice>> {
+    let s = row("colorChoices");
+    match o.get("colorChoices") {
+        None | Some(Value::Null) => Ok(vec![]),
+        Some(Value::Array(list)) if list.len() <= MAX_COLOR_CHOICES => list.iter().map(|v| choice(v, s)).collect(),
+        Some(v) => Err(refused(s, v)),
     }
 }
 
@@ -343,7 +488,9 @@ impl Settings {
         Ok(Self {
             size,
             crop: rect(o, "crop")?,
+            background: background(o)?,
             mode,
+            choices: choices(o)?,
             colors,
             min_area: number(o, "minArea")?.unwrap_or(MIN_AREA_MM2),
             smoothing: number(o, "smoothing")?.unwrap_or(SMOOTHING),
@@ -365,7 +512,18 @@ impl Settings {
             "height": height,
             "fit": fit,
             "crop": self.crop,
+            "background": match self.background {
+                BackgroundSetting::Corners => json!("corners"),
+                BackgroundSetting::None => json!("none"),
+                BackgroundSetting::Colour(c) => json!(super::super::hex(c)),
+            },
             "mode": self.mode.id(),
+            "colorChoices": self.choices.iter().map(|c| json!({
+                "color": super::super::hex(c.color),
+                "thread": c.thread.map(|t| json!({"palette": t.palette().id(), "index": t.index()})),
+                "mergeInto": c.merge_into.map(super::super::hex),
+                "job": c.job.map(Job::id),
+            })).collect::<Vec<_>>(),
             "colors": self.colors,
             "minArea": self.min_area,
             "smoothing": self.smoothing,
@@ -387,6 +545,8 @@ pub(super) fn table() -> Value {
                     Kind::Choice { ids } => ("", json!(ids), json!(ids.first())),
                     Kind::Size => ("mm", json!([SIZE_RANGE_MM.0, SIZE_RANGE_MM.1]), Value::Null),
                     Kind::Rect => ("px", Value::Null, Value::Null),
+                    Kind::Background => ("", json!(["corners", "none", "#rrggbb"]), json!("corners")),
+                    Kind::Choices => ("", json!([0, MAX_COLOR_CHOICES]), json!([])),
                 };
                 json!({"name": s.name, "key": s.key, "step": s.step.id(), "unit": unit, "range": range, "default": default, "source": s.source})
             })

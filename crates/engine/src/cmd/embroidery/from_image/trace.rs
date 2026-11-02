@@ -33,17 +33,28 @@ pub(super) fn area_px(area_mm2: f64, px_per_mm: f64) -> u32 {
     if px.is_finite() && px > 0.0 { px.min(f64::from(u32::MAX)) as u32 } else { 0 }
 }
 
-/// Image Trace's parameters for `settings` at `px_per_mm`.
-pub(super) fn params(settings: &Settings, px_per_mm: f64) -> tr::TraceParams {
-    let (mode, palette) = match settings.mode {
-        Mode::Color => (tr::Mode::Color, tr::Palette::Limited),
-        Mode::Logo => (tr::Mode::Color, tr::Palette::Automatic),
-        Mode::Grayscale => (tr::Mode::Grayscale, tr::Palette::Limited),
+/// How a trace finds the image's colours.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Palette {
+    /// As the mode asks: Limited for colours and greys, Automatic for logo mode.
+    Mode,
+    /// Limited, whatever the mode: logo mode's trace again, when the Automatic palette found more
+    /// colours than asked (a photo, or gradients).
+    Limited,
+}
+
+/// Image Trace's parameters for `settings` at `px_per_mm`, reducing the image to at most `colors`
+/// (the colours asked, and one more for a background colour), its palette found as `palette` says.
+pub(super) fn params(settings: &Settings, px_per_mm: f64, colors: u32, palette: Palette) -> tr::TraceParams {
+    let (mode, palette) = match (settings.mode, palette) {
+        (Mode::Color, _) | (Mode::Logo, Palette::Limited) => (tr::Mode::Color, tr::Palette::Limited),
+        (Mode::Logo, Palette::Mode) => (tr::Mode::Color, tr::Palette::Automatic),
+        (Mode::Grayscale, _) => (tr::Mode::Grayscale, tr::Palette::Limited),
     };
     tr::TraceParams {
         mode,
         palette,
-        colors: settings.colors,
+        colors,
         // Smoothing is upstream's Paths turned round: the higher, the looser the fit.
         paths: PERCENT_RANGE.1 - settings.smoothing,
         corners: settings.corners,
@@ -61,12 +72,12 @@ pub(super) fn params(settings: &Settings, px_per_mm: f64) -> tr::TraceParams {
     }
 }
 
-/// The working copy traced with `settings`: its paths in the working copy's pixels, bottom-most
+/// The working copy traced with `settings` in at most `colors` colours found as `palette` says: its paths in the working copy's pixels, bottom-most
 /// first, each with its colour and pixel count, and the colours used. A cancel stops it between
 /// stages (with [`EngineError::Cancelled`], nothing made); an image that would make more than
 /// [`MAX_ANCHORS`] anchor points is refused with advice.
-pub(super) fn traced(working: &Working, settings: &Settings) -> Result<tr::TraceResult> {
-    let p = params(settings, working.px_per_mm);
+pub(super) fn traced(working: &Working, settings: &Settings, colors: u32, palette: Palette) -> Result<tr::TraceResult> {
+    let p = params(settings, working.px_per_mm, colors, palette);
     // The stages before the colour layers report on this thread, where a cancel reaches them; the
     // layers report from the threads that trace them, where it doesn't.
     tr::trace_watched(&working.raster, &p, MAX_ANCHORS, &|_, _| !vectorcraft_doc::cancel::is_cancelled()).map_err(|e| match e {

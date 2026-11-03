@@ -96,7 +96,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 92] = [
+pub const ROWS: [&str; 94] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -189,6 +189,8 @@ pub const ROWS: [&str; 92] = [
     digitizing::ROWS[7],
     digitizing::ROWS[8],
     digitizing::ROWS[9],
+    digitizing::ROWS[10],
+    digitizing::ROWS[11],
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -208,7 +210,7 @@ pub const ROWS: [&str; 92] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 92] = [
+const BUDGETS: [f64; 94] = [
     400.0,
     100.0,
     100.0,
@@ -302,6 +304,8 @@ const BUDGETS: [f64; 92] = [
     digitizing::BUDGETS[7],
     digitizing::BUDGETS[8],
     digitizing::BUDGETS[9],
+    digitizing::BUDGETS[10],
+    digitizing::BUDGETS[11],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.

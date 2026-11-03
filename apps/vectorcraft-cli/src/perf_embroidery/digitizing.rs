@@ -5,10 +5,16 @@
 //! - a badge of 98 × 88 mm in six colours on white (an oval, a ring, a star, a band, bars and
 //!   dots), drawn as art and exported by the engine as a JPEG at 10 pixels a millimetre over its
 //!   box and a 5 mm margin ([`BADGE_PX`]);
-//! - 2,500 specks of 0.09 mm² strewn over an orange field 100 mm square;
+//! - 2,500 specks of 0.36 mm² strewn over an orange field 100 mm square: larger than the trace's
+//!   own noise (0.16 mm²), so that it keeps them, and smaller than the smallest area (1 mm²), so
+//!   that every one joins the field;
 //! - grids of squares in five colours, none beside another of its own: 300 of 4 mm and 1,000 of
 //!   3 mm;
-//! - 1,500 × 1,500 pixels of noise in 16 colours, which makes more areas than a design may have.
+//! - 3,600 dots of 1.2 mm in a field, each sewn over it, the field made solid under them;
+//! - a line one pixel wide winding between 27,750 bars of 0.2 by 0.9 mm in two colours, too small to
+//!   keep, which join the rows they lie in: a thin area with a hundred and fifty neighbours, each
+//!   once a thousand specks;
+//! - 1,500 × 1,500 pixels of noise in 16 colours, more than a design may be made of.
 
 use std::time::Instant;
 
@@ -35,10 +41,10 @@ const JPEG_QUALITY: u8 = 80;
 /// The badge's colours: its own six, as the command is asked for.
 const BADGE_COLORS: u32 = 6;
 
-/// The specks: a grid of 50 by 50, each 3 pixels square (0.09 mm²), 20 pixels apart, on a field
+/// The specks: a grid of 50 by 50, each 6 pixels square (0.36 mm²), 20 pixels apart, on a field
 /// of 1,000 pixels a side.
 const SPECKS: u32 = 50;
-const SPECK_PX: u32 = 3;
+const SPECK_PX: u32 = 6;
 const SPECK_STEP_PX: u32 = 20;
 const FIELD_PX: u32 = 1000;
 
@@ -46,32 +52,55 @@ const FIELD_PX: u32 = 1000;
 /// plus twice its row, of five).
 const GRID_COLOURS: [[u8; 3]; 5] = [[29, 42, 107], [232, 177, 0], [210, 32, 48], [31, 138, 60], [126, 200, 232]];
 
+/// The grids: 20 by 15 squares of 40 pixels (300 of 4 mm), and 40 by 25 of 30 pixels (1,000 of
+/// 3 mm), each as `(columns, rows, side)`.
+const SQUARES: (u32, u32, u32) = (20, 15, 40);
+const MANY_SQUARES: (u32, u32, u32) = (40, 25, 30);
+
+/// The dots: 60 by 60 squares of 12 pixels (1.2 mm, narrower than an island sewn over its field
+/// may be), 24 pixels apart, in a navy field inside a white margin of 20 pixels: 1,480 pixels a side.
+const DOTS: u32 = 60;
+const DOT_PX: u32 = 12;
+const DOT_STEP_PX: u32 = 24;
+const DOTS_MARGIN_PX: u32 = 20;
+const DOTS_PX: u32 = DOTS * DOT_STEP_PX + 2 * DOTS_MARGIN_PX;
+
+/// The winding line: one pixel wide, a row every 10 pixels, each joined to the next at alternate
+/// ends, across 750 pixels; between its rows, bars 2 pixels wide alternating in two colours.
+const WINDING_PX: u32 = 750;
+const WINDING_PITCH_PX: u32 = 10;
+const BAR_PX: u32 = 2;
+const WINDING_ROWS: u32 = WINDING_PX / WINDING_PITCH_PX;
+
 /// The noise: 1,500 pixels a side, the working copy's largest, in 16 colours.
 const NOISE_PX: u32 = 1500;
 const NOISE_COLORS: u32 = 16;
 
 /// The rows' names, in order (at most 42 characters, the report's column).
-pub(super) const ROWS: [&str; 10] = [
+pub(super) const ROWS: [&str; 12] = [
     "image: prepare a 1,080 × 980 JPEG",
     "image: trace and colours, 6 threads",
     "image: logo mode, 1,080 × 980 JPEG",
     "image: areas merged, 2,500 specks",
     "image: overlap 0.4 mm, 300 areas",
-    "image: objects made, 300 areas",
+    "image: objects made, 3,601 areas",
     "image: stitches, 98 × 88 mm badge",
     "image: whole dry run, 98 × 88 mm badge",
     "image: 1,500 × 1,500 noise, refused",
     "image: dry run reply, 1,000 areas",
+    "image: shapes, 3,600 dots in a field",
+    "image: shapes, a line round 27,750 bars",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates, about 2.5 times what each
-/// measured on 2026-11-02 (release, 12-core Apple Silicon, load under 2, the median of three), as
-/// the other rows', so that a regression of that size shows: the JPEG prepared in 1.9 ms, traced
-/// with its colours in 105 ms (178 in logo mode), 2,500 specks merged in 29 ms, 300 areas grown
-/// under each other in 16 ms and made into objects in 0.06 ms (1 ms, the least the report's
-/// whole-millisecond column shows), the badge's stitches planned in 32 ms and its whole dry run in
-/// 194 ms, noise refused in 1.1 s, a reply of 1,000 areas built in 4.9 ms.
-pub(super) const BUDGETS: [f64; 10] = [5.0, 265.0, 450.0, 75.0, 40.0, 1.0, 80.0, 490.0, 2750.0, 13.0];
+/// measured on 2026-11-03 (release, 12-core Apple Silicon, load about 4, the median of three), as
+/// the other rows', so that a regression of that size shows: the JPEG prepared in 1.96 ms, traced
+/// with its colours in 126 ms (199 in logo mode), 2,500 specks merged in 46.8 ms, 300 areas grown
+/// under each other in 29.2 ms, 3,601 areas made into objects in 0.53 ms, the badge's stitches
+/// planned in 33.7 ms and its whole dry run in 208 ms, noise refused in 1.17 s, a reply of 1,000
+/// areas built in 5.22 ms, 3,600 dots and their field shaped in 59.5 ms, and the winding line and
+/// its rows of joined bars in 429 ms.
+pub(super) const BUDGETS: [f64; 12] = [5.0, 315.0, 500.0, 120.0, 75.0, 1.3, 85.0, 520.0, 2930.0, 13.0, 150.0, 1070.0];
 
 /// A picture of `width` × `height` opaque pixels, each `colour(x, y)`, as PNG.
 fn png(width: u32, height: u32, colour: impl Fn(u32, u32) -> [u8; 3]) -> Result<Vec<u8>, String> {
@@ -172,12 +201,36 @@ pub(super) fn times() -> Result<Vec<f64>, String> {
         if speck(x) && speck(y) { [29, 42, 107] } else { [240, 130, 20] }
     })?;
     let mut field = placed("specks.png", &specks, FIELD_PX, FIELD_PX)?;
-    ms.push(staged(&dry_runs(&mut field, json!({"colors": 2, "background": "none"}))?, &["areas"]));
-    let (cols, rows, side) = (20, 15, 40);
+    let merged = dry_runs(&mut field, json!({"colors": 2, "background": "none"}))?;
+    if merged.iter().any(|(r, _)| r["joined"] != json!(SPECKS * SPECKS)) {
+        return Err(format!("perf: the specks weren't all merged: {}", merged.first().map_or(Value::Null, |(r, _)| r["joined"].clone())));
+    }
+    ms.push(staged(&merged, &["areas"]));
+    let (cols, rows, side) = SQUARES;
     let mut squares = placed("squares.png", &grid(cols, rows, side)?, cols * side, rows * side)?;
     let squares_runs = dry_runs(&mut squares, json!({"colors": GRID_COLOURS.len()}))?;
     ms.push(staged(&squares_runs, &["shapes"]));
-    ms.push(staged(&squares_runs, &["objects"]));
+    let dots = png(DOTS_PX, DOTS_PX, |x, y| {
+        let inner = |v: u32| (DOTS_MARGIN_PX..DOTS_PX - DOTS_MARGIN_PX).contains(&v);
+        let dot = |v: u32| {
+            (v - DOTS_MARGIN_PX) % DOT_STEP_PX >= (DOT_STEP_PX - DOT_PX) / 2 && (v - DOTS_MARGIN_PX) % DOT_STEP_PX < (DOT_STEP_PX + DOT_PX) / 2
+        };
+        match (inner(x) && inner(y), inner(x) && inner(y) && dot(x) && dot(y)) {
+            (_, true) => [240, 130, 20],
+            (true, false) => [29, 42, 107],
+            (false, _) => [255, 255, 255],
+        }
+    })?;
+    let mut dotted = placed("dots.png", &dots, DOTS_PX, DOTS_PX)?;
+    let dots_runs = dry_runs(&mut dotted, json!({"colors": 2}))?;
+    if dots_runs.iter().any(|(r, _)| r["areaCount"] != json!(DOTS * DOTS + 1)) {
+        return Err(format!(
+            "perf: the dots aren't {} areas: {}",
+            DOTS * DOTS + 1,
+            dots_runs.first().map_or(Value::Null, |(r, _)| r["areaCount"].clone())
+        ));
+    }
+    ms.push(staged(&dots_runs, &["objects"]));
     ms.push(staged(&runs, &["stitches"]));
     ms.push(middle(runs.iter().map(|(_, t)| *t).collect()));
     let noise = png(NOISE_PX, NOISE_PX, |x, y| {
@@ -191,15 +244,30 @@ pub(super) fn times() -> Result<Vec<f64>, String> {
     for _ in 0..RUNS {
         let t = Instant::now();
         if noisy.execute("embroidery.digitizeImage", &refusal).is_ok() {
-            return Err("perf: noise was digitized, not refused as more areas than a design may have".into());
+            return Err("perf: noise was digitized, not refused as more than a design may be made of".into());
         }
         refused.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     ms.push(middle(refused));
-    let (cols, rows, side) = (40, 25, 30);
+    let (cols, rows, side) = MANY_SQUARES;
     let mut many = placed("many.png", &grid(cols, rows, side)?, cols * side, rows * side)?;
     let replies = dry_runs(&mut many, json!({"colors": GRID_COLOURS.len()}))?;
     let stages = ["image", "trace", "areas", "shapes", "objects", "stitches"];
     ms.push(middle(replies.iter().map(|(r, t)| t - stages.iter().filter_map(|k| r["timings"][*k].as_f64()).sum::<f64>()).collect()));
+    ms.push(staged(&dots_runs, &["shapes"]));
+    let height = WINDING_ROWS * WINDING_PITCH_PX - (WINDING_PITCH_PX - 1);
+    let winding = png(WINDING_PX, height, |x, y| {
+        let row = y / WINDING_PITCH_PX;
+        let joint = x == if row.is_multiple_of(2) { WINDING_PX - 1 } else { 0 };
+        if y.is_multiple_of(WINDING_PITCH_PX) || joint {
+            [210, 32, 48]
+        } else if (x / BAR_PX).is_multiple_of(2) {
+            [29, 42, 107]
+        } else {
+            [31, 138, 60]
+        }
+    })?;
+    let mut wound = placed("winding.png", &winding, WINDING_PX, height)?;
+    ms.push(staged(&dry_runs(&mut wound, json!({"colors": 3, "background": "none"}))?, &["shapes"]));
     Ok(ms)
 }

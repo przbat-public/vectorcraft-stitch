@@ -137,10 +137,11 @@ proptest! {
             let from = (k + turn.min(colours.len())) % colours.len().max(1);
             prop_assert_eq!(m.thread, got[from].thread);
         }
-        // The colours whose thread wasn't fixed (chosen, or their own): within the line as few
-        // without one of their own as can be, then the least total.
-        let fixed: Vec<usize> = (0..colours.len()).filter(|&c| matches!(got[c].reason, MatchReason::Chosen | MatchReason::Own)).collect();
-        let taken: Vec<usize> = fixed.iter().map(|&c| got[c].thread.index).collect();
+        // The colours whose thread was fixed before the assignment, from the inputs alone (a thread
+        // chosen from this palette); the rest: within the line as few without one of their own as
+        // can be, then the least total.
+        let fixed: Vec<usize> = (0..colours.len()).filter(|&c| colours[c].chosen.is_some_and(|t| t.palette() == palette)).collect();
+        let taken: Vec<usize> = fixed.iter().filter_map(|&c| colours[c].chosen.map(|t| t.index())).collect();
         let free: Vec<usize> = (0..colours.len()).filter(|c| !fixed.contains(c)).collect();
         let near: Vec<usize> = (1..=palette.threads().len())
             .filter(|&t| palette.is_thread(t) && (!neutral || palette.is_neutral(t)))

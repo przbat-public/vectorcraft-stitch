@@ -68,7 +68,8 @@ pub struct ColourToMatch {
     /// The colour (sRGB).
     pub color: [u8; 3],
     /// How much of the design it covers, in any unit (the same for every colour): a larger colour
-    /// comes first in the order the assignment is made in, and so keeps a thread in a tie.
+    /// comes first in the order the colours are put in, and is the first holder of a thread two
+    /// colours share.
     pub area: f64,
     /// The thread a person chose for it, which it is sewn in whatever `threads` allows (a person
     /// may choose a coloured thread for a picture in greys). One of another palette is no choice
@@ -79,7 +80,7 @@ pub struct ColourToMatch {
 /// Why a colour got its thread.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MatchReason {
-    /// The colour is the thread's own.
+    /// The colour is the thread's own (no difference at all), given it by the assignment.
     Own,
     /// A person chose it.
     Chosen,
@@ -179,21 +180,11 @@ impl Palette {
             let (x, y) = (&colours[a], &colours[b]);
             y.area.total_cmp(&x.area).then(x.color.cmp(&y.color)).then(a.cmp(&b))
         });
-        let own = |c: usize| {
-            candidates
-                .iter()
-                .enumerate()
-                .position(|(k, &t)| differences[c][k].is_finite() && self.get(t).is_some_and(|(rgb, _)| rgb == colours[c].color))
-        };
-        // A thread chosen from this palette, or a colour that is a thread's own, is that thread.
+        // A thread a person chose from this palette is that colour's, before the assignment.
         let mut held: Vec<Option<(usize, MatchReason)>> = vec![None; colours.len()];
         for &c in &order {
             let chosen = colours[c].chosen.filter(|t| t.palette() == self).and_then(|t| candidates.iter().position(|&k| k == t.index()));
-            held[c] = match (chosen, own(c)) {
-                (Some(k), _) => Some((k, MatchReason::Chosen)),
-                (None, Some(k)) => Some((k, MatchReason::Own)),
-                (None, None) => None,
-            };
+            held[c] = chosen.map(|k| (k, MatchReason::Chosen));
         }
         let taken: Vec<usize> = held.iter().flatten().map(|(k, _)| *k).collect();
         // The rest are assigned among the threads not taken: one row a colour, one column a free
@@ -221,6 +212,7 @@ impl Palette {
         for &c in &order {
             let Some((k, reason)) = snapshot[c] else { continue };
             let reason = match (reason, nearest(c)) {
+                (MatchReason::Nearest, _) if differences[c][k] == 0.0 => MatchReason::Own,
                 (MatchReason::Nearest, Some(n)) if n != k && differences[c][n] < differences[c][k] => {
                     MatchReason::NextFree { by: holder(n, &snapshot).filter(|&h| h != c) }
                 }
@@ -469,6 +461,33 @@ mod tests {
         // Every cost the same: any one column each.
         let flat = vec![vec![3.0; 4]; 4];
         assert_eq!(assignment(&flat, 4).iter().map(|&c| flat[0][c]).sum::<f64>(), 12.0);
+    }
+
+    /// A colour that is a thread's own colour gets no thread before the others (the documented
+    /// order: the person's choices, then the fewest colours without a thread of their own within
+    /// the line, then the least total; the project owner's decision, 2026-11-03). Brother's Red and
+    /// a darker red whose only near thread is Red: Red takes Vermilion, the darker red Red, so both
+    /// keep a thread of their own.
+    #[test]
+    fn an_own_colour_and_a_colour_with_no_other_thread_keep_two_threads() {
+        let pec = Palette::Pec;
+        let colours = [colour([0xed, 0x17, 0x1f], 10.0), colour([0xdc, 0x17, 0x19], 5.0)];
+        let m = pec.match_colours(&colours, Threads::All).unwrap();
+        let name = |m: &ColourMatch| pec.get(m.thread.index).map(|(_, n)| n).unwrap();
+        assert_eq!((name(&m[0]), name(&m[1])), ("Vermilion", "Red"), "{m:?}");
+        assert!(m.iter().all(|m| !mismatched(m.thread.delta_e) && !matches!(m.reason, MatchReason::Shared { .. })), "{m:?}");
+    }
+
+    /// Janome's Yellow and a lime whose only near thread is Yellow: Yellow takes Canary Yellow, the
+    /// lime Yellow, and neither shares (the same rule).
+    #[test]
+    fn an_exact_thread_colour_leaves_the_only_thread_to_the_colour_needing_it() {
+        let jef = Palette::Jef;
+        let (yellow, lime) = ([255, 255, 23], [224, 248, 0]);
+        let m = jef.match_colours(&[colour(yellow, 2.0), colour(lime, 1.0)], Threads::All).unwrap();
+        let name = |m: &ColourMatch| jef.get(m.thread.index).map(|(_, n)| n).unwrap();
+        assert_eq!((name(&m[0]), name(&m[1])), ("Canary Yellow", "Yellow"), "{m:?}");
+        assert!(m.iter().all(|m| !matches!(m.reason, MatchReason::Shared { .. })), "{m:?}");
     }
 
     /// The number of `palette`'s thread called `name`.

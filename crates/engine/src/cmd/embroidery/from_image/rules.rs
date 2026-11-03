@@ -13,11 +13,10 @@
 //!   ([`SLIVER_DELTA_E`]), or a mix of two neighbours' ([`is_mix`]), is no drawn line but what a
 //!   picture leaves along an edge: the darker or lighter band a JPEG rings round a sharp edge, the
 //!   blend anti-aliasing paints between two colours. It joins the neighbour nearest its colour.
-//! - **Islands.** An area lying inside one other area alone is sewn after it; one narrower than
-//!   [`ISLAND_SEWN_OVER_MM`] is sewn on top of it, with no hole cut for it (the project owner's
-//!   choice): a dot or an eye is sewn over the fill round it, as the person's real designs do.
 //!
 //! The background is never sewn, and areas join it as they join any area: a speck in it vanishes.
+//! What lies inside what, and which islands are sewn over the area round them, is decided once
+//! the colours have their threads and the areas their order (`super::inside`).
 
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BinaryHeap};
@@ -36,12 +35,6 @@ pub(super) const THIN_LINE_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 /// How long a thin area must be to stay below the smallest area (millimetres): a line, not a speck.
 /// An estimate (two stitches of a running line at their shortest).
 pub(super) const LINE_KEEP_LENGTH_MM: f64 = 2.0;
-
-/// The widest an island may be and be sewn over the area round it, with no hole cut (millimetres):
-/// a fill's longest stitch (Wilcom's tatami default, `plan::FILL_STITCH`), so that the fill round
-/// an island has no rows too short to sew. The person's real designs sew details 2.5 to 5.4 mm wide
-/// over the colour beneath. An estimate.
-pub(super) const ISLAND_SEWN_OVER_MM: f64 = 4.0;
 
 /// How near a thin area's colour may lie to a neighbour's (CIEDE2000) and be part of it: within the
 /// line past which a thread looks unlike its colour (`thread::MISMATCH_DELTA_E`). A JPEG rings
@@ -99,8 +92,10 @@ pub(super) struct Area {
     /// Its pixels, those that joined it included.
     pub(super) pixels: usize,
     pub(super) kind: AreaKind,
-    /// The area it lies inside alone (its place in the areas), and whether it is sewn over it.
+    /// The area it lies inside alone (its place in the areas: `super::inside`), whether it is
+    /// narrow enough to be sewn over it, with what it holds filled in, and whether it is.
     pub(super) inside: Option<usize>,
+    pub(super) narrow: bool,
     pub(super) sewn_over: bool,
 }
 
@@ -226,7 +221,15 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         if root(&mut parent, i) == i && !dropped[i] && pixels[i] > 0 {
             place[i] = Some(areas.len());
             let kind = if is_line(i) && !sliver[i] { AreaKind::Line } else { AreaKind::Fill };
-            areas.push(Area { paths: vec![i], row: row_of.get(i).copied().unwrap_or(0), pixels: pixels[i], kind, inside: None, sewn_over: false });
+            areas.push(Area {
+                paths: vec![i],
+                row: row_of.get(i).copied().unwrap_or(0),
+                pixels: pixels[i],
+                kind,
+                inside: None,
+                narrow: false,
+                sewn_over: false,
+            });
         }
     }
     for i in 0..n {
@@ -247,23 +250,5 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         *l = place.get(r).copied().flatten().and_then(|p| u32::try_from(p).ok()).unwrap_or(super::regions::NONE);
     }
     let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len());
-    // Islands: an area whose only neighbour is one other area, away from the image's edge and from
-    // transparency.
-    let island_px = ISLAND_SEWN_OVER_MM * px_per_mm;
-    for a in 0..areas.len() {
-        let Some(stats) = regions.areas.get(a) else { continue };
-        if stats.touches_edge || stats.touches_clear {
-            continue;
-        }
-        if let [(b, _)] = regions.neighbours(a as u32) {
-            let b = *b as usize;
-            let narrow = stats.widest_px < island_px;
-            let sewn_under = areas.get(b).and_then(|o| colours.rows.get(o.row)).is_some_and(super::colours::Colour::sewn);
-            if let Some(area) = areas.get_mut(a) {
-                area.inside = Some(b);
-                area.sewn_over = narrow && sewn_under;
-            }
-        }
-    }
     Areas { areas, regions, joined, dropped: left_out }
 }

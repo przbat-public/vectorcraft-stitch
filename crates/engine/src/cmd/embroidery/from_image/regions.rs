@@ -217,6 +217,40 @@ fn distances(feature: &[bool], w: usize, h: usize) -> Vec<f64> {
     grid
 }
 
+/// Whether the ridge through pixel `i` of a `w × h` map is two pixels thick across it (an even
+/// width), `deep` telling which pixels are as deep as it in its shape: the pixel one step on is as
+/// deep and the one beyond it is not (shallower, or not the shape's), rightwards or downwards.
+/// Along a band's ridge every pixel is as deep, so that way never counts. The pixel before `i` is
+/// shallower whatever the width when `i` is the first of the deepest in scan order.
+fn two_pixels_thick(i: usize, w: usize, h: usize, deep: impl Fn(usize) -> bool) -> bool {
+    let (x, y) = (i % w, i / w);
+    let thick = |step: usize, room: usize| room >= 1 && deep(i + step) && !(room >= 2 && deep(i + 2 * step));
+    thick(1, w - 1 - x) || thick(w, h - 1 - y)
+}
+
+/// The widest inscribed width (pixels) of the shape `mask` holds (a `w × h` map, `true` inside),
+/// measured as [`AreaStats::widest_px`] measures an area: twice the distance from its deepest
+/// pixel to its edge, a pixel more for an even width; 0 for an empty mask. Beyond the map is
+/// outside the shape.
+pub(super) fn widest_of(mask: &[bool], w: usize, h: usize) -> f64 {
+    let inside = |x: usize, y: usize| mask.get(y * w + x).copied().unwrap_or(false);
+    // A pixel of the shape beside one that isn't, or on the map's edge.
+    let on_edge = |x: usize, y: usize| {
+        x == 0 || y == 0 || x + 1 == w || y + 1 == h || !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)
+    };
+    let edge: Vec<bool> = (0..mask.len()).map(|i| inside(i % w, i / w) && on_edge(i % w, i / w)).collect();
+    let d2 = distances(&edge, w, h);
+    let mut deepest: Option<(f64, usize)> = None;
+    for (i, (&m, &d)) in mask.iter().zip(&d2).enumerate() {
+        if m && deepest.is_none_or(|(best, _)| d > best) {
+            deepest = Some((d, i));
+        }
+    }
+    let Some((d, i)) = deepest else { return 0.0 };
+    let deep = |j: usize| mask.get(j).copied().unwrap_or(false) && d2.get(j) == Some(&d);
+    2.0 * (d.sqrt() + 0.5) + if two_pixels_thick(i, w, h, deep) { 1.0 } else { 0.0 }
+}
+
 impl Regions {
     /// The region map of `traced`'s filled paths over `raster`, its working copy: each path drawn
     /// at the pixels' centres in its order, then each opaque pixel no path took given its
@@ -312,14 +346,10 @@ impl Regions {
                 continue;
             }
             let (x, y) = (i % wu, i / wu);
-            // Its middle between two pixels as deep (an even width across it): a pixel wider than
-            // either's own distance says. Across, not along: the pixel one step on is as deep and
-            // the one beyond it is not (shallower, or not the area's), so the ridge is two pixels
-            // thick that way, where along a band's ridge every pixel is as deep. The pixel before
-            // it is shallower whatever the width: the deepest pixel is the first in scan order.
+            // Its middle between two pixels as deep across it (an even width): a pixel wider than
+            // either's own distance says.
             let deep = |j: usize| labels.get(j).is_some_and(|&o| o as usize == l) && d2.get(j) == Some(&d);
-            let two_thick = |step: usize, room: usize| room >= 1 && deep(i + step) && !(room >= 2 && deep(i + 2 * step));
-            let even = two_thick(1, wu - 1 - x) || two_thick(wu, hu - 1 - y);
+            let even = two_pixels_thick(i, wu, hu, deep);
             a.widest_px = 2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 };
             a.deepest = (x as u32, y as u32);
         }

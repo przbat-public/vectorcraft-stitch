@@ -79,12 +79,12 @@ squares-0.4 pes 91d6539cc90f4f6e 2174
 squares-0.4 pec 5b0d51c6f61b2f04 2160
 squares-0.4 jef 8c1526d60a6029bd 1074
 squares-0.4 vp3 227aa697c6338f4b 1264
-scan reply 4a2b7ea9643a714e
-scan dst 305bc3eded4b726a 3056
-scan tap 2e2a095a32e56da4 2544
-scan t01 2e2a095a32e56da4 2544
-scan exp 2a16ef31a9cdfe95 1710
-scan pes 05ce58fc5c2a8bc7 3447
-scan pec 2c6f5338448eb5e1 3433
-scan jef 5e22f6b22bea63d8 1856
-scan vp3 622ab34da1c69118 2134
+scan reply cb94320bc8c29423
+scan dst 6369045341f0f4bc 3179
+scan tap 098b2da01be3ad3e 2667
+scan t01 098b2da01be3ad3e 2667
+scan exp 4b4ef296b57632aa 1794
+scan pes a23d2ddf5370381d 3531
+scan pec 3450930387791953 3517
+scan jef 3163a8c79e289077 1940
+scan vp3 06a576f9ba19d90a 2214

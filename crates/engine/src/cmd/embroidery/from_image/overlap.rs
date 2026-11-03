@@ -56,6 +56,13 @@ fn united(paths: &[&PathData]) -> Option<PathData> {
     try_unite_all_with(&with_rules, PRECISION_PX).ok()
 }
 
+/// The union of areas' shapes `paths` when the path operations refuse it: their outlines one after
+/// another, which under the non-zero rule is their union exactly, the areas abutting (none
+/// overlaps another) and each wound with its holes against its outlines.
+fn side_by_side(paths: &[&PathData]) -> PathData {
+    PathData::new(paths.iter().flat_map(|p| p.subpaths.iter().cloned()).collect())
+}
+
 /// The area of `p` (square units), its outlines' signed areas added: the trace's outer outlines run
 /// one way and its holes the other.
 fn area(p: &PathData) -> f64 {
@@ -79,20 +86,43 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
             [one] => (*one).clone(),
             _ => united(&paths).unwrap_or_else(|| {
                 failed += 1;
-                paths.first().map(|p| (*p).clone()).unwrap_or_default()
+                side_by_side(&paths)
             }),
         };
         own.push(shape);
     }
-    // Solid under the islands sewn over it: each such island's shape joined in.
-    let mut shapes = own.clone();
+    // Solid under the islands sewn over it: each area joined, in one union, with every island
+    // sewn over it and every island sewn over those in turn (an eye with its pupil), so that only
+    // what keeps its hole stays a hole.
+    let mut over: Vec<Vec<usize>> = vec![Vec::new(); n];
     for (a, area) in areas.areas.iter().enumerate() {
-        let (Some(b), true) = (area.inside, area.sewn_over) else { continue };
-        let (Some(base), Some(island)) = (shapes.get(b), own.get(a)) else { continue };
-        let solid = united(&[base, island]);
-        match (solid, shapes.get_mut(b)) {
-            (Some(solid), Some(slot)) => *slot = solid,
-            _ => failed += 1,
+        if let (Some(b), true) = (area.inside, area.sewn_over)
+            && let Some(o) = over.get_mut(b)
+        {
+            o.push(a);
+        }
+    }
+    let mut shapes = own.clone();
+    for b in 0..n {
+        if over.get(b).is_none_or(Vec::is_empty) {
+            continue;
+        }
+        vectorcraft_doc::cancel::check()?;
+        let mut solid = vec![b];
+        let mut next = 0;
+        while let Some(&x) = solid.get(next) {
+            next += 1;
+            if solid.len() <= n {
+                solid.extend(over.get(x).into_iter().flatten().copied());
+            }
+        }
+        let paths: Vec<&PathData> = solid.iter().filter_map(|&x| own.get(x)).collect();
+        let joined = united(&paths).unwrap_or_else(|| {
+            failed += 1;
+            side_by_side(&paths)
+        });
+        if let Some(slot) = shapes.get_mut(b) {
+            *slot = joined;
         }
     }
     // The overlap: each sewn area under the sewn neighbours sewn after it.

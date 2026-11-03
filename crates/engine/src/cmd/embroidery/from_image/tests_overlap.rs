@@ -164,3 +164,103 @@ fn an_island_sewn_over_leaves_no_hole() {
     assert!((area - 256.0).abs() < 0.5, "16 × 16 mm, solid: {area}");
     assert!(orange["grownUnder"].as_array().unwrap().is_empty(), "nothing to grow under: it lies under the dot whole");
 }
+
+/// An island whose colour is not sewn keeps its hole in the area round it, so that the fabric
+/// shows there, however narrow: a 2 mm dot left unsewn in a 16 mm square leaves 252 mm² sewn.
+#[test]
+fn an_unsewn_island_keeps_its_hole() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [90, 90, 110, 110]) {
+            NAVY
+        } else if inside(x, y, [20, 20, 180, 180]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "none"}]}));
+    let (dot, _, _) = shape_of(&r, NAVY);
+    assert_eq!((&dot["sewn"], &dot["sewnOver"]), (&json!(false), &json!(false)), "{dot}");
+    let (_, _, area) = shape_of(&r, ORANGE);
+    assert!((area - 252.0).abs() < 0.5, "16 × 16 mm less the 2 × 2 mm dot: {area}");
+}
+
+/// A dot inside a thin outline is sewn before the outline (a line, sewn after every fill), so the
+/// outline keeps its hole for it and the dot grows under it: the outline 0.6 mm wide round a 3 mm
+/// dot is 8.64 mm², not the solid 17.64 mm² square that would cover the dot.
+#[test]
+fn a_dot_inside_a_thin_outline_is_not_covered_by_it() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [86, 86, 116, 116]) {
+            GREEN
+        } else if inside(x, y, [80, 80, 122, 122]) {
+            NAVY
+        } else if inside(x, y, [20, 20, 180, 180]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3}));
+    let (dot, _, _) = shape_of(&r, GREEN);
+    let (ring, _, ring_mm2) = shape_of(&r, NAVY);
+    assert_eq!((&ring["kind"], &dot["inside"]), (&json!("line"), &ring["area"]));
+    assert!(dot["area"].as_u64() < ring["area"].as_u64(), "the line sewn after the dot");
+    assert_eq!(dot["sewnOver"], json!(false));
+    assert!((ring_mm2 - 8.64).abs() < 0.3, "the ring alone: {ring_mm2}");
+    assert!(dot["grownUnder"].as_array().unwrap().contains(&ring["area"]), "{dot}");
+}
+
+/// An island holding an island is an island as a plain dot is (the project owner's choice): an eye
+/// with its pupil inside a face is sewn over the face, measured with its pupil filled in, and the
+/// pupil over the eye; the face and the eye are solid under them.
+#[test]
+fn an_eye_with_its_pupil_is_sewn_over_a_solid_face() {
+    let disc = |x: u32, y: u32, (cx, cy, r): (i64, i64, i64)| (i64::from(x) - cx).pow(2) + (i64::from(y) - cy).pow(2) < r * r;
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if disc(x, y, (100, 100, 7)) {
+            NAVY
+        } else if disc(x, y, (100, 100, 18)) {
+            GREEN
+        } else if disc(x, y, (100, 100, 60)) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3}));
+    let ((face, _, face_mm2), (eye, _, eye_mm2), (pupil, _, _)) = (shape_of(&r, ORANGE), shape_of(&r, GREEN), shape_of(&r, NAVY));
+    assert_eq!((&eye["inside"], &eye["sewnOver"]), (&face["area"], &json!(true)), "{eye}");
+    assert_eq!((&pupil["inside"], &pupil["sewnOver"]), (&eye["area"], &json!(true)), "{pupil}");
+    let mm2 = |r: f64| std::f64::consts::PI * r * r / 100.0;
+    assert!((face_mm2 - mm2(60.0)).abs() < 1.5, "the face solid: {face_mm2}");
+    assert!((eye_mm2 - mm2(18.0)).abs() < 0.5, "the eye solid: {eye_mm2}");
+}
+
+/// A small letter O and its counter each follow the rule for islands: the O, 3 × 3.6 mm with its
+/// counter filled in, is sewn over the field round it, and its counter over it.
+#[test]
+fn a_letter_and_its_counter_are_islands() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [88, 88, 102, 108]) {
+            WHITE
+        } else if inside(x, y, [80, 80, 110, 116]) {
+            NAVY
+        } else if inside(x, y, [20, 20, 180, 180]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3}));
+    let field = shape_of(&r, ORANGE);
+    let letter = shape_of(&r, NAVY);
+    let counter = r["areas"].as_array().unwrap().iter().find(|a| a["color"] == hex(WHITE)).unwrap().clone();
+    assert_eq!((&letter.0["inside"], &letter.0["sewnOver"]), (&field.0["area"], &json!(true)), "{}", letter.0);
+    assert_eq!((&counter["inside"], &counter["sewnOver"]), (&letter.0["area"], &json!(true)), "{counter}");
+    assert!((field.2 - 256.0).abs() < 0.5 && (letter.2 - 10.8).abs() < 0.3, "both solid: {} {}", field.2, letter.2);
+}

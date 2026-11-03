@@ -17,8 +17,9 @@
 //!   pixel, with which areas touch which, how wide each is, and the point that keys it;
 //! - [`colours`]: each colour matched to a thread of the document's palette, merged, or left
 //!   unsewn;
-//! - [`rules`]: the smallest area (long thin lines kept below it), and islands sewn over the area
-//!   round them;
+//! - [`rules`]: the smallest area (long thin lines kept below it), and the slivers a picture
+//!   leaves along its edges;
+//! - [`inside`]: what lies inside what, and which islands are sewn over the area round them;
 //! - [`order`]: the order the areas are sewn in;
 //! - [`overlap`]: the shapes they are sewn as, each grown under the neighbours sewn after it;
 //! - [`create`]: the embroidery objects made of them, in place of the image, which moves to a
@@ -32,6 +33,7 @@ mod background;
 mod colours;
 mod command;
 mod create;
+mod inside;
 mod order;
 mod overlap;
 mod regions;

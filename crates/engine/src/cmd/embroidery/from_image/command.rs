@@ -26,7 +26,7 @@ use super::overlap::{self, Shapes};
 use super::regions::Regions;
 use super::rules::{self, Areas};
 use super::settings::{BackgroundSetting, C, Mode, Settings, table};
-use super::{trace, working};
+use super::{inside, trace, working};
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
 use crate::{EngineError, Result, Session};
@@ -203,7 +203,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let rows = colours::rows(&traced, &touches, traced_background, &settings.choices);
     let row_of = rows.row_of(traced.paths.len());
     let min_px = trace::area_px(settings.min_area, w.px_per_mm) as usize;
-    let areas = rules::applied(regions, &rows, &row_of, w.px_per_mm, min_px);
+    let mut areas = rules::applied(regions, &rows, &row_of, w.px_per_mm, min_px);
     if areas.areas.len() > MAX_IMAGE_AREAS {
         return Err(bad(
             C,
@@ -222,7 +222,9 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
             settings.min_area
         ));
     }
+    inside::containers(&mut areas, &colours, w.px_per_mm)?;
     let order = order::ordered(&areas.areas, &areas.regions, &colours);
+    inside::sewn_over(&mut areas, &colours, &order);
     let colors_ms = since(started);
     vectorcraft_doc::cancel::progress(3, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();

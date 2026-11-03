@@ -145,7 +145,7 @@ fn a_band_measures_its_own_width() {
     let (w, h) = (80u32, 80u32);
     let measured = |inside: &dyn Fn(u32, u32) -> bool| {
         let labels: Vec<u32> = (0..w * h).map(|i| u32::from(inside(i % w, i / w))).collect();
-        super::regions::Regions::from_labels(labels, w, h, 2).areas[1].widest_px
+        super::regions::Regions::from_labels(labels, w, h, 2, None).areas[1].widest_px
     };
     for width in [1u32, 2, 3, 4, 5, 9, 10] {
         let lying = measured(&|x, y| (10..70).contains(&x) && (10..10 + width).contains(&y));

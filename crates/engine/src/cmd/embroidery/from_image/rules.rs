@@ -249,7 +249,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         let r = root(&mut parent, *l as usize);
         *l = place.get(r).copied().flatten().and_then(|p| u32::try_from(p).ok()).unwrap_or(super::regions::NONE);
     }
-    let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len());
+    let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len(), regions.outside.clone());
     Areas { areas, regions, joined, dropped: left_out }
 }
 
@@ -344,6 +344,6 @@ pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result
         let r = root(&mut parent, *l as usize);
         *l = place.get(r).copied().flatten().and_then(|p| u32::try_from(p).ok()).unwrap_or(super::regions::NONE);
     }
-    let regions = Regions::from_labels(labels, regions.w, regions.h, out.len());
+    let regions = Regions::from_labels(labels, regions.w, regions.h, out.len(), regions.outside.clone());
     Ok(Areas { areas: out, regions, joined, dropped })
 }

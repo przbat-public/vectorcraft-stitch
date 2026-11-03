@@ -134,24 +134,76 @@ fn a_crop_counts_the_images_pixels() {
     assert!(refused(&mut s, json!({"crop": [-1, 0, 10, 20]})).contains("whole pixels"));
 }
 
-/// An image turned or slanted on the page is measured along its own axes: turned 30°, it works at
-/// the resolution it has upright.
+/// The design's size of a turned image is measured as it lies on the page (the project owner's
+/// decision, 2026-11-03): turned a quarter, a 100 × 80 mm picture fitted to a 100 × 80 mm field
+/// comes out 64 wide and 80 tall, within it; turned 30°, `width` is the width of the box round it.
+/// Its working copy runs along its own axes, at the resolution it has upright.
 #[test]
-fn a_turned_image_is_measured_along_its_own_axes() {
+fn a_turned_image_is_measured_on_the_page() {
     let picture = flat(1000, 800, [30, 90, 200, 255]);
+    let turned = |degrees: f64, params: Value| {
+        let mut s = blank();
+        image_with(&mut s, &picture, Affine::rotate(degrees.to_radians()) * Affine::scale(0.1 * PT_PER_MM));
+        dry(&mut s, params)["image"].clone()
+    };
+    let bounds = |r: &Value| {
+        let b: Vec<f64> = r["bounds"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+        (b[2] - b[0], b[3] - b[1])
+    };
+    let quarter = turned(90.0, json!({"fit": [100, 80]}));
+    let (w, h) = bounds(&quarter);
+    assert!((w - 64.0).abs() < 0.01 && (h - 80.0).abs() < 0.01, "within the field: {w} × {h}");
+    assert_eq!(quarter["size"], json!([64.0, 80.0]));
+    let thirty = turned(30.0, json!({"width": 50}));
+    let (w, _) = bounds(&thirty);
+    assert!((w - 50.0).abs() < 0.01, "the box round it 50 wide: {w}");
     let upright = {
         let mut s = blank();
         image(&mut s, &picture, 0.1);
         dry(&mut s, json!({}))["image"].clone()
     };
-    let turned = {
-        let mut s = blank();
-        image_with(&mut s, &picture, Affine::rotate(30f64.to_radians()) * Affine::scale(0.1 * PT_PER_MM));
-        dry(&mut s, json!({}))["image"].clone()
-    };
-    for key in ["pxPerMm", "worked", "size"] {
-        assert_eq!(turned[key], upright[key], "{key}");
+    let as_placed = turned(30.0, json!({}));
+    for key in ["pxPerMm", "worked"] {
+        assert_eq!(as_placed[key], upright[key], "{key}");
     }
+}
+
+/// A slanted image is measured as it lies on the page too: a 10 mm square slanted 30° covers
+/// 100 mm² (its base and height kept), not the 115 its slanted side would give, and lies where its
+/// picture does.
+#[test]
+fn a_slanted_image_is_measured_on_the_page() {
+    let mut s = blank();
+    let slant = Affine::new([1.0, 0.0, 30f64.to_radians().tan(), 1.0, 0.0, 0.0]);
+    image_with(&mut s, &flat(100, 100, [30, 90, 200, 255]), slant * Affine::scale(0.1 * PT_PER_MM));
+    let r = dry(&mut s, json!({"background": "none", "colors": 2}));
+    let areas = r["areas"].as_array().unwrap();
+    assert_eq!(areas.len(), 1, "{areas:?}");
+    let mm2 = areas[0]["size"]["area"].as_f64().unwrap();
+    assert!((mm2 - 100.0).abs() < 1.0, "the page's 100 mm²: {mm2}");
+    let b: Vec<f64> = r["image"]["bounds"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+    let width = 10.0 + 10.0 * 30f64.to_radians().tan();
+    assert!((b[2] - b[0] - width).abs() < 0.1 && (b[3] - b[1] - 10.0).abs() < 0.1, "the picture's box: {b:?}");
+}
+
+/// A slanted picture's background is found at its own corners, and the areas of it that touch its
+/// edge are left unsewn, as upright: a white margin round a navy square.
+#[test]
+fn a_slanted_pictures_background_is_its_own() {
+    let mut s = blank();
+    let slant = Affine::new([1.0, 0.0, 30f64.to_radians().tan(), 1.0, 0.0, 0.0]);
+    let picture =
+        tr::Raster::from_fn(
+            200,
+            200,
+            |x, y| if (40..160).contains(&x) && (40..160).contains(&y) { [20, 40, 120, 255] } else { [255, 255, 255, 255] },
+        );
+    image_with(&mut s, &picture, slant * Affine::scale(0.1 * PT_PER_MM));
+    let r = dry(&mut s, json!({"colors": 2}));
+    assert_eq!(r["image"]["background"]["from"], json!("corners"), "{}", r["image"]["background"]);
+    let white = r["colors"].as_array().unwrap().iter().find(|c| c["background"] == json!(true)).unwrap_or_else(|| panic!("{}", r["colors"]));
+    assert_eq!(white["sewn"], json!(false));
+    assert!(r["areas"].as_array().unwrap().iter().all(|a| a["color"] != white["color"]), "no white area sewn: {}", r["areas"]);
 }
 
 /// The working copy averages the pixels each of its own covers, weighted by their opacity: a 2 × 2

@@ -15,6 +15,7 @@
 //! neighbouring pixel's area.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use vectorcraft_geom::{BezPath, PathEl, Point};
 use vectorcraft_trace as tr;
@@ -65,6 +66,9 @@ pub(super) struct Regions {
     pub(super) borders: BTreeMap<(u32, u32), u32>,
     /// Each area's neighbours by number, with the edge each shares: [`Regions::borders`] by area.
     adjacent: Vec<Vec<(u32, u32)>>,
+    /// The pixels outside the image (a slanted image's corners), beyond its edge; `None` when every
+    /// pixel is the image's.
+    pub(super) outside: Option<Arc<[bool]>>,
 }
 
 /// The straight pieces of `path`'s outline, each `(from, to)`, flattened.
@@ -254,8 +258,8 @@ pub(super) fn widest_of(mask: &[bool], w: usize, h: usize) -> f64 {
 impl Regions {
     /// The region map of `traced`'s filled paths over `raster`, its working copy: each path drawn
     /// at the pixels' centres in its order, then each opaque pixel no path took given its
-    /// neighbour's area.
-    pub(super) fn of(traced: &tr::TraceResult, raster: &tr::Raster) -> Self {
+    /// neighbour's area. `outside` marks the pixels outside the image, if any.
+    pub(super) fn of(traced: &tr::TraceResult, raster: &tr::Raster, outside: Option<Arc<[bool]>>) -> Self {
         let (w, h) = (raster.width, raster.height);
         let (wu, hu) = (w as usize, h as usize);
         let mut labels = vec![NONE; wu * hu];
@@ -284,12 +288,14 @@ impl Regions {
             }
             frontier = next;
         }
-        Self::from_labels(labels, w, h, traced.paths.len())
+        Self::from_labels(labels, w, h, traced.paths.len(), outside)
     }
 
     /// The map of `labels` (`w × h`, each pixel's area of `count`, or [`NONE`]), its facts worked
-    /// out.
-    pub(super) fn from_labels(labels: Vec<u32>, w: u32, h: u32, count: usize) -> Self {
+    /// out; `outside` marks the pixels outside the image, if any: an area beside one touches the
+    /// image's edge, not transparency.
+    pub(super) fn from_labels(labels: Vec<u32>, w: u32, h: u32, count: usize, outside: Option<Arc<[bool]>>) -> Self {
+        let beyond = |j: usize| outside.as_ref().is_some_and(|o| o.get(j).copied().unwrap_or(false));
         let (wu, hu) = (w as usize, h as usize);
         let mut areas =
             vec![
@@ -321,7 +327,9 @@ impl Regions {
                         continue;
                     }
                     edge[i] = true;
-                    if o == NONE {
+                    if o == NONE && beyond(j) {
+                        a.touches_edge = true;
+                    } else if o == NONE {
                         a.touches_clear = true;
                     } else if j > i {
                         // Each pair of pixels once: from the one before.
@@ -365,7 +373,7 @@ impl Regions {
         for v in &mut adjacent {
             v.sort_unstable();
         }
-        Self { w, h, labels, areas, borders, adjacent }
+        Self { w, h, labels, areas, borders, adjacent, outside }
     }
 
     /// The area under pixel `(x, y)`, if any.

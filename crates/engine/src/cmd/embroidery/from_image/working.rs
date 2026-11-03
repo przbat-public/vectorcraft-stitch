@@ -8,6 +8,8 @@
 //! add only blends. A smaller one is averaged down, each working pixel the mean of the image pixels
 //! it covers (premultiplied by their opacity, so that transparent pixels tint nothing).
 
+use std::sync::Arc;
+
 use vectorcraft_doc::ImageObject;
 use vectorcraft_geom::{Affine, Point, Vec2};
 use vectorcraft_stitch::MM_PER_PT;
@@ -39,6 +41,16 @@ pub(super) const COARSE_PX_PER_MM: f64 = 4.0;
 /// exactly ten pixels a millimetre comes through its transform's floating point a hair under or
 /// over, and is still the grid's resolution, not its own.
 const SAME_RESOLUTION: f64 = 1e-9;
+
+/// How far an image's axes may lean off square on the page and still be measured along them: its
+/// y axis's step along its x axis against its step across it. A transform's floating point leaves
+/// square axes a hair off; past this the image is slanted, and its working copy is made square on
+/// the page.
+const SLANT_TOLERANCE: f64 = 1e-9;
+
+/// The most samples a working pixel of a slanted image takes along each side: enough for an image
+/// eight times finer than its working copy to count every pixel. An estimate.
+const MAX_SAMPLES_A_SIDE: f64 = 8.0;
 
 /// What held the working resolution down.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -83,6 +95,12 @@ pub(super) struct Working {
     pub(super) scaled: Affine,
     /// A working pixel's coordinates to the image's own pixels: where a point keys an area.
     pub(super) to_image: Affine,
+    /// Of a slanted image, the working pixels outside it (their centres): the corners its slant
+    /// leaves round it, the image's edge beyond its pixels; and the crop upright, along its own
+    /// axes, whose corners show its background. `None` for an image square on the page, whose
+    /// working copy is the crop.
+    pub(super) outside: Option<Arc<[bool]>>,
+    pub(super) upright: Option<tr::Raster>,
     /// The crop, in the image's own pixels.
     pub(super) crop: [u32; 4],
     /// The image's own size in pixels, and the size it was decoded at (smaller only past
@@ -140,10 +158,37 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
     if ![a, b, c, d, e, f].iter().all(|v| v.is_finite()) || xf.determinant() == 0.0 {
         return Err(bad(C, "the image is placed with a transform that has no size: it can't be measured"));
     }
-    // A pixel's step along each of the image's axes, on the page (points).
+    // A pixel's step along each of the image's axes, on the page (points), and the y step split
+    // into its part along the x axis (a slant) and its part square across it.
     let (ux, uy) = (length(Vec2::new(a, b)), length(Vec2::new(c, d)));
-    let placed = (f64::from(x1 - x0) * ux * MM_PER_PT, f64::from(y1 - y0) * uy * MM_PER_PT);
+    let along = (a * c + b * d) / ux;
+    let across = xf.determinant().abs() / ux;
+    let square = b == 0.0 && c == 0.0;
+    let slanted = along.abs() > SLANT_TOLERANCE * across;
+    let (crop_w, crop_h) = (f64::from(x1 - x0), f64::from(y1 - y0));
+    // The crop as placed, as it lies on the page (millimetres): what `width`, `height` and `fit`
+    // measure (the project owner's decision, 2026-11-03). Along the image's axes when they are the
+    // page's; turned or slanted, the box round it.
+    let placed = if square {
+        (crop_w * ux * MM_PER_PT, crop_h * uy * MM_PER_PT)
+    } else {
+        let corners = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)].map(|(x, y)| xf * Point::new(f64::from(x), f64::from(y)));
+        let (l, t, r, bottom) = corners.iter().fold((f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY), |(l, t, r, b), p| {
+            (l.min(p.x), t.min(p.y), r.max(p.x), b.max(p.y))
+        });
+        ((r - l) * MM_PER_PT, (bottom - t) * MM_PER_PT)
+    };
     let (size_mm, scale) = design_size(placed, settings.size)?;
+    // The working copy's own extent (millimetres at the design's size): the crop along its axes, or,
+    // slanted, along its x axis and square across it, wide enough to hold the slant. A turned image
+    // is measured along its own axes, square on the page as they are.
+    let frame = if square {
+        size_mm
+    } else if slanted {
+        ((crop_w * ux + crop_h * along.abs()) * MM_PER_PT * scale, crop_h * across * MM_PER_PT * scale)
+    } else {
+        (crop_w * ux * MM_PER_PT * scale, crop_h * uy * MM_PER_PT * scale)
+    };
     let decoded = tr::Raster::decode_to_fit(bytes).map_err(|e| bad(C, format!("the image can't be digitized: {e}")))?;
     let (dw, dh) = (decoded.width, decoded.height);
     // The crop in the decoded pixels: the same pixels unless the image was decoded smaller.
@@ -156,9 +201,14 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
     let (dx0, dx1) = span(x0, x1, sx, dw);
     let (dy0, dy1) = span(y0, y1, sy, dh);
     let (cw, ch) = (dx1 - dx0, dy1 - dy0);
-    // The resolution: the smallest of the grid's, the side's and the image's own.
-    let longest = size_mm.0.max(size_mm.1);
-    let own = (f64::from(cw) / size_mm.0).min(f64::from(ch) / size_mm.1);
+    // The resolution: the smallest of the grid's, the side's and the image's own (along its
+    // coarser axis).
+    let longest = frame.0.max(frame.1);
+    let own = if slanted {
+        (sx / (ux * MM_PER_PT * scale)).min(sy / (uy * MM_PER_PT * scale))
+    } else {
+        (f64::from(cw) / frame.0).min(f64::from(ch) / frame.1)
+    };
     let candidates = [(WORKING_PX_PER_MM, Limit::Grid), (MAX_WORKING_SIDE_PX / longest, Limit::Side), (own, Limit::Image)];
     // The smallest; of those within a hair of each other, the first listed.
     let (mut px_per_mm, limit) =
@@ -168,16 +218,31 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
     }
     // Never more pixels than the crop has: the image is not enlarged.
     let side = |mm: f64, max: u32| ((mm * px_per_mm).round().max(1.0) as u32).min(max);
-    let (ww, wh) = (side(size_mm.0, cw), side(size_mm.1, ch));
-    if limit == Limit::Image {
-        // Exactly the image's pixels: the resolution they give.
-        px_per_mm = (f64::from(ww) / size_mm.0).min(f64::from(wh) / size_mm.1);
-    }
-    let raster = resampled(&decoded, [dx0, dy0, dx1, dy1], ww, wh);
-    // A working pixel to the image's own pixels (the decoded crop mapped back), to the page, then
-    // scaled about the crop's centre on the page.
-    let to_image =
-        Affine::new([f64::from(cw) / f64::from(ww) / sx, 0.0, 0.0, f64::from(ch) / f64::from(wh) / sy, f64::from(dx0) / sx, f64::from(dy0) / sy]);
+    let (raster, to_image, outside, upright) = if slanted {
+        // Square on the page: each working pixel the mean of samples of the image under it, the
+        // working copy as wide as the slant, the image's own resolution set by its coarser axis.
+        let (ww, wh) = (side(frame.0, u32::MAX), side(frame.1, u32::MAX));
+        // A working pixel's side (points, as placed), and where the slant leaves the frame's start.
+        let t = 1.0 / (px_per_mm * scale) / MM_PER_PT;
+        let x_min = (crop_h * along).min(0.0);
+        let to_image = Affine::new([t / ux, 0.0, -t * along / (across * ux), t / across, f64::from(x0) + x_min / ux, f64::from(y0)]);
+        let footprint = (sx * (t / ux + (t * along / (across * ux)).abs())).max(sy * t / across);
+        let samples = footprint.ceil().clamp(1.0, MAX_SAMPLES_A_SIDE) as u32;
+        let (raster, outside) = resampled_slanted(&decoded, to_image, (sx, sy), crop, (ww, wh), samples)?;
+        let upright = resampled(&decoded, [dx0, dy0, dx1, dy1], side(crop_w * ux * MM_PER_PT * scale, cw), side(crop_h * uy * MM_PER_PT * scale, ch));
+        (raster, to_image, Some(Arc::from(outside)), Some(upright))
+    } else {
+        let (ww, wh) = (side(frame.0, cw), side(frame.1, ch));
+        if limit == Limit::Image {
+            // Exactly the image's pixels: the resolution they give.
+            px_per_mm = (f64::from(ww) / frame.0).min(f64::from(wh) / frame.1);
+        }
+        // A working pixel to the image's own pixels (the decoded crop mapped back).
+        let to_image =
+            Affine::new([f64::from(cw) / f64::from(ww) / sx, 0.0, 0.0, f64::from(ch) / f64::from(wh) / sy, f64::from(dx0) / sx, f64::from(dy0) / sy]);
+        (resampled(&decoded, [dx0, dy0, dx1, dy1], ww, wh), to_image, None, None)
+    };
+    // To the page, then scaled about the crop's centre on the page.
     let centre = xf * Point::new((f64::from(x0) + f64::from(x1)) / 2.0, (f64::from(y0) + f64::from(y1)) / 2.0);
     let scaled = Affine::translate(centre.to_vec2()) * Affine::scale(scale) * Affine::translate(-centre.to_vec2());
     Ok(Working {
@@ -189,6 +254,8 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
         to_doc: scaled * xf * to_image,
         scaled,
         to_image,
+        outside,
+        upright,
         crop,
         image_px: (iw, ih),
         decoded_px: (dw, dh),
@@ -196,6 +263,12 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
 }
 
 impl Working {
+    /// The picture whose corners show its background: the working copy, or a slanted image's crop
+    /// upright.
+    pub(super) fn upright(&self) -> &tr::Raster {
+        self.upright.as_ref().unwrap_or(&self.raster)
+    }
+
     /// Where the design lies on the page: the box round the working copy's corners in the document
     /// (millimetres from the document's origin, y down, `[left, top, right, bottom]`).
     pub(super) fn bounds_mm(&self) -> [f64; 4] {
@@ -316,4 +389,47 @@ pub(super) fn resampled(src: &tr::Raster, rect: [u32; 4], w: u32, h: u32) -> tr:
     }
     // As many bytes as `w × h` pixels take, by construction.
     tr::Raster::new(w, h, rgba).unwrap_or_else(|_| tr::Raster::from_fn(w, h, |_, _| [0; 4]))
+}
+
+/// A slanted image's working copy, square on the page: `size` pixels, each `(x, y)` mapped to the
+/// image's own pixels by `to_image`, the mean of `samples × samples` points spread evenly over it
+/// (read from `src`, the image decoded at `scale` times its own pixels), each weighted by its
+/// opacity, a point outside `crop` (the image's own pixels) transparent. And which pixels' centres
+/// lie outside the crop. A cancel stops it between rows.
+fn resampled_slanted(
+    src: &tr::Raster,
+    to_image: Affine,
+    scale: (f64, f64),
+    crop: [u32; 4],
+    size: (u32, u32),
+    samples: u32,
+) -> Result<(tr::Raster, Vec<bool>)> {
+    let ([x0, y0, x1, y1], (sx, sy), (w, h)) = (crop.map(f64::from), scale, size);
+    let inside = |p: Point| p.x >= x0 && p.x < x1 && p.y >= y0 && p.y < y1;
+    let (last_x, last_y) = (f64::from(src.width.saturating_sub(1)), f64::from(src.height.saturating_sub(1)));
+    let read = |p: Point| -> [u8; 4] {
+        if !inside(p) {
+            return [0; 4];
+        }
+        src.pixel((p.x * sx).floor().clamp(0.0, last_x) as u32, (p.y * sy).floor().clamp(0.0, last_y) as u32)
+    };
+    let n = f64::from(samples);
+    let (mut rgba, mut outside) = (Vec::with_capacity(w as usize * h as usize * 4), Vec::with_capacity(w as usize * h as usize));
+    for y in 0..h {
+        vectorcraft_doc::cancel::check()?;
+        for x in 0..w {
+            let mut sum = Sum::default();
+            for j in 0..samples {
+                for i in 0..samples {
+                    let at = Point::new(f64::from(x) + (f64::from(i) + 0.5) / n, f64::from(y) + (f64::from(j) + 0.5) / n);
+                    sum.add(read(to_image * at), 1.0);
+                }
+            }
+            rgba.extend_from_slice(&sum.pixel(n * n));
+            outside.push(!inside(to_image * Point::new(f64::from(x) + 0.5, f64::from(y) + 0.5)));
+        }
+    }
+    // As many bytes as `w × h` pixels take, by construction.
+    let raster = tr::Raster::new(w, h, rgba).unwrap_or_else(|_| tr::Raster::from_fn(w, h, |_, _| [0; 4]));
+    Ok((raster, outside))
 }

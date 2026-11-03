@@ -171,7 +171,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let started = clock();
     let w = working::prepare(image, bytes, settings)?;
     let found = match settings.background {
-        BackgroundSetting::Corners => background::found(&w.raster),
+        BackgroundSetting::Corners => background::found(w.upright()),
         BackgroundSetting::None => Background::None,
         BackgroundSetting::Colour(c) => Background::Colour(c),
     };
@@ -204,7 +204,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     if settings.background == BackgroundSetting::Corners && found == Background::None {
         warnings.push("the image's corners don't agree on a background: every area is sewn (give `background` to name one)".into());
     }
-    let regions = Regions::of(&traced, &w.raster);
+    let regions = Regions::of(&traced, &w.raster, w.outside.clone());
     if settings.mode != Mode::Logo {
         let gradual = flat::gradual_share(&w.raster, &regions, &traced, settings.mode == Mode::Grayscale);
         if gradual >= flat::GRADIENT_SHARE {

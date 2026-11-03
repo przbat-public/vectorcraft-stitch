@@ -118,6 +118,26 @@ fn long_thin_lines_stay() {
     }
 }
 
+/// A line's length is measured along it: a whisker 0.5 mm wide at its root, tapering to a point
+/// over 3 mm (2.4 mm of pixels), under the smallest area and only 1.8 mm long by its pixels over its
+/// width, stays as a line; a speck as wide, 1.5 mm long, joins the area round it.
+#[test]
+fn a_tapered_line_counts_its_whole_length() {
+    let whisker = tr::Raster::from_fn(200, 100, |x, y| {
+        let along = f64::from(x) - 60.0;
+        let half = 2.5 * (1.0 - along / 30.0);
+        let speck = inside(x, y, [140, 47, 155, 53]);
+        if speck || ((0.0..30.0).contains(&along) && (f64::from(y) + 0.5 - 50.0).abs() < half) { NAVY } else { ORANGE }
+    });
+    let mut s = placed(&whisker);
+    let r = dry(&mut s, json!({"colors": 2, "background": "none"}));
+    let navy = areas_of(&r, NAVY);
+    assert_eq!(navy.len(), 1, "the whisker alone: {}", r["areas"]);
+    assert_eq!(navy[0]["kind"], json!("line"));
+    assert!(navy[0]["size"]["area"].as_f64().unwrap() < 1.0, "below the smallest area: {}", navy[0]["size"]);
+    assert!(navy[0]["box"][0].as_f64().unwrap() < 7.0, "the whisker, not the speck: {}", navy[0]["box"]);
+}
+
 /// An island just narrower than 4 mm is sewn over the area round it, however long; one 4 mm wide
 /// has its hole cut.
 #[test]

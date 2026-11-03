@@ -14,7 +14,8 @@
 //! pixel centre lying between them is taken by the area drawn first, or, taken by none, by the
 //! neighbouring pixel's area.
 
-use std::collections::BTreeMap;
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, BinaryHeap};
 use std::sync::Arc;
 
 use vectorcraft_geom::{BezPath, PathEl, Point};
@@ -374,6 +375,78 @@ impl Regions {
             v.sort_unstable();
         }
         Self { w, h, labels, areas, borders, adjacent, outside }
+    }
+
+    /// The length of each area `of` picks, measured along it (pixels): the longest of the shortest
+    /// ways between two of its pixels through its own, a diagonal step √2, a pixel added for the
+    /// halves at its two ends; found by two sweeps, from its first pixel to the farthest, then from
+    /// that one to the farthest (exact for a line without branches, a tapered one included). 0 for
+    /// an area not picked. A cancel stops it between areas.
+    pub(super) fn lengths(&self, of: impl Fn(usize) -> bool) -> crate::Result<Vec<f64>> {
+        let (w, h) = (self.w as usize, self.h as usize);
+        let n = self.areas.len();
+        // The pixels of each area picked, in scan order.
+        let mut members: Vec<Vec<usize>> = vec![Vec::new(); n];
+        for (i, &l) in self.labels.iter().enumerate() {
+            if let Some(m) = members.get_mut(l as usize).filter(|_| of(l as usize)) {
+                m.push(i);
+            }
+        }
+        let mut lengths = vec![0.0; n];
+        let mut dist: Vec<f64> = vec![f64::INFINITY; self.labels.len()];
+        for (a, pixels) in members.iter().enumerate() {
+            let Some(&first) = pixels.first() else { continue };
+            vectorcraft_doc::cancel::check()?;
+            let label = u32::try_from(a).unwrap_or(NONE);
+            // The farthest pixel from `start` through the area's own, and how far.
+            let mut sweep = |start: usize| {
+                for &p in pixels {
+                    if let Some(d) = dist.get_mut(p) {
+                        *d = f64::INFINITY;
+                    }
+                }
+                let mut heap = BinaryHeap::new();
+                if let Some(d) = dist.get_mut(start) {
+                    *d = 0.0;
+                }
+                heap.push(Reverse((0.0f64.to_bits(), start)));
+                let mut far = (0.0f64, start);
+                // A distance is never negative, so its bits order as it does.
+                while let Some(Reverse((bits, p))) = heap.pop() {
+                    let d = f64::from_bits(bits);
+                    if dist.get(p).is_some_and(|&best| d > best) {
+                        continue;
+                    }
+                    if d > far.0 || (d == far.0 && p < far.1) {
+                        far = (d, p);
+                    }
+                    let (x, y) = (p % w, p / w);
+                    for (dx, dy) in [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)] {
+                        let (Some(nx), Some(ny)) = (x.checked_add_signed(dx), y.checked_add_signed(dy)) else { continue };
+                        if nx >= w || ny >= h {
+                            continue;
+                        }
+                        let q = ny * w + nx;
+                        if self.labels.get(q) != Some(&label) {
+                            continue;
+                        }
+                        let step = if dx != 0 && dy != 0 { std::f64::consts::SQRT_2 } else { 1.0 };
+                        let next = d + step;
+                        if let Some(best) = dist.get_mut(q).filter(|best| next < **best) {
+                            *best = next;
+                            heap.push(Reverse((next.to_bits(), q)));
+                        }
+                    }
+                }
+                far
+            };
+            let (_, end) = sweep(first);
+            let (longest, _) = sweep(end);
+            if let Some(slot) = lengths.get_mut(a) {
+                *slot = longest + 1.0;
+            }
+        }
+        Ok(lengths)
     }
 
     /// The area under pixel `(x, y)`, if any.

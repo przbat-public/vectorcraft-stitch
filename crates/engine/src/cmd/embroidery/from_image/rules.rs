@@ -5,10 +5,11 @@
 //!   a lone speck would cost a jump, its ties and a cut. The trace removes most specks itself; this
 //!   catches what it keeps (the Automatic palette keeps a rare colour's regions of a few pixels
 //!   whatever its noise setting is) and what the trace is told to keep for the next rule.
-//! - **Long thin lines stay**, whatever their area, as long as they are lines (narrower than
-//!   [`THIN_LINE_MM`]) at least [`LINE_KEEP_LENGTH_MM`] long: a hairline weighs less than a crumb,
-//!   but it is drawn (the project owner's choice, 2026-11-01). The planner sews a part that narrow
-//!   as a running line along its middle.
+//! - **Long thin lines stay**, whatever their area (the project owner's choice, 2026-11-01): a
+//!   hairline weighs less than a crumb, but it is drawn. A line is narrower than [`THIN_LINE_MM`]
+//!   and, measured along it, at least [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so
+//!   that a stroke tapering to a point counts its whole length. The planner sews a part that
+//!   narrow as a running line along its middle.
 //! - **Slivers join, whatever their size.** A thin area whose colour is a neighbour's, near enough
 //!   ([`SLIVER_DELTA_E`]), or a mix of two neighbours' ([`is_mix`]), is no drawn line but what a
 //!   picture leaves along an edge: the darker or lighter band a JPEG rings round a sharp edge, the
@@ -32,8 +33,9 @@ use super::regions::Regions;
 /// sews it as a running line along its middle.
 pub(super) const THIN_LINE_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
-/// How long a thin area must be to stay below the smallest area (millimetres): a line, not a speck.
-/// An estimate (two stitches of a running line at their shortest).
+/// How long a thin area must be, measured along it, to stay below the smallest area (millimetres):
+/// a line, not a speck. The project owner's choice (2026-11-03), taken from the research's estimate
+/// of two stitches of a running line at their shortest.
 pub(super) const LINE_KEEP_LENGTH_MM: f64 = 2.0;
 
 /// How near a thin area's colour may lie to a neighbour's (CIEDE2000) and be part of it: within the
@@ -125,15 +127,17 @@ fn root(parent: &mut [usize], mut i: usize) -> usize {
 }
 
 /// The rules applied to the areas of `regions` (one a traced path), whose colours `colours` lists
-/// (`row_of` each path's row), at `px_per_mm`, keeping `min_area_px` pixels at least.
-pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_per_mm: f64, min_area_px: usize) -> Areas {
+/// (`row_of` each path's row), at `px_per_mm`, keeping `min_area_px` pixels at least. A cancel
+/// stops it.
+pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_per_mm: f64, min_area_px: usize) -> crate::Result<Areas> {
     let n = regions.areas.len();
     let background = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).is_some_and(|r| r.background);
     let thin_px = THIN_LINE_MM * px_per_mm;
     let long_px = LINE_KEEP_LENGTH_MM * px_per_mm;
-    // A line: narrower than a satin column, long enough not to be a speck.
-    let is_line =
-        |i: usize| regions.areas.get(i).is_some_and(|a| a.pixels > 0 && a.widest_px < thin_px && a.pixels as f64 / a.widest_px.max(1.0) >= long_px);
+    // A line: narrower than a satin column, and long enough along it not to be a speck.
+    let thin = |i: usize| regions.areas.get(i).is_some_and(|a| a.pixels > 0 && a.widest_px < thin_px);
+    let lengths = regions.lengths(thin)?;
+    let is_line = |i: usize| thin(i) && lengths.get(i).is_some_and(|&l| l >= long_px);
     let colour = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).map(|r| r.color);
     // Each area's neighbours, as traced.
     let mut around: Vec<Vec<(usize, u32)>> = vec![Vec::new(); n];
@@ -250,7 +254,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         *l = place.get(r).copied().flatten().and_then(|p| u32::try_from(p).ok()).unwrap_or(super::regions::NONE);
     }
     let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len(), regions.outside.clone());
-    Areas { areas, regions, joined, dropped: left_out }
+    Ok(Areas { areas, regions, joined, dropped: left_out })
 }
 
 /// The areas once the colours have their threads (`colours`): touching areas sewn in one thread

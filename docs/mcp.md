@@ -6622,11 +6622,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   with maxAnchors and colors, or `"gradual"` with percent}, `noBackgroundColor`, `cornersDisagree`, `choiceNotGray`
   {color, thread: {palette, index, name}}, `colorJoined` {color, minArea}, `specksJoined` {count, minArea},
   `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `shapesNotJoined` {count}, `nothingTraced` and
-  `nothingToMake` (a dry run's; Create is refused instead). An area's `area` is its number in this reply's sewing
-  order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its colour. `regions`
-  (with `regions: true`) is each working pixel's area number, two bytes little-endian in base64; `outline` (with
-  `outlines: true`) an area's shape as sewn, an SVG path in millimetres from the document's origin. An interface runs
-  it off its thread through the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`,
+  `nothingToMake` (a dry run's; Create is refused instead). `unusedChoices` lists `{choice, reason}` for each choice
+  that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
+  names none, the background's aside, so the colours it took are sewn as their own). An area's `area` is its number in
+  this reply's sewing order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its
+  colour. `regions` (with `regions: true`) is each working pixel's area number, two bytes little-endian in base64;
+  `outline` (with `outlines: true`) an area's shape as sewn, an SVG path in millimetres from the document's origin. An
+  interface runs it off its thread through the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`,
   `Session::apply_digitize_image`), which a document changed meanwhile refuses.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,

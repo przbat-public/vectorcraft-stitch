@@ -60,9 +60,18 @@ impl Colour {
 /// The colour list of a trace: which colours there are, and what becomes of each.
 pub(super) struct Colours {
     pub(super) rows: Vec<Colour>,
-    /// The choices no colour took (their places in `colorChoices`).
-    pub(super) unused: Vec<usize>,
+    /// The choices that did nothing, each by its place in `colorChoices`, with why: no colour took
+    /// it ([`NO_SUCH_COLOR`]), or its `mergeInto` names no colour to merge into ([`NO_MERGE_TARGET`]).
+    pub(super) unused: Vec<(usize, &'static str)>,
 }
+
+/// Why a choice did nothing: no colour of the image lies within the line of its colour.
+pub(super) const NO_SUCH_COLOR: &str = "noSuchColor";
+
+/// Why a choice's merge did nothing: no other colour of the image, the background's aside, lies
+/// within the line of the colour its `mergeInto` names, so the colours it took are sewn as their
+/// own.
+pub(super) const NO_MERGE_TARGET: &str = "noMergeTarget";
 
 impl Colours {
     /// Each traced path's row, by the path's place in the trace (`0` for a path in no row, which
@@ -148,7 +157,7 @@ pub(super) fn rows(traced: &tr::TraceResult, touches_edge: &dyn Fn(usize) -> boo
             row.job = job;
         }
     }
-    let unused = used.iter().enumerate().filter(|(_, u)| !**u).map(|(i, _)| i).collect();
+    let unused = used.iter().enumerate().filter(|(_, u)| !**u).map(|(i, _)| (i, NO_SUCH_COLOR)).collect();
     Colours { rows, unused }
 }
 
@@ -184,6 +193,14 @@ pub(super) fn matched(mut colours: Colours, areas: &[(usize, usize)], mode: Mode
                 .map(|(j, _)| j)
         })
         .collect();
+    // A merge with nowhere to go does nothing: said, once for its choice.
+    for (row, target) in rows.iter().zip(&targets) {
+        if let (Some(i), None) = (row.choice.filter(|&i| choices.get(i).is_some_and(|c| c.merge_into.is_some())), target)
+            && !colours.unused.iter().any(|&(u, _)| u == i)
+        {
+            colours.unused.push((i, NO_MERGE_TARGET));
+        }
+    }
     // Each merge followed to the row it ends in. A loop of merges (each colour merged into the next
     // and the last into the first) would leave none of them a colour of its own: it is refused.
     let mut ends: Vec<usize> = Vec::with_capacity(rows.len());

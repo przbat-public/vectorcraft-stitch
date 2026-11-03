@@ -669,7 +669,7 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let w = &d.working;
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
-    let unused: Vec<Value> = d.colours.unused.iter().map(|&i| json!({"choice": i, "reason": "noSuchColor"})).collect();
+    let unused: Vec<Value> = d.colours.unused.iter().map(|&(i, why)| json!({"choice": i, "reason": why})).collect();
     let areas = areas_json(d, palette, listed.offset, listed.limit, listed.outlines);
     let area_count = d.order.sewn.len();
     let specks = d.areas.joined.saturating_sub(d.areas.bands);

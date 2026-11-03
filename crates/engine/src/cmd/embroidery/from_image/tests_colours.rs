@@ -360,6 +360,27 @@ fn a_choice_at_the_line_as_shown_is_taken() {
     assert_eq!((&row["choice"], &r["unusedChoices"]), (&json!(0), &json!([])), "{row}");
 }
 
+/// Merges follow each other to where they end: red merged into blue and blue into yellow are both
+/// sewn in yellow's thread, each saying it merged into yellow. A merge into a colour the image
+/// hasn't is no merge: the colour is sewn as its own, and the choice listed as doing nothing, with
+/// why.
+#[test]
+fn merges_follow_each_other_and_need_their_target() {
+    let mut s = placed(&quarters(WHITE, YELLOW));
+    let hex4 = |c: [u8; 4]| super::super::hex([c[0], c[1], c[2]]);
+    let chain = json!([{"color": hex4(RED), "mergeInto": hex4(BLUE)}, {"color": hex4(BLUE), "mergeInto": hex4(YELLOW)}]);
+    let r = dry(&mut s, json!({"colors": 4, "colorChoices": chain}));
+    let yellow = row(&r, YELLOW, false);
+    for c in [RED, BLUE] {
+        let merged = row(&r, c, false);
+        assert_eq!((&merged["mergedInto"], &merged["thread"]["index"]), (&json!(hex4(YELLOW)), &yellow["thread"]["index"]), "{merged}");
+    }
+    let r = dry(&mut s, json!({"colors": 4, "colorChoices": [{"color": hex4(RED), "mergeInto": "#00ff00"}]}));
+    let red = row(&r, RED, false);
+    assert_eq!((&red["mergedInto"], &red["sewn"], &red["choice"]), (&Value::Null, &json!(true), &json!(0)), "{red}");
+    assert_eq!(r["unusedChoices"], json!([{"choice": 0, "reason": "noMergeTarget"}]));
+}
+
 /// The reply's table gives the colours' range of the document's palette: Brother's 61 threads,
 /// Janome's 78.
 #[test]

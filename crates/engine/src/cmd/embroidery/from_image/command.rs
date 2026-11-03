@@ -361,20 +361,55 @@ fn background_json(found: Background, setting: BackgroundSetting, traced: Option
     json!({"from": from, "color": traced.map(super::super::hex)})
 }
 
-/// The areas `offset` to `offset + limit` in sewing order, as the reply lists them, with their
-/// outlines when `outlines` asks.
-fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outlines: bool) -> Vec<Value> {
+/// The most path elements (moves, lines, curves, closes) of outlines a reply gives: past them the
+/// areas listed end, `truncated` saying more follow, so that a reply stays about a megabyte
+/// whatever the picture (each element some fifty characters). An estimate: the real designs'
+/// artwork and the test logos are drawn in at most a few thousand.
+pub(super) const MAX_OUTLINE_ELEMENTS: usize = 20_000;
+
+/// Area `a`'s shape as sewn, as an SVG path in millimetres from the document's origin, each
+/// coordinate to hundredths as the reply gives millimetres; and how many path elements it has.
+fn outline_of(d: &Digitized, a: usize) -> Option<(String, usize)> {
+    use vectorcraft_geom::kurbo::{BezPath, PathEl};
     let to_mm = vectorcraft_geom::Affine::scale(MM_PER_PT) * d.working.to_doc;
+    let path = d.shapes.shapes.get(a)?.transformed(to_mm).to_bezpath();
+    let r = |p: Point| Point::new(hundredths(p.x), hundredths(p.y));
+    let rounded: BezPath = path
+        .elements()
+        .iter()
+        .map(|&el| match el {
+            PathEl::MoveTo(p) => PathEl::MoveTo(r(p)),
+            PathEl::LineTo(p) => PathEl::LineTo(r(p)),
+            PathEl::QuadTo(p, q) => PathEl::QuadTo(r(p), r(q)),
+            PathEl::CurveTo(p, q, e) => PathEl::CurveTo(r(p), r(q), r(e)),
+            PathEl::ClosePath => PathEl::ClosePath,
+        })
+        .collect();
+    Some((rounded.to_svg(), rounded.elements().len()))
+}
+
+/// The areas `offset` to `offset + limit` in sewing order, as the reply lists them, with their
+/// outlines when `outlines` asks: then at most [`MAX_OUTLINE_ELEMENTS`] path elements of them, the
+/// list ending at the area that would pass it (the first one listed whatever it has).
+fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outlines: bool) -> Vec<Value> {
     let w = &d.working;
     let px = w.px_per_mm;
     let number = |a: usize| d.order.placed.get(a).and_then(|p| p.index).map(|i| i + 1);
     let mm = |p: Point| [hundredths(p.x * MM_PER_PT), hundredths(p.y * MM_PER_PT)];
+    let mut elements = 0usize;
     d.order
         .sewn
         .iter()
         .skip(offset)
         .take(limit)
-        .filter_map(|&a| {
+        .map(|&a| (a, outlines.then(|| outline_of(d, a)).flatten()))
+        .take_while(|(_, outline)| {
+            let n = outline.as_ref().map_or(0, |(_, n)| *n);
+            let first = elements == 0;
+            elements = elements.saturating_add(n);
+            first || elements <= MAX_OUTLINE_ELEMENTS
+        })
+        .filter_map(|(a, outline)| {
             let area = d.areas.areas.get(a)?;
             let stats = d.areas.regions.areas.get(a)?;
             let placed = d.order.placed.get(a)?;
@@ -416,7 +451,7 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 "joined": area.paths.len().saturating_sub(1),
                 "touches": touches,
                 "grownUnder": d.shapes.grown_under.get(a).map_or(vec![], |g| g.iter().filter_map(|&b| number(b)).collect::<Vec<_>>()),
-                "outline": outlines.then(|| d.shapes.shapes.get(a).map(|p| p.transformed(to_mm).to_bezpath().to_svg())).flatten(),
+                "outline": outline.map(|(svg, _)| svg),
                 "order": {
                     "taken": placed.taken.id(),
                     "after": placed.after.iter().filter_map(|&(o, why)| Some(json!({"area": number(o)?, "because": why.id()}))).collect::<Vec<_>>(),

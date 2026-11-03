@@ -170,6 +170,37 @@ fn the_edge_warning_comes_only_with_an_overlap_to_leave_out() {
 /// The most areas a reply lists.
 const MAX_LISTED: usize = 10_000;
 
+/// The numbers of SVG path `d`.
+fn numbers(d: &str) -> Vec<&str> {
+    d.split(|c: char| !(c.is_ascii_digit() || c == '.' || c == '-')).filter(|t| !t.is_empty()).collect()
+}
+
+/// The outlines are given in millimetres to hundredths, as the rest of the reply is, and the areas
+/// listed with them end where their path elements would pass the most a reply gives, `truncated`
+/// saying more follow: a checkerboard of 4,900 squares of 1.2 mm, its outlines far past it.
+#[test]
+fn outlines_are_rounded_and_capped() {
+    let picture = tr::Raster::from_fn(840, 840, |x, y| if (x / 12 + y / 12) % 2 == 0 { ORANGE } else { NAVY });
+    let mut s = placed(&picture);
+    let p = json!({"dryRun": true, "colors": 2, "background": "none", "overlap": 0, "outlines": true, "limit": MAX_LISTED});
+    let r = s.execute("embroidery.digitizeImage", &p).unwrap();
+    let areas = r["areas"].as_array().unwrap();
+    assert_eq!(r["areaCount"], json!(4900));
+    assert!(areas.len() < 4900 && r["truncated"] == json!(true), "{} listed", areas.len());
+    let elements: usize = areas.iter().map(|a| kurbo::BezPath::from_svg(a["outline"].as_str().unwrap()).unwrap().elements().len()).sum();
+    assert!(elements <= super::command::MAX_OUTLINE_ELEMENTS, "{elements} elements");
+    for a in areas {
+        for n in numbers(a["outline"].as_str().unwrap()) {
+            assert!(n.split('.').nth(1).is_none_or(|d| d.len() <= 2), "{n} in {}", a["outline"]);
+        }
+    }
+    // Paged on from where it ended, the next areas come with their outlines.
+    let mut next = p.clone();
+    next["offset"] = json!(areas.len());
+    let more = s.execute("embroidery.digitizeImage", &next).unwrap();
+    assert_eq!(more["areas"][0]["area"], json!(areas.len() + 1));
+}
+
 /// The overlap never reaches the background or an area left unsewn, and reaches at most half way
 /// under a thin area: two fills on either side of a navy band 0.6 mm wide each reach 0.3 mm under
 /// it, meeting in its middle.

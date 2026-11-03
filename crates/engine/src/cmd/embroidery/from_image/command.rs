@@ -188,7 +188,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         return Err(bad(
             C,
             format!(
-                "the image traces as {} shapes, more than {}: raise `minArea`, lower `colors`, or crop the image",
+                "the image traces as {} shapes, more than {}: lower `colors`, give a smaller size (`width`, `height` or `fit`), or crop the image",
                 traced.paths.len(),
                 trace::MAX_TRACED_SHAPES
             ),
@@ -224,7 +224,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         return Err(bad(
             C,
             format!(
-                "the image makes {} areas, more than {MAX_IMAGE_AREAS}: raise `minArea` or `smoothing`, lower `colors`, or crop the image",
+                "the image makes {} areas, more than {MAX_IMAGE_AREAS}: raise `minArea`, lower `colors`, give a smaller size (`width`, `height` or `fit`), or crop the image",
                 areas.areas.len()
             ),
         ));

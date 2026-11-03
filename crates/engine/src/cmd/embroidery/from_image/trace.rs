@@ -38,11 +38,17 @@ pub(super) const MAX_TRACED_SHAPES: usize = 250_000;
 /// anything, a line or a dot.
 pub(super) const TRACE_AREA_MM2: f64 = vectorcraft_stitch::plan::THREAD_WIDTH * vectorcraft_stitch::plan::THREAD_WIDTH;
 
+/// How far over a whole number of pixels an area's floating point may come and still be that
+/// number (a share of it): 0.4 mm squared at ten pixels a millimetre is 16.000000000000004, which
+/// is 16 pixels, not 17.
+const PIXELS_SLACK: f64 = 1e-9;
+
 /// The whole pixels `area_mm2` square millimetres cover at `px_per_mm`, rounded up: ⌈A × r²⌉,
-/// as Image Trace's noise counts them (its threshold is strict: a region of exactly that many
-/// pixels stays). 0 for nothing, and at most `u32::MAX`.
+/// a product a hair over a whole number ([`PIXELS_SLACK`]) taken as that number, as Image Trace's
+/// noise counts them (its threshold is strict: a region of exactly that many pixels stays). 0 for
+/// nothing, and at most `u32::MAX`.
 pub(super) fn area_px(area_mm2: f64, px_per_mm: f64) -> u32 {
-    let px = (area_mm2 * px_per_mm * px_per_mm).ceil();
+    let px = (area_mm2 * px_per_mm * px_per_mm * (1.0 - PIXELS_SLACK)).ceil();
     if px.is_finite() && px > 0.0 { px.min(f64::from(u32::MAX)) as u32 } else { 0 }
 }
 
@@ -149,9 +155,12 @@ pub(super) fn in_mode(
 pub(super) fn refusal(e: tr::TraceError) -> EngineError {
     match e {
         tr::TraceError::Cancelled => EngineError::Cancelled,
-        tr::TraceError::TooComplex { max } => {
-            bad(C, format!("the image would make more than {max} anchor points: raise `minArea` or `smoothing`, or lower `colors`"))
-        }
+        tr::TraceError::TooComplex { max } => bad(
+            C,
+            format!(
+                "the image would make more than {max} anchor points: lower `colors`, raise `smoothing`, give a smaller size (`width`, `height` or `fit`), or crop the image"
+            ),
+        ),
         e => bad(C, format!("the image can't be traced: {e}")),
     }
 }

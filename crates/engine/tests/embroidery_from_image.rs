@@ -133,13 +133,13 @@ fn files_that_lie_are_refused() {
     }
 }
 
-/// Noise makes more areas than a design is made of: refused with what to change. With the
-/// smallest area raised it is digitized, the colours asked at most.
+/// Noise makes more areas than a design is made of: refused by that cap, with what changes it.
+/// With the smallest area raised it is digitized, the colours asked at most.
 #[test]
 fn noise_is_refused_with_advice() {
     let mut s = placed("noise.png", &noise(400, 400).encode_png()).unwrap();
     let why = digitized(&mut s, json!({"colors": 16, "minArea": 0, "smoothing": 0})).unwrap_err();
-    assert!(why.contains("raise `minArea`"), "{why}");
+    assert!(why.contains("areas, more than 10000") && why.contains("raise `minArea`"), "{why}");
     let r = digitized(&mut s, json!({"colors": 4, "minArea": 20})).unwrap();
     assert!(r["colorCount"].as_u64().unwrap() <= 4, "{}", r["colors"]);
 }

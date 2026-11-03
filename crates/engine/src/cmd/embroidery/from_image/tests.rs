@@ -238,6 +238,22 @@ fn areas_turn_into_whole_pixels() {
     assert_eq!(area_px(0.0, 10.0), 0);
     assert_eq!(area_px(f64::NAN, 10.0), 0);
     assert_eq!(area_px(1e30, 10.0), u32::MAX);
+    // A product a hair over a whole number is that number: 0.4 mm squared at 10 a millimetre.
+    assert_eq!(area_px(super::trace::TRACE_AREA_MM2, 10.0), 16);
+    assert_eq!(area_px(0.3, 10.0), 30);
+    assert_eq!(area_px(0.305, 10.0), 31);
+}
+
+/// The trace's noise keeps a thread's footprint whatever the smallest area above it, so a refusal
+/// past the anchor points or the shapes never advises raising the smallest area, which changes
+/// neither; only the areas' refusal does, which it changes.
+#[test]
+fn refusals_advise_only_what_changes_them() {
+    let at = |a: f64| Settings::from_params(json!({ "minArea": a }).as_object().unwrap(), Palette::Jef).unwrap();
+    let noise = |a: f64| super::trace::params(&at(a), 10.0, 6, TracePalette::Mode).noise;
+    assert_eq!(noise(1.0), noise(50.0), "the smallest area past a thread's footprint traces alike");
+    let anchors = super::trace::refusal(tr::TraceError::TooComplex { max: 10 }).to_string();
+    assert!(!anchors.contains("minArea") && anchors.contains("colors") && anchors.contains("smoothing") && anchors.contains("crop"), "{anchors}");
 }
 
 /// The smallest area is in square millimetres: at 10 pixels a millimetre, a speck of 1.4 mm² (140

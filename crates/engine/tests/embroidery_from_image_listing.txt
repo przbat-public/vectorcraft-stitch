@@ -79,12 +79,12 @@ squares-0.4 pes 91d6539cc90f4f6e 2174
 squares-0.4 pec 5b0d51c6f61b2f04 2160
 squares-0.4 jef 8c1526d60a6029bd 1074
 squares-0.4 vp3 227aa697c6338f4b 1264
-scan reply 1a677f2b1923bd9a
+scan reply 0060fa4b7ab5d0dd
 scan dst e3154f457391c811 3104
 scan tap dcdd5b1cc1d2bb14 2592
 scan t01 dcdd5b1cc1d2bb14 2592
 scan exp 1521bfd1dcc9a670 1742
 scan pes 0e852298b58037a6 3479
 scan pec dab050c1e67c52c4 3465
-scan jef f031ada0113174d9 1888
-scan vp3 556cd37f883173cc 2166
+scan jef 1ce616c630f392bf 1888
+scan vp3 25f562ad975d89ba 2166

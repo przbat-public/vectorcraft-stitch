@@ -18,8 +18,8 @@
 
 use std::collections::BTreeMap;
 
-use vectorcraft_geom::kurbo::{BezPath, ParamCurve, ParamCurveDeriv, PathSeg};
-use vectorcraft_geom::{FillRule, PathData, Point};
+use vectorcraft_geom::kurbo::{BezPath, ParamCurve, ParamCurveDeriv, PathEl, PathSeg};
+use vectorcraft_geom::{FillRule, PathData, Point, Rect, SubPath};
 use vectorcraft_pathops::{BoolOp, Cap, Join, outline_stroke, try_boolean, try_unite_all_with};
 
 use super::colours::Colours;
@@ -40,26 +40,18 @@ const BEYOND_PX: f64 = 0.5;
 /// round, so that the strip reaches no farther than its width from the shared edge anywhere.
 const NO_MITER: f64 = 1.0;
 
-/// The most edges between two sewn areas the overlap grows along: past them it is left out, with a
-/// warning. An estimate: the real designs' artwork and the test logos have at most 43 (a dry run of
-/// them takes at most half a second in all), a busy logo of some hundreds of areas a few hundred,
-/// while an untrusted image of noise has tens of thousands, a path operation a few for each.
-pub(super) const MAX_OVERLAP_EDGES: usize = 2_000;
-
 /// The shapes of a digitized image's areas.
 pub(super) struct Shapes {
     /// Each area's shape (working pixels), by its index; empty for the background's.
     pub(super) shapes: Vec<PathData>,
     /// The areas each area was grown under, by the indices of the areas sewn after it: none where
-    /// nothing was grown (no overlap asked, the overlap left out, a strip that came to nothing, a
-    /// shape the path operations couldn't grow).
+    /// nothing was grown (no overlap asked, a strip that came to nothing, a shape the path
+    /// operations couldn't grow).
     pub(super) grown_under: Vec<Vec<usize>>,
     /// How much the overlap added (square working pixels): the area sewn twice, of the strips
     /// joined to the shapes.
     pub(super) doubled_px: f64,
-    /// Whether an overlap asked for was left out (past [`MAX_OVERLAP_EDGES`]), and how many shapes
-    /// the path operations couldn't join or grow (each left as it was).
-    pub(super) skipped: bool,
+    /// How many shapes the path operations couldn't join or grow (each left as it was).
     pub(super) failed: usize,
 }
 
@@ -69,9 +61,10 @@ fn united(paths: &[&PathData]) -> Option<PathData> {
     try_unite_all_with(&with_rules, PRECISION_PX).ok()
 }
 
-/// The union of areas' shapes `paths` when the path operations refuse it: their outlines one after
-/// another, which under the non-zero rule is their union exactly, the areas abutting (none
-/// overlaps another) and each wound with its holes against its outlines.
+/// The union of `paths` with no path operation: their outlines one after another, which under the
+/// non-zero rule is their union exactly when each is wound with its holes against its outlines and
+/// all the same way round, as the trace's shapes are (abutting areas' shapes, when the path
+/// operations refuse their union) and the path operations' outputs (the strips under one area).
 fn side_by_side(paths: &[&PathData]) -> PathData {
     PathData::new(paths.iter().flat_map(|p| p.subpaths.iter().cloned()).collect())
 }
@@ -80,6 +73,79 @@ fn side_by_side(paths: &[&PathData]) -> PathData {
 /// one way and its holes the other.
 fn area(p: &PathData) -> f64 {
     p.subpaths.iter().map(|sp| sp.signed_area()).sum::<f64>().abs()
+}
+
+/// Whether shapes in boxes `a` and `b` may overlap by more than [`PRECISION_PX`]: the boxes overlap
+/// by more than it both ways. The strips round neighbouring dots, whose boxes only touch, don't.
+fn may_overlap(a: Rect, b: Rect) -> bool {
+    a.x1.min(b.x1) - a.x0.max(b.x0) > PRECISION_PX && a.y1.min(b.y1) - a.y0.max(b.y0) > PRECISION_PX
+}
+
+/// `path` with the points along each straight run dropped: a line on from the run's start in the
+/// direction of its first line, every point within half of [`PRECISION_PX`] of it, so that the
+/// run's one line lies within the precision of every point it drops. The trace splits an outline
+/// wherever what lies beside it changes, so the edge along a row of specks that joined one area
+/// keeps a point at each of them (a serpentine line between 111,452 specks keeps 222,608): a strip
+/// is cut from the outline straightened, the same shape to the precision, a few lines instead of
+/// thousands.
+pub(super) fn straightened(path: &BezPath) -> BezPath {
+    let mut out = BezPath::new();
+    // The run of lines not yet written: its start, its direction and its end.
+    let mut run: Option<(Point, vectorcraft_geom::Vec2, Point)> = None;
+    // Where the pen is, and where its outline started (where a close takes it back to).
+    let (mut at, mut start) = (Point::ZERO, Point::ZERO);
+    for el in path.elements() {
+        if let PathEl::LineTo(p) = *el {
+            let on = |(s, d, e): (Point, vectorcraft_geom::Vec2, Point)| {
+                let len = d.hypot();
+                len > 0.0 && (d.cross(p - s) / len).abs() <= PRECISION_PX / 2.0 && (p - e).dot(d) > 0.0
+            };
+            match run {
+                Some((s, d, e)) if on((s, d, e)) => run = Some((s, d, p)),
+                _ => {
+                    if let Some((_, _, e)) = run.take() {
+                        out.line_to(e);
+                    }
+                    run = Some((at, p - at, p));
+                }
+            }
+            at = p;
+            continue;
+        }
+        if let Some((_, _, e)) = run.take() {
+            out.line_to(e);
+        }
+        out.push(*el);
+        at = match *el {
+            PathEl::MoveTo(p) => {
+                start = p;
+                p
+            }
+            PathEl::LineTo(p) | PathEl::QuadTo(_, p) | PathEl::CurveTo(_, _, p) => p,
+            PathEl::ClosePath => start,
+        };
+    }
+    if let Some((_, _, e)) = run {
+        out.line_to(e);
+    }
+    out
+}
+
+/// `p`'s outlines straightened ([`straightened`]), each with its box.
+fn straightened_outlines(p: &PathData) -> Vec<(Rect, SubPath)> {
+    let straight = |sp: &SubPath| {
+        let mut bez = BezPath::new();
+        sp.to_bezpath_into(&mut bez);
+        PathData::from_bezpath(&straightened(&bez)).subpaths.into_iter().next()
+    };
+    p.subpaths.iter().filter_map(|sp| straight(sp).and_then(|s| Some((outline_box(&s)?, s)))).collect()
+}
+
+/// The box of an outline's points and handles, which holds all of it.
+fn outline_box(sp: &SubPath) -> Option<Rect> {
+    let mut points = sp.anchors.iter().flat_map(|a| [a.p, a.h_in, a.h_out]);
+    let first = points.next()?;
+    Some(points.fold(Rect::from_points(first, first), |r, p| r.union_pt(p)))
 }
 
 /// Where along a curve piece of an outline the region map is asked what lies beside it: a quarter,
@@ -224,14 +290,17 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
             }
         }
     }
-    let edges: usize = under.iter().map(Vec::len).sum();
-    let skipped = overlap_px > 0.0 && edges > MAX_OVERLAP_EDGES;
     let mut grown_under: Vec<Vec<usize>> = vec![Vec::new(); n];
     let mut doubled_px = 0.0;
-    // What strips already lie under each area, from the areas sewn before: a later strip there gives
-    // way to them.
-    let mut taken: Vec<Option<PathData>> = vec![None; n];
-    if overlap_px > 0.0 && !skipped {
+    // Each area's outlines straightened ([`straightened`]), with their boxes, made the first time it
+    // is grown under: a band is cut from the outlines its box meets alone, an outline beyond the
+    // box winding nothing inside it, so that a strip costs its own stretch of edge however many
+    // outlines the area has (a field round thousands of dots).
+    let mut boxed: Vec<Option<Vec<(Rect, SubPath)>>> = vec![None; n];
+    // What strips already lie under each area, from the areas sewn before, each with its box: a
+    // later strip there gives way to those it may overlap.
+    let mut taken: Vec<Vec<(Rect, PathData)>> = vec![Vec::new(); n];
+    if overlap_px > 0.0 {
         for &a in &order.sewn {
             vectorcraft_doc::cancel::check()?;
             let Some(later) = under.get(a).filter(|l| !l.is_empty()) else { continue };
@@ -239,16 +308,25 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
             let edges = shared_edges(base, a, &areas.regions);
             let (mut strips, mut reached, mut strip_px): (Vec<PathData>, Vec<usize>, f64) = (Vec::new(), Vec::new(), 0.0);
             for &b in later {
-                let (Some(into), Some(stats), Some(lines)) = (own.get(b), areas.regions.areas.get(b), edges.get(&b)) else { continue };
+                let (Some(lines), Some(into), Some(stats), Some(outlines)) =
+                    (edges.get(&b), own.get(b), areas.regions.areas.get(b), boxed.get_mut(b))
+                else {
+                    continue;
+                };
                 // As far as asked, or half as wide as a thin neighbour.
                 let width = overlap_px.min(stats.widest_px / 2.0);
                 let band = outline_stroke(&joined_edges(lines), 2.0 * width, Cap::Round, Join::Round, NO_MITER);
-                let Ok(mut strip) = try_boolean(&band, FillRule::NonZero, into, FillRule::NonZero, BoolOp::Intersect, PRECISION_PX) else {
+                let Some(reach) = band.control_bounds() else { continue };
+                let outlines = outlines.get_or_insert_with(|| straightened_outlines(into));
+                let near = PathData::new(outlines.iter().filter(|(r, _)| r.overlaps(reach)).map(|(_, sp)| sp.clone()).collect());
+                let Ok(mut strip) = try_boolean(&band, FillRule::NonZero, &near, FillRule::NonZero, BoolOp::Intersect, PRECISION_PX) else {
                     failed += 1;
                     continue;
                 };
-                if let Some(Some(before)) = taken.get(b) {
-                    match try_boolean(&strip, FillRule::NonZero, before, FillRule::NonZero, BoolOp::Difference, PRECISION_PX) {
+                let Some(found) = strip.bounds() else { continue };
+                let met: Vec<&PathData> = taken.get(b).into_iter().flatten().filter(|(r, _)| may_overlap(*r, found)).map(|(_, p)| p).collect();
+                if !met.is_empty() {
+                    match try_boolean(&strip, FillRule::NonZero, &side_by_side(&met), FillRule::NonZero, BoolOp::Difference, PRECISION_PX) {
                         Ok(rest) => strip = rest,
                         Err(_) => {
                             failed += 1;
@@ -256,14 +334,9 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
                         }
                     }
                 }
-                if strip.is_empty() {
-                    continue;
-                }
+                let Some(strip_box) = strip.bounds() else { continue };
                 if let Some(slot) = taken.get_mut(b) {
-                    *slot = Some(match slot.take() {
-                        Some(before) => united(&[&before, &strip]).unwrap_or_else(|| side_by_side(&[&before, &strip])),
-                        None => strip.clone(),
-                    });
+                    slot.push((strip_box, strip.clone()));
                 }
                 strip_px += area(&strip);
                 strips.push(strip);
@@ -287,5 +360,5 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
             }
         }
     }
-    Ok(Shapes { shapes, grown_under, doubled_px, skipped, failed })
+    Ok(Shapes { shapes, grown_under, doubled_px, failed })
 }

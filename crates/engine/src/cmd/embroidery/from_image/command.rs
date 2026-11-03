@@ -261,12 +261,6 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     vectorcraft_doc::cancel::progress(3, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm)?;
-    if shapes.skipped {
-        warnings.push(format!(
-            "the areas meet along more than {} edges: the colours are sewn edge to edge, with no overlap (raise `minArea`, or lower `colors`)",
-            overlap::MAX_OVERLAP_EDGES
-        ));
-    }
     if shapes.failed > 0 {
         warnings.push(format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed));
     }

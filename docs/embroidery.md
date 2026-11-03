@@ -1381,9 +1381,9 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   satin's round or square caps not sewn, and the fill's rows run at the fixed angle, not across the
   shape (the second engine PR); the window (the next PR); overrides for one area, kept by the
   point clicked and its colour, and a live object digitized again (the PR after). A photo or
-  gradients are digitized with a warning, never refused. Past 2,000 edges between sewn areas the
-  colours are sewn edge to edge, without the overlap; past 250,000 traced shapes, 2,000,000 anchors
-  (on every system, the web's limit) or 10,000 areas an image is refused with what to change.
+  gradients are digitized with a warning, never refused. Past 250,000 traced shapes, 2,000,000
+  anchors (on every system, the web's limit) or 10,000 areas an image is refused with what to
+  change.
 
 ## Validation
 
@@ -3125,11 +3125,16 @@ millimetres again. The stages, each a module, each reported to a progress sink
    while its areas can be sewn, the nearest next.
 8. **The shapes and the overlap** (`overlap.rs`): each area's traced shape joined with the specks
    that joined it, made solid under the islands sewn over it, and grown under the neighbours sewn
-   after it by `overlap` (0.4 mm, the owner's choice), only along the edge they share
-   (`pathops::trap_band`, the geometry of print trapping), at most half as wide as a thin area it
-   reaches under, never into the background, an unsewn area or the image's edge. Upstream's
+   after it by `overlap` (0.4 mm, the owner's choice), only along the edge they share (the
+   geometry of print trapping: the region map says which stretches of an outline border which
+   neighbour, and the strip is those stretches widened, kept inside the neighbour), at most half as
+   wide as a thin area it reaches under, never into the background, an unsewn area or the image's
+   edge; where two strips would stack under a narrow neck, the one sewn later gives way. Upstream's
    Overlapping method and `expand` are not used: the visible edges stay where the picture has
-   them. Past 2,000 shared edges the colours are sewn edge to edge, with a warning.
+   them. The overlap is made whatever the number of edges (the owner's choice, 2026-11-03: it
+   takes about a second at the 10,000-area limit); each strip is cut only from the outlines near
+   it, straightened, and gives way only to the strips it may overlap, so that its cost is its own
+   stretch of edge.
 9. **Create** (`create.rs`): one group in the image's place, a group a colour block in sewing order
    named after its thread as its swatch is, one object an area painted with its thread's own colour
    (so the plan sews it in exactly that thread), settings set only where a job asks; the image

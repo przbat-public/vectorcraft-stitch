@@ -145,26 +145,63 @@ fn two_strips_never_stack_under_a_neck() {
     }
 }
 
-/// Past the most edges the overlap grows along, an overlap asked for is left out with a warning,
-/// and nothing is listed as grown under; with no overlap asked, there is nothing to leave out and no
-/// warning. A checkerboard of 2 mm squares in two colours: 2,500 squares, the first colour's each
-/// touching four of the second's.
+/// The overlap is made however many edges the areas meet along: a checkerboard of 2 mm squares in
+/// two colours, 2,500 squares meeting along some 4,900 edges, has each square of the colour sewn
+/// first grown under its neighbours of the other, with nothing left out; with no overlap asked,
+/// none is.
 #[test]
-fn the_edge_warning_comes_only_with_an_overlap_to_leave_out() {
+fn the_overlap_is_made_however_many_edges_the_areas_meet_along() {
     let picture = tr::Raster::from_fn(1000, 1000, |x, y| if (x / 20 + y / 20) % 2 == 0 { ORANGE } else { NAVY });
     let mut s = placed(&picture);
     let run = |s: &mut Session, overlap: f64| {
         let p = json!({"dryRun": true, "colors": 2, "background": "none", "overlap": overlap, "limit": MAX_LISTED});
         s.execute("embroidery.digitizeImage", &p).unwrap_or_else(|e| panic!("{p}: {e}"))
     };
-    let warned = |r: &Value| r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("edges"));
-    let grown = |r: &Value| r["areas"].as_array().unwrap().iter().any(|a| a["grownUnder"] != json!([]));
+    let grown = |r: &Value| r["areas"].as_array().unwrap().iter().filter(|a| a["grownUnder"] != json!([])).count();
     let asked = run(&mut s, 0.4);
     assert_eq!(asked["areaCount"], json!(2500));
-    assert!(warned(&asked) && !grown(&asked), "{}", asked["warnings"]);
-    assert_eq!(asked["doubledArea"], json!(0.0));
+    assert_eq!(asked["warnings"], json!([]));
+    assert_eq!(grown(&asked), 1250, "every square of the colour sewn first");
+    assert!(asked["doubledArea"].as_f64().unwrap() > 0.0, "{}", asked["doubledArea"]);
     let none = run(&mut s, 0.0);
-    assert!(!warned(&none) && !grown(&none), "{}", none["warnings"]);
+    assert_eq!((grown(&none), &none["doubledArea"]), (0, &json!(0.0)));
+}
+
+/// An outline straightened to cut strips from loses the points along its straight runs, and only
+/// those: a side split at each of a hundred specks comes back as one line, as does a side with a
+/// point off it by under half the path operations' precision (4 thousandths of a pixel), while a
+/// point off by 2 hundredths, a curve and a line turning back stay.
+#[test]
+fn an_outline_to_cut_from_is_straightened_and_no_more() {
+    use kurbo::{BezPath, PathEl, Point};
+    let mut p = BezPath::new();
+    p.move_to((0.0, 0.0));
+    for x in 1..=100 {
+        p.line_to((f64::from(x), 0.0));
+    }
+    for point in [(100.0, 50.0), (100.0, 100.0), (60.0, 100.0), (50.0, 100.004), (0.0, 100.0), (0.0, 60.0), (0.02, 50.0), (0.0, 40.0)] {
+        p.line_to(point);
+    }
+    p.curve_to((-5.0, 30.0), (-5.0, 10.0), (0.0, 0.0));
+    p.close_path();
+    let line = |x: f64, y: f64| PathEl::LineTo(Point::new(x, y));
+    let kept = [
+        PathEl::MoveTo(Point::ZERO),
+        line(100.0, 0.0),
+        line(100.0, 100.0),
+        line(0.0, 100.0),
+        line(0.0, 60.0),
+        line(0.02, 50.0),
+        line(0.0, 40.0),
+        PathEl::CurveTo(Point::new(-5.0, 30.0), Point::new(-5.0, 10.0), Point::ZERO),
+        PathEl::ClosePath,
+    ];
+    assert_eq!(super::overlap::straightened(&p).elements(), kept);
+    let mut back = BezPath::new();
+    back.move_to((0.0, 0.0));
+    back.line_to((10.0, 0.0));
+    back.line_to((5.0, 0.0));
+    assert_eq!(super::overlap::straightened(&back).elements(), back.elements(), "a turn back is no straight run");
 }
 
 /// The most areas a reply lists.

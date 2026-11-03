@@ -75,6 +75,12 @@ pub(super) struct Regions {
     pub(super) outside: Option<Arc<[bool]>>,
 }
 
+/// [`draw`], for the tests.
+#[cfg(test)]
+pub(super) fn draw_for_tests(labels: &mut [u32], w: u32, h: u32, edges: &[(Point, Point)], label: u32) {
+    draw(labels, w, h, edges, label);
+}
+
 /// The straight pieces of `path`'s outline, each `(from, to)`, flattened.
 fn edges(path: &BezPath) -> Vec<(Point, Point)> {
     let mut out = Vec::new();
@@ -121,11 +127,38 @@ fn draw(labels: &mut [u32], w: u32, h: u32, edges: &[(Point, Point)], label: u32
     if last < 0.0 {
         return;
     }
+    let (first_row, last_row) = (first, last as u32);
+    // A path crossing no row's pixel centres fills nothing.
+    let Some(rows) = last_row.checked_sub(first_row) else { return };
+    // The edges each row meets, by an edge table: each edge listed at the first row whose pixel
+    // centre it crosses, and kept in the rows' active list until its last, so that a row meets its
+    // own edges, not every edge of a long outline (a field holding thousands of dots has them all).
+    let mut starts: Vec<Vec<usize>> = vec![Vec::new(); rows as usize + 1];
+    let mut ends: Vec<u32> = vec![0; edges.len()];
+    for (k, (a, b)) in edges.iter().enumerate() {
+        let (lo, hi) = if a.y < b.y { (a, b) } else { (b, a) };
+        if lo.y.is_nan() || hi.y.is_nan() || lo.y >= hi.y {
+            continue;
+        }
+        let (r0, r1) = ((lo.y - 0.5).ceil().max(f64::from(first_row)), ((hi.y - 0.5).ceil() - 1.0).min(f64::from(last_row)));
+        if r0 > r1 {
+            continue;
+        }
+        if let (Some(list), Some(end)) = (starts.get_mut((r0 as u32 - first_row) as usize), ends.get_mut(k)) {
+            list.push(k);
+            *end = r1 as u32;
+        }
+    }
+    let mut active: Vec<usize> = Vec::new();
     let mut crossings: Vec<(f64, i32)> = Vec::new();
-    for y in first..=(last as u32) {
+    for y in first_row..=last_row {
         let cy = f64::from(y) + 0.5;
+        if let Some(list) = starts.get((y - first_row) as usize) {
+            active.extend_from_slice(list);
+        }
+        active.retain(|&k| ends.get(k).is_some_and(|&e| e >= y));
         crossings.clear();
-        for (a, b) in edges {
+        for (a, b) in active.iter().filter_map(|&k| edges.get(k)) {
             // Half open, so a vertex on the scanline counts once.
             let (lo, hi, dir) = if a.y < b.y { (a, b, 1) } else { (b, a, -1) };
             if lo.y <= cy && cy < hi.y {

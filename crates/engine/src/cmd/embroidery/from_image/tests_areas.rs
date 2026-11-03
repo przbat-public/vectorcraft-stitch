@@ -290,3 +290,47 @@ fn slivers_join_the_colour_they_are_nearest() {
     let navy = areas_of(&r, NAVY);
     assert_eq!((navy.len(), &navy[0]["kind"]), (1, &json!("line")));
 }
+
+/// The region map's scanlines meet each row's own edges through an edge table, and fill exactly
+/// the pixels that testing every edge on every row fills: random polygons, crossing and wound
+/// either way, against that brute force.
+#[test]
+fn the_edge_table_fills_as_every_edge_would() {
+    use vectorcraft_geom::Point;
+    let mut seed = 0xed6e_7ab1u64;
+    let mut next = |n: f64| {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        (seed % 10_000) as f64 / 10_000.0 * n
+    };
+    let (w, h) = (40u32, 30u32);
+    for _ in 0..200 {
+        let k = 3 + (next(6.0) as usize);
+        let pts: Vec<Point> = (0..k).map(|_| Point::new(next(48.0) - 4.0, next(38.0) - 4.0)).collect();
+        let edges: Vec<(Point, Point)> = (0..k).map(|i| (pts[i], pts[(i + 1) % k])).collect();
+        let mut got = vec![super::regions::NONE; (w * h) as usize];
+        super::regions::draw_for_tests(&mut got, w, h, &edges, 7);
+        // Every edge on every row, the non-zero rule at each pixel's centre.
+        let want: Vec<u32> = (0..w * h)
+            .map(|i| {
+                let (cx, cy) = (f64::from(i % w) + 0.5, f64::from(i / w) + 0.5);
+                let winding: i32 = edges
+                    .iter()
+                    .filter_map(|(a, b)| {
+                        let (lo, hi, dir) = if a.y < b.y { (a, b, 1) } else { (b, a, -1) };
+                        (lo.y <= cy && cy < hi.y && lo.x + (cy - lo.y) / (hi.y - lo.y) * (hi.x - lo.x) > cx).then_some(dir)
+                    })
+                    .sum();
+                if winding != 0 { 7 } else { super::regions::NONE }
+            })
+            .collect();
+        assert_eq!(got, want, "{pts:?}");
+    }
+    // A sliver between two rows of pixel centres crosses none, and fills nothing.
+    let mut got = vec![super::regions::NONE; (w * h) as usize];
+    let sliver =
+        [(Point::new(2.0, 3.6), Point::new(30.0, 4.4)), (Point::new(30.0, 4.4), Point::new(2.0, 4.4)), (Point::new(2.0, 4.4), Point::new(2.0, 3.6))];
+    super::regions::draw_for_tests(&mut got, w, h, &sliver, 7);
+    assert!(got.iter().all(|&l| l == super::regions::NONE));
+}

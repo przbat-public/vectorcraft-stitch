@@ -654,8 +654,16 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let unused: Vec<Value> = d.colours.unused.iter().map(|&i| json!({"choice": i, "reason": "noSuchColor"})).collect();
     let areas = areas_json(d, palette, listed.offset, listed.limit, listed.outlines);
     let area_count = d.order.sewn.len();
-    if d.areas.joined > 0 {
-        warnings.push(format!("{} areas smaller than {} mm² joined their neighbours", d.areas.joined, settings.min_area));
+    let specks = d.areas.joined.saturating_sub(d.areas.bands);
+    if specks > 0 {
+        warnings.push(format!("{specks} areas smaller than {} mm² joined their neighbours", settings.min_area));
+    }
+    if d.areas.bands > 0 {
+        warnings.push(format!(
+            "{} bands at most {} mm wide, in a colour between their neighbours', joined the neighbour nearest their colour",
+            d.areas.bands,
+            rules::SLIVER_MAX_MM
+        ));
     }
     if d.areas.dropped > 0 {
         warnings.push(format!("{} areas smaller than {} mm² had nothing to join and were left out", d.areas.dropped, settings.min_area));

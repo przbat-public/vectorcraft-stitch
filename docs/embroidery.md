@@ -1651,11 +1651,12 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   turned into the working copy's pixels at any resolution, an image turned on the page measured
   along its own axes, the background at the corners or in transparency, white inside a design sewn,
   colours sharing their only thread merged and far ones flagged, choices found by colour, specks
-  joining the area round them, long thin lines kept, slivers joining the colour they are nearest,
-  islands sewn over or cut out, details sewn last, the overlap reaching 0.4 mm under the next
-  colour only along their edge and half way under a thin one, Create's groups, paints, settings and
-  template layer, one undo step, the image lying under the design it made, the dry run's figures
-  Create's, the job refused on a document changed meanwhile, the reply pinned by shape;
+  joining the area round them, long thin lines kept, bands a thread wide joining the colour they are
+  nearest and wider ones kept, islands sewn over or cut out, details sewn last, the overlap reaching
+  0.4 mm under the next colour only along their edge and half way under a thin one, Create's groups,
+  paints, settings and template layer, one undo step, the image lying under the design it made, the
+  dry run's figures Create's, the job refused on a document changed meanwhile, the reply pinned by
+  shape;
   `stitch/tests/prop_threads.rs` checks the threads chosen together against every assignment;
   hostile images written by the tests' own code (`tests/embroidery_from_image.rs`: a PNG claiming
   4 billion pixels a side, files cut short, noise, gradients, one pixel, a line one pixel high, a
@@ -3113,9 +3114,11 @@ millimetres again. The stages, each a module, each reported to a progress sink
    owner's choice). Each colour has a job: Auto, Fill (tatami, its narrow parts too) or Don't sew.
 6. **The rules** (`rules.rs`), on the map: an area smaller than `minArea` (1 mm², the owner's
    choice) joins the area it shares the longest edge with, smallest first, or is left out with
-   only transparency round it; a line narrower than 1 mm and at least 2 mm long stays; a sliver (a
-   thin area in nearly a neighbour's colour, or a blend of two as anti-aliasing paints it) joins
-   the neighbour nearest its colour, whatever its size; an area inside one other alone is sewn
+   only transparency round it; a line narrower than 1 mm and at least 2 mm long stays; a band no
+   wider than a thread (0.4 mm, the owner's choice) in nearly a neighbour's colour, or a blend of
+   two as anti-aliasing paints it, joins the neighbour nearest its colour, whatever its size, while
+   a wider one (a grey outline round black on white) is drawn on purpose and kept, as a line when
+   it is long; an area inside one other alone is sewn
    after it, and over it with no hole cut when narrower than 4 mm (the owner's choice). More than
    10,000 areas is refused with advice.
 7. **The order** (`order.rs`), which Create stacks the objects in: a line after the fills it

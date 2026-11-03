@@ -118,6 +118,36 @@ fn long_thin_lines_stay() {
     }
 }
 
+/// Only bands a thread wide join a neighbour for their colour: a grey outline 0.5 mm wide round
+/// black art on white, a mix of the two, is drawn on purpose and kept, a line, sewn; one 0.2 mm
+/// wide joins the colour nearest it, as anti-aliasing would.
+#[test]
+fn a_grey_outline_wider_than_a_thread_is_kept() {
+    const GREY: [u8; 4] = [128, 128, 128, 255];
+    const BLACK: [u8; 4] = [0, 0, 0, 255];
+    for (ring, kept) in [(5u32, true), (2, false)] {
+        let picture = tr::Raster::from_fn(200, 200, |x, y| {
+            if inside(x, y, [50, 50, 150, 150]) {
+                BLACK
+            } else if inside(x, y, [50 - ring, 50 - ring, 150 + ring, 150 + ring]) {
+                GREY
+            } else {
+                WHITE
+            }
+        });
+        let mut s = placed(&picture);
+        let r = dry(&mut s, json!({"colors": 3}));
+        let greys = areas_of(&r, GREY);
+        if kept {
+            assert_eq!(greys.len(), 1, "{}", r["areas"]);
+            assert_eq!((&greys[0]["kind"], &greys[0]["sewn"]), (&json!("line"), &json!(true)), "{}", greys[0]);
+        } else {
+            assert!(greys.is_empty(), "{}", r["areas"]);
+            assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("bands at most 0.4 mm wide")), "{}", r["warnings"]);
+        }
+    }
+}
+
 /// An area is keyed at the middle of its ridge, not at one end: a bar 10 mm long and 0.5 mm high
 /// has its key point at its middle.
 #[test]

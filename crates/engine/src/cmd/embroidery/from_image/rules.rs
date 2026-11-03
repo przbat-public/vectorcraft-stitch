@@ -10,10 +10,13 @@
 //!   and, measured along it, at least [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so
 //!   that a stroke tapering to a point counts its whole length. The planner sews a part that
 //!   narrow as a running line along its middle.
-//! - **Slivers join, whatever their size.** A thin area whose colour is a neighbour's, near enough
-//!   ([`SLIVER_DELTA_E`]), or a mix of two neighbours' ([`is_mix`]), is no drawn line but what a
-//!   picture leaves along an edge: the darker or lighter band a JPEG rings round a sharp edge, the
-//!   blend anti-aliasing paints between two colours. It joins the neighbour nearest its colour.
+//! - **Bands a thread wide join, whatever their size.** A band no wider than a thread
+//!   ([`SLIVER_MAX_MM`], the project owner's choice, 2026-11-03) whose colour is a neighbour's,
+//!   near enough ([`SLIVER_DELTA_E`]), or a mix of two neighbours' ([`is_mix`]), is no drawn line
+//!   but what a picture leaves along an edge: the darker or lighter band a JPEG rings round a sharp
+//!   edge, the blend anti-aliasing paints between two colours, a pixel or three wide. It joins the
+//!   neighbour nearest its colour. A wider thin area in an in-between colour (a grey outline round
+//!   black on white) is drawn on purpose: the line rule keeps it when it is long.
 //!
 //! The background is never sewn, and areas join it as they join any area: a speck in it vanishes.
 //! What lies inside what, and which islands are sewn over the area round them, is decided once
@@ -38,7 +41,13 @@ pub(super) const THIN_LINE_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 /// of two stitches of a running line at their shortest.
 pub(super) const LINE_KEEP_LENGTH_MM: f64 = 2.0;
 
-/// How near a thin area's colour may lie to a neighbour's (CIEDE2000) and be part of it: within the
+/// The widest a band may be and join a neighbour for its colour (millimetres): a thread's width
+/// (0.4 mm for 40 wt, `plan::THREAD_WIDTH`), the project owner's choice (2026-11-03). Anti-aliasing
+/// and a JPEG's rings are a pixel or three wide, under it at the working resolution; a band wider
+/// is drawn on purpose.
+pub(super) const SLIVER_MAX_MM: f64 = vectorcraft_stitch::plan::THREAD_WIDTH;
+
+/// How near a band's colour may lie to a neighbour's (CIEDE2000) and be part of it: within the
 /// line past which a thread looks unlike its colour (`thread::MISMATCH_DELTA_E`). A JPEG rings
 /// round a sharp edge with a darker or lighter copy of the colour beside it, nearer it than that.
 pub(super) const SLIVER_DELTA_E: f64 = MISMATCH_DELTA_E;
@@ -106,8 +115,10 @@ pub(super) struct Areas {
     pub(super) areas: Vec<Area>,
     /// The region map, its labels now the areas' places in [`Areas::areas`].
     pub(super) regions: Regions,
-    /// How many specks joined another area, and how many were left out with nothing to join.
+    /// How many specks and bands joined another area (the bands among them counted again in
+    /// [`Areas::bands`]), and how many specks were left out with nothing to join.
     pub(super) joined: usize,
+    pub(super) bands: usize,
     pub(super) dropped: usize,
 }
 
@@ -134,6 +145,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     let background = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).is_some_and(|r| r.background);
     let thin_px = THIN_LINE_MM * px_per_mm;
     let long_px = LINE_KEEP_LENGTH_MM * px_per_mm;
+    let band_px = SLIVER_MAX_MM * px_per_mm;
     // A line: narrower than a satin column, and long enough along it not to be a speck.
     let thin = |i: usize| regions.areas.get(i).is_some_and(|a| a.pixels > 0 && a.widest_px < thin_px);
     let lengths = regions.lengths(thin)?;
@@ -149,10 +161,10 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
             v.push((a as usize, len));
         }
     }
-    // A sliver: thin, and its colour a neighbour's or a mix of two.
+    // A sliver: a band no wider than a thread, its colour a neighbour's or a mix of two.
     let is_sliver = |i: usize| {
         let (Some(stats), Some(c), Some(next)) = (regions.areas.get(i), colour(i), around.get(i)) else { return false };
-        if stats.widest_px >= thin_px {
+        if stats.widest_px > band_px {
             return false;
         }
         // Its neighbours' colours, each once: no more than the trace's colours, however many
@@ -186,7 +198,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     let joins = |i: usize, size: usize| !background(i) && (sliver[i] || (size < min_area_px && !is_line(i)));
     let mut heap: BinaryHeap<Reverse<(usize, usize)>> =
         (0..n).filter(|&i| pixels[i] > 0 && joins(i, pixels[i])).map(|i| Reverse((pixels[i], i))).collect();
-    let (mut joined, mut left_out) = (0usize, 0usize);
+    let (mut joined, mut bands, mut left_out) = (0usize, 0usize, 0usize);
     while let Some(Reverse((size, i))) = heap.pop() {
         vectorcraft_doc::cancel::check()?;
         // A stale entry: the group grew, or joined another.
@@ -209,6 +221,9 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         };
         // Group i joins group j: its pixels and its edges with the others.
         joined += 1;
+        if sliver[i] {
+            bands += 1;
+        }
         parent[i] = j;
         pixels[j] += pixels[i];
         let moved = std::mem::take(&mut edges[i]);
@@ -263,7 +278,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         *l = place.get(r).copied().flatten().and_then(|p| u32::try_from(p).ok()).unwrap_or(super::regions::NONE);
     }
     let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len(), regions.outside.clone());
-    Ok(Areas { areas, regions, joined, dropped: left_out })
+    Ok(Areas { areas, regions, joined, bands, dropped: left_out })
 }
 
 /// The areas once the colours have their threads (`colours`): touching areas sewn in one thread
@@ -277,7 +292,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
 /// stops it.
 pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result<Areas> {
     vectorcraft_doc::cancel::check()?;
-    let Areas { areas: list, regions, joined, dropped } = areas;
+    let Areas { areas: list, regions, joined, bands, dropped } = areas;
     let n = list.len();
     let rows = &colours.rows;
     // The row a merged row ends in.
@@ -319,7 +334,7 @@ pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result
         }
     }
     if !any {
-        return Ok(Areas { areas: list, regions, joined, dropped });
+        return Ok(Areas { areas: list, regions, joined, bands, dropped });
     }
     // Each group an area, in the order of its first member; the row of the colour the others are
     // merged into (unmerged first, then the largest).
@@ -358,5 +373,5 @@ pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result
         *l = place.get(r).copied().flatten().and_then(|p| u32::try_from(p).ok()).unwrap_or(super::regions::NONE);
     }
     let regions = Regions::from_labels(labels, regions.w, regions.h, out.len(), regions.outside.clone());
-    Ok(Areas { areas: out, regions, joined, dropped })
+    Ok(Areas { areas: out, regions, joined, bands, dropped })
 }

@@ -144,14 +144,35 @@ fn noise_is_refused_with_advice() {
     assert!(r["colorCount"].as_u64().unwrap() <= 4, "{}", r["colors"]);
 }
 
-/// A photo's gradients are digitized with a warning in logo mode, never refused; one pixel, a line
-/// one pixel high and nothing but transparency are answered too (the last with nothing to sew).
+/// Whether reply `r` warns that the picture doesn't look like flat art.
+fn warns_of_gradients(r: &Value) -> bool {
+    r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("doesn't look like flat art"))
+}
+
+/// A photo's gradients are digitized with a warning in every mode, never refused; flat art, as a
+/// PNG and as a JPEG, is digitized with none.
+#[test]
+fn a_photo_is_warned_about_in_every_mode() {
+    let gradient = Raster::from_fn(240, 160, |x, y| [(x % 256) as u8, (y % 256) as u8, 128, 255]);
+    for mode in ["color", "grayscale", "logo"] {
+        let mut s = placed("photo.jpg", &jpeg(&gradient)).unwrap();
+        let r = digitized(&mut s, json!({"mode": mode})).unwrap();
+        assert!(warns_of_gradients(&r), "{mode}: {}", r["warnings"]);
+    }
+    let flat = logo(400, 200);
+    for (name, bytes) in [("logo.png", flat.encode_png()), ("logo.jpg", jpeg(&flat))] {
+        for mode in ["color", "grayscale", "logo"] {
+            let mut s = placed(name, &bytes).unwrap();
+            let r = digitized(&mut s, json!({"mode": mode})).unwrap();
+            assert!(!warns_of_gradients(&r), "{name} in {mode}: {}", r["warnings"]);
+        }
+    }
+}
+
+/// One pixel, a line one pixel high and nothing but transparency are answered (the last with
+/// nothing to sew).
 #[test]
 fn odd_pictures_are_answered() {
-    let gradient = Raster::from_fn(240, 160, |x, y| [(x % 256) as u8, (y % 256) as u8, 128, 255]);
-    let mut s = placed("photo.jpg", &jpeg(&gradient)).unwrap();
-    let r = digitized(&mut s, json!({"mode": "logo"})).unwrap();
-    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("flat art")), "{}", r["warnings"]);
     for (name, picture) in
         [("dot.png", Raster::from_fn(1, 1, |_, _| NAVY)), ("line.png", Raster::from_fn(3000, 1, |x, _| if x % 2 == 0 { NAVY } else { ORANGE }))]
     {

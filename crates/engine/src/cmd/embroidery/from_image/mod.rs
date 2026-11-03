@@ -15,6 +15,8 @@
 //!   settings digitizing needs: the image's own colours, abutting shapes;
 //! - [`regions`]: the traced areas drawn back into the working copy's pixels, an area for each
 //!   pixel, with which areas touch which, how wide each is, and the point that keys it;
+//! - [`flat`]: whether the picture is flat art or has gradients (a photo, shading), which are
+//!   sewn as bands of flat colour and warned about;
 //! - [`colours`]: each colour matched to a thread of the document's palette, merged, or left
 //!   unsewn;
 //! - [`rules`]: the smallest area (long thin lines kept below it), and the slivers a picture
@@ -33,6 +35,7 @@ mod background;
 mod colours;
 mod command;
 mod create;
+mod flat;
 mod inside;
 mod order;
 mod overlap;

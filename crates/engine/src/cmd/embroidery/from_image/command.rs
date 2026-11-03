@@ -26,7 +26,7 @@ use super::overlap::{self, Shapes};
 use super::regions::Regions;
 use super::rules::{self, Areas};
 use super::settings::{BackgroundSetting, C, Mode, Settings, table};
-use super::{inside, trace, working};
+use super::{flat, inside, trace, working};
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
 use crate::{EngineError, Result, Session};
@@ -166,17 +166,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     // A background colour takes one of the trace's colours: the design keeps the colours asked.
     let colors = settings.colors + u32::from(matches!(found, Background::Colour(_)));
     let mut warnings = w.warnings();
-    let mut traced = trace::traced(&w, settings, colors, trace::Palette::Mode)?;
-    if settings.mode == Mode::Logo && traced.palette.len() > colors as usize {
-        // The Automatic palette traces an image that isn't flat art (a photo, gradients) in as
-        // many colours as its tones need: traced again in the colours asked.
-        warnings.push(format!(
-            "the image doesn't look like flat art (a photo or gradients?): {} colours were found, so it was traced in the {} that represent it best",
-            traced.palette.len(),
-            settings.colors
-        ));
-        traced = trace::traced(&w, settings, colors, trace::Palette::Limited)?;
-    }
+    let traced = trace::in_mode(&w, settings, colors, trace::MAX_ANCHORS, &mut warnings)?;
     if traced.paths.len() > trace::MAX_TRACED_SHAPES {
         return Err(bad(
             C,
@@ -199,6 +189,15 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         warnings.push("the image's corners don't agree on a background: every area is sewn (give `background` to name one)".into());
     }
     let regions = Regions::of(&traced, &w.raster);
+    if settings.mode != Mode::Logo {
+        let gradual = flat::gradual_share(&w.raster, &regions, &traced, settings.mode == Mode::Grayscale);
+        if gradual >= flat::GRADIENT_SHARE {
+            warnings.push(format!(
+                "the image doesn't look like flat art (a photo or gradients?): {:.0}% of the edges traced between its colours lie where it changes gradually, so its gradients are sewn as bands of flat colour",
+                gradual * PERCENT
+            ));
+        }
+    }
     let touches = |i: usize| regions.areas.get(i).is_some_and(|a| a.touches_edge);
     let rows = colours::rows(&traced, &touches, traced_background, &settings.choices);
     let row_of = rows.row_of(traced.paths.len());

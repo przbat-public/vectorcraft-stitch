@@ -79,7 +79,7 @@ squares-0.4 pes 91d6539cc90f4f6e 2174
 squares-0.4 pec 5b0d51c6f61b2f04 2160
 squares-0.4 jef 8c1526d60a6029bd 1074
 squares-0.4 vp3 227aa697c6338f4b 1264
-scan reply 5839a14eab9a6f49
+scan reply daaf97492d420b89
 scan dst 6369045341f0f4bc 3179
 scan tap 098b2da01be3ad3e 2667
 scan t01 098b2da01be3ad3e 2667

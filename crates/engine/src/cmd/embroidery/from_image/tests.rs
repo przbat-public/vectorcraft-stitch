@@ -8,8 +8,8 @@ use vectorcraft_stitch::thread::Palette;
 use vectorcraft_trace as tr;
 
 use super::settings::{MIN_AREA_MM2, SETTINGS, Settings};
-use super::trace::area_px;
-use super::working::{COARSE_PX_PER_MM, resampled};
+use super::trace::{self, Palette as TracePalette, area_px};
+use super::working::{self, COARSE_PX_PER_MM, resampled};
 use crate::Session;
 
 /// Points a millimetre.
@@ -321,4 +321,35 @@ fn the_params_description_names_every_setting() {
     }
     crate::cmd::params::check_params("embroidery.digitizeImage", &Value::Object(all)).unwrap();
     assert!(crate::cmd::params::check_params("embroidery.digitizeImage", &json!({"minAreas": 1})).is_err());
+}
+
+/// Logo mode's own colours, past the anchor points a trace may make, are traced again in the
+/// colours asked, with a warning, not refused; the colours mode is refused past them. The limit
+/// lies between the two traces' anchor points: a gradient in its own colours makes more than in 6.
+#[test]
+fn logo_mode_past_the_anchor_limit_traces_in_the_colours_asked() {
+    let gradient = tr::Raster::from_fn(200, 200, |x, y| [x as u8, y as u8, 128, 255]);
+    let png = gradient.encode_png();
+    let image = ImageObject {
+        key: "picture".into(),
+        width: 200,
+        height: 200,
+        xf: Affine::scale(0.1 * PT_PER_MM),
+        link: None,
+        placement: Default::default(),
+        pixels: None,
+    };
+    let mode = |m: &str| Settings::from_params(json!({ "mode": m }).as_object().unwrap(), Palette::Pec).unwrap();
+    let (logo, colours) = (mode("logo"), mode("color"));
+    let w = working::prepare(&image, &png, &logo).unwrap();
+    let anchors = |p| trace::traced(&w, &logo, logo.colors, p, usize::MAX).unwrap().anchor_count();
+    let (own, asked) = (anchors(TracePalette::Mode), anchors(TracePalette::Limited));
+    assert!(asked < own, "the gradient's own colours make {own} anchor points, 6 colours {asked}");
+    let limit = asked + (own - asked) / 2;
+    let mut warnings = Vec::new();
+    let t = trace::in_mode(&w, &logo, logo.colors, limit, &mut warnings).unwrap();
+    assert!(t.palette.len() <= logo.colors as usize, "{:?}", t.palette);
+    assert!(warnings.iter().any(|w| w.contains(&format!("more than {limit} anchor points"))), "{warnings:?}");
+    let why = trace::in_mode(&w, &colours, colours.colors, asked - 1, &mut Vec::new()).unwrap_err().to_string();
+    assert!(why.contains("anchor points"), "{why}");
 }

@@ -138,6 +138,21 @@ fn a_crop_counts_the_images_pixels() {
     assert!(refused(&mut s, json!({"crop": [-1, 0, 10, 20]})).contains("whole pixels"));
 }
 
+/// A crop is read from its own pixels, not from the image's corner: a picture red on the left and
+/// blue on the right, cropped to its right half, traces in blue alone, whether the working copy is
+/// the image's pixels as they are (10 a millimetre) or resampled down to them (from 50).
+#[test]
+fn a_crop_reads_its_own_pixels() {
+    let (red, blue) = ([220, 30, 40, 255], [30, 70, 200, 255]);
+    for mm_per_px in [0.1, 0.02] {
+        let mut s = blank();
+        image(&mut s, &tr::Raster::from_fn(200, 100, |x, _| if x < 100 { red } else { blue }), mm_per_px);
+        let r = dry(&mut s, json!({"crop": [100, 0, 200, 100], "background": "none", "colors": 2}));
+        let found: Vec<&Value> = r["colors"].as_array().unwrap().iter().map(|c| &c["color"]).collect();
+        assert_eq!(found, [&json!(super::super::hex([30, 70, 200]))], "{mm_per_px} mm a pixel: {}", r["colors"]);
+    }
+}
+
 /// The design's size of a turned image is measured as it lies on the page (the project owner's
 /// decision, 2026-11-03): turned a quarter, a 100 × 80 mm picture fitted to a 100 × 80 mm field
 /// comes out 64 wide and 80 tall, within it; turned 30°, `width` is the width of the box round it.

@@ -381,8 +381,9 @@ fn background(o: &Map<String, Value>) -> Result<BackgroundSetting> {
     }
 }
 
-/// One of the choices `v` gives, or why it is refused.
-fn choice(v: &Value, s: &Setting) -> Result<ColorChoice> {
+/// One of the choices `v` gives, for a document in `document`'s threads, or why it is refused: a
+/// thread of another palette is no thread the design can be sewn in.
+fn choice(v: &Value, s: &Setting, document: Palette) -> Result<ColorChoice> {
     let o = v.as_object().ok_or_else(|| refused(s, v))?;
     if let Some(k) = o.keys().find(|k| !["color", "thread", "mergeInto", "job"].contains(&k.as_str())) {
         return Err(bad(C, format!("`colorChoices` {v}: unknown key `{k}`; a choice takes color, thread, mergeInto and job")));
@@ -396,18 +397,27 @@ fn choice(v: &Value, s: &Setting) -> Result<ColorChoice> {
         }
     };
     let color = colour("color")?.ok_or_else(|| bad(C, format!("`colorChoices` {v}: each choice names the image's `color` it is for")))?;
-    let thread =
-        match o.get("thread") {
-            None | Some(Value::Null) => None,
-            Some(t) => {
-                let palette = t.get("palette").and_then(Value::as_str).and_then(Palette::from_id);
-                let index = t.get("index").and_then(Value::as_u64).and_then(|i| usize::try_from(i).ok());
-                let chosen = palette.zip(index).and_then(|(p, i)| PaletteThread::new(p, i));
-                Some(chosen.ok_or_else(|| {
-                    bad(C, format!("`colorChoices` {v}: `thread` is {{palette: \"pec\"|\"jef\", index}}, a thread of that palette"))
-                })?)
+    let thread = match o.get("thread") {
+        None | Some(Value::Null) => None,
+        Some(t) => {
+            let palette = t.get("palette").and_then(Value::as_str).and_then(Palette::from_id);
+            let index = t.get("index").and_then(Value::as_u64).and_then(|i| usize::try_from(i).ok());
+            let chosen = palette.zip(index).and_then(|(p, i)| PaletteThread::new(p, i));
+            let chosen = chosen
+                .ok_or_else(|| bad(C, format!("`colorChoices` {v}: `thread` is {{palette: \"pec\"|\"jef\", index}}, a thread of that palette")))?;
+            if chosen.palette() != document {
+                return Err(bad(
+                    C,
+                    format!(
+                        "`colorChoices` {v}: the thread is of the {} palette, the document's is {}: choose one of its threads, or change the palette with embroidery.setup",
+                        chosen.palette().id(),
+                        document.id()
+                    ),
+                ));
             }
-        };
+            Some(chosen)
+        }
+    };
     let job = match o.get("job") {
         None | Some(Value::Null) => None,
         Some(j) => {
@@ -421,12 +431,12 @@ fn choice(v: &Value, s: &Setting) -> Result<ColorChoice> {
     Ok(ColorChoice { color, thread, merge_into, job })
 }
 
-/// The choices for the image's colours `o` gives.
-fn choices(o: &Map<String, Value>) -> Result<Vec<ColorChoice>> {
+/// The choices for the image's colours `o` gives, for a document in `palette`'s threads.
+fn choices(o: &Map<String, Value>, palette: Palette) -> Result<Vec<ColorChoice>> {
     let s = row("colorChoices");
     match o.get("colorChoices") {
         None | Some(Value::Null) => Ok(vec![]),
-        Some(Value::Array(list)) if list.len() <= MAX_COLOR_CHOICES => list.iter().map(|v| choice(v, s)).collect(),
+        Some(Value::Array(list)) if list.len() <= MAX_COLOR_CHOICES => list.iter().map(|v| choice(v, s, palette)).collect(),
         Some(v) => Err(refused(s, v)),
     }
 }
@@ -512,7 +522,7 @@ impl Settings {
             crop: rect(o, "crop")?,
             background: background(o)?,
             mode,
-            choices: choices(o)?,
+            choices: choices(o, palette)?,
             colors,
             min_area: number(o, "minArea")?.unwrap_or(MIN_AREA_MM2),
             smoothing: number(o, "smoothing")?.unwrap_or(SMOOTHING),

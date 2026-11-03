@@ -182,7 +182,11 @@ fn choices_for_colours_are_found_by_colour() {
     assert_eq!(r["colorCount"], json!(2), "red and yellow: green unsewn, blue merged");
     assert_eq!(r["unusedChoices"], json!([{"choice": 3, "reason": "noSuchColor"}]));
     assert_eq!(r["settings"]["colorChoices"].as_array().unwrap().len(), 4);
-    // Refused: a choice without its colour, a thread that isn't one, a merge with a thread.
+    // Refused: a thread of the other palette, naming the document's; a choice without its colour,
+    // a thread that isn't one, a merge with a thread.
+    let p = json!({"dryRun": true, "colors": 4, "colorChoices": [{"color": hex(RED), "thread": {"palette": "pec", "index": 5}}]});
+    let e = s.execute("embroidery.digitizeImage", &p).unwrap_err().to_string();
+    assert!(e.contains("the document's is jef"), "{e}");
     for bad in [
         json!([{"job": "none"}]),
         json!([{"color": hex(RED), "thread": {"palette": "pec", "index": 63}}]),
@@ -228,16 +232,25 @@ fn colours_with_one_thread_are_merged_and_far_ones_flagged() {
     assert_eq!((&t["palette"], &t["mismatch"]), (&json!("pec"), &json!(true)), "{t}");
 }
 
-/// Greys mode sews in grey threads only; logo mode on an image that isn't flat art traces it again
-/// in the colours asked, and says so.
+/// Greys mode sews in grey threads only, but for a thread a person chose, which is sewn as chosen
+/// with a warning; logo mode on an image that isn't flat art traces it again in the colours asked,
+/// and says so.
 #[test]
 fn greys_and_a_logo_that_is_no_logo() {
     let mut s = placed(&quarters(WHITE, RED));
     let r = dry(&mut s, json!({"mode": "grayscale", "colors": 4}));
-    for c in r["colors"].as_array().unwrap().iter().filter(|c| c["sewn"] == json!(true)) {
+    let sewn: Vec<Value> = r["colors"].as_array().unwrap().iter().filter(|c| c["sewn"] == json!(true)).cloned().collect();
+    for c in &sewn {
         let index = c["thread"]["index"].as_u64().unwrap() as usize;
         assert!(Palette::Jef.is_neutral(index), "{c}");
     }
+    let pink = Palette::Jef.threads().iter().position(|(_, n)| *n == "Pink").map(|i| i + 1).unwrap();
+    assert!(!Palette::Jef.is_neutral(pink));
+    let grey = &sewn[0]["color"];
+    let r = dry(&mut s, json!({"mode": "grayscale", "colors": 4, "colorChoices": [{"color": grey, "thread": {"palette": "jef", "index": pink}}]}));
+    let chosen = r["colors"].as_array().unwrap().iter().find(|c| &c["color"] == grey).unwrap();
+    assert_eq!((&chosen["thread"]["index"], &chosen["reason"]), (&json!(pink), &json!("chosen")), "{chosen}");
+    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("isn't grey")), "{}", r["warnings"]);
     let gradient = tr::Raster::from_fn(300, 100, |x, y| [(x * 255 / 299) as u8, (y * 255 / 99) as u8, 128, 255]);
     let mut s = placed(&gradient);
     let r = dry(&mut s, json!({"mode": "logo", "colors": 4, "background": "none"}));

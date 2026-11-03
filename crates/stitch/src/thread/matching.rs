@@ -65,8 +65,9 @@ pub struct ColourToMatch {
     /// How much of the design it covers, in any unit (the same for every colour): a larger colour
     /// comes first in the order the assignment is made in, and so keeps a thread in a tie.
     pub area: f64,
-    /// The thread a person chose for it. One of another palette is no choice here (the caller
-    /// matches its colour instead).
+    /// The thread a person chose for it, which it is sewn in whatever `threads` allows (a person
+    /// may choose a coloured thread for a picture in greys). One of another palette is no choice
+    /// here (the caller matches its colour instead).
     pub chosen: Option<PaletteThread>,
 }
 
@@ -140,15 +141,31 @@ impl Palette {
         if colours.len() > MAX_COLOURS_MATCHED {
             return Err(TooManyColours { given: colours.len(), max: MAX_COLOURS_MATCHED });
         }
-        let candidates = self.candidates(threads);
+        // The threads `threads` allows, and every thread a person chose: a chosen thread is a
+        // candidate for its own colour only, so that no other colour is given it.
+        let allowed = self.candidates(threads);
+        let mut candidates = allowed.clone();
+        for t in colours.iter().filter_map(|c| c.chosen).filter(|t| t.palette() == self && self.is_thread(t.index())) {
+            if let Err(at) = candidates.binary_search(&t.index()) {
+                candidates.insert(at, t.index());
+            }
+        }
         let labs = self.labs();
-        // Each colour's difference from each candidate, in the candidates' order.
+        // Each colour's difference from each candidate, in the candidates' order: none (infinite)
+        // from a thread it may not be given.
         let lab_of = |i: usize| i.checked_sub(1).and_then(|k| labs.get(k)).copied();
         let differences: Vec<Vec<f64>> = colours
             .iter()
             .map(|c| {
                 let lab = color::lab(c.color);
-                candidates.iter().map(|&t| lab_of(t).map_or(f64::INFINITY, |l| color::delta_e(lab, l))).collect()
+                let own_choice = |t: usize| c.chosen.is_some_and(|ch| ch.palette() == self && ch.index() == t);
+                candidates
+                    .iter()
+                    .map(|&t| {
+                        let may = allowed.binary_search(&t).is_ok() || own_choice(t);
+                        lab_of(t).filter(|_| may).map_or(f64::INFINITY, |l| color::delta_e(lab, l))
+                    })
+                    .collect()
             })
             .collect();
         // The order the assignment is made in: the largest first, then by sRGB, then as given.
@@ -157,7 +174,12 @@ impl Palette {
             let (x, y) = (&colours[a], &colours[b]);
             y.area.total_cmp(&x.area).then(x.color.cmp(&y.color)).then(a.cmp(&b))
         });
-        let own = |c: usize| candidates.iter().position(|&t| self.get(t).is_some_and(|(rgb, _)| rgb == colours[c].color));
+        let own = |c: usize| {
+            candidates
+                .iter()
+                .enumerate()
+                .position(|(k, &t)| differences[c][k].is_finite() && self.get(t).is_some_and(|(rgb, _)| rgb == colours[c].color))
+        };
         // A thread chosen from this palette, or a colour that is a thread's own, is that thread.
         let mut held: Vec<Option<(usize, MatchReason)>> = vec![None; colours.len()];
         for &c in &order {
@@ -254,7 +276,7 @@ impl Palette {
     /// A colour's match: candidate `k` with `reason`, and the nearest candidates after it.
     fn matched(self, candidates: &[usize], differences: &[f64], k: usize, reason: MatchReason) -> ColourMatch {
         let at = |i: usize| Match { index: candidates.get(i).copied().unwrap_or(1), delta_e: differences.get(i).copied().unwrap_or(f64::INFINITY) };
-        let mut rest: Vec<usize> = (0..candidates.len()).filter(|&i| i != k).collect();
+        let mut rest: Vec<usize> = (0..candidates.len()).filter(|&i| i != k && differences.get(i).is_some_and(|d| d.is_finite())).collect();
         rest.sort_by(|&a, &b| differences[a].total_cmp(&differences[b]).then(a.cmp(&b)));
         ColourMatch { thread: at(k), reason, alternatives: rest.into_iter().take(ALTERNATIVES_SHOWN).map(at).collect() }
     }
@@ -327,6 +349,26 @@ fn assignment(cost: &[Vec<f64>], cols: usize) -> Vec<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A thread a person chose is the colour's in greys too, though it isn't grey; the other colours
+    /// still get grey threads.
+    #[test]
+    fn a_chosen_thread_is_used_in_greys() {
+        let p = Palette::Jef;
+        let pink = p.threads().iter().position(|(_, n)| *n == "Pink").map(|i| i + 1).unwrap();
+        assert!(!p.is_neutral(pink));
+        let chosen = PaletteThread::new(p, pink);
+        let colours = [ColourToMatch { color: [128, 128, 128], area: 2.0, chosen }, ColourToMatch { color: [40, 40, 40], area: 1.0, chosen: None }];
+        let got = p.match_colours(&colours, Threads::Neutral).unwrap();
+        assert_eq!((got[0].thread.index, got[0].reason), (pink, MatchReason::Chosen));
+        assert!(p.is_neutral(got[1].thread.index), "{:?}", got[1]);
+        // A colour that is pink itself, not choosing it, gets a grey all the same, and lists no pink.
+        let (pink_rgb, _) = p.get(pink).unwrap();
+        let colours = [colours[0], ColourToMatch { color: pink_rgb, area: 1.0, chosen: None }];
+        let got = p.match_colours(&colours, Threads::Neutral).unwrap();
+        assert!(p.is_neutral(got[1].thread.index), "{:?}", got[1]);
+        assert!(got[1].alternatives.iter().all(|a| p.is_neutral(a.index)), "{:?}", got[1].alternatives);
+    }
 
     /// Every assignment of `rows` rows to distinct columns of `cost`, its least total: brute force,
     /// for small sizes.

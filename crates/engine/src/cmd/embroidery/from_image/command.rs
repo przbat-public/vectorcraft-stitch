@@ -230,6 +230,20 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     }
     let area_rows: Vec<(usize, usize)> = areas.areas.iter().map(|a| (a.row, a.pixels)).collect();
     let colours = colours::matched(rows, &area_rows, settings.mode, palette, &settings.choices)?;
+    // In greys mode a thread a person chose is sewn even when it isn't grey (the project owner's
+    // decision, 2026-11-03): the reply says so.
+    if settings.mode == Mode::Grayscale {
+        for row in colours.rows.iter().filter(|r| r.areas > 0) {
+            let chosen = row.choice.and_then(|i| settings.choices.get(i)).and_then(|c| c.thread);
+            let Some(t) = chosen.filter(|t| !palette.is_neutral(t.index())) else { continue };
+            let name = palette.get(t.index()).map_or("", |(_, n)| n);
+            warnings.push(format!(
+                "the thread chosen for {}, {}, isn't grey: it is sewn as chosen",
+                super::super::hex(row.color),
+                super::super::threadlib::swatch_name(palette, t.index(), name)
+            ));
+        }
+    }
     for row in colours.rows.iter().filter(|r| !r.background && r.areas == 0) {
         warnings.push(format!(
             "every area of {} was smaller than {} mm², so it joined its neighbours",

@@ -110,7 +110,7 @@ proptest! {
     #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(256))]
 
     /// Threads for a design's colours keep the rules: each is a thread (and a neutral one for
-    /// greys), a choice from the palette is kept, each difference is the colour's from its
+    /// greys, but for a thread chosen for it), a choice from the palette is kept, each difference is the colour's from its
     /// thread, the order the colours come in changes nothing but the order of the answer, and
     /// within the line the fewest colours share a thread and then the least total difference is
     /// taken (against brute force over the threads near them).
@@ -121,9 +121,10 @@ proptest! {
         prop_assert_eq!(got.len(), colours.len());
         for (c, m) in colours.iter().zip(&got) {
             prop_assert!(palette.is_thread(m.thread.index));
-            prop_assert!(!neutral || palette.is_neutral(m.thread.index));
+            let chosen = c.chosen.filter(|t| t.palette() == palette);
+            prop_assert!(!neutral || palette.is_neutral(m.thread.index) || chosen.is_some_and(|t| t.index() == m.thread.index));
             prop_assert_eq!(m.thread.delta_e, delta_e_rgb(c.color, palette.get(m.thread.index).unwrap().0));
-            if let Some(t) = c.chosen.filter(|t| t.palette() == palette && (!neutral || palette.is_neutral(t.index()))) {
+            if let Some(t) = chosen {
                 prop_assert_eq!((m.thread.index, m.reason), (t.index(), MatchReason::Chosen));
             }
             prop_assert!(!m.alternatives.iter().any(|a| a.index == m.thread.index));

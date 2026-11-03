@@ -280,3 +280,41 @@ fn merges_end_at_the_colour_holding_the_thread() {
     assert_eq!(rows.iter().filter(|c| !c["mergedInto"].is_null()).count(), 2, "{}", r["colors"]);
     assert_eq!(row(&r, grey, false)["job"], json!("auto"), "black's job");
 }
+
+/// Colours merged into one thread that touch are one area: no seam through it, and no strip of it
+/// sewn twice. In Janome's palette a grey touching black shares Black with it.
+#[test]
+fn merged_colours_that_touch_are_one_area() {
+    let (black, grey) = ([0, 0, 0, 255], [0x29, 0x2f, 0x33, 255]);
+    let picture = tr::Raster::from_fn(200, 100, |x, y| match ((20..100).contains(&x), (100..180).contains(&x), (20..80).contains(&y)) {
+        (true, _, true) => black,
+        (_, true, true) => grey,
+        _ => WHITE,
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 2}));
+    assert_eq!(row(&r, grey, false)["mergedInto"], hex(black));
+    assert_eq!(r["areaCount"], json!(1), "one thread, one area: {}", r["areas"]);
+    assert_eq!(r["doubledArea"], json!(0.0));
+    assert_eq!(r["areas"][0]["size"]["area"], json!(96.0), "both squares");
+}
+
+/// A speck that joins one area of a colour across another colour's band makes it touch a second
+/// area of that colour: the two are one area, as Image Trace's own noise removal joins a speck
+/// to its colour. A blue speck 0.9 mm square across a green band 0.2 mm wide between two yellows.
+#[test]
+fn a_speck_bridging_two_areas_of_a_colour_makes_them_one() {
+    let picture = tr::Raster::from_fn(300, 100, |x, y| {
+        if (145..154).contains(&x) && (46..55).contains(&y) {
+            BLUE
+        } else if (149..151).contains(&x) {
+            GREEN
+        } else {
+            YELLOW
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3, "background": "none"}));
+    let yellow: Vec<&Value> = r["areas"].as_array().unwrap().iter().filter(|a| a["color"] == hex(YELLOW)).collect();
+    assert_eq!(yellow.len(), 1, "{}", r["areas"]);
+}

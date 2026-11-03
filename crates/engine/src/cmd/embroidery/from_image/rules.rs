@@ -252,3 +252,98 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len());
     Areas { areas, regions, joined, dropped: left_out }
 }
+
+/// The areas once the colours have their threads (`colours`): touching areas sewn in one thread
+/// joined into one, so that one colour of the design is one area, with no seam through it and no
+/// strip sewn twice in one thread. Colours merge into one thread (two sharing their only near
+/// thread, the project owner's choice of 2026-11-01, or a merge a person asks for), and a speck
+/// joined to one area of a colour can make it touch another of that colour (as in the trace's own
+/// noise removal, where a speck merged into a colour joins the regions of it that it touches).
+/// Areas left unsewn join only areas of their own colour, and the background's none. A group keeps the paths of every area in it, the row of the
+/// colour the others are merged into, and is a line only when every area in it is one. A cancel
+/// stops it.
+pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result<Areas> {
+    vectorcraft_doc::cancel::check()?;
+    let Areas { areas: list, regions, joined, dropped } = areas;
+    let n = list.len();
+    let rows = &colours.rows;
+    // The row a merged row ends in.
+    let end = |mut r: usize| {
+        let mut hops = 0usize;
+        while let Some(next) = rows.get(r).and_then(|x| x.merged_into) {
+            hops += 1;
+            if hops > rows.len() {
+                break;
+            }
+            r = next;
+        }
+        r
+    };
+    // What two areas must share to be one: a sewn area's thread, an unsewn one's colour.
+    let key = |a: usize| -> Option<(bool, usize)> {
+        let row_index = list.get(a)?.row;
+        let row = rows.get(row_index)?;
+        if row.background {
+            None
+        } else if row.sewn() {
+            row.thread.as_ref().map(|m| (true, m.thread.index))
+        } else {
+            Some((false, end(row_index)))
+        }
+    };
+    let mut parent: Vec<usize> = (0..n).collect();
+    let mut any = false;
+    for &(a, b) in regions.borders.keys() {
+        let (a, b) = (a as usize, b as usize);
+        if a < n && b < n && key(a).is_some() && key(a) == key(b) {
+            let (ra, rb) = (root(&mut parent, a), root(&mut parent, b));
+            if ra != rb
+                && let Some(slot) = parent.get_mut(ra.max(rb))
+            {
+                *slot = ra.min(rb);
+                any = true;
+            }
+        }
+    }
+    if !any {
+        return Ok(Areas { areas: list, regions, joined, dropped });
+    }
+    // Each group an area, in the order of its first member; the row of the colour the others are
+    // merged into (unmerged first, then the largest).
+    let mut place: Vec<Option<usize>> = vec![None; n];
+    let mut out: Vec<Area> = Vec::new();
+    for (a, area) in list.iter().enumerate() {
+        if root(&mut parent, a) == a
+            && let Some(slot) = place.get_mut(a)
+        {
+            *slot = Some(out.len());
+            out.push(Area { paths: Vec::new(), pixels: 0, inside: None, narrow: false, sewn_over: false, ..area.clone() });
+        }
+    }
+    let mut best: Vec<Option<(bool, usize)>> = vec![None; out.len()];
+    for (a, area) in list.iter().enumerate() {
+        let r = root(&mut parent, a);
+        let Some(g) = place.get(r).copied().flatten() else { continue };
+        let (Some(group), Some(pick)) = (out.get_mut(g), best.get_mut(g)) else { continue };
+        group.paths.extend(area.paths.iter().copied());
+        group.pixels += area.pixels;
+        if area.kind == AreaKind::Fill {
+            group.kind = AreaKind::Fill;
+        }
+        let rank = (rows.get(area.row).is_some_and(|x| x.merged_into.is_none()), area.pixels);
+        if pick.is_none_or(|p| rank > p) {
+            *pick = Some(rank);
+            group.row = area.row;
+        }
+    }
+    let mut labels = regions.labels;
+    for l in labels.iter_mut() {
+        if *l == super::regions::NONE {
+            continue;
+        }
+        let r = root(&mut parent, *l as usize);
+        *l = place.get(r).copied().flatten().and_then(|p| u32::try_from(p).ok()).unwrap_or(super::regions::NONE);
+    }
+    let regions = Regions::from_labels(labels, regions.w, regions.h, out.len());
+    Ok(Areas { areas: out, regions, joined, dropped })
+}

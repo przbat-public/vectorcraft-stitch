@@ -203,7 +203,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let rows = colours::rows(&traced, &touches, traced_background, &settings.choices);
     let row_of = rows.row_of(traced.paths.len());
     let min_px = trace::area_px(settings.min_area, w.px_per_mm) as usize;
-    let mut areas = rules::applied(regions, &rows, &row_of, w.px_per_mm, min_px);
+    let areas = rules::applied(regions, &rows, &row_of, w.px_per_mm, min_px);
     if areas.areas.len() > MAX_IMAGE_AREAS {
         return Err(bad(
             C,
@@ -222,6 +222,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
             settings.min_area
         ));
     }
+    let mut areas = rules::joined_by_thread(areas, &colours)?;
     inside::containers(&mut areas, &colours, w.px_per_mm)?;
     let order = order::ordered(&areas.areas, &areas.regions, &colours);
     inside::sewn_over(&mut areas, &colours, &order);

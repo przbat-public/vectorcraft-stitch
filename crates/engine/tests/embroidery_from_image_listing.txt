@@ -1,21 +1,21 @@
-badge reply fa7d6a1c3e6e4797
-badge dst 05ea452f5ecef8e3 4856
-badge tap 61d33bb96ede519e 4344
-badge t01 61d33bb96ede519e 4344
-badge exp b90b3d10b9e2e0e8 2924
-badge pes 552e9c6099ed413c 5062
-badge pec c77f63f803d3f116 5048
-badge jef 4ca9dbe1d908a0e6 3094
-badge vp3 98a4a1e4d0c5f082 3460
-badge-jpeg reply cbc0db264c1aeb2d
-badge-jpeg dst 3c063ebe2f5f48b5 5147
-badge-jpeg tap b6f822107f5bdd2b 4635
-badge-jpeg t01 b6f822107f5bdd2b 4635
-badge-jpeg exp c229efcca3b81904 3110
-badge-jpeg pes df3a7617a39b0f0f 5252
-badge-jpeg pec 0c61b38448127ff1 5238
-badge-jpeg jef 486529cb4723049f 3284
-badge-jpeg vp3 7585d518894b04a3 3642
+badge reply ca742da12d400e77
+badge dst 88b284bbe2d2ee68 5039
+badge tap c5f9a2a17a74c3b6 4527
+badge t01 c5f9a2a17a74c3b6 4527
+badge exp e31439ad28c3f118 3044
+badge pes fd93c3afe4ed051e 5182
+badge pec 5df1737e22ff48a0 5168
+badge jef 3ac1ea4ac6b53695 3214
+badge vp3 dcbb773b414de47b 3576
+badge-jpeg reply a0fe6c73505f0309
+badge-jpeg dst b5447ef8f2888ad7 5126
+badge-jpeg tap a5bb049d1bdf8493 4614
+badge-jpeg t01 a5bb049d1bdf8493 4614
+badge-jpeg exp 9e6f6bcac4446d62 3098
+badge-jpeg pes 66e810fb5f0eb177 5240
+badge-jpeg pec d7181699b281aa2d 5226
+badge-jpeg jef 7ea2e5659bf87b8f 3272
+badge-jpeg vp3 1ec0955cf6c741c5 3634
 halves reply 512e56f7e8c8c543
 halves dst 46f59b606700fe76 2363
 halves tap 51a766bcc69e649c 1851
@@ -43,15 +43,15 @@ specks pes a9ffce94540cee0e 2249
 specks pec 858caddf9e18719c 2235
 specks jef a185deff4084b92b 1368
 specks vp3 2f8f67bd3b42c5d6 1508
-blend reply bfbef9fc56db6738
-blend dst 1aeb8308866f23ff 2912
-blend tap d1be130915e4b74f 2400
-blend t01 d1be130915e4b74f 2400
-blend exp 21200e2c9448c1f6 1608
-blend pes 973ffbe9466f3125 2838
-blend pec 92d8535cc5a9aa23 2824
-blend jef 42f41460809c38b4 1738
-blend vp3 da946815298b2197 1928
+blend reply 661febcfcf35a67d
+blend dst 7643996f1e5e573b 2885
+blend tap a1c49d58a1621726 2373
+blend t01 a1c49d58a1621726 2373
+blend exp 9f348259ba575532 1590
+blend pes a9405c5ade017280 2820
+blend pec c6d046f4936d9916 2806
+blend jef bd4eb415e7c0803d 1720
+blend vp3 11ae2cf673d4b5eb 1910
 squares-0 reply 83091698e639cd28
 squares-0 dst d8ce001c10a597b5 1889
 squares-0 tap a3c7f2f4489893ea 1377
@@ -79,12 +79,12 @@ squares-0.4 pes 91d6539cc90f4f6e 2174
 squares-0.4 pec 5b0d51c6f61b2f04 2160
 squares-0.4 jef 8c1526d60a6029bd 1074
 squares-0.4 vp3 227aa697c6338f4b 1264
-scan reply ffa635fc871a0990
-scan dst 6369045341f0f4bc 3179
-scan tap 098b2da01be3ad3e 2667
-scan t01 098b2da01be3ad3e 2667
-scan exp 4b4ef296b57632aa 1794
-scan pes a23d2ddf5370381d 3531
-scan pec 3450930387791953 3517
-scan jef 3163a8c79e289077 1940
-scan vp3 06a576f9ba19d90a 2214
+scan reply 2dc64a396e7dac15
+scan dst e3154f457391c811 3104
+scan tap dcdd5b1cc1d2bb14 2592
+scan t01 dcdd5b1cc1d2bb14 2592
+scan exp 1521bfd1dcc9a670 1742
+scan pes 0e852298b58037a6 3479
+scan pec dab050c1e67c52c4 3465
+scan jef f031ada0113174d9 1888
+scan vp3 556cd37f883173cc 2166

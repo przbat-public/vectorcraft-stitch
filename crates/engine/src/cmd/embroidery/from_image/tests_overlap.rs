@@ -92,6 +92,59 @@ fn the_colour_sewn_first_reaches_under_the_next() {
     assert_eq!((&orange["grownUnder"], &r["doubledArea"]), (&json!([]), &json!(0.0)), "nothing grown under");
 }
 
+/// The strip grows from the edge two areas share alone: orange and green, kept apart by a navy
+/// band 0.3 mm wide and touching below it, are not joined by a sliver of the green across the band,
+/// 7 mm from where they meet.
+#[test]
+fn the_strip_stays_along_the_shared_edge() {
+    let picture = tr::Raster::from_fn(300, 200, |x, y| {
+        if inside(x, y, [140, 20, 143, 150]) {
+            NAVY
+        } else if inside(x, y, [20, 20, 140, 180]) || inside(x, y, [140, 150, 143, 180]) {
+            ORANGE
+        } else if inside(x, y, [143, 20, 260, 180]) {
+            GREEN
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3}));
+    let (orange, ..) = shape_of(&r, ORANGE);
+    let outline = kurbo::BezPath::from_svg(orange["outline"].as_str().unwrap()).unwrap();
+    assert_eq!(outline.winding(kurbo::Point::new(14.35, 8.0)), 0, "no sliver of the green across the band");
+    assert_ne!(outline.winding(kurbo::Point::new(14.35, 16.5)), 0, "under the green where they meet");
+}
+
+/// Two strips never stack under a narrow neck: orange and navy, both sewn before the green, face
+/// each other across a neck of it 0.5 mm wide; each reaches 0.4 mm under the green, so the one sewn
+/// later gives way where they would meet, and no point of the neck lies under both.
+#[test]
+fn two_strips_never_stack_under_a_neck() {
+    let picture = tr::Raster::from_fn(220, 200, |x, y| {
+        if inside(x, y, [20, 20, 100, 160]) {
+            ORANGE
+        } else if inside(x, y, [105, 20, 185, 160]) {
+            NAVY
+        } else if inside(x, y, [100, 20, 105, 160]) || inside(x, y, [20, 160, 185, 175]) {
+            GREEN
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3}));
+    let (green, ..) = shape_of(&r, GREEN);
+    let (orange, ..) = shape_of(&r, ORANGE);
+    let (navy, ..) = shape_of(&r, NAVY);
+    assert!(orange["area"].as_u64() < green["area"].as_u64() && navy["area"].as_u64() < green["area"].as_u64(), "both sewn first");
+    let covers = |a: &Value, x: f64| kurbo::BezPath::from_svg(a["outline"].as_str().unwrap()).unwrap().winding(kurbo::Point::new(x, 9.0)) != 0;
+    for x in [10.05, 10.15, 10.25, 10.35, 10.45] {
+        assert!(!(covers(&orange, x) && covers(&navy, x)), "both under the neck at {x} mm");
+        assert!(covers(&orange, x) || covers(&navy, x), "the neck covered at {x} mm");
+    }
+}
+
 /// Past the most edges the overlap grows along, an overlap asked for is left out with a warning,
 /// and nothing is listed as grown under; with no overlap asked, there is nothing to leave out and no
 /// warning. A checkerboard of 2 mm squares in two colours: 2,500 squares, the first colour's each

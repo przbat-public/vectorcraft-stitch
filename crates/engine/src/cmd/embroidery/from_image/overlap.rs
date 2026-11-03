@@ -5,21 +5,26 @@
 //! `overlap` millimetres (0.4 by default), only along the edge they share, so that no fabric shows
 //! between them when the stitches pull the cloth (the project owner's choice, 2026-11-01: the lower
 //! colour slides under the upper, as roof tiles lie over each other by a strip). It is the geometry
-//! of print trapping, a strip of one area within a width of another's edge (upstream's
-//! `pathops::trap_band`), and it never reaches the background, an area left unsewn, the image's
-//! edge or an area sewn earlier. Each edge's strip is at most half as wide as the area it grows
-//! into, so that two neighbours growing under a thin area from both sides meet in its middle rather
-//! than stacking a third layer. Upstream's Overlapping method (every lower colour whole under every
-//! upper one) and `expand` (growth all round, details and the outline too) are not used: the visible
-//! edges stay where the picture has them.
+//! of print trapping, a strip of one area within a width of another's edge, here of the edge the two
+//! share alone: the region map says which stretches of an area's outline border which neighbour,
+//! and the strip is those stretches widened, kept inside the neighbour. So it never reaches across
+//! a third area to a neighbour beyond it, nor round a corner past where the two meet, nor into the
+//! background, an area left unsewn, the image's edge or an area sewn earlier. Each strip is at most
+//! half as wide as the area it grows into, so that two neighbours growing under a thin area from
+//! both sides meet in its middle; where two still meet under a narrow neck of one, the one sewn
+//! later gives way, so that no third layer stacks there. Upstream's Overlapping method (every lower
+//! colour whole under every upper one) and `expand` (growth all round, details and the outline too)
+//! are not used: the visible edges stay where the picture has them.
 
 use std::collections::BTreeMap;
 
-use vectorcraft_geom::{FillRule, PathData};
-use vectorcraft_pathops::{trap_band, try_unite_all_with};
+use vectorcraft_geom::kurbo::{BezPath, ParamCurve, ParamCurveDeriv, PathSeg};
+use vectorcraft_geom::{FillRule, PathData, Point};
+use vectorcraft_pathops::{BoolOp, Cap, Join, outline_stroke, try_boolean, try_unite_all_with};
 
 use super::colours::Colours;
 use super::order::Order;
+use super::regions::{NONE, Regions};
 use super::rules::Areas;
 use crate::Result;
 
@@ -27,8 +32,13 @@ use crate::Result;
 /// thousandth of a millimetre at ten pixels a millimetre, the path operations' own default.
 const PRECISION_PX: f64 = vectorcraft_pathops::DEFAULT_PRECISION;
 
-/// The overlap's strip is as wide across horizontal edges as across vertical ones.
-const SAME_BOTH_WAYS: f64 = 1.0;
+/// How far beyond an area's outline the region map is asked which area lies there (working
+/// pixels): half a pixel, the centre of the pixel beside the edge.
+const BEYOND_PX: f64 = 0.5;
+
+/// The miter limit the strip's widened edge is drawn with: none is drawn, its joins and ends being
+/// round, so that the strip reaches no farther than its width from the shared edge anywhere.
+const NO_MITER: f64 = 1.0;
 
 /// The most edges between two sewn areas the overlap grows along: past them it is left out, with a
 /// warning. An estimate: the real designs' artwork and the test logos have at most 43 (a dry run of
@@ -70,6 +80,76 @@ fn side_by_side(paths: &[&PathData]) -> PathData {
 /// one way and its holes the other.
 fn area(p: &PathData) -> f64 {
     p.subpaths.iter().map(|sp| sp.signed_area()).sum::<f64>().abs()
+}
+
+/// Where along a curve piece of an outline the region map is asked what lies beside it: a quarter,
+/// half and three quarters of the way, the piece taken for the neighbour two of them find.
+const SAMPLES_ALONG: [f64; 3] = [0.25, 0.5, 0.75];
+
+/// The stretches of area `a`'s outline (`base`, working pixels) that border each other area, as
+/// open paths of its own curves, by that area's number: each curve piece of the outline whose
+/// sides, half a pixel out, lie in `a` and in that area, as the region map says, at two of
+/// [`SAMPLES_ALONG`]; consecutive pieces of one neighbour make one path.
+fn shared_edges(base: &PathData, a: usize, regions: &Regions) -> BTreeMap<usize, Vec<BezPath>> {
+    let label = |p: Point| {
+        if p.x >= 0.0 && p.y >= 0.0 && p.x.is_finite() && p.y.is_finite() { regions.at(p.x as u32, p.y as u32).unwrap_or(NONE) } else { NONE }
+    };
+    let own = u32::try_from(a).unwrap_or(NONE);
+    // The neighbour beside a curve piece at `t`, if one side there is `a`'s and the other another
+    // area's.
+    let beside = |seg: &PathSeg, t: f64| -> Option<u32> {
+        let tangent = match seg {
+            PathSeg::Line(l) => l.p1 - l.p0,
+            PathSeg::Quad(q) => q.deriv().eval(t).to_vec2(),
+            PathSeg::Cubic(c) => c.deriv().eval(t).to_vec2(),
+        };
+        let len = (tangent.x * tangent.x + tangent.y * tangent.y).sqrt();
+        if len.is_nan() || len <= 0.0 {
+            return None;
+        }
+        let n = vectorcraft_geom::Vec2::new(-tangent.y, tangent.x) / len * BEYOND_PX;
+        let m = seg.eval(t);
+        match (label(m + n), label(m - n)) {
+            (l, o) | (o, l) if l == own && o != own && o != NONE => Some(o),
+            _ => None,
+        }
+    };
+    let mut out: BTreeMap<usize, Vec<BezPath>> = BTreeMap::new();
+    for sp in &base.subpaths {
+        let bez = PathData::new(vec![sp.clone()]).to_bezpath();
+        let mut current: Option<(usize, BezPath)> = None;
+        for seg in bez.segments() {
+            let found: Vec<u32> = SAMPLES_ALONG.iter().filter_map(|&t| beside(&seg, t)).collect();
+            let by = found.iter().copied().find(|&o| found.iter().filter(|&&x| x == o).count() * 2 > SAMPLES_ALONG.len()).map(|o| o as usize);
+            match (current.as_mut(), by) {
+                (Some((b, path)), Some(o)) if *b == o => path.push(seg.as_path_el()),
+                (_, next) => {
+                    if let Some((b, path)) = current.take() {
+                        out.entry(b).or_default().push(path);
+                    }
+                    current = next.map(|o| {
+                        let mut path = BezPath::new();
+                        path.move_to(seg.start());
+                        path.push(seg.as_path_el());
+                        (o, path)
+                    });
+                }
+            }
+        }
+        if let Some((b, path)) = current.take() {
+            out.entry(b).or_default().push(path);
+        }
+    }
+    out
+}
+
+/// `edges` (open paths) as one path.
+fn joined_edges(edges: &[BezPath]) -> PathData {
+    let mut all = BezPath::new();
+    for e in edges {
+        all.extend(e.iter());
+    }
+    PathData::from_bezpath(&all)
 }
 
 /// The shapes of `areas` (traced as `traced`), sewn in `order`, with `overlap_px` working pixels of
@@ -148,30 +228,46 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
     let skipped = overlap_px > 0.0 && edges > MAX_OVERLAP_EDGES;
     let mut grown_under: Vec<Vec<usize>> = vec![Vec::new(); n];
     let mut doubled_px = 0.0;
+    // What strips already lie under each area, from the areas sewn before: a later strip there gives
+    // way to them.
+    let mut taken: Vec<Option<PathData>> = vec![None; n];
     if overlap_px > 0.0 && !skipped {
-        for a in 0..n {
+        for &a in &order.sewn {
             vectorcraft_doc::cancel::check()?;
             let Some(later) = under.get(a).filter(|l| !l.is_empty()) else { continue };
             let Some(base) = own.get(a) else { continue };
-            // The neighbours it grows under, by how far it reaches: as far as asked, or half as wide
-            // as a thin one. Areas never overlap, so one strip reaches into all those of one width
-            // at once, a path operation a width rather than a neighbour.
-            let mut by_width: BTreeMap<u64, (PathData, Vec<usize>)> = BTreeMap::new();
-            for &b in later {
-                let (Some(into), Some(stats)) = (own.get(b), areas.regions.areas.get(b)) else { continue };
-                let width = overlap_px.min(stats.widest_px / 2.0);
-                let (paths, of) = by_width.entry(width.to_bits()).or_default();
-                paths.subpaths.extend(into.subpaths.iter().cloned());
-                of.push(b);
-            }
+            let edges = shared_edges(base, a, &areas.regions);
             let (mut strips, mut reached, mut strip_px): (Vec<PathData>, Vec<usize>, f64) = (Vec::new(), Vec::new(), 0.0);
-            for (width, (into, of)) in &by_width {
-                let strip = trap_band(base, FillRule::NonZero, into, FillRule::NonZero, f64::from_bits(*width), SAME_BOTH_WAYS, PRECISION_PX);
-                if !strip.is_empty() {
-                    strip_px += area(&strip);
-                    strips.push(strip);
-                    reached.extend(of);
+            for &b in later {
+                let (Some(into), Some(stats), Some(lines)) = (own.get(b), areas.regions.areas.get(b), edges.get(&b)) else { continue };
+                // As far as asked, or half as wide as a thin neighbour.
+                let width = overlap_px.min(stats.widest_px / 2.0);
+                let band = outline_stroke(&joined_edges(lines), 2.0 * width, Cap::Round, Join::Round, NO_MITER);
+                let Ok(mut strip) = try_boolean(&band, FillRule::NonZero, into, FillRule::NonZero, BoolOp::Intersect, PRECISION_PX) else {
+                    failed += 1;
+                    continue;
+                };
+                if let Some(Some(before)) = taken.get(b) {
+                    match try_boolean(&strip, FillRule::NonZero, before, FillRule::NonZero, BoolOp::Difference, PRECISION_PX) {
+                        Ok(rest) => strip = rest,
+                        Err(_) => {
+                            failed += 1;
+                            continue;
+                        }
+                    }
                 }
+                if strip.is_empty() {
+                    continue;
+                }
+                if let Some(slot) = taken.get_mut(b) {
+                    *slot = Some(match slot.take() {
+                        Some(before) => united(&[&before, &strip]).unwrap_or_else(|| side_by_side(&[&before, &strip])),
+                        None => strip.clone(),
+                    });
+                }
+                strip_px += area(&strip);
+                strips.push(strip);
+                reached.push(b);
             }
             if strips.is_empty() {
                 continue;

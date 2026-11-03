@@ -6049,6 +6049,8 @@ embroidery	Nothing here can take entry and exit points	这里没有对象可以�
 # embroidery: Nearest Connection off the interface thread
 embroidery	{percent}% · Esc stops it	{percent}% · 按 Esc 停止
 embroidery	Stopped: nothing was changed.	已停止：未做任何更改。
+# VectorCraft Stitch: Digitize Image, the command's name in the command palette and its undo step (drafted with AI assistance from the English meaning, for review)
+	Digitize Image	数字化图像
 # VectorCraft Stitch: Digitize Image from the command palette, the line saying how many objects it made
 @plural	{count} object made|{count} objects made	已创建 {count} 个对象
 embroidery	The document changed meanwhile: nothing was changed.	在此期间文档已更改：未做任何更改。

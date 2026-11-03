@@ -6239,6 +6239,8 @@ embroidery	Nothing here can take entry and exit points	Mikään tässä ei voi s
 # embroidery: Nearest Connection off the interface thread
 embroidery	{percent}% · Esc stops it	{percent} % · Esc keskeyttää
 embroidery	Stopped: nothing was changed.	Keskeytetty: mitään ei muutettu.
+# VectorCraft Stitch: Digitize Image, the command's name in the command palette and its undo step (drafted with AI assistance from the English meaning, for review)
+	Digitize Image	Digitoi kuva
 # VectorCraft Stitch: Digitize Image from the command palette, the line saying how many objects it made
 @plural	{count} object made|{count} objects made	{count} objekti luotu|{count} objektia luotu
 embroidery	The document changed meanwhile: nothing was changed.	Dokumentti muuttui sillä välin: mitään ei muutettu.

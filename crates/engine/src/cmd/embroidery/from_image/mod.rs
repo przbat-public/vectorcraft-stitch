@@ -1,5 +1,5 @@
 //! Digitizing from an image (`embroidery.digitizeImage`): an image's pixels made into embroidery
-//! objects, every threshold given in millimetres.
+//! objects, every size threshold given in millimetres.
 //!
 //! Image Trace works only in pixels: its noise is a pixel count, its stroke width pixels, and an
 //! image traces at whatever size it happens to be. So the fork chooses a working copy of the image

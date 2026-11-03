@@ -19,7 +19,7 @@ use vectorcraft_stitch::thread::{ColourMatch, ColourToMatch, MatchReason, Palett
 use vectorcraft_trace as tr;
 
 use super::background::Background;
-use super::settings::{C, ColorChoice, Job, Mode};
+use super::settings::{C, ColourChoice, Job, Mode};
 use crate::Result;
 use crate::cmd::bad;
 
@@ -103,7 +103,7 @@ pub(super) fn background_colour(palette: &[[u8; 3]], found: Background) -> Optio
 }
 
 /// The choice of `choices` nearest `color`, within the line (as the difference is shown).
-fn nearest_choice(choices: &[ColorChoice], color: [u8; 3]) -> Option<usize> {
+fn nearest_choice(choices: &[ColourChoice], color: [u8; 3]) -> Option<usize> {
     choices
         .iter()
         .enumerate()
@@ -117,7 +117,7 @@ fn nearest_choice(choices: &[ColorChoice], color: [u8; 3]) -> Option<usize> {
 /// none): one row for each colour's areas and one for the background's (the areas of its colour
 /// that `touches_edge` says touch the image's edge), the background first, then the largest; each
 /// with the person's choice nearest it, and what that choice sews it as.
-pub(super) fn rows(traced: &tr::TraceResult, touches_edge: &dyn Fn(usize) -> bool, background: Option<[u8; 3]>, choices: &[ColorChoice]) -> Colours {
+pub(super) fn rows(traced: &tr::TraceResult, touches_edge: &dyn Fn(usize) -> bool, background: Option<[u8; 3]>, choices: &[ColourChoice]) -> Colours {
     let mut rows: Vec<Colour> = Vec::new();
     for (i, p) in traced.paths.iter().enumerate() {
         let is_background = background == Some(p.color) && touches_edge(i);
@@ -167,7 +167,7 @@ pub(super) fn rows(traced: &tr::TraceResult, touches_edge: &dyn Fn(usize) -> boo
 /// for the rows that keep their own colour and are sewn (neutral threads only in grayscale mode),
 /// a colour left unsewn given its nearest; two colours sharing their only thread within the line
 /// are merged.
-pub(super) fn matched(mut colours: Colours, areas: &[(usize, usize)], mode: Mode, palette: Palette, choices: &[ColorChoice]) -> Result<Colours> {
+pub(super) fn matched(mut colours: Colours, areas: &[(usize, usize)], mode: Mode, palette: Palette, choices: &[ColourChoice]) -> Result<Colours> {
     for row in colours.rows.iter_mut() {
         (row.pixels, row.areas) = (0, 0);
     }

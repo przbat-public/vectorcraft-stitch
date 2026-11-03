@@ -29,7 +29,7 @@ use crate::cmd::bad;
 pub(super) const WORKING_PX_PER_MM: f64 = 10.0;
 
 /// The longest side of the working copy (pixels): upstream Image Trace traces a larger image "but
-/// more slowly", the public documentation's warning
+/// more slowly", as upstream's own message words the public documentation's warning
 /// (<https://helpx.adobe.com/illustrator/using/image-trace-results-optimization.html>, as
 /// `docs/image-trace-adjustments.md` cites it), which upstream names `LARGE_TRACE_SIDE` in a module
 /// the fork can't reach. A design larger than 150 mm is worked at less than ten pixels a

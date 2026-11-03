@@ -299,7 +299,7 @@ Stitches tab, in English and Polish and the terms every language chose:
 ![The Stitches tab outside editing: the whole design's records, one in the middle in focus and marked on the canvas](images/embroidery-stitches-tab.png)
 
 **Digitizing from an image.** `embroidery.digitizeImage` makes embroidery objects of a placed image
-(or of an Image Trace object's source image), every threshold in millimetres (the window that
+(or of an Image Trace object's source image), every size threshold in millimetres (the window that
 drives it comes in the next PR; `docs/mcp.md` gives its params and reply in full):
 
 ```json

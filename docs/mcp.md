@@ -6591,7 +6591,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   Edit is on ("not while Global Edit is on: stop Global Edit first").
 - `embroidery.digitizeImage {id?, dryRun?, offset?, limit?, regions?, outlines?, at?, …settings}` digitizes an image
   (`id`, an image or an Image Trace object, whose source image it reads; default: the one object selected) into
-  embroidery objects, every threshold in millimetres (`embroidery.md` › Digitizing from an image). The settings:
+  embroidery objects, every size threshold in millimetres (`embroidery.md` › Digitizing from an image). The settings:
   `width`, `height` or `fit: [w, h]` (mm; default: the image as placed), `crop: [x0, y0, x1, y1]` (the image's own
   pixels), `background` (`"corners"`, the default: transparency, or the colour three corners agree on; `"none"`;
   `"#rrggbb"`), `mode` (`color`, `logo`, `grayscale`), `colors` (2 to the palette's threads, default 6),

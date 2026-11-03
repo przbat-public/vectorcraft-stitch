@@ -2,9 +2,12 @@
 //! (camelCase), its key in files (the name in snake_case, held so at compile time), the window's
 //! step it belongs to, what it takes, its default and where the default comes from.
 //!
-//! Every threshold is in millimetres or square millimetres; only the crop, which is about the
-//! picture itself, counts the image's own pixels ("what is about the picture is in its pixels;
-//! what is about the embroidery is in millimetres"). A value outside a setting's range is refused,
+//! Every size threshold is in millimetres or square millimetres; only the crop, which is about
+//! the picture itself, counts the image's own pixels ("what is about the picture is in its pixels;
+//! what is about the embroidery is in millimetres"). Smoothing and corners are upstream Image
+//! Trace's own: how loosely an outline fits the working copy's pixels (a tolerance in its pixels,
+//! so looser in millimetres on a copy of fewer pixels a millimetre) and how sharp a turn is kept
+//! (an angle). A value outside a setting's range is refused,
 //! naming the range, rather than clamped, as the other embroidery commands do.
 
 use serde_json::{Map, Value, json};
@@ -56,7 +59,7 @@ pub(super) enum Kind {
     Rect,
     /// `"corners"` (found where the image's corners agree), `"none"`, or a colour `"#rrggbb"`.
     Background,
-    /// A list of choices for the image's colours ([`ColorChoice`]), at most [`MAX_COLOR_CHOICES`].
+    /// A list of choices for the image's colours ([`ColourChoice`]), at most [`MAX_COLOUR_CHOICES`].
     Choices,
 }
 
@@ -94,9 +97,10 @@ pub(super) const MIN_AREA_MM2: f64 = 1.0;
 /// 50 mm², a disc 8 mm across, enough to simplify any logo. An estimate.
 pub(super) const MIN_AREA_RANGE_MM2: (f64, f64) = (0.0, 50.0);
 
-/// How many colours the image is reduced to, unless given: Wilcom's "most embroidery uses 5–6
-/// colors max" (help.wilcom.com, *Understanding auto-digitizing*), and upstream Image Trace's own
-/// default.
+/// How many colours the image is reduced to, unless given: Wilcom's help on auto-digitizing gives
+/// five or six colours at most for most designs
+/// (<https://help.wilcom.com/portal/en/kb/articles/autodigitizing-concept>), and it is upstream
+/// Image Trace's own default.
 pub(super) const COLORS: u32 = 6;
 
 /// The fewest colours an image is reduced to: one colour and the background, as upstream's Color
@@ -120,8 +124,10 @@ pub(super) const CORNERS: f64 = 75.0;
 /// (millimetres), unless given: the project owner's choice (2026-11-01, „0,4 mm (polecam)”). One
 /// fill row (0.38 mm, `plan::FILL_SPACING`), the overlap a fill's own regions get, rounded to the
 /// formats' 0.1 mm; it covers the bare wedges of up to 0.35 mm the planner leaves near an edge
-/// square to its rows, and lies between Embird's 0.3 mm example and Wilcom's 0.5 mm default for
-/// pieces cut apart.
+/// square to its rows, and lies between Embird's 0.3 mm example of an overlay
+/// (<https://www.embird.net/studio/manual/0800trace_tut.htm>) and Wilcom's 0.5 mm default for the
+/// pieces Flatten and Divide cut apart
+/// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Modifying/reshape/reshape-19.htm>).
 pub(super) const OVERLAP_MM: f64 = 0.4;
 
 /// The range of the overlap (millimetres): none to as much as a fill may grow (`expand`'s 2 mm).
@@ -132,7 +138,7 @@ pub(super) const PERCENT_RANGE: (f64, f64) = (0.0, 100.0);
 
 /// How the image's colours are found, the first the default:
 /// - `color`: at most `colors` colours that best represent the image (upstream's Color mode with
-///   the Limited palette), the design's Colours mode;
+///   the Limited palette), the default, as the engine plan's colour step has it;
 /// - `logo`: flat art traced with exactly its own colours, rare but distinct ones kept, at most
 ///   `colors` (upstream's Color mode with the Automatic palette, not its Flat Logo mode, whose
 ///   shapes are stacked instead of abutting: the project owner's choice, 2026-11-01);
@@ -141,9 +147,9 @@ pub(super) const MODES: &[&str] = &["color", "logo", "grayscale"];
 
 /// The most choices for the image's colours one call takes: as many as a trace has colours at most
 /// (upstream Image Trace's 256).
-pub(super) const MAX_COLOR_CHOICES: usize = 256;
+pub(super) const MAX_COLOUR_CHOICES: usize = 256;
 
-/// What a colour of the image is sewn as ([`ColorChoice::job`]).
+/// What a colour of the image is sewn as ([`ColourChoice::job`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Job {
     /// By the planner's rules: a fill as tatami, its narrow parts as satin or a running line.
@@ -172,7 +178,7 @@ impl Job {
 /// A person's choice for one of the image's colours, found again by colour: the thread it is sewn
 /// in, another colour it is merged into, or what it is sewn as.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) struct ColorChoice {
+pub(super) struct ColourChoice {
     /// The image's colour it is for (the colours within `thread::MISMATCH_DELTA_E` of it take it).
     pub(super) color: [u8; 3],
     pub(super) thread: Option<PaletteThread>,
@@ -223,13 +229,19 @@ pub(super) const SETTINGS: [Setting; 12] = [
         kind: Kind::Background,
         source: "the project owner's choice (2026-11-01): only what touches the image's edge, found at its corners",
     },
-    Setting { name: "mode", key: "mode", step: Step::Colors, kind: Kind::Choice { ids: MODES }, source: "the design's Colours mode" },
+    Setting {
+        name: "mode",
+        key: "mode",
+        step: Step::Colors,
+        kind: Kind::Choice { ids: MODES },
+        source: "the default: the colours that best represent the image, upstream Image Trace's Color mode with its Limited palette",
+    },
     Setting {
         name: "colors",
         key: "colors",
         step: Step::Colors,
         kind: Kind::Count { range: (MIN_COLORS, MAX_COLORS), default: COLORS },
-        source: "Wilcom's \"most embroidery uses 5–6 colors max\"; upstream Image Trace's default",
+        source: "Wilcom's help on auto-digitizing: five or six colours at most for most designs; upstream Image Trace's default",
     },
     Setting { name: "colorChoices", key: "color_choices", step: Step::Colors, kind: Kind::Choices, source: "unset: no choices" },
     Setting {
@@ -320,7 +332,7 @@ pub(super) struct Settings {
     pub(super) crop: Option<[u32; 4]>,
     pub(super) background: BackgroundSetting,
     pub(super) mode: Mode,
-    pub(super) choices: Vec<ColorChoice>,
+    pub(super) choices: Vec<ColourChoice>,
     pub(super) colors: u32,
     /// Square millimetres.
     pub(super) min_area: f64,
@@ -352,7 +364,7 @@ fn wants(setting: &Setting) -> String {
         Kind::Rect => "[x0, y0, x1, y1]: whole pixels of the image, x0 < x1 and y0 < y1".into(),
         Kind::Background => "\"corners\", \"none\" or a colour \"#rrggbb\"".into(),
         Kind::Choices => format!(
-            "a list of at most {MAX_COLOR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"none\"}}, mergeInto alone"
+            "a list of at most {MAX_COLOUR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"none\"}}, mergeInto alone"
         ),
     }
 }
@@ -383,7 +395,7 @@ fn background(o: &Map<String, Value>) -> Result<BackgroundSetting> {
 
 /// One of the choices `v` gives, for a document in `document`'s threads, or why it is refused: a
 /// thread of another palette is no thread the design can be sewn in.
-fn choice(v: &Value, s: &Setting, document: Palette) -> Result<ColorChoice> {
+fn choice(v: &Value, s: &Setting, document: Palette) -> Result<ColourChoice> {
     let o = v.as_object().ok_or_else(|| refused(s, v))?;
     if let Some(k) = o.keys().find(|k| !["color", "thread", "mergeInto", "job"].contains(&k.as_str())) {
         return Err(bad(C, format!("`colorChoices` {v}: unknown key `{k}`; a choice takes color, thread, mergeInto and job")));
@@ -428,15 +440,15 @@ fn choice(v: &Value, s: &Setting, document: Palette) -> Result<ColorChoice> {
     if merge_into.is_some() && (thread.is_some() || job.is_some()) {
         return Err(bad(C, format!("`colorChoices` {v}: a colour merged into another takes that one's thread and job: give `mergeInto` alone")));
     }
-    Ok(ColorChoice { color, thread, merge_into, job })
+    Ok(ColourChoice { color, thread, merge_into, job })
 }
 
 /// The choices for the image's colours `o` gives, for a document in `palette`'s threads.
-fn choices(o: &Map<String, Value>, palette: Palette) -> Result<Vec<ColorChoice>> {
+fn choices(o: &Map<String, Value>, palette: Palette) -> Result<Vec<ColourChoice>> {
     let s = row("colorChoices");
     match o.get("colorChoices") {
         None | Some(Value::Null) => Ok(vec![]),
-        Some(Value::Array(list)) if list.len() <= MAX_COLOR_CHOICES => list.iter().map(|v| choice(v, s, palette)).collect(),
+        Some(Value::Array(list)) if list.len() <= MAX_COLOUR_CHOICES => list.iter().map(|v| choice(v, s, palette)).collect(),
         Some(v) => Err(refused(s, v)),
     }
 }
@@ -585,7 +597,7 @@ pub(super) fn table(palette: Palette) -> Value {
                     Kind::Size => ("mm", json!([SIZE_RANGE_MM.0, SIZE_RANGE_MM.1]), Value::Null),
                     Kind::Rect => ("px", Value::Null, Value::Null),
                     Kind::Background => ("", json!(["corners", "none", "#rrggbb"]), json!("corners")),
-                    Kind::Choices => ("", json!([0, MAX_COLOR_CHOICES]), json!([])),
+                    Kind::Choices => ("", json!([0, MAX_COLOUR_CHOICES]), json!([])),
                 };
                 json!({"name": s.name, "key": s.key, "step": s.step.id(), "unit": unit, "range": range, "default": default, "source": s.source})
             })

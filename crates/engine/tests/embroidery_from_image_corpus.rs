@@ -79,7 +79,8 @@ const MIN_COLORS: usize = 2;
 /// overlap, than where the vector path does (square millimetres): 1.5, over the most measured on
 /// 2026-11-03, 1.1 on the pool ball, where the overlap moves the end of a satin column the planner
 /// sews in each notch of the 8's waist so that it no longer reaches the corner (0.3 there with no
-/// overlap; the vector path leaves 0.1 at most).
+/// overlap; the vector path leaves 0.1 at most): the planner's to fix, on its own (the project
+/// owner's choice, 2026-11-03).
 const FABRIC_MARGIN_MM2: f64 = 1.5;
 
 /// How far, on average, the overlap must reach under the next colour along the edges colours share

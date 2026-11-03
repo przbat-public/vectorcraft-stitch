@@ -1701,25 +1701,26 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   | watermelon | 0.962, 0.966 (0.978) | 0.952, 0.946 | 1,535, 1,544 (1.01×) | 3, 4 | 0.0, 0.0, 0.0 | 0.31 (158) |
   | zebra | 0.965, 0.969 (0.972) | 0.919, 0.918 | 3,640, 3,343 (0.92×) | 4, 4 | 0.1, 0.0, 0.3 | 0.31 (473) |
 
-  The test holds each design's IoU and agreement within 0.02 of the vector path's, its needle
-  points within 0.6 to 1.4 times, its fabric between colours within 1.5 mm² of the vector path's,
-  the overlap's reach at least 0.25 mm, its threads within one of the person's (in Brother's
-  palette), the check free of errors and the dry run's figures Create's; and the art as a JPEG of
-  quality 55, or drawn at 4 pixels a millimetre, keeps the clean picture's IoU and agreement within
-  0.01 and 0.02 (agreement by colour: a scan's colours drift, and its nearest thread can be another
-  as near). The IoU, agreement and stitch margins were calibrated on the art before any of the code
-  (2026-11-02) so that upstream's plain Image Trace passes them, with no overlap, no region rules and
-  no threads chosen together: they bound regressions against that trace and can't see the overlap.
-  Nor can the fabric between colours: the planner's stitches, drawn a thread wide, already cover a
-  seam from both sides (0.9 mm² at most with no overlap). The reach does: with the overlap off, the
-  test fails. On the pool ball the overlap leaves 1.1 mm² bare against 0.3 without it, in the notches
-  of the 8's waist, where growing the light disc under the 8 moves the end of the satin column the
-  planner sews in each notch so that it no longer reaches the corner. In Janome's palette the
-  figures are the same but where colours merge into one thread: the joystick's and the zebra's four
-  colours are sewn in three threads, and the joystick sews 0.73 times the vector path's needle
-  points. The bullseye's 0.69: its art stacks whole discs, which the vector path sews one over
-  another, the image path as abutting rings. Measured by colour instead of thread, the video game's
-  agreement is 0.879: its main grey's thread lies nearer another of the art's colours.
+  The test holds each design's IoU and agreement within 0.02 of the vector path's, its needle points
+  within 0.6 to 1.4 times, its fabric between colours within 1.5 mm² of the vector path's, the
+  overlap's reach at least 0.25 mm, its threads within one of the person's (in Brother's palette),
+  the check free of errors and the dry run's figures Create's; and the art as a JPEG of quality 55,
+  or drawn at 4 pixels a millimetre, keeps the clean picture's IoU and agreement within 0.01 and
+  0.02 (agreement by colour: a scan's colours drift, and its nearest thread can be another as near).
+  The IoU, agreement and stitch margins were calibrated on the art before any of the code
+  (2026-11-02) so that upstream's plain Image Trace passes them, with no overlap, no region rules
+  and no threads chosen together: they bound regressions against that trace and can't see the
+  overlap. Nor can the fabric between colours: the planner's stitches, drawn a thread wide, already
+  cover a seam from both sides (0.9 mm² at most with no overlap). The reach does: with the overlap
+  off, the test fails. On the pool ball the overlap leaves 1.1 mm² bare against 0.3 without it, in
+  the notches of the 8's waist, where growing the light disc under the 8 moves the end of the satin
+  column the planner sews in each notch so that it no longer reaches the corner: the planner's to
+  fix, on its own, later (the project owner's choice, 2026-11-03). In Janome's palette the figures
+  are the same but where colours merge into one thread: the joystick's and the zebra's four colours
+  are sewn in three threads, and the joystick sews 0.73 times the vector path's needle points. The
+  bullseye's 0.69: its art stacks whole discs, which the vector path sews one over another, the
+  image path as abutting rings. Measured by colour instead of thread, the video game's agreement is
+  0.879: its main grey's thread lies nearer another of the art's colours.
 
 **Real designs** (`crates/engine/tests/embroidery_corpus.rs`): `cargo xtask corpus --embroidery`
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)

@@ -55,7 +55,7 @@ pub(super) const SLIVER_DELTA_E: f64 = MISMATCH_DELTA_E;
 /// How far a colour may lie from the line between two others (sRGB levels) and be their mix, and
 /// the shares of the way along it it must lie between: upstream Image Trace's own test of the
 /// blends anti-aliasing leaves between two colours (`quantize/rare.rs`: within 12 levels of the
-/// line, at least an eighth of the way from each end).
+/// line, at least 0.12 of the way from each end, about an eighth).
 const MIX_OFF_LEVELS: f64 = 12.0;
 const MIX_ALONG: (f64, f64) = (0.12, 0.88);
 

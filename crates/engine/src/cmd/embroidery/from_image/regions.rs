@@ -21,15 +21,14 @@ use std::sync::Arc;
 use vectorcraft_geom::{BezPath, PathEl, Point};
 use vectorcraft_trace as tr;
 
+use super::background::TRANSPARENT_ALPHA;
+
 /// The label of a pixel in no area: transparent, never traced.
 pub(super) const NONE: u32 = u32::MAX;
 
 /// How closely a traced outline's curves are followed as straight pieces when it is drawn into the
 /// map (pixels): a hundredth of a pixel, far finer than a pixel's centre can tell.
 const FLATTEN_TOLERANCE_PX: f64 = 0.01;
-
-/// The opacity below which a pixel is transparent, never traced (upstream Image Trace's threshold).
-const TRANSPARENT_ALPHA: u8 = 128;
 
 /// A distance larger than any in a working copy (pixels squared), for the distance transform's
 /// "no feature here": finite, so that its arithmetic never meets infinity minus infinity.

@@ -198,6 +198,13 @@ fn create_undoes_and_redoes() {
     assert!(vectorcraft_format::save(&doc(&s), false) == made, "redone");
 }
 
+/// Create's undo step is named as the command is: the two names, one a literal in `cmd!`, agree.
+#[test]
+fn the_undo_step_is_named_as_the_command() {
+    let spec = crate::cmd::command_specs().iter().find(|c| c.id == "embroidery.digitizeImage").unwrap();
+    assert_eq!(spec.label, super::command::LABEL);
+}
+
 /// A colour's job sets only what it changes: Fill sets its fill's narrow parts not to be satin, Don't
 /// sew sets its fill not to be sewn (its objects made, under the rest, and left out of the figures),
 /// Auto sets nothing.

@@ -36,6 +36,10 @@ pub(super) const WORKING_PX_PER_MM: f64 = 10.0;
 /// millimetre: five at 300 mm.
 pub(super) const MAX_WORKING_SIDE_PX: f64 = 1500.0;
 
+/// A count of pixels shifted this far right is in megapixels, as upstream writes its decoder's limit
+/// (2²⁰ pixels).
+const MEGAPIXEL_SHIFT: u32 = 20;
+
 /// Below this resolution (pixels a millimetre), a millimetre's detail spans fewer than four pixels,
 /// so a line's width is known only to about a quarter: the image is digitized, with a warning. An
 /// estimate.
@@ -301,7 +305,7 @@ impl Working {
             ));
         }
         if self.decoded_px != self.image_px {
-            let most = tr::MAX_PIXELS >> 20;
+            let most = tr::MAX_PIXELS >> MEGAPIXEL_SHIFT;
             out.push(Warning::new(
                 "decodedSmaller",
                 json!({"decoded": [self.decoded_px.0, self.decoded_px.1], "pixels": [self.image_px.0, self.image_px.1], "maxMegapixels": most}),
@@ -340,7 +344,7 @@ impl Sum {
 
     /// The pixel these sums average to, over a box of `area` source pixels.
     fn pixel(&self, area: f64) -> [u8; 4] {
-        let byte = |v: f64| v.round().clamp(0.0, 255.0) as u8;
+        let byte = |v: f64| v.round().clamp(0.0, f64::from(u8::MAX)) as u8;
         if self.alpha <= 0.0 {
             return [0; 4];
         }

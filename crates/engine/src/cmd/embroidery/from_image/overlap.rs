@@ -36,6 +36,11 @@ const PRECISION_PX: f64 = vectorcraft_pathops::DEFAULT_PRECISION;
 /// pixels): half a pixel, the centre of the pixel beside the edge.
 const BEYOND_PX: f64 = 0.5;
 
+/// How much of a thin neighbour's widest inscribed width a strip may take: half, so that two
+/// neighbours growing under it from both sides meet in its middle. The session's choice
+/// (2026-11-02), for the owner to confirm.
+const THIN_SHARE: f64 = 0.5;
+
 /// The miter limit the strip's widened edge is drawn with: none is drawn, its joins and ends being
 /// round, so that the strip reaches no farther than its width from the shared edge anywhere.
 const NO_MITER: f64 = 1.0;
@@ -314,7 +319,7 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
                     continue;
                 };
                 // As far as asked, or half as wide as a thin neighbour.
-                let width = overlap_px.min(stats.widest_px / 2.0);
+                let width = overlap_px.min(stats.widest_px * THIN_SHARE);
                 let band = outline_stroke(&joined_edges(lines), 2.0 * width, Cap::Round, Join::Round, NO_MITER);
                 let Some(reach) = band.control_bounds() else { continue };
                 let outlines = outlines.get_or_insert_with(|| straightened_outlines(into));

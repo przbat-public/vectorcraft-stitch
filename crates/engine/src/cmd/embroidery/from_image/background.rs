@@ -25,8 +25,8 @@ pub(super) const CORNERS_AGREE_DELTA_E: f64 = 5.0;
 const CORNERS_NEEDED: usize = 3;
 
 /// The opacity below which a pixel is transparent: Image Trace never traces it (upstream's
-/// threshold, half of 255).
-const TRANSPARENT_ALPHA: u8 = 128;
+/// threshold, half of 255). The region map reads it too.
+pub(super) const TRANSPARENT_ALPHA: u8 = 128;
 
 /// What lies round the art.
 #[derive(Clone, Copy, Debug, PartialEq)]

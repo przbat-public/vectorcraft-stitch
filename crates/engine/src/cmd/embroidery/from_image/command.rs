@@ -40,18 +40,26 @@ pub const DIGITIZE_PROGRESS: &str = "digitizeImage";
 /// colours and areas, the shapes, the objects and their stitches.
 pub const DIGITIZE_STAGES: u64 = 5;
 
-/// The undo step Create makes, as the command is named.
-const LABEL: &str = "Digitize Image";
+/// The stages done when each stage of [`DIGITIZE_STAGES`] begins: the working copy, the trace, the
+/// colours and areas, the shapes, and the objects with their stitches.
+const PREPARING: u64 = 0;
+const TRACING: u64 = 1;
+const COLOURING: u64 = 2;
+const SHAPING: u64 = 3;
+const MAKING: u64 = 4;
+
+/// The undo step Create makes, as the command is named: its label, which `cmd!` takes only as a
+/// literal (a test checks the two agree).
+pub(super) const LABEL: &str = "Digitize Image";
 
 /// The most areas a design is made of: past them, digitizing is refused with advice (an untrusted
 /// image of noise makes hundreds of thousands). An estimate: the real designs' artwork has at most
 /// 18 regions a design, a busy logo some hundreds.
 pub(super) const MAX_IMAGE_AREAS: usize = 10_000;
 
-/// The areas a reply lists unless `limit` says otherwise, and the most it lists: as
-/// `embroidery.sequence` lists its units.
-const AREAS_LISTED: usize = 1_000;
-const MAX_AREAS_LISTED: usize = 10_000;
+// The areas a reply lists unless `limit` says otherwise, and the most it lists: as
+// `embroidery.sequence` lists its units.
+use super::super::stats::{LIST_LIMIT as AREAS_LISTED, MAX_LIST_LIMIT as MAX_AREAS_LISTED};
 
 /// Hundredths: millimetres, square millimetres and shares are given to two decimals.
 const HUNDREDTHS: f64 = 100.0;
@@ -169,7 +177,7 @@ pub(super) struct Digitized {
 /// the order they are sewn in. A cancel stops it within each stage; `steps` is asked as the trace
 /// goes, from the threads that trace, and stops it when it answers `false`.
 pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, palette: Palette, steps: &trace::Steps<'_>) -> Result<Digitized> {
-    vectorcraft_doc::cancel::progress(0, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(PREPARING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let w = working::prepare(image, bytes, settings)?;
     let found = match settings.background {
@@ -179,7 +187,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     };
     let image_ms = since(started);
     vectorcraft_doc::cancel::check()?;
-    vectorcraft_doc::cancel::progress(1, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(TRACING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     // A background colour takes one of the trace's colours: the design keeps the colours asked.
     let colors = settings.colors + u32::from(matches!(found, Background::Colour(_)));
@@ -197,7 +205,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     }
     let trace_ms = since(started);
     vectorcraft_doc::cancel::check()?;
-    vectorcraft_doc::cancel::progress(2, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(COLOURING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let traced_background = colours::background_colour(&traced.palette, found);
     if matches!(found, Background::Colour(_)) && traced_background.is_none() {
@@ -272,7 +280,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let order = order::ordered(&areas.areas, &areas.regions, &colours)?;
     inside::sewn_over(&mut areas, &colours, &order);
     let colors_ms = since(started);
-    vectorcraft_doc::cancel::progress(3, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm)?;
     if shapes.failed > 0 {
@@ -283,7 +291,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         ));
     }
     let shapes_ms = since(started);
-    vectorcraft_doc::cancel::progress(4, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    vectorcraft_doc::cancel::progress(MAKING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     if traced.paths.is_empty() {
         warnings.push(Warning::new("nothingTraced", json!({}), "nothing in the image was traced: it is empty or transparent"));
     }
@@ -559,10 +567,10 @@ impl DigitizeFound {
     }
 }
 
-/// The key the read commands take to plan the selection alone, and `embroidery.stats`, whose reply
-/// the dry run gives.
-const SELECTED_ONLY: &str = "selectedOnly";
+/// `embroidery.stats`, whose reply the dry run gives, planning the selection alone
+/// ([`SELECTED_ONLY`]).
 const STATS: &str = "embroidery.stats";
+use super::super::SELECTED_ONLY;
 
 /// What `embroidery.stats {selectedOnly: true}` answers for `doc` with `group` selected: the plan
 /// of the group alone, in its layers, made afresh by the same code (the export's plan, which a

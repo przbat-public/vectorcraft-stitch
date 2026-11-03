@@ -369,14 +369,22 @@ fn wants(setting: &Setting) -> String {
     }
 }
 
+/// How a colour is written, `#rrggbb`: its length, its digits' base, where each channel's digits
+/// start, and how many each has.
+const HEX_COLOUR_LEN: usize = 7;
+const HEX_RADIX: u32 = 16;
+const HEX_CHANNELS: [usize; 3] = [1, 3, 5];
+const HEX_DIGITS: usize = 2;
+
 /// The colour `s` writes as `#rrggbb`, exactly.
 pub(super) fn hex_colour(s: &str) -> Option<[u8; 3]> {
-    let ok = s.len() == 7 && s.starts_with('#') && s.bytes().skip(1).all(|b| b.is_ascii_hexdigit());
-    let byte = |k: usize| s.get(k..k + 2).and_then(|h| u8::from_str_radix(h, 16).ok());
+    let ok = s.len() == HEX_COLOUR_LEN && s.starts_with('#') && s.bytes().skip(1).all(|b| b.is_ascii_hexdigit());
+    let byte = |k: usize| s.get(k..k + HEX_DIGITS).and_then(|h| u8::from_str_radix(h, HEX_RADIX).ok());
     if !ok {
         return None;
     }
-    Some([byte(1)?, byte(3)?, byte(5)?])
+    let [r, g, b] = HEX_CHANNELS;
+    Some([byte(r)?, byte(g)?, byte(b)?])
 }
 
 /// The background `o` asks for.

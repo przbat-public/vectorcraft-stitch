@@ -50,7 +50,10 @@ pub(super) struct AreaStats {
     /// and a pixel more when its middle lies between two pixels as deep across it (an even width);
     /// exact for upright bands and squares, to about a pixel on a slant.
     pub(super) widest_px: f64,
-    /// Its deepest pixel: the farthest from its edge, the first in scan order of those as deep.
+    /// Its key point: of its deepest pixels (the farthest from its edge), the one nearest their
+    /// middle (their mean), the first in scan order of those as near; so a long area is keyed at
+    /// the middle of its ridge, where a later run that moves its outline by a pixel still finds
+    /// it, not at one end.
     pub(super) deepest: (u32, u32),
 }
 
@@ -350,7 +353,7 @@ impl Regions {
                 *best = (d2[i], i);
             }
         }
-        for (l, (a, (d, i))) in areas.iter_mut().zip(deepest).enumerate() {
+        for (l, (a, &(d, i))) in areas.iter_mut().zip(&deepest).enumerate() {
             if d < 0.0 {
                 continue;
             }
@@ -361,6 +364,34 @@ impl Regions {
             let even = two_pixels_thick(i, wu, hu, deep);
             a.widest_px = 2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 };
             a.deepest = (x as u32, y as u32);
+        }
+        // Each area's key: its deepest pixel nearest the mean of its deepest pixels. The sums are of
+        // whole coordinates, exact in floating point.
+        let deepest_of = |i: usize, l: u32| deepest.get(l as usize).filter(|&&(d, _)| d >= 0.0 && d2.get(i) == Some(&d)).is_some();
+        let mut sums: Vec<(f64, f64, f64)> = vec![(0.0, 0.0, 0.0); count];
+        for (i, &l) in labels.iter().enumerate() {
+            if deepest_of(i, l)
+                && let Some(s) = sums.get_mut(l as usize)
+            {
+                *s = (s.0 + (i % wu) as f64, s.1 + (i / wu) as f64, s.2 + 1.0);
+            }
+        }
+        let mut nearest: Vec<Option<(f64, usize)>> = vec![None; count];
+        for (i, &l) in labels.iter().enumerate() {
+            let (Some(&(sx, sy, n)), Some(best)) = (sums.get(l as usize), nearest.get_mut(l as usize)) else { continue };
+            if !deepest_of(i, l) || n <= 0.0 {
+                continue;
+            }
+            let (dx, dy) = ((i % wu) as f64 - sx / n, (i / wu) as f64 - sy / n);
+            let off = dx * dx + dy * dy;
+            if best.is_none_or(|(b, _)| off < b) {
+                *best = Some((off, i));
+            }
+        }
+        for (a, key) in areas.iter_mut().zip(nearest) {
+            if let Some((_, i)) = key {
+                a.deepest = ((i % wu) as u32, (i / wu) as u32);
+            }
         }
         let mut adjacent: Vec<Vec<(u32, u32)>> = vec![Vec::new(); count];
         for (&(a, b), &n) in &borders {

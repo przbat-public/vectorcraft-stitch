@@ -118,6 +118,18 @@ fn long_thin_lines_stay() {
     }
 }
 
+/// An area is keyed at the middle of its ridge, not at one end: a bar 10 mm long and 0.5 mm high
+/// has its key point at its middle.
+#[test]
+fn a_long_area_is_keyed_at_its_middle() {
+    let bar = tr::Raster::from_fn(200, 100, |x, y| if inside(x, y, [50, 40, 150, 45]) { NAVY } else { ORANGE });
+    let mut s = placed(&bar);
+    let r = dry(&mut s, json!({"colors": 2, "background": "none"}));
+    let navy = areas_of(&r, NAVY);
+    let at = (navy[0]["at"][0].as_f64().unwrap(), navy[0]["at"][1].as_f64().unwrap());
+    assert!((at.0 - 100.0).abs() <= 1.0 && (at.1 - 42.5).abs() <= 1.0, "the bar's middle, (100, 42.5): {at:?}");
+}
+
 /// A line's length is measured along it: a whisker 0.5 mm wide at its root, tapering to a point
 /// over 3 mm (2.4 mm of pixels), under the smallest area and only 1.8 mm long by its pixels over its
 /// width, stays as a line; a speck as wide, 1.5 mm long, joins the area round it.

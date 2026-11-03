@@ -112,6 +112,22 @@ fn target(s: &Session, o: &Map<String, Value>) -> Result<(NodeId, ImageObject)> 
     Ok((id, image))
 }
 
+/// Refused unless image `id` may be replaced by a design: Global Edit off, and neither the image
+/// nor a group or layer it lies in locked, a template layer aside (locked so that a picture to
+/// work over stays still, as File › Place makes one), as Convert to Manual Stitches and Nearest
+/// Connection leave locked objects alone.
+fn editable(st: &crate::DocState, id: NodeId) -> Result<()> {
+    if st.global_edit.is_some() {
+        return Err(bad(C, super::super::GLOBAL_EDIT_ON));
+    }
+    let ancestry = st.doc.ancestry(id).ok_or(EngineError::NoNode(id))?;
+    let locked = |n: &vectorcraft_doc::Node| n.locked && !matches!(n.kind, NodeKind::Layer { template: true, .. });
+    if ancestry.iter().any(|&a| st.doc.node(a).is_some_and(locked)) {
+        return Err(bad(C, "the image is locked, or lies in a locked group or layer: unlock it first"));
+    }
+    Ok(())
+}
+
 /// The time since `started` (milliseconds); none on the web, which has no clock to read.
 #[cfg(not(target_arch = "wasm32"))]
 fn since(started: std::time::Instant) -> Option<f64> {
@@ -512,6 +528,7 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
         at: point(&o)?,
     };
     let (target, image) = target(s, &o)?;
+    editable(st, target)?;
     let bytes =
         st.doc.images.get(&image.key).map(|b| Arc::clone(&b.bytes)).ok_or_else(|| bad(C, format!("the image's data `{}` is missing", image.key)))?;
     Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run })
@@ -638,6 +655,9 @@ fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
     let st = s.doc()?;
     if st.uid != uid || !Arc::ptr_eq(&st.doc, &original) {
         return Err(bad(C, "the document changed while the image was digitized: nothing was made"));
+    }
+    if st.global_edit.is_some() {
+        return Err(bad(C, super::super::GLOBAL_EDIT_ON));
     }
     s.edit(LABEL, |d, sel| {
         *d = doc;

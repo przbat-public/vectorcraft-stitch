@@ -14,6 +14,13 @@
 //!
 //! The background's areas become no object. The source image moves, with its id, to a new template
 //! layer below every layer, hidden and locked, scaled as the design is so that it lies under it.
+//!
+//! Where the image's place isn't sewn (the plan walks no template, non-printing or hidden layer,
+//! nor a hidden group), the design goes on top of the nearest layer above that is (visible,
+//! printing, unlocked), or of a new layer on top when none is, and the image stays where it is,
+//! scaled as the design is: a picture on its template layer stays there (the project owner's
+//! decision, 2026-11-03), and so does the image Create moved to its own template layer, digitized
+//! again.
 
 use std::sync::Arc;
 
@@ -23,6 +30,7 @@ use vectorcraft_doc::embroidery::{Embroidery, PartSettings};
 use vectorcraft_doc::{Appearance, Document, Node, NodeId, NodeKind};
 use vectorcraft_stitch::thread::Palette;
 
+use super::super::digitize::{printed, shows};
 use super::command::Digitized;
 use super::settings::{C, Job};
 use crate::cmd::bad;
@@ -37,8 +45,8 @@ pub(super) const NOT_SEWN: &str = "none";
 /// least the setting takes (`vectorcraft_stitch::plan::NARROW_RANGE`).
 pub(super) const NO_SATIN_MM: f64 = vectorcraft_stitch::plan::NARROW_RANGE.0;
 
-/// What Create made: the design's group, the template layer holding the image, and how many
-/// objects and colour blocks the design is.
+/// What Create made: the design's group, the layer holding the image (the new template layer, or
+/// the one it stayed on), and how many objects and colour blocks the design is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct Made {
     pub(super) group: NodeId,
@@ -62,6 +70,22 @@ fn settings_for(job: Job) -> Option<Embroidery> {
 fn template_name(name: Option<&str>, link: Option<&vectorcraft_doc::LinkInfo>) -> String {
     let file = link.and_then(|l| std::path::Path::new(&l.path).file_name()).and_then(|f| f.to_str());
     format!("Template {}", name.or(file).unwrap_or("Image"))
+}
+
+/// Whether the place of `target` is sewn: every layer and group it lies in shown, printed and
+/// unlocked, as the plan walks the document (`super::super::digitize::{shows, printed}`).
+fn sewn_place(doc: &Document, target: NodeId) -> bool {
+    let Some(ancestry) = doc.ancestry(target) else { return false };
+    let (_, around) = ancestry.split_last().unwrap_or((&target, &[]));
+    around.iter().all(|&a| doc.node(a).is_some_and(|n| shows(n) && printed(n) && !n.locked))
+}
+
+/// The nearest top-level layer above `below` that is sewn and may take objects (shown, printed,
+/// unlocked): where a design goes when its image's place isn't sewn.
+fn ordinary_layer_above(doc: &Document, below: NodeId) -> Option<NodeId> {
+    let layers = doc.children(None)?;
+    let i = layers.iter().position(|l| l.id == below)?;
+    layers.iter().skip(i + 1).find(|l| l.is_layer() && shows(l) && printed(l) && !l.locked).map(|l| l.id)
 }
 
 /// The objects digitizing made of `target` (an image, or an Image Trace object) as `d` says, in
@@ -115,6 +139,17 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
     let mut group = Node::group(doc.alloc_id(), groups);
     group.name = image.name.clone();
     let id = group.id;
+    if !sewn_place(doc, target) {
+        let below = doc.layer_of(target).ok_or(EngineError::NoNode(target))?;
+        let layer = ordinary_layer_above(doc, below).unwrap_or_else(|| doc.add_layer(None));
+        doc.insert(Some(layer), usize::MAX, group)?;
+        let NodeKind::Image(scaled) = &image.kind else { return Err(bad(C, "not an image: select an image, or an Image Trace object")) };
+        let xf = scaled.xf;
+        if let Some(NodeKind::Image(img)) = doc.node_mut(image.id).map(|n| &mut n.kind) {
+            img.xf = xf;
+        }
+        return Ok(Some(Made { group: id, layer: below, objects, blocks: count }));
+    }
     let (parent, index, _) = doc.position(target).ok_or(EngineError::NoNode(target))?;
     doc.remove(target)?;
     doc.insert(parent, index, group)?;

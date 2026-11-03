@@ -280,3 +280,130 @@ fn a_photo_turned_by_its_exif_orientation_is_digitized_as_seen() {
     let left = orange["box"][0].as_f64().unwrap();
     assert!((left - middle).abs() < 1.0, "the orange on the right half: {} in {bounds:?}", orange["box"]);
 }
+
+/// The top-level layer object `id` lies in, and whether it is sewn: a template, shown, locked,
+/// printed.
+fn layer_of(s: &Session, id: u64) -> (u64, [bool; 4]) {
+    let st = s.doc().unwrap();
+    let layer = st.doc.layer_of(vectorcraft_doc::NodeId(id)).unwrap();
+    let n = st.doc.node(layer).unwrap();
+    let vectorcraft_doc::NodeKind::Layer { template, printable, .. } = n.kind else { panic!("{layer:?} isn't a layer") };
+    (layer.0, [template, n.visible, n.locked, printable])
+}
+
+/// The flags of a layer whose objects are sewn: no template, shown, unlocked, printed.
+const SEWN_LAYER: [bool; 4] = [false, true, false, true];
+
+/// How many top-level layers the document has.
+fn layer_count(s: &Session) -> usize {
+    s.doc().unwrap().doc.children(None).unwrap().len()
+}
+
+/// Create on `s` with `params` after its dry run: the two agree, and the design is sewn, on a layer
+/// that is. The design's group id and Create's reply.
+fn created_sewn(s: &mut Session, params: Value) -> (u64, Value) {
+    let mut dry = params.clone();
+    dry["dryRun"] = json!(true);
+    let answered = s.execute("embroidery.digitizeImage", &dry).unwrap();
+    let made = s.execute("embroidery.digitizeImage", &params).unwrap();
+    assert_eq!(answered["stats"], made["stats"], "Create made what the dry run answered");
+    assert!(made["stats"]["stitches"].as_u64().unwrap() > 0, "{}", made["stats"]);
+    let group = made["created"]["group"].as_u64().unwrap();
+    assert_eq!(layer_of(s, group).1, SEWN_LAYER, "the design's layer");
+    (group, made)
+}
+
+/// A picture placed as a template (on a locked template layer of its own, as File › Place › Template
+/// puts it) makes a design that is sewn, on the layer above; the picture stays on its template layer
+/// and no other is made.
+#[test]
+fn a_picture_on_a_template_layer_makes_a_design_that_is_sewn() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 600, "height": 600, "artboards": 1})).unwrap();
+    let data = vectorcraft_format::base64_encode(&logo(200, 100).encode_png());
+    let placed = s.execute("file.place", &json!({"name": "logo.png", "dataBase64": data, "template": true})).unwrap();
+    let image = placed["ids"][0].as_u64().unwrap();
+    let (template, flags) = layer_of(&s, image);
+    assert!(flags[0] && flags[2], "placed on a locked template layer: {flags:?}");
+    let layers = layer_count(&s);
+    let (_, made) = created_sewn(&mut s, json!({"id": image, "colors": 3}));
+    assert_eq!(layer_of(&s, image).0, template, "the picture stays on its template layer");
+    assert_eq!(made["created"]["layer"], json!(template));
+    assert_eq!(layer_count(&s), layers, "no layer made");
+}
+
+/// The image Create moved to its template layer, digitized again, makes a design that is sewn too;
+/// the image stays on that template layer.
+#[test]
+fn the_image_create_moved_digitizes_again_into_a_design_that_is_sewn() {
+    let mut s = placed("logo.png", &logo(200, 100).encode_png()).unwrap();
+    let (_, first) = created_sewn(&mut s, json!({"colors": 3}));
+    let image = first["image"]["id"].as_u64().unwrap();
+    let template = first["created"]["layer"].as_u64().unwrap();
+    let layers = layer_count(&s);
+    let (_, again) = created_sewn(&mut s, json!({"id": image, "colors": 4}));
+    assert_eq!(layer_of(&s, image).0, template);
+    assert_eq!(again["created"]["layer"], json!(template));
+    assert_eq!(layer_count(&s), layers, "no second template layer");
+}
+
+/// A picture on a layer that doesn't print, or is hidden, makes its design on the nearest layer
+/// above that is sewn, or on a new layer when none is; the picture stays where it is.
+#[test]
+fn a_picture_on_a_layer_not_sewn_makes_its_design_on_one_that_is() {
+    for props in [json!({"printable": false}), json!({"visible": false})] {
+        for above in [true, false] {
+            let mut s = placed("logo.png", &logo(200, 100).encode_png()).unwrap();
+            let image = s.doc().unwrap().selection.objects[0].0;
+            let (own, _) = layer_of(&s, image);
+            let upper = above.then(|| s.execute("layer.new", &json!({"top": true})).unwrap()["id"].as_u64().unwrap());
+            let mut set = props.clone();
+            set["id"] = json!(own);
+            s.execute("layer.setProps", &set).unwrap();
+            let layers = layer_count(&s);
+            let (group, made) = created_sewn(&mut s, json!({"id": image, "colors": 3}));
+            assert_eq!(layer_of(&s, image).0, own, "{props}: the picture stays");
+            assert_eq!(made["created"]["layer"], json!(own));
+            match upper {
+                Some(upper) => assert_eq!((layer_of(&s, group).0, layer_count(&s)), (upper, layers), "{props}: on the layer above"),
+                None => assert_eq!(layer_count(&s), layers + 1, "{props}: on a new layer"),
+            }
+        }
+    }
+}
+
+/// A locked image, an image on a locked layer and a run while Global Edit is on are refused,
+/// nothing changed.
+#[test]
+fn a_locked_image_and_global_edit_are_refused() {
+    let lock_image = |s: &mut Session, _: u64| {
+        s.execute("object.lock", &json!({})).unwrap();
+    };
+    let lock_layer = |s: &mut Session, image: u64| {
+        let (layer, _) = layer_of(s, image);
+        s.execute("layer.setProps", &json!({"id": layer, "locked": true})).unwrap();
+    };
+    for lock in [&lock_image as &dyn Fn(&mut Session, u64), &lock_layer] {
+        let mut s = placed("logo.png", &logo(200, 100).encode_png()).unwrap();
+        let image = s.doc().unwrap().selection.objects[0].0;
+        lock(&mut s, image);
+        let steps = s.doc().unwrap().history.undo.len();
+        for dry in [true, false] {
+            let why = no_panic(s.execute("embroidery.digitizeImage", &json!({"id": image, "dryRun": dry}))).unwrap_err().to_string();
+            assert!(why.contains("unlock it first"), "{why}");
+        }
+        assert_eq!(s.doc().unwrap().history.undo.len(), steps, "nothing changed");
+    }
+    // Global Edit works on paths alike: started on one of two squares, the image named by its id.
+    let mut s = placed("logo.png", &logo(200, 100).encode_png()).unwrap();
+    let image = s.doc().unwrap().selection.objects[0].0;
+    let square = s.execute("shape.rectangle", &json!({"x": 10, "y": 10, "width": 20, "height": 20})).unwrap()["id"].clone();
+    s.execute("shape.rectangle", &json!({"x": 40, "y": 10, "width": 20, "height": 20})).unwrap();
+    s.execute("select.set", &json!({"ids": [square]})).unwrap();
+    s.execute("select.globalEdit", &json!({"artboards": "all", "includeCanvas": true})).unwrap();
+    assert!(s.doc().unwrap().global_edit.is_some());
+    match s.execute("embroidery.digitizeImage", &json!({"id": image})) {
+        Err(EngineError::Disabled(_, why)) => assert!(why.contains("Global Edit"), "{why}"),
+        r => panic!("{r:?}"),
+    }
+}

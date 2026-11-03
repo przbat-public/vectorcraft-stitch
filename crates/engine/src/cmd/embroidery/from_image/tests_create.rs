@@ -160,6 +160,30 @@ fn a_dry_run_answers_what_create_makes() {
     assert_eq!(made, steady(dry));
 }
 
+/// A dry run's figures are what Create's objects sew, checked apart from the command: beside other
+/// sewn art (a rectangle), Create made, the document saved and opened again, and the new group alone
+/// measured by `embroidery.stats`; the whole document sews more.
+#[test]
+fn a_dry_run_answers_what_create_makes_beside_other_art() {
+    let (mut s, image) = placed_at(&picture(), (5.0, 5.0));
+    s.execute("shape.rectangle", &json!({"x": 200, "y": 200, "width": 60, "height": 40})).unwrap();
+    let p = json!({"id": image.0, "colors": 3});
+    let mut dry_p = p.clone();
+    dry_p["dryRun"] = json!(true);
+    let dry = s.execute("embroidery.digitizeImage", &dry_p).unwrap();
+    let made = s.execute("embroidery.digitizeImage", &p).unwrap();
+    let group = made["created"]["group"].as_u64().unwrap();
+    let saved = vectorcraft_format::save(&doc(&s), false);
+    let mut t = Session::new();
+    t.execute("document.open", &json!({"name": "saved.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&saved)})).unwrap();
+    t.execute("select.set", &json!({"ids": [group]})).unwrap();
+    let stats = t.execute("embroidery.stats", &json!({"selectedOnly": true})).unwrap();
+    assert_eq!(dry["stats"], stats);
+    let all = t.execute("embroidery.stats", &json!({"selectedOnly": false})).unwrap();
+    let stitches = |r: &Value| r["stitches"].as_u64().unwrap();
+    assert!(stitches(&all) > stitches(&stats), "the rectangle sews too: {} against {}", all["stitches"], stats["stitches"]);
+}
+
 /// A colour's job sets only what it changes: Fill sets its fill's narrow parts not to be satin, Don't
 /// sew sets its fill not to be sewn (its objects made, under the rest, and left out of the figures),
 /// Auto sets nothing.

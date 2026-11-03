@@ -14,6 +14,7 @@ use vectorcraft_engine::{EngineError, Session};
 use vectorcraft_testkit::invariants::check_native_roundtrip;
 use vectorcraft_trace::Raster;
 
+const PT_PER_MM: f64 = 72.0 / 25.4;
 const WHITE: [u8; 4] = [255, 255, 255, 255];
 const ORANGE: [u8; 4] = [240, 130, 20, 255];
 const NAVY: [u8; 4] = [20, 40, 120, 255];
@@ -115,22 +116,136 @@ fn digitized(s: &mut Session, params: Value) -> Result<Value, String> {
     answered
 }
 
-/// A PNG claiming more pixels than any machine holds, and files cut short, are refused or never
-/// placed: never a panic.
+/// A document holding `bytes` as an image claiming `width` × `height` pixels, a tenth of a
+/// millimetre each, selected: what another program may write where File › Place would refuse the
+/// file. `None` when the document refuses to hold it.
+fn holding(bytes: &[u8], width: u32, height: u32) -> Option<Session> {
+    held(bytes, width, height, false)
+}
+
+/// [`holding`], the image linked to a file that is missing (`missing`): the document keeps only
+/// its preview, `bytes`.
+fn held(bytes: &[u8], width: u32, height: u32, missing: bool) -> Option<Session> {
+    use vectorcraft_doc::{ImageBlob, ImageObject, LinkInfo, Node, NodeKind};
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 600, "height": 600, "artboards": 1})).unwrap();
+    let bytes = std::sync::Arc::new(bytes.to_vec());
+    let placed = s.edit("place", |d, sel| {
+        let proxy = missing.then(|| bytes.clone());
+        d.images.insert("picture".into(), ImageBlob { mime: "image/png".into(), bytes: bytes.clone(), proxy });
+        let id = d.alloc_id();
+        let xf = vectorcraft_geom::Affine::scale(0.1 * PT_PER_MM);
+        let link = missing.then(|| LinkInfo::new("/nowhere/picture.png"));
+        let image = ImageObject { key: "picture".into(), width, height, xf, link, placement: Default::default(), pixels: None };
+        d.insert(d.default_layer(), 0, Node::new(id, NodeKind::Image(Box::new(image))))?;
+        sel.set([id]);
+        Ok(())
+    });
+    placed.ok().map(|_| s)
+}
+
+/// Files that lie, each with its own answer. File › Place takes a PNG claiming a million pixels a
+/// side, which the command refuses as more than Image Trace takes, and a JPEG cut short, digitized
+/// as far as it decodes. What File › Place refuses a document may still hold (another program
+/// wrote it): one claiming no pixels, and a PNG cut short, the command refuses with why; one
+/// claiming another size than its pixels is answered; one claiming more pixels than a document
+/// holds, the document refuses.
 #[test]
-fn files_that_lie_are_refused() {
-    for (w, h) in [(u32::MAX, u32::MAX), (1 << 20, 1 << 20), (1, u32::MAX), (0, 10)] {
-        if let Some(mut s) = placed("claims.png", &png_claiming(w, h)) {
-            assert!(digitized(&mut s, json!({})).is_err(), "{w} × {h}");
-        }
-    }
-    let png = logo(200, 100).encode_png();
+fn files_that_lie_are_answered_each_with_its_reason() {
+    let mut s = placed("claims.png", &png_claiming(1 << 20, 1 << 20)).expect("File › Place takes it");
+    let why = digitized(&mut s, json!({"width": 100})).unwrap_err();
+    assert!(why.contains("more than Image Trace takes"), "{why}");
     let jpg = jpeg(&logo(200, 100));
-    for (name, bytes) in [("cut.png", &png[..png.len() / 2]), ("cut.jpg", &jpg[..jpg.len() / 2]), ("cut.png", &png[..40])] {
-        if let Some(mut s) = placed(name, bytes) {
-            let _ = digitized(&mut s, json!({}));
+    let mut s = placed("cut.jpg", &jpg[..jpg.len() / 2]).expect("File › Place takes it");
+    digitized(&mut s, json!({})).unwrap();
+    let png = logo(200, 100).encode_png();
+    for (name, bytes, w, h, said) in [
+        ("empty.png", png_claiming(0, 10), 0, 10, "the image has no pixels"),
+        ("cut.png", png[..png.len() / 2].to_vec(), 200, 100, "could not decode image"),
+        ("cut.png", png[..40].to_vec(), 200, 100, "could not decode image"),
+    ] {
+        assert!(placed(name, &bytes).is_none(), "{name}: File › Place refuses it");
+        let why = digitized(&mut holding(&bytes, w, h).unwrap(), json!({})).unwrap_err();
+        assert!(why.contains(said), "{name}: {why}");
+    }
+    digitized(&mut holding(&png, 5, 5).unwrap(), json!({})).unwrap();
+    for (w, h) in [(u32::MAX, u32::MAX), (1, u32::MAX)] {
+        assert!(placed("claims.png", &png_claiming(w, h)).is_none() && holding(&png_claiming(w, h), w, h).is_none(), "{w} × {h}");
+    }
+}
+
+/// Each cap is reached through the command with its own reason and what changes it: noise of 800
+/// pixels a side traces as more shapes than the trace may make (250,000), of 1,200 a side as more
+/// anchor points (2,000,000); more areas than a design is made of is the next test's.
+#[test]
+fn each_cap_is_reached_with_its_own_reason() {
+    for (side, why, advice) in
+        [(800u32, "shapes, more than 250000", "lower `colors`"), (1200, "more than 2000000 anchor points", "raise `smoothing`")]
+    {
+        let mut s = placed("noise.png", &noise(side, side).encode_png()).unwrap();
+        let said = digitized(&mut s, json!({"width": f64::from(side) / 10.0, "colors": 16, "minArea": 0, "smoothing": 0})).unwrap_err();
+        assert!(said.contains(why) && said.contains(advice), "{side} pixels a side: {said}");
+    }
+}
+
+/// Junk parameters on broken images, as the command sweep's image tests give them: on a JPEG cut
+/// short, a PNG claiming a million pixels a side, a PNG cut short, one claiming no pixels and a
+/// linked file that is missing, each answered or refused with why, never a panic.
+#[test]
+fn junk_params_on_broken_images_are_answered() {
+    let jpg = jpeg(&logo(200, 100));
+    let png = logo(200, 100).encode_png();
+    let params = [
+        json!({}),
+        json!({"id": u64::MAX, "dryRun": true}),
+        json!({"dryRun": 1, "width": 1e308, "crop": [0, 0, u32::MAX, u32::MAX]}),
+        json!({"fit": [f64::NAN, -1], "colors": 1e308, "minArea": -1, "smoothing": "smooth"}),
+        json!({"colorChoices": [{"color": "#zzzzzz", "thread": {"palette": "pec", "index": u64::MAX}}, null, 5]}),
+        json!({"crop": [10, 10, 5, 5], "at": [1e308, f64::NAN], "overlap": 1e308, "mode": "photo", "background": [1]}),
+        json!({"offset": u64::MAX, "limit": u64::MAX, "regions": "yes", "outlines": [true], "height": -1e-300}),
+        json!({"dryRun": true, "width": 1e-9, "overlap": 2, "minArea": 50, "colors": 2}),
+        json!({"dryRun": true, "crop": [0, 0, 1, 1], "at": [0, 0], "regions": true, "outlines": true, "limit": 0}),
+    ];
+    for p in &params {
+        let sessions = [
+            ("cut.jpg", placed("cut.jpg", &jpg[..jpg.len() / 2])),
+            ("claims.png", placed("claims.png", &png_claiming(1 << 20, 1 << 20))),
+            ("cut.png", holding(&png[..png.len() / 2], 200, 100)),
+            ("empty.png", holding(&png_claiming(0, 10), 0, 10)),
+            ("missing.png", held(&png, 200, 100, true)),
+        ];
+        for (name, s) in sessions {
+            let mut s = s.unwrap_or_else(|| panic!("{name}"));
+            if let Err(e) = no_panic(s.execute("embroidery.digitizeImage", p)) {
+                assert!(e.to_string().len() > "embroidery.digitizeImage: ".len(), "{name} {p}: a refusal says why: {e}");
+            }
         }
     }
+}
+
+/// Many islands, many slivers and many holes are answered, Create making what the dry run said:
+/// 400 dots in a field, 160 bands anti-aliasing paints between stripes, and a field round 400 holes
+/// of transparency (white inside it is sewn: the background is only what touches the image's
+/// edge).
+#[test]
+fn many_islands_slivers_and_holes_are_answered() {
+    let dots = Raster::from_fn(600, 600, |x, y| if (x % 30) >= 10 && (x % 30) < 22 && (y % 30) >= 10 && (y % 30) < 22 { ORANGE } else { NAVY });
+    let r = digitized(&mut placed("dots.png", &dots.encode_png()).unwrap(), json!({"colors": 2, "background": "none"})).unwrap();
+    assert!(r["areaCount"].as_u64().unwrap() > 400, "{}", r["areaCount"]);
+    let stripes = Raster::from_fn(800, 300, |x, _| match x % 10 {
+        0 => [130, 85, 70, 255],
+        1..5 => ORANGE,
+        5 => [130, 85, 70, 255],
+        _ => NAVY,
+    });
+    let r = digitized(&mut placed("stripes.png", &stripes.encode_png()).unwrap(), json!({"colors": 3, "background": "none"})).unwrap();
+    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "bandsJoined"), "{}", r["warnings"]);
+    let holes = Raster::from_fn(600, 600, |x, y| {
+        let edge = !(20..580).contains(&x) || !(20..580).contains(&y);
+        if edge || ((x % 28) >= 10 && (x % 28) < 20 && (y % 28) >= 10 && (y % 28) < 20) { CLEAR } else { NAVY }
+    });
+    let r = digitized(&mut placed("holes.png", &holes.encode_png()).unwrap(), json!({"colors": 2})).unwrap();
+    assert_eq!(r["areaCount"], json!(1), "one field, its holes transparent: {}", r["areaCount"]);
 }
 
 /// Noise makes more areas than a design is made of: refused by that cap, with what changes it.

@@ -6626,10 +6626,32 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
   names none, the background's aside, so the colours it took are sewn as their own). An area's `area` is its number in
   this reply's sewing order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its
-  colour. `regions` (with `regions: true`) is each working pixel's area number, two bytes little-endian in base64;
-  `outline` (with `outlines: true`) an area's shape as sewn, an SVG path in millimetres from the document's origin. An
-  interface runs it off its thread through the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`,
-  `Session::apply_digitize_image`), which a document changed meanwhile refuses.
+  colour. The rest, in full: `created` is the group made, the layer holding the image, and how many objects and colour
+  blocks; `image.pixels` is the image's own size, `decoded` what was read of it (smaller only past 64 megapixels),
+  `crop` the pixels digitized, `worked` the working copy's size, `pxPerMm` its resolution and `limitedBy` what held it
+  down (`"grid"`: 10 a millimetre, `"side"`: 1,500 pixels, `"image"`: its own pixels), `size` the design's
+  millimetres, `scale` the design against the image as placed, `bounds` where it lies (millimetres from the document's
+  origin, y down), and `background` `{from: "corners"|"transparency"|"given"|"none", color}`; each of `colors` gives
+  the image's colour, whether it is the background's (touching the image's edge, never sewn) and sewn, its `job`, its
+  `thread` `{palette, index, name, color, deltaE, mismatch}` (null for the background), the `reason` (`own`, `chosen`,
+  `nearest`, `nextFree` with the colour that took its nearest in `by`, `shared`, `merged`), the five nearest
+  `alternatives` after its own, its `area` (mm²), `areaCount`, `share` of the image and `sewnShare` of what is sewn
+  (percent), `mergedInto` and the `choice` it took; each of `areas` gives `thread`, `kind` (`"fill"`, or `"line"` for
+  a thin line kept below the smallest area), `sewn`, `size` `{area, width, height}` (mm², mm), `widest` (its widest
+  inscribed width, mm), `box` `[left, top, right, bottom]` (mm), the area it lies `inside` alone and whether it is
+  `sewnOver` that one, how many smaller areas `joined` it, what it `touches` `[{area, edge, under}]` (the edge in mm;
+  `under`: that one is sewn before it), the areas it is `grownUnder`, its `outline` (with `outlines: true`) and its
+  `order` `{taken: "notSewn"|"sameThread"|"newThread", after: [{area, because: "detail"|"inside"|"larger"}]}`. The
+  areas are listed from `offset` (default 0), at most `limit` (0 to 10,000, default 1,000) and at most 20,000 path
+  elements of outlines a reply: `truncated` says more follow. `at: [x, y]` is a point in the image's own pixels, and
+  `areaAt` the area there (null: none, outside the image or the crop, or no `at`). `regions` (with `regions: true`) is
+  `{width, height, base64}`: each working pixel's area number (0 for none), two bytes little-endian. `traced` is what
+  the trace made before the rules (`{paths, colors}`), `joined` and `leftOut` how many specks joined an area or were
+  left out, `doubledArea` the mm² the overlap sews twice, and `timings` each stage's milliseconds (`{image, trace,
+  areas, shapes, objects, stitches}`, null on the web). `outline` (with `outlines: true`) is an area's shape as sewn,
+  an SVG path in millimetres from the document's origin, to hundredths. An interface runs it off its thread through
+  the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`, `Session::apply_digitize_image`), which a
+  document changed meanwhile refuses.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

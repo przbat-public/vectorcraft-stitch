@@ -354,6 +354,25 @@ fn at_and_the_region_map_follow_the_crop() {
     assert_eq!(cropped(json!([50, 50]))["areaAt"], Value::Null, "beside the crop");
 }
 
+/// How far across a kept thin line its needle points may spread (millimetres): half of the line's
+/// 0.6 mm, so that a line sewn as a fill that narrow, its rows across it, fails.
+const ALONG_THE_MIDDLE_MM: f64 = 0.2;
+
+/// A thin line kept below the smallest area is sewn as the planner sews any part that narrow: a
+/// running line along its middle, every needle point within [`ALONG_THE_MIDDLE_MM`] across a navy
+/// line 0.6 mm wide and 20 mm long.
+#[test]
+fn a_kept_thin_line_is_sewn_along_its_middle() {
+    let picture = tr::Raster::from_fn(260, 100, |x, y| if inside(x, y, [30, 47, 230, 53]) { NAVY } else { CLEAR });
+    let mut s = placed(&picture);
+    let r = s.execute("embroidery.digitizeImage", &json!({"colors": 2})).unwrap();
+    assert_eq!(areas_of(&r, NAVY)[0]["kind"], json!("line"));
+    let st = s.execute("embroidery.stitches", &json!({"kinds": ["stitch"]})).unwrap();
+    let ys: Vec<f64> = st["records"].as_array().unwrap().iter().map(|r| r["at"][1].as_f64().unwrap()).collect();
+    let spread = ys.iter().copied().fold(f64::MIN, f64::max) - ys.iter().copied().fold(f64::MAX, f64::min);
+    assert!(!ys.is_empty() && spread < ALONG_THE_MIDDLE_MM, "{} needle points across {spread} mm", ys.len());
+}
+
 /// A thin band along an edge in nearly its neighbour's colour is what a picture leaves round a
 /// sharp edge, not a line: a darker red ring 0.2 mm wide round a red square joins the red, whatever
 /// its size, while a navy line 0.5 mm wide stays a line.

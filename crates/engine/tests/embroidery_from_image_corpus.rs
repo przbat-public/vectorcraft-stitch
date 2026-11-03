@@ -16,7 +16,7 @@
 //!   are measured by thread);
 //! - the needle points are [`STITCHES_RANGE`] times the vector path's (the bullseye's art stacks
 //!   whole discs, which the vector path sews one over another and the image path as abutting
-//!   rings: 0.68 times);
+//!   rings: 0.69 times);
 //! - the fabric that shows between two of the art's colours (pixels at least 0.5 mm inside its
 //!   silhouette, within 0.3 mm of flat pixels of both, that no stitch reaches) is at most the
 //!   vector path's plus [`FABRIC_MARGIN_MM2`], with the overlap; the figure with none is printed
@@ -54,20 +54,21 @@ use embroidery_common::images::{Art, Sewn, art_picture, art_picture_at, cover, p
 use embroidery_common::{DESIGNS, artwork, corpus, run};
 
 /// How much lower than the vector path's the image path's silhouette IoU may be: 0.02, the
-/// largest gap measured before the overlap was 0.013 (the video game), with room for the
-/// renderer's anti-aliasing to differ between systems.
+/// largest gap measured before any code was 0.013 (the video game, 2026-11-02) and is 0.011 now
+/// (the fox, 2026-11-03), with room for the renderer's anti-aliasing to differ between systems.
 const IOU_MARGIN: f64 = 0.02;
 
 /// How much lower than the vector path's its colour agreement may be: 0.02, the largest gap
-/// measured 0.011.
+/// measured before any code was 0.011 (2026-11-02) and is 0.009 now (the bullseye, 2026-11-03).
 const AGREEMENT_MARGIN: f64 = 0.02;
 
 /// The needle points the image path may sew, as a share of the vector path's: the bullseye's
-/// abutting rings sew 0.68 of its stacked discs; an overlap of 0.4 mm adds a little elsewhere.
+/// abutting rings sew 0.69 of its stacked discs with the overlap (0.68 before it, 2026-11-02); an
+/// overlap of 0.4 mm adds a little elsewhere.
 const STITCHES_RANGE: (f64, f64) = (0.6, 1.4);
 
-/// How far the threads may number from the person's: the art's colours and the person's threads
-/// differ by one at most on every design.
+/// How far the threads may number from the person's: the art's colours and the person's threads,
+/// each counted once, differ by one at most on every design.
 const THREADS_OFF: usize = 1;
 
 /// The fewest colours the command takes: a design of one colour is asked for two, the

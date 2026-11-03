@@ -360,6 +360,36 @@ fn a_choice_at_the_line_as_shown_is_taken() {
     assert_eq!((&row["choice"], &r["unusedChoices"]), (&json!(0), &json!([])), "{row}");
 }
 
+/// A background given by its colour is that colour where it touches the image's edge, never sewn,
+/// while a dot of it inside the art is sewn; one no traced colour comes near leaves every area
+/// sewn, with a warning.
+#[test]
+fn a_background_given_by_its_colour() {
+    let cream = [245, 240, 220, 255];
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if (90..110).contains(&x) && (90..110).contains(&y) {
+            cream
+        } else if (40..160).contains(&x) && (40..160).contains(&y) {
+            RED
+        } else {
+            cream
+        }
+    });
+    let mut s = placed(&picture);
+    let hex4 = |c: [u8; 4]| super::super::hex([c[0], c[1], c[2]]);
+    let r = dry(&mut s, json!({"colors": 2, "background": hex4(cream)}));
+    let creams: Vec<&Value> = r["colors"].as_array().unwrap().iter().filter(|c| c["color"] == json!(hex4(cream))).collect();
+    assert_eq!(
+        creams.iter().map(|c| (&c["background"], &c["sewn"])).collect::<Vec<_>>(),
+        [(&json!(true), &json!(false)), (&json!(false), &json!(true))],
+        "{}",
+        r["colors"]
+    );
+    let r = dry(&mut s, json!({"colors": 2, "background": "#00ff00"}));
+    assert!(r["colors"].as_array().unwrap().iter().all(|c| c["background"] == json!(false)), "{}", r["colors"]);
+    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "noBackgroundColor"), "{}", r["warnings"]);
+}
+
 /// Merges follow each other to where they end: red merged into blue and blue into yellow are both
 /// sewn in yellow's thread, each saying it merged into yellow. A merge into a colour the image
 /// hasn't is no merge: the colour is sewn as its own, and the choice listed as doing nothing, with

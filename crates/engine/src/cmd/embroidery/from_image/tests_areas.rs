@@ -318,6 +318,42 @@ fn details_are_sewn_last() {
     assert_eq!(page["areas"][0]["area"], json!(2));
 }
 
+/// A page past the last area lists none and says none follow; `limit: 0` lists none and says more
+/// follow; the counts are whole either way.
+#[test]
+fn pages_past_the_end_and_of_none() {
+    let picture = tr::Raster::from_fn(300, 100, |x, _| match x / 100 {
+        0 => ORANGE,
+        1 => NAVY,
+        _ => GREEN,
+    });
+    let mut s = placed(&picture);
+    let all = dry(&mut s, json!({"colors": 3, "background": "none"}));
+    assert_eq!(all["areaCount"], json!(3));
+    let past = dry(&mut s, json!({"colors": 3, "background": "none", "offset": 3}));
+    assert_eq!((&past["areas"], &past["truncated"], &past["areaCount"]), (&json!([]), &json!(false), &json!(3)));
+    let none = dry(&mut s, json!({"colors": 3, "background": "none", "limit": 0}));
+    assert_eq!((&none["areas"], &none["truncated"], &none["areaCount"]), (&json!([]), &json!(true), &json!(3)));
+}
+
+/// `at` is a point in the image's own pixels, and the region map the working copy's: outside the
+/// image no area is under `at`; with a crop, a point in the crop finds its area, one beside the
+/// crop none, and the map is the crop's size.
+#[test]
+fn at_and_the_region_map_follow_the_crop() {
+    let picture = tr::Raster::from_fn(300, 100, |x, _| if x < 150 { ORANGE } else { NAVY });
+    let mut s = placed(&picture);
+    for at in [json!([-5, 10]), json!([400, 10]), json!([10, 1e9])] {
+        let r = dry(&mut s, json!({"colors": 2, "background": "none", "at": at}));
+        assert_eq!(r["areaAt"], Value::Null, "{at}");
+    }
+    let mut cropped = |at: Value| dry(&mut s, json!({"colors": 2, "background": "none", "crop": [150, 0, 300, 100], "at": at, "regions": true}));
+    let r = cropped(json!([250, 50]));
+    assert_eq!(r["areaAt"], areas_of(&r, NAVY)[0]["area"], "{}", r["areas"]);
+    assert_eq!((&r["regions"]["width"], &r["regions"]["height"]), (&json!(150), &json!(100)));
+    assert_eq!(cropped(json!([50, 50]))["areaAt"], Value::Null, "beside the crop");
+}
+
 /// A thin band along an edge in nearly its neighbour's colour is what a picture leaves round a
 /// sharp edge, not a line: a darker red ring 0.2 mm wide round a red square joins the red, whatever
 /// its size, while a navy line 0.5 mm wide stays a line.

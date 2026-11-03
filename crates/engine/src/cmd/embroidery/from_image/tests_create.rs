@@ -184,6 +184,20 @@ fn a_dry_run_answers_what_create_makes_beside_other_art() {
     assert!(stitches(&all) > stitches(&stats), "the rectangle sews too: {} against {}", all["stitches"], stats["stitches"]);
 }
 
+/// Create is one undo step, and it redoes: undone, the document is the one it was; redone, the one
+/// Create left.
+#[test]
+fn create_undoes_and_redoes() {
+    let (mut s, _) = placed_at(&picture(), (5.0, 5.0));
+    let before = vectorcraft_format::save(&doc(&s), false);
+    s.execute("embroidery.digitizeImage", &json!({"colors": 3})).unwrap();
+    let made = vectorcraft_format::save(&doc(&s), false);
+    s.execute("edit.undo", &json!({})).unwrap();
+    assert!(vectorcraft_format::save(&doc(&s), false) == before, "undone");
+    s.execute("edit.redo", &json!({})).unwrap();
+    assert!(vectorcraft_format::save(&doc(&s), false) == made, "redone");
+}
+
 /// A colour's job sets only what it changes: Fill sets its fill's narrow parts not to be satin, Don't
 /// sew sets its fill not to be sewn (its objects made, under the rest, and left out of the figures),
 /// Auto sets nothing.

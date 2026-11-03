@@ -311,6 +311,30 @@ fn an_island_sewn_over_leaves_no_hole() {
     assert!(orange["grownUnder"].as_array().unwrap().is_empty(), "nothing to grow under: it lies under the dot whole");
 }
 
+/// Two islands side by side in one hole of the area round them, neither filling it alone, are
+/// sewn over it all the same: the area made solid by joining them, as one island's hole is closed.
+#[test]
+fn two_islands_in_one_hole_are_sewn_over() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [90, 90, 100, 110]) {
+            NAVY
+        } else if inside(x, y, [100, 90, 110, 110]) {
+            GREEN
+        } else if inside(x, y, [20, 20, 180, 180]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3}));
+    for colour in [NAVY, GREEN] {
+        assert_eq!(shape_of(&r, colour).0["sewnOver"], json!(true), "{colour:?}");
+    }
+    let (_, _, area) = shape_of(&r, ORANGE);
+    assert!((area - 256.0).abs() < 0.5, "16 × 16 mm, solid: {area}");
+}
+
 /// An island whose colour is not sewn keeps its hole in the area round it, so that the fabric
 /// shows there, however narrow: a 2 mm dot left unsewn in a 16 mm square leaves 252 mm² sewn.
 #[test]

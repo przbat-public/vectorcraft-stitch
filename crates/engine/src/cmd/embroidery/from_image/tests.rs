@@ -504,3 +504,37 @@ fn a_missing_linked_file_is_refused() {
     let why = refused(&mut s, json!({"id": id.0}));
     assert!(why.contains("linked file is missing") && why.contains("links.relink"), "{why}");
 }
+
+/// A linked picture whose file was read is digitized as a placed one is: the same answer.
+#[test]
+fn a_linked_file_that_was_read_is_digitized() {
+    let picture = tr::Raster::from_fn(200, 100, |x, _| if x < 100 { [220, 30, 40, 255] } else { [30, 70, 200, 255] });
+    let answer = |link: Option<vectorcraft_doc::LinkInfo>| {
+        let mut s = blank();
+        let png = picture.encode_png();
+        s.edit("place", |d, sel| {
+            d.images.insert("logo".into(), ImageBlob::new("image/png", png));
+            let id = d.alloc_id();
+            let layer = d.default_layer();
+            let image = ImageObject {
+                key: "logo".into(),
+                width: 200,
+                height: 100,
+                xf: Affine::scale(0.1 * PT_PER_MM),
+                link,
+                placement: Default::default(),
+                pixels: None,
+            };
+            d.insert(layer, 0, Node::new(id, NodeKind::Image(Box::new(image))))?;
+            sel.set([id]);
+            Ok(())
+        })
+        .unwrap();
+        let mut r = dry(&mut s, json!({"colors": 2, "background": "none"}));
+        r.as_object_mut().unwrap().remove("timings");
+        r
+    };
+    let linked = answer(Some(vectorcraft_doc::LinkInfo::new("/pictures/logo.png")));
+    assert_eq!(linked["areaCount"], json!(2));
+    assert_eq!(linked, answer(None));
+}

@@ -23,6 +23,79 @@ use super::rules::{Area, AreaKind};
 /// How many times larger a neighbour must be for an area to be sewn after it: twice. An estimate.
 pub(super) const MUCH_LARGER: usize = 2;
 
+/// The side of the cells the areas ready to sew are kept in, by where their key points lie
+/// (working pixels): the nearest one to the last area sewn is looked for ring by ring of cells
+/// round it, not among every area of the thread. An estimate: a few cells cover a small design,
+/// some fifty a side the largest working copy.
+const CELL_PX: u32 = 32;
+
+/// The areas ready to sew of each thread, by the cell their key point lies in ([`CELL_PX`]).
+#[derive(Default)]
+struct ReadyCells {
+    cells: BTreeMap<(Option<usize>, u32, u32), BTreeSet<usize>>,
+    /// The farthest cell any area lies in, along either axis.
+    reach: u32,
+}
+
+impl ReadyCells {
+    fn cell((x, y): (u32, u32)) -> (u32, u32) {
+        (x / CELL_PX, y / CELL_PX)
+    }
+
+    fn insert(&mut self, thread: Option<usize>, at: (u32, u32), a: usize) {
+        let (cx, cy) = Self::cell(at);
+        self.reach = self.reach.max(cx).max(cy);
+        self.cells.entry((thread, cx, cy)).or_default().insert(a);
+    }
+
+    fn remove(&mut self, thread: Option<usize>, at: (u32, u32), a: usize) {
+        let (cx, cy) = Self::cell(at);
+        if let Some(set) = self.cells.get_mut(&(thread, cx, cy)) {
+            set.remove(&a);
+            if set.is_empty() {
+                self.cells.remove(&(thread, cx, cy));
+            }
+        }
+    }
+
+    /// Of `thread`'s areas, the one whose key point (`at` of each) lies nearest `from`, the first by
+    /// number of those as near: ring by ring of cells round `from`'s, until no ring farther can
+    /// hold one nearer.
+    fn nearest(&self, thread: Option<usize>, from: (u32, u32), at: impl Fn(usize) -> (u32, u32)) -> Option<usize> {
+        let (cx, cy) = Self::cell(from);
+        let distance = |a: usize| {
+            let (x, y) = at(a);
+            let (dx, dy) = (i64::from(x) - i64::from(from.0), i64::from(y) - i64::from(from.1));
+            (dx * dx + dy * dy).unsigned_abs()
+        };
+        let mut best: Option<(u64, usize)> = None;
+        for ring in 0..=self.reach.saturating_add(1) {
+            // Every cell of this ring and beyond lies at least `ring - 1` cells from `from`'s cell.
+            let near = u64::from(ring.saturating_sub(1)) * u64::from(CELL_PX);
+            if best.is_some_and(|(d, _)| near * near > d) {
+                break;
+            }
+            let (x0, x1) = (cx.saturating_sub(ring), cx.saturating_add(ring));
+            let (y0, y1) = (cy.saturating_sub(ring), cy.saturating_add(ring));
+            for y in y0..=y1 {
+                for x in x0..=x1 {
+                    // The ring's own cells: those `ring` cells away along either axis.
+                    if x.abs_diff(cx).max(y.abs_diff(cy)) != ring {
+                        continue;
+                    }
+                    for &a in self.cells.get(&(thread, x, y)).into_iter().flatten() {
+                        let d = distance(a);
+                        if best.is_none_or(|(bd, ba)| (d, a) < (bd, ba)) {
+                            best = Some((d, a));
+                        }
+                    }
+                }
+            }
+        }
+        best.map(|(_, a)| a)
+    }
+}
+
 /// Why an area must come after another.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum After {
@@ -152,35 +225,28 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> c
         }
     }
     // The areas ready to be sewn, by key and by thread.
+    let at = |a: usize| regions.areas.get(a).map_or((0, 0), |s| s.deepest);
     let mut ready = BTreeSet::new();
-    let mut ready_by_thread: BTreeMap<Option<usize>, BTreeSet<usize>> = BTreeMap::new();
+    let mut cells = ReadyCells::default();
     for a in (0..n).filter(|&a| sewn(a) && waiting[a] == 0) {
         ready.insert(key(a));
-        ready_by_thread.entry(thread(a)).or_default().insert(a);
+        cells.insert(thread(a), at(a), a);
     }
     let mut current: Option<usize> = None;
     let mut last: Option<(u32, u32)> = None;
     // The keys agree with every rule kept, so an area is ready until every one is sewn.
     while let Some(&(.., first)) = ready.first() {
         vectorcraft_doc::cancel::check()?;
-        let distance = |a: usize| {
-            let (x, y) = regions.areas.get(a).map_or((0, 0), |s| s.deepest);
-            last.map_or(0u64, |(lx, ly)| {
-                let (dx, dy) = (i64::from(x) - i64::from(lx), i64::from(y) - i64::from(ly));
-                (dx * dx + dy * dy).unsigned_abs()
-            })
-        };
-        let same = current.and_then(|_| ready_by_thread.get(&current)).and_then(|r| r.iter().copied().min_by_key(|&a| (distance(a), a)));
+        // The current thread's nearest area to the last one sewn (none before the first).
+        let same = current.and(last).and_then(|from| cells.nearest(current, from, at));
         let (pick, how) = match same {
             Some(a) => (a, Taken::SameThread),
             None => (first, Taken::NewThread),
         };
         ready.remove(&key(pick));
-        if let Some(r) = ready_by_thread.get_mut(&thread(pick)) {
-            r.remove(&pick);
-        }
+        cells.remove(thread(pick), at(pick), pick);
         current = thread(pick);
-        last = regions.areas.get(pick).map(|s| s.deepest);
+        last = Some(at(pick));
         taken[pick] = Some(how);
         order.push(pick);
         for &a in waited_on.get(pick).map_or(&[][..], Vec::as_slice) {
@@ -188,7 +254,7 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> c
                 *w = w.saturating_sub(1);
                 if *w == 0 {
                     ready.insert(key(a));
-                    ready_by_thread.entry(thread(a)).or_default().insert(a);
+                    cells.insert(thread(a), at(a), a);
                 }
             }
         }
@@ -208,4 +274,42 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> c
         })
         .collect();
     Ok(Order { sewn: order, placed })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ReadyCells;
+
+    /// The cells find the area every scan of the ready areas finds: of the thread's, the nearest
+    /// to the point asked, the first by number of those as near; random points (many on the same
+    /// spot, ties), two threads, areas taken out as they are sewn.
+    #[test]
+    fn the_cells_find_the_nearest_as_a_scan_does() {
+        let mut seed = 0x0dde_c311u64;
+        let mut next = |n: u32| {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed % u64::from(n)) as u32
+        };
+        let points: Vec<(u32, u32)> = (0..400).map(|_| (next(300) / 7 * 7, next(200) / 7 * 7)).collect();
+        let threads: Vec<Option<usize>> = (0..400).map(|_| Some((next(2)) as usize)).collect();
+        let mut cells = ReadyCells::default();
+        let mut ready: Vec<usize> = (0..400).collect();
+        for &a in &ready {
+            cells.insert(threads[a], points[a], a);
+        }
+        let at = |a: usize| points[a];
+        while !ready.is_empty() {
+            let (from, thread) = ((next(320), next(220)), Some(next(2) as usize));
+            let scan = ready.iter().copied().filter(|&a| threads[a] == thread).min_by_key(|&a| {
+                let (dx, dy) = (i64::from(points[a].0) - i64::from(from.0), i64::from(points[a].1) - i64::from(from.1));
+                ((dx * dx + dy * dy).unsigned_abs(), a)
+            });
+            assert_eq!(cells.nearest(thread, from, at), scan, "from {from:?}");
+            let taken = scan.unwrap_or_else(|| ready[0]);
+            cells.remove(threads[taken], points[taken], taken);
+            ready.retain(|&a| a != taken);
+        }
+    }
 }

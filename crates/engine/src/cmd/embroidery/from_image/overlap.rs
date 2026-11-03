@@ -40,12 +40,15 @@ pub(super) const MAX_OVERLAP_EDGES: usize = 2_000;
 pub(super) struct Shapes {
     /// Each area's shape (working pixels), by its index; empty for the background's.
     pub(super) shapes: Vec<PathData>,
-    /// The edges each area grows under, by the indices of the areas sewn after it.
+    /// The areas each area was grown under, by the indices of the areas sewn after it: none where
+    /// nothing was grown (no overlap asked, the overlap left out, a strip that came to nothing, a
+    /// shape the path operations couldn't grow).
     pub(super) grown_under: Vec<Vec<usize>>,
-    /// How much the overlap adds (square working pixels): the area sewn twice.
+    /// How much the overlap added (square working pixels): the area sewn twice, of the strips
+    /// joined to the shapes.
     pub(super) doubled_px: f64,
-    /// Whether the overlap was left out (past [`MAX_OVERLAP_EDGES`]), and how many shapes the path
-    /// operations couldn't join or grow (each left as it was).
+    /// Whether an overlap asked for was left out (past [`MAX_OVERLAP_EDGES`]), and how many shapes
+    /// the path operations couldn't join or grow (each left as it was).
     pub(super) skipped: bool,
     pub(super) failed: usize,
 }
@@ -126,7 +129,7 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
         }
     }
     // The overlap: each sewn area under the sewn neighbours sewn after it.
-    let mut grown_under: Vec<Vec<usize>> = vec![Vec::new(); n];
+    let mut under: Vec<Vec<usize>> = vec![Vec::new(); n];
     for (b, placed) in order.placed.iter().enumerate() {
         if !sewn(b) {
             continue;
@@ -135,35 +138,39 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
             let sewn_over = areas.areas.get(b).is_some_and(|x| x.inside == Some(a) && x.sewn_over);
             if sewn(a)
                 && !sewn_over
-                && let Some(g) = grown_under.get_mut(a)
+                && let Some(g) = under.get_mut(a)
             {
                 g.push(b);
             }
         }
     }
-    let edges: usize = grown_under.iter().map(Vec::len).sum();
-    let skipped = edges > MAX_OVERLAP_EDGES;
+    let edges: usize = under.iter().map(Vec::len).sum();
+    let skipped = overlap_px > 0.0 && edges > MAX_OVERLAP_EDGES;
+    let mut grown_under: Vec<Vec<usize>> = vec![Vec::new(); n];
     let mut doubled_px = 0.0;
     if overlap_px > 0.0 && !skipped {
         for a in 0..n {
             vectorcraft_doc::cancel::check()?;
-            let Some(later) = grown_under.get(a).filter(|l| !l.is_empty()) else { continue };
+            let Some(later) = under.get(a).filter(|l| !l.is_empty()) else { continue };
             let Some(base) = own.get(a) else { continue };
             // The neighbours it grows under, by how far it reaches: as far as asked, or half as wide
             // as a thin one. Areas never overlap, so one strip reaches into all those of one width
             // at once, a path operation a width rather than a neighbour.
-            let mut by_width: BTreeMap<u64, PathData> = BTreeMap::new();
+            let mut by_width: BTreeMap<u64, (PathData, Vec<usize>)> = BTreeMap::new();
             for &b in later {
                 let (Some(into), Some(stats)) = (own.get(b), areas.regions.areas.get(b)) else { continue };
                 let width = overlap_px.min(stats.widest_px / 2.0);
-                by_width.entry(width.to_bits()).or_default().subpaths.extend(into.subpaths.iter().cloned());
+                let (paths, of) = by_width.entry(width.to_bits()).or_default();
+                paths.subpaths.extend(into.subpaths.iter().cloned());
+                of.push(b);
             }
-            let mut strips: Vec<PathData> = Vec::new();
-            for (width, into) in &by_width {
+            let (mut strips, mut reached, mut strip_px): (Vec<PathData>, Vec<usize>, f64) = (Vec::new(), Vec::new(), 0.0);
+            for (width, (into, of)) in &by_width {
                 let strip = trap_band(base, FillRule::NonZero, into, FillRule::NonZero, f64::from_bits(*width), SAME_BOTH_WAYS, PRECISION_PX);
                 if !strip.is_empty() {
-                    doubled_px += area(&strip);
+                    strip_px += area(&strip);
                     strips.push(strip);
+                    reached.extend(of);
                 }
             }
             if strips.is_empty() {
@@ -172,8 +179,14 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
             let Some(shape) = shapes.get(a) else { continue };
             let mut all: Vec<&PathData> = vec![shape];
             all.extend(strips.iter());
-            match (united(&all), shapes.get_mut(a)) {
-                (Some(grown), Some(slot)) => *slot = grown,
+            // Counted only once joined: a shape the path operations can't grow is sewn as it was.
+            match (united(&all), shapes.get_mut(a), grown_under.get_mut(a)) {
+                (Some(grown), Some(slot), Some(g)) => {
+                    *slot = grown;
+                    reached.sort_unstable();
+                    *g = reached;
+                    doubled_px += strip_px;
+                }
                 _ => failed += 1,
             }
         }

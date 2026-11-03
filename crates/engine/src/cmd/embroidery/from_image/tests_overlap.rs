@@ -87,10 +87,35 @@ fn the_colour_sewn_first_reaches_under_the_next() {
     // The strip along 10 mm of shared edge, 0.4 mm deep.
     assert!((r["doubledArea"].as_f64().unwrap() - 4.0).abs() < 0.1, "{}", r["doubledArea"]);
     let r = dry(&mut s, json!({"colors": 2, "overlap": 0}));
-    let (_, ob, _) = shape_of(&r, ORANGE);
+    let (orange, ob, _) = shape_of(&r, ORANGE);
     assert!((ob.x1 - 16.0).abs() < NEAR_MM, "edge to edge: {ob:?}");
-    assert_eq!(r["doubledArea"], json!(0.0));
+    assert_eq!((&orange["grownUnder"], &r["doubledArea"]), (&json!([]), &json!(0.0)), "nothing grown under");
 }
+
+/// Past the most edges the overlap grows along, an overlap asked for is left out with a warning,
+/// and nothing is listed as grown under; with no overlap asked, there is nothing to leave out and no
+/// warning. A checkerboard of 2 mm squares in two colours: 2,500 squares, the first colour's each
+/// touching four of the second's.
+#[test]
+fn the_edge_warning_comes_only_with_an_overlap_to_leave_out() {
+    let picture = tr::Raster::from_fn(1000, 1000, |x, y| if (x / 20 + y / 20) % 2 == 0 { ORANGE } else { NAVY });
+    let mut s = placed(&picture);
+    let run = |s: &mut Session, overlap: f64| {
+        let p = json!({"dryRun": true, "colors": 2, "background": "none", "overlap": overlap, "limit": MAX_LISTED});
+        s.execute("embroidery.digitizeImage", &p).unwrap_or_else(|e| panic!("{p}: {e}"))
+    };
+    let warned = |r: &Value| r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("edges"));
+    let grown = |r: &Value| r["areas"].as_array().unwrap().iter().any(|a| a["grownUnder"] != json!([]));
+    let asked = run(&mut s, 0.4);
+    assert_eq!(asked["areaCount"], json!(2500));
+    assert!(warned(&asked) && !grown(&asked), "{}", asked["warnings"]);
+    assert_eq!(asked["doubledArea"], json!(0.0));
+    let none = run(&mut s, 0.0);
+    assert!(!warned(&none) && !grown(&none), "{}", none["warnings"]);
+}
+
+/// The most areas a reply lists.
+const MAX_LISTED: usize = 10_000;
 
 /// The overlap never reaches the background or an area left unsewn, and reaches at most half way
 /// under a thin area: two fills on either side of a navy band 0.6 mm wide each reach 0.3 mm under

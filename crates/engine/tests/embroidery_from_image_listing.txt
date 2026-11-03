@@ -88,3 +88,48 @@ scan pes 0e852298b58037a6 3479
 scan pec dab050c1e67c52c4 3465
 scan jef 1ce616c630f392bf 1888
 scan vp3 25f562ad975d89ba 2166
+badge-logo reply 64a1843a7b2c3692
+badge-logo dst 88b284bbe2d2ee68 5039
+badge-logo tap c5f9a2a17a74c3b6 4527
+badge-logo t01 c5f9a2a17a74c3b6 4527
+badge-logo exp e31439ad28c3f118 3044
+badge-logo pes fd93c3afe4ed051e 5182
+badge-logo pec 5df1737e22ff48a0 5168
+badge-logo jef 3ac1ea4ac6b53695 3214
+badge-logo vp3 dcbb773b414de47b 3576
+badge-greys reply 96f6560118dbe618
+badge-greys dst 044fffa432d8eeb7 4889
+badge-greys tap 7baeff25834ef5ba 4377
+badge-greys t01 7baeff25834ef5ba 4377
+badge-greys exp 785ad02e6dd3bc15 2930
+badge-greys pes 64c0386408e57993 4391
+badge-greys pec 5fa688460af9ecb1 4377
+badge-greys jef 70678dc725288da0 3080
+badge-greys vp3 cac2ec192509766a 3316
+badge-jobs reply d66de55122e4c7b6
+badge-jobs dst 950fe0beff3b28bf 4451
+badge-jobs tap 64106c34a132a10d 3939
+badge-jobs t01 64106c34a132a10d 3939
+badge-jobs exp aa1454a4b9c28414 2654
+badge-jobs pes 02347d600e1ab84c 4565
+badge-jobs pec 6fe026f6234a6cc2 4551
+badge-jobs jef 1f22efb747d9eee2 2808
+badge-jobs vp3 3cee4cad249978a0 3140
+badge-crop reply f4ae2a214c7ca169
+badge-crop dst 4d63778170e240c9 3728
+badge-crop tap d3f801a7f25f50b5 3216
+badge-crop t01 d3f801a7f25f50b5 3216
+badge-crop exp ce44c9c5a786595c 2180
+badge-crop pes 4dea3159b459da10 4071
+badge-crop pec 4f5d7d321f3fdf1e 4057
+badge-crop jef 332dd90a0ff600a1 2358
+badge-crop vp3 0e7ea4a93d57ae8d 2714
+badge-resized reply f1259baece5758ff
+badge-resized dst d9b7abba606dbcf4 2249
+badge-resized tap b801de0078c31276 1737
+badge-resized t01 b801de0078c31276 1737
+badge-resized exp 759966f5f5d76ee2 1180
+badge-resized pes dffcce1df4f07589 3326
+badge-resized pec bc6a9afb04f6fe9b 3312
+badge-resized jef f14e1e0344a34391 1346
+badge-resized vp3 c625b72e8bdf7439 1704

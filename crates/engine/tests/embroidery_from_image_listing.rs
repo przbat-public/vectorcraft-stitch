@@ -8,7 +8,8 @@
 //! disc's two halves touching, on transparency; a letter O, its counter sewn white; specks of one
 //! to four pixels on a field; a sharp edge between navy and yellow, whose anti-aliasing is no third
 //! colour; two squares side by side at an overlap of 0, 0.2 and 0.4 mm; a logo on a cream scan
-//! lit unevenly.
+//! lit unevenly. The badge again in logo mode, in greys, with a colour sewn as Fill and one not
+//! sewn, cropped to its middle, and made 25 mm wide.
 //!
 //! - Every scene digitized twice gives the same bytes.
 //! - Every scene exports as recorded.
@@ -180,6 +181,8 @@ fn scenes() -> Vec<(&'static str, &'static str, Vec<u8>, Value)> {
         if logo { NAVY } else { [CREAM[0] - shade, CREAM[1] - shade, CREAM[2] - shade, 255] }
     });
     let badge = badge();
+    let hex = |c: [u8; 4]| format!("#{:02x}{:02x}{:02x}", c[0], c[1], c[2]);
+    let jobs = json!([{"color": hex(GOLD), "job": "fill"}, {"color": hex(RED), "job": "none"}]);
     vec![
         ("badge", "badge.png", badge.encode_png(), json!({"colors": 4})),
         ("badge-jpeg", "badge.jpg", jpeg(&badge), json!({"colors": 4})),
@@ -191,6 +194,11 @@ fn scenes() -> Vec<(&'static str, &'static str, Vec<u8>, Value)> {
         ("squares-0.2", "squares.png", squares.encode_png(), json!({"colors": 3, "overlap": 0.2})),
         ("squares-0.4", "squares.png", squares.encode_png(), json!({"colors": 3, "overlap": 0.4})),
         ("scan", "scan.png", scan.encode_png(), json!({"colors": 2})),
+        ("badge-logo", "badge.png", badge.encode_png(), json!({"colors": 4, "mode": "logo"})),
+        ("badge-greys", "badge.png", badge.encode_png(), json!({"colors": 3, "mode": "grayscale"})),
+        ("badge-jobs", "badge.png", badge.encode_png(), json!({"colors": 4, "colorChoices": jobs})),
+        ("badge-crop", "badge.png", badge.encode_png(), json!({"colors": 4, "crop": [100, 50, 300, 250]})),
+        ("badge-resized", "badge.png", badge.encode_png(), json!({"colors": 4, "width": 25})),
     ]
 }
 

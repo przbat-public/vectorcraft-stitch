@@ -5,7 +5,9 @@
 //! - every object Create makes is painted with a thread of the document's palette, and the threads
 //!   number no more than the colours asked;
 //! - the dry run's figures are Create's, and digitizing twice answers the same;
-//! - a larger smallest area never adds areas, and a larger overlap never sews less twice.
+//! - a larger smallest area never adds areas, either side of the trace's own noise cap;
+//! - what the overlap sews twice, measured from the outlines, is what the reply says, and a larger
+//!   overlap never sews less twice.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -22,6 +24,18 @@ const COLOURS: [[u8; 4]; 6] =
     [[29, 42, 107, 255], [232, 177, 0, 255], [210, 32, 48, 255], [31, 138, 60, 255], [240, 122, 26, 255], [126, 200, 232, 255]];
 const WHITE: [u8; 4] = [255, 255, 255, 255];
 const CLEAR: [u8; 4] = [0, 0, 0, 0];
+
+/// The smallest areas tried in pairs, the smaller and the larger (square millimetres): either side
+/// of the trace's own noise cap, a thread's footprint (0.16 mm²), below which the trace keeps what
+/// the rules then join.
+const MIN_AREAS: [f64; 7] = [0.05, 0.1, 0.16, 0.25, 0.5, 1.0, 4.0];
+
+/// How far a vertex of an outline may move when the reply rounds it to hundredths of a millimetre
+/// (millimetres): half a hundredth either way, along both axes.
+const ROUNDED_MM: f64 = 0.005 * std::f64::consts::SQRT_2;
+
+/// The most areas a reply lists.
+const LISTED: u64 = 10_000;
 
 /// A shape of a picture: a rectangle or a disc, its box as shares of the picture, and its colour.
 #[derive(Clone, Debug)]
@@ -47,6 +61,11 @@ struct Picture {
     px_per_mm: f64,
     on_white: bool,
     shapes: Vec<Shape>,
+}
+
+/// A pair of smallest areas from [`MIN_AREAS`], the smaller first.
+fn arb_min_areas() -> impl Strategy<Value = (f64, f64)> {
+    (0..MIN_AREAS.len(), 0..MIN_AREAS.len()).prop_map(|(i, j)| (MIN_AREAS[i.min(j)], MIN_AREAS[i.max(j)]))
 }
 
 fn arb_picture() -> impl Strategy<Value = Picture> {
@@ -105,6 +124,14 @@ fn dry(s: &mut Session, params: &Value) -> Value {
     r
 }
 
+/// The outlines of reply `r`'s areas, measured: their areas added (square millimetres), and their
+/// lengths added (millimetres).
+fn outlines_measured(r: &Value) -> (f64, f64) {
+    use vectorcraft_geom::kurbo::{BezPath, Shape};
+    let outlines = r["areas"].as_array().unwrap().iter().filter_map(|a| a["outline"].as_str());
+    outlines.map(|d| BezPath::from_svg(d).unwrap()).fold((0.0, 0.0), |(area, length), p| (area + p.area().abs(), length + p.perimeter(1e-3)))
+}
+
 /// The fill colours of every object in `s`'s document, `#rrggbb`.
 fn fills(s: &Session) -> Vec<String> {
     let doc = s.doc().unwrap().doc.clone();
@@ -122,10 +149,10 @@ fn fills(s: &Session) -> Vec<String> {
 }
 
 proptest! {
-    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(12))]
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(24))]
 
     #[test]
-    fn random_pictures_digitize_by_the_rules(picture in arb_picture()) {
+    fn random_pictures_digitize_by_the_rules(picture in arb_picture(), (small, large) in arb_min_areas()) {
         let mut s = picture.placed();
         let colors = picture.colours().max(2) + 1;
         let params = json!({"colors": colors});
@@ -136,11 +163,25 @@ proptest! {
             prop_assert!(a["size"]["area"].as_f64().unwrap() >= min_area || a["kind"] == json!("line"), "{}", a);
         }
         prop_assert!(answered["colorCount"].as_u64().unwrap() as usize <= colors);
-        // Larger thresholds: never more areas; a larger overlap never sews less twice.
-        let fewer = dry(&mut s, &json!({"colors": colors, "minArea": min_area * 4.0}));
-        prop_assert!(fewer["areaCount"].as_u64() <= answered["areaCount"].as_u64(), "{} > {}", fewer["areaCount"], answered["areaCount"]);
-        let less = dry(&mut s, &json!({"colors": colors, "overlap": 0.2}));
-        prop_assert!(less["doubledArea"].as_f64() <= answered["doubledArea"].as_f64(), "{} > {}", less["doubledArea"], answered["doubledArea"]);
+        // A larger smallest area never adds areas.
+        let mut count = |min: f64| dry(&mut s, &json!({"colors": colors, "minArea": min}))["areaCount"].as_u64().unwrap();
+        let (more, fewer) = (count(small), count(large));
+        prop_assert!(fewer <= more, "{} mm² makes {} areas, {} mm² {}", large, fewer, small, more);
+        // What the overlap sews twice, from the outlines: the areas' own shapes tile the picture,
+        // so what their outlines cover past that is what the strips added.
+        let mut measured = |overlap: f64| {
+            let r = dry(&mut s, &json!({"colors": colors, "overlap": overlap, "outlines": true, "limit": LISTED}));
+            let (area, length) = outlines_measured(&r);
+            (area, length, r["doubledArea"].as_f64().unwrap())
+        };
+        let (none, none_length, _) = measured(0.0);
+        let (thin, thin_length, thin_said) = measured(0.2);
+        let (asked, asked_length, asked_said) = measured(0.4);
+        // The outlines' rounding moves each area by at most its length times a vertex's move.
+        let slack = |length: f64| (length + none_length) * ROUNDED_MM;
+        prop_assert!(((thin - none) - thin_said).abs() <= slack(thin_length), "0.2 mm sews {} mm² twice, the reply says {}", thin - none, thin_said);
+        prop_assert!(((asked - none) - asked_said).abs() <= slack(asked_length), "0.4 mm sews {} mm² twice, the reply says {}", asked - none, asked_said);
+        prop_assert!(thin <= asked + slack(asked_length), "0.2 mm sews {} mm² twice, 0.4 mm {}", thin - none, asked - none);
         if answered["areaCount"] == json!(0) {
             return Ok(());
         }

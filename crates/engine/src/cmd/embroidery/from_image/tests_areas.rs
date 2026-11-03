@@ -54,6 +54,20 @@ fn inside(x: u32, y: u32, [x0, y0, x1, y1]: [u32; 4]) -> bool {
     (x0..x1).contains(&x) && (y0..y1).contains(&y)
 }
 
+/// An area of exactly the smallest area stays, and one a row of pixels smaller joins: navy squares
+/// of 10 × 10 pixels (1.00 mm²) and 10 × 9 (0.90 mm²) in an orange field, the smallest area 1 mm².
+#[test]
+fn an_area_of_exactly_the_smallest_area_stays() {
+    let picture =
+        tr::Raster::from_fn(200, 100, |x, y| if inside(x, y, [40, 40, 50, 50]) || inside(x, y, [120, 40, 130, 49]) { NAVY } else { ORANGE });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 2, "background": "none", "minArea": 1.0}));
+    let navy = areas_of(&r, NAVY);
+    assert_eq!(navy.len(), 1, "{}", r["areas"]);
+    assert_eq!(navy[0]["size"]["area"], json!(1.0), "{}", navy[0]);
+    assert_eq!(r["joined"], json!(1));
+}
+
 /// Specks join the area round them, smallest first, while they are under the smallest area (1 mm²
 /// by default, 100 pixels here): of navy squares of 0.49, 0.81, 1.21 and 2.25 mm² in an orange
 /// field, the two larger stay. On transparency, with nothing to join, a speck is left out.

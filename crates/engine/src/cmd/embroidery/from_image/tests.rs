@@ -384,3 +384,34 @@ fn the_image_scaled_past_the_canvas_is_refused() {
         assert!(why.contains("past the canvas"), "{why}");
     }
 }
+
+/// A linked picture whose file is missing is refused, asking for it to be relinked, rather than
+/// digitized from the preview the document keeps of it.
+#[test]
+fn a_missing_linked_file_is_refused() {
+    let mut s = blank();
+    let preview = flat(256, 171, [20, 40, 120, 255]).encode_png();
+    let preview = std::sync::Arc::new(preview);
+    let id = s
+        .edit("place", |d, sel| {
+            d.images.insert("logo".into(), ImageBlob { mime: "image/png".into(), bytes: preview.clone(), proxy: Some(preview.clone()) });
+            let id = d.alloc_id();
+            let layer = d.default_layer();
+            let link = Some(vectorcraft_doc::LinkInfo::new("/nowhere/logo.png"));
+            let image = ImageObject {
+                key: "logo".into(),
+                width: 3000,
+                height: 2000,
+                xf: Affine::scale(0.1 * PT_PER_MM),
+                link,
+                placement: Default::default(),
+                pixels: None,
+            };
+            d.insert(layer, 0, Node::new(id, NodeKind::Image(Box::new(image))))?;
+            sel.set([id]);
+            Ok(id)
+        })
+        .unwrap();
+    let why = refused(&mut s, json!({"id": id.0}));
+    assert!(why.contains("linked file is missing") && why.contains("links.relink"), "{why}");
+}

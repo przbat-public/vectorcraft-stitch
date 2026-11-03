@@ -543,8 +543,14 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
     };
     let (target, image) = target(s, &o)?;
     editable(st, target)?;
-    let bytes =
-        st.doc.images.get(&image.key).map(|b| Arc::clone(&b.bytes)).ok_or_else(|| bad(C, format!("the image's data `{}` is missing", image.key)))?;
+    let blob = st.doc.images.get(&image.key).ok_or_else(|| bad(C, format!("the image's data `{}` is missing", image.key)))?;
+    // While a linked file can't be read, the document holds only its preview, a few hundred pixels
+    // a side: a design is never made of that (the project owner's decision, 2026-11-03).
+    if blob.is_proxy() {
+        let file = image.link.as_ref().map_or_else(String::new, |l| format!(" ({})", l.path));
+        return Err(bad(C, format!("the image's linked file is missing{file}: relink it (links.relink) to digitize it, not its preview")));
+    }
+    let bytes = Arc::clone(&blob.bytes);
     Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run })
 }
 

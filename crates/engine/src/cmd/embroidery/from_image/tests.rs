@@ -370,3 +370,17 @@ fn a_crop_at_the_end_of_the_widest_image_is_answered() {
     let r = s.execute("embroidery.digitizeImage", &json!({"dryRun": true, "crop": [u32::MAX - 2, 0, u32::MAX, 1]}));
     assert!(!matches!(r, Err(crate::EngineError::Internal { .. })), "{r:?}");
 }
+
+/// A small crop of a large image made much larger would carry the rest of the image past the
+/// canvas when the image moves under the design: Create is refused, saying what to do, and the
+/// dry run with it, so that it never answers what Create refuses.
+#[test]
+fn the_image_scaled_past_the_canvas_is_refused() {
+    let mut s = blank();
+    image(&mut s, &tr::Raster::from_fn(6000, 20, |x, _| if x < 3 { [20, 40, 120, 255] } else { [240, 130, 20, 255] }), 0.1);
+    for dry in [true, false] {
+        let p = json!({"dryRun": dry, "crop": [0, 0, 4, 4], "width": 1000, "background": "none"});
+        let why = s.execute("embroidery.digitizeImage", &p).unwrap_err().to_string();
+        assert!(why.contains("past the canvas"), "{why}");
+    }
+}

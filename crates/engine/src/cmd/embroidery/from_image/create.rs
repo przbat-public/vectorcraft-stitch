@@ -27,7 +27,8 @@ use std::sync::Arc;
 use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::appearance::{AppearanceItem, FillLayer};
 use vectorcraft_doc::embroidery::{Embroidery, PartSettings};
-use vectorcraft_doc::{Appearance, Document, Node, NodeId, NodeKind};
+use vectorcraft_doc::{Appearance, Document, MAX_COORD, Node, NodeId, NodeKind};
+use vectorcraft_geom::Point;
 use vectorcraft_stitch::thread::Palette;
 
 use super::super::digitize::{printed, shows};
@@ -99,6 +100,16 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         return Err(bad(C, "not an image: select an image, or an Image Trace object"));
     };
     img.xf = d.working.scaled * img.xf;
+    // The image moved under the design stays on the canvas, as the design must: a small crop of a
+    // large image made much larger would carry the rest of the image past it.
+    let (w, h) = (f64::from(img.width), f64::from(img.height));
+    let on_canvas = |p: Point| p.x.is_finite() && p.y.is_finite() && p.x.abs() <= MAX_COORD && p.y.abs() <= MAX_COORD;
+    if ![(0.0, 0.0), (w, 0.0), (0.0, h), (w, h)].into_iter().all(|(x, y)| on_canvas(img.xf * Point::new(x, y))) {
+        return Err(bad(
+            C,
+            "the image, scaled as the design is, would reach past the canvas: give a smaller size, or crop the image first (Object › Crop Image)",
+        ));
+    }
     let layer_name = template_name(image.name.as_deref(), img.link.as_ref());
     image.visible = true;
     // The areas in sewing order, by colour block: a block's thread, whether it is sewn, its objects.

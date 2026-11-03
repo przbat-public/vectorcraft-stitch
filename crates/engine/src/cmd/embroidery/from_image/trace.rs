@@ -87,23 +87,31 @@ pub(super) fn params(settings: &Settings, px_per_mm: f64, colors: u32, palette: 
 
 /// The working copy traced with `settings` in at most `colors` colours found as `palette` says:
 /// its paths in the working copy's pixels, bottom-most first, each with its colour and pixel
-/// count, and the colours used. A cancel stops it between stages ([`tr::TraceError::Cancelled`],
-/// nothing made); past `max_anchors` anchor points it gives up ([`tr::TraceError::TooComplex`]).
+/// count, and the colours used. It stops when `steps` (told how far the trace has got, on
+/// whichever thread traces) answers `false`, or a cancel reaches this thread
+/// ([`tr::TraceError::Cancelled`], nothing made); past `max_anchors` anchor points it gives up
+/// ([`tr::TraceError::TooComplex`]).
 pub(super) fn traced(
     working: &Working,
     settings: &Settings,
     colors: u32,
     palette: Palette,
     max_anchors: usize,
+    steps: &Steps<'_>,
 ) -> std::result::Result<tr::TraceResult, tr::TraceError> {
     let p = params(settings, working.px_per_mm, colors, palette);
-    // The stages before the colour layers report on this thread, where a cancel reaches them; the
-    // layers report from the threads that trace them, where it doesn't.
-    tr::trace_watched(&working.raster, &p, max_anchors, &|_, _| !vectorcraft_doc::cancel::is_cancelled())
+    // The trace's colour layers report from the threads that trace them, which only `steps` can
+    // reach; the stages before them report on this thread, which a cancel reaches too.
+    tr::trace_watched(&working.raster, &p, max_anchors, &|done, total| steps(done, total) && !vectorcraft_doc::cancel::is_cancelled())
 }
 
+/// What a trace asks as it goes: told how many of how many steps are done, whether to go on. It is
+/// asked from the threads that trace, so it reads a flag they all see.
+pub(super) type Steps<'a> = dyn Fn(u64, u64) -> bool + Sync + 'a;
+
 /// The working copy traced as `settings.mode` asks, in at most `colors` colours and
-/// `max_anchors` anchor points ([`MAX_ANCHORS`] for the command). Logo mode's Automatic palette
+/// `max_anchors` anchor points ([`MAX_ANCHORS`] for the command), `steps` asked as it goes. Logo
+/// mode's Automatic palette
 /// traces an image that isn't flat art (a photo, gradients) in as many colours as its tones need,
 /// or past the anchor points: it is traced again in the colours asked, the Limited palette's, with
 /// a warning in `warnings`. A failure is refused as [`refusal`] words it.
@@ -112,10 +120,11 @@ pub(super) fn in_mode(
     settings: &Settings,
     colors: u32,
     max_anchors: usize,
+    steps: &Steps<'_>,
     warnings: &mut Vec<String>,
 ) -> Result<tr::TraceResult> {
-    let limited = || traced(working, settings, colors, Palette::Limited, max_anchors).map_err(refusal);
-    match (settings.mode, traced(working, settings, colors, Palette::Mode, max_anchors)) {
+    let limited = || traced(working, settings, colors, Palette::Limited, max_anchors, steps).map_err(refusal);
+    match (settings.mode, traced(working, settings, colors, Palette::Mode, max_anchors, steps)) {
         (Mode::Logo, Ok(t)) if t.palette.len() > colors as usize => {
             warnings.push(format!(
                 "the image doesn't look like flat art (a photo or gradients?): {} colours were found, so it was traced in the {} that represent it best",

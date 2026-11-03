@@ -295,8 +295,9 @@ pub(super) fn widest_of(mask: &[bool], w: usize, h: usize) -> f64 {
 impl Regions {
     /// The region map of `traced`'s filled paths over `raster`, its working copy: each path drawn
     /// at the pixels' centres in its order, then each opaque pixel no path took given its
-    /// neighbour's area. `outside` marks the pixels outside the image, if any.
-    pub(super) fn of(traced: &tr::TraceResult, raster: &tr::Raster, outside: Option<Arc<[bool]>>) -> Self {
+    /// neighbour's area. `outside` marks the pixels outside the image, if any. A cancel stops it
+    /// between paths.
+    pub(super) fn of(traced: &tr::TraceResult, raster: &tr::Raster, outside: Option<Arc<[bool]>>) -> crate::Result<Self> {
         let (w, h) = (raster.width, raster.height);
         let (wu, hu) = (w as usize, h as usize);
         let mut labels = vec![NONE; wu * hu];
@@ -304,6 +305,7 @@ impl Regions {
             if p.stroke.is_some() {
                 continue;
             }
+            vectorcraft_doc::cancel::check()?;
             let label = u32::try_from(i).unwrap_or(NONE);
             draw(&mut labels, w, h, &edges(&p.path.to_bezpath()), label);
         }
@@ -325,7 +327,7 @@ impl Regions {
             }
             frontier = next;
         }
-        Self::from_labels(labels, w, h, traced.paths.len(), outside)
+        Ok(Self::from_labels(labels, w, h, traced.paths.len(), outside))
     }
 
     /// The map of `labels` (`w × h`, each pixel's area of `count`, or [`NONE`]), its facts worked

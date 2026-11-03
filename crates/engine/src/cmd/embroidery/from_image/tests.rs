@@ -215,15 +215,15 @@ fn averaging_down_weighs_pixels_by_their_opacity() {
         (1, 1) => [0, 0, 255, 255],
         _ => [0, 0, 0, 0],
     });
-    let one = resampled(&src, [0, 0, 2, 2], 1, 1);
+    let one = resampled(&src, [0, 0, 2, 2], 1, 1).unwrap();
     assert_eq!(one.pixel(0, 0), [128, 0, 128, 128], "transparent pixels tint nothing");
     // Never enlarged: asked for more pixels than the crop has, it is the crop as it is.
-    let same = resampled(&src, [0, 0, 2, 2], 4, 4);
+    let same = resampled(&src, [0, 0, 2, 2], 4, 4).unwrap();
     assert_eq!((same.width, same.height), (2, 2));
     assert_eq!(same, src);
     // A box of 1.5 pixels: the middle one counts half to each side.
     let row = tr::Raster::from_fn(3, 1, |x, _| [(x * 100) as u8, 0, 0, 255]);
-    let two = resampled(&row, [0, 0, 3, 1], 2, 1);
+    let two = resampled(&row, [0, 0, 3, 1], 2, 1).unwrap();
     assert_eq!(two.pixel(0, 0)[0], 33, "0 and half of 100, over 1.5");
     assert_eq!(two.pixel(1, 0)[0], 167, "half of 100 and 200, over 1.5");
 }
@@ -394,15 +394,15 @@ fn logo_mode_past_the_anchor_limit_traces_in_the_colours_asked() {
     let mode = |m: &str| Settings::from_params(json!({ "mode": m }).as_object().unwrap(), Palette::Pec).unwrap();
     let (logo, colours) = (mode("logo"), mode("color"));
     let w = working::prepare(&image, &png, &logo).unwrap();
-    let anchors = |p| trace::traced(&w, &logo, logo.colors, p, usize::MAX).unwrap().anchor_count();
+    let anchors = |p| trace::traced(&w, &logo, logo.colors, p, usize::MAX, &|_, _| true).unwrap().anchor_count();
     let (own, asked) = (anchors(TracePalette::Mode), anchors(TracePalette::Limited));
     assert!(asked < own, "the gradient's own colours make {own} anchor points, 6 colours {asked}");
     let limit = asked + (own - asked) / 2;
     let mut warnings = Vec::new();
-    let t = trace::in_mode(&w, &logo, logo.colors, limit, &mut warnings).unwrap();
+    let t = trace::in_mode(&w, &logo, logo.colors, limit, &|_, _| true, &mut warnings).unwrap();
     assert!(t.palette.len() <= logo.colors as usize, "{:?}", t.palette);
     assert!(warnings.iter().any(|w| w.contains(&format!("more than {limit} anchor points"))), "{warnings:?}");
-    let why = trace::in_mode(&w, &colours, colours.colors, asked - 1, &mut Vec::new()).unwrap_err().to_string();
+    let why = trace::in_mode(&w, &colours, colours.colors, asked - 1, &|_, _| true, &mut Vec::new()).unwrap_err().to_string();
     assert!(why.contains("anchor points"), "{why}");
 }
 

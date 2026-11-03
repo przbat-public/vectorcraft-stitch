@@ -91,7 +91,7 @@ pub(super) struct Order {
 
 /// The sewing order of `areas` (their region map `regions`, their colours `colours`): the rules,
 /// then the greedy choice (this module's).
-pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> Order {
+pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> crate::Result<Order> {
     let n = areas.len();
     let sewn = |a: usize| areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(super::colours::Colour::sewn);
     let background = |a: usize| areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(|r| r.background);
@@ -162,6 +162,7 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> O
     let mut last: Option<(u32, u32)> = None;
     // The keys agree with every rule kept, so an area is ready until every one is sewn.
     while let Some(&(.., first)) = ready.first() {
+        vectorcraft_doc::cancel::check()?;
         let distance = |a: usize| {
             let (x, y) = regions.areas.get(a).map_or((0, 0), |s| s.deepest);
             last.map_or(0u64, |(lx, ly)| {
@@ -206,5 +207,5 @@ pub(super) fn ordered(areas: &[Area], regions: &Regions, colours: &Colours) -> O
             Placed { index: index[a], taken: taken[a].unwrap_or(Taken::NewThread), after: after[a].clone(), under }
         })
         .collect();
-    Order { sewn: order, placed }
+    Ok(Order { sewn: order, placed })
 }

@@ -165,8 +165,9 @@ pub(super) struct Digitized {
 
 /// Digitize `image`, whose file is `bytes`, with `settings` in `palette`'s threads: the working
 /// copy, its background, the trace, the colours and their threads, the areas after the rules, and
-/// the order they are sewn in. A cancel stops it between stages (and between the trace's).
-pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, palette: Palette) -> Result<Digitized> {
+/// the order they are sewn in. A cancel stops it within each stage; `steps` is asked as the trace
+/// goes, from the threads that trace, and stops it when it answers `false`.
+pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, palette: Palette, steps: &trace::Steps<'_>) -> Result<Digitized> {
     vectorcraft_doc::cancel::progress(0, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
     let w = working::prepare(image, bytes, settings)?;
@@ -182,7 +183,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     // A background colour takes one of the trace's colours: the design keeps the colours asked.
     let colors = settings.colors + u32::from(matches!(found, Background::Colour(_)));
     let mut warnings = w.warnings();
-    let traced = trace::in_mode(&w, settings, colors, trace::MAX_ANCHORS, &mut warnings)?;
+    let traced = trace::in_mode(&w, settings, colors, trace::MAX_ANCHORS, steps, &mut warnings)?;
     if traced.paths.len() > trace::MAX_TRACED_SHAPES {
         return Err(bad(
             C,
@@ -204,7 +205,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     if settings.background == BackgroundSetting::Corners && found == Background::None {
         warnings.push("the image's corners don't agree on a background: every area is sewn (give `background` to name one)".into());
     }
-    let regions = Regions::of(&traced, &w.raster, w.outside.clone());
+    let regions = Regions::of(&traced, &w.raster, w.outside.clone())?;
     if settings.mode != Mode::Logo {
         let gradual = flat::gradual_share(&w.raster, &regions, &traced, settings.mode == Mode::Grayscale);
         if gradual >= flat::GRADIENT_SHARE {
@@ -229,6 +230,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         ));
     }
     let area_rows: Vec<(usize, usize)> = areas.areas.iter().map(|a| (a.row, a.pixels)).collect();
+    vectorcraft_doc::cancel::check()?;
     let colours = colours::matched(rows, &area_rows, settings.mode, palette, &settings.choices)?;
     // In greys mode a thread a person chose is sewn even when it isn't grey (the project owner's
     // decision, 2026-11-03): the reply says so.
@@ -253,7 +255,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     }
     let mut areas = rules::joined_by_thread(areas, &colours)?;
     inside::containers(&mut areas, &colours, w.px_per_mm)?;
-    let order = order::ordered(&areas.areas, &areas.regions, &colours);
+    let order = order::ordered(&areas.areas, &areas.regions, &colours)?;
     inside::sewn_over(&mut areas, &colours, &order);
     let colors_ms = since(started);
     vectorcraft_doc::cancel::progress(3, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
@@ -556,11 +558,14 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
 
 impl DigitizeJob {
     /// Digitizing, on the document as it was: the image digitized, its objects made on a copy and
-    /// planned for their figures. Any thread runs it; inside a [`vectorcraft_doc::cancel::scope`],
-    /// a cancel stops it between stages or inside one (an error then, nothing made).
-    pub fn run(&self) -> Result<DigitizeFound> {
+    /// planned for their figures. Any thread runs it. Inside a [`vectorcraft_doc::cancel::scope`],
+    /// a cancel stops it within each stage (an error then, nothing made), and the stages' progress
+    /// goes to the scope's sink ([`DIGITIZE_PROGRESS`]); `steps` is asked as the trace goes, from
+    /// the threads that trace it, which a scope's cancel doesn't reach, as Image Trace's own run
+    /// asks it, and stops the run when it answers `false`.
+    pub fn run(&self, steps: &(dyn Fn(u64, u64) -> bool + Sync)) -> Result<DigitizeFound> {
         let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run } = self;
-        let d = digitized(image, bytes, settings, *palette)?;
+        let d = digitized(image, bytes, settings, *palette, steps)?;
         let started = clock();
         let mut doc = Document::clone(original);
         let mut warnings = d.warnings.clone();
@@ -691,7 +696,8 @@ fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
 /// `embroidery.digitizeImage`: prepared, run and applied in one go ([`DigitizeJob`]).
 pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> Result<Value> {
     let job = prepare(s, p)?;
-    let found = job.run()?;
+    // On this thread, where a cancel reaches every stage but the trace's colour layers.
+    let found = job.run(&|_, _| true)?;
     apply(s, found)
 }
 

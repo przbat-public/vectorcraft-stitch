@@ -229,7 +229,8 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
         let footprint = (sx * (t / ux + (t * along / (across * ux)).abs())).max(sy * t / across);
         let samples = footprint.ceil().clamp(1.0, MAX_SAMPLES_A_SIDE) as u32;
         let (raster, outside) = resampled_slanted(&decoded, to_image, (sx, sy), crop, (ww, wh), samples)?;
-        let upright = resampled(&decoded, [dx0, dy0, dx1, dy1], side(crop_w * ux * MM_PER_PT * scale, cw), side(crop_h * uy * MM_PER_PT * scale, ch));
+        let upright =
+            resampled(&decoded, [dx0, dy0, dx1, dy1], side(crop_w * ux * MM_PER_PT * scale, cw), side(crop_h * uy * MM_PER_PT * scale, ch))?;
         (raster, to_image, Some(Arc::from(outside)), Some(upright))
     } else {
         let (ww, wh) = (side(frame.0, cw), side(frame.1, ch));
@@ -240,7 +241,7 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
         // A working pixel to the image's own pixels (the decoded crop mapped back).
         let to_image =
             Affine::new([f64::from(cw) / f64::from(ww) / sx, 0.0, 0.0, f64::from(ch) / f64::from(wh) / sy, f64::from(dx0) / sx, f64::from(dy0) / sy]);
-        (resampled(&decoded, [dx0, dy0, dx1, dy1], ww, wh), to_image, None, None)
+        (resampled(&decoded, [dx0, dy0, dx1, dy1], ww, wh)?, to_image, None, None)
     };
     // To the page, then scaled about the crop's centre on the page.
     let centre = xf * Point::new((f64::from(x0) + f64::from(x1)) / 2.0, (f64::from(y0) + f64::from(y1)) / 2.0);
@@ -361,18 +362,20 @@ fn spans(n: u32, out: u32) -> Vec<Vec<(u32, f64)>> {
 /// The pixels `rect` (`[x0, y0, x1, y1]`, within `src`) of `src`, averaged down to `w × h` (at most
 /// the rectangle's own size): a box filter, each source pixel's colour weighted by its opacity.
 /// One output row is built at a time from the source rows it covers, so the memory used is a row's.
-pub(super) fn resampled(src: &tr::Raster, rect: [u32; 4], w: u32, h: u32) -> tr::Raster {
+/// A cancel stops it between rows.
+pub(super) fn resampled(src: &tr::Raster, rect: [u32; 4], w: u32, h: u32) -> Result<tr::Raster> {
     let [x0, y0, x1, y1] = rect;
     let (cw, ch) = (x1.saturating_sub(x0), y1.saturating_sub(y0));
     let (w, h) = (w.clamp(1, cw.max(1)), h.clamp(1, ch.max(1)));
     if (w, h) == (cw, ch) {
         // The crop as it is.
-        return tr::Raster::from_fn(w, h, |x, y| src.pixel(x0 + x, y0 + y));
+        return Ok(tr::Raster::from_fn(w, h, |x, y| src.pixel(x0 + x, y0 + y)));
     }
     let (across, down) = (spans(cw, w), spans(ch, h));
     let area = (f64::from(cw) / f64::from(w)) * (f64::from(ch) / f64::from(h));
     let mut rgba = Vec::with_capacity(w as usize * h as usize * 4);
     for rows in &down {
+        vectorcraft_doc::cancel::check()?;
         let mut acc = vec![Sum::default(); w as usize];
         for &(sy, wy) in rows {
             for (out, cols) in acc.iter_mut().zip(&across) {
@@ -388,7 +391,7 @@ pub(super) fn resampled(src: &tr::Raster, rect: [u32; 4], w: u32, h: u32) -> tr:
         }
     }
     // As many bytes as `w × h` pixels take, by construction.
-    tr::Raster::new(w, h, rgba).unwrap_or_else(|_| tr::Raster::from_fn(w, h, |_, _| [0; 4]))
+    Ok(tr::Raster::new(w, h, rgba).unwrap_or_else(|_| tr::Raster::from_fn(w, h, |_, _| [0; 4])))
 }
 
 /// A slanted image's working copy, square on the page: `size` pixels, each `(x, y)` mapped to the

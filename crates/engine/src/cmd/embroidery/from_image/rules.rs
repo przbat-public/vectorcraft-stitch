@@ -188,6 +188,7 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         (0..n).filter(|&i| pixels[i] > 0 && joins(i, pixels[i])).map(|i| Reverse((pixels[i], i))).collect();
     let (mut joined, mut left_out) = (0usize, 0usize);
     while let Some(Reverse((size, i))) = heap.pop() {
+        vectorcraft_doc::cancel::check()?;
         // A stale entry: the group grew, or joined another.
         if root(&mut parent, i) != i || pixels[i] != size || dropped[i] {
             continue;

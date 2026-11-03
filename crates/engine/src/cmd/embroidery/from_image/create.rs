@@ -116,6 +116,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
     let mut blocks: Vec<(Option<usize>, bool, Vec<Arc<Node>>)> = Vec::new();
     let mut objects = 0usize;
     for &a in &d.order.sewn {
+        vectorcraft_doc::cancel::check()?;
         let (Some(area), Some(shape)) = (d.areas.areas.get(a), d.shapes.shapes.get(a)) else { continue };
         let Some(row) = d.colours.rows.get(area.row) else { continue };
         if shape.subpaths.is_empty() {

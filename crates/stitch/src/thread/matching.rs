@@ -12,11 +12,16 @@
 //! 2026-11-01). The colours are put in one order (largest first, then by their sRGB) before the
 //! assignment, so the threads don't depend on the order the colours are given in.
 //!
-//! The assignment is the Hungarian method (H. W. Kuhn, "The Hungarian method for the assignment
-//! problem", *Naval Research Logistics Quarterly* 2, 1955; J. Munkres, "Algorithms for the
-//! assignment and transportation problems", *J. SIAM* 5, 1957), in its shortest-augmenting-path
-//! form with potentials (R. Jonker and A. Volgenant, "A shortest augmenting path algorithm for
-//! dense and sparse linear assignment problems", *Computing* 38, 1987), written from the papers.
+//! The assignment is the shortest augmenting path method, written from its description in R.
+//! Jonker and A. Volgenant, "A shortest augmenting path algorithm for dense and sparse linear
+//! assignment problems", *Computing* 38, 1987 (its augmentation phase; the initialising phases
+//! before it are left out): the colours are added one at a time, each by the path of least reduced
+//! cost from it to a thread no colour holds yet, found as E. W. Dijkstra's method finds a shortest
+//! path ("A note on two problems in connexion with graphs", *Numerische Mathematik* 1, 1959), and a
+//! value for each colour and each thread keeps every reduced cost at least 0 and those of the pairs
+//! assigned 0: the duality on which H. W. Kuhn's Hungarian method rests ("The Hungarian method for
+//! the assignment problem", *Naval Research Logistics Quarterly* 2, 1955), which makes the total
+//! the least.
 
 use super::{Match, Palette, PaletteThread, mismatched};
 use crate::color;
@@ -282,68 +287,81 @@ impl Palette {
     }
 }
 
-/// The columns of `cost` (one row a colour, `cols` columns, at least as many as rows) the rows are
-/// assigned to, one each, at the least total cost: the Hungarian method's shortest-augmenting-path
-/// form (this module's sources). `cost[r][c]` is finite; a missing entry counts as [`TOO_FAR`].
+/// The column of `cost` each row is assigned to, a column to at most one row, at the least total
+/// cost (one row a colour, `cols` columns, at least as many as rows; `cost[r][c]` finite, a missing
+/// entry [`TOO_FAR`]): by shortest augmenting paths (this module's sources). Each row is added by
+/// the path of least reduced cost from it to a column no row holds, each step along a column
+/// another row holds to that row and on, found as Dijkstra's method finds a shortest path; the
+/// duals then move so that every reduced cost stays at least 0 and the path's are 0, and the path's
+/// columns pass along it. Empty for no rows, or for fewer columns than rows.
 fn assignment(cost: &[Vec<f64>], cols: usize) -> Vec<usize> {
     let rows = cost.len();
     if rows == 0 || cols < rows {
         return vec![];
     }
     let at = |r: usize, c: usize| cost.get(r).and_then(|row| row.get(c)).copied().unwrap_or(TOO_FAR);
-    // 1-based, with row and column 0 standing for none: the method's own bookkeeping.
-    let (mut u, mut v) = (vec![0.0f64; rows + 1], vec![0.0f64; cols + 1]);
-    let (mut row_of, mut way) = (vec![0usize; cols + 1], vec![0usize; cols + 1]);
-    for r in 1..=rows {
-        row_of[0] = r;
-        let mut col = 0usize;
-        let mut least = vec![f64::INFINITY; cols + 1];
-        let mut used = vec![false; cols + 1];
+    // A value for each row and column; a pair's reduced cost is its cost less both. Each row's
+    // starts at its least cost, so that no reduced cost starts below 0.
+    let mut row_value: Vec<f64> = (0..rows).map(|r| (0..cols).map(|c| at(r, c)).fold(f64::INFINITY, f64::min)).collect();
+    let mut col_value = vec![0.0f64; cols];
+    let mut holder: Vec<Option<usize>> = vec![None; cols];
+    let mut column_of: Vec<Option<usize>> = vec![None; rows];
+    for start in 0..rows {
+        let reduced = |r: usize, c: usize, row_value: &[f64], col_value: &[f64]| {
+            at(r, c) - row_value.get(r).copied().unwrap_or(0.0) - col_value.get(c).copied().unwrap_or(0.0)
+        };
+        // Each column's least reduced cost from `start` so far, the row it is reached from, and
+        // whether it is settled.
+        let mut dist: Vec<f64> = (0..cols).map(|c| reduced(start, c, &row_value, &col_value)).collect();
+        let mut from: Vec<usize> = vec![start; cols];
+        let mut settled = vec![false; cols];
+        let end = loop {
+            // The nearest column not settled, the first of those as near.
+            let next = (0..cols).filter(|&c| !settled[c]).min_by(|&a, &b| dist[a].total_cmp(&dist[b]).then(a.cmp(&b)));
+            let Some(j) = next else { break None };
+            settled[j] = true;
+            let Some(i) = holder[j] else { break Some(j) };
+            // On through the row holding it, whose pair with it costs nothing reduced.
+            for c in 0..cols {
+                if !settled[c] {
+                    let through = dist[j] + reduced(i, c, &row_value, &col_value);
+                    if through < dist[c] {
+                        dist[c] = through;
+                        from[c] = i;
+                    }
+                }
+            }
+        };
+        // At least as many columns as rows: a free one is always reached.
+        let Some(end) = end else { return vec![] };
+        // The values: each settled column lowered by what it lacked of the path's length, the row
+        // holding it raised by as much, and the start raised by the whole length.
+        let length = dist[end];
+        row_value[start] += length;
+        for c in 0..cols {
+            if settled[c] {
+                let lack = length - dist[c];
+                col_value[c] -= lack;
+                if let Some(i) = holder[c] {
+                    row_value[i] += lack;
+                }
+            }
+        }
+        // Along the path back from its end: each column to the row it was reached from, that row's
+        // old column to the row before it.
+        let mut c = end;
         loop {
-            used[col] = true;
-            let r0 = row_of[col];
-            let (mut delta, mut next) = (f64::INFINITY, 0usize);
-            for c in 1..=cols {
-                if used[c] {
-                    continue;
-                }
-                let reduced = at(r0 - 1, c - 1) - u[r0] - v[c];
-                if reduced < least[c] {
-                    least[c] = reduced;
-                    way[c] = col;
-                }
-                if least[c] < delta {
-                    delta = least[c];
-                    next = c;
-                }
+            let i = from[c];
+            let before = column_of[i];
+            holder[c] = Some(i);
+            column_of[i] = Some(c);
+            match before {
+                Some(b) if i != start => c = b,
+                _ => break,
             }
-            for c in 0..=cols {
-                if used[c] {
-                    u[row_of[c]] += delta;
-                    v[c] -= delta;
-                } else {
-                    least[c] -= delta;
-                }
-            }
-            col = next;
-            if col == 0 || row_of[col] == 0 {
-                break;
-            }
-        }
-        // Along the augmenting path back to the start.
-        while col != 0 {
-            let prev = way[col];
-            row_of[col] = row_of[prev];
-            col = prev;
         }
     }
-    let mut out = vec![0usize; rows];
-    for (c, &r) in row_of.iter().enumerate().skip(1) {
-        if let Some(slot) = r.checked_sub(1).and_then(|r| out.get_mut(r)) {
-            *slot = c - 1;
-        }
-    }
-    out
+    column_of.into_iter().map(|c| c.unwrap_or(0)).collect()
 }
 
 #[cfg(test)]
@@ -419,6 +437,38 @@ mod tests {
         }
         assert!(assignment(&[], 3).is_empty());
         assert!(assignment(&vec![vec![1.0, 2.0]; 3], 2).is_empty(), "more rows than columns");
+    }
+
+    /// Ties and far pairs don't fool it: matrices of a few costs, many assignments equally good,
+    /// some pairs at [`TOO_FAR`], and as many more columns as rows, each still a least one against
+    /// brute force.
+    #[test]
+    fn the_assignment_costs_the_least_through_ties() {
+        let mut seed = 0x7135_e1d5u64;
+        let mut next = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            seed
+        };
+        for rows in 1..=5 {
+            for cols in rows..=(2 * rows).min(7) {
+                for _ in 0..30 {
+                    let cost: Vec<Vec<f64>> =
+                        (0..rows).map(|_| (0..cols).map(|_| [0.0, 1.0, 1.0, 2.0, TOO_FAR][(next() % 5) as usize]).collect()).collect();
+                    let got = assignment(&cost, cols);
+                    let mut seen = got.clone();
+                    seen.sort_unstable();
+                    seen.dedup();
+                    assert_eq!(seen.len(), rows, "distinct columns: {got:?}");
+                    let total: f64 = got.iter().enumerate().map(|(r, &c)| cost[r][c]).sum();
+                    assert_eq!(total, least_total(&cost, cols), "{rows} × {cols}: {cost:?}");
+                }
+            }
+        }
+        // Every cost the same: any one column each.
+        let flat = vec![vec![3.0; 4]; 4];
+        assert_eq!(assignment(&flat, 4).iter().map(|&c| flat[0][c]).sum::<f64>(), 12.0);
     }
 
     /// The number of `palette`'s thread called `name`.

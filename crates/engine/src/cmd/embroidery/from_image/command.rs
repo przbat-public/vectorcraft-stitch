@@ -411,7 +411,7 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 "box": bounds,
                 "inside": area.inside.and_then(number),
                 "sewnOver": area.sewn_over,
-                "joined": area.paths.len() - 1,
+                "joined": area.paths.len().saturating_sub(1),
                 "touches": touches,
                 "grownUnder": d.shapes.grown_under.get(a).map_or(vec![], |g| g.iter().filter_map(|&b| number(b)).collect::<Vec<_>>()),
                 "outline": outlines.then(|| d.shapes.shapes.get(a).map(|p| p.transformed(to_mm).to_bezpath().to_svg())).flatten(),

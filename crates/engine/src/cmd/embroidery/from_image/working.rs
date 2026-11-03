@@ -178,7 +178,7 @@ pub(super) fn prepare(image: &ImageObject, bytes: &[u8], settings: &Settings) ->
     // scaled about the crop's centre on the page.
     let to_image =
         Affine::new([f64::from(cw) / f64::from(ww) / sx, 0.0, 0.0, f64::from(ch) / f64::from(wh) / sy, f64::from(dx0) / sx, f64::from(dy0) / sy]);
-    let centre = xf * Point::new(f64::from(x0 + x1) / 2.0, f64::from(y0 + y1) / 2.0);
+    let centre = xf * Point::new((f64::from(x0) + f64::from(x1)) / 2.0, (f64::from(y0) + f64::from(y1)) / 2.0);
     let scaled = Affine::translate(centre.to_vec2()) * Affine::scale(scale) * Affine::translate(-centre.to_vec2());
     Ok(Working {
         raster,

@@ -353,3 +353,20 @@ fn logo_mode_past_the_anchor_limit_traces_in_the_colours_asked() {
     let why = trace::in_mode(&w, &colours, colours.colors, asked - 1, &mut Vec::new()).unwrap_err().to_string();
     assert!(why.contains("anchor points"), "{why}");
 }
+
+/// A crop at the far end of an image as wide as a u32 holds is measured from its own centre, no
+/// sum of its corners overflowing: answered or refused with a reason, never a panic.
+#[test]
+fn a_crop_at_the_end_of_the_widest_image_is_answered() {
+    let mut s = blank();
+    let id = image_with(&mut s, &flat(4, 4, [20, 40, 120, 255]), Affine::scale(1e-4));
+    s.edit("widen", |d, _| {
+        if let Some(NodeKind::Image(img)) = d.node_mut(id).map(|n| &mut n.kind) {
+            img.width = u32::MAX;
+        }
+        Ok(())
+    })
+    .unwrap();
+    let r = s.execute("embroidery.digitizeImage", &json!({"dryRun": true, "crop": [u32::MAX - 2, 0, u32::MAX, 1]}));
+    assert!(!matches!(r, Err(crate::EngineError::Internal { .. })), "{r:?}");
+}

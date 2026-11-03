@@ -155,11 +155,19 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         if stats.widest_px >= thin_px {
             return false;
         }
-        let near: Vec<[u8; 3]> = next.iter().filter_map(|&(j, _)| colour(j)).collect();
+        // Its neighbours' colours, each once: no more than the trace's colours, however many
+        // neighbours it has (a thin line through a field of dots has thousands).
+        let mut near: Vec<[u8; 3]> = next.iter().filter_map(|&(j, _)| colour(j)).collect();
+        near.sort_unstable();
+        near.dedup();
         near.iter().any(|&o| o != c && delta_e_rgb(c, o) <= SLIVER_DELTA_E)
             || near.iter().enumerate().any(|(k, &x)| near.iter().skip(k + 1).any(|&y| is_mix(c, x, y)))
     };
-    let sliver: Vec<bool> = (0..n).map(|i| !background(i) && is_sliver(i)).collect();
+    let mut sliver: Vec<bool> = Vec::with_capacity(n);
+    for i in 0..n {
+        vectorcraft_doc::cancel::check()?;
+        sliver.push(!background(i) && is_sliver(i));
+    }
     let mut parent: Vec<usize> = (0..n).collect();
     let mut pixels: Vec<usize> = regions.areas.iter().map(|a| a.pixels).collect();
     let mut dropped = vec![false; n];

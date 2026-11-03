@@ -45,7 +45,8 @@ pub(super) struct AreaStats {
     /// Whether it touches transparency (a pixel in no area beside one of its own).
     pub(super) touches_clear: bool,
     /// Its widest inscribed width (pixels): twice the distance from its deepest pixel to its edge,
-    /// and a pixel more when its middle lies between two pixels as deep; to about a pixel on a slant.
+    /// and a pixel more when its middle lies between two pixels as deep across it (an even width);
+    /// exact for upright bands and squares, to about a pixel on a slant.
     pub(super) widest_px: f64,
     /// Its deepest pixel: the farthest from its edge, the first in scan order of those as deep.
     pub(super) deepest: (u32, u32),
@@ -311,10 +312,14 @@ impl Regions {
                 continue;
             }
             let (x, y) = (i % wu, i / wu);
-            // Its middle between two pixels as deep (an even width): a pixel wider than either's
-            // own distance says.
-            let beside = [(x + 1 < wu).then(|| i + 1), (y + 1 < hu).then(|| i + wu)];
-            let even = beside.into_iter().flatten().any(|j| labels.get(j).is_some_and(|&o| o as usize == l) && d2.get(j) == Some(&d));
+            // Its middle between two pixels as deep (an even width across it): a pixel wider than
+            // either's own distance says. Across, not along: the pixel one step on is as deep and
+            // the one beyond it is not (shallower, or not the area's), so the ridge is two pixels
+            // thick that way, where along a band's ridge every pixel is as deep. The pixel before
+            // it is shallower whatever the width: the deepest pixel is the first in scan order.
+            let deep = |j: usize| labels.get(j).is_some_and(|&o| o as usize == l) && d2.get(j) == Some(&d);
+            let two_thick = |step: usize, room: usize| room >= 1 && deep(i + step) && !(room >= 2 && deep(i + 2 * step));
+            let even = two_thick(1, wu - 1 - x) || two_thick(wu, hu - 1 - y);
             a.widest_px = 2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 };
             a.deepest = (x as u32, y as u32);
         }

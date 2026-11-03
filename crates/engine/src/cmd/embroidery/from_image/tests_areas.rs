@@ -90,6 +90,8 @@ fn specks_join_the_area_round_them() {
 
 /// A long thin line stays below the smallest area, as a line: 0.4 mm wide and 3 mm long, 1.2 mm²,
 /// it is kept when the smallest area is 1.5 mm², while a stub 0.5 mm wide and 1.5 mm long joins.
+/// A line of an odd width is as wide as it is: 0.3 mm wide and 2.4 mm long, 0.72 mm², it is long
+/// enough to stay.
 #[test]
 fn long_thin_lines_stay() {
     let picture =
@@ -101,6 +103,56 @@ fn long_thin_lines_stay() {
     assert_eq!(navy[0]["kind"], json!("line"));
     assert!(navy[0]["widest"].as_f64().unwrap() < 1.0, "{}", navy[0]["widest"]);
     assert!(navy[0]["size"]["width"].as_f64().unwrap() > 2.5);
+    let odd = tr::Raster::from_fn(100, 60, |x, y| if inside(x, y, [30, 30, 54, 33]) { NAVY } else { ORANGE });
+    let mut s = placed(&odd);
+    let r = dry(&mut s, json!({"colors": 2, "background": "none"}));
+    let navy = areas_of(&r, NAVY);
+    assert_eq!(navy.len(), 1, "{}", r["areas"]);
+    assert_eq!((&navy[0]["kind"], &navy[0]["widest"]), (&json!("line"), &json!(0.3)));
+    // A stem just narrower than 1 mm is a line; one 1 mm wide is a fill.
+    for (wide, kind) in [(9, "line"), (10, "fill")] {
+        let stem = tr::Raster::from_fn(400, 60, |x, y| if inside(x, y, [40, 20, 340, 20 + wide]) { NAVY } else { ORANGE });
+        let mut s = placed(&stem);
+        let r = dry(&mut s, json!({"colors": 2, "background": "none"}));
+        assert_eq!(areas_of(&r, NAVY)[0]["kind"], json!(kind), "{wide} px wide");
+    }
+}
+
+/// An island just narrower than 4 mm is sewn over the area round it, however long; one 4 mm wide
+/// has its hole cut.
+#[test]
+fn islands_narrower_than_four_millimetres_are_sewn_over() {
+    for (side, over) in [(39, true), (40, false)] {
+        let picture = tr::Raster::from_fn(200, 200, |x, y| {
+            if inside(x, y, [80, 60, 80 + side, 130]) {
+                NAVY
+            } else if inside(x, y, [20, 20, 180, 180]) {
+                ORANGE
+            } else {
+                WHITE
+            }
+        });
+        let mut s = placed(&picture);
+        let r = dry(&mut s, json!({"colors": 2}));
+        assert_eq!(areas_of(&r, NAVY)[0]["sewnOver"], json!(over), "{side} px");
+    }
+}
+
+/// A band's widest width is its own, odd or even, lying or standing: the pixel an even width adds
+/// is counted across the band, never along it. A square is as wide as its side.
+#[test]
+fn a_band_measures_its_own_width() {
+    let (w, h) = (80u32, 80u32);
+    let measured = |inside: &dyn Fn(u32, u32) -> bool| {
+        let labels: Vec<u32> = (0..w * h).map(|i| u32::from(inside(i % w, i / w))).collect();
+        super::regions::Regions::from_labels(labels, w, h, 2).areas[1].widest_px
+    };
+    for width in [1u32, 2, 3, 4, 5, 9, 10] {
+        let lying = measured(&|x, y| (10..70).contains(&x) && (10..10 + width).contains(&y));
+        let standing = measured(&|x, y| (10..10 + width).contains(&x) && (10..70).contains(&y));
+        let square = measured(&|x, y| (10..10 + width).contains(&x) && (10..10 + width).contains(&y));
+        assert_eq!((lying, standing, square), (f64::from(width), f64::from(width), f64::from(width)), "{width} px");
+    }
 }
 
 /// An area inside another alone is sewn after it; narrower than 4 mm it is sewn over it, no hole

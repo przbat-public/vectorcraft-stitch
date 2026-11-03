@@ -15,9 +15,9 @@ const NAVY: [u8; 4] = [20, 40, 120, 255];
 const GREEN: [u8; 4] = [30, 150, 60, 255];
 const CLEAR: [u8; 4] = [0, 0, 0, 0];
 
-/// How near (millimetres) a shape's edge must lie to where it is asked: a working pixel's half,
-/// the fitting's own error far under it.
-const NEAR_MM: f64 = 0.05;
+/// How near (millimetres) a shape's edge must lie to where it is asked: a fifth of a working
+/// pixel, so that a pixel's error in a width shows, the fitting's own error far under it.
+const NEAR_MM: f64 = 0.02;
 
 /// A session holding `raster` placed at a tenth of a millimetre a pixel, its corner at the origin.
 fn placed(raster: &tr::Raster) -> Session {
@@ -117,6 +117,23 @@ fn the_overlap_stops_at_what_isnt_sewn_and_halfway_under_thin_areas() {
     assert!((ob.x1 - 14.3).abs() < NEAR_MM, "half the band: {ob:?}");
     assert!((gb.x0 - 14.3).abs() < NEAR_MM, "half the band: {gb:?}");
     assert!((ob.x0 - 2.0).abs() < NEAR_MM && (ob.y0 - 2.0).abs() < NEAR_MM, "never into the background: {ob:?}");
+    // A band of an odd width, 0.3 mm: the two strips meet in its middle, neither crossing it.
+    let odd = tr::Raster::from_fn(300, 200, |x, y| {
+        if inside(x, y, [20, 20, 140, 180]) {
+            ORANGE
+        } else if inside(x, y, [140, 20, 143, 180]) {
+            NAVY
+        } else if inside(x, y, [143, 20, 280, 180]) {
+            GREEN
+        } else {
+            WHITE
+        }
+    });
+    let mut odd = placed(&odd);
+    let r = dry(&mut odd, json!({"colors": 3}));
+    let (_, ob, _) = shape_of(&r, ORANGE);
+    let (_, gb, _) = shape_of(&r, GREEN);
+    assert!((ob.x1 - 14.15).abs() < NEAR_MM && (gb.x0 - 14.15).abs() < NEAR_MM, "half of 0.3 mm each: {ob:?} {gb:?}");
     // The green left unsewn: nothing reaches under it.
     let r = dry(&mut s, json!({"colors": 3, "colorChoices": [{"color": hex(GREEN), "job": "none"}]}));
     let (green, _, _) = shape_of(&r, GREEN);

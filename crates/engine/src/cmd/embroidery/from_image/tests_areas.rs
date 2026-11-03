@@ -72,7 +72,16 @@ fn specks_join_the_area_round_them() {
     // Raising the smallest area joins the rest too, and never splits what was joined.
     let r = dry(&mut s, json!({"colors": 2, "background": "none", "minArea": 2.5}));
     assert_eq!(areas_of(&r, NAVY).len(), 0);
-    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("every area of")), "{}", r["warnings"]);
+    let navy = super::super::hex([NAVY[0], NAVY[1], NAVY[2]]);
+    assert!(
+        r["warnings"].as_array().unwrap().contains(&json!({
+            "id": "colorJoined",
+            "values": {"color": navy, "minArea": 2.5},
+            "message": format!("every area of {navy} was smaller than 2.5 mm², so it joined its neighbours"),
+        })),
+        "{}",
+        r["warnings"]
+    );
     // A speck alone on transparency: nothing to join.
     let alone = tr::Raster::from_fn(200, 100, |x, y| {
         if inside(x, y, [20, 20, 80, 80]) {
@@ -143,7 +152,10 @@ fn a_grey_outline_wider_than_a_thread_is_kept() {
             assert_eq!((&greys[0]["kind"], &greys[0]["sewn"]), (&json!("line"), &json!(true)), "{}", greys[0]);
         } else {
             assert!(greys.is_empty(), "{}", r["areas"]);
-            assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("bands at most 0.4 mm wide")), "{}", r["warnings"]);
+            let band =
+                r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "bandsJoined").unwrap_or_else(|| panic!("{}", r["warnings"])).clone();
+            assert_eq!(band["values"]["maxWidth"], json!(0.4), "{band}");
+            assert!(band["message"].as_str().unwrap().contains("bands at most 0.4 mm wide"), "{band}");
         }
     }
 }

@@ -34,7 +34,7 @@ letter pes 619ffd2d5410348a 2330
 letter pec f4b466e83af8258c 2316
 letter jef 9b59000245a8d33a 1226
 letter vp3 b5f1697d0c39bc38 1404
-specks reply 7aa6ed758dd24a22
+specks reply e709f75bc3fac8ad
 specks dst 2d2f748c223f1cd1 2357
 specks tap 95c43a94cd610714 1845
 specks t01 95c43a94cd610714 1845
@@ -79,7 +79,7 @@ squares-0.4 pes 91d6539cc90f4f6e 2174
 squares-0.4 pec 5b0d51c6f61b2f04 2160
 squares-0.4 jef 8c1526d60a6029bd 1074
 squares-0.4 vp3 227aa697c6338f4b 1264
-scan reply 0060fa4b7ab5d0dd
+scan reply b15a66e7769e6e7a
 scan dst e3154f457391c811 3104
 scan tap dcdd5b1cc1d2bb14 2592
 scan t01 dcdd5b1cc1d2bb14 2592

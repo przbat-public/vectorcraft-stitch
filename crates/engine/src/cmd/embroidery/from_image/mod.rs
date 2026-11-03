@@ -26,7 +26,8 @@
 //! - [`overlap`]: the shapes they are sewn as, each grown under the neighbours sewn after it;
 //! - [`create`]: the embroidery objects made of them, in place of the image, which moves to a
 //!   template layer;
-//! - [`command`]: `embroidery.digitizeImage` and its answer, run as a job ([`DigitizeJob`]).
+//! - [`command`]: `embroidery.digitizeImage` and its answer, run as a job ([`DigitizeJob`]);
+//! - [`warnings`]: what the answer warns of, each by an id a window words, with its values.
 //!
 //! No upstream file is hooked: the trace crate is called as any caller would, and the command is
 //! one of the fork's own.
@@ -43,6 +44,7 @@ mod regions;
 mod rules;
 mod settings;
 mod trace;
+mod warnings;
 mod working;
 
 pub(super) use command::digitize_image;

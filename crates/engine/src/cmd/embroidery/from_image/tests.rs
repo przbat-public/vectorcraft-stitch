@@ -90,8 +90,12 @@ fn the_working_resolution_is_the_smallest_of_three() {
         assert_eq!(im["limitedBy"], json!(limit), "{w} × {h}");
         assert_eq!(im["worked"], json!(worked), "{w} × {h}");
         assert_eq!(im["size"], json!(size), "{w} × {h}");
-        let coarse = r["warnings"].as_array().unwrap().iter().any(|t| t.as_str().unwrap().contains("pixels a millimetre"));
-        assert_eq!(coarse, px_per_mm < COARSE_PX_PER_MM, "{w} × {h}: {}", r["warnings"]);
+        let coarse = r["warnings"].as_array().unwrap().iter().find(|t| t["id"] == "coarse");
+        assert_eq!(coarse.is_some(), px_per_mm < COARSE_PX_PER_MM, "{w} × {h}: {}", r["warnings"]);
+        if let Some(c) = coarse {
+            assert_eq!(c["values"], json!({"pxPerMm": px_per_mm, "fewerThan": COARSE_PX_PER_MM}), "{w} × {h}: {c}");
+            assert!(c["message"].as_str().unwrap().contains("pixels a millimetre"), "{c}");
+        }
     }
 }
 
@@ -417,7 +421,9 @@ fn logo_mode_past_the_anchor_limit_traces_in_the_colours_asked() {
     let mut warnings = Vec::new();
     let t = trace::in_mode(&w, &logo, logo.colors, limit, &|_, _| true, &mut warnings).unwrap();
     assert!(t.palette.len() <= logo.colors as usize, "{:?}", t.palette);
-    assert!(warnings.iter().any(|w| w.contains(&format!("more than {limit} anchor points"))), "{warnings:?}");
+    let warned = warnings.iter().find(|w| w.id == "notFlatArt").unwrap_or_else(|| panic!("{warnings:?}"));
+    assert_eq!(warned.values, json!({"by": "anchors", "maxAnchors": limit, "colors": logo.colors}));
+    assert!(warned.message.contains(&format!("more than {limit} anchor points")), "{warned:?}");
     let why = trace::in_mode(&w, &colours, colours.colors, asked - 1, &|_, _| true, &mut Vec::new()).unwrap_err().to_string();
     assert!(why.contains("anchor points"), "{why}");
 }

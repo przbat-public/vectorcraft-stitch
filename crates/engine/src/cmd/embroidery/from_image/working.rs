@@ -10,12 +10,16 @@
 
 use std::sync::Arc;
 
+use serde_json::json;
+
 use vectorcraft_doc::ImageObject;
 use vectorcraft_geom::{Affine, Point, Vec2};
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_trace as tr;
 
+use super::command::hundredths;
 use super::settings::{C, SIZE_RANGE_MM, Settings, Size};
+use super::warnings::Warning;
 use crate::Result;
 use crate::cmd::bad;
 
@@ -284,22 +288,27 @@ impl Working {
 
     /// The warnings a reply gives about the working copy: an image too coarse for its size, or one
     /// decoded smaller than it is.
-    pub(super) fn warnings(&self) -> Vec<String> {
+    pub(super) fn warnings(&self) -> Vec<Warning> {
         let mut out = vec![];
         if self.px_per_mm < COARSE_PX_PER_MM {
-            out.push(format!(
-                "the image has {:.1} pixels a millimetre at this size, fewer than {COARSE_PX_PER_MM}: details under a millimetre can't be measured; a larger copy of the image digitizes better",
-                self.px_per_mm
+            out.push(Warning::new(
+                "coarse",
+                json!({"pxPerMm": hundredths(self.px_per_mm), "fewerThan": COARSE_PX_PER_MM}),
+                format!(
+                    "the image has {:.1} pixels a millimetre at this size, fewer than {COARSE_PX_PER_MM}: details under a millimetre can't be measured; a larger copy of the image digitizes better",
+                    self.px_per_mm
+                ),
             ));
         }
         if self.decoded_px != self.image_px {
-            out.push(format!(
-                "the image was read at {} × {} pixels, scaled down from {} × {} ({} megapixels at most)",
-                self.decoded_px.0,
-                self.decoded_px.1,
-                self.image_px.0,
-                self.image_px.1,
-                tr::MAX_PIXELS >> 20
+            let most = tr::MAX_PIXELS >> 20;
+            out.push(Warning::new(
+                "decodedSmaller",
+                json!({"decoded": [self.decoded_px.0, self.decoded_px.1], "pixels": [self.image_px.0, self.image_px.1], "maxMegapixels": most}),
+                format!(
+                    "the image was read at {} × {} pixels, scaled down from {} × {} ({most} megapixels at most)",
+                    self.decoded_px.0, self.decoded_px.1, self.image_px.0, self.image_px.1
+                ),
             ));
         }
         out

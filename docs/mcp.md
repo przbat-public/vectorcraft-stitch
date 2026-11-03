@@ -6616,12 +6616,18 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   at, color, thread, kind, sewn, size, widest, box, inside, sewnOver, joined, touches, grownUnder, outline, order}],
   areaAt, doubledArea, traced, joined, leftOut, regions, stats, warnings, settings, table, timings}`: `stats` is what
   `embroidery.stats {selectedOnly: true}` answers with the new group selected (null when nothing is made), a dry run's
-  as Create's. An area's `area` is its number in this reply's sewing order only; its key is `at` (the point deepest
-  inside it, in the image's own pixels) with its colour. `regions` (with `regions: true`) is each working pixel's area
-  number, two bytes little-endian in base64; `outline` (with `outlines: true`) an area's shape as sewn, an SVG path in
-  millimetres from the document's origin. An interface runs it off its thread through the job it is made of
-  (`Session::digitize_image_job`, `DigitizeJob::run`, `Session::apply_digitize_image`), which a document changed
-  meanwhile refuses.
+  as Create's. `warnings` lists `{id, values, message}`: `id` names the warning for a window to word in its own
+  language, `values` holds what that wording needs, and `message` says it in English: `coarse` {pxPerMm, fewerThan},
+  `decodedSmaller` {decoded, pixels, maxMegapixels}, `notFlatArt` {by: `"colors"` with found and colors, `"anchors"`
+  with maxAnchors and colors, or `"gradual"` with percent}, `noBackgroundColor`, `cornersDisagree`, `choiceNotGray`
+  {color, thread: {palette, index, name}}, `colorJoined` {color, minArea}, `specksJoined` {count, minArea},
+  `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `shapesNotJoined` {count}, `nothingTraced` and
+  `nothingToMake` (a dry run's; Create is refused instead). An area's `area` is its number in this reply's sewing
+  order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its colour. `regions`
+  (with `regions: true`) is each working pixel's area number, two bytes little-endian in base64; `outline` (with
+  `outlines: true`) an area's shape as sewn, an SVG path in millimetres from the document's origin. An interface runs
+  it off its thread through the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`,
+  `Session::apply_digitize_image`), which a document changed meanwhile refuses.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

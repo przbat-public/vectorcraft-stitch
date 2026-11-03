@@ -26,6 +26,7 @@ use super::overlap::{self, Shapes};
 use super::regions::Regions;
 use super::rules::{self, Areas};
 use super::settings::{BackgroundSetting, C, Mode, Settings, table};
+use super::warnings::Warning;
 use super::{flat, inside, trace, working};
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
@@ -63,7 +64,7 @@ const PERCENT: f64 = 100.0;
 const MS_PER_SEC: f64 = 1000.0;
 
 /// `v` to two decimals, as the replies give millimetres and shares.
-fn hundredths(v: f64) -> f64 {
+pub(super) fn hundredths(v: f64) -> f64 {
     (v * HUNDREDTHS).round() / HUNDREDTHS
 }
 
@@ -158,7 +159,7 @@ pub(super) struct Digitized {
     pub(super) areas: Areas,
     pub(super) order: Order,
     pub(super) shapes: Shapes,
-    pub(super) warnings: Vec<String>,
+    pub(super) warnings: Vec<Warning>,
     /// The time of each stage it went through (milliseconds), none on the web.
     pub(super) timings: [Option<f64>; 4],
 }
@@ -200,18 +201,26 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let started = clock();
     let traced_background = colours::background_colour(&traced.palette, found);
     if matches!(found, Background::Colour(_)) && traced_background.is_none() {
-        warnings.push("no traced colour is the background's: every area is sewn".into());
+        warnings.push(Warning::new("noBackgroundColor", json!({}), "no traced colour is the background's: every area is sewn"));
     }
     if settings.background == BackgroundSetting::Corners && found == Background::None {
-        warnings.push("the image's corners don't agree on a background: every area is sewn (give `background` to name one)".into());
+        warnings.push(Warning::new(
+            "cornersDisagree",
+            json!({}),
+            "the image's corners don't agree on a background: every area is sewn (give `background` to name one)",
+        ));
     }
     let regions = Regions::of(&traced, &w.raster, w.outside.clone())?;
     if settings.mode != Mode::Logo {
         let gradual = flat::gradual_share(&w.raster, &regions, &traced, settings.mode == Mode::Grayscale);
         if gradual >= flat::GRADIENT_SHARE {
-            warnings.push(format!(
-                "the image doesn't look like flat art (a photo or gradients?): {:.0}% of the edges traced between its colours lie where it changes gradually, so its gradients are sewn as bands of flat colour",
-                gradual * PERCENT
+            let percent = (gradual * PERCENT).round();
+            warnings.push(Warning::new(
+                "notFlatArt",
+                json!({"by": "gradual", "percent": percent}),
+                format!(
+                    "the image doesn't look like flat art (a photo or gradients?): {percent}% of the edges traced between its colours lie where it changes gradually, so its gradients are sewn as bands of flat colour"
+                ),
             ));
         }
     }
@@ -239,18 +248,23 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
             let chosen = row.choice.and_then(|i| settings.choices.get(i)).and_then(|c| c.thread);
             let Some(t) = chosen.filter(|t| !palette.is_neutral(t.index())) else { continue };
             let name = palette.get(t.index()).map_or("", |(_, n)| n);
-            warnings.push(format!(
-                "the thread chosen for {}, {}, isn't grey: it is sewn as chosen",
-                super::super::hex(row.color),
-                super::super::threadlib::swatch_name(palette, t.index(), name)
+            let color = super::super::hex(row.color);
+            warnings.push(Warning::new(
+                "choiceNotGray",
+                json!({"color": color, "thread": {"palette": palette.id(), "index": t.index(), "name": name}}),
+                format!(
+                    "the thread chosen for {color}, {}, isn't grey: it is sewn as chosen",
+                    super::super::threadlib::swatch_name(palette, t.index(), name)
+                ),
             ));
         }
     }
     for row in colours.rows.iter().filter(|r| !r.background && r.areas == 0) {
-        warnings.push(format!(
-            "every area of {} was smaller than {} mm², so it joined its neighbours",
-            super::super::hex(row.color),
-            settings.min_area
+        let color = super::super::hex(row.color);
+        warnings.push(Warning::new(
+            "colorJoined",
+            json!({"color": color, "minArea": settings.min_area}),
+            format!("every area of {color} was smaller than {} mm², so it joined its neighbours", settings.min_area),
         ));
     }
     let mut areas = rules::joined_by_thread(areas, &colours)?;
@@ -262,12 +276,16 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let started = clock();
     let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm)?;
     if shapes.failed > 0 {
-        warnings.push(format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed));
+        warnings.push(Warning::new(
+            "shapesNotJoined",
+            json!({"count": shapes.failed}),
+            format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed),
+        ));
     }
     let shapes_ms = since(started);
     vectorcraft_doc::cancel::progress(4, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     if traced.paths.is_empty() {
-        warnings.push("nothing in the image was traced: it is empty or transparent".into());
+        warnings.push(Warning::new("nothingTraced", json!({}), "nothing in the image was traced: it is empty or transparent"));
     }
     Ok(Digitized {
         working: w,
@@ -601,7 +619,7 @@ impl DigitizeJob {
         let made = match create::made(&mut doc, *target, &d, *palette)? {
             Some(m) => Some((doc, m)),
             None if *dry_run => {
-                warnings.push(NOTHING_TO_MAKE.into());
+                warnings.push(Warning::new("nothingToMake", json!({}), NOTHING_TO_MAKE));
                 None
             }
             None => return Err(bad(C, NOTHING_TO_MAKE)),
@@ -640,7 +658,7 @@ struct ReplyOf<'a> {
     listed: Listed,
     dry_run: bool,
     stats: Value,
-    warnings: Vec<String>,
+    warnings: Vec<Warning>,
     /// How long making the objects took, and planning their stitches (milliseconds).
     made_ms: [Option<f64>; 2],
 }
@@ -656,17 +674,29 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let area_count = d.order.sewn.len();
     let specks = d.areas.joined.saturating_sub(d.areas.bands);
     if specks > 0 {
-        warnings.push(format!("{specks} areas smaller than {} mm² joined their neighbours", settings.min_area));
+        warnings.push(Warning::new(
+            "specksJoined",
+            json!({"count": specks, "minArea": settings.min_area}),
+            format!("{specks} areas smaller than {} mm² joined their neighbours", settings.min_area),
+        ));
     }
     if d.areas.bands > 0 {
-        warnings.push(format!(
-            "{} bands at most {} mm wide, in a colour between their neighbours', joined the neighbour nearest their colour",
-            d.areas.bands,
-            rules::SLIVER_MAX_MM
+        warnings.push(Warning::new(
+            "bandsJoined",
+            json!({"count": d.areas.bands, "maxWidth": rules::SLIVER_MAX_MM}),
+            format!(
+                "{} bands at most {} mm wide, in a colour between their neighbours', joined the neighbour nearest their colour",
+                d.areas.bands,
+                rules::SLIVER_MAX_MM
+            ),
         ));
     }
     if d.areas.dropped > 0 {
-        warnings.push(format!("{} areas smaller than {} mm² had nothing to join and were left out", d.areas.dropped, settings.min_area));
+        warnings.push(Warning::new(
+            "specksLeftOut",
+            json!({"count": d.areas.dropped, "minArea": settings.min_area}),
+            format!("{} areas smaller than {} mm² had nothing to join and were left out", d.areas.dropped, settings.min_area),
+        ));
     }
     json!({
         "dryRun": dry_run,
@@ -698,7 +728,7 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
         "leftOut": d.areas.dropped,
         "regions": if listed.regions { regions_json(d) } else { Value::Null },
         "stats": stats,
-        "warnings": warnings,
+        "warnings": warnings.iter().map(Warning::json).collect::<Vec<_>>(),
         "settings": settings.echo(),
         "table": table(palette),
         "timings": {"image": d.timings[0], "trace": d.timings[1], "areas": d.timings[2], "shapes": d.timings[3], "objects": objects_ms, "stitches": stitches_ms},

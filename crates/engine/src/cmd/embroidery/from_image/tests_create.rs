@@ -253,7 +253,7 @@ fn the_job_applies_to_the_document_it_was_made_of() {
     let (mut s, _) = placed_at(&tr::Raster::from_fn(100, 100, |_, _| WHITE), (0.0, 0.0));
     let r = s.execute("embroidery.digitizeImage", &json!({"dryRun": true})).unwrap();
     assert_eq!(r["stats"], Value::Null);
-    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("nothing to sew")), "{}", r["warnings"]);
+    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "nothingToMake" && w["values"] == json!({})), "{}", r["warnings"]);
     let e = s.execute("embroidery.digitizeImage", &json!({})).unwrap_err().to_string();
     assert!(e.contains("nothing to sew"), "{e}");
 }

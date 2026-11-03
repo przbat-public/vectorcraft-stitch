@@ -144,7 +144,7 @@ fn transparency_and_corners_that_disagree() {
     let mut s = placed(&corners);
     let r = dry(&mut s, json!({"colors": 4}));
     assert_eq!(r["image"]["background"]["from"], json!("none"));
-    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("corners don't agree")), "{}", r["warnings"]);
+    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "cornersDisagree" && w["values"] == json!({})), "{}", r["warnings"]);
     assert_eq!(r["colorCount"], json!(4));
 }
 
@@ -250,11 +250,15 @@ fn greys_and_a_logo_that_is_no_logo() {
     let r = dry(&mut s, json!({"mode": "grayscale", "colors": 4, "colorChoices": [{"color": grey, "thread": {"palette": "jef", "index": pink}}]}));
     let chosen = r["colors"].as_array().unwrap().iter().find(|c| &c["color"] == grey).unwrap();
     assert_eq!((&chosen["thread"]["index"], &chosen["reason"]), (&json!(pink), &json!("chosen")), "{chosen}");
-    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("isn't grey")), "{}", r["warnings"]);
+    let warned = r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "choiceNotGray").unwrap_or_else(|| panic!("{}", r["warnings"])).clone();
+    assert_eq!(warned["values"], json!({"color": grey, "thread": {"palette": "jef", "index": pink, "name": "Pink"}}), "{warned}");
+    assert!(warned["message"].as_str().unwrap().contains("isn't grey"), "{warned}");
     let gradient = tr::Raster::from_fn(300, 100, |x, y| [(x * 255 / 299) as u8, (y * 255 / 99) as u8, 128, 255]);
     let mut s = placed(&gradient);
     let r = dry(&mut s, json!({"mode": "logo", "colors": 4, "background": "none"}));
-    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("flat art")), "{}", r["warnings"]);
+    let warned = r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "notFlatArt").unwrap_or_else(|| panic!("{}", r["warnings"])).clone();
+    assert_eq!((&warned["values"]["by"], &warned["values"]["colors"]), (&json!("colors"), &json!(4)), "{warned}");
+    assert!(warned["message"].as_str().unwrap().contains("flat art"), "{warned}");
     assert!(r["colorCount"].as_u64().unwrap() <= 4, "{}", r["colorCount"]);
 }
 

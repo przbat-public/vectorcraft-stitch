@@ -12,9 +12,11 @@
 //! (`super::rules`), where a long thin line below it can be kept, which the trace's noise removal
 //! would merge away before any line is looked for.
 
+use serde_json::json;
 use vectorcraft_trace as tr;
 
 use super::settings::{C, Mode, PERCENT_RANGE, Settings};
+use super::warnings::Warning;
 use super::working::Working;
 use crate::cmd::bad;
 use crate::{EngineError, Result};
@@ -127,22 +129,30 @@ pub(super) fn in_mode(
     colors: u32,
     max_anchors: usize,
     steps: &Steps<'_>,
-    warnings: &mut Vec<String>,
+    warnings: &mut Vec<Warning>,
 ) -> Result<tr::TraceResult> {
     let limited = || traced(working, settings, colors, Palette::Limited, max_anchors, steps).map_err(refusal);
     match (settings.mode, traced(working, settings, colors, Palette::Mode, max_anchors, steps)) {
         (Mode::Logo, Ok(t)) if t.palette.len() > colors as usize => {
-            warnings.push(format!(
-                "the image doesn't look like flat art (a photo or gradients?): {} colours were found, so it was traced in the {} that represent it best",
-                t.palette.len(),
-                settings.colors
+            warnings.push(Warning::new(
+                "notFlatArt",
+                json!({"by": "colors", "found": t.palette.len(), "colors": settings.colors}),
+                format!(
+                    "the image doesn't look like flat art (a photo or gradients?): {} colours were found, so it was traced in the {} that represent it best",
+                    t.palette.len(),
+                    settings.colors
+                ),
             ));
             limited()
         }
         (Mode::Logo, Err(tr::TraceError::TooComplex { max })) => {
-            warnings.push(format!(
-                "the image doesn't look like flat art (a photo or gradients?): traced in its own colours it would make more than {max} anchor points, so it was traced in the {} that represent it best",
-                settings.colors
+            warnings.push(Warning::new(
+                "notFlatArt",
+                json!({"by": "anchors", "maxAnchors": max, "colors": settings.colors}),
+                format!(
+                    "the image doesn't look like flat art (a photo or gradients?): traced in its own colours it would make more than {max} anchor points, so it was traced in the {} that represent it best",
+                    settings.colors
+                ),
             ));
             limited()
         }

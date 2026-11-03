@@ -146,7 +146,7 @@ fn noise_is_refused_with_advice() {
 
 /// Whether reply `r` warns that the picture doesn't look like flat art.
 fn warns_of_gradients(r: &Value) -> bool {
-    r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("doesn't look like flat art"))
+    r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "notFlatArt" && w["message"].as_str().unwrap().contains("doesn't look like flat art"))
 }
 
 /// A photo's gradients are digitized with a warning in every mode, never refused; flat art, as a

@@ -698,7 +698,7 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
         "stats": stats,
         "warnings": warnings,
         "settings": settings.echo(),
-        "table": table(),
+        "table": table(palette),
         "timings": {"image": d.timings[0], "trace": d.timings[1], "areas": d.timings[2], "shapes": d.timings[3], "objects": objects_ms, "stitches": stitches_ms},
     })
 }

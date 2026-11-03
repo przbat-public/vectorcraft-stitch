@@ -15,7 +15,7 @@
 //! every area was a speck takes no thread from another.
 
 use vectorcraft_stitch::color::delta_e_rgb;
-use vectorcraft_stitch::thread::{ColourMatch, ColourToMatch, MISMATCH_DELTA_E, MatchReason, Palette, Threads};
+use vectorcraft_stitch::thread::{ColourMatch, ColourToMatch, MatchReason, Palette, Threads, mismatched};
 use vectorcraft_trace as tr;
 
 use super::background::Background;
@@ -81,24 +81,25 @@ impl Colours {
 }
 
 /// The traced colour that is the background `found`: the one nearest it, within the line
-/// (`MISMATCH_DELTA_E`); none when no traced colour is that near.
+/// (`MISMATCH_DELTA_E`, the difference as shown, as `thread::mismatched` reads it); none when no
+/// traced colour is that near.
 pub(super) fn background_colour(palette: &[[u8; 3]], found: Background) -> Option<[u8; 3]> {
     let Background::Colour(bg) = found else { return None };
     palette
         .iter()
         .map(|&c| (c, delta_e_rgb(c, bg)))
-        .filter(|&(_, d)| d <= MISMATCH_DELTA_E)
+        .filter(|&(_, d)| !mismatched(d))
         .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
         .map(|(c, _)| c)
 }
 
-/// The choice of `choices` nearest `color`, within the line.
+/// The choice of `choices` nearest `color`, within the line (as the difference is shown).
 fn nearest_choice(choices: &[ColorChoice], color: [u8; 3]) -> Option<usize> {
     choices
         .iter()
         .enumerate()
         .map(|(i, c)| (i, delta_e_rgb(color, c.color)))
-        .filter(|&(_, d)| d <= MISMATCH_DELTA_E)
+        .filter(|&(_, d)| !mismatched(d))
         .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
         .map(|(i, _)| i)
 }
@@ -178,7 +179,7 @@ pub(super) fn matched(mut colours: Colours, areas: &[(usize, usize)], mode: Mode
                 .enumerate()
                 .filter(|(_, r)| !r.background && r.areas > 0 && r.color != row.color)
                 .map(|(j, r)| (j, delta_e_rgb(r.color, into)))
-                .filter(|&(_, d)| d <= MISMATCH_DELTA_E)
+                .filter(|&(_, d)| !mismatched(d))
                 .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
                 .map(|(j, _)| j)
         })

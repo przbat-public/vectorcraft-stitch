@@ -199,21 +199,21 @@ pub(super) const SETTINGS: [Setting; 12] = [
         key: "width",
         step: Step::Image,
         kind: Kind::Number { unit: "mm", range: SIZE_RANGE_MM, default: None },
-        source: "unset: the image's size as placed (with one of width and height, the other follows the picture's proportions)",
+        source: "unset: the image's size as placed, as it lies on the page (with one of width and height, the other follows the picture's proportions)",
     },
     Setting {
         name: "height",
         key: "height",
         step: Step::Image,
         kind: Kind::Number { unit: "mm", range: SIZE_RANGE_MM, default: None },
-        source: "unset: the image's size as placed",
+        source: "unset: the image's size as placed, as it lies on the page",
     },
     Setting {
         name: "fit",
         key: "fit",
         step: Step::Image,
         kind: Kind::Size,
-        source: "unset: the largest size within [width, height] millimetres, the picture's proportions kept (a sewing field)",
+        source: "unset: the largest size within [width, height] millimetres on the page, the picture's proportions kept (a sewing field)",
     },
     Setting { name: "crop", key: "crop", step: Step::Image, kind: Kind::Rect, source: "unset: the whole image" },
     Setting {
@@ -506,11 +506,8 @@ impl Settings {
             Some(v) => v.as_str().and_then(Mode::from_id).ok_or_else(|| refused(row("mode"), v))?,
         };
         let colors_row = row("colors");
-        let Kind::Count { range: (lo, max), default } = colors_row.kind else { return Err(bad(C, "the colour count has no range")) };
-        // A design's colours are its threads: at most its palette's (Brother's 61, not PEC's 64
-        // entries, three of which are no thread).
-        let threads = (1..=palette.threads().len()).filter(|&i| palette.is_thread(i)).count();
-        let hi = max.min(u32::try_from(threads).unwrap_or(max));
+        let Kind::Count { range: (lo, _), default } = colors_row.kind else { return Err(bad(C, "the colour count has no range")) };
+        let hi = most_colors(palette);
         let colors = match o.get("colors") {
             None | Some(Value::Null) => default,
             Some(v) => v.as_u64().and_then(|n| u32::try_from(n).ok()).filter(|n| (lo..=hi).contains(n)).ok_or_else(|| {
@@ -568,14 +565,22 @@ impl Settings {
 
 /// The settings' table as a reply lists it: each setting's name, file key, step, what it takes,
 /// its default and its source.
-pub(super) fn table() -> Value {
+/// The most colours a design in `palette`'s threads takes: its threads, at most [`MAX_COLORS`]
+/// (Brother's 61, not PEC's 64 entries, three of which are no thread; Janome's 78).
+pub(super) fn most_colors(palette: Palette) -> u32 {
+    let threads = (1..=palette.threads().len()).filter(|&i| palette.is_thread(i)).count();
+    MAX_COLORS.min(u32::try_from(threads).unwrap_or(MAX_COLORS))
+}
+
+/// Each setting's row as the reply gives it, the colours' range `palette`'s own ([`most_colors`]).
+pub(super) fn table(palette: Palette) -> Value {
     Value::Array(
         SETTINGS
             .iter()
             .map(|s| {
                 let (unit, range, default): (&str, Value, Value) = match s.kind {
                     Kind::Number { unit, range, default } => (unit, json!([range.0, range.1]), json!(default)),
-                    Kind::Count { range, default } => ("", json!([range.0, range.1]), json!(default)),
+                    Kind::Count { range, default } => ("", json!([range.0, most_colors(palette)]), json!(default)),
                     Kind::Choice { ids } => ("", json!(ids), json!(ids.first())),
                     Kind::Size => ("mm", json!([SIZE_RANGE_MM.0, SIZE_RANGE_MM.1]), Value::Null),
                     Kind::Rect => ("px", Value::Null, Value::Null),

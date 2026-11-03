@@ -331,3 +331,38 @@ fn a_speck_bridging_two_areas_of_a_colour_makes_them_one() {
     let yellow: Vec<&Value> = r["areas"].as_array().unwrap().iter().filter(|a| a["color"] == hex(YELLOW)).collect();
     assert_eq!(yellow.len(), 1, "{}", r["areas"]);
 }
+
+/// A difference is compared as it is shown, as a thread's flag is: a choice 10.0032 from a colour,
+/// shown as 10.00, is within the line and taken.
+#[test]
+fn a_choice_at_the_line_as_shown_is_taken() {
+    let green = [57, 210, 106];
+    let pec = Palette::Pec;
+    let near = pec.nearest(green, &[]);
+    let other = pec.nearest(green, &[near.index]);
+    let choice = pec.get(other.index).unwrap().0;
+    let d = vectorcraft_stitch::color::delta_e_rgb(green, choice);
+    assert!(d > 10.0 && shown_delta_e(d) == 10.0, "{d}");
+    let picture =
+        tr::Raster::from_fn(
+            100,
+            100,
+            |x, y| if (20..80).contains(&x) && (20..80).contains(&y) { [green[0], green[1], green[2], 255] } else { WHITE },
+        );
+    let mut s = placed(&picture);
+    let hex3 = |c: [u8; 3]| super::super::hex(c);
+    let r = dry(&mut s, json!({"colors": 2, "colorChoices": [{"color": hex3(choice), "job": "fill"}]}));
+    let row = r["colors"].as_array().unwrap().iter().find(|c| c["color"] == json!(hex3(green))).unwrap();
+    assert_eq!((&row["choice"], &r["unusedChoices"]), (&json!(0), &json!([])), "{row}");
+}
+
+/// The reply's table gives the colours' range of the document's palette: Brother's 61 threads,
+/// Janome's 78.
+#[test]
+fn the_table_gives_the_palettes_own_range() {
+    let colors = |r: &Value| r["table"].as_array().unwrap().iter().find(|row| row["key"] == "colors").unwrap()["range"].clone();
+    let mut s = placed(&quarters(WHITE, RED));
+    assert_eq!(colors(&dry(&mut s, json!({"colors": 4}))), json!([2, 78]));
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    assert_eq!(colors(&dry(&mut s, json!({"colors": 4}))), json!([2, 61]));
+}

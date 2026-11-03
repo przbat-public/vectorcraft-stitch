@@ -15,7 +15,7 @@ use serde_json::{Map, Value, json};
 use vectorcraft_doc::{Document, ImageObject, NodeId, NodeKind};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
-use vectorcraft_stitch::thread::{Match, Palette, mismatched, shown_delta_e};
+use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_delta_e};
 use vectorcraft_trace as tr;
 
 use super::background::{self, Background};
@@ -280,11 +280,14 @@ fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f
         .filter(|r| r.background || r.areas > 0)
         .map(|r| {
             let merged = r.merged_into.and_then(|j| colours.rows.get(j)).map(|t| super::super::hex(t.color));
+            // Merged by sharing its only near thread, or because a person asked.
             let reason = match (&r.thread, &merged) {
+                (Some(m), Some(_)) if matches!(m.reason, MatchReason::Shared { .. }) => Some("shared"),
                 (_, Some(_)) => Some("merged"),
                 (Some(m), None) => Some(m.reason.id()),
                 (None, None) => None,
             };
+            let by = r.taken_by.and_then(|j| colours.rows.get(j)).map(|t| super::super::hex(t.color));
             json!({
                 "color": super::super::hex(r.color),
                 "background": r.background,
@@ -292,6 +295,7 @@ fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f
                 "job": r.job.id(),
                 "thread": r.thread.as_ref().map(|m| thread_json(palette, m.thread)),
                 "reason": reason,
+                "by": by,
                 "alternatives": r.thread.as_ref().map_or(vec![], |m| m.alternatives.iter().map(|&a| thread_json(palette, a)).collect()),
                 "area": hundredths(r.pixels as f64 / px_per_mm2),
                 "areaCount": r.areas,
@@ -302,6 +306,16 @@ fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f
             })
         })
         .collect()
+}
+
+/// How many threads the colours sewn are sewn in: one thread once, however many colours it sews
+/// (two colours a person chose one thread for are one colour in the design).
+fn thread_count(colours: &Colours) -> usize {
+    let mut threads: Vec<usize> =
+        colours.rows.iter().filter(|r| r.sewn() && r.areas > 0).filter_map(|r| r.thread.as_ref()).map(|m| m.thread.index).collect();
+    threads.sort_unstable();
+    threads.dedup();
+    threads.len()
 }
 
 /// The background as a reply gives it: where it came from, and its colour.
@@ -591,7 +605,7 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
             "bounds": w.bounds_mm().map(hundredths),
             "background": background_json(d.found, settings.background, d.background),
         },
-        "colorCount": d.colours.rows.iter().filter(|r| r.sewn() && r.areas > 0 && r.merged_into.is_none()).count(),
+        "colorCount": thread_count(&d.colours),
         "colors": colors_json(&d.colours, palette, px_per_mm2, frame_px),
         "unusedChoices": unused,
         "areaCount": area_count,

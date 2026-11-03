@@ -140,8 +140,7 @@ impl Palette {
         if colours.len() > MAX_COLOURS_MATCHED {
             return Err(TooManyColours { given: colours.len(), max: MAX_COLOURS_MATCHED });
         }
-        let candidates: Vec<usize> =
-            (1..=self.threads().len()).filter(|&i| self.is_thread(i) && (threads == Threads::All || self.is_neutral(i))).collect();
+        let candidates = self.candidates(threads);
         let labs = self.labs();
         // Each colour's difference from each candidate, in the candidates' order.
         let lab_of = |i: usize| i.checked_sub(1).and_then(|k| labs.get(k)).copied();
@@ -222,6 +221,34 @@ impl Palette {
                 m.unwrap_or(ColourMatch { thread: Match { index: 1, delta_e: f64::INFINITY }, reason: MatchReason::Nearest, alternatives: vec![] })
             })
             .collect())
+    }
+
+    /// The threads a colour may be matched to: the palette's (its appliqué entries left out), or
+    /// its neutral ones.
+    fn candidates(self, threads: Threads) -> Vec<usize> {
+        (1..=self.threads().len()).filter(|&i| self.is_thread(i) && (threads == Threads::All || self.is_neutral(i))).collect()
+    }
+
+    /// Colour `color` sewn in thread `index` (from 1) with `reason`: its own difference from that
+    /// thread, and the threads of `threads` nearest it after that one, as
+    /// [`Palette::match_colours`] gives a colour's (the thread among them whatever `threads` says).
+    /// For a colour sewn in a thread another colour holds, merged into it, so that it shows its own
+    /// difference, flag and alternatives. `None` for a number that names no thread.
+    pub fn match_to(self, color: [u8; 3], index: usize, reason: MatchReason, threads: Threads) -> Option<ColourMatch> {
+        if !self.is_thread(index) {
+            return None;
+        }
+        let mut candidates = self.candidates(threads);
+        if !candidates.contains(&index) {
+            candidates.push(index);
+            candidates.sort_unstable();
+        }
+        let lab = color::lab(color);
+        let labs = self.labs();
+        let differences: Vec<f64> =
+            candidates.iter().map(|&t| t.checked_sub(1).and_then(|k| labs.get(k)).map_or(f64::INFINITY, |l| color::delta_e(lab, *l))).collect();
+        let k = candidates.iter().position(|&t| t == index)?;
+        Some(self.matched(&candidates, &differences, k, reason))
     }
 
     /// A colour's match: candidate `k` with `reason`, and the nearest candidates after it.
@@ -428,5 +455,21 @@ mod tests {
         let too_many = vec![colour([1, 2, 3], 1.0); MAX_COLOURS_MATCHED + 1];
         assert_eq!(Palette::Jef.match_colours(&too_many, Threads::All).unwrap_err().max, MAX_COLOURS_MATCHED);
         assert!(Palette::Jef.match_colours(&[], Threads::All).unwrap().is_empty());
+    }
+
+    /// A colour sewn in a given thread gets its own difference from it and its own nearest threads
+    /// after it, as a colour matched alone does; a number that names no thread is none.
+    #[test]
+    fn a_colour_sewn_in_a_given_thread_keeps_its_own_difference() {
+        let grey = [0x29, 0x2f, 0x33];
+        let black = Palette::Jef.threads().iter().position(|(rgb, _)| *rgb == [0, 0, 0]).map(|i| i + 1).unwrap();
+        let m = Palette::Jef.match_to(grey, black, MatchReason::Shared { with: 0 }, Threads::All).unwrap();
+        assert_eq!(m.thread.index, black);
+        assert!((m.thread.delta_e - color::delta_e_rgb(grey, [0, 0, 0])).abs() < 1e-9, "{m:?}");
+        let alone = Palette::Jef.match_colours(&[colour(grey, 1.0)], Threads::All).unwrap().remove(0);
+        let mut expected: Vec<Match> = std::iter::once(alone.thread).chain(alone.alternatives).filter(|a| a.index != black).collect();
+        expected.truncate(ALTERNATIVES_SHOWN);
+        assert_eq!(m.alternatives, expected);
+        assert!(Palette::Jef.match_to(grey, 0, MatchReason::Nearest, Threads::All).is_none());
     }
 }

@@ -42,6 +42,8 @@ pub(super) struct Colour {
     pub(super) thread: Option<ColourMatch>,
     /// The row it is merged into: its areas sewn as that row's, in its thread.
     pub(super) merged_into: Option<usize>,
+    /// The row that took its nearest thread, when it was given the next free one.
+    pub(super) taken_by: Option<usize>,
     /// What it is sewn as.
     pub(super) job: Job,
     /// The person's choice that applies to it (its place in `colorChoices`).
@@ -121,6 +123,7 @@ pub(super) fn rows(traced: &tr::TraceResult, touches_edge: &dyn Fn(usize) -> boo
                     areas: 0,
                     thread: None,
                     merged_into: None,
+                    taken_by: None,
                     job: Job::Auto,
                     choice: None,
                 });
@@ -180,20 +183,29 @@ pub(super) fn matched(mut colours: Colours, areas: &[(usize, usize)], mode: Mode
                 .map(|(j, _)| j)
         })
         .collect();
-    // Each merge followed to the row it ends in (a loop ends at the last row before it repeats).
-    let end = |mut i: usize| {
+    // Each merge followed to the row it ends in. A loop of merges (each colour merged into the next
+    // and the last into the first) would leave none of them a colour of its own: it is refused.
+    let mut ends: Vec<usize> = Vec::with_capacity(rows.len());
+    for i in 0..rows.len() {
         let mut seen = vec![i];
-        while let Some(next) = targets.get(i).copied().flatten() {
+        let mut at = i;
+        while let Some(next) = targets.get(at).copied().flatten() {
             if seen.contains(&next) {
-                break;
+                let names: Vec<String> = seen.iter().filter_map(|&r| rows.get(r)).map(|r| super::super::hex(r.color)).collect();
+                return Err(bad(
+                    C,
+                    format!(
+                        "`colorChoices` merge {} into each other: a loop leaves none of them a colour of its own, so give one of them no `mergeInto`",
+                        names.join(", ")
+                    ),
+                ));
             }
             seen.push(next);
-            i = next;
+            at = next;
         }
-        i
-    };
-    for i in 0..rows.len() {
-        let e = end(i);
+        ends.push(at);
+    }
+    for (i, &e) in ends.iter().enumerate() {
         if let Some(row) = rows.get_mut(i) {
             row.merged_into = (e != i).then_some(e);
         }
@@ -227,8 +239,34 @@ pub(super) fn matched(mut colours: Colours, areas: &[(usize, usize)], mode: Mode
         {
             row.merged_into = Some(into);
         }
+        // Who took its nearest thread, by row.
+        let by = match m.reason {
+            MatchReason::NextFree { by } => by.and_then(|b| together.get(b)).copied(),
+            _ => None,
+        };
         if let Some(row) = rows.get_mut(i) {
             row.thread = Some(m);
+            row.taken_by = by;
+        }
+    }
+    // Shared merges followed to the colour that holds the thread as its own (a colour sharing with
+    // one that shares in turn ends where that one does), and sewn as that colour is.
+    for i in 0..rows.len() {
+        let mut at = rows.get(i).and_then(|r| r.merged_into);
+        let mut hops = 0usize;
+        while let Some(next) = at.and_then(|a| rows.get(a)).and_then(|r| r.merged_into) {
+            hops += 1;
+            if hops > rows.len() {
+                break;
+            }
+            at = Some(next);
+        }
+        let job = at.and_then(|a| rows.get(a)).map(|t| t.job);
+        if let Some(row) = rows.get_mut(i) {
+            row.merged_into = at;
+            if let Some(job) = job {
+                row.job = job;
+            }
         }
     }
     // A colour left unsewn keeps its own thread, its nearest (or the one chosen for it), for when
@@ -237,16 +275,22 @@ pub(super) fn matched(mut colours: Colours, areas: &[(usize, usize)], mode: Mode
         let Some(row) = rows.get(i).filter(|r| keeps(r) && !r.sewn()) else { continue };
         let chosen = choice_of(row).and_then(|c| c.thread).filter(|t| t.palette() == palette);
         let ask = [ColourToMatch { color: row.color, area: row.pixels as f64, chosen }];
+        // One colour is never past the colours matched at once, so the match never fails.
         let m = palette.match_colours(&ask, threads).ok().and_then(|mut v| v.pop());
         if let Some(row) = rows.get_mut(i) {
             row.thread = m;
         }
     }
-    // A merged row is sewn in the thread of the row it ends in.
+    // A merged row is sewn in the thread of the row it ends in, with its own difference from it,
+    // its own flag and its own nearest threads: a grey merged into Black says how far it is.
     for i in 0..rows.len() {
-        let thread = rows.get(i).and_then(|r| r.merged_into).and_then(|j| rows.get(j)).and_then(|r| r.thread.clone());
-        if let (Some(row), Some(t)) = (rows.get_mut(i), thread) {
-            row.thread = Some(t);
+        let Some(row) = rows.get(i) else { continue };
+        let Some(index) = row.merged_into.and_then(|j| rows.get(j)).and_then(|r| r.thread.as_ref()).map(|m| m.thread.index) else { continue };
+        // A shared row keeps why it shares; a merge a person asked for is theirs.
+        let reason = row.thread.as_ref().map(|m| m.reason).filter(|r| matches!(r, MatchReason::Shared { .. })).unwrap_or(MatchReason::Chosen);
+        let own = palette.match_to(row.color, index, reason, threads);
+        if let Some(row) = rows.get_mut(i) {
+            row.thread = own;
         }
     }
     Ok(colours)

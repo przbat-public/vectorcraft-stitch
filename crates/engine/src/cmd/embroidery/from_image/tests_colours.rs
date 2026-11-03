@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 use vectorcraft_doc::{ImageBlob, ImageObject, Node, NodeKind};
 use vectorcraft_geom::Affine;
 use vectorcraft_stitch::MM_PER_PT;
-use vectorcraft_stitch::thread::{Palette, mismatched};
+use vectorcraft_stitch::thread::{Palette, mismatched, shown_delta_e};
 use vectorcraft_trace as tr;
 
 use crate::Session;
@@ -50,6 +50,12 @@ fn quarters(margin: [u8; 4], inner: [u8; 4]) -> tr::Raster {
             (false, false) => YELLOW,
         }
     })
+}
+
+/// `#rrggbb` as sRGB.
+fn rgb(v: &Value) -> [u8; 3] {
+    let h = v.as_str().unwrap();
+    [1, 3, 5].map(|k| u8::from_str_radix(&h[k..k + 2], 16).unwrap())
 }
 
 fn dry(s: &mut Session, params: Value) -> Value {
@@ -168,7 +174,11 @@ fn choices_for_colours_are_found_by_colour() {
     assert_eq!((&green["sewn"], &green["job"]), (&json!(false), &json!("none")));
     let blue = row(&r, BLUE, false);
     assert_eq!((&blue["mergedInto"], &blue["reason"]), (&hex(YELLOW), &json!("merged")));
-    assert_eq!(blue["thread"], row(&r, YELLOW, false)["thread"]);
+    // Sewn in yellow's thread, its own difference from it.
+    let (bt, yt) = (&blue["thread"], &row(&r, YELLOW, false)["thread"]);
+    assert_eq!((&bt["index"], &bt["name"]), (&yt["index"], &yt["name"]));
+    let own = vectorcraft_stitch::color::delta_e_rgb([BLUE[0], BLUE[1], BLUE[2]], rgb(&bt["color"]));
+    assert_eq!((&bt["deltaE"], &bt["mismatch"]), (&json!(shown_delta_e(own)), &json!(mismatched(own))), "{bt}");
     assert_eq!(r["colorCount"], json!(2), "red and yellow: green unsewn, blue merged");
     assert_eq!(r["unusedChoices"], json!([{"choice": 3, "reason": "noSuchColor"}]));
     assert_eq!(r["settings"]["colorChoices"].as_array().unwrap().len(), 4);
@@ -199,8 +209,14 @@ fn colours_with_one_thread_are_merged_and_far_ones_flagged() {
     let mut s = placed(&picture);
     let r = dry(&mut s, json!({"colors": 2}));
     let g = row(&r, grey, false);
-    assert_eq!((&g["mergedInto"], &g["reason"]), (&hex(black), &json!("merged")), "{}", r["colors"]);
-    assert_eq!(g["thread"], row(&r, black, false)["thread"]);
+    assert_eq!((&g["mergedInto"], &g["reason"]), (&hex(black), &json!("shared")), "{}", r["colors"]);
+    assert_eq!(g["thread"]["index"], row(&r, black, false)["thread"]["index"]);
+    // Sewn in Black, 12.43 from it: flagged, with its own nearest threads.
+    let de = vectorcraft_stitch::color::delta_e_rgb([0x29, 0x2f, 0x33], [0, 0, 0]);
+    assert!(mismatched(de), "{de}");
+    assert_eq!((&g["thread"]["deltaE"], &g["thread"]["mismatch"]), (&json!(shown_delta_e(de)), &json!(true)), "{g}");
+    let alternatives: Vec<f64> = g["alternatives"].as_array().unwrap().iter().map(|a| a["deltaE"].as_f64().unwrap()).collect();
+    assert!(alternatives.windows(2).all(|w| w[0] <= w[1]) && alternatives[0] >= de - 0.01, "the grey's own: {alternatives:?}");
     assert_eq!(r["colorCount"], json!(1));
     // The fox's ears, far from every Brother thread.
     let ears = [0xa0, 0x04, 0x1e, 255];
@@ -227,4 +243,40 @@ fn greys_and_a_logo_that_is_no_logo() {
     let r = dry(&mut s, json!({"mode": "logo", "colors": 4, "background": "none"}));
     assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("flat art")), "{}", r["warnings"]);
     assert!(r["colorCount"].as_u64().unwrap() <= 4, "{}", r["colorCount"]);
+}
+
+/// Merges a person asks for that end where they began leave no colour of its own: refused, naming
+/// the colours.
+#[test]
+fn a_loop_of_merges_is_refused() {
+    let mut s = placed(&quarters(WHITE, RED));
+    let p = json!({"dryRun": true, "colors": 4, "colorChoices": [
+        {"color": hex(BLUE), "mergeInto": hex(YELLOW)}, {"color": hex(YELLOW), "mergeInto": hex(BLUE)}]});
+    let e = s.execute("embroidery.digitizeImage", &p).unwrap_err().to_string();
+    assert!(e.contains("loop") && e.contains(&hex(BLUE).as_str().unwrap().to_string()), "{e}");
+}
+
+/// A colour merged into one that shares its thread ends at the colour holding the thread, and is
+/// sewn as it is: in Janome's palette a large grey and a darker grey both share Black with black,
+/// and the grey a person set to Fill takes black's job.
+#[test]
+fn merges_end_at_the_colour_holding_the_thread() {
+    let (black, grey, dark) = ([0, 0, 0, 255], [0x29, 0x2f, 0x33, 255], [0x1a, 0x1c, 0x1e, 255]);
+    let picture =
+        tr::Raster::from_fn(300, 100, |x, y| match ((20..60).contains(&x), (90..200).contains(&x), (220..280).contains(&x), (20..80).contains(&y)) {
+            (true, _, _, true) => black,
+            (_, true, _, true) => grey,
+            (_, _, true, true) => dark,
+            _ => WHITE,
+        });
+    let mut s = placed(&picture);
+    let r = dry(&mut s, json!({"colors": 3, "colorChoices": [{"color": hex(grey), "job": "fill"}]}));
+    let rows = r["colors"].as_array().unwrap();
+    for row in rows.iter().filter(|c| !c["mergedInto"].is_null()) {
+        let into = rows.iter().find(|c| c["color"] == row["mergedInto"]).unwrap();
+        assert!(into["mergedInto"].is_null(), "{row} ends at a merged colour: {into}");
+        assert_eq!((&row["thread"]["index"], &row["job"]), (&into["thread"]["index"], &into["job"]), "{row}");
+    }
+    assert_eq!(rows.iter().filter(|c| !c["mergedInto"].is_null()).count(), 2, "{}", r["colors"]);
+    assert_eq!(row(&r, grey, false)["job"], json!("auto"), "black's job");
 }

@@ -2,7 +2,8 @@
 //! Pixel Preview, checked as the active document's stitch view is (and Show Check Marks, for the
 //! check's marks on the canvas); the document tab's mode, "Stitches" while the canvas shows them;
 //! and a person's Convert to Manual Stitches, Restore Object and Nearest Connection from the
-//! command palette or a shortcut, run as the Embroidery panel runs them.
+//! command palette or a shortcut, run as the Embroidery panel runs them, and Digitize Image, run as
+//! Nearest Connection is.
 
 use serde_json::{Value, json};
 use vectorcraft_engine::DocState;
@@ -15,17 +16,19 @@ use crate::menus::Item;
 const CONVERT: &str = "embroidery.convertToManual";
 const RESTORE: &str = "embroidery.restoreObject";
 const NEAREST: &str = "embroidery.nearestConnection";
+const DIGITIZE: &str = "embroidery.digitizeImage";
 
-/// A person's Convert to Manual Stitches, Restore Object or Nearest Connection (`id`, with no
-/// params), from the command palette or a shortcut, run as the Embroidery panel runs it: Convert
-/// and Nearest Connection off the interface thread, the status bar saying how far they have got
-/// and Escape stopping them; Restore asking first when the stitches it would put back were edited
-/// since converting, and saying what it restored → whether `id` was one of them. Agents' and
-/// scripts' commands run in one go, as every command does.
+/// A person's Convert to Manual Stitches, Restore Object, Nearest Connection or Digitize Image
+/// (`id`, with no params), from the command palette or a shortcut, run as the Embroidery panel runs
+/// it: Convert, Nearest Connection and Digitize Image off the interface thread, the status bar
+/// saying how far they have got and Escape stopping them; Restore asking first when the stitches
+/// it would put back were edited since converting, and saying what it restored → whether `id` was
+/// one of them. Agents' and scripts' commands run in one go, as every command does.
 pub fn invoked(app: &mut VectorcraftApp, id: &str) -> bool {
     match id {
         CONVERT => crate::embroidery::convert_job::start(app, &json!({})),
         NEAREST => crate::embroidery::nearest::start(app),
+        DIGITIZE => crate::embroidery::digitize_job::start(app),
         RESTORE => restore_asking(app, Value::Null),
         _ => return false,
     }

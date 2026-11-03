@@ -6149,6 +6149,8 @@ embroidery	Nothing here can take entry and exit points	Aquí nada puede tener pu
 # embroidery: Nearest Connection off the interface thread
 embroidery	{percent}% · Esc stops it	{percent} % · Esc lo detiene
 embroidery	Stopped: nothing was changed.	Detenido: no se ha cambiado nada.
+# VectorCraft Stitch: Digitize Image from the command palette, the line saying how many objects it made
+@plural	{count} object made|{count} objects made	{count} objeto creado|{count} objetos creados
 embroidery	The document changed meanwhile: nothing was changed.	El documento ha cambiado mientras tanto: no se ha cambiado nada.
 # embroidery: the Exit Point dialog's Auto
 embroidery	Auto (where the plan ends the part)	Auto (donde el plan termina la parte)

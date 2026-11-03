@@ -1673,30 +1673,47 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   (`tests/embroidery_from_image_listing.rs`, 90 lines, the same on Linux aarch64 as on macOS), twice
   the same; the command through MCP; junk params in the shared junk table. On the real designs'
   artwork (`tests/embroidery_from_image_corpus.rs`: each drawn as a PNG at 10 pixels a millimetre,
-  placed over its box and digitized by Create in its own number of colours, Brother's palette),
-  against the vector path (VectorCraft's digitizing of the same art) and the person's design, the
-  silhouette's IoU (needle-down stitches drawn 0.4 mm wide, against the painted art), the colour
-  agreement by thread (each flat pixel of the art under the thread the vector path sews its colour
-  in), the needle points and the threads (measured 2026-11-02):
+  placed over its box and digitized by Create in its own number of colours, in Brother's palette and
+  again in Janome's), against the vector path (VectorCraft's digitizing of the same art) and the
+  person's design: the silhouette's IoU (needle-down stitches drawn 0.4 mm wide, against the
+  painted art), the colour agreement by thread (each flat pixel of the art under the thread the
+  vector path sews its colour in), the needle points, the threads (the person's each counted once),
+  the fabric that shows between two of the art's colours (pixels at least 0.5 mm inside the
+  silhouette, within 0.3 mm of flat pixels of both, that no stitch reaches), and how far the
+  overlap reaches under the next colour on average along the edges colours share, from the outlines
+  (measured 2026-11-03, Brother's palette):
 
-  | design | IoU: vector, image (person) | agreement: vector, image | needle points: vector, image | threads: person, image |
-  |---|---|---|---|---|
-  | bullseye | 0.980, 0.972 (0.981) | 0.960, 0.950 | 3,794, 2,638 (0.70×) | 6, 6 |
-  | fox | 0.968, 0.956 (0.965) | 0.947, 0.946 | 2,270, 2,438 (1.07×) | 4, 4 |
-  | heart | 0.977, 0.974 (0.980) | 0.995, 0.992 | 1,374, 1,368 (1.00×) | 1, 1 |
-  | joystick | 0.953, 0.956 (0.968) | 0.961, 0.960 | 1,669, 1,452 (0.87×) | 5, 4 |
-  | pool 8 ball | 0.980, 0.978 (0.985) | 0.976, 0.974 | 2,437, 2,352 (0.97×) | 3, 2 |
-  | puzzle piece | 0.956, 0.955 (0.967) | 0.987, 0.986 | 1,325, 1,347 (1.02×) | 1, 1 |
-  | smiling face | 0.979, 0.977 (0.985) | 0.969, 0.968 | 2,668, 2,800 (1.05×) | 4, 3 |
-  | SOS button | 0.981, 0.981 (0.984) | 0.967, 0.968 | 2,758, 2,962 (1.07×) | 2, 2 |
-  | video game | 0.969, 0.965 (0.978) | 0.956, 0.954 | 2,192, 1,883 (0.86×) | 8, 7 |
-  | watermelon | 0.962, 0.966 (0.978) | 0.952, 0.945 | 1,535, 1,547 (1.01×) | 3, 4 |
-  | zebra | 0.965, 0.968 (0.972) | 0.919, 0.917 | 3,640, 3,341 (0.92×) | 5, 4 |
+  | design | IoU: vector, image (person) | agreement: vector, image | needle points: vector, image | threads: person, image | fabric between colours, mm²: vector, image, no overlap | reach, mm (along, mm) |
+  |---|---|---|---|---|---|---|
+  | bullseye | 0.980, 0.972 (0.981) | 0.960, 0.951 | 3,794, 2,622 (0.69×) | 6, 6 | 0.0, 0.0, 0.0 | 0.31 (372) |
+  | fox | 0.968, 0.957 (0.965) | 0.947, 0.946 | 2,270, 2,459 (1.08×) | 4, 4 | 0.0, 0.2, 0.2 | 0.30 (263) |
+  | heart | 0.977, 0.974 (0.980) | 0.995, 0.992 | 1,374, 1,368 (1.00×) | 1, 1 | 0.0, 0.0, 0.0 | none: one colour |
+  | joystick | 0.953, 0.956 (0.968) | 0.961, 0.960 | 1,669, 1,452 (0.87×) | 4, 4 | 0.0, 0.0, 0.0 | 0.38 (19) |
+  | pool 8 ball | 0.980, 0.977 (0.985) | 0.976, 0.974 | 2,437, 2,345 (0.96×) | 3, 2 | 0.0, 1.1, 0.3 | 0.31 (171) |
+  | puzzle piece | 0.956, 0.955 (0.967) | 0.987, 0.986 | 1,325, 1,347 (1.02×) | 1, 1 | 0.0, 0.0, 0.0 | none: one colour |
+  | smiling face | 0.979, 0.976 (0.985) | 0.969, 0.967 | 2,668, 2,683 (1.01×) | 4, 3 | 0.0, 0.9, 0.4 | 0.29 (183) |
+  | SOS button | 0.981, 0.981 (0.984) | 0.967, 0.968 | 2,758, 2,962 (1.07×) | 2, 2 | 0.0, 0.0, 0.0 | 0.32 (90) |
+  | video game | 0.969, 0.965 (0.978) | 0.956, 0.955 | 2,192, 1,881 (0.86×) | 8, 7 | 0.0, 0.7, 0.9 | 0.30 (105) |
+  | watermelon | 0.962, 0.966 (0.978) | 0.952, 0.946 | 1,535, 1,544 (1.01×) | 3, 4 | 0.0, 0.0, 0.0 | 0.31 (158) |
+  | zebra | 0.965, 0.969 (0.972) | 0.919, 0.918 | 3,640, 3,343 (0.92×) | 4, 4 | 0.1, 0.0, 0.3 | 0.31 (473) |
 
   The test holds each design's IoU and agreement within 0.02 of the vector path's, its needle
-  points within 0.6 to 1.4 times, its threads within one of the person's, the check free of errors
-  and the dry run's figures Create's (the thresholds calibrated on the art before any of the code,
-  2026-11-02). The bullseye's 0.70: its art stacks whole discs, which the vector path sews one over
+  points within 0.6 to 1.4 times, its fabric between colours within 1.5 mm² of the vector path's,
+  the overlap's reach at least 0.25 mm, its threads within one of the person's (in Brother's
+  palette), the check free of errors and the dry run's figures Create's; and the art as a JPEG of
+  quality 55, or drawn at 4 pixels a millimetre, keeps the clean picture's IoU and agreement within
+  0.01 and 0.02 (agreement by colour: a scan's colours drift, and its nearest thread can be another
+  as near). The IoU, agreement and stitch margins were calibrated on the art before any of the code
+  (2026-11-02) so that upstream's plain Image Trace passes them, with no overlap, no region rules and
+  no threads chosen together: they bound regressions against that trace and can't see the overlap.
+  Nor can the fabric between colours: the planner's stitches, drawn a thread wide, already cover a
+  seam from both sides (0.9 mm² at most with no overlap). The reach does: with the overlap off, the
+  test fails. On the pool ball the overlap leaves 1.1 mm² bare against 0.3 without it, in the notches
+  of the 8's waist, where growing the light disc under the 8 moves the end of the satin column the
+  planner sews in each notch so that it no longer reaches the corner. In Janome's palette the
+  figures are the same but where colours merge into one thread: the joystick's and the zebra's four
+  colours are sewn in three threads, and the joystick sews 0.73 times the vector path's needle
+  points. The bullseye's 0.69: its art stacks whole discs, which the vector path sews one over
   another, the image path as abutting rings. Measured by colour instead of thread, the video game's
   agreement is 0.879: its main grey's thread lies nearer another of the art's colours.
 

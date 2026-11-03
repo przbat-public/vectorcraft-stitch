@@ -4,10 +4,10 @@
 //! what the image stage loses; and the person's design, for counts. Each artwork, at the size of
 //! the person's design, is drawn by the engine as a PNG at 10 pixels a millimetre over its box and
 //! a 5 mm margin, placed over that same box, and digitized by Create in the art's own number of
-//! colours, in Brother's palette (the person's designs are PES).
+//! colours, in Brother's palette (the person's designs are PES) and again in Janome's, whose
+//! nearer threads merge colours of four of the designs.
 //!
-//! For every design, with the thresholds calibrated on the artwork before any of this code was
-//! written (2026-11-02):
+//! For every design, in both palettes:
 //! - the silhouette's IoU against the art (needle-down stitches drawn 0.4 mm wide, where 40 wt
 //!   threads touch) is at least the vector path's less [`IOU_MARGIN`];
 //! - the colour agreement (each flat pixel of the art under the thread the vector path sews its
@@ -17,9 +17,28 @@
 //! - the needle points are [`STITCHES_RANGE`] times the vector path's (the bullseye's art stacks
 //!   whole discs, which the vector path sews one over another and the image path as abutting
 //!   rings: 0.68 times);
-//! - the threads number within one of the person's;
-//! - the check finds no error;
-//! - the dry run's figures are Create's.
+//! - the fabric that shows between two of the art's colours (pixels at least 0.5 mm inside its
+//!   silhouette, within 0.3 mm of flat pixels of both, that no stitch reaches) is at most the
+//!   vector path's plus [`FABRIC_MARGIN_MM2`], with the overlap; the figure with none is printed
+//!   beside it, and so are the fabric inside the art in all and the share of its seams sewn twice;
+//! - the overlap reaches at least [`MIN_REACH_MM`] under the next colour on average along the
+//!   edges colours share, measured from the outlines (what they cover at 0.4 mm past what they
+//!   cover at none, by that length): with the overlap off, this fails;
+//! - the art as a JPEG of quality 55, and drawn at 4 pixels a millimetre, keeps the clean
+//!   picture's IoU and colour agreement within [`JPEG_MARGIN`] and [`COARSE_MARGIN`] (the plan's
+//!   validation note), the agreement by colour (a scan's colours drift, and the nearest thread can
+//!   be another as near);
+//! - in Brother's palette, the threads number within one of the person's, each of theirs counted
+//!   once however many colour blocks it sews;
+//! - the check finds no error, and the dry run's figures are Create's.
+//!
+//! What the thresholds were calibrated on (2026-11-02, before any of this code was written): the
+//! IoU, agreement and stitch margins were set so that upstream's plain Image Trace passes them,
+//! with no overlap, no region rules and no threads chosen together, so they bound regressions
+//! against that trace and can't see the overlap; the fabric between colours can't either (the
+//! planner's stitches, drawn a thread wide, already cover a seam from both sides: 0.9 mm² at most
+//! with no overlap). The reach does, and the fabric margin and the reach were measured on these
+//! designs on 2026-11-03, the JPEG and coarse margins taken from the plan's note.
 //!
 //! A table of the measures is printed. Local runs skip an absent corpus;
 //! `EMBROIDERY_CORPUS_REQUIRED=1` requires it.
@@ -31,7 +50,7 @@ use vectorcraft_engine::EmbroideryOptions;
 use vectorcraft_stitch::format::Format;
 
 mod embroidery_common;
-use embroidery_common::images::{Art, Sewn, art_picture, cover, painted_centre, placed_over, thread_of};
+use embroidery_common::images::{Art, Sewn, art_picture, art_picture_at, cover, painted_centre, placed_over, thread_of};
 use embroidery_common::{DESIGNS, artwork, corpus, run};
 
 /// How much lower than the vector path's the image path's silhouette IoU may be: 0.02, the
@@ -55,73 +74,222 @@ const THREADS_OFF: usize = 1;
 /// anti-aliased edge the second, which joins the first as a sliver.
 const MIN_COLORS: usize = 2;
 
+/// How much more fabric may show between the art's colours where the image path sews it, with the
+/// overlap, than where the vector path does (square millimetres): 1.5, over the most measured on
+/// 2026-11-03, 1.1 on the pool ball, where the overlap moves the end of a satin column the planner
+/// sews in each notch of the 8's waist so that it no longer reaches the corner (0.3 there with no
+/// overlap; the vector path leaves 0.1 at most).
+const FABRIC_MARGIN_MM2: f64 = 1.5;
+
+/// How far, on average, the overlap must reach under the next colour along the edges colours share
+/// (millimetres), on a design of two colours or more: 0.25, under the 0.29 to 0.38 measured on
+/// 2026-11-03 at 0.4 mm, the strip narrowing at its round ends and under thin neighbours. None
+/// reached is no overlap.
+const MIN_REACH_MM: f64 = 0.25;
+
+/// The overlap the gates are taken at (millimetres), the default, and none, whose fabric is
+/// printed beside it.
+const OVERLAP_MM: f64 = 0.4;
+const NO_OVERLAP_MM: f64 = 0.0;
+
+/// The JPEG the plan's validation note measures the art as (its quality), and how much lower than
+/// the clean picture's its IoU and colour agreement may be: 0.01, the note's.
+const JPEG_QUALITY: u8 = 55;
+const JPEG_MARGIN: f64 = 0.01;
+
+/// The coarse copy the note measures the art at (pixels a millimetre, the coarse-image warning's
+/// line), and how much lower than the clean picture's its IoU and agreement may be: 0.02, the
+/// note's.
+const COARSE_PX_PER_MM: f64 = 4.0;
+const COARSE_MARGIN: f64 = 0.02;
+
+/// The palettes the designs are digitized in: Brother's, as the person's designs are PES, and
+/// Janome's, whose nearer threads merge colours of four of the designs.
+const PALETTES: [&str; 2] = ["pec", "jef"];
+
+/// `png` drawn over white, as a JPEG of `quality`: a scan of the art as a camera or a scanner saves
+/// it.
+fn jpeg_of(png: &[u8], quality: u8) -> Vec<u8> {
+    let img = image::load_from_memory(png).unwrap().to_rgba8();
+    let over_white = |c: u8, a: u8| ((u16::from(c) * u16::from(a) + 255 * (255 - u16::from(a))) / 255) as u8;
+    let rgb: Vec<u8> = img.pixels().flat_map(|p| [over_white(p[0], p[3]), over_white(p[1], p[3]), over_white(p[2], p[3])]).collect();
+    let mut out = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, quality)
+        .encode(&rgb, img.width(), img.height(), image::ExtendedColorType::Rgb8)
+        .unwrap();
+    out
+}
+
+/// The most areas a reply lists: every area of the real designs.
+const LISTED: u64 = 10_000;
+
+/// The outlines of reply `r`'s areas, measured: their areas added (square millimetres).
+fn outlined(r: &serde_json::Value) -> f64 {
+    use vectorcraft_geom::kurbo::{BezPath, Shape};
+    r["areas"].as_array().unwrap().iter().filter_map(|a| a["outline"].as_str()).map(|d| BezPath::from_svg(d).unwrap().area().abs()).sum()
+}
+
+/// The edges along which reply `r`'s areas grow under the ones sewn after them (millimetres): each
+/// edge between two sewn areas, the later's, but an island's sewn over the area round it.
+fn grown_along(r: &serde_json::Value) -> f64 {
+    let areas = r["areas"].as_array().unwrap();
+    let sewn = |n: &serde_json::Value| areas.iter().any(|a| &a["area"] == n && a["sewn"] == json!(true));
+    let mut edge = 0.0;
+    for a in areas.iter().filter(|a| a["sewn"] == json!(true)) {
+        for t in a["touches"].as_array().unwrap().iter().filter(|t| t["under"] == json!(true) && sewn(&t["area"])) {
+            if !(a["sewnOver"] == json!(true) && a["inside"] == t["area"]) {
+                edge += t["edge"].as_f64().unwrap();
+            }
+        }
+    }
+    edge
+}
+
+/// Picture `bytes` (named `name`) placed over `rect`, digitized by Create in `palette` with `colours`
+/// colours and `overlap` millimetres of overlap: what it sews, and whether the dry run answered
+/// Create's figures, with Create's reply; the dry run's lists its outlines.
+fn digitized(
+    name: &str,
+    bytes: &[u8],
+    rect: embroidery_common::images::Box,
+    palette: &str,
+    colours: usize,
+    overlap: f64,
+) -> (vectorcraft_stitch::Pattern, bool, serde_json::Value) {
+    let mut image = placed_over(name, bytes, rect);
+    run(&mut image, "embroidery.setup", json!({"palette": palette}));
+    let params = json!({"colors": colours.max(MIN_COLORS), "overlap": overlap});
+    let mut dry = params.clone();
+    dry["dryRun"] = json!(true);
+    dry["outlines"] = json!(true);
+    dry["limit"] = json!(LISTED);
+    let answered = run(&mut image, "embroidery.digitizeImage", dry);
+    let made = run(&mut image, "embroidery.digitizeImage", params);
+    let errors = run(&mut image, "embroidery.check", json!({"limit": 0}))["summary"]["errors"]["hits"].as_u64().unwrap();
+    let mut made = made;
+    made["checkErrors"] = json!(errors);
+    made["outlined"] = json!(outlined(&answered));
+    made["grownAlong"] = json!(grown_along(&answered));
+    (image.embroidery_plan(&EmbroideryOptions::default()).unwrap().to_pattern(), answered["stats"] == made["stats"], made)
+}
+
 #[test]
 fn digitized_artwork_stays_near_the_vector_path() {
     let Some(dir) = corpus() else { return };
     let mut failed = Vec::new();
-    eprintln!("design\tcolours\tIoU vector, image\tagreement vector, image\tstitches vector, image (×)\tthreads person, image");
-    for &(art_name, theirs) in DESIGNS {
-        let design = art_name.split('-').next().unwrap();
-        let mut s = artwork(&dir, art_name, theirs);
-        run(&mut s, "embroidery.setup", json!({"palette": "pec"}));
-        let vector = s.embroidery_plan(&EmbroideryOptions::default()).unwrap().to_pattern();
-        // The art's colours, each with the thread the vector path sews it in.
-        let (mut colours, mut threads): (Vec<[u8; 3]>, Vec<Option<usize>>) = (Vec::new(), Vec::new());
-        for b in &vector.blocks {
-            if !colours.contains(&b.thread.color) {
-                colours.push(b.thread.color);
-                threads.push(thread_of(b));
+    eprintln!(
+        "design\tpalette\tcolours\tIoU vector, image\tagreement vector, image\tstitches vector, image (×)\tthreads person, image\tfabric between colours mm² vector, image, at 0 (inside in all)\tseams sewn twice vector, image, at 0\treach mm along mm\tJPEG IoU, agreement by colour (PNG's)\t4 px/mm IoU, agreement by colour"
+    );
+    for palette in PALETTES {
+        for &(art_name, theirs) in DESIGNS {
+            let design = art_name.split('-').next().unwrap();
+            let mut s = artwork(&dir, art_name, theirs);
+            run(&mut s, "embroidery.setup", json!({"palette": palette}));
+            let vector = s.embroidery_plan(&EmbroideryOptions::default()).unwrap().to_pattern();
+            // The art's colours, each with the thread the vector path sews it in.
+            let (mut colours, mut threads): (Vec<[u8; 3]>, Vec<Option<usize>>) = (Vec::new(), Vec::new());
+            for b in &vector.blocks {
+                if !colours.contains(&b.thread.color) {
+                    colours.push(b.thread.color);
+                    threads.push(thread_of(b));
+                }
+            }
+            let (rect, png) = art_picture(&mut s);
+            let (_, coarse_png) = art_picture_at(&mut s, COARSE_PX_PER_MM);
+            let mut art = Art::of(&png, rect, colours.clone());
+            let by_thread = Sewn::Thread(&threads);
+            let (sewn, same, made) = digitized("art.png", &png, rect, palette, colours.len(), OVERLAP_MM);
+            if !same {
+                failed.push(format!("{design} in {palette}: the dry run's figures aren't Create's"));
+            }
+            let (bare, _, flush) = digitized("art.png", &png, rect, palette, colours.len(), NO_OVERLAP_MM);
+            // How far the overlap reaches under the next colour, on average along the edges it grows
+            // along: what the outlines cover at 0.4 mm past what they cover at none, by that length.
+            let along = made["grownAlong"].as_f64().unwrap();
+            let reach = if along > 0.0 { (made["outlined"].as_f64().unwrap() - flush["outlined"].as_f64().unwrap()) / along } else { 0.0 };
+            let (jpeg, _, _) = digitized("art.jpg", &jpeg_of(&png, JPEG_QUALITY), rect, palette, colours.len(), OVERLAP_MM);
+            let (coarse, _, _) = digitized("art.png", &coarse_png, rect, palette, colours.len(), OVERLAP_MM);
+            let (v, d) = (cover(&vector, &mut art, 0.0, 0.0, by_thread), cover(&sewn, &mut art, 0.0, 0.0, by_thread));
+            let b = cover(&bare, &mut art, 0.0, 0.0, by_thread);
+            // The JPEG and the coarse copy against the clean picture, by colour: a scan's colours
+            // drift, and its nearest thread can be another as near.
+            let by_colour = |p: &vectorcraft_stitch::Pattern, art: &mut Art| cover(p, art, 0.0, 0.0, Sewn::Colour);
+            let (dc, j, c) = (by_colour(&sewn, &mut art), by_colour(&jpeg, &mut art), by_colour(&coarse, &mut art));
+            let (vs, ds) = (vector.sewn() as f64, sewn.sewn() as f64);
+            let threads_sewn = made["stats"]["threadCount"].as_u64().unwrap() as usize;
+            let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
+            // The person's threads, each once however many colour blocks it sews.
+            let mut theirs_threads: Vec<[u8; 3]> = person.blocks.iter().map(|b| b.thread.color).collect();
+            theirs_threads.sort_unstable();
+            theirs_threads.dedup();
+            eprintln!(
+                "{design}\t{palette}\t{}\t{:.3}, {:.3}\t{:.3}, {:.3}\t{vs}, {ds} ({:.2})\t{}, {threads_sewn}\t{:.1}, {:.1}, {:.1} ({:.1}, {:.1}, {:.1})\t{:.2}, {:.2}, {:.2}\t{reach:.2} along {along:.0}\t{:.3}, {:.3} ({:.3})\t{:.3}, {:.3}",
+                colours.len(),
+                v.iou,
+                d.iou,
+                v.agreement,
+                d.agreement,
+                ds / vs,
+                theirs_threads.len(),
+                v.seam_fabric_mm2,
+                d.seam_fabric_mm2,
+                b.seam_fabric_mm2,
+                v.fabric_mm2,
+                d.fabric_mm2,
+                b.fabric_mm2,
+                v.seams_doubled,
+                d.seams_doubled,
+                b.seams_doubled,
+                j.iou,
+                j.agreement,
+                dc.agreement,
+                c.iou,
+                c.agreement
+            );
+            let mut fail = |why: String| failed.push(format!("{design} in {palette}: {why}"));
+            if d.iou < v.iou - IOU_MARGIN {
+                fail(format!("IoU {:.3}, the vector path's {:.3}", d.iou, v.iou));
+            }
+            if d.agreement < v.agreement - AGREEMENT_MARGIN {
+                fail(format!("colour agreement {:.3}, the vector path's {:.3}", d.agreement, v.agreement));
+            }
+            if !(STITCHES_RANGE.0..=STITCHES_RANGE.1).contains(&(ds / vs)) {
+                fail(format!("{ds} needle points, {:.2} times the vector path's", ds / vs));
+            }
+            if d.seam_fabric_mm2 > v.seam_fabric_mm2 + FABRIC_MARGIN_MM2 {
+                fail(format!("{:.1} mm² of fabric shows between colours, the vector path's {:.1}", d.seam_fabric_mm2, v.seam_fabric_mm2));
+            }
+            if along > 0.0 && reach < MIN_REACH_MM {
+                fail(format!("the overlap reaches {reach:.2} mm under the next colour along {along:.0} mm"));
+            }
+            if j.iou < d.iou - JPEG_MARGIN || j.agreement < dc.agreement - JPEG_MARGIN {
+                fail(format!("as a JPEG: IoU {:.3}, agreement {:.3}, the PNG's {:.3}, {:.3}", j.iou, j.agreement, d.iou, dc.agreement));
+            }
+            if c.iou < d.iou - COARSE_MARGIN || c.agreement < dc.agreement - COARSE_MARGIN {
+                fail(format!("at 4 px/mm: IoU {:.3}, agreement {:.3}, the 10's {:.3}, {:.3}", c.iou, c.agreement, d.iou, dc.agreement));
+            }
+            // The person's threads are Brother's: in Janome's, colours whose nearest thread is one
+            // thread merge, and fewer are sewn.
+            if palette == "pec" && threads_sewn.abs_diff(theirs_threads.len()) > THREADS_OFF {
+                fail(format!("{threads_sewn} threads, the person's {}", theirs_threads.len()));
+            }
+            if made["checkErrors"] != json!(0) {
+                fail(format!("the check finds {} errors", made["checkErrors"]));
+            }
+            if palette == "pec" {
+                // The person's design is drawn where its box's centre meets the art's (for the table).
+                let (ax, ay) = painted_centre(&art);
+                let pb = person.bounds().unwrap();
+                let p = cover(&person, &mut art, ax - (pb.x0 + pb.x1) / 2.0, ay - (pb.y0 + pb.y1) / 2.0, Sewn::Colour);
+                eprintln!(
+                    "{design}\tthe person's design: IoU {:.3}, agreement {:.3}, {} needle points, {:.1} mm² of fabric",
+                    p.iou,
+                    p.agreement,
+                    person.sewn(),
+                    p.fabric_mm2
+                );
             }
         }
-        let (rect, png) = art_picture(&mut s);
-        let mut art = Art::of(&png, rect, colours.clone());
-        let mut image = placed_over("art.png", &png, rect);
-        run(&mut image, "embroidery.setup", json!({"palette": "pec"}));
-        let params = json!({"colors": colours.len().max(MIN_COLORS)});
-        let mut dry = params.clone();
-        dry["dryRun"] = json!(true);
-        let answered = run(&mut image, "embroidery.digitizeImage", dry);
-        let made = run(&mut image, "embroidery.digitizeImage", params);
-        if answered["stats"] != made["stats"] {
-            failed.push(format!("{design}: the dry run's figures aren't Create's"));
-        }
-        let digitized = image.embroidery_plan(&EmbroideryOptions::default()).unwrap().to_pattern();
-        let person = Format::Pes.read(&std::fs::read(dir.join(theirs)).unwrap()).unwrap();
-        let by_thread = Sewn::Thread(&threads);
-        let (v, d) = (cover(&vector, &mut art, 0.0, 0.0, by_thread), cover(&digitized, &mut art, 0.0, 0.0, by_thread));
-        let (vs, ds) = (vector.sewn() as f64, digitized.sewn() as f64);
-        let threads = made["stats"]["threadCount"].as_u64().unwrap() as usize;
-        let errors = run(&mut image, "embroidery.check", json!({"limit": 0}))["summary"]["errors"]["hits"].as_u64().unwrap();
-        eprintln!(
-            "{design}\t{}\t{:.3}, {:.3}\t{:.3}, {:.3}\t{vs}, {ds} ({:.2})\t{}, {threads}",
-            colours.len(),
-            v.iou,
-            d.iou,
-            v.agreement,
-            d.agreement,
-            ds / vs,
-            person.blocks.len()
-        );
-        if d.iou < v.iou - IOU_MARGIN {
-            failed.push(format!("{design}: IoU {:.3}, the vector path's {:.3}", d.iou, v.iou));
-        }
-        if d.agreement < v.agreement - AGREEMENT_MARGIN {
-            failed.push(format!("{design}: colour agreement {:.3}, the vector path's {:.3}", d.agreement, v.agreement));
-        }
-        if !(STITCHES_RANGE.0..=STITCHES_RANGE.1).contains(&(ds / vs)) {
-            failed.push(format!("{design}: {ds} needle points, {:.2} times the vector path's", ds / vs));
-        }
-        if threads.abs_diff(person.blocks.len()) > THREADS_OFF {
-            failed.push(format!("{design}: {threads} threads, the person's {}", person.blocks.len()));
-        }
-        if errors > 0 {
-            failed.push(format!("{design}: the check finds {errors} errors"));
-        }
-        // The person's design is drawn where its box's centre meets the art's (for the table).
-        let (ax, ay) = painted_centre(&art);
-        let pb = person.bounds().unwrap();
-        let p = cover(&person, &mut art, ax - (pb.x0 + pb.x1) / 2.0, ay - (pb.y0 + pb.y1) / 2.0, Sewn::Colour);
-        eprintln!("{design}\tthe person's design: IoU {:.3}, agreement {:.3}, {} needle points", p.iou, p.agreement, person.sewn());
     }
     assert!(failed.is_empty(), "{}", failed.join("\n"));
 }

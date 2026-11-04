@@ -40,6 +40,8 @@
 //! - the Embroidery panel's Object tab's work on a new snapshot (each frame of a drag or a scrub):
 //!   its read of 1,000 selected objects' settings, and its footer's fabric and thread on the
 //!   22,000-path document;
+//! - digitizing from an image (`digitizing`): pictures made there, its stages as the command times
+//!   them, and its dry run in all;
 //! - stitch pictures of 10,000 to 2,000,000 stitches ([`stitch_picture`]: fill rows, satin columns
 //!   and running lines in twelve threads, built in code, no planner), drawn by the stitch preview's
 //!   renderer at fit and zoomed in, on the default threads and on one (as the web build draws).
@@ -65,6 +67,8 @@ use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, Point, Shape, kurbo}
 use vectorcraft_render::lines::{LinePicture, LinePictureBuilder, LineRenderer, LineStyle, LinkKind, MarkKind, edge_against};
 
 use crate::perf::synthetic;
+
+mod digitizing;
 
 /// The paths of the synthetic document whose embroidery is planned: few enough to stay within the
 /// 2 million stitches a design may have (the 50,000-path document needs more), about a hundred
@@ -92,7 +96,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 82] = [
+pub const ROWS: [&str; 94] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -175,6 +179,18 @@ pub const ROWS: [&str; 82] = [
     "needle points: slowest press at 10%",
     "edit look: draw 500,000 all flagged",
     "stitches tab: counts and rows, 2,000,000",
+    digitizing::ROWS[0],
+    digitizing::ROWS[1],
+    digitizing::ROWS[2],
+    digitizing::ROWS[3],
+    digitizing::ROWS[4],
+    digitizing::ROWS[5],
+    digitizing::ROWS[6],
+    digitizing::ROWS[7],
+    digitizing::ROWS[8],
+    digitizing::ROWS[9],
+    digitizing::ROWS[10],
+    digitizing::ROWS[11],
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -194,7 +210,7 @@ pub const ROWS: [&str; 82] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 82] = [
+const BUDGETS: [f64; 94] = [
     400.0,
     100.0,
     100.0,
@@ -278,6 +294,18 @@ const BUDGETS: [f64; 82] = [
     // Set in the run, beside the same picture drawn plain ([`FLAGGED_FRAME_RATIO`]).
     f64::INFINITY,
     TAB_ROWS_MS,
+    digitizing::BUDGETS[0],
+    digitizing::BUDGETS[1],
+    digitizing::BUDGETS[2],
+    digitizing::BUDGETS[3],
+    digitizing::BUDGETS[4],
+    digitizing::BUDGETS[5],
+    digitizing::BUDGETS[6],
+    digitizing::BUDGETS[7],
+    digitizing::BUDGETS[8],
+    digitizing::BUDGETS[9],
+    digitizing::BUDGETS[10],
+    digitizing::BUDGETS[11],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -463,6 +491,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend(needle_index(&literal)?);
     ms.push(flagged(&stitch_picture(500_000)));
     ms.push(tab_rows(&literal)?);
+    ms.extend(digitizing::times()?);
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;

@@ -6589,6 +6589,69 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   selection after it. One undo step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
   Edit is on ("not while Global Edit is on: stop Global Edit first").
+- `embroidery.digitizeImage {id?, dryRun?, offset?, limit?, regions?, outlines?, at?, …settings}` digitizes an image
+  (`id`, an image or an Image Trace object, whose source image it reads; default: the one object selected) into
+  embroidery objects, every size threshold in millimetres (`embroidery.md` › Digitizing from an image). The settings:
+  `width`, `height` or `fit: [w, h]` (mm; default: the image as placed), `crop: [x0, y0, x1, y1]` (the image's own
+  pixels), `background` (`"corners"`, the default: transparency, or the colour three corners agree on; `"none"`;
+  `"#rrggbb"`), `mode` (`color`, `logo`, `grayscale`), `colors` (2 to the palette's threads, default 6),
+  `colorChoices: [{color, thread?: {palette, index}, mergeInto?, job?: "auto"|"fill"|"none"}]` (at most 256),
+  `minArea` (mm², default 1), `smoothing` and `corners` (0 to 100) and `overlap` (mm, 0 to 2, default 0.4); the
+  reply's `table` gives each setting's step, unit, range, default and its source. The image is worked at a copy of at
+  most 10 pixels a millimetre (fewer past 1,500 pixels a side, or where the image has fewer) and traced in its own
+  colours; each colour gets a thread of the document's palette, chosen together (CIEDE2000, flagged past ΔE 10; two
+  colours whose only thread within ΔE 10 is the same one are merged); the background is only what touches the
+  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than 1 mm and at least 2 mm long
+  stays), an island narrower than 4 mm is sewn over the area round it with no hole cut, and where two colours meet the
+  one sewn first reaches `overlap` under the one sewn after, only along the edge they share. Without `dryRun` it
+  creates the objects: one group in the image's place (named as the image is), in it a group for each colour block in
+  sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
+  its thread's own colour, embroidery settings set only where a colour's job asks (`fill`: `narrowAsSatin` 0; `none`:
+  not sewn); the image moves, with its id, to a new template layer below every layer, hidden and locked, scaled as the
+  design is. One undo step "Digitize Image", the new group selected; Nearest Connection is not run. More than 10,000
+  areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
+  {group, layer, objects, blocks} (null for a dry run), image: {id, pixels, decoded, crop, worked, pxPerMm, limitedBy,
+  size, scale, bounds, background}, colorCount, colors: [{color, background, sewn, job, thread, reason, alternatives,
+  area, areaCount, share, sewnShare, mergedInto, choice}], unusedChoices, areaCount, offset, truncated, areas: [{area,
+  at, color, thread, kind, sewn, size, widest, box, inside, sewnOver, joined, touches, grownUnder, outline, order}],
+  areaAt, doubledArea, traced, joined, leftOut, regions, stats, warnings, settings, table, timings}`: `stats` is what
+  `embroidery.stats {selectedOnly: true}` answers with the new group selected (null when nothing is made), a dry run's
+  as Create's. `warnings` lists `{id, values, message}`: `id` names the warning for a window to word in its own
+  language, `values` holds what that wording needs, and `message` says it in English: `coarse` {pxPerMm, fewerThan},
+  `decodedSmaller` {decoded, pixels, maxMegapixels}, `notFlatArt` {by: `"colors"` with found and colors, `"anchors"`
+  with maxAnchors and colors, or `"gradual"` with percent}, `noBackgroundColor`, `cornersDisagree`, `choiceNotGray`
+  {color, thread: {palette, index, name}}, `colorJoined` {color, minArea}, `specksJoined` {count, minArea},
+  `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `shapesNotJoined` {count}, `nothingTraced` and
+  `nothingToMake` (a dry run's; Create is refused instead). `unusedChoices` lists `{choice, reason}` for each choice
+  that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
+  names none, the background's aside, so the colours it took are sewn as their own). An area's `area` is its number in
+  this reply's sewing order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its
+  colour. The rest, in full: `created` is the group made, the layer holding the image, and how many objects and colour
+  blocks; `image.pixels` is the image's own size, `decoded` what was read of it (smaller only past 64 megapixels),
+  `crop` the pixels digitized, `worked` the working copy's size, `pxPerMm` its resolution and `limitedBy` what held it
+  down (`"grid"`: 10 a millimetre, `"side"`: 1,500 pixels, `"image"`: its own pixels), `size` the design's
+  millimetres, `scale` the design against the image as placed, `bounds` where it lies (millimetres from the document's
+  origin, y down), and `background` `{from: "corners"|"transparency"|"given"|"none", color}`; each of `colors` gives
+  the image's colour, whether it is the background's (touching the image's edge, never sewn) and sewn, its `job`, its
+  `thread` `{palette, index, name, color, deltaE, mismatch}` (null for the background), the `reason` (`own`, `chosen`,
+  `nearest`, `nextFree` with the colour that took its nearest in `by`, `shared`, `merged`), the five nearest
+  `alternatives` after its own, its `area` (mm²), `areaCount`, `share` of the image and `sewnShare` of what is sewn
+  (percent), `mergedInto` and the `choice` it took; each of `areas` gives `thread`, `kind` (`"fill"`, or `"line"` for
+  a thin line kept below the smallest area), `sewn`, `size` `{area, width, height}` (mm², mm), `widest` (its widest
+  inscribed width, mm), `box` `[left, top, right, bottom]` (mm), the area it lies `inside` alone and whether it is
+  `sewnOver` that one, how many smaller areas `joined` it, what it `touches` `[{area, edge, under}]` (the edge in mm;
+  `under`: that one is sewn before it), the areas it is `grownUnder`, its `outline` (with `outlines: true`) and its
+  `order` `{taken: "notSewn"|"sameThread"|"newThread", after: [{area, because: "detail"|"inside"|"larger"}]}`. The
+  areas are listed from `offset` (default 0), at most `limit` (0 to 10,000, default 1,000) and at most 20,000 path
+  elements of outlines a reply: `truncated` says more follow. `at: [x, y]` is a point in the image's own pixels, and
+  `areaAt` the area there (null: none, outside the image or the crop, or no `at`). `regions` (with `regions: true`) is
+  `{width, height, base64}`: each working pixel's area number (0 for none), two bytes little-endian. `traced` is what
+  the trace made before the rules (`{paths, colors}`), `joined` and `leftOut` how many specks joined an area or were
+  left out, `doubledArea` the mm² the overlap sews twice, and `timings` each stage's milliseconds (`{image, trace,
+  areas, shapes, objects, stitches}`, null on the web). `outline` (with `outlines: true`) is an area's shape as sewn,
+  an SVG path in millimetres from the document's origin, to hundredths. An interface runs it off its thread through
+  the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`, `Session::apply_digitize_image`), which a
+  document changed meanwhile refuses.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

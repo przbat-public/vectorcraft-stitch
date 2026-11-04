@@ -9,7 +9,7 @@
 use proptest::prelude::*;
 use vectorcraft_stitch::Thread;
 use vectorcraft_stitch::color::delta_e_rgb;
-use vectorcraft_stitch::thread::{Palette, PaletteThread, mismatched};
+use vectorcraft_stitch::thread::{ColourToMatch, MatchReason, Palette, PaletteThread, Threads, mismatched};
 
 /// The most entries a palette has (Janome's 78), and one past it for numbers that name none.
 const MOST_ENTRIES: usize = 78;
@@ -75,4 +75,87 @@ fn a_thread_shown_at_the_threshold_is_similar() {
     let other = Palette::Pec.nearest([57, 210, 106], &[numbers[0]]);
     assert!(other.delta_e > 10.0 && !mismatched(other.delta_e), "{other:?}");
     assert_eq!(numbers[1], other.index);
+}
+
+/// A design's colour to match: any colour, or a thread's own, covering any area, with a thread
+/// chosen for it from either palette now and then.
+fn arb_colour() -> impl Strategy<Value = ColourToMatch> {
+    let own = (arb_palette(), 1..=MOST_ENTRIES).prop_map(|(p, i)| p.get(i).map_or([0, 0, 0], |(rgb, _)| rgb));
+    let color = prop_oneof![3 => any::<[u8; 3]>(), 1 => own];
+    let chosen = prop_oneof![4 => Just(None), 1 => (arb_palette(), 1..=MOST_ENTRIES).prop_map(|(p, i)| PaletteThread::new(p, i))];
+    (color, 1u32..1000, chosen).prop_map(|(color, area, chosen)| ColourToMatch { color, area: f64::from(area), chosen })
+}
+
+/// The least total difference of colours `free` (indices into `colours`), each given a distinct
+/// thread of `near` within the line, or none (paying `unmatched`): by brute force.
+fn least(colours: &[ColourToMatch], free: &[usize], near: &[usize], palette: Palette, taken: &[usize], unmatched: f64) -> f64 {
+    let Some((&c, rest)) = free.split_first() else { return 0.0 };
+    let mut best = unmatched + least(colours, rest, near, palette, taken, unmatched);
+    for &t in near {
+        if taken.contains(&t) {
+            continue;
+        }
+        let d = delta_e_rgb(colours[c].color, palette.get(t).unwrap().0);
+        if mismatched(d) {
+            continue;
+        }
+        let mut more = taken.to_vec();
+        more.push(t);
+        best = best.min(d + least(colours, rest, near, palette, &more, unmatched));
+    }
+    best
+}
+
+proptest! {
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(256))]
+
+    /// Threads for a design's colours keep the rules: each is a thread (and a neutral one for
+    /// greys, but for a thread chosen for it), a choice from the palette is kept, each difference is the colour's from its
+    /// thread, the order the colours come in changes nothing but the order of the answer, and
+    /// within the line the fewest colours share a thread and then the least total difference is
+    /// taken (against brute force over the threads near them).
+    #[test]
+    fn colours_get_threads_by_the_rules(palette in arb_palette(), colours in prop::collection::vec(arb_colour(), 0..4), neutral in any::<bool>(), turn in 0usize..4) {
+        let threads = if neutral { Threads::Neutral } else { Threads::All };
+        let got = palette.match_colours(&colours, threads).unwrap();
+        prop_assert_eq!(got.len(), colours.len());
+        for (c, m) in colours.iter().zip(&got) {
+            prop_assert!(palette.is_thread(m.thread.index));
+            let chosen = c.chosen.filter(|t| t.palette() == palette);
+            prop_assert!(!neutral || palette.is_neutral(m.thread.index) || chosen.is_some_and(|t| t.index() == m.thread.index));
+            prop_assert_eq!(m.thread.delta_e, delta_e_rgb(c.color, palette.get(m.thread.index).unwrap().0));
+            if let Some(t) = chosen {
+                prop_assert_eq!((m.thread.index, m.reason), (t.index(), MatchReason::Chosen));
+            }
+            prop_assert!(!m.alternatives.iter().any(|a| a.index == m.thread.index));
+        }
+        // Turned round: the same threads, each with its colour.
+        let mut turned = colours.clone();
+        turned.rotate_left(turn.min(colours.len()));
+        let again = palette.match_colours(&turned, threads).unwrap();
+        for (k, m) in again.iter().enumerate() {
+            let from = (k + turn.min(colours.len())) % colours.len().max(1);
+            prop_assert_eq!(m.thread, got[from].thread);
+        }
+        // The colours whose thread was fixed before the assignment, from the inputs alone (a thread
+        // chosen from this palette); the rest: within the line as few without one of their own as
+        // can be, then the least total.
+        let fixed: Vec<usize> = (0..colours.len()).filter(|&c| colours[c].chosen.is_some_and(|t| t.palette() == palette)).collect();
+        let taken: Vec<usize> = fixed.iter().filter_map(|&c| colours[c].chosen.map(|t| t.index())).collect();
+        let free: Vec<usize> = (0..colours.len()).filter(|c| !fixed.contains(c)).collect();
+        let near: Vec<usize> = (1..=palette.threads().len())
+            .filter(|&t| palette.is_thread(t) && (!neutral || palette.is_neutral(t)))
+            .filter(|&t| free.iter().any(|&c| !mismatched(delta_e_rgb(colours[c].color, palette.get(t).unwrap().0))))
+            .collect();
+        let unmatched = 1.0e6;
+        let ours: f64 = free
+            .iter()
+            .map(|&c| {
+                let own = !matches!(got[c].reason, MatchReason::Shared { .. }) && !mismatched(got[c].thread.delta_e) && !taken.contains(&got[c].thread.index);
+                if own { got[c].thread.delta_e } else { unmatched }
+            })
+            .sum();
+        let best = least(&colours, &free, &near, palette, &taken, unmatched);
+        prop_assert!((ours - best).abs() < 1e-6, "ours {} against the least {}: {:?}", ours, best, got);
+    }
 }

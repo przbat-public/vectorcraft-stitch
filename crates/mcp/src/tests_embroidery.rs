@@ -237,3 +237,29 @@ fn nearest_connection_is_reachable() {
     let refused = call_tool(&mut h, "run_command", &json!({"command": "embroidery.nearestConnection", "params": {"dryrun": true}}));
     assert!(refused.is_error, "{refused:?}");
 }
+
+/// Digitize Image through MCP: listed, run on an image placed from a PNG, a dry run changing nothing
+/// and answering the figures Create then makes, Create one undo step, and a key it doesn't take
+/// refused.
+#[test]
+fn digitize_image_is_reachable() {
+    let mut h = Headless::with_document();
+    let listed = text(&call_tool(&mut h, "list_commands", &json!({"filter": "embroidery.digitize"})));
+    assert!(listed["commands"].as_array().unwrap().iter().any(|c| c["id"] == "embroidery.digitizeImage"), "{listed}");
+    // An orange square on white, 100 pixels a side.
+    let square = |x: u32, y: u32| (20..80).contains(&x) && (20..80).contains(&y);
+    let picture = image::RgbaImage::from_fn(100, 100, |x, y| image::Rgba(if square(x, y) { [240, 130, 20, 255] } else { [255, 255, 255, 255] }));
+    let mut png = Vec::new();
+    picture.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    let place = json!({"command": "file.place", "params": {"name": "square.png", "dataBase64": vectorcraft_format::base64_encode(&png)}});
+    text(&call_tool(&mut h, "run_command", &place));
+    let undo = h.session.doc().unwrap().history.undo.len();
+    let dry = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.digitizeImage", "params": {"dryRun": true, "colors": 2}})));
+    assert_eq!(h.session.doc().unwrap().history.undo.len(), undo, "a dry run changes nothing");
+    assert_eq!((&dry["areaCount"], &dry["created"]), (&json!(1), &Value::Null), "{dry}");
+    let r = text(&call_tool(&mut h, "run_command", &json!({"command": "embroidery.digitizeImage", "params": {"colors": 2}})));
+    assert_eq!((&r["created"]["objects"], &r["stats"]), (&json!(1), &dry["stats"]), "{r}");
+    assert_eq!(h.session.doc().unwrap().history.undo.len(), undo + 1);
+    let refused = call_tool(&mut h, "run_command", &json!({"command": "embroidery.digitizeImage", "params": {"minAreas": 1}}));
+    assert!(refused.is_error, "{refused:?}");
+}

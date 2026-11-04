@@ -31,6 +31,9 @@ use std::sync::{Mutex, OnceLock};
 
 use crate::{Thread, color};
 
+mod matching;
+pub use matching::{ALTERNATIVES_SHOWN, ColourMatch, ColourToMatch, MAX_COLOURS_MATCHED, MatchReason, NEUTRAL_CHROMA, Threads, TooManyColours};
+
 /// A palette entry: sRGB and the thread's name.
 pub type Entry = ([u8; 3], &'static str);
 

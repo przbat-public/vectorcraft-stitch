@@ -51,14 +51,19 @@ pub const THREAD_LIBRARIES: [ThreadLibrary; thread::Palette::ALL.len()] = {
 /// left out: [`thread::Palette::is_thread`]): each named by the palette, its number and its name
 /// ("PEC 5 Red"), as a list of the plan's threads shows them.
 pub fn thread_swatches(palette: thread::Palette) -> Vec<Swatch> {
-    let code = palette.id().to_ascii_uppercase();
     let swatch = |(i, &([r, g, b], name)): (usize, &([u8; 3], &str))| Swatch {
-        name: format!("{code} {} {name}", i + 1),
+        name: swatch_name(palette, i + 1, name),
         paint: Paint::solid(Color::rgb8(r, g, b)),
         global: false,
         spot: false,
     };
     palette.threads().iter().enumerate().filter(|(i, _)| palette.is_thread(i + 1)).map(swatch).collect()
+}
+
+/// The name of `palette`'s thread `index` (from 1, as the formats number them), named `name`, as
+/// its swatch is named: the palette, its number and its name ("PEC 5 Red").
+pub(crate) fn swatch_name(palette: thread::Palette, index: usize, name: &str) -> String {
+    format!("{} {index} {name}", palette.id().to_ascii_uppercase())
 }
 
 /// The thread libraries as `swatch.library.list` lists them, after the built-in ones.

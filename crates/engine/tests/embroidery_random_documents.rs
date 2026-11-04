@@ -1,7 +1,7 @@
 //! Random documents with embroidery among their edits: the generated editing of the other
 //! property tests (`vectorcraft_testkit::strategies::arb_ops`) with embroidery steps between its
 //! steps (a cut after random objects, the document's thread palette, start point and label, a
-//! machine file placed). Every embroidery step is done (a cut after an object that isn't sewn
+//! machine file placed, a picture placed and digitized). Every embroidery step is done (a cut after an object that isn't sewn
 //! refused, as the command refuses it), the document saves and reads back as it was (its
 //! embroidery included), and its embroidery is read, checked and exported, or refused, without a
 //! panic.
@@ -29,6 +29,9 @@ enum Step {
     Label(Option<String>),
     /// A small design placed from a machine file: its runs literal stitches.
     Place,
+    /// A small picture placed and digitized (`embroidery.digitizeImage`): its objects made, the
+    /// picture on a template layer.
+    Digitize,
 }
 
 fn step() -> impl Strategy<Value = Step> {
@@ -38,6 +41,7 @@ fn step() -> impl Strategy<Value = Step> {
         1 => prop::option::of((-50.0..450.0f64, -50.0..350.0f64)).prop_map(Step::Start),
         1 => prop::option::of("[A-Za-z0-9 ]{0,12}").prop_map(Step::Label),
         1 => Just(Step::Place),
+        1 => Just(Step::Digitize),
     ]
 }
 
@@ -90,6 +94,20 @@ fn small_dst() -> String {
     vectorcraft_format::base64_encode(&vectorcraft_stitch::format::Format::Dst.write(&p).unwrap())
 }
 
+/// A small picture as PNG: an orange square with a navy bar across it, on white, 60 × 40 pixels.
+fn small_picture() -> String {
+    let picture = vectorcraft_trace::Raster::from_fn(60, 40, |x, y| {
+        if (8..52).contains(&x) && (18..22).contains(&y) {
+            [20, 40, 120, 255]
+        } else if (8..52).contains(&x) && (6..34).contains(&y) {
+            [240, 130, 20, 255]
+        } else {
+            [255, 255, 255, 255]
+        }
+    });
+    vectorcraft_format::base64_encode(&picture.encode_png())
+}
+
 impl Step {
     fn apply(&self, s: &mut Session) -> vectorcraft_engine::Result<Value> {
         match self {
@@ -107,6 +125,11 @@ impl Step {
             Step::Start(p) => s.execute("embroidery.setup", &json!({"start": p.map(|(x, y)| json!([x, y]))})),
             Step::Label(l) => s.execute("embroidery.setup", &json!({"label": l})),
             Step::Place => s.execute("file.place", &json!({"name": "design.dst", "dataBase64": small_dst()})),
+            // Placing selects the picture alone, which is what is digitized.
+            Step::Digitize => {
+                s.execute("file.place", &json!({"name": "picture.png", "dataBase64": small_picture()}))?;
+                s.execute("embroidery.digitizeImage", &json!({"colors": 3}))
+            }
         }
     }
 }

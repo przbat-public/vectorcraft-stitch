@@ -16,6 +16,7 @@
 //! - [`stitch_preview`]: when the preview plans, and what it shows meanwhile.
 //! - [`stitch_layer`]: the canvas in the stitch view.
 //! - [`menu`]: View › Stitch Preview, its options, and the document tab's mode.
+//! - [`digitize_job`]: Digitize Image from the command palette, off the interface thread.
 //! - [`switch`]: the canvas's Art | Stitches switch.
 //! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
 //! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
@@ -35,6 +36,7 @@ pub mod bounds;
 pub mod check_marks;
 pub mod convert_job;
 pub mod counters;
+pub mod digitize_job;
 pub mod editing;
 pub mod fields;
 pub mod handles;
@@ -86,6 +88,8 @@ pub struct Embroidery {
     pub(crate) nearest: nearest::Nearest,
     /// Convert to Manual Stitches under way ([`convert_job`]).
     pub(crate) converting: convert_job::Converting,
+    /// Digitize Image under way from the command palette ([`digitize_job`]).
+    pub(crate) digitizing: digitize_job::Digitizing,
     /// The Embroidery panel's Sewing order tab.
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
@@ -120,13 +124,15 @@ pub fn limits(app: &VectorcraftApp) -> Option<vectorcraft_engine::cmd::embroider
 }
 
 /// Each frame, before it is drawn: the stitch preview's plans taken in
-/// ([`stitch_preview::poll`]), Nearest Connection's search and a convert under way looked at
-/// ([`nearest::poll`], [`convert_job::poll`]), and what the Stitches tab and the canvas's bounds
+/// ([`stitch_preview::poll`]), Nearest Connection's search, a convert and a digitizing under way
+/// looked at ([`nearest::poll`], [`convert_job::poll`], [`digitize_job::poll`]), and what the
+/// Stitches tab and the canvas's bounds
 /// keep of a document closed let go.
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     stitch_preview::poll(app);
     nearest::poll(app, ctx);
     convert_job::poll(app, ctx);
+    digitize_job::poll(app, ctx);
     crate::panels::embroidery::stitches::forget_closed(app);
     bounds::forget_closed(app);
 }

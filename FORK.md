@@ -453,6 +453,9 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-11-03 | The review round's decisions on the command: the design goes on the nearest ordinary layer above the picture's (visible, printing, unlocked), else a new layer, the picture staying on its template layer; a linked picture whose file is missing is refused, asking for the file to be relinked; a turned or slanted picture's sizes and millimetres are measured as the design lies on the page; one anchor limit on every system, 2,000,000 (the web's); the job Lines comes with centre lines in the second engine PR (the four jobs are Auto, Fill, Lines and Don't sew; Lines isn't offered until then); warnings are ids with their values now, the English sentence beside each, while each area's stitch type and the object it became come with the window | their answers: „Na zwykłą warstwę (polecam)”, „Brak pliku: odmowa (polecam)”, „Obrót mierzony na stronie (polecam)”, „Jeden limit wszędzie (polecam)”, „„Linie” w drugim PR silnika (polecam)”, „Ostrzeżenia jako kody już teraz (polecam)” | the template layer the picture was on; its preview digitized; sizes in the image's own axes; a higher limit on the desktop | `from_image/{create,command,working,trace,warnings}.rs`; `tests_create.rs`, `tests.rs`, `tests/embroidery_from_image.rs` |
 | 2026-11-03 | The review round's own choices, for the owner to confirm: the photo test (2 % of the trace's edges on gradual borders); outlines at most 20,000 path elements a reply; the strip drawn from the shared edge's own curves with round ends, cut from the neighbour's outlines near it (straightened), a later strip giving way where two would stack; the key point in the middle of the ridge; cells of 32 pixels for the nearest area; a choice whose `mergeInto` names no colour listed as `noMergeTarget`; the real designs' test's fabric margin (1.5 mm² over the vector path's, between colours) and the overlap's reach (at least 0.25 mm) | the session's, each measured as its constant's doc says | (each constant's doc) | `from_image/{flat,command,overlap,regions,order,colours}.rs`; `tests/embroidery_from_image_corpus.rs` |
 | 2026-11-03 | After the review round's measurements: on a picture of 9,216 dots in a grid of 0.3 mm lines (9,217 areas) the overlap takes 4.1 s of the 9.6 s dry run and is left as it is, no contact skipped (a cancel stops it at any dot); the 1.1 mm² of fabric the overlap leaves bare in the notches of the pool ball's 8 (0.3 without it), where the end of the satin column the planner sews in a narrow notch moves off the corner, is the planner's to fix, on its own, later | the project owner's answers, each the recommended one: „Zostaw tak, bez pomijania (polecam)” (the checkerboard at the 10,000-area limit takes 1.04 s, and skipping contacts would save at most 4 of about 10 s on the grid, the planner alone taking 4.6 s, while a work count predicted the time poorly, 30 times apart between pictures), „Później, osobno w plannerze (polecam)” (it is the planner's satin columns, not digitizing) | a work budget leaving the shortest contacts out with a warning; the planner fixed in this PR | `from_image/overlap.rs`; `tests/embroidery_from_image_corpus.rs` (`FABRIC_MARGIN_MM2`) |
+| 2026-11-06 | The fork syncs with upstream (v0.21.0 and the 1,203 commits after it) in a PR of its own before digitizing from an image's second engine part, and the work goes on in this order after it: the second engine part, a small planner PR, the digitizing window, the inspector | the project owner's choice („Najpierw synchronizacja (polecam)”): 21 of upstream's new commits changed Image Trace and the path operations, which digitizing reads with no hook, so they are met before more is built on them | the second engine part first | this file › Keeping up with upstream › Syncs so far |
+| 2026-11-06 | SVG circles import as upstream imports them now, the exact four-anchor ellipse VectorCraft draws (upstream's `60e1600c`), and the one real design it moves, bullseye-twemoji's artwork (its red and yellow circles sew 5 and 6 more needle points; size, jumps, trims and the longest and shortest stitch unchanged), is pinned again | the project owner's choice („Przypnij na nowo (polecam)”): the design's anchors are the same and its handles move by at most 1.7 millionths of a millimetre; with that one line of upstream's put back, every pinned export matched byte for byte | keeping the old import in a fork hook (a difference from upstream at every sync, and back the round trip that changed a circle's shape, which upstream fixed) | `embroidery_output.rs` |
+| 2026-11-06 | Copy and Cut with needle points of runs of stitches selected alone take their objects whole to the clipboard, as before the sync, and Cut deletes the needle points as Delete does (their neighbours merge); the selected ruler guides go with a Cut of needle points, in the same undo step, as upstream's Cut takes them with anchors, and Delete leaves them, as upstream's does | the project owner's choices („Jak przed synchronizacją (polecam)”, „Tak, jak upstream (polecam)”): upstream's new Copy and Cut of a direct selection's segments (#2122) took a needle point's neighbour and both stitches beside it, and left the run's stops and cuts on the wrong needle points, in the document and on the clipboard | a stretch of needle points as a run of its own on the clipboard, its marks carried (new behaviour, for a PR of its own); a Cut leaving the guides | `edit::copy_cut_targets`, `edit::cut`, `needle_edits::delete_with`; `copy_and_cut_take_a_run_whole_and_cut_deletes_its_needle_points_as_stitches` |
 
 ## Clean-room for embroidery
 
@@ -517,11 +520,24 @@ upstream's new Windows install policy (below). After its first CI runs, upstream
 render test that raced its background worker on FreeBSD (storytold/vectorcraft#5152, "the bitmaps
 show"; `f4979c7e`, `b903e2e7` and `59992ce1`, one test file, after `639c9d6c`) was cherry-picked
 into it with `git cherry-pick -x`: at the next sync, if `crates/render/src/tests/placed_document.rs`
-conflicts, take upstream's.
+conflicts, take upstream's (it merged cleanly at the next one).
+2026-11-06, before digitizing's second engine part: upstream `639c9d6c..36ef34dfd` (v0.21.0 and
+1,203 commits after it), 1,519 commits, 18 conflicting files, all listed in the merge commit.
+Upstream added document windows (Window › Arrange › Tile, Float in Window, New Window), so the
+current window's canvas is drawn in three places, and made View › Outline a setting of each
+document's view; its Copy and Cut of a direct selection take the selected segments (#2122), past
+the needle-points hook in `delete_anchors`, so Copy and Cut of needle points have hooks of their
+own (below); SVG circles import as the exact four-anchor ellipse (`60e1600c`), which moved one real
+design's pins (pinned again, Decisions register); `CLAUDE.md` became `@AGENTS.md`, with the
+craft-contrib house rules in `AGENTS.md`. Hindi rows for every fork string, its numbers with Indian
+grouping; ten more allows for the fork's 1.95 gate (below). Nothing digitizing reads from upstream
+moved: Image Trace's parallel fitting keeps the paths' order, its noise removal and smoothing
+give the same results as before (upstream's own tests compare them with the old code), and the
+path operations' new limit is far past the trace's pixels.
 
-**Upstream's CI lints with the stable clippy** (on 2026-10-24, Rust 1.99.1), newer than the fork's
-1.95 gate (`rust-version = "1.95"`), and since that sync the same CI runs on the fork's PRs
-(Practicalities). Code must pass both:
+**Upstream's CI lints with the stable clippy** (Rust 1.99.1, on 2026-10-24 and still on
+2026-11-06), newer than the fork's 1.95 gate (`rust-version = "1.95"`), and since that sync the
+same CI runs on the fork's PRs (Practicalities). Code must pass both:
 - Upstream code can fail the fork's 1.95 gate, through a lint 1.95 doesn't know or one 1.95 flags
   and the newer clippy doesn't. Allow it in place, marked "VectorCraft Stitch", and list it with
   the hooks below. Drop the allow when the fork's gate moves to upstream's clippy.
@@ -554,7 +570,12 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again. The fork's
   `pub(crate) mod embroidery` and `mod tests_embroidery` are declared in `fileio.rs`.
 - **The generator string** (`crates/format/src/lib.rs`): the fork's files say `VectorCraft Stitch`
-  and the version, so a file from the fork can be told from upstream's in a report.
+  and the version, so a file from the fork can be told from upstream's in a report; upstream's test
+  of the bytes `save_to` writes (`save_to_writes_the_bytes_of_the_crates_file`) expects it, marked.
+  Upstream reads the generator for one thing: whether a document of version 1 turned Twist
+  clockwise (`twist::written_clockwise`, which knows `VectorCraft X.Y` alone). The fork writes
+  documents of version 3, so its own name never decides, and its files of version 1 (saved before
+  the 2026-11-06 sync) migrate as upstream's 0.20 files do.
 - **Objects made from others keep their embroidery settings** (`cmd/embroidery/derive.rs`, each
   hook marked "VectorCraft Stitch"): in `cmd/pathops.rs`, `Style`'s `embroidery` field (set in
   `of`, `style_of`'s text arm, given in `apply`: Pathfinder, Offset Path, Shape Builder, Divide
@@ -581,7 +602,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   with it, `Embroidery::transform`), `doc/src/mem.rs`'s document and node estimates (the
   embroidery settings' memory, `embroidery::setup_bytes` and `object_bytes` in
   `doc/src/embroidery/mem.rs`; `ALLOC`, `map_bytes` and `json_bytes` made `pub(crate)` for them), `fileio/load.rs`'s `is_loss` (`super::embroidery::is_loss`), `cmd/swatchlib.rs`'s `libraries` and `library`
-  (`cmd/embroidery/threadlib.rs`), `i18n.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
+  (`cmd/embroidery/threadlib.rs`, after upstream's pattern libraries; in the libraries' menus,
+  `panels/swatches/libraries.rs` and `panels/library_panel.rs`, Embroidery Threads after
+  Patterns), `i18n.rs`'s `mod tests_embroidery`, `command_sweep.rs`'s
   `mod embroidery_common` and `cases.extend(…)`, the `pub use` lines in `engine/src/lib.rs`,
   `cmd/params.rs`'s `nearest` made `pub(crate)` (the embroidery options' misspelt keys,
   `cmd/embroidery/options.rs`), `mcp/src/lib.rs`'s `mod tests_embroidery` (beside upstream's
@@ -602,9 +625,12 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - `ui-egui/src/lib.rs`: `pub mod embroidery`, and the app's `embroidery` field right after
     `pen_end` (off the struct's end, where upstream adds its own); in `ui-egui/src/app.rs`, the
     field's init, `embroidery::poll` after the background jobs (the stitch preview's plans taken in,
-    and Nearest Connection's search looked at), `canvas_controls` after the canvas (before
-    upstream's isolation bar, which lies over the canvas's top: the switch and the notice move
-    below it), and `embroidery::end_frame` at the frame's end (a click on the counters, then
+    and Nearest Connection's search looked at), `canvas_controls` after the canvas area (the
+    canvas under the tabs or the active tile of Window › Arrange › Tile; skipped while the current
+    document floats, as upstream's isolation bar is), before upstream's isolation bar, which lies
+    over the canvas's top: the switch and the notice move below it; in `doc_windows.rs`'s `body`,
+    `canvas_controls` after a floating window's canvas; and `embroidery::end_frame` at the frame's
+    end (a click on the counters, then
     `stitch_preview::schedule`), before upstream's guard for a pass egui reruns, as upstream's own
     `scrub::end_frame`; in `app/screenshot.rs`'s `issue_screenshots`, the wait for the stitch view
     (`holds_screenshots`, `MAX_SCREENSHOT_WAIT_MS`, within upstream's 8 s capture deadline);
@@ -617,11 +643,15 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `paint_fabric` right after the pasteboard, in place of all of upstream's paper branches (the
     Hide Artboards one too); `to_screen_path` and `node_outline` made `pub(crate)` in
     `canvas/outline.rs` and re-exported; the selection overlay's `frame_only` in
-    `canvas/overlays.rs`; `fit_zoom` and `FIT_MARGIN` split out of `fit` in `canvas/view.rs` for
-    View › Zoom to Box (`embroidery/zoom.rs`), re-exported;
-  - `chrome/tabs.rs`: the tab title's mode (`tab_title`'s fifth parameter, `stitches`, after
-    upstream's `display_print_size`, `pub(crate)` and re-exported for the fork's tests), and its
-    call in `doc_tabs`; `chrome/status_bar.rs`: in `status_readouts` the counters
+    `canvas/overlays.rs`; in `canvas/view.rs`, upstream's own `fit_zoom(rect, target, rotation)`
+    (split out for the tiles at the 2026-11-06 sync) calls the fork's `fit_zoom_within(rect,
+    target, rotation, margin)` with `FIT_MARGIN`, which View › Zoom to Box (`embroidery/zoom.rs`)
+    calls with its own margin, re-exported;
+  - `chrome/tabs.rs`: the tab title's mode (`view_tab_title`'s sixth parameter, `stitches`, after
+    upstream's `display_print_size`), from `window_tab_title` with each window's own Outline
+    (`menu::shows_stitches`); `tab_title`, upstream's for its tests, keeps the fork's five
+    parameters, `pub(crate)` and re-exported for the fork's tests; `chrome/status_bar.rs`: in
+    `status_readouts` the counters
     (`embroidery::counters::show`) given the bar's area first: they take its right end and return
     the rest, and `diagnostics` waits on their answer (`timings &&`), so the timings give way to
     them. The bar is drawn with the app only read: the counters keep their state in cells and act
@@ -657,7 +687,13 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `brush/src/track.rs`'s `tracks`, `#[allow(clippy::nonminimal_bool)]` on `engine/src/cmd.rs`'s
     `ordinary_isolation`, and `#[allow(clippy::collapsible_match)]` on `cmd/expand.rs`'s
     `outermost` (the allow on `effects/src/group.rs`'s `clippy::manual_isolate_lowest_one` is
-    upstream's own now);
+    upstream's own now); since the 2026-11-06 sync also `nonminimal_bool` on `eps`'s
+    `end_multi_mask` (`import/ai/read/masks.rs`), `shares` (`import/native/compare.rs`) and
+    `writes_image_mask` (`legacy_ai.rs`), the engine's `editing_story` (`cmd/textedit.rs`) and
+    ui-egui's `placing::poll` and `confirm_swatch_paste`, `collapsible_match` on
+    `tools/src/addons/enclosing_lasso.rs`'s `pointer` and `panels/layers/tests.rs`'s `collect`,
+    and `drop_non_drop` on `cmd/addons/cleanup/text.rs`'s `replace_fonts` and `cmd/fonts.rs`'s
+    `replace`;
   - `render/src/lib.rs`: `pub mod lines`, and `render/src/node_checks.rs`'s `MAX_DEVICE` made
     `pub(crate)` for it (the stitch view's lines keep within the device range the renderer does);
     `testkit/src/lib.rs`: `pub mod embroidery`;
@@ -710,7 +746,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     plus the fork's two: a sync sums it again by hand, since git merges two sides that both raise
     it to the same number without a conflict (upstream's 78 → 80 for its own two cursors would
     leave 82 entries in a `[Cursor; 80]`, and the tests would not compile). At the 2026-11-02 sync,
-    upstream's 89 and the fork's 2: 91 (count `RotateToward(1)` too);
+    upstream's 89 and the fork's 2: 91 (count `RotateToward(1)` too); at the 2026-11-06 sync, 93
+    and 2: 95;
   - `tools/src/catalog.rs`: the tool's own group at the end of `TOOL_GROUPS` (the Advanced
     toolbar), with no default shortcut;
   - `ui-egui/src/toolbar.rs`: the Embroidery category at the end of `BASIC`, and in
@@ -737,9 +774,16 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   statement each, but two for each cut (the run as it was taken before the cut, then its marks on
   the pieces after).
   - `engine/src/cmd/path.rs`: at the top of `delete_anchors` (which the Delete key, Edit › Clear and
-    Edit › Cut with anchors selected, and `path.deleteAnchors` all reach), needle points of runs of
-    stitches selected are deleted as stitches (`embroidery::delete_needle_points_selected`: when
-    every object selected is a path of stitches and no segment is, else upstream's Delete);
+    `path.deleteAnchors` reach), after upstream's `guides` flag is read, needle points of runs of
+    stitches selected are deleted as stitches (`embroidery::delete_needle_points_selected`, handed
+    the flag: when every object selected is a path of stitches and no segment is, else upstream's
+    Delete);
+  - `engine/src/cmd/edit.rs` (since the 2026-11-06 sync, when upstream's Copy and Cut began to take
+    a direct selection's segments, #2122): in `copy_cut_targets`, needle points of runs selected
+    alone are no direct selection (`embroidery::needle_points_selected_alone`), so Copy and Cut
+    take the runs whole; in `cut`, after the copy, the needle points are deleted as stitches with
+    the selected ruler guides, in one undo step (`delete_needle_points_selected(s, true)`), ahead of
+    upstream's direct cut;
   - `engine/src/cmd/draw2/common.rs`: in `replace_with_pieces` (Cut Path at Anchors on a path of one
     subpath, the Eraser), the run as it was taken first (`embroidery::stitches_before_cut`), and the
     earlier hook's `derive::cut_once` call replaced by `embroidery::cut_into_pieces` (that cut, then
@@ -847,6 +891,12 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     within 0.33 pixels, Corners 75, a turn of 49°, and 6 colours (`settings.rs`); File › Place's
     "Template …" layer name and Expand's unnamed group (`create.rs`). No test fails when only one of
     these moves upstream: compare them on each sync.
+  - View › Outline is each document view's own since the 2026-11-06 sync (`View::outline`): the
+    stitch view's layers, its notice, stitch editing's key and the art it redraws read the view
+    the canvas draws (`app.outline_view()`), and each window's tab its own. Only the current window
+    draws the stitch view: the other tiles of Window › Arrange › Tile and the other floating windows
+    draw their art from renders of their own (`canvas::pane`), whatever their document's stitch
+    view.
 - **Opening a file's steps for each object reach Restore Object too.** Restore puts back the object
   the fork kept as the file saved it (`embroidery.original.node`), read without
   `vectorcraft_format::load`. So `cmd/embroidery/manual.rs` repeats on it what opening a file does
@@ -875,7 +925,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   (`packaging/macos/dmg/DS_Store`, from `dmg/generate.py`), which still places `VectorCraft.app`
   on a volume named VectorCraft, so regenerate it before the fork ships a DMG.
 - **The fork's text in upstream's docs**, to put back on upstream's own text when resolving: the
-  pointer to this file at the top of `CLAUDE.md`; in `README.md` the fork's note and "Based on
+  pointer to this file under the title of `AGENTS.md`'s own instructions, outside its craft-contrib
+  house-rules blocks, which the House rules check compares with craft-contrib (`CLAUDE.md` is
+  upstream's `@AGENTS.md` since the 2026-11-06 sync); in `README.md` the fork's note and "Based on
   VectorCraft", with ArtCraft's marks and links left out (`docs/brand/LICENSE-brand.txt`); the
   embroidery rows of `ROADMAP.md`'s progress log and of `docs/file-format-parity.md` (its format
   counts, the embroidery row, its history), with each one's status line; in
@@ -937,7 +989,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   printing, Windows ARM64 (builds the MSI, installs it into `Program Files\VectorCraft Stitch` and
   uninstalls it), FreeBSD, Nix, Packaging lint (with the Windows installation policy's metadata
   checks, since the 2026-11-02 sync), SonarCloud and the Affinity 3 corpus (upstream dropped its
-  Windows 7 build).
+  Windows 7 build). Since the 2026-11-06 sync, House rules too, on a PR that changes `AGENTS.md` or
+  `CLAUDE.md`: `AGENTS.md`'s craft-contrib blocks must match craft-contrib, so the fork's own text
+  goes outside them.
   Read them with `gh pr checks <number> --repo przbat-public/vectorcraft-stitch`, and report what
   they say. The release workflow is upstream's too, and it needs signing secrets the fork
   doesn't have.

@@ -438,7 +438,7 @@ fn the_needle_point_stepped_from_follows_the_object_edited() {
     s.select_tool("embroidery", view).unwrap();
     let p = needle_points(&s, a)[5];
     for kind in [PointerKind::Down, PointerKind::Up] {
-        s.pointer(&PointerEvent { kind, pos: p, mods: Mods::default(), backquote: false, pressure: 1.0 }, view).unwrap();
+        s.pointer(&PointerEvent { kind, pos: p, mods: Mods::default(), backquote: false, pressure: 1.0, pen: None }, view).unwrap();
     }
     assert!(current(&s).is_object(), "pressed: {}", current(&s));
     s.execute("object.exitIsolation", &json!({})).unwrap();
@@ -447,7 +447,7 @@ fn the_needle_point_stepped_from_follows_the_object_edited() {
     assert!(current(&s).is_null(), "another object: {}", current(&s));
     let q = needle_points(&s, b)[2];
     for kind in [PointerKind::Down, PointerKind::Up] {
-        s.pointer(&PointerEvent { kind, pos: q, mods: Mods::default(), backquote: false, pressure: 1.0 }, view).unwrap();
+        s.pointer(&PointerEvent { kind, pos: q, mods: Mods::default(), backquote: false, pressure: 1.0, pen: None }, view).unwrap();
     }
     assert!(current(&s).is_object(), "pressed in the other object: {}", current(&s));
 }

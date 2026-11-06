@@ -208,14 +208,14 @@ a77bc0e2ff5f19ceb4bea099c075139bab412a8c1cf02da2759b55e301d16acf  stops.vp3
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
 const ARTWORK: &str = "
-236957804f516fe0004917fc484b5da2b1daf8f9f6f09061ce353f9684a7235e  bullseye-twemoji.dst
-e280bb5748b1b92274b813cbbf961269a79cb37c4ac59ed4d7af16b393416b32  bullseye-twemoji.tap
-e280bb5748b1b92274b813cbbf961269a79cb37c4ac59ed4d7af16b393416b32  bullseye-twemoji.t01
-ad3aaf8945c67d9e706a3b47d230611f186f4d69190662fa18f9c5df818c5f0d  bullseye-twemoji.exp
-467bff688288710650df332d4dcb92e8a4ff8ce6b33521d8b85dcf8946dbf545  bullseye-twemoji.pes
-e28af61cc1acdd408c4562dc6a964cee1c085103f55133c3a4249b400affc77c  bullseye-twemoji.pec
-523dbf9a258e8b259b1698e53c337a86d55306d05e410c1b80cd392e08495d12  bullseye-twemoji.jef
-e0ac16c407b086bd1c964569b655b2b33ae7daa05689e78f9fecc1e708c4b618  bullseye-twemoji.vp3
+337631d4f2fd2fa291f75c9eb404a25ecb6492c820e4cc791f47bbf718c84d32  bullseye-twemoji.dst
+8dbd5a852f1e5b5c87b02496fa2ef9c815c7167b3a5112c65fab91ce329d6e85  bullseye-twemoji.tap
+8dbd5a852f1e5b5c87b02496fa2ef9c815c7167b3a5112c65fab91ce329d6e85  bullseye-twemoji.t01
+311a18288e87e7e044145734e3002123be003d7e4836a32df51000f4dfbd2d12  bullseye-twemoji.exp
+803df1ebc68cc7116ba46b065c99508ae450ab916e06d86bdfba24f37729ae05  bullseye-twemoji.pes
+ede939c1f79385908415969867f87a957ccd8a529db8cbd5d17b18ca128826e5  bullseye-twemoji.pec
+0d36033bddfbf83d030d4546db2ae79c60c3196d4735a6a8ae60e204a685d573  bullseye-twemoji.jef
+9c4f42a52e1389ffbd913937caffc3bbcaaf028331c9f526572341bd666ebe7d  bullseye-twemoji.vp3
 beae2e150caf987f5a39397dbef9238bf14f09acd707e9d18d139928b579cbad  fox-twemoji.clipart.dst
 2b0c4f2447243770c7215c90de2dd376dd0553501399e1ab059184272107837d  fox-twemoji.clipart.tap
 2b0c4f2447243770c7215c90de2dd376dd0553501399e1ab059184272107837d  fox-twemoji.clipart.t01
@@ -360,9 +360,9 @@ e4484bd08cdd4abbc709e8285797662885f60e3f1eff64d4ce448f1ec03db8cd  stops.jef  33 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
 /// [`SYNTHETIC_THREADS`] is.
 const ARTWORK_THREADS: &str = "
-2e75c5d4920528b816c8bfe3c6d2965032695332d0e87f79d3016f48374c2c15  bullseye-twemoji.pes  29 32 5 33 20 36
-8337ee76e87dd3d31bfac3e432aa93804696592921cb0333c075057d575d8b87  bullseye-twemoji.pec  29 32 5 33 20 36
-f1d38145b030ab084d0360845649b99fdb6428059e139d7c07d024bbda436f3e  bullseye-twemoji.jef  23 28 33 72 1 11
+a9efd9daaa10da20663b24d48d409209d8f6a4c467338afdd1980a86369f6e5a  bullseye-twemoji.pes  29 32 5 33 20 36
+c6e28c0425effd7dde03869f4abccc803d827aa75a0e708ff861f8eaf0e91639  bullseye-twemoji.pec  29 32 5 33 20 36
+9fd4e1b28d0f1bc0d7daba622e685b1f7aaad7920604439fcdad3541b2c2fec8  bullseye-twemoji.jef  23 28 33 72 1 11
 13b66fbf44372777c53904bb86183f924b459a5fb319149b1d94315a966f4233  fox-twemoji.clipart.pes  52 12 20 51
 4769f08394494c5c9c9476e66892725d0c71134daac5748008bd30f88de97e20  fox-twemoji.clipart.pec  52 12 20 51
 50fb0d66129a6998f9546b0f2cb96f42a17c57a5c786737526059f1178fa84aa  fox-twemoji.clipart.jef  71 13 1 42
@@ -545,14 +545,14 @@ stops.vp3  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trim
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
 const ARTWORK_SUMMARIES: &str = "
-bullseye-twemoji.dst  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
-bullseye-twemoji.tap  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
-bullseye-twemoji.t01  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
-bullseye-twemoji.exp  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
-bullseye-twemoji.pes  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.50  shortest 0.32  cells 1711
-bullseye-twemoji.pec  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.50  shortest 0.32  cells 1711
-bullseye-twemoji.jef  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.2x45.2  longest 8.50  shortest 0.32  cells 1711
-bullseye-twemoji.vp3  blocks 6  needle 1563/998/550/232/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.2x45.2  longest 8.50  shortest 0.32  cells 1711
+bullseye-twemoji.dst  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
+bullseye-twemoji.tap  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
+bullseye-twemoji.t01  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
+bullseye-twemoji.exp  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.46  shortest 0.32  cells 1710
+bullseye-twemoji.pes  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.50  shortest 0.32  cells 1711
+bullseye-twemoji.pec  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.3x45.2  longest 8.50  shortest 0.32  cells 1711
+bullseye-twemoji.jef  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.2x45.2  longest 8.50  shortest 0.32  cells 1711
+bullseye-twemoji.vp3  blocks 6  needle 1563/998/555/238/290/161  jumps 1/1/1/1/2/1  trims 0/0/0/0/0/0  size 45.2x45.2  longest 8.50  shortest 0.32  cells 1711
 fox-twemoji.clipart.dst  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/2/1  size 45.3x40.7  longest 10.04  shortest 0.32  cells 1329
 fox-twemoji.clipart.tap  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/2/1  size 45.3x40.7  longest 10.04  shortest 0.32  cells 1329
 fox-twemoji.clipart.t01  blocks 4  needle 1414/460/148/248  jumps 1/2/3/2  trims 0/0/2/1  size 45.3x40.7  longest 10.04  shortest 0.32  cells 1329

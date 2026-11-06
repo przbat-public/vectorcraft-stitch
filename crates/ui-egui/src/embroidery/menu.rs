@@ -91,9 +91,10 @@ pub fn checked(app: &VectorcraftApp, id: &str) -> Option<bool> {
     })
 }
 
-/// Whether document `d`'s canvas shows its stitches (its tab's mode then says so).
-pub fn shows_stitches(app: &VectorcraftApp, d: &DocState) -> bool {
-    layers(app.session.stitch_view_of(d.uid), paused(&d.doc), app.ui.view.outline).stitches
+/// Whether document `d`'s canvas shows its stitches in a view whose View › Outline is `outline`
+/// (its tab's mode then says so).
+pub fn shows_stitches(app: &VectorcraftApp, d: &DocState, outline: bool) -> bool {
+    layers(app.session.stitch_view_of(d.uid), paused(&d.doc), outline).stitches
 }
 
 /// The document tab's mode while the canvas shows the stitches, as in "(RGB/Stitches)".

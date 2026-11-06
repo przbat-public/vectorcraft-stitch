@@ -314,7 +314,7 @@ impl StitchLayer {
 fn stitch_layers(app: &VectorcraftApp) -> Option<(u64, Layers)> {
     let st = app.session.active()?;
     let view = app.session.stitch_view_of(st.uid);
-    Some((st.uid, layers(view, paused(&st.doc), app.ui.view.outline)))
+    Some((st.uid, layers(view, paused(&st.doc), app.outline_view())))
 }
 
 /// What the canvas's art does this frame, asked by the canvas before it renders its art. While the
@@ -421,7 +421,7 @@ pub fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, painter: &egui::Paint
         app.embroidery.layer.edited = None;
         return;
     }
-    let outline = app.ui.view.outline;
+    let outline = app.outline_view();
     let faint = stitch_layers(app).is_some_and(|(_, l)| l.faint_art);
     if pass.render && !outline {
         draw_art(app, painter, xf, pass, if faint { faded() } else { Color32::WHITE });
@@ -445,7 +445,7 @@ fn draw_art(app: &VectorcraftApp, painter: &egui::Painter, xf: &Xf, pass: &ArtPa
     let Some(uid) = app.session.active().map(|st| st.uid) else { return };
     let (Some(tex), Some(k)) = (&app.canvas.texture, &app.canvas.key) else { return };
     let templates = app.ui.view.templates && !pass.hide_templates;
-    if k.doc != uid as usize || k.outline != app.ui.view.outline || k.hidden != pass.hidden || k.templates != templates {
+    if k.doc != uid as usize || k.outline != app.outline_view() || k.hidden != pass.hidden || k.templates != templates {
         return;
     }
     let quad = match k.pixel {

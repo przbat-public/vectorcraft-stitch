@@ -693,7 +693,11 @@ fn without_inner(doc: &Document, placed: Vec<(NodeId, Option<Vec<usize>>)>) -> i
 fn copy_cut_targets(s: &Session) -> Result<(bool, Vec<NodeId>)> {
     let st = s.doc()?;
     let in_drawing_tool = matches!(s.tool_id(), "pen" | "curvature");
-    let direct = !in_drawing_tool && (!st.selection.anchors.is_empty() || !st.selection.segments.is_empty());
+    // VectorCraft Stitch: needle points of paths of stitches are copied and cut with their objects
+    // whole (`embroidery::needle_points_selected_alone`).
+    let direct = !in_drawing_tool
+        && (!st.selection.anchors.is_empty() || !st.selection.segments.is_empty())
+        && !super::embroidery::needle_points_selected_alone(st);
     let in_isolated_compound = st.isolation.is_some_and(|iso| st.doc.node(iso).is_some_and(|n| matches!(n.kind, NodeKind::Compound { .. })));
     let roots = roots_within(&st.doc, st.selection.in_paint_order(&st.doc), |_compound, member| {
         in_isolated_compound || (direct && (st.selection.partial(member).is_some() || st.selection.segments.contains_key(&member)))
@@ -757,6 +761,11 @@ fn cut(s: &mut Session, p: &Value) -> Result<Value> {
     let res = copy(s, p)?;
     if res.get("copied").and_then(Value::as_u64) == Some(0) {
         return Ok(res);
+    }
+    // VectorCraft Stitch: needle points leave as Delete takes them (their neighbours merge), the
+    // selected ruler guides with them, in one undo step.
+    if let Some(done) = super::embroidery::delete_needle_points_selected(s, true) {
+        return done;
     }
     // The selected ruler guides it copied go with the objects, in the same undo step (#3226).
     if !direct { clear(s, &json!({ "ids": roots, "guides": true })) } else { cut_direct_selection(s, &roots) }

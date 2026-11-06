@@ -1,5 +1,6 @@
-//! The marked upstream hooks of the stitch commands (FORK.md's hook list): Delete with needle points
-//! selected, Join of runs of stitches, and a run cut into pieces or in place by the cutting tools.
+//! The marked upstream hooks of the stitch commands (FORK.md's hook list): Delete, Copy and Cut with
+//! needle points selected, Join of runs of stitches, and a run cut into pieces or in place by the
+//! cutting tools.
 //! Each acts as a stitch edit on runs of stitches and leaves everything else to upstream; `mod.rs`
 //! wraps them for the upstream files.
 
@@ -13,16 +14,21 @@ use super::needle_edits::{self, ONE_RUN, RUNS_WITH_ART};
 use super::needles::{self, Stitches};
 use crate::{EngineError, Result, Session};
 
-/// Delete with needle points selected (the marked hook in `path::delete_anchors`): when every object the
-/// selection holds is a path of stitches and it selects needle points of them (no segment), the
-/// needle points are deleted as stitches (`embroidery.deleteNeedlePoints`: the neighbours merge,
-/// the paths leave the selection); `None` otherwise, for upstream's Delete.
-pub(crate) fn delete_selected(s: &mut Session) -> Option<Result<Value>> {
-    let st = s.doc().ok()?;
+/// Delete with needle points selected (the marked hooks in `path::delete_anchors` and `edit::cut`):
+/// when every object the selection holds is a path of stitches and it selects needle points of
+/// them (no segment, [`needle_points_alone`]), the needle points are deleted as stitches
+/// (`embroidery.deleteNeedlePoints`: the neighbours merge, the paths leave the selection), with
+/// `guides` the selected ruler guides in the same undo step; `None` otherwise, for upstream's.
+pub(crate) fn delete_selected(s: &mut Session, guides: bool) -> Option<Result<Value>> {
+    needle_points_alone(s.doc().ok()?).then(|| needle_edits::delete_with(s, &json!({}), guides))
+}
+
+/// Whether `st`'s selection is needle points of paths of stitches alone: every object selected is
+/// a path of stitches with needle points selected, and no segment is.
+pub(crate) fn needle_points_alone(st: &crate::DocState) -> bool {
     let sel = &st.selection;
     let stitches = |id: &NodeId| st.doc.node(*id).is_some_and(needles::is_stitches);
-    let all = !sel.anchors.is_empty() && sel.segments.is_empty() && sel.objects.iter().all(stitches) && sel.anchors.keys().all(stitches);
-    all.then(|| needle_edits::delete(s, &json!({})))
+    !sel.anchors.is_empty() && sel.segments.is_empty() && sel.objects.iter().all(stitches) && sel.anchors.keys().all(stitches)
 }
 
 /// Join (the marked hook in `path.join`) of paths `ids` when any is a path of stitches: all of them

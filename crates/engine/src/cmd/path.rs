@@ -1205,7 +1205,7 @@ pub(crate) fn delete_anchors(s: &mut Session, p: &Value) -> Result<Value> {
     // `guides: true` (Cut, #3226): the selected ruler guides go in the same undo step.
     let with_guides = switch_or(p, "guides", false, "path.deleteAnchors")?;
     // VectorCraft Stitch: needle points of runs of stitches are deleted as stitches (neighbours merge).
-    if let Some(done) = super::embroidery::delete_needle_points_selected(s) {
+    if let Some(done) = super::embroidery::delete_needle_points_selected(s, with_guides) {
         return done;
     }
     let st = s.doc()?;

@@ -687,6 +687,58 @@ fn a_stop_at_a_paths_end_is_its_stop_after() {
     assert_eq!(stats(&mut s), 0, "cleared by Stop After");
 }
 
+/// Copy and Cut with needle points of a run selected take the run whole to the clipboard, as they did
+/// before upstream's Copy took a direct selection's segments (a stretch of a run would keep its
+/// marks on the wrong needle points); Cut then deletes the needle points as Delete does (their
+/// neighbours merge, a stop stays with its needle point), and the selected ruler guides go with them
+/// in one undo step, as upstream's Cut takes them with anchors, while Delete leaves the guides. An
+/// art path's anchors are upstream's: their segments are copied.
+#[test]
+fn copy_and_cut_take_a_run_whole_and_cut_deletes_its_needle_points_as_stitches() {
+    let marks = || StitchRun { stops: vec![Mark::place(0, 3)], trim_after: true, ..StitchRun::default() };
+    let points = [(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (16.0, 10.0), (18.0, 10.0)];
+    let guides = |s: &Session| s.doc().unwrap().doc.guides.len();
+    let undos = |s: &Session| s.doc().unwrap().history.undo.len();
+    let mut s = blank();
+    let id = path_mm(&mut s, &points, marks());
+    run(&mut s, "guide.add", json!({"vertical": false, "pos": 90}));
+    let n = guides(&s);
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 1]]}));
+    run(&mut s, "guide.select", json!({"indexes": [n - 1], "toggle": true}));
+    let undo = undos(&s);
+    let r = run(&mut s, "edit.cut", json!({}));
+    let st = needles::read(&node(&s, id)).unwrap();
+    assert_eq!((st.runs.len(), st.len()), (1, 4), "the needle point deleted, its neighbours merged: {r}");
+    let left = stitches(&node(&s, id));
+    assert_eq!((places(&left.stops), left.trim_after), (vec![(0, 2)], true), "the stop stays on its needle point");
+    assert_eq!(guides(&s), n - 1, "the guide goes with the needle points");
+    assert_eq!(undos(&s), undo + 1, "in one undo step");
+    // The clipboard holds the run whole, as it was.
+    let pasted = run(&mut s, "edit.paste", json!({}))["ids"][0].as_u64().unwrap();
+    assert_eq!(needles::read(&node(&s, pasted)).unwrap().len(), 5);
+    assert_eq!(places(&stitches(&node(&s, pasted)).stops), [(0, 3)]);
+    run(&mut s, "edit.undo", json!({}));
+    run(&mut s, "edit.undo", json!({}));
+    assert_eq!((needles::read(&node(&s, id)).unwrap().len(), guides(&s)), (5, n), "Undo brings both back");
+    // Copy of three needle points takes the run whole too.
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 1], [0, 2], [0, 3]]}));
+    assert_eq!(run(&mut s, "edit.copy", json!({}))["copied"], json!(1));
+    let pasted = run(&mut s, "edit.paste", json!({}))["ids"][0].as_u64().unwrap();
+    assert_eq!(needles::read(&node(&s, pasted)).unwrap().len(), 5);
+    run(&mut s, "edit.undo", json!({}));
+    // Delete (Edit › Clear) with a guide selected too deletes the needle point and leaves the guide.
+    run(&mut s, "select.anchors", json!({"id": id, "anchors": [[0, 1]]}));
+    run(&mut s, "guide.select", json!({"indexes": [n - 1], "toggle": true}));
+    run(&mut s, "edit.clear", json!({}));
+    assert_eq!((needles::read(&node(&s, id)).unwrap().len(), guides(&s)), (4, n), "Delete keeps the guide");
+    // An art path's anchors: upstream's Copy, the selected segment alone.
+    let art = run(&mut s, "path.create", json!({"d": "M 100 100 L 120 100 L 140 100 L 160 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "select.anchors", json!({"id": art, "anchors": [[0, 1], [0, 2]]}));
+    run(&mut s, "edit.copy", json!({}));
+    let piece = run(&mut s, "edit.paste", json!({}))["ids"][0].as_u64().unwrap();
+    assert_eq!(node(&s, piece).path_data().unwrap().subpaths[0].anchors.len(), 2, "the segment alone");
+}
+
 /// Scissors, at an anchor or on a segment, cuts a run as Cut Path does: the halves take the marks of
 /// the needle points they hold (a stop on the cut point stays on the first), the first the cut before
 /// the run, the second the cut and the stop after it, and a file's run's second half starts after

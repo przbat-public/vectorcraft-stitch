@@ -9,7 +9,9 @@
 //! to four pixels on a field; a sharp edge between navy and yellow, whose anti-aliasing is no third
 //! colour; two squares side by side at an overlap of 0, 0.2 and 0.4 mm; a logo on a cream scan
 //! lit unevenly. The badge again in logo mode, in greys, with a colour sewn as Fill and one not
-//! sewn, cropped to its middle, and made 25 mm wide.
+//! sewn, cropped to its middle, and made 25 mm wide. Line art (a T, an X, a ring and hatch lines)
+//! drawn 0.6 mm wide, sewn along its middle by the rules, and drawn 2 mm wide with its colour set
+//! to Lines.
 //!
 //! - Every scene digitized twice gives the same bytes.
 //! - Every scene exports as recorded.
@@ -44,6 +46,11 @@ const PT_PER_MM: f64 = 72.0 / 25.4;
 
 /// The samples a pixel is the mean of, along each axis.
 const SAMPLES: u32 = 4;
+
+/// How wide the line art's lines are drawn (pixels): 0.6 mm, a centre line by the rules; and 2 mm,
+/// sewn along their middle only as a colour set to Lines.
+const THIN_LINE_PX: f64 = 6.0;
+const WIDE_LINE_PX: f64 = 20.0;
 
 /// The JPEG quality the badge is also written at: a heavily compressed picture.
 const JPEG_QUALITY: u8 = 55;
@@ -132,6 +139,32 @@ fn badge() -> Raster {
     })
 }
 
+/// How far `(x, y)` lies from the segment `a`–`b` (pixels).
+fn to_segment((x, y): (f64, f64), (a, b): ((f64, f64), (f64, f64))) -> f64 {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let len2 = dx * dx + dy * dy;
+    let t = if len2 > 0.0 { (((x - a.0) * dx + (y - a.1) * dy) / len2).clamp(0.0, 1.0) } else { 0.0 };
+    ((x - a.0 - t * dx).powi(2) + (y - a.1 - t * dy).powi(2)).sqrt()
+}
+
+/// Line art in navy on white, its lines `width` pixels wide, round at their ends: a letter T, an X,
+/// a ring and three hatch lines.
+fn line_art(width: f64) -> Raster {
+    let segments = [
+        ((30.0, 30.0), (130.0, 30.0)),
+        ((80.0, 30.0), (80.0, 120.0)),
+        ((160.0, 30.0), (250.0, 120.0)),
+        ((250.0, 30.0), (160.0, 120.0)),
+        ((30.0, 160.0), (130.0, 160.0)),
+        ((30.0, 180.0), (130.0, 180.0)),
+        ((30.0, 200.0), (130.0, 200.0)),
+    ];
+    drawn(300, 230, move |x, y| {
+        let ring = (((x - 205.0).powi(2) + (y - 180.0).powi(2)).sqrt() - 35.0).abs() <= width / 2.0;
+        if ring || segments.iter().any(|&s| to_segment((x, y), s) <= width / 2.0) { NAVY } else { WHITE }
+    })
+}
+
 /// A JPEG of `r` (opaque), as the `image` crate writes one.
 fn jpeg(r: &Raster) -> Vec<u8> {
     let rgb: Vec<u8> = r.rgba.as_chunks::<4>().0.iter().flat_map(|&[r, g, b, _]| [r, g, b]).collect();
@@ -199,6 +232,13 @@ fn scenes() -> Vec<(&'static str, &'static str, Vec<u8>, Value)> {
         ("badge-jobs", "badge.png", badge.encode_png(), json!({"colors": 4, "colorChoices": jobs})),
         ("badge-crop", "badge.png", badge.encode_png(), json!({"colors": 4, "crop": [100, 50, 300, 250]})),
         ("badge-resized", "badge.png", badge.encode_png(), json!({"colors": 4, "width": 25})),
+        ("line-art", "lines.png", line_art(THIN_LINE_PX).encode_png(), json!({"colors": 2})),
+        (
+            "line-art-wide-as-lines",
+            "lines.png",
+            line_art(WIDE_LINE_PX).encode_png(),
+            json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "lines"}]}),
+        ),
     ]
 }
 

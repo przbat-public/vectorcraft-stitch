@@ -1,7 +1,7 @@
 //! The document's embroidery settings: `embroidery.setup` changes them, `embroidery.settings`
 //! reads them (the thread palette, the start point, the label, the fabric, the thread's weight,
-//! the joining of one colour's objects, the machine), each as stored and as the stitch plan uses
-//! it, and how many objects set the fabric's values themselves.
+//! the joining of one colour's objects, the machine, the fills' rows), each as stored and as the
+//! stitch plan uses it, and how many objects set the fabric's values themselves.
 //!
 //! A fabric is copied, not linked (the project owner's choice): choosing a preset copies its values
 //! into the document as the values in force and as the preset's (the base a changed value is told
@@ -12,7 +12,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vectorcraft_doc::Document;
-use vectorcraft_doc::embroidery::{FabricSettings, MachineSettings, StitchValues, ThreadPalette};
+use vectorcraft_doc::embroidery::{FabricSettings, FillAngle, MachineSettings, StitchValues, ThreadPalette};
 use vectorcraft_stitch::fabric::{FABRICS, fabric};
 use vectorcraft_stitch::plan::{
     FABRIC_SPACING_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, PULL_RANGE, Params, SPACING_PERCENT_AS_PICKED,
@@ -58,6 +58,8 @@ pub struct StoredSettings {
     pub thread_weight: Option<f64>,
     pub join_same_color: Option<bool>,
     pub machine: Option<StoredMachine>,
+    /// The fills' rows: degrees counter-clockwise on the page, or `"acrossShape"`.
+    pub fill_angle: Option<Value>,
 }
 
 /// The document's fabric as stored: the preset it was copied from (its id), its values in force,
@@ -116,6 +118,9 @@ pub struct ResolvedSettings {
     pub thread_weight: Resolved<f64>,
     pub join_same_color: Resolved<bool>,
     pub machine: ResolvedMachine,
+    /// The rows of fills that set no angle: degrees counter-clockwise on the page (135, the
+    /// planner's default rows), or `"acrossShape"`.
+    pub fill_angle: Resolved<Value>,
 }
 
 /// A value the plan uses and where it comes from: `document`, or `default`.
@@ -218,6 +223,7 @@ pub(super) fn document_settings(d: &Document) -> DocumentSettings {
     let weight = e.and_then(|e| e.thread_weight);
     let join = e.and_then(|e| e.join_same_color);
     let machine = e.and_then(|e| e.machine.as_deref());
+    let rows = e.and_then(|e| e.fill_angle);
     let resolved_weight = weight.unwrap_or(THREAD_WEIGHT);
     DocumentSettings {
         settings: StoredSettings {
@@ -234,6 +240,7 @@ pub(super) fn document_settings(d: &Document) -> DocumentSettings {
                 split_length: m.split_length,
                 speed: m.speed,
             }),
+            fill_angle: rows.map(FillAngle::to_value),
         },
         resolved: ResolvedSettings {
             palette: Resolved { value: thread_palette(d).id().to_string(), source: source(known) },
@@ -241,6 +248,10 @@ pub(super) fn document_settings(d: &Document) -> DocumentSettings {
             thread_weight: Resolved { value: resolved_weight, source: source(weight.is_some()) },
             join_same_color: Resolved { value: join.unwrap_or(true), source: source(join.is_some()) },
             machine: resolved_machine(machine),
+            fill_angle: Resolved {
+                value: rows.map_or(Value::from(super::options::planner_angle(vectorcraft_stitch::plan::FILL_ANGLE)), FillAngle::to_value),
+                source: source(rows.is_some()),
+            },
         },
         overrides: overrides(d),
     }
@@ -415,10 +426,13 @@ pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
                 _ => return Err(bad(C, format!("`joinSameColor` {v}: true, false or null"))),
             }),
             "machine" => new.set_machine(machine_param(v, new.machine.as_deref())?),
+            "fillAngle" => new.set_fill_angle(fill_angle_param(v)?),
             _ => {
                 return Err(bad(
                     C,
-                    format!("unknown setting `{k}`: the settings are palette, start, label, fabric, threadWeight, joinSameColor and machine"),
+                    format!(
+                        "unknown setting `{k}`: the settings are palette, start, label, fabric, threadWeight, joinSameColor, machine and fillAngle"
+                    ),
                 ));
             }
         }
@@ -450,6 +464,28 @@ fn unchanged_left_out(given: Map<String, Value>, stored: &Value) -> Map<String, 
             (v, _) => Some((k, v)),
         })
         .collect()
+}
+
+/// The rows `v` gives the document's fills (`fillAngle`): a number of degrees counter-clockwise on
+/// the page, within a full turn either way as an object's angle is; the rule across each fill's
+/// shape, `"acrossShape"`; or null (`None`: the built-in rows).
+fn fill_angle_param(v: &Value) -> Result<Option<FillAngle>> {
+    let range = super::options::ANGLE_RANGE;
+    match v {
+        Value::Null => Ok(None),
+        Value::String(id) if id == FillAngle::ACROSS_SHAPE => Ok(Some(FillAngle::AcrossShape)),
+        v => v.as_f64().filter(|a| a.is_finite() && (range.0..=range.1).contains(a)).map(|a| Some(FillAngle::Degrees(a))).ok_or_else(|| {
+            bad(
+                C,
+                format!(
+                    "`fillAngle` {v}: degrees from {} to {} (counter-clockwise on the page), \"{}\" or null",
+                    range.0,
+                    range.1,
+                    FillAngle::ACROSS_SHAPE
+                ),
+            )
+        }),
+    }
 }
 
 /// The number `v` gives `key`, within `range` (in `unit`), or null (`None`).

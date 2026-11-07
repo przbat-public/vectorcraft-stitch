@@ -132,15 +132,19 @@ fn outlines_measured(r: &Value) -> (f64, f64) {
     outlines.map(|d| BezPath::from_svg(d).unwrap()).fold((0.0, 0.0), |(area, length), p| (area + p.area().abs(), length + p.perimeter(1e-3)))
 }
 
-/// The fill colours of every object in `s`'s document, `#rrggbb`.
+/// The fill and stroke colours of every object in `s`'s document (a centre line is a stroke),
+/// `#rrggbb`.
 fn fills(s: &Session) -> Vec<String> {
+    use vectorcraft_doc::appearance::AppearanceItem;
     let doc = s.doc().unwrap().doc.clone();
     let mut out = Vec::new();
     doc.walk(|n| {
         for item in &n.appearance.items {
-            if let vectorcraft_doc::appearance::AppearanceItem::Fill(f) = item
-                && let vectorcraft_color::Paint::Solid { color, .. } = &f.paint
-            {
+            let paint = match item {
+                AppearanceItem::Fill(f) => &f.paint,
+                AppearanceItem::Stroke(st) => &st.paint,
+            };
+            if let vectorcraft_color::Paint::Solid { color, .. } = paint {
                 out.push(color.to_hex());
             }
         }
@@ -174,13 +178,25 @@ proptest! {
             let (area, length) = outlines_measured(&r);
             (area, length, r["doubledArea"].as_f64().unwrap())
         };
-        let (none, none_length, _) = measured(0.0);
+        // With none asked, the areas beside a centre line still reach its middle under it (what the
+        // reply says is sewn twice then): the overlap adds what it adds past that.
+        let (none, none_length, none_said) = measured(0.0);
         let (thin, thin_length, thin_said) = measured(0.2);
         let (asked, asked_length, asked_said) = measured(0.4);
         // The outlines' rounding moves each area by at most its length times a vertex's move.
         let slack = |length: f64| (length + none_length) * ROUNDED_MM;
-        prop_assert!(((thin - none) - thin_said).abs() <= slack(thin_length), "0.2 mm sews {} mm² twice, the reply says {}", thin - none, thin_said);
-        prop_assert!(((asked - none) - asked_said).abs() <= slack(asked_length), "0.4 mm sews {} mm² twice, the reply says {}", asked - none, asked_said);
+        prop_assert!(
+            ((thin - none) - (thin_said - none_said)).abs() <= slack(thin_length),
+            "0.2 mm sews {} mm² twice, the reply says {}",
+            thin - none,
+            thin_said - none_said
+        );
+        prop_assert!(
+            ((asked - none) - (asked_said - none_said)).abs() <= slack(asked_length),
+            "0.4 mm sews {} mm² twice, the reply says {}",
+            asked - none,
+            asked_said - none_said
+        );
         prop_assert!(thin <= asked + slack(asked_length), "0.2 mm sews {} mm² twice, 0.4 mm {}", thin - none, asked - none);
         if answered["areaCount"] == json!(0) {
             return Ok(());

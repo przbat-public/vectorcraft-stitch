@@ -410,6 +410,7 @@ pub fn setup_file_keys() -> impl Iterator<Item = (&'static str, &'static str)> {
         ("threadWeight", THREAD_WEIGHT),
         ("joinSameColor", JOIN_SAME_COLOR),
         ("machine", MACHINE),
+        ("fillAngle", FILL_ANGLE),
     ];
     own.into_iter().chain(setup::FILE_KEYS)
 }
@@ -691,6 +692,9 @@ pub struct EmbroiderySetup {
     /// The machine's values: jumps, trims, the shortest stitch, the satin split, its speed
     /// ([`MachineSettings`]). `None`: the built-in defaults.
     pub machine: Option<Box<MachineSettings>>,
+    /// The rows fills run at where neither the object nor the export sets an angle ([`FillAngle`]).
+    /// `None`: the built-in rows (135° on the page), turned with each object.
+    pub fill_angle: Option<FillAngle>,
     /// Keys this version doesn't know (written by a newer one), and known keys whose value this
     /// version can't read, kept so that saving doesn't lose them, as [`crate::Document::extra`]
     /// keeps the document's.
@@ -709,6 +713,42 @@ const FABRIC: &str = "fabric";
 const THREAD_WEIGHT: &str = "thread_weight";
 const JOIN_SAME_COLOR: &str = "join_same_color";
 const MACHINE: &str = "machine";
+const FILL_ANGLE: &str = "fill_angle";
+
+/// The rows a document's fills run at ([`EmbroiderySetup::fill_angle`]): a number of degrees, or a
+/// rule that finds the angle from each fill's shape. Saved as the number, or as the rule's id.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum FillAngle {
+    /// This many degrees, counter-clockwise on the page (as every angle the commands take), turned
+    /// with each object as the built-in rows are.
+    Degrees(f64),
+    /// Across each fill's length: square to its long axis, and the fixed rows where it is about as
+    /// long as wide (the project owner's choices, 2026-11-01: „W poprzek kształtu (polecam)”, a
+    /// document setting, with fixed rows the default).
+    AcrossShape,
+}
+
+impl FillAngle {
+    /// The id the rule across the shape is saved and named by.
+    pub const ACROSS_SHAPE: &'static str = "acrossShape";
+
+    /// The rows `v` names: a finite number of degrees, or the rule's id; `None` for anything else (a
+    /// newer version's rule, kept unread).
+    pub fn read(v: &Value) -> Option<Self> {
+        match v {
+            Value::String(id) if id == Self::ACROSS_SHAPE => Some(Self::AcrossShape),
+            other => number(other).map(Self::Degrees),
+        }
+    }
+
+    /// As it is saved and reported: the number, or the rule's id.
+    pub fn to_value(self) -> Value {
+        match self {
+            Self::Degrees(a) => Value::from(a),
+            Self::AcrossShape => Value::String(Self::ACROSS_SHAPE.into()),
+        }
+    }
+}
 
 impl EmbroiderySetup {
     /// Whether nothing is set and nothing a newer version wrote is kept: the document then carries
@@ -720,7 +760,7 @@ impl EmbroiderySetup {
     /// Whether nothing is set, whatever is kept unread: what makes the writer give back a value it
     /// couldn't read as it was.
     fn nothing_set(&self) -> bool {
-        let Self { palette, start, label, fabric, thread_weight, join_same_color, machine, extra, unread: _ } = self;
+        let Self { palette, start, label, fabric, thread_weight, join_same_color, machine, fill_angle, extra, unread: _ } = self;
         palette.is_none()
             && start.is_none()
             && label.is_none()
@@ -728,6 +768,7 @@ impl EmbroiderySetup {
             && thread_weight.is_none()
             && join_same_color.is_none()
             && machine.is_none()
+            && fill_angle.is_none()
             && extra.is_empty()
     }
 
@@ -754,6 +795,12 @@ impl EmbroiderySetup {
     /// built-in defaults), as [`EmbroiderySetup::set_fabric`] sets the fabric.
     pub fn set_machine(&mut self, machine: Option<MachineSettings>) {
         self.machine = self.replacing(MACHINE, machine.filter(|m| !m.is_empty())).map(Box::new);
+    }
+
+    /// Set the rows fills run at where nothing else sets them, or unset them (`None`: the built-in
+    /// rows), as [`EmbroiderySetup::set_fabric`] sets the fabric.
+    pub fn set_fill_angle(&mut self, angle: Option<FillAngle>) {
+        self.fill_angle = self.replacing(FILL_ANGLE, angle);
     }
 
     /// `value`, about to be set under `key`: when it is set, what this version couldn't read (the
@@ -812,7 +859,8 @@ impl From<serde_json::Value> for EmbroiderySetup {
                 let thread_weight = take(&mut map, THREAD_WEIGHT, number);
                 let join_same_color = take(&mut map, JOIN_SAME_COLOR, Value::as_bool);
                 let machine = setup_object(&mut map, MACHINE, MachineSettings::read).map(Box::new);
-                Self { palette, start, label, fabric, thread_weight, join_same_color, machine, extra: map, unread: None }
+                let fill_angle = take(&mut map, FILL_ANGLE, FillAngle::read);
+                Self { palette, start, label, fabric, thread_weight, join_same_color, machine, fill_angle, extra: map, unread: None }
             }
             serde_json::Value::Null => Self::default(),
             other => Self { unread: Some(other), ..Self::default() },
@@ -830,7 +878,7 @@ impl From<EmbroiderySetup> for serde_json::Value {
         {
             return unread;
         }
-        let EmbroiderySetup { palette, start, label, fabric, thread_weight, join_same_color, machine, extra, unread: _ } = s;
+        let EmbroiderySetup { palette, start, label, fabric, thread_weight, join_same_color, machine, fill_angle, extra, unread: _ } = s;
         let set = [
             palette.map(|p| (PALETTE, Value::from(p))),
             start.map(|p| (START, serde_json::json!([p.x, p.y]))),
@@ -839,6 +887,7 @@ impl From<EmbroiderySetup> for serde_json::Value {
             thread_weight.map(|w| (THREAD_WEIGHT, Value::from(w))),
             join_same_color.map(|on| (JOIN_SAME_COLOR, Value::Bool(on))),
             machine.filter(|m| !m.is_empty()).map(|m| (MACHINE, Value::from(*m))),
+            fill_angle.map(|a| (FILL_ANGLE, a.to_value())),
         ];
         with_kept(set.into_iter().flatten(), extra)
     }
@@ -1353,6 +1402,27 @@ mod tests {
             let snake: String = name.chars().flat_map(|c| if c.is_ascii_uppercase() { vec!['_', c.to_ascii_lowercase()] } else { vec![c] }).collect();
             assert_eq!(file, snake, "{name}");
         }
+    }
+
+    /// The document's rows round-trip as a number of degrees or as the rule across the shape; a
+    /// newer version's rule (a string this version doesn't know) is kept and read as unset, and
+    /// setting the rows replaces it; unsetting leaves nothing behind.
+    #[test]
+    fn the_documents_rows_round_trip() {
+        for (written, read) in
+            [(json!({"fill_angle": 30.0}), Some(FillAngle::Degrees(30.0))), (json!({"fill_angle": "acrossShape"}), Some(FillAngle::AcrossShape))]
+        {
+            let s: EmbroiderySetup = serde_json::from_value(written.clone()).unwrap();
+            assert_eq!(s.fill_angle, read, "{written}");
+            assert_eq!(serde_json::to_value(&s).unwrap(), written);
+        }
+        let mut newer: EmbroiderySetup = serde_json::from_value(json!({"fill_angle": "alongShape"})).unwrap();
+        assert_eq!((newer.fill_angle, newer.extra.get("fill_angle")), (None, Some(&json!("alongShape"))));
+        assert_eq!(serde_json::to_value(&newer).unwrap(), json!({"fill_angle": "alongShape"}));
+        newer.set_fill_angle(Some(FillAngle::AcrossShape));
+        assert_eq!(serde_json::to_value(&newer).unwrap(), json!({"fill_angle": "acrossShape"}));
+        newer.set_fill_angle(None);
+        assert!(newer.is_empty());
     }
 
     /// Nothing set reads and writes as an empty object, and a palette of null is none.

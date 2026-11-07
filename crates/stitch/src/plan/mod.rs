@@ -32,11 +32,13 @@
 //! and `narrow` (a fill's narrow parts, sewn as satin columns).
 
 mod area;
+mod axis;
 mod ends;
 mod fill;
 mod geometry;
 mod joins;
 mod narrow;
+mod route;
 mod running;
 mod runs;
 mod satin;
@@ -45,11 +47,18 @@ mod tests;
 #[cfg(test)]
 mod tests_aim;
 #[cfg(test)]
+mod tests_axis;
+#[cfg(test)]
+mod tests_caps;
+#[cfg(test)]
 mod tests_narrow;
+#[cfg(test)]
+mod tests_route;
 mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
+pub use axis::{SHAPE_ANGLE_STEP, SHAPE_AXIS_BANDS, SHAPE_AXIS_MIN_ELONGATION, ShapeAxis, rows_across, shape_axis};
 pub use ends::{Ends, MAX_JOIN_EXITS, MAX_JOIN_STARTS, Through, ends};
 pub use fill::MIN_AREA;
 pub use fill::TATAMI_UNDERLAY_MIN;
@@ -260,6 +269,33 @@ impl Underlay {
     }
 }
 
+/// How a satin column's open ends are sewn ([`Params::cap`]): as a stroke's cap paints the end of a
+/// line, past which the paint stops.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Cap {
+    /// At the path's ends.
+    #[default]
+    Butt,
+    /// Past each end by half the column's width, as a half disc: the crossings narrow round it.
+    Round,
+    /// Past each end by half the column's width, at its full width.
+    Square,
+}
+
+impl Cap {
+    /// Every kind.
+    pub const ALL: [Self; 3] = [Self::Butt, Self::Round, Self::Square];
+
+    /// Its name: `butt`, `round`, `square`.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Butt => "butt",
+            Self::Round => "round",
+            Self::Square => "square",
+        }
+    }
+}
+
 /// What one shape is stitched as.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Params {
@@ -321,6 +357,11 @@ pub struct Params {
     /// and [`try_fill_with_columns`] sews them with the rest of the shape, which the caller cuts
     /// out (the planner has no path operations); [`try_stitches`] itself fills the whole shape.
     pub narrow: f64,
+    /// Satin only: how each open column's ends are sewn ([`Cap`]), as the stroke it sews paints
+    /// them: past the path's ends by half the column's width, round or square, or at them. A
+    /// column whose two ends meet (a ring drawn without closing it) has no end to cap. Running
+    /// lines and fills don't read it.
+    pub cap: Cap,
 }
 
 // The ranges [`Params::sane`] clamps each value to (millimetres, lowest and highest). They are
@@ -410,6 +451,7 @@ impl Params {
                 auto_spacing: false,
                 spacing_scale: SPACING_SCALE,
                 narrow: 0.0,
+                cap: Cap::Butt,
             },
             // A satin column's stitches cross from rail to rail: it uses no stitch length or angle
             // (a satin without a width is filled instead, and then they apply).
@@ -432,6 +474,7 @@ impl Params {
                 auto_spacing: true,
                 spacing_scale: SPACING_SCALE,
                 narrow: 0.0,
+                cap: Cap::Butt,
             },
             // A fill has no ends to push in: its rows run edge to edge.
             Style::Fill => Self {
@@ -453,6 +496,7 @@ impl Params {
                 auto_spacing: false,
                 spacing_scale: SPACING_SCALE,
                 narrow: NARROW_SATIN,
+                cap: Cap::Butt,
             },
         }
     }
@@ -486,6 +530,7 @@ impl Params {
             auto_spacing: self.auto_spacing,
             spacing_scale: clamp(self.spacing_scale, d.spacing_scale, (SPACING_PERCENT_RANGE.0 / PERCENT, SPACING_PERCENT_RANGE.1 / PERCENT)),
             narrow: clamp(self.narrow, d.narrow, NARROW_RANGE),
+            cap: self.cap,
         }
     }
 
@@ -772,8 +817,15 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     let total: f64 = subs.iter().map(|s| length(&s.points(), s.closed)).sum();
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
     match sewn_style(p) {
-        Style::Running => total / p.stitch_length + ends,
+        // Pieces that meet end to end are sewn as routes, some of them twice (`route`).
+        Style::Running => {
+            let repeats = if subs.iter().filter(|s| !s.closed).count() >= 2 { total } else { 0.0 };
+            (total + repeats) / p.stitch_length + ends
+        }
         Style::Satin => {
+            // A cap carries each open column past its ends by at most half its width.
+            let capped = if p.cap == Cap::Butt { 0.0 } else { p.width * subs.iter().filter(|s| !s.closed).count() as f64 };
+            let total = total + capped;
             // Each crossing split as `split_long` splits the longest a crossing can be (the column
             // and the most pull compensation at both rails); round a bend, the crossings come up to
             // MAX_RAIL_STRETCH times closer along the centre line.

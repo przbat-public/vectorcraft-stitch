@@ -7,9 +7,10 @@
 //!   whatever its noise setting is) and what the trace is told to keep for the next rule.
 //! - **Long thin lines stay**, whatever their area (the project owner's choice, 2026-11-01): a
 //!   hairline weighs less than a crumb, but it is drawn. A line is narrower than [`THIN_LINE_MM`]
-//!   and, measured along it, at least [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so
-//!   that a stroke tapering to a point counts its whole length. The planner sews a part that
-//!   narrow as a running line along its middle.
+//!   along its middle (at most [`JUNCTION_ALLOWANCE`] times wider where its lines meet) and,
+//!   measured along it, at least [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so that a
+//!   stroke tapering to a point counts its whole length. It is sewn along its centre line
+//!   (`super::centre`).
 //! - **Bands a thread wide join, whatever their size.** A band no wider than a thread
 //!   ([`SLIVER_MAX_MM`], the project owner's choice, 2026-11-03) whose colour is a neighbour's,
 //!   near enough ([`SLIVER_DELTA_E`]), or a mix of two neighbours' ([`is_mix`]), is no drawn line
@@ -30,11 +31,19 @@ use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
 use super::colours::Colours;
 use super::regions::Regions;
+use super::settings::Job;
 
 /// The narrowest a long area may be and still be no line (millimetres): the narrowest satin column
 /// the planner sews (`plan::SATIN_MIN_WIDTH`, from Melco's design checker); narrower, the planner
 /// sews it as a running line along its middle.
 pub(super) const THIN_LINE_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
+
+/// How much wider than its lines a drawing of lines may be where they meet and still be lines: √2,
+/// a right-angle crossing's largest disc as wide as its lines' diagonal (the research's geometry:
+/// a T's is 1.26 times its lines, a Y's 1.16, a crossing's 1.41). A line is narrower than
+/// [`THIN_LINE_MM`] along its middle (`AreaStats::ridge_px`), and at most this much wider at its
+/// widest; the session's choice, for the owner to confirm.
+pub(super) const JUNCTION_ALLOWANCE: f64 = std::f64::consts::SQRT_2;
 
 /// How long a thin area must be, measured along it, to stay below the smallest area (millimetres):
 /// a line, not a speck. The project owner's choice (2026-11-03), taken from the research's estimate
@@ -146,8 +155,9 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     let thin_px = THIN_LINE_MM * px_per_mm;
     let long_px = LINE_KEEP_LENGTH_MM * px_per_mm;
     let band_px = SLIVER_MAX_MM * px_per_mm;
-    // A line: narrower than a satin column, and long enough along it not to be a speck.
-    let thin = |i: usize| regions.areas.get(i).is_some_and(|a| a.pixels > 0 && a.widest_px < thin_px);
+    // A line: narrower than a satin column along its middle (a little wider where its lines meet),
+    // and long enough along it not to be a speck.
+    let thin = |i: usize| regions.areas.get(i).is_some_and(|a| a.pixels > 0 && a.ridge_px < thin_px && a.widest_px < thin_px * JUNCTION_ALLOWANCE);
     let lengths = regions.lengths(thin)?;
     let is_line = |i: usize| thin(i) && lengths.get(i).is_some_and(|&l| l >= long_px);
     let colour = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).map(|r| r.color);
@@ -279,6 +289,19 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     }
     let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len(), regions.outside.clone());
     Ok(Areas { areas, regions, joined, bands, dropped: left_out })
+}
+
+/// Every area of a colour sewn as Lines made a line, whatever its width (the project owner's
+/// choices: "each colour has a job (Auto, Fill, Lines, Don't sew)", 2026-11-01, and the job Lines
+/// with centre lines, 2026-11-03): sewn along its middle as one running line (`super::centre`),
+/// after the fills it touches (`super::order`), the colours beside it reaching its middle under it
+/// (`super::overlap`). The background's areas stay as they are: they are never sewn.
+pub(super) fn lines_by_job(areas: &mut Areas, colours: &Colours) {
+    for area in &mut areas.areas {
+        if colours.rows.get(area.row).is_some_and(|r| r.job == Job::Lines && !r.background) {
+            area.kind = AreaKind::Line;
+        }
+    }
 }
 
 /// The areas once the colours have their threads (`colours`): touching areas sewn in one thread

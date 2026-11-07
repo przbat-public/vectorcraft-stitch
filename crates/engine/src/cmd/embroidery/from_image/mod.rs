@@ -23,7 +23,9 @@
 //!   leaves along its edges;
 //! - [`inside`]: what lies inside what, and which islands are sewn over the area round them;
 //! - [`order`]: the order the areas are sewn in;
-//! - [`overlap`]: the shapes they are sewn as, each grown under the neighbours sewn after it;
+//! - [`centre`]: a thin line's middle, the path a running stitch follows through its junctions;
+//! - [`overlap`]: the shapes they are sewn as, each grown under the neighbours sewn after it (and
+//!   under a centre line to its middle);
 //! - [`create`]: the embroidery objects made of them, in place of the image, which moves to a
 //!   template layer;
 //! - [`command`]: `embroidery.digitizeImage` and its answer, run as a job ([`DigitizeJob`]);
@@ -33,6 +35,7 @@
 //! one of the fork's own.
 
 mod background;
+mod centre;
 mod colours;
 mod command;
 mod create;
@@ -58,5 +61,7 @@ mod tests_areas;
 mod tests_colours;
 #[cfg(test)]
 mod tests_create;
+#[cfg(test)]
+mod tests_lines;
 #[cfg(test)]
 mod tests_overlap;

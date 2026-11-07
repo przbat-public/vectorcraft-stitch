@@ -19,10 +19,14 @@ use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings, PartValue};
 use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
-use vectorcraft_stitch::plan::{Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, Style, TATAMI_UNDERLAY_MIN, Underlay, satin_auto_underlay};
+use vectorcraft_geom::FillRule;
+use vectorcraft_stitch::plan::{
+    Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, SHAPE_AXIS_MIN_ELONGATION, Style, TATAMI_UNDERLAY_MIN, Underlay, rows_across,
+    satin_auto_underlay,
+};
 use vectorcraft_stitch::{Command, pt_to_mm};
 
-use super::digitize::{outlined_rule, part_rule, sews};
+use super::digitize::{in_mm, outlined_rule, part_rule, sews};
 use super::objects::{MAX_IDS, MAX_SKIPPED, has_part, part_kind, takers, value_json};
 use super::options::stitch_id;
 use super::plan::{Choice, DesignPlan, Part};
@@ -562,7 +566,12 @@ fn part_section(
             Some(AppearanceItem::Stroke(st)) if style == Style::Satin => pt_to_mm(st.width).max(0.0),
             _ => 0.0,
         };
-        let rules = if sewn_as == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
+        let mut rules = if sewn_as == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
+        if sewn_as != "none"
+            && let Some(rows) = rows_by_shape(n, style, &settings)
+        {
+            rules.push(("angle", rows));
+        }
         for reported in settings.report(style) {
             let Some((_, k)) = keys.iter_mut().find(|(name, _)| *name == reported.name) else { continue };
             // Set: what the object's own settings give, as this version reads them (a stitch or an
@@ -631,9 +640,52 @@ pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLay
         return None;
     }
     let angle = settings.angle(&object);
-    let degrees = angle.value.as_f64().filter(|a| a.is_finite())?;
-    Some((degrees, angle.source == Source::Object))
+    // The rule across the shape: the rows it chooses for the object's own outline.
+    let degrees = match angle.value.as_f64() {
+        Some(a) => a,
+        None => rows_by_shape(n, style, &settings)?.get("chose").and_then(Value::as_f64)?,
+    };
+    degrees.is_finite().then_some((degrees, angle.source == Source::Object))
 }
+
+/// Object `n`'s outline (millimetres) and its fill rule: a path's, or a compound path's paths
+/// together; `None` for anything else (a symbol's instance, a group).
+fn outline_mm(n: &Node) -> Option<(BezPath, FillRule)> {
+    match &n.kind {
+        NodeKind::Path { path, rule, .. } => Some((in_mm(&path.to_bezpath()), *rule)),
+        NodeKind::Compound { children, rule } => {
+            let mut bp = BezPath::new();
+            for p in children.iter().filter_map(|c| c.path_data()) {
+                bp.extend(p.to_bezpath());
+            }
+            Some((in_mm(&bp), *rule))
+        }
+        _ => None,
+    }
+}
+
+/// What the document's rows across the shape chose for a fill of `n` sewn with `settings`, as
+/// `info`'s rules give it: the rows square to its outline's long axis (degrees counter-clockwise on
+/// the page), with how much longer it is than wide; for one about as long as wide, the rows it
+/// keeps. `None` where the rule doesn't decide (an angle set, no rule, not a fill). The plan
+/// measures the shape as it is planned (grown and clipped); this, the object's own outline.
+fn rows_by_shape(n: &Node, style: Style, settings: &UnitSettings) -> Option<Value> {
+    if style != Style::Fill || !settings.by_shape() {
+        return None;
+    }
+    let kept = super::options::planner_angle(settings.params(Style::Fill, 0.0).angle);
+    let (outline, rule) = outline_mm(n)?;
+    let axis = vectorcraft_stitch::plan::shape_axis(&outline, rule);
+    let across = rows_across(&outline, rule).map(|(a, _)| super::options::planner_angle(a));
+    Some(json!({
+        "id": "rowsAcrossShape",
+        "chose": across.unwrap_or(kept),
+        "values": {"elongation": axis.map(|a| (a.elongation * ELONGATION_HUNDREDTHS).round() / ELONGATION_HUNDREDTHS), "elongationMin": SHAPE_AXIS_MIN_ELONGATION, "across": across.is_some()},
+    }))
+}
+
+/// How finely a shape's elongation is reported: to hundredths.
+const ELONGATION_HUNDREDTHS: f64 = 100.0;
 
 /// What `plan` sews of part `kind` of objects `ids` (as a person selects them).
 fn sewn_of(plan: &DesignPlan, ids: &[NodeId], kind: PartKind) -> Sewing {

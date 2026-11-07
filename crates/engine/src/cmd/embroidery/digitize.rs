@@ -39,6 +39,8 @@ pub(super) const MARKS_LEFT_OUT: &str =
 pub(super) use vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 /// The column width given for what is not a satin column: fills and running lines have none.
 const NO_WIDTH: f64 = 0.0;
+/// The cap given for what is not a stroke sewn along its path: a fill's unit has no ends to cap.
+const NO_CAP: plan::Cap = plan::Cap::Butt;
 /// The first word of a kept area's key ([`Digitizer::area`]), saying what the path operations made
 /// the area from: a fill's own area, a stroke's painted area (dashed, aligned, of varying width,
 /// with arrowheads), a stroke filled at its width.
@@ -264,6 +266,8 @@ struct Sewing<'a> {
     style: Style,
     why: Choice,
     width: f64,
+    /// How a satin column sews its open ends: a stroke's cap; a fill has none.
+    cap: plan::Cap,
     clip_stitches: bool,
 }
 
@@ -716,14 +720,19 @@ impl<'a> Digitizer<'a> {
                     // Paint that isn't sewn is said so (or passed by) before any path operation
                     // runs on its area.
                     if !matches!(solid(&fill.paint), Colour::Solid(_) | Colour::Approx(_)) {
-                        self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, clip_stitches: false }, &mm, rule, &fill.paint);
+                        self.colour(
+                            Sewing { unit, settings, style, why, width: NO_WIDTH, cap: NO_CAP, clip_stitches: false },
+                            &mm,
+                            rule,
+                            &fill.paint,
+                        );
                         continue;
                     }
                     // A fill sewn as a running line follows its outline, as a stroke does: the
                     // clip groups around it cut its stitches, rather than its area, whose cut
                     // edge would be sewn as a line the art doesn't have.
                     if style == Style::Running {
-                        self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, clip_stitches: true }, &mm, rule, &fill.paint);
+                        self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, cap: NO_CAP, clip_stitches: true }, &mm, rule, &fill.paint);
                         continue;
                     }
                     let e = if style == Style::Fill { settings.expand() } else { 0.0 };
@@ -734,7 +743,12 @@ impl<'a> Digitizer<'a> {
                         Some(k)
                     };
                     let shaped = self.area(what, |d| d.expanded_and_clipped(&mm, rule, e));
-                    self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, clip_stitches: false }, &shaped.area, shaped.rule, &fill.paint);
+                    self.colour(
+                        Sewing { unit, settings, style, why, width: NO_WIDTH, cap: NO_CAP, clip_stitches: false },
+                        &shaped.area,
+                        shaped.rule,
+                        &fill.paint,
+                    );
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
@@ -757,8 +771,15 @@ impl<'a> Digitizer<'a> {
                             let outline = outline_region(&PathData::from_bezpath(bp), rule, stroke).to_bezpath();
                             d.expanded_and_clipped(&in_mm(&outline), FillRule::NonZero, e)
                         });
-                        let sewing =
-                            Sewing { unit, settings, style: Style::Fill, why: Choice::StrokeOutlined, width: NO_WIDTH, clip_stitches: false };
+                        let sewing = Sewing {
+                            unit,
+                            settings,
+                            style: Style::Fill,
+                            why: Choice::StrokeOutlined,
+                            width: NO_WIDTH,
+                            cap: NO_CAP,
+                            clip_stitches: false,
+                        };
                         self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         continue;
                     }
@@ -787,8 +808,15 @@ impl<'a> Digitizer<'a> {
                                 let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, miter).to_bezpath();
                                 d.expanded_and_clipped(&outline, FillRule::NonZero, e)
                             });
-                            let sewing =
-                                Sewing { unit, settings, style: Style::Fill, why: Choice::StrokeFilled, width: NO_WIDTH, clip_stitches: false };
+                            let sewing = Sewing {
+                                unit,
+                                settings,
+                                style: Style::Fill,
+                                why: Choice::StrokeFilled,
+                                width: NO_WIDTH,
+                                cap: NO_CAP,
+                                clip_stitches: false,
+                            };
                             self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         }
                         // A satin column or a running line along its path.
@@ -799,7 +827,14 @@ impl<'a> Digitizer<'a> {
                                     "strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)"
                                 ));
                             }
-                            self.colour(Sewing { unit, settings, style, why, width, clip_stitches: true }, &mm, rule, &stroke.paint);
+                            // A satin column sews the stroke's cap at its ends, as the stroke paints it
+                            // (the project owner's choice, 2026-11-01).
+                            let cap = match stroke.cap {
+                                LineCap::Butt => plan::Cap::Butt,
+                                LineCap::Round => plan::Cap::Round,
+                                LineCap::Square => plan::Cap::Square,
+                            };
+                            self.colour(Sewing { unit, settings, style, why, width, cap, clip_stitches: true }, &mm, rule, &stroke.paint);
                         }
                     }
                 }
@@ -878,8 +913,8 @@ impl<'a> Digitizer<'a> {
         if self.failed.is_some() {
             return;
         }
-        let Sewing { unit, settings, style, why, width, clip_stitches } = sewing;
-        let params = settings.params(style, width);
+        let Sewing { unit, settings, style, why, width, cap, clip_stitches } = sewing;
+        let params = plan::Params { cap, ..settings.params(style, width) };
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
         let bounds = bp.bounding_box();

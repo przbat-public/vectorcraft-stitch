@@ -1,22 +1,22 @@
-badge reply a9e46d14c36a0b44
-badge dst 88b284bbe2d2ee68 5039
-badge tap c5f9a2a17a74c3b6 4527
-badge t01 c5f9a2a17a74c3b6 4527
-badge exp e31439ad28c3f118 3044
-badge pes fd93c3afe4ed051e 5182
-badge pec 5df1737e22ff48a0 5168
-badge jef 3ac1ea4ac6b53695 3214
-badge vp3 dcbb773b414de47b 3576
-badge-jpeg reply fbd9f946d9c508ce
-badge-jpeg dst b5447ef8f2888ad7 5126
-badge-jpeg tap a5bb049d1bdf8493 4614
-badge-jpeg t01 a5bb049d1bdf8493 4614
-badge-jpeg exp 9e6f6bcac4446d62 3098
-badge-jpeg pes 66e810fb5f0eb177 5240
-badge-jpeg pec d7181699b281aa2d 5226
-badge-jpeg jef 7ea2e5659bf87b8f 3272
-badge-jpeg vp3 1ec0955cf6c741c5 3634
-halves reply dc46d0f9dabaa016
+badge reply f686aef5afe6333a
+badge dst 611ea41aa424c41b 5087
+badge tap e2772a42de1287c8 4575
+badge t01 e2772a42de1287c8 4575
+badge exp abc397dd51840666 3076
+badge pes 79dc8a8adeddca17 5214
+badge pec db15b035dfb5dc71 5200
+badge jef c47c772dc810cc2c 3246
+badge vp3 a246936bebb9a334 3608
+badge-jpeg reply f55098eea9e28727
+badge-jpeg dst 876a48ee29265ead 5141
+badge-jpeg tap 1c36dd8e29e040ed 4629
+badge-jpeg t01 1c36dd8e29e040ed 4629
+badge-jpeg exp c4ffe0fbe0eb142d 3110
+badge-jpeg pes 44673f5670b30f44 5252
+badge-jpeg pec 8461a2be8e3dd12a 5238
+badge-jpeg jef 4cae43f041dfbf14 3284
+badge-jpeg vp3 e07a1e95a5f92b11 3650
+halves reply 1c3f2dc86216116c
 halves dst 46f59b606700fe76 2363
 halves tap 51a766bcc69e649c 1851
 halves t01 51a766bcc69e649c 1851
@@ -25,7 +25,7 @@ halves pes 120ab5ef8d413bcb 2474
 halves pec 87b9922cea90920d 2460
 halves jef 9f0284fcacd2f0dd 1370
 halves vp3 12a899e5a3016898 1564
-letter reply 5325bcbc146fa21c
+letter reply b2bc61b5d88925e6
 letter dst 23cc7d6fbec799e1 2144
 letter tap b7f79e508807038f 1632
 letter t01 b7f79e508807038f 1632
@@ -34,7 +34,7 @@ letter pes 619ffd2d5410348a 2330
 letter pec f4b466e83af8258c 2316
 letter jef 9b59000245a8d33a 1226
 letter vp3 b5f1697d0c39bc38 1404
-specks reply 0943fcb04f02a043
+specks reply 16c4a987100f58f0
 specks dst 2d2f748c223f1cd1 2357
 specks tap 95c43a94cd610714 1845
 specks t01 95c43a94cd610714 1845
@@ -43,7 +43,7 @@ specks pes 8e0500a65450ca43 2239
 specks pec 9fa571238daf69a9 2225
 specks jef 2ac1b9bbdeaef782 1358
 specks vp3 1a047671be5fa66d 1498
-blend reply 5733b31828e6e1e0
+blend reply 19017ec98c456cc2
 blend dst 7643996f1e5e573b 2885
 blend tap a1c49d58a1621726 2373
 blend t01 a1c49d58a1621726 2373
@@ -52,7 +52,7 @@ blend pes a9405c5ade017280 2820
 blend pec c6d046f4936d9916 2806
 blend jef bd4eb415e7c0803d 1720
 blend vp3 11ae2cf673d4b5eb 1910
-squares-0 reply c8a947ff668a8137
+squares-0 reply 2a4e1dac863e58ab
 squares-0 dst d8ce001c10a597b5 1889
 squares-0 tap a3c7f2f4489893ea 1377
 squares-0 t01 a3c7f2f4489893ea 1377
@@ -61,7 +61,7 @@ squares-0 pes 2f587012721ee7da 2156
 squares-0 pec 667ae29f49e0a990 2142
 squares-0 jef 0cdc9b606b91c958 1056
 squares-0 vp3 5182cfd2e4f8eb9d 1238
-squares-0.2 reply ba9b4b1376bcc4ff
+squares-0.2 reply 1de984b9a2b7cc93
 squares-0.2 dst 11256aa5c1ce6e34 1910
 squares-0.2 tap a0414c6ca882d609 1398
 squares-0.2 t01 a0414c6ca882d609 1398
@@ -70,7 +70,7 @@ squares-0.2 pes e79b9a34c02261da 2172
 squares-0.2 pec 47c370c3a3f4b698 2158
 squares-0.2 jef b75b1dfbef90b5a6 1072
 squares-0.2 vp3 3e4cd821520b98a6 1262
-squares-0.4 reply 3876a35ee67f3ac5
+squares-0.4 reply ad4676762b3033d1
 squares-0.4 dst a020bf1c797ac46c 1913
 squares-0.4 tap 5eef02b2c314b048 1401
 squares-0.4 t01 5eef02b2c314b048 1401
@@ -79,7 +79,7 @@ squares-0.4 pes 91d6539cc90f4f6e 2174
 squares-0.4 pec 5b0d51c6f61b2f04 2160
 squares-0.4 jef 8c1526d60a6029bd 1074
 squares-0.4 vp3 227aa697c6338f4b 1264
-scan reply eabcc7c33b18537c
+scan reply 94acf1f61b09f5d0
 scan dst e3154f457391c811 3104
 scan tap dcdd5b1cc1d2bb14 2592
 scan t01 dcdd5b1cc1d2bb14 2592
@@ -88,16 +88,16 @@ scan pes 0e852298b58037a6 3479
 scan pec dab050c1e67c52c4 3465
 scan jef 1ce616c630f392bf 1888
 scan vp3 25f562ad975d89ba 2166
-badge-logo reply 6fcb9910be940344
-badge-logo dst 88b284bbe2d2ee68 5039
-badge-logo tap c5f9a2a17a74c3b6 4527
-badge-logo t01 c5f9a2a17a74c3b6 4527
-badge-logo exp e31439ad28c3f118 3044
-badge-logo pes fd93c3afe4ed051e 5182
-badge-logo pec 5df1737e22ff48a0 5168
-badge-logo jef 3ac1ea4ac6b53695 3214
-badge-logo vp3 dcbb773b414de47b 3576
-badge-greys reply 2856f5a1c1129fd8
+badge-logo reply 2f83677153d9c20a
+badge-logo dst 611ea41aa424c41b 5087
+badge-logo tap e2772a42de1287c8 4575
+badge-logo t01 e2772a42de1287c8 4575
+badge-logo exp abc397dd51840666 3076
+badge-logo pes 79dc8a8adeddca17 5214
+badge-logo pec db15b035dfb5dc71 5200
+badge-logo jef c47c772dc810cc2c 3246
+badge-logo vp3 a246936bebb9a334 3608
+badge-greys reply 3f42a55f76f8e3f5
 badge-greys dst 044fffa432d8eeb7 4889
 badge-greys tap 7baeff25834ef5ba 4377
 badge-greys t01 7baeff25834ef5ba 4377
@@ -106,7 +106,7 @@ badge-greys pes 64c0386408e57993 4391
 badge-greys pec 5fa688460af9ecb1 4377
 badge-greys jef 70678dc725288da0 3080
 badge-greys vp3 cac2ec192509766a 3316
-badge-jobs reply 073aa5c90985a6e0
+badge-jobs reply e0edfa9809a549ef
 badge-jobs dst 950fe0beff3b28bf 4451
 badge-jobs tap 64106c34a132a10d 3939
 badge-jobs t01 64106c34a132a10d 3939
@@ -115,7 +115,7 @@ badge-jobs pes 02347d600e1ab84c 4565
 badge-jobs pec 6fe026f6234a6cc2 4551
 badge-jobs jef 1f22efb747d9eee2 2808
 badge-jobs vp3 3cee4cad249978a0 3140
-badge-crop reply 24d9031f1d77409d
+badge-crop reply 3a480e8001403d46
 badge-crop dst 4d63778170e240c9 3728
 badge-crop tap d3f801a7f25f50b5 3216
 badge-crop t01 d3f801a7f25f50b5 3216
@@ -124,12 +124,12 @@ badge-crop pes 4dea3159b459da10 4071
 badge-crop pec 4f5d7d321f3fdf1e 4057
 badge-crop jef 332dd90a0ff600a1 2358
 badge-crop vp3 0e7ea4a93d57ae8d 2714
-badge-resized reply 77e7001888e181bf
-badge-resized dst d9b7abba606dbcf4 2249
-badge-resized tap b801de0078c31276 1737
-badge-resized t01 b801de0078c31276 1737
-badge-resized exp 759966f5f5d76ee2 1180
-badge-resized pes dffcce1df4f07589 3326
-badge-resized pec bc6a9afb04f6fe9b 3312
-badge-resized jef f14e1e0344a34391 1346
-badge-resized vp3 c625b72e8bdf7439 1704
+badge-resized reply 9e556237f6ba1cb8
+badge-resized dst 64eedb561c92c644 2237
+badge-resized tap 83dd62118e295e0a 1725
+badge-resized t01 83dd62118e295e0a 1725
+badge-resized exp 4b1117db79c66c63 1172
+badge-resized pes ac985b2b0c28b5fb 3318
+badge-resized pec dd4e8631ce0b8135 3304
+badge-resized jef 617599f7e8157cbf 1338
+badge-resized vp3 0103d506e2f49c32 1696

@@ -22,6 +22,7 @@ use vectorcraft_geom::kurbo::{BezPath, ParamCurve, ParamCurveDeriv, PathEl, Path
 use vectorcraft_geom::{FillRule, PathData, Point, Rect, SubPath};
 use vectorcraft_pathops::{BoolOp, Cap, Join, outline_stroke, try_boolean, try_unite_all_with};
 
+use super::centre::CentreLine;
 use super::colours::Colours;
 use super::order::Order;
 use super::regions::{NONE, Regions};
@@ -40,6 +41,14 @@ const BEYOND_PX: f64 = 0.5;
 /// neighbours growing under it from both sides meet in its middle. The session's choice
 /// (2026-11-02), for the owner to confirm.
 const THIN_SHARE: f64 = 0.5;
+
+/// How much wider than its widest inscribed width (`AreaStats::widest_px`, measured on the region
+/// map's pixels) a centre line's traced outline may be (working pixels): a pixel, the trace's
+/// anti-aliased edges moving each side by up to half of one. The colours either side of a centre
+/// line reach half of this past its middle, so that they meet under it, however its edges were
+/// traced (measured 2026-11-07: a ring 2 mm wide set to Lines left 1.9 mm² of fabric under its
+/// middle when each side reached half its widest alone).
+const LINE_SLACK_PX: f64 = 1.0;
 
 /// The miter limit the strip's widened edge is drawn with: none is drawn, its joins and ends being
 /// round, so that the strip reaches no farther than its width from the shared edge anywhere.
@@ -224,9 +233,20 @@ fn joined_edges(edges: &[BezPath]) -> PathData {
 }
 
 /// The shapes of `areas` (traced as `traced`), sewn in `order`, with `overlap_px` working pixels of
-/// overlap. A cancel stops it between areas.
-pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, colours: &Colours, order: &Order, overlap_px: f64) -> Result<Shapes> {
+/// overlap. An area sewn along its centre line (`lines`) grows under nothing, and its neighbours
+/// grow under it to its middle, whatever the overlap (the project owner's choice, 2026-11-07,
+/// „Sąsiedzi wchodzą pod linię (polecam)”): a line is sewn on top of what lies beside it. A cancel
+/// stops it between areas.
+pub(super) fn shaped(
+    traced: &[vectorcraft_trace::TracedPath],
+    areas: &Areas,
+    colours: &Colours,
+    order: &Order,
+    overlap_px: f64,
+    lines: &[Option<CentreLine>],
+) -> Result<Shapes> {
     let n = areas.areas.len();
+    let line = |a: usize| lines.get(a).is_some_and(Option::is_some);
     let sewn = |a: usize| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(super::colours::Colour::sewn);
     let background = |a: usize| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(|r| r.background);
     let mut failed = 0usize;
@@ -288,6 +308,7 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
         for &a in &placed.under {
             let sewn_over = areas.areas.get(b).is_some_and(|x| x.inside == Some(a) && x.sewn_over);
             if sewn(a)
+                && !line(a)
                 && !sewn_over
                 && let Some(g) = under.get_mut(a)
             {
@@ -305,7 +326,7 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
     // What strips already lie under each area, from the areas sewn before, each with its box: a
     // later strip there gives way to those it may overlap.
     let mut taken: Vec<Vec<(Rect, PathData)>> = vec![Vec::new(); n];
-    if overlap_px > 0.0 {
+    if overlap_px > 0.0 || lines.iter().any(Option::is_some) {
         for &a in &order.sewn {
             vectorcraft_doc::cancel::check()?;
             let Some(later) = under.get(a).filter(|l| !l.is_empty()) else { continue };
@@ -318,8 +339,12 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
                 else {
                     continue;
                 };
-                // As far as asked, or half as wide as a thin neighbour.
-                let width = overlap_px.min(stats.widest_px * THIN_SHARE);
+                // As far as asked, or half as wide as a thin neighbour; under a centre line, to its
+                // middle and half a pixel past it.
+                let width = if line(b) { (stats.widest_px + LINE_SLACK_PX) * THIN_SHARE } else { overlap_px.min(stats.widest_px * THIN_SHARE) };
+                if width <= 0.0 {
+                    continue;
+                }
                 let band = outline_stroke(&joined_edges(lines), 2.0 * width, Cap::Round, Join::Round, NO_MITER);
                 let Some(reach) = band.control_bounds() else { continue };
                 let outlines = outlines.get_or_insert_with(|| straightened_outlines(into));

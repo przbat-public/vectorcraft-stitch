@@ -238,9 +238,14 @@ fn outlines_are_rounded_and_capped() {
     assert_eq!(more["areas"][0]["area"], json!(areas.len() + 1));
 }
 
-/// The overlap never reaches the background or an area left unsewn, and reaches at most half way
-/// under a thin area: two fills on either side of a navy band 0.6 mm wide each reach 0.3 mm under
-/// it, meeting in its middle.
+/// How far from a centre line's middle the colours either side of it meet (millimetres): each
+/// reaches half a working pixel past it (`overlap::LINE_SLACK_PX`), the one sewn later giving way
+/// where the two would overlap.
+const MIDDLE_MM: f64 = 0.05 + NEAR_MM;
+
+/// The overlap never reaches the background or an area left unsewn, and under a thin line the
+/// colours either side of it meet at its middle: two fills either side of a navy band 0.6 mm wide
+/// meet within half a pixel of its middle, with no fabric between them.
 #[test]
 fn the_overlap_stops_at_what_isnt_sewn_and_halfway_under_thin_areas() {
     let picture = tr::Raster::from_fn(300, 200, |x, y| {
@@ -260,10 +265,10 @@ fn the_overlap_stops_at_what_isnt_sewn_and_halfway_under_thin_areas() {
     let (_, gb, _) = shape_of(&r, GREEN);
     let (navy, _, _) = shape_of(&r, NAVY);
     assert!(navy["area"].as_u64() > shape_of(&r, ORANGE).0["area"].as_u64() && navy["area"].as_u64() > shape_of(&r, GREEN).0["area"].as_u64());
-    assert!((ob.x1 - 14.3).abs() < NEAR_MM, "half the band: {ob:?}");
-    assert!((gb.x0 - 14.3).abs() < NEAR_MM, "half the band: {gb:?}");
+    assert!((ob.x1 - 14.3).abs() < MIDDLE_MM && (gb.x0 - 14.3).abs() < MIDDLE_MM, "to the band's middle: {ob:?} {gb:?}");
+    assert!(ob.x1 >= gb.x0 - NEAR_MM, "fabric between them: {ob:?} {gb:?}");
     assert!((ob.x0 - 2.0).abs() < NEAR_MM && (ob.y0 - 2.0).abs() < NEAR_MM, "never into the background: {ob:?}");
-    // A band of an odd width, 0.3 mm: the two strips meet in its middle, neither crossing it.
+    // A band of an odd width, 0.3 mm: the two strips meet at its middle.
     let odd = tr::Raster::from_fn(300, 200, |x, y| {
         if inside(x, y, [20, 20, 140, 180]) {
             ORANGE
@@ -279,14 +284,15 @@ fn the_overlap_stops_at_what_isnt_sewn_and_halfway_under_thin_areas() {
     let r = dry(&mut odd, json!({"colors": 3}));
     let (_, ob, _) = shape_of(&r, ORANGE);
     let (_, gb, _) = shape_of(&r, GREEN);
-    assert!((ob.x1 - 14.15).abs() < NEAR_MM && (gb.x0 - 14.15).abs() < NEAR_MM, "half of 0.3 mm each: {ob:?} {gb:?}");
+    assert!((ob.x1 - 14.15).abs() < MIDDLE_MM && (gb.x0 - 14.15).abs() < MIDDLE_MM && ob.x1 >= gb.x0 - NEAR_MM, "to its middle: {ob:?} {gb:?}");
     // The green left unsewn: nothing reaches under it.
     let r = dry(&mut s, json!({"colors": 3, "colorChoices": [{"color": hex(GREEN), "job": "none"}]}));
     let (green, _, _) = shape_of(&r, GREEN);
     assert_eq!(green["sewn"], json!(false));
     let (navy, nb, _) = shape_of(&r, NAVY);
     assert!(navy["grownUnder"].as_array().unwrap().is_empty(), "{navy}");
-    assert!((nb.x1 - 14.6).abs() < NEAR_MM, "{nb:?}");
+    // The band, a line, is sewn along its middle, which the reply's outline gives.
+    assert!(navy["line"].is_object() && nb.x0 >= 14.0 && nb.x1 <= 14.6, "{nb:?}");
 }
 
 /// An island sewn over the area round it leaves no hole in it: the area is sewn solid, its outline
@@ -356,9 +362,10 @@ fn an_unsewn_island_keeps_its_hole() {
     assert!((area - 252.0).abs() < 0.5, "16 × 16 mm less the 2 × 2 mm dot: {area}");
 }
 
-/// A dot inside a thin outline is sewn before the outline (a line, sewn after every fill), so the
-/// outline keeps its hole for it and the dot grows under it: the outline 0.6 mm wide round a 3 mm
-/// dot is 8.64 mm², not the solid 17.64 mm² square that would cover the dot.
+/// A dot inside a thin outline is sewn before the outline (a line, sewn after every fill, along its
+/// middle), so the outline covers nothing of it and the dot grows under it to the outline's
+/// middle: the outline 0.6 mm wide round a 3 mm dot is a loop round the band's middle, 3.6 mm a
+/// side (12.96 mm² within it), not the solid 4.2 mm square that would cover the dot.
 #[test]
 fn a_dot_inside_a_thin_outline_is_not_covered_by_it() {
     let picture = tr::Raster::from_fn(200, 200, |x, y| {
@@ -379,7 +386,8 @@ fn a_dot_inside_a_thin_outline_is_not_covered_by_it() {
     assert_eq!((&ring["kind"], &dot["inside"]), (&json!("line"), &ring["area"]));
     assert!(dot["area"].as_u64() < ring["area"].as_u64(), "the line sewn after the dot");
     assert_eq!(dot["sewnOver"], json!(false));
-    assert!((ring_mm2 - 8.64).abs() < 0.3, "the ring alone: {ring_mm2}");
+    assert_eq!((&ring["line"]["pieces"], &ring["line"]["ends"]), (&json!(1), &json!(0)), "{ring}");
+    assert!((ring_mm2 - 3.6 * 3.6).abs() < 0.6, "the loop round the ring's middle: {ring_mm2}");
     assert!(dot["grownUnder"].as_array().unwrap().contains(&ring["area"]), "{dot}");
 }
 
@@ -410,14 +418,15 @@ fn an_eye_with_its_pupil_is_sewn_over_a_solid_face() {
     assert!((eye_mm2 - mm2(18.0)).abs() < 0.5, "the eye solid: {eye_mm2}");
 }
 
-/// A small letter O and its counter each follow the rule for islands: the O, 3 × 3.6 mm with its
-/// counter filled in, is sewn over the field round it, and its counter over it.
+/// A small letter O and its counter each follow the rule for islands: the O, 3.4 × 4 mm with its
+/// counter filled in and its sides 1.2 mm wide (a fill, not a line), is sewn over the field round
+/// it, and its counter over it.
 #[test]
 fn a_letter_and_its_counter_are_islands() {
     let picture = tr::Raster::from_fn(200, 200, |x, y| {
-        if inside(x, y, [88, 88, 102, 108]) {
+        if inside(x, y, [92, 92, 102, 108]) {
             WHITE
-        } else if inside(x, y, [80, 80, 110, 116]) {
+        } else if inside(x, y, [80, 80, 114, 120]) {
             NAVY
         } else if inside(x, y, [20, 20, 180, 180]) {
             ORANGE
@@ -432,5 +441,5 @@ fn a_letter_and_its_counter_are_islands() {
     let counter = r["areas"].as_array().unwrap().iter().find(|a| a["color"] == hex(WHITE)).unwrap().clone();
     assert_eq!((&letter.0["inside"], &letter.0["sewnOver"]), (&field.0["area"], &json!(true)), "{}", letter.0);
     assert_eq!((&counter["inside"], &counter["sewnOver"]), (&letter.0["area"], &json!(true)), "{counter}");
-    assert!((field.2 - 256.0).abs() < 0.5 && (letter.2 - 10.8).abs() < 0.3, "both solid: {} {}", field.2, letter.2);
+    assert!((field.2 - 256.0).abs() < 0.5 && (letter.2 - 13.6).abs() < 0.3, "both solid: {} {}", field.2, letter.2);
 }

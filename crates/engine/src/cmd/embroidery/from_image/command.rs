@@ -19,13 +19,14 @@ use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_
 use vectorcraft_trace as tr;
 
 use super::background::{self, Background};
+use super::centre::{self, CentreLine};
 use super::colours::{self, Colours};
 use super::create::{self, Made};
 use super::order::{self, Order};
 use super::overlap::{self, Shapes};
 use super::regions::Regions;
-use super::rules::{self, Areas};
-use super::settings::{BackgroundSetting, C, Mode, Settings, table};
+use super::rules::{self, AreaKind, Areas};
+use super::settings::{BackgroundSetting, C, Job, Mode, Settings, table};
 use super::warnings::Warning;
 use super::{flat, inside, trace, working};
 use crate::cmd::bad;
@@ -166,6 +167,8 @@ pub(super) struct Digitized {
     pub(super) colours: Colours,
     pub(super) areas: Areas,
     pub(super) order: Order,
+    /// Each area's centre line, where it is sewn along its middle ([`centre`]), by its index.
+    pub(super) lines: Vec<Option<CentreLine>>,
     pub(super) shapes: Shapes,
     pub(super) warnings: Vec<Warning>,
     /// The time of each stage it went through (milliseconds), none on the web.
@@ -282,7 +285,14 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let colors_ms = since(started);
     vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
-    let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm)?;
+    // A thin line of a colour sewn by the rules (or kept unsewn, to be sewn later) along its middle.
+    let along_middle = |a: usize| {
+        areas.areas.get(a).is_some_and(|x| {
+            x.kind == AreaKind::Line && colours.rows.get(x.row).is_some_and(|r| !r.background && matches!(r.job, Job::Auto | Job::None))
+        })
+    };
+    let lines = centre::lines(&areas.regions, &along_middle)?;
+    let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm, &lines)?;
     if shapes.failed > 0 {
         warnings.push(Warning::new(
             "shapesNotJoined",
@@ -303,6 +313,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         colours,
         areas,
         order,
+        lines,
         shapes,
         warnings,
         timings: [image_ms, trace_ms, colors_ms, shapes_ms],
@@ -387,12 +398,16 @@ fn background_json(found: Background, setting: BackgroundSetting, traced: Option
 /// artwork and the test logos are drawn in at most a few thousand.
 pub(super) const MAX_OUTLINE_ELEMENTS: usize = 20_000;
 
-/// Area `a`'s shape as sewn, as an SVG path in millimetres from the document's origin, each
-/// coordinate to hundredths as the reply gives millimetres; and how many path elements it has.
+/// Area `a`'s shape as sewn (a line's centre line), as an SVG path in millimetres from the
+/// document's origin, each coordinate to hundredths as the reply gives millimetres; and how many
+/// path elements it has.
 fn outline_of(d: &Digitized, a: usize) -> Option<(String, usize)> {
     use vectorcraft_geom::kurbo::{BezPath, PathEl};
     let to_mm = vectorcraft_geom::Affine::scale(MM_PER_PT) * d.working.to_doc;
-    let path = d.shapes.shapes.get(a)?.transformed(to_mm).to_bezpath();
+    let path = match d.lines.get(a).and_then(Option::as_ref) {
+        Some(line) => to_mm * line.path(),
+        None => d.shapes.shapes.get(a)?.transformed(to_mm).to_bezpath(),
+    };
     let r = |p: Point| Point::new(hundredths(p.x), hundredths(p.y));
     let rounded: BezPath = path
         .elements()
@@ -465,6 +480,13 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                     "height": hundredths((y1 - y0) / px),
                 },
                 "widest": hundredths(stats.widest_px / px),
+                "line": d.lines.get(a).and_then(Option::as_ref).map(|l| json!({
+                    "width": hundredths(l.width_px / px),
+                    "length": hundredths(l.length_px / px),
+                    "pieces": l.pieces.len(),
+                    "ends": l.ends,
+                    "junctions": l.junctions,
+                })),
                 "box": bounds,
                 "inside": area.inside.and_then(number),
                 "sewnOver": area.sewn_over,

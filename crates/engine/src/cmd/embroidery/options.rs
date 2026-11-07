@@ -123,6 +123,10 @@ pub fn distinct_underlays(sewn: &str) -> Vec<&'static str> {
 /// any angle; a full turn either way is every direction).
 const FULL_TURN: f64 = 360.0;
 
+/// The degrees an angle a person types takes, a full turn either way ([`FULL_TURN`]): the field's
+/// range, and the document's rows' (`embroidery.setup {fillAngle}`).
+pub(crate) const ANGLE_RANGE: (f64, f64) = (-FULL_TURN, FULL_TURN);
+
 /// [`SettingField`] of setting `name`: the export's options as `document.formats` lists them, and
 /// the document's own (`spacingPercent`, `speed`, `thickness`); `None` for a name that is neither.
 /// As an export takes them: an object's `stitch` also takes `none` ([`part_field`]), and a fabric's
@@ -135,7 +139,7 @@ pub fn setting_field(name: &str) -> Option<SettingField> {
         "underlay" => SettingField::Choice(Underlay::ALL.iter().map(|u| u.id()).collect()),
         "spacing" => mm(DENSITY_RANGE),
         "length" => mm(STITCH_LENGTH_RANGE),
-        "angle" => SettingField::Number { min: -FULL_TURN, max: FULL_TURN, unit: "°", decimals: 1 },
+        "angle" => SettingField::Number { min: ANGLE_RANGE.0, max: ANGLE_RANGE.1, unit: "°", decimals: 1 },
         "pull" => mm(PULL_RANGE),
         "pullPercent" => SettingField::Number { min: PULL_PERCENT_RANGE.0, max: PULL_PERCENT_RANGE.1, unit: "%", decimals: 1 },
         "push" => mm(PUSH_RANGE),

@@ -62,7 +62,7 @@ const MAX_SYMBOL_NESTING: u32 = 8;
 const MAX_SYMBOL_PLACEMENTS: u64 = 100_000;
 const PLACEMENTS_LEFT_OUT: &str = "symbols placed more than 100,000 times (placing one another) are left out past that";
 /// `bp` (document points) in millimetres, as the stitch planner counts.
-fn in_mm(bp: &BezPath) -> BezPath {
+pub(super) fn in_mm(bp: &BezPath) -> BezPath {
     let mut mm = bp.clone();
     mm.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
     mm
@@ -914,7 +914,15 @@ impl<'a> Digitizer<'a> {
             return;
         }
         let Sewing { unit, settings, style, why, width, cap, clip_stitches } = sewing;
-        let params = plan::Params { cap, ..settings.params(style, width) };
+        let mut params = plan::Params { cap, ..settings.params(style, width) };
+        // The document's rows across the shape: a fill long enough rows square to its length, the
+        // shape as it is planned (grown and clipped); one about as long as wide, the rows it had.
+        if plan::sewn_style(&params) == Style::Fill
+            && settings.by_shape()
+            && let Some((across, _)) = plan::rows_across(bp, rule)
+        {
+            params.angle = across;
+        }
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
         let bounds = bp.bounding_box();

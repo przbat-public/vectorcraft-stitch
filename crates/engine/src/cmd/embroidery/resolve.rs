@@ -26,7 +26,7 @@
 //! the cuts across a literal run's clipping, whether objects of one colour join) is resolved once a
 //! plan ([`DesignSettings`]).
 
-use vectorcraft_doc::embroidery::{EmbroiderySetup, MachineSettings, PartPoints, PartSettings, StitchValues};
+use vectorcraft_doc::embroidery::{EmbroiderySetup, FillAngle, MachineSettings, PartPoints, PartSettings, StitchValues};
 use vectorcraft_doc::{Document, MAX_COORD};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
@@ -90,12 +90,29 @@ impl<'a> UnitSettings<'a> {
     /// upright is planned as before, bit for bit.
     fn above_the_document(&self) -> Options {
         let mut o = self.object.values.over(self.export);
-        if self.object.values.angle.is_none() && self.turn != 0.0 && self.turn.is_finite() {
-            // The default rows, as the commands count angles (135° on the page).
-            let default = planner_angle(FILL_ANGLE);
-            o.angle = Some(o.angle.unwrap_or(default) + self.turn);
+        if self.object.values.angle.is_none() {
+            // The document's rows where the export sets none either: a number of degrees turns with
+            // the object as the default rows do; a rule leaves the number unset ([`by_shape`]).
+            if o.angle.is_none()
+                && let Some(FillAngle::Degrees(a)) = self.doc.fill_angle
+            {
+                o.angle = Some(a);
+            }
+            if self.turn != 0.0 && self.turn.is_finite() {
+                // The default rows, as the commands count angles (135° on the page).
+                let default = planner_angle(FILL_ANGLE);
+                o.angle = Some(o.angle.unwrap_or(default) + self.turn);
+            }
         }
         o
+    }
+
+    /// Whether a fill's rows run across its shape: the document's rule (`fillAngle:
+    /// "acrossShape"`), where neither the object nor the export sets an angle. The rows the rule
+    /// chooses come from the shape planned ([`vectorcraft_stitch::plan::rows_across`]); a shape about as
+    /// long as wide keeps the rows [`UnitSettings::params`] give (the default, turned with the object).
+    pub(crate) fn by_shape(&self) -> bool {
+        self.object.values.angle.is_none() && self.export.angle.is_none() && self.doc.fill_angle == Some(FillAngle::AcrossShape)
     }
 
     /// The style the settings force, `None` for the rule (Auto): the object's `stitch`, else the
@@ -301,6 +318,8 @@ pub(crate) struct DocLayer {
     every: Options,
     /// Objects of one colour join one block where nothing lies between them.
     join: bool,
+    /// The rows of fills that set no angle (`fillAngle`): a number, or the rule across the shape.
+    pub(crate) fill_angle: Option<FillAngle>,
     /// The machine's speed, stitches a minute, and the fabric's thickness, millimetres: what
     /// `embroidery.stats` estimates the time and the thread for when not asked for others.
     pub(crate) speed: Option<f64>,
@@ -316,6 +335,7 @@ impl Default for DocLayer {
             satin: Options::default(),
             every: Options::default(),
             join: true,
+            fill_angle: None,
             speed: None,
             thickness: None,
             notes: Vec::new(),
@@ -385,12 +405,17 @@ impl DocLayer {
             every.min_stitch = min_stitch.map(|m| within(m, MIN_STITCH_RANGE, &mut clamped));
             every.split_length = split_length.map(|s| within(s, MAX_SATIN_STITCH_RANGE, &mut clamped));
         }
+        // A number of degrees from a file is brought within a full turn either way, as typed.
+        let fill_angle = e.fill_angle.map(|a| match a {
+            FillAngle::Degrees(d) => FillAngle::Degrees(within(d, super::options::ANGLE_RANGE, &mut clamped)),
+            rule => rule,
+        });
         let notes = [(unread, DOCUMENT_SETTINGS_UNREAD), (clamped, DOCUMENT_SETTINGS_OUT_OF_RANGE)]
             .into_iter()
             .filter(|(on, _)| *on)
             .map(|(_, n)| n)
             .collect();
-        Self { tatami, satin, every, join: e.join_same_color.unwrap_or(true), speed, thickness, notes }
+        Self { tatami, satin, every, join: e.join_same_color.unwrap_or(true), fill_angle, speed, thickness, notes }
     }
 
     /// The document's layer for a unit sewn in `style` with thread of `weight` (wt): the fabric's

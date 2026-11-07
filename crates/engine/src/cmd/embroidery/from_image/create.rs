@@ -15,8 +15,8 @@
 //! An area's embroidery settings are set only where its colour's job departs from what it would
 //! inherit: `fill` sets its fill's narrowAsSatin to none (tatami, its narrow parts too), `none` sets
 //! its fill (a centre line's stroke) not to be sewn, and a centre line's stroke as wide as a satin
-//! column (a thin line widened where its lines meet) is set to a running line. Everything else
-//! stays unset (Auto, following the document's fabric).
+//! column (a thin line widened where its lines meet, or any line of a colour sewn as `lines`) is
+//! set to a running line. Everything else stays unset (Auto, following the document's fabric).
 //!
 //! The background's areas become no object. The source image moves, with its id, to a new template
 //! layer below every layer, hidden and locked, scaled as the design is so that it lies under it.
@@ -69,10 +69,12 @@ pub(super) struct Made {
     pub(super) blocks: usize,
 }
 
-/// The settings an area of a colour sewn as `job` is given: none for Auto.
+/// The settings an area of a colour sewn as `job` is given: none for Auto, nor for an area of a
+/// colour sewn as Lines that has no centre line (a dot, which thins to no piece: sewn as the area
+/// it is).
 fn settings_for(job: Job) -> Option<Embroidery> {
     let fill = match job {
-        Job::Auto => return None,
+        Job::Auto | Job::Lines => return None,
         Job::Fill => PartSettings { narrow_as_satin: Some(NO_SATIN_MM), ..Default::default() },
         Job::None => PartSettings { stitch: Some(NOT_SEWN.into()), ..Default::default() },
     };
@@ -82,12 +84,13 @@ fn settings_for(job: Job) -> Option<Embroidery> {
 /// The settings a centre line's stroke `width_pt` points wide, of a colour sewn as `job`, is given:
 /// not sewn for `none`; a running line where the stroke is as wide as a satin column
 /// (`plan::SATIN_MIN_WIDTH`, which the planner sews a stroke that wide as by default: a thin line
-/// whose junctions widen it); none for a narrower one, which the planner sews as a running line.
+/// whose junctions widen it, or any of a colour sewn as Lines); none for a narrower one, which the
+/// planner sews as a running line.
 fn line_settings_for(job: Job, width_pt: f64) -> Option<Embroidery> {
     let stitch = match job {
         Job::None => NOT_SEWN,
-        Job::Auto if vectorcraft_stitch::pt_to_mm(width_pt) >= SATIN_MIN_WIDTH => RUNNING,
-        Job::Auto | Job::Fill => return None,
+        Job::Auto | Job::Lines if vectorcraft_stitch::pt_to_mm(width_pt) >= SATIN_MIN_WIDTH => RUNNING,
+        Job::Auto | Job::Lines | Job::Fill => return None,
     };
     Some(Embroidery { stroke: Some(Box::new(PartSettings { stitch: Some(stitch.into()), ..Default::default() })), ..Default::default() })
 }

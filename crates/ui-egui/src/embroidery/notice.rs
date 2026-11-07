@@ -28,7 +28,7 @@ const MAX_WIDTH: f32 = 420.0;
 pub fn text(app: &VectorcraftApp, now: f64) -> Option<(String, Option<f64>)> {
     let st = app.session.active()?;
     let view = app.session.stitch_view_of(st.uid);
-    if !layers(view, paused(&st.doc), app.ui.view.outline).stitches {
+    if !layers(view, paused(&st.doc), app.outline_view()).stitches {
         return None;
     }
     // The status bar's counters say when the stitches are planned or can't be: the notice says it

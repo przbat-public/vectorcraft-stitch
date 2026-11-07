@@ -74,6 +74,7 @@ impl Document {
             new_art,
             dimensions,
             retired_artboard_id: _,
+            opened_artboard: _,
             index: _,
         } = self;
         *version == other.version
@@ -252,6 +253,7 @@ impl Document {
             new_art: Default::default(),
             dimensions: false,
             retired_artboard_id: Default::default(),
+            opened_artboard: None,
             index: Default::default(),
         };
         let id = d.alloc_id();

@@ -70,8 +70,8 @@ fn point_mm(o: &Map<String, Value>, key: &str, cmd: &str) -> Result<Option<Point
 
 /// Write `edits` into the active document and set the selection to `sel`, as one undo step named
 /// `label`: the paths removed (and those left with no needle point) removed together, in one pass
-/// over each parent.
-fn apply(s: &mut Session, label: &str, edits: Vec<(NodeId, Left)>, sel: Selection) -> Result<()> {
+/// over each parent; with `guides`, the ruler guides `sel` selects deleted in the same step (Cut).
+fn apply(s: &mut Session, label: &str, edits: Vec<(NodeId, Left)>, sel: Selection, guides: bool) -> Result<()> {
     s.edit(label, |d, selection| {
         let mut gone = Vec::new();
         for (id, left) in edits {
@@ -96,6 +96,10 @@ fn apply(s: &mut Session, label: &str, edits: Vec<(NodeId, Left)>, sel: Selectio
             d.remove_many(&gone).map_err(|e| EngineError::Internal { cmd: label.to_string(), msg: e.to_string() })?;
         }
         *selection = sel;
+        if guides {
+            let gone = selection.guides.clone();
+            d.retain_guides(selection, |i, _| !gone.contains(&i));
+        }
         Ok(())
     })
 }
@@ -148,6 +152,9 @@ struct Edit {
     /// Runs of two needle points at one spot in a path of several, made one needle point
     /// ([`Stitches::collapse_tacks`]).
     collapsed: usize,
+    /// The selected ruler guides go in the edit's undo step: a Cut of needle points, as upstream's
+    /// Cut takes them with anchors.
+    guides: bool,
 }
 
 impl Edit {
@@ -157,7 +164,7 @@ impl Edit {
     fn begin(s: &Session, cmd: &'static str, before: Selection, passed_over: Vec<(NodeId, needles::Unfit)>) -> Result<Self> {
         let limits = StitchLimits::of(&s.doc()?.doc, None);
         let sel = needles::Selecting::new(before.clone());
-        Ok(Self { cmd, sel, before, limits, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0 })
+        Ok(Self { cmd, sel, before, limits, lengths: Lengths::default(), edits: Vec::new(), passed_over, collapsed: 0, guides: false })
     }
 
     /// The needle points of path `id` (read from it, `ix` its index) that the selection selected
@@ -237,7 +244,7 @@ impl Edit {
         let passed: Vec<Value> = self.passed_over.iter().take(MAX_LISTED).map(|(id, why)| json!({"id": id.0, "reason": why.code()})).collect();
         reply.insert("passedOver".into(), Value::Array(passed));
         if changed {
-            apply(s, label, self.edits, self.sel.done())?;
+            apply(s, label, self.edits, self.sel.done(), self.guides)?;
         }
         Ok(Value::Object(reply))
     }
@@ -525,10 +532,17 @@ fn beside(doc: &Document, gone: &BTreeSet<NodeId>) -> std::collections::HashMap<
 /// after), or are dropped, and the reply says which, once each. The paths it changed leave the
 /// selection, so a second Delete deletes nothing.
 pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
+    delete_with(s, p, false)
+}
+
+/// [`delete`], and with `guides` the selected ruler guides deleted in the same undo step: a Cut of
+/// needle points (`edit.cut`), as upstream's Cut takes them with anchors.
+pub(super) fn delete_with(s: &mut Session, p: &Value, guides: bool) -> Result<Value> {
     let o = params(p, DELETE, &[])?;
     let (t, before) = targets(s, &o, DELETE)?;
     let doc = s.doc()?.doc.clone();
     let mut e = Edit::begin(s, DELETE, before, t.passed_over)?;
+    e.guides = guides;
     let (mut moved, mut dropped, mut removed) = (Vec::new(), Vec::new(), BTreeSet::new());
     // Each needle point a merged stitch now leaves from, as numbered after the edit.
     let mut merged_listed = Vec::new();

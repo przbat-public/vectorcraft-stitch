@@ -7,7 +7,7 @@ use vectorcraft_engine::cmd::embroidery::render::corners;
 use vectorcraft_geom::{Point, Rect};
 
 use crate::VectorcraftApp;
-use crate::canvas::{FIT_MARGIN, fit_zoom};
+use crate::canvas::{FIT_MARGIN, fit_zoom_within};
 
 /// `view.zoomTo {rect: [left, top, right, bottom], margin?}`: centre box `rect` (document points,
 /// each within ±[`MAX_COORD`]) in the window and zoom so that it fills it less `margin` screen
@@ -22,7 +22,7 @@ pub(crate) fn zoom_to(app: &mut VectorcraftApp, p: &Value) -> Result<Value, Stri
     };
     let Some(canvas) = app.canvas_rect else { return Err("no canvas is shown".into()) };
     let target = Rect::new(left, top, right, bottom);
-    let zoom = fit_zoom(app, canvas, target, margin);
+    let zoom = fit_zoom_within(canvas, target, app.view().map_or(0.0, |v| v.rotation), margin);
     // Halfway along each side, from its start: never the sum of two corners, which could overflow.
     let center = Point::new(left + (right - left) / 2.0, top + (bottom - top) / 2.0);
     if !(center.x.is_finite() && center.y.is_finite()) {

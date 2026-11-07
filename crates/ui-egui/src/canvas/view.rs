@@ -20,25 +20,34 @@ pub fn fit(app: &mut VectorcraftApp, how: &str) {
         _ => st.doc.artboards.get(current).or(st.doc.artboards.first()).map(|a| a.rect),
     };
     let Some(target) = target else { return };
-    // VectorCraft Stitch: the fit's zoom split out as `fit_zoom`, for View › Zoom to Box.
-    let zoom =
-        if how == "view.actualSize" { actual_size_zoom(app.session.prefs.display_print_size) } else { fit_zoom(app, rect, target, FIT_MARGIN) };
+    let zoom = if how == "view.actualSize" {
+        actual_size_zoom(app.session.prefs.display_print_size)
+    } else {
+        fit_zoom(rect, target, app.view().map_or(0.0, |v| v.rotation))
+    };
     let Some(v) = app.view_mut() else { return };
     v.center = target.center();
     v.fitted = true;
     v.zoom = zoom;
 }
 
-// VectorCraft Stitch: `FIT_MARGIN` and `fit_zoom` split out of `fit` for View › Zoom to Box
-// (`embroidery/zoom.rs`).
+/// The zoom at which `target`, turned `rotation` degrees with the view, fits in `rect` with a
+/// 30-point margin on each side.
+pub(super) fn fit_zoom(rect: egui::Rect, target: Rect, rotation: f64) -> f64 {
+    // VectorCraft Stitch: the margin a parameter (`fit_zoom_within`), for View › Zoom to Box.
+    fit_zoom_within(rect, target, rotation, FIT_MARGIN)
+}
+
+// VectorCraft Stitch: `FIT_MARGIN` and `fit_zoom_within` split out of `fit_zoom` for View › Zoom to
+// Box (`embroidery/zoom.rs`).
 /// The room Fit Artboard and Fit All leave round what they fit, screen points on each side.
 pub(crate) const FIT_MARGIN: f64 = 30.0;
 
-/// The zoom at which `target` (document points) fills canvas `rect` less `margin` screen points on
-/// each side, turned as the view is, within the zoom's range.
-pub(crate) fn fit_zoom(app: &VectorcraftApp, rect: egui::Rect, target: Rect, margin: f64) -> f64 {
+/// The zoom at which `target` (document points), turned `rotation` degrees with the view, fills
+/// canvas `rect` less `margin` screen points on each side, within the zoom's range.
+pub(crate) fn fit_zoom_within(rect: egui::Rect, target: Rect, rotation: f64, margin: f64) -> f64 {
     // The width and height of the box round the target turned with the view, at zoom 1.
-    let (sn, cs) = app.view().map_or(0.0, |v| v.rotation.to_radians()).sin_cos();
+    let (sn, cs) = rotation.to_radians().sin_cos();
     let (w, h) = (target.width(), target.height());
     let zx = (rect.width() as f64 - 2.0 * margin) / (w * cs.abs() + h * sn.abs()).max(1.0);
     let zy = (rect.height() as f64 - 2.0 * margin) / (w * sn.abs() + h * cs.abs()).max(1.0);

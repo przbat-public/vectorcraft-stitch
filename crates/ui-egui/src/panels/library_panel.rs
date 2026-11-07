@@ -408,6 +408,7 @@ fn key(panel: &str, key: &str) -> String {
 pub(crate) fn submenu(category: &str) -> Option<&'static str> {
     match category {
         "gradients" => Some("Gradients"),
+        "patterns" => Some("Patterns"),
         "threads" => Some("Embroidery Threads"),
         "user" => Some("User Defined"),
         "loaded" => Some("Other Libraries"),

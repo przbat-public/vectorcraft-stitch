@@ -81,6 +81,16 @@ pub const UNITS: &[(&str, &str)] = &[
     ("yards", "Yards"),
     ("feet", "Feet"),
 ];
+/// What Units › East Asian Type offers, as (`Unit::key`, `Unit::label`): [`Unit::EAST_ASIAN`].
+pub const EAST_ASIAN_UNITS: &[(&str, &str)] = &{
+    let mut out = [("", ""); Unit::EAST_ASIAN.len()];
+    let mut i = 0;
+    while i < out.len() {
+        out[i] = (Unit::EAST_ASIAN[i].key(), Unit::EAST_ASIAN[i].label());
+        i += 1;
+    }
+    out
+};
 const LINE_STYLE: &[(&str, &str)] = &[("lines", "Lines"), ("dots", "Dots")];
 /// Performance › Graphics Processor (`gpuPreference`), read by the desktop app at startup. The
 /// values are WebGPU's power preferences plus `automatic`; 0.5.0's default, `powerSaving`, reads as
@@ -201,7 +211,7 @@ pub const PREF_SPECS: &[PrefSpec] = &[
     p!("unitsGeneral", "Units", "", "General", choice(UNITS)),
     p!("unitsStroke", "Units", "", "Stroke", choice(UNITS)),
     p!("unitsType", "Units", "", "Type", choice(UNITS)),
-    p!("unitsAsianType", "Units", "", "East Asian Type", choice(UNITS)),
+    p!("unitsAsianType", "Units", "", "East Asian Type", choice(EAST_ASIAN_UNITS)),
     p!("numbersWithoutUnitsArePoints", "Units", "", "Numbers Without Units Are Points", bool),
     p!("identifyObjectsBy", "Units", "", "Identify Objects By", choice(&[("objectName", "Object Name"), ("xmlId", "XML ID")])),
     // Guides & Grid
@@ -250,14 +260,40 @@ pub const PREF_SPECS: &[PrefSpec] = &[
         "",
         "Default Language",
         choice(&[
-            ("English: USA", "English: USA"),
-            ("English: UK", "English: UK"),
-            ("French", "French"),
-            ("German", "German"),
-            ("Spanish", "Spanish"),
-            ("Italian", "Italian"),
-            ("Dutch", "Dutch"),
-            ("Portuguese", "Portuguese")
+            ("en-US", "English: USA"),
+            ("en-GB", "English: UK"),
+            ("de", "German"),
+            ("de-CH", "German: Swiss"),
+            ("fr", "French"),
+            ("it", "Italian"),
+            ("es", "Spanish"),
+            ("ca", "Catalan"),
+            ("pt", "Portuguese"),
+            ("nl", "Dutch"),
+            ("da", "Danish"),
+            ("sv", "Swedish"),
+            ("fi", "Finnish"),
+            ("nb", "Norwegian"),
+            ("pl", "Polish"),
+            ("cs", "Czech"),
+            ("ru", "Russian"),
+            ("sr-Cyrl", "Serbian: Cyrillic"),
+            ("sr-Latn", "Serbian: Latin"),
+            ("hr", "Croatian"),
+            ("tr", "Turkish"),
+            ("ja", "Japanese"),
+            ("zh", "Chinese"),
+            ("hi", "Hindi"),
+            ("mr", "Marathi"),
+            ("gu", "Gujarati"),
+            ("bn", "Bengali"),
+            ("pa", "Punjabi"),
+            ("ta", "Tamil"),
+            ("te", "Telugu"),
+            ("kn", "Kannada"),
+            ("ml", "Malayalam"),
+            ("or", "Odia"),
+            ("ur", "Urdu")
         ])
     ),
     p!("hyphenationExceptions", "Hyphenation", "", "Exceptions (comma separated)", text),
@@ -362,6 +398,8 @@ pub const PREF_SPECS: &[PrefSpec] = &[
     p!("newArtBasic", "General", "Appearance Panel", "New Art Has Basic Appearance", bool),
     // File Handling (continued)
     p!("templatesFolder", "File Handling", "Files", "Templates Folder", text),
+    // Off: raster images open in PhotoCraft where it is installed (#5236).
+    p!("editOriginalSystemDefaults", "File Handling", "Files", "Use System Defaults for Edit Original", bool),
     p!("appendConverted", "File Handling", "Files", "Mark Older Files as [Converted] When Opened", bool),
     // Native saves (`document.save {compress}`)
     p!("useCompression", "File Handling", "Files", "Use Compression", bool),

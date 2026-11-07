@@ -446,6 +446,7 @@ fn the_index_is_built_again_only_for_what_changed() {
         mods: vectorcraft_tools::Mods::default(),
         backquote: false,
         pressure: 1.0,
+        pen: None,
     };
     s.pointer(&ev(vectorcraft_tools::PointerKind::Down, p.x), view).unwrap();
     s.pointer(&ev(vectorcraft_tools::PointerKind::Drag, p.x + 10.0), view).unwrap();

@@ -4,8 +4,8 @@
 //! (2026-10-23): read-only text follows the language, while input fields keep the app's point, which
 //! is all their parser takes.
 //!
-//! Each language's decimal mark, group mark and minimum grouping digits are CLDR's ([`SYMBOLS`]),
-//! as ICU 78.3 / CLDR 48 writes them (the Unicode CLDR number symbols chart,
+//! Each language's decimal mark, group mark, minimum grouping digits and group sizes are CLDR's
+//! ([`SYMBOLS`]), as ICU 78.3 / CLDR 48 writes them (the Unicode CLDR number symbols chart,
 //! <https://www.unicode.org/cldr/charts/latest/by_type/numbers.symbols.html>). A number that isn't
 //! finite is written "–", and −0 as 0.
 
@@ -44,32 +44,40 @@ pub const PERCENT_FIRST: &[&str] = &["tr"];
 
 /// The digits in a group: thousands.
 const GROUP: usize = 3;
+/// The digits in each group before the thousands in Hindi: two, lakhs and crores (CLDR's
+/// secondary grouping, the pattern "#,##,##0": 12,34,567).
+const INDIAN_GROUP: usize = 2;
 
 /// How a language writes numbers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Symbols {
     /// Between the whole part and the fraction.
     pub decimal: char,
-    /// Between groups of three digits.
+    /// Between groups of digits.
     pub group: char,
     /// The fewest digits the leftmost group must have for the number to be grouped at all
     /// (CLDR's `minimumGroupingDigits`): 2 leaves four-digit numbers whole ("4752"), as Polish,
     /// Spanish and Italian write them.
     pub min_grouping: usize,
+    /// The digits in each group before the thousands (CLDR's secondary grouping): three in most
+    /// languages, two in Hindi ([`INDIAN_GROUP`]). The thousands' group is always [`GROUP`].
+    pub secondary: usize,
 }
 
 /// English's: the point, the comma, grouped from four digits. Also the fallback for a language
 /// missing from [`SYMBOLS`] (a test keeps every registered language in it).
-const ENGLISH: Symbols = Symbols { decimal: '.', group: ',', min_grouping: 1 };
-const COMMA_POINT: Symbols = Symbols { decimal: ',', group: '.', min_grouping: 1 };
-const COMMA_POINT_FROM_FIVE: Symbols = Symbols { decimal: ',', group: '.', min_grouping: 2 };
-const COMMA_SPACE: Symbols = Symbols { decimal: ',', group: NO_BREAK_SPACE, min_grouping: 1 };
-const COMMA_SPACE_FROM_FIVE: Symbols = Symbols { decimal: ',', group: NO_BREAK_SPACE, min_grouping: 2 };
-const COMMA_NARROW_SPACE: Symbols = Symbols { decimal: ',', group: NARROW_NO_BREAK_SPACE, min_grouping: 1 };
+const ENGLISH: Symbols = Symbols { decimal: '.', group: ',', min_grouping: 1, secondary: GROUP };
+const COMMA_POINT: Symbols = Symbols { decimal: ',', group: '.', min_grouping: 1, secondary: GROUP };
+const COMMA_POINT_FROM_FIVE: Symbols = Symbols { decimal: ',', group: '.', min_grouping: 2, secondary: GROUP };
+const COMMA_SPACE: Symbols = Symbols { decimal: ',', group: NO_BREAK_SPACE, min_grouping: 1, secondary: GROUP };
+const COMMA_SPACE_FROM_FIVE: Symbols = Symbols { decimal: ',', group: NO_BREAK_SPACE, min_grouping: 2, secondary: GROUP };
+const COMMA_NARROW_SPACE: Symbols = Symbols { decimal: ',', group: NARROW_NO_BREAK_SPACE, min_grouping: 1, secondary: GROUP };
+/// Hindi's: English's marks, its groups before the thousands of two digits ("12,34,567").
+const HINDI: Symbols = Symbols { decimal: '.', group: ',', min_grouping: 1, secondary: INDIAN_GROUP };
 
 /// Each interface language's number symbols, by its code (CLDR 48, read through ICU 78.3's
-/// `Intl.NumberFormat` on 2026-10-22, Turkish on 2026-10-24, Bosnian and Catalan on 2026-11-02;
-/// Polish checked in CLDR's own data: decimal ",", `minimumGroupingDigits` 2).
+/// `Intl.NumberFormat` on 2026-10-22, Turkish on 2026-10-24, Bosnian and Catalan on 2026-11-02,
+/// Hindi on 2026-11-06; Polish checked in CLDR's own data: decimal ",", `minimumGroupingDigits` 2).
 pub const SYMBOLS: &[(&str, Symbols)] = &[
     ("en", ENGLISH),
     ("ja", ENGLISH),
@@ -98,6 +106,7 @@ pub const SYMBOLS: &[(&str, Symbols)] = &[
     ("hu", COMMA_SPACE_FROM_FIVE),
     ("pl", COMMA_SPACE_FROM_FIVE),
     ("fr", COMMA_NARROW_SPACE),
+    ("hi", HINDI),
 ];
 
 /// `lang`'s number symbols.
@@ -105,16 +114,20 @@ pub fn symbols(lang: Lang) -> Symbols {
     SYMBOLS.iter().find(|(code, _)| *code == lang.code()).map_or(ENGLISH, |(_, s)| *s)
 }
 
-/// `digits` (ASCII digits only) grouped by threes with `s`'s group mark, when there are enough of
-/// them ([`Symbols::min_grouping`]).
+/// `digits` (ASCII digits only) grouped with `s`'s group mark, when there are enough of them
+/// ([`Symbols::min_grouping`]): the last [`GROUP`] digits, then groups of [`Symbols::secondary`]
+/// digits before them.
 fn grouped(digits: &str, s: Symbols) -> String {
     let n = digits.len();
     if n < GROUP + s.min_grouping {
         return digits.to_string();
     }
-    let mut out = String::with_capacity(n + n / GROUP * s.group.len_utf8());
+    let secondary = s.secondary.max(1);
+    // The digits before the thousands' group.
+    let head = n - GROUP;
+    let mut out = String::with_capacity(n + n / secondary * s.group.len_utf8());
     for (i, c) in digits.chars().enumerate() {
-        if i > 0 && (n - i).is_multiple_of(GROUP) {
+        if i > 0 && (i == head || (i < head && (head - i).is_multiple_of(secondary))) {
             out.push(s.group);
         }
         out.push(c);
@@ -204,12 +217,18 @@ mod tests {
             ("ja", 14752, "14,752".into()),
             ("ru", 4752, format!("4{nb}752")),
             ("tr", 4752, "4.752".into()),
+            ("hi", 999, "999".into()),
+            ("hi", 4752, "4,752".into()),
+            ("hi", 14752, "14,752".into()),
+            ("hi", 123_456, "1,23,456".into()),
+            ("hi", 1_234_567, "12,34,567".into()),
             ("en", 0, "0".into()),
         ];
         for (code, n, want) in cases {
             assert_eq!(count(lang(code), *n), *want, "{code} {n}");
         }
         assert_eq!(count(lang("en"), u64::MAX), "18,446,744,073,709,551,615");
+        assert_eq!(count(lang("hi"), u64::MAX), "1,84,46,74,40,73,70,95,51,615");
     }
 
     #[test]
@@ -230,6 +249,8 @@ mod tests {
             ("ja", 0.38, 2, "0.38".into()),
             ("tr", 0.38, 2, "0,38".into()),
             ("tr", 12345.6, 1, "12.345,6".into()),
+            ("hi", 0.38, 2, "0.38".into()),
+            ("hi", 123456.7, 1, "1,23,456.7".into()),
         ];
         for (code, v, places, want) in cases {
             assert_eq!(decimal(lang(code), *v, *places), *want, "{code} {v}");
@@ -254,6 +275,7 @@ mod tests {
             ("ru", format!("37{nb}%")),
             ("fr", format!("37{nnb}%")),
             ("tr", "%37".into()),
+            ("hi", "37%".into()),
         ] {
             assert_eq!(percent(lang(code), 37), want, "{code}");
         }

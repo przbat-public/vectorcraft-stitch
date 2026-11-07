@@ -75,8 +75,7 @@ pub fn editing(app: &mut VectorcraftApp) -> Option<StitchEditing> {
     let lent = app.session.lent_from().is_some_and(vectorcraft_tools::embroidery::edits_stitches);
     let (uid, revision, gesture) = (st.uid, st.revision, st.interaction.is_some() || lent);
     let shown = app.embroidery.preview.shown(uid).map(|s| s.planned.generation);
-    let key =
-        Key { uid, revision, shown, tool: app.session.tool_id(), stitch_view: app.session.stitch_view_of(uid).on, outline: app.ui.view.outline };
+    let key = Key { uid, revision, shown, tool: app.session.tool_id(), stitch_view: app.session.stitch_view_of(uid).on, outline: app.outline_view() };
     let kept = &app.embroidery.editing;
     if kept.key == Some(key) || (gesture && kept.key.is_some_and(|k| k.uid == uid)) {
         return kept.editing;

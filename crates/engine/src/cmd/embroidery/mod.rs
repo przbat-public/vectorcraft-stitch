@@ -142,11 +142,22 @@ pub use vectorcraft_stitch::format::Format;
 pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
 
 /// The marked upstream hooks of the stitch commands: Delete with needle points selected
-/// (`path::delete_anchors`, which the Delete key, Edit › Clear, Edit › Cut and `path.deleteAnchors`
-/// all reach), a run of stitches cut into pieces (`draw2::replace_with_pieces`), and Join of runs of
-/// stitches (`path.join`).
-pub(crate) fn delete_needle_points_selected(s: &mut Session) -> Option<Result<Value>> {
-    hooks::delete_selected(s)
+/// (`path::delete_anchors`, which the Delete key, Edit › Clear and `path.deleteAnchors` reach, and
+/// `edit::cut`, Edit › Cut), with `guides` the selected ruler guides deleted in the same undo step
+/// (Cut, and `path.deleteAnchors {guides: true}`, as upstream's Cut takes them with anchors); a run
+/// of stitches cut into pieces (`draw2::replace_with_pieces`), and Join of runs of stitches
+/// (`path.join`).
+pub(crate) fn delete_needle_points_selected(s: &mut Session, guides: bool) -> Option<Result<Value>> {
+    hooks::delete_selected(s, guides)
+}
+
+/// Whether the selection is needle points of paths of stitches alone (the marked hook in
+/// `edit::copy_cut_targets`): Copy and Cut then take their objects whole, as they did before
+/// upstream's Copy took a direct selection's segments (#2122; a stretch of a run would lose the
+/// marks its needle points hold), and Cut deletes the needle points as Delete does
+/// ([`delete_needle_points_selected`] with the guides, the marked hook in `edit::cut`).
+pub(crate) fn needle_points_selected_alone(st: &crate::DocState) -> bool {
+    hooks::needle_points_alone(st)
 }
 
 /// Whether a run of two needle points so far apart is one needle point ([`needles::one_needle_point`]),

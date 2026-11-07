@@ -2,7 +2,9 @@
 //! edges are) is made a stroke along its middle and sewn in one go through its junctions; the
 //! colours beside it reach its middle under it; a colour set to Fill keeps its lines filled, and one
 //! not sewn keeps its line unsewn; a line's width doesn't depend on the picture's resolution; a line
-//! its crossing widens to a millimetre is still sewn as a running line.
+//! its crossing widens to a millimetre is still sewn as a running line. A colour set to Lines is
+//! sewn along its middle whatever its width, the colours round it reaching its middle; a job that
+//! isn't one is refused.
 
 use serde_json::{Value, json};
 use vectorcraft_doc::{ImageBlob, ImageObject, Node, NodeId, NodeKind};
@@ -307,4 +309,93 @@ fn a_line_its_junction_widens_is_still_a_running_line() {
     let plan = super::super::digitize::digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
     let sewn: Vec<_> = plan.units.iter().filter_map(|u| u.sewn()).collect();
     assert_eq!(sewn, [vectorcraft_stitch::plan::Style::Running]);
+}
+
+/// How wide the letter set to Lines is drawn (millimetres): twice a satin column's least width,
+/// which the rules alone would fill.
+const WIDE_MM: f64 = 2.0;
+
+/// A colour set to Lines is sewn along its middle whatever its width: a navy T drawn 2 mm wide,
+/// filled by the rules, is one line with its junction and three ends when its colour's job is
+/// Lines, made a stroke set to a running line (as wide as a satin column) and sewn in one go.
+#[test]
+fn a_colour_set_to_lines_is_sewn_along_its_middle() {
+    let raster = picture(30.0, 25.0, PX_PER_MM, lines_of(WIDE_MM, t_segments(), NAVY, WHITE));
+    let mut s = placed(&raster, PX_PER_MM);
+    let r = digitize(&mut s, json!({"colors": 2}), true);
+    let navy = areas_of(&r, NAVY);
+    assert!(navy.iter().all(|a| a["kind"] == json!("fill") && a["line"].is_null()), "{}", r["areas"]);
+    let as_lines = json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "lines"}]});
+    let r = digitize(&mut s, as_lines.clone(), true);
+    let navy = areas_of(&r, NAVY);
+    assert_eq!(navy.len(), 1, "{}", r["areas"]);
+    let line = &navy[0]["line"];
+    assert_eq!((&navy[0]["kind"], &line["junctions"], &line["ends"]), (&json!("line"), &json!(1), &json!(3)), "{}", navy[0]);
+    assert!((line["width"].as_f64().unwrap() - WIDE_MM).abs() <= 2.0 * WIDTH_MM, "{line}");
+    let colour = r["colors"].as_array().unwrap().iter().find(|c| c["job"] == json!("lines")).cloned();
+    assert!(colour.is_some_and(|c| c["sewn"] == json!(true)), "{}", r["colors"]);
+    let created = digitize(&mut s, as_lines, false)["created"].clone();
+    let objects = made(&s, &created);
+    assert_eq!(objects.len(), 1);
+    let set = objects[0].extras().embroidery.as_deref().and_then(|e| e.stroke.as_deref()).and_then(|p| p.stitch.clone());
+    assert_eq!(set.as_deref(), Some("running"));
+    let plan = super::super::digitize::digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
+    let sewn: Vec<_> = plan.units.iter().filter_map(|u| u.sewn()).collect();
+    assert_eq!(sewn, [vectorcraft_stitch::plan::Style::Running]);
+    let stats = s.execute("embroidery.stats", &json!({})).unwrap();
+    assert_eq!((&stats["jumps"], &stats["trims"]), (&json!(0), &json!(0)), "{stats}");
+}
+
+/// The colours round a colour set to Lines reach its middle under it from each side, whatever the
+/// overlap (the project owner's choice, 2026-11-07, „Sąsiedzi wchodzą pod linię (polecam)”): no
+/// fabric shows round the line. A band 2 mm wide between a yellow field and a red one, and a ring
+/// 2 mm wide on an orange field (too wide, with what it holds, to be sewn over it): the fields
+/// together as large as the picture, the line sewn after them.
+#[test]
+fn the_colours_round_a_colour_set_to_lines_reach_its_middle() {
+    let band = |q: Point| {
+        if (q.x - 10.0).abs() <= WIDE_MM / 2.0 {
+            NAVY
+        } else if q.x < 10.0 {
+            YELLOW
+        } else {
+            RED
+        }
+    };
+    let ring = |q: Point| if (q.distance(Point::new(15.0, 12.5)) - 6.0).abs() <= WIDE_MM / 2.0 { NAVY } else { ORANGE };
+    let scenes: [(tr::Raster, f64, usize, Vec<[u8; 4]>); 2] = [
+        (picture(20.0, 10.0, PX_PER_MM, band), 20.0 * 10.0, 3, vec![YELLOW, RED]),
+        (picture(30.0, 25.0, PX_PER_MM, ring), 30.0 * 25.0, 2, vec![ORANGE]),
+    ];
+    for (raster, picture_mm2, colors, fields) in scenes {
+        for overlap in [0.0, 0.4] {
+            let mut s = placed(&raster, PX_PER_MM);
+            let p = json!({"colors": colors, "background": "none", "overlap": overlap, "outlines": true,
+                "colorChoices": [{"color": hex(NAVY), "job": "lines"}]});
+            let r = digitize(&mut s, p, true);
+            let outlined: f64 = fields
+                .iter()
+                .flat_map(|&c| areas_of(&r, c))
+                .filter_map(|a| a["outline"].as_str().map(str::to_string))
+                .map(|d| vectorcraft_geom::kurbo::Shape::area(&vectorcraft_geom::BezPath::from_svg(&d).unwrap()).abs())
+                .sum();
+            assert!(outlined >= picture_mm2 - 0.2, "overlap {overlap}: the fields cover {outlined} of {picture_mm2} mm²: {}", r["areas"]);
+            let navy = areas_of(&r, NAVY);
+            assert!(navy.len() == 1 && !navy[0]["line"].is_null(), "{}", r["areas"]);
+            let order = |a: &Value| a["area"].as_u64().unwrap();
+            let after = fields.iter().flat_map(|&c| areas_of(&r, c)).all(|f| order(&f) < order(&navy[0]));
+            assert!(after, "the line after the fields: {}", r["areas"]);
+        }
+    }
+}
+
+/// A job that isn't one is refused, naming the four.
+#[test]
+fn a_job_that_isnt_one_is_refused() {
+    let mut s = placed(&picture(30.0, 25.0, PX_PER_MM, lines(t_segments(), NAVY, WHITE)), PX_PER_MM);
+    for job in [json!("line"), json!("Lines"), json!(1), json!(["lines"])] {
+        let p = json!({"dryRun": true, "colors": 2, "colorChoices": [{"color": hex(NAVY), "job": job}]});
+        let e = s.execute("embroidery.digitizeImage", &p).unwrap_err().to_string();
+        assert!(e.contains(r#"`job` is "auto", "fill", "lines" or "none""#), "{job}: {e}");
+    }
 }

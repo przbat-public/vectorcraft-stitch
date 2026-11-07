@@ -279,16 +279,18 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         ));
     }
     let mut areas = rules::joined_by_thread(areas, &colours)?;
+    rules::lines_by_job(&mut areas, &colours);
     inside::containers(&mut areas, &colours, w.px_per_mm)?;
     let order = order::ordered(&areas.areas, &areas.regions, &colours)?;
     inside::sewn_over(&mut areas, &colours, &order);
     let colors_ms = since(started);
     vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
-    // A thin line of a colour sewn by the rules (or kept unsewn, to be sewn later) along its middle.
+    // A line along its middle: a thin one of a colour sewn by the rules (or kept unsewn, to be sewn
+    // later), and every area of a colour sewn as Lines; not a colour sewn as Fill.
     let along_middle = |a: usize| {
         areas.areas.get(a).is_some_and(|x| {
-            x.kind == AreaKind::Line && colours.rows.get(x.row).is_some_and(|r| !r.background && matches!(r.job, Job::Auto | Job::None))
+            x.kind == AreaKind::Line && colours.rows.get(x.row).is_some_and(|r| !r.background && matches!(r.job, Job::Auto | Job::Lines | Job::None))
         })
     };
     let lines = centre::lines(&areas.regions, &along_middle)?;

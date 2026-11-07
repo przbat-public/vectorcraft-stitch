@@ -31,6 +31,7 @@ use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
 use super::colours::Colours;
 use super::regions::Regions;
+use super::settings::Job;
 
 /// The narrowest a long area may be and still be no line (millimetres): the narrowest satin column
 /// the planner sews (`plan::SATIN_MIN_WIDTH`, from Melco's design checker); narrower, the planner
@@ -288,6 +289,19 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     }
     let regions = Regions::from_labels(labels, regions.w, regions.h, areas.len(), regions.outside.clone());
     Ok(Areas { areas, regions, joined, bands, dropped: left_out })
+}
+
+/// Every area of a colour sewn as Lines made a line, whatever its width (the project owner's
+/// choices: "each colour has a job (Auto, Fill, Lines, Don't sew)", 2026-11-01, and the job Lines
+/// with centre lines, 2026-11-03): sewn along its middle as one running line (`super::centre`),
+/// after the fills it touches (`super::order`), the colours beside it reaching its middle under it
+/// (`super::overlap`). The background's areas stay as they are: they are never sewn.
+pub(super) fn lines_by_job(areas: &mut Areas, colours: &Colours) {
+    for area in &mut areas.areas {
+        if colours.rows.get(area.row).is_some_and(|r| r.job == Job::Lines && !r.background) {
+            area.kind = AreaKind::Line;
+        }
+    }
 }
 
 /// The areas once the colours have their threads (`colours`): touching areas sewn in one thread

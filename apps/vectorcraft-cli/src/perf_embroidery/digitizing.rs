@@ -14,7 +14,9 @@
 //! - a line one pixel wide winding between 27,750 bars of 0.2 by 0.9 mm in two colours, too small to
 //!   keep, which join the rows they lie in: a thin area with a hundred and fifty neighbours, each
 //!   once a thousand specks;
-//! - 1,500 × 1,500 pixels of noise in 16 colours, more than a design may be made of.
+//! - 1,500 × 1,500 pixels of noise in 16 colours, more than a design may be made of;
+//! - line art 1,500 pixels a side: a mesh of lines 0.6 mm wide every 2 mm (one line, about 74 × 74
+//!   junctions, sewn along its middle) and 75 such hatch lines.
 
 use std::time::Instant;
 
@@ -77,7 +79,7 @@ const NOISE_PX: u32 = 1500;
 const NOISE_COLORS: u32 = 16;
 
 /// The rows' names, in order (at most 42 characters, the report's column).
-pub(super) const ROWS: [&str; 12] = [
+pub(super) const ROWS: [&str; 14] = [
     "image: prepare a 1,080 × 980 JPEG",
     "image: trace and colours, 6 threads",
     "image: logo mode, 1,080 × 980 JPEG",
@@ -90,6 +92,8 @@ pub(super) const ROWS: [&str; 12] = [
     "image: dry run reply, 1,000 areas",
     "image: shapes, 3,600 dots in a field",
     "image: shapes, a line round 27,750 bars",
+    "image: centre lines, a 1,500 px mesh",
+    "image: whole dry run, 75 hatch lines",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: estimates, about 2.5 times what each
@@ -99,8 +103,24 @@ pub(super) const ROWS: [&str; 12] = [
 /// under each other in 29.2 ms, 3,601 areas made into objects in 0.53 ms, the badge's stitches
 /// planned in 33.7 ms and its whole dry run in 208 ms, noise refused in 1.17 s, a reply of 1,000
 /// areas built in 5.22 ms, 3,600 dots and their field shaped in 59.5 ms, and the winding line and
-/// its rows of joined bars in 429 ms.
-pub(super) const BUDGETS: [f64; 12] = [5.0, 315.0, 500.0, 120.0, 75.0, 1.3, 85.0, 520.0, 2930.0, 13.0, 150.0, 1070.0];
+/// its rows of joined bars in 429 ms (472 ms on 2026-11-07, its line found along its middle); the
+/// line rows', added on 2026-11-07, from [`LINES_MS`].
+pub(super) const BUDGETS: [f64; 14] =
+    [5.0, 315.0, 500.0, 120.0, 75.0, 1.3, 85.0, 520.0, 2930.0, 13.0, 150.0, 1070.0, LINES_MS[0] * 2.5, LINES_MS[1] * 2.5];
+
+/// What the line rows measured on 2026-11-07 (release, 12-core Apple Silicon, load about 3 to 5,
+/// the median of three, in two runs): the mesh's shapes (its centre line found, its holes none) in
+/// 393 and 394 ms, and the hatch's whole dry run in 274 and 273 ms.
+const LINES_MS: [f64; 2] = [394.0, 274.0];
+
+/// The line pictures: 1,500 pixels a side (150 mm at [`PX_PER_MM`]), navy lines 6 pixels wide
+/// (0.6 mm, sewn along their middle) every 20 pixels, the rest transparent: 75 hatch lines across,
+/// and a mesh of them both ways inside a transparent margin of 10 pixels (one line with about
+/// 74 × 74 junctions; with no margin, three of its corners would be navy, the background).
+const LINES_PX: u32 = 1500;
+const LINE_PX: u32 = 6;
+const LINE_STEP_PX: u32 = 20;
+const MESH_MARGIN_PX: u32 = 10;
 
 /// A picture of `width` × `height` opaque pixels, each `colour(x, y)`, as PNG.
 fn png(width: u32, height: u32, colour: impl Fn(u32, u32) -> [u8; 3]) -> Result<Vec<u8>, String> {
@@ -109,6 +129,17 @@ fn png(width: u32, height: u32, colour: impl Fn(u32, u32) -> [u8; 3]) -> Result<
         for x in 0..width {
             let [r, g, b] = colour(x, y);
             pixels.extend_from_slice(&[r, g, b, u8::MAX]);
+        }
+    }
+    Rendered { width, height, pixels }.to_png()
+}
+
+/// A picture of `width` × `height` pixels, each `colour(x, y)` with its opacity, as PNG.
+fn rgba(width: u32, height: u32, colour: impl Fn(u32, u32) -> [u8; 4]) -> Result<Vec<u8>, String> {
+    let mut pixels = Vec::with_capacity(width as usize * height as usize * 4);
+    for y in 0..height {
+        for x in 0..width {
+            pixels.extend_from_slice(&colour(x, y));
         }
     }
     Rendered { width, height, pixels }.to_png()
@@ -269,5 +300,21 @@ pub(super) fn times() -> Result<Vec<f64>, String> {
     })?;
     let mut wound = placed("winding.png", &winding, WINDING_PX, height)?;
     ms.push(staged(&dry_runs(&mut wound, json!({"colors": 3, "background": "none"}))?, &["shapes"]));
+    let inner = |v: u32| (MESH_MARGIN_PX..LINES_PX - MESH_MARGIN_PX).contains(&v);
+    let lines = |mesh: bool| {
+        rgba(LINES_PX, LINES_PX, |x, y| {
+            let on =
+                if mesh { inner(x) && inner(y) && (x % LINE_STEP_PX < LINE_PX || y % LINE_STEP_PX < LINE_PX) } else { y % LINE_STEP_PX < LINE_PX };
+            if on { [29, 42, 107, 255] } else { [0, 0, 0, 0] }
+        })
+    };
+    let mut mesh = placed("mesh.png", &lines(true)?, LINES_PX, LINES_PX)?;
+    let mesh_runs = dry_runs(&mut mesh, json!({"colors": 2}))?;
+    if mesh_runs.iter().any(|(r, _)| r["areas"].as_array().is_none_or(|a| a.iter().all(|a| a["line"].is_null()))) {
+        return Err("perf: the mesh wasn't sewn along its middle".into());
+    }
+    ms.push(staged(&mesh_runs, &["shapes"]));
+    let mut hatch = placed("hatch.png", &lines(false)?, LINES_PX, LINES_PX)?;
+    ms.push(middle(dry_runs(&mut hatch, json!({"colors": 2}))?.iter().map(|(_, t)| *t).collect()));
     Ok(ms)
 }

@@ -248,6 +248,27 @@ fn many_islands_slivers_and_holes_are_answered() {
     assert_eq!(r["areaCount"], json!(1), "one field, its holes transparent: {}", r["areaCount"]);
 }
 
+/// Line art at the largest working size (1,500 pixels a side at 10 a millimetre) is answered, its
+/// lines sewn along their middle, Create making what the dry run said: 75 hatch lines 0.6 mm wide
+/// and 150 mm long, and a mesh of such lines every 2 mm inside a transparent margin of 1 mm (one
+/// line with about 74 × 74 junctions, its holes transparent; with no margin, three of its corners would
+/// be navy, the background).
+#[test]
+fn line_art_at_the_largest_size_is_answered() {
+    let hatch = Raster::from_fn(1500, 1500, |_, y| if y % 20 < 6 { NAVY } else { CLEAR });
+    let inner = |v: u32| (10..1490).contains(&v);
+    let mesh = Raster::from_fn(1500, 1500, |x, y| if inner(x) && inner(y) && (x % 20 < 6 || y % 20 < 6) { NAVY } else { CLEAR });
+    for (name, picture, lines, junctions) in [("hatch.png", hatch, 75, 0), ("mesh.png", mesh, 1, 74 * 74)] {
+        let mut s = placed(name, &picture.encode_png()).unwrap();
+        let r = digitized(&mut s, json!({"colors": 2, "width": 150})).unwrap();
+        let areas = r["areas"].as_array().unwrap();
+        let found: Vec<&Value> = areas.iter().filter(|a| !a["line"].is_null()).collect();
+        assert_eq!(found.len(), lines, "{name}: {} areas", areas.len());
+        let at_junctions: u64 = found.iter().map(|a| a["line"]["junctions"].as_u64().unwrap()).sum();
+        assert!(at_junctions.abs_diff(junctions) <= junctions / 50, "{name}: {at_junctions} junctions");
+    }
+}
+
 /// Noise makes more areas than a design is made of: refused by that cap, with what changes it.
 /// With the smallest area raised it is digitized, the colours asked at most.
 #[test]

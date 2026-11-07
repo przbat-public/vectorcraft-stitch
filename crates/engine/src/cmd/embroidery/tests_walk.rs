@@ -381,3 +381,41 @@ fn a_satin_stroke_sews_its_cap() {
     let (lo, _) = extent("butt", Some([5.0, 2.0]));
     assert!(lo >= FROM_MM - 0.5, "a dashed butt stroke reaches {lo}");
 }
+
+/// A running line whose pieces meet end to end is sewn in one go through the document walk (the
+/// project owner's choices, 2026-11-01 and 2026-11-07, „Wszędzie w planiście (polecam)”): a letter
+/// K drawn as four pieces meeting at its junction, a thin stroke sewn as running stitch, makes no
+/// jump and no trim, where its pieces sewn one by one make jumps between them.
+#[test]
+fn a_running_line_whose_pieces_meet_is_sewn_in_one_go() {
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    let mm = |x: f64, y: f64| format!("{} {}", x * PT_PER_MM, y * PT_PER_MM);
+    let pieces = [
+        format!("M {} L {}", mm(20.0, 20.0), mm(20.0, 40.0)),
+        format!("M {} L {}", mm(20.0, 40.0), mm(20.0, 60.0)),
+        format!("M {} L {}", mm(20.0, 40.0), mm(38.0, 20.0)),
+        format!("M {} L {}", mm(20.0, 40.0), mm(38.0, 60.0)),
+    ];
+    let sew = |d: &str| {
+        let mut s = blank();
+        run(&mut s, "paint.setFill", json!({"none": true}));
+        run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+        let id = run(&mut s, "path.create", json!({"d": d}))["id"].as_u64().unwrap();
+        run(&mut s, "stroke.set", json!({"weight": 0.6 * PT_PER_MM, "ids": [id]}));
+        run(&mut s, "embroidery.stats", json!({}))
+    };
+    let k = sew(&pieces.join(" "));
+    assert_eq!((k["jumps"].as_u64(), k["trims"].as_u64()), (Some(0), Some(0)), "the K: {k}");
+    // The same pieces apart, a millimetre off the junction, are sewn one by one.
+    let apart = sew(&format!(
+        "{} M {} L {} M {} L {} M {} L {}",
+        pieces[0],
+        mm(20.0, 41.0),
+        mm(20.0, 60.0),
+        mm(21.0, 39.0),
+        mm(38.0, 20.0),
+        mm(21.0, 41.0),
+        mm(38.0, 60.0)
+    ));
+    assert!(apart["jumps"].as_u64().unwrap() > 0, "the K apart: {apart}");
+}

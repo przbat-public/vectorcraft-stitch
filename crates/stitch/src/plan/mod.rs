@@ -37,6 +37,7 @@ mod fill;
 mod geometry;
 mod joins;
 mod narrow;
+mod route;
 mod running;
 mod runs;
 mod satin;
@@ -48,6 +49,8 @@ mod tests_aim;
 mod tests_caps;
 #[cfg(test)]
 mod tests_narrow;
+#[cfg(test)]
+mod tests_route;
 mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
@@ -810,7 +813,11 @@ fn estimate(subs: &[SubPath], p: &Params) -> f64 {
     let total: f64 = subs.iter().map(|s| length(&s.points(), s.closed)).sum();
     let ends = POINTS_PER_SUBPATH * subs.len() as f64;
     match sewn_style(p) {
-        Style::Running => total / p.stitch_length + ends,
+        // Pieces that meet end to end are sewn as routes, some of them twice (`route`).
+        Style::Running => {
+            let repeats = if subs.iter().filter(|s| !s.closed).count() >= 2 { total } else { 0.0 };
+            (total + repeats) / p.stitch_length + ends
+        }
         Style::Satin => {
             // A cap carries each open column past its ends by at most half its width.
             let capped = if p.cap == Cap::Butt { 0.0 } else { p.width * subs.iter().filter(|s| !s.closed).count() as f64 };

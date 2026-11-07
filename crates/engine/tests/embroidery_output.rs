@@ -13,8 +13,9 @@
 //!   them, an opened design's literal stitch runs (as they are, clipped, and with cuts at its
 //!   blocks' ends), the export's options away from their defaults, settings at every level
 //!   (objects', the document's and an export's together), objects the walk expands whose
-//!   strokes are sewn along their path, a path an effect reshapes too, and
-//!   entry and exit points the planner sews toward (checked met within the Check tab's 1 mm too).
+//!   strokes are sewn along their path, a path an effect reshapes too,
+//!   entry and exit points the planner sews toward (checked met within the Check tab's 1 mm too),
+//!   and satin strokes sewn with their round, square and butt caps.
 //! - A test sheet sewn on each fabric preset (`embroidery.setup {fabric}`), the default fabric's
 //!   checked to be the sheet with no fabric, byte for byte.
 //! - The real designs' artwork (`cargo xtask corpus --embroidery`, checked against its manifest),
@@ -204,6 +205,14 @@ b20992b7856d058115f889b35679dfcbeb0b683a306da77cb64ee516b91281f7  exits.vp3
 181d9ac9fc9d6c34d7f776e58dc502dc98d61b2c25f589383d779d2041364431  stops.pec
 d2238d55ce687e38e34bda4876c983f1b21034c978580abc19e3b61dc48259bc  stops.jef
 a77bc0e2ff5f19ceb4bea099c075139bab412a8c1cf02da2759b55e301d16acf  stops.vp3
+fe1a392e99d8b0809f14ece8e759a6a64389663b617ee3db9e79d5f884ffbbe3  capped-strokes.dst
+0507147efaf71a34c509e71da2e6b5b7983e71e457ff9da2158e5da2104400e0  capped-strokes.tap
+0507147efaf71a34c509e71da2e6b5b7983e71e457ff9da2158e5da2104400e0  capped-strokes.t01
+b001548e536dbda11f03304f1609971f2df54867ff28bfcead47c1e7d138d791  capped-strokes.exp
+c5210d9ccb456eeac4490ce6be3a338d0a9d5a3b85abfdc3bb3b8994bf470d23  capped-strokes.pes
+15fd550242d54ae398ec1f3820c6b4e1e1a4a34540ca2e0333570b89a08f624b  capped-strokes.pec
+be2879e71192606ab57c9adf9c3f02dd2101756bdafb39bc7aac27ad5aea35c1  capped-strokes.jef
+293c0a81a7c1123289612818c1aabca949d56babbde653118eeaa4bde2ed21ac  capped-strokes.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -355,6 +364,9 @@ a3e4b067d744441d2a8c4ddeef48373d866aebe41326aade0c20252f59ee69d1  exits.jef  33 
 0cbdbeaf8f5a6b54c08931ca2b8a8132f27e10b2ee67498351caa446d8ed9915  stops.pes  5 5 55 5 5 21 56 56 56
 0de51589ee049991fc511ff98f549cb9742893c818db4450209a826ac44b9043  stops.pec  5 5 55 5 5 21 56 56 56
 e4484bd08cdd4abbc709e8285797662885f60e3f1eff64d4ce448f1ec03db8cd  stops.jef  33 33 59 33 33 59 75 75 75
+35af6da3a502a3c1480d1c549d45b5d1846c4515d271dccf1a10de13bb5daf8e  capped-strokes.pes  5 21 37 7 52 24
+ead88b1d2bd53690645f8093fb14f0b91321da54d61a41ada27f24736f513bb8  capped-strokes.pec  5 21 37 7 52 24
+d17793b9e22e94bf48221482f60025e022ed5c3aeac29a6e9be068f0a04e411e  capped-strokes.jef  33 59 45 59 71 14
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -541,6 +553,14 @@ stops.pes  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trim
 stops.pec  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
 stops.jef  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
 stops.vp3  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/0/0/0/0/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+capped-strokes.dst  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.0x89.8  longest 4.03  shortest 0.91  cells 1671
+capped-strokes.tap  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.0x89.8  longest 4.03  shortest 0.91  cells 1671
+capped-strokes.t01  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.0x89.8  longest 4.03  shortest 0.91  cells 1671
+capped-strokes.exp  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.0x89.8  longest 4.03  shortest 0.91  cells 1671
+capped-strokes.pes  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.0x89.8  longest 4.03  shortest 0.91  cells 1672
+capped-strokes.pec  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.0x89.8  longest 4.03  shortest 0.91  cells 1672
+capped-strokes.jef  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.86  cells 1664
+capped-strokes.vp3  blocks 6  needle 346/375/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.86  cells 1664
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -1253,6 +1273,7 @@ settings  converted 5
 expanded-strokes  converted 3
 exits  converted 4
 stops  converted 3 · literal 4
+capped-strokes  converted 7
 bullseye-twemoji  converted 7
 fox-twemoji.clipart  converted 7
 heart-suit-twemoji.clipart  converted 1
@@ -1523,7 +1544,33 @@ fn documents() -> Vec<(&'static str, Session, Value)> {
         ("expanded-strokes", expanded_strokes(), json!({})),
         ("exits", exits(), json!({})),
         ("stops", stops(), json!({})),
+        ("capped-strokes", capped_strokes(), json!({})),
     ]
+}
+
+/// Satin strokes with caps (the project owner's choice, 2026-11-01, „Tak, wszędzie (polecam)”):
+/// lines with a round, a square and a butt cap, sewn past their ends by half their width as each is
+/// painted (the butt at its ends); an S curve with round caps; a closed ellipse and an open circle
+/// whose ends meet, both round-capped, sewn with no cap (the project owner's choice, 2026-11-07,
+/// „Nie, tam bez zakończeń (polecam)”); and a running line with round caps, which a running line
+/// doesn't sew.
+fn capped_strokes() -> Session {
+    let mut s = blank(300.0, 300.0);
+    let capped = |s: &mut Session, color: &str, weight: f64, d: &str, cap: &str| {
+        let id = stroked(s, color, weight, d);
+        run(s, "stroke.set", json!({"cap": cap, "ids": [id]}));
+    };
+    capped(&mut s, "#cc2222", 8.0, "M 30 30 L 200 30", "round");
+    capped(&mut s, "#2233cc", 8.0, "M 30 60 L 200 60", "square");
+    capped(&mut s, "#22aa44", 8.0, "M 30 90 L 200 90", "butt");
+    capped(&mut s, "#8822aa", 10.0, "M 30 150 C 100 110 130 210 200 160", "round");
+    let ring = ellipse(&mut s, "#ff8800", 40.0, 200.0, 80.0, 50.0);
+    run(&mut s, "paint.setFill", json!({"none": true, "ids": [ring]}));
+    run(&mut s, "paint.setStroke", json!({"color": "#ff8800", "ids": [ring]}));
+    run(&mut s, "stroke.set", json!({"weight": 6.0, "cap": "round", "ids": [ring]}));
+    capped(&mut s, "#552200", 6.0, "M 190 250 A 30 30 0 1 1 190.001 250", "round");
+    capped(&mut s, "#2233cc", 1.0, "M 30 280 L 200 280", "round");
+    s
 }
 
 /// Fills: a rectangle and an ellipse, a letter T (its strokes narrow enough to be sewn as satin

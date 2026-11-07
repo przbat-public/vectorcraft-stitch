@@ -338,3 +338,46 @@ fn a_design_past_two_million_stitches_is_refused() {
     let refused = s.execute("document.export", &json!({"format": "dst"})).unwrap_err().to_string();
     assert!(refused.contains("more than 2000000 stitches"), "{refused}");
 }
+
+/// A stroke sewn as a satin column sews its cap as the stroke paints it (the project owner's choice,
+/// 2026-11-01, „Tak, wszędzie (polecam)”): a round or a square cap past each end of its path by half
+/// its width, a butt cap at the ends; a dashed stroke, filled as the area its dashes paint, has no
+/// column to cap.
+#[test]
+fn a_satin_stroke_sews_its_cap() {
+    /// The stroke's width and its ends along y = 30 mm (millimetres).
+    const WIDTH_MM: f64 = 3.0;
+    const FROM_MM: f64 = 20.0;
+    const TO_MM: f64 = 60.0;
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    // How short of a cap's full reach the column's last crossing may stop: its pitch, and the tip
+    // a round cap leaves to the shortest stitch.
+    const TIP_MM: f64 = 0.3;
+    let extent = |cap: &str, dash: Option<[f64; 2]>| {
+        let mut s = blank();
+        run(&mut s, "paint.setFill", json!({"none": true}));
+        run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+        let d = format!("M {} {} L {} {}", FROM_MM * PT_PER_MM, 30.0 * PT_PER_MM, TO_MM * PT_PER_MM, 30.0 * PT_PER_MM);
+        let id = run(&mut s, "path.create", json!({"d": d}))["id"].as_u64().unwrap();
+        let mut set = json!({"weight": WIDTH_MM * PT_PER_MM, "cap": cap, "ids": [id]});
+        if let Some(dash) = dash {
+            set["dash"] = json!(dash.map(|v| v * PT_PER_MM));
+        }
+        run(&mut s, "stroke.set", set);
+        let pattern = super::digitize::digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap().to_pattern();
+        let xs: Vec<f64> =
+            pattern.blocks.iter().flat_map(|b| &b.stitches).filter(|q| q.command == vectorcraft_stitch::Command::Stitch).map(|q| q.x).collect();
+        (xs.iter().copied().fold(f64::INFINITY, f64::min), xs.iter().copied().fold(f64::NEG_INFINITY, f64::max))
+    };
+    let half = WIDTH_MM / 2.0;
+    let (lo, hi) = extent("butt", None);
+    assert!(lo >= FROM_MM - 1e-6 && hi <= TO_MM + 1e-6, "a butt cap reaches {lo} to {hi}");
+    for cap in ["round", "square"] {
+        let (lo, hi) = extent(cap, None);
+        assert!((FROM_MM - half - 1e-6..=FROM_MM - half + TIP_MM).contains(&lo), "a {cap} cap starts at {lo}");
+        assert!((TO_MM + half - TIP_MM..=TO_MM + half + 1e-6).contains(&hi), "a {cap} cap ends at {hi}");
+    }
+    // Dashed: its dashes' area, the same whatever the cap but for the area the cap paints.
+    let (lo, _) = extent("butt", Some([5.0, 2.0]));
+    assert!(lo >= FROM_MM - 0.5, "a dashed butt stroke reaches {lo}");
+}

@@ -1,0 +1,163 @@
+//! A satin column's caps: an open column's top stitching reaches past the path's ends by half its
+//! width, round or square as the stroke paints them; a ring, a column whose ends meet, and a butt
+//! cap are sewn as before.
+
+use vectorcraft_geom::{BezPath, FillRule, Point};
+
+use super::*;
+use crate::Command;
+
+/// The width of the columns tried (millimetres), and the half of it a cap reaches past each end.
+const WIDTH: f64 = 3.0;
+const HALF: f64 = WIDTH / 2.0;
+
+/// The length of the straight column tried (millimetres).
+const LENGTH: f64 = 20.0;
+
+/// How near the path's own end plus a cap's reach the column's last crossing lies at most
+/// (millimetres): a crossing's pitch on this width (half the auto spacing of 0.5 mm) and the share
+/// of a round cap's tip a stitch of the shortest length leaves out.
+const TIP: f64 = 0.3;
+
+/// A satin column `WIDTH` wide along `path` with `cap`, no underlay, ties or compensation: its
+/// needle points.
+fn column(path: &BezPath, cap: Cap) -> Vec<Point> {
+    let p = Params { width: WIDTH, cap, underlay: Underlay::None, lock: false, pull: [0.0; 2], ..Params::for_style(Style::Satin) };
+    points(&stitches(path, FillRule::NonZero, &p))
+}
+
+fn points(v: &[Stitch]) -> Vec<Point> {
+    v.iter().filter(|s| s.command == Command::Stitch).map(|s| s.point()).collect()
+}
+
+fn straight() -> BezPath {
+    let mut p = BezPath::new();
+    p.move_to((0.0, 0.0));
+    p.line_to((LENGTH, 0.0));
+    p
+}
+
+/// A circle of `radius` drawn as one open path that comes back to its start, without closing.
+fn open_circle(radius: f64) -> BezPath {
+    let ring: BezPath = vectorcraft_geom::Shape::path_elements(&vectorcraft_geom::kurbo::Circle::new((0.0, 0.0), radius), 0.01).collect();
+    ring.elements().iter().filter(|el| !matches!(el, vectorcraft_geom::PathEl::ClosePath)).copied().collect()
+}
+
+fn extent(q: &[Point]) -> (f64, f64) {
+    (q.iter().map(|a| a.x).fold(f64::INFINITY, f64::min), q.iter().map(|a| a.x).fold(f64::NEG_INFINITY, f64::max))
+}
+
+/// A round cap: the crossings go on past each end, narrowing round a half disc as wide as the
+/// column, and every needle point lies within the stroke as it is painted.
+#[test]
+fn a_round_cap_is_sewn_round_past_each_end() {
+    let q = column(&straight(), Cap::Round);
+    let (lo, hi) = extent(&q);
+    assert!((-HALF - 1e-9..=-HALF + TIP).contains(&lo), "the start reaches {lo}");
+    assert!((LENGTH + HALF - TIP..=LENGTH + HALF + 1e-9).contains(&hi), "the end reaches {hi}");
+    for a in &q {
+        let inside = if a.x < 0.0 {
+            a.distance(Point::new(0.0, 0.0)) <= HALF + 1e-9
+        } else if a.x > LENGTH {
+            a.distance(Point::new(LENGTH, 0.0)) <= HALF + 1e-9
+        } else {
+            a.y.abs() <= HALF + 1e-9
+        };
+        assert!(inside, "{a:?} lies outside the round-capped stroke");
+    }
+    // Near the tip the crossings are short: none past a millimetre beyond the end reaches the rails.
+    assert!(q.iter().filter(|a| a.x < -1.0 || a.x > LENGTH + 1.0).all(|a| a.y.abs() < 1.2), "a crossing at a round tip spans the full width");
+    assert!(q.iter().any(|a| a.x < -1.0) && q.iter().any(|a| a.x > LENGTH + 1.0), "no crossing near the tips");
+}
+
+/// A square cap: the column goes on past each end by half its width, at its full width.
+#[test]
+fn a_square_cap_is_sewn_at_full_width_past_each_end() {
+    let q = column(&straight(), Cap::Square);
+    let (lo, hi) = extent(&q);
+    assert!((-HALF - 1e-9..=-HALF + TIP).contains(&lo), "the start reaches {lo}");
+    assert!((LENGTH + HALF - TIP..=LENGTH + HALF + 1e-9).contains(&hi), "the end reaches {hi}");
+    assert!(q.iter().all(|a| a.y.abs() <= HALF + 1e-9), "past the column's width");
+    assert!(q.iter().any(|a| a.x < -1.0 && a.y.abs() > HALF - 1e-6), "the square cap's corners are not reached");
+}
+
+/// A butt cap sews the column at the path's ends, as every column was sewn before caps; a ring has
+/// no ends, and a column whose ends meet (a circle drawn without closing it) has none to cap: each
+/// is sewn the same whatever its cap.
+#[test]
+fn a_butt_cap_a_ring_and_ends_that_meet_are_sewn_as_before() {
+    let butt = column(&straight(), Cap::Butt);
+    let (lo, hi) = extent(&butt);
+    assert!(lo >= -1e-9 && hi <= LENGTH + 1e-9, "a butt column reaches {lo} to {hi}");
+    assert_ne!(column(&straight(), Cap::Round), butt, "a round cap changes nothing");
+    let ring: BezPath = vectorcraft_geom::Shape::path_elements(&vectorcraft_geom::kurbo::Circle::new((0.0, 0.0), 10.0), 0.01).collect();
+    let open = open_circle(10.0);
+    for cap in [Cap::Round, Cap::Square] {
+        assert_eq!(column(&ring, cap), column(&ring, Cap::Butt), "a ring with a {} cap", cap.id());
+        assert_eq!(column(&open, cap), column(&open, Cap::Butt), "an open circle with a {} cap", cap.id());
+    }
+}
+
+/// No stitch at a round tip is shorter than the shortest the planner sews: the cap stops where a
+/// crossing of its half disc would be.
+#[test]
+fn no_stitch_at_a_round_tip_is_shorter_than_the_shortest() {
+    for width in [1.0, 1.5, 3.0, 6.0, 9.0] {
+        let p = Params { width, cap: Cap::Round, underlay: Underlay::None, lock: false, ..Params::for_style(Style::Satin) };
+        let q = points(&stitches(&straight(), FillRule::NonZero, &p));
+        let shortest = q.windows(2).map(|w| w[0].distance(w[1])).fold(f64::INFINITY, f64::min);
+        assert!(shortest >= p.min_stitch - 1e-9, "{width} mm: a stitch of {shortest}");
+    }
+}
+
+/// Push compensation shortens a capped column from the cap's end: the end it is sewn to is the
+/// painted end less the push.
+#[test]
+fn push_compensation_shortens_a_capped_column_from_its_caps() {
+    let p = Params { width: WIDTH, cap: Cap::Square, underlay: Underlay::None, lock: false, push: [1.0, 2.0], ..Params::for_style(Style::Satin) };
+    let (lo, hi) = extent(&points(&stitches(&straight(), FillRule::NonZero, &p)));
+    assert!((lo - (-HALF + 1.0)).abs() < TIP && lo >= -HALF + 1.0 - 1e-9, "the start at {lo}");
+    assert!((hi - (LENGTH + HALF - 2.0)).abs() < TIP && hi <= LENGTH + HALF - 2.0 + 1e-9, "the end at {hi}");
+}
+
+/// The underlay stays on the path, inside the column, whatever the cap: a centre run along a
+/// narrow column ends at the path's ends.
+#[test]
+fn the_underlay_stays_on_the_path() {
+    let p = Params { width: 1.5, cap: Cap::Round, underlay: Underlay::Center, lock: false, ..Params::for_style(Style::Satin) };
+    let q = points(&stitches(&straight(), FillRule::NonZero, &p));
+    let on_the_middle: Vec<&Point> = q.iter().filter(|a| a.y.abs() <= 1e-9).collect();
+    assert!(!on_the_middle.is_empty(), "no centre run");
+    assert!(on_the_middle.iter().all(|a| a.x >= -1e-9 && a.x <= LENGTH + 1e-9), "the centre run leaves the path: {on_the_middle:?}");
+    assert!(extent(&q).0 < -0.5, "the cap isn't sewn over the underlay");
+}
+
+/// A capped column's ends ([`ends`]): it ends past the path's by its cap, where its top stitching
+/// ends; it starts there too without an underlay, and at the path's end with one, where the
+/// underlay starts. Sewn from each start, its first needle point lies within the column's half
+/// width and pull compensation of it, on a rail.
+#[test]
+fn a_capped_column_starts_and_ends_where_its_stitches_do() {
+    let near = |a: Point, b: Point| a.distance(b) < 1e-9;
+    let capped = [Point::new(-HALF, 0.0), Point::new(LENGTH + HALF, 0.0)];
+    let path_ends = [Point::new(0.0, 0.0), Point::new(LENGTH, 0.0)];
+    for (underlay, starts) in [(Underlay::None, capped), (Underlay::Auto, path_ends)] {
+        let p = Params { width: WIDTH, cap: Cap::Square, underlay, ..Params::for_style(Style::Satin) };
+        let e = ends(&straight(), &p, false).expect("an open column has ends");
+        assert!(capped.iter().all(|&c| e.ends.iter().any(|&q| near(q, c))), "{:?}: ends {:?}", underlay, e.ends);
+        assert!(starts.iter().all(|&c| e.starts.iter().any(|&q| near(q, c))), "{:?}: starts {:?}", underlay, e.starts);
+        // The rails lie half the width out, and the pull compensation beyond.
+        let [left, right] = p.compensation(WIDTH);
+        for &entry in &e.starts {
+            let sewn = try_stitches_aimed(&straight(), FillRule::NonZero, &p, Aim { start: Start::Entry(entry), exit: None }).expect("sewn");
+            let first = points(&sewn).first().copied().expect("a needle point");
+            assert!(
+                first.distance(entry) <= HALF + left.max(right) + 1e-9,
+                "{underlay:?}: starts {first:?}, {} from {entry:?}",
+                first.distance(entry)
+            );
+        }
+    }
+    let butt = ends(&straight(), &Params { width: WIDTH, ..Params::for_style(Style::Satin) }, false).expect("ends");
+    assert!(path_ends.iter().all(|&c| butt.starts.iter().any(|&q| near(q, c)) && butt.ends.iter().any(|&q| near(q, c))), "{butt:?}");
+}

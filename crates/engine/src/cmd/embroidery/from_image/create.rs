@@ -8,9 +8,15 @@
 //! in sewing order, its outline and holes (a compound path for an area with holes), painted with
 //! its thread's own colour, so that the plan sews it in exactly that thread.
 //!
+//! An area along whose middle a centre line runs (`super::centre`) is made a stroke along it, as
+//! wide as the line, round at its ends and turns, with no fill: the planner sews a stroke that
+//! narrow as one running line through its junctions.
+//!
 //! An area's embroidery settings are set only where its colour's job departs from what it would
 //! inherit: `fill` sets its fill's narrowAsSatin to none (tatami, its narrow parts too), `none` sets
-//! its fill not to be sewn. Everything else stays unset (Auto, following the document's fabric).
+//! its fill (a centre line's stroke) not to be sewn, and a centre line's stroke as wide as a satin
+//! column (a thin line widened where its lines meet) is set to a running line. Everything else
+//! stays unset (Auto, following the document's fabric).
 //!
 //! The background's areas become no object. The source image moves, with its id, to a new template
 //! layer below every layer, hidden and locked, scaled as the design is so that it lies under it.
@@ -27,8 +33,9 @@ use std::sync::Arc;
 use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::appearance::{AppearanceItem, FillLayer};
 use vectorcraft_doc::embroidery::{Embroidery, PartSettings};
-use vectorcraft_doc::{Appearance, Document, MAX_COORD, Node, NodeId, NodeKind};
-use vectorcraft_geom::Point;
+use vectorcraft_doc::{Appearance, Document, LineCap, LineJoin, MAX_COORD, Node, NodeId, NodeKind};
+use vectorcraft_geom::{PathData, Point};
+use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::Palette;
 
 use super::super::digitize::{printed, shows};
@@ -41,6 +48,12 @@ use crate::{EngineError, Result};
 
 /// The stitch id of a part not sewn ([`super::super::resolve::Stitch::None`]).
 pub(super) const NOT_SEWN: &str = "none";
+
+/// The stitch id of a part sewn as a running line ([`super::super::resolve::Stitch::IDS`]).
+pub(super) const RUNNING: &str = "running";
+
+/// How wide a stroke the planner sews as a satin column by default (millimetres).
+const SATIN_MIN_WIDTH: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
 /// The widest part of a colour sewn as fill that is sewn as a satin column (millimetres): none, the
 /// least the setting takes (`vectorcraft_stitch::plan::NARROW_RANGE`).
@@ -64,6 +77,40 @@ fn settings_for(job: Job) -> Option<Embroidery> {
         Job::None => PartSettings { stitch: Some(NOT_SEWN.into()), ..Default::default() },
     };
     Some(Embroidery { fill: Some(Box::new(fill)), ..Default::default() })
+}
+
+/// The settings a centre line's stroke `width_pt` points wide, of a colour sewn as `job`, is given:
+/// not sewn for `none`; a running line where the stroke is as wide as a satin column
+/// (`plan::SATIN_MIN_WIDTH`, which the planner sews a stroke that wide as by default: a thin line
+/// whose junctions widen it); none for a narrower one, which the planner sews as a running line.
+fn line_settings_for(job: Job, width_pt: f64) -> Option<Embroidery> {
+    let stitch = match job {
+        Job::None => NOT_SEWN,
+        Job::Auto if vectorcraft_stitch::pt_to_mm(width_pt) >= SATIN_MIN_WIDTH => RUNNING,
+        Job::Auto | Job::Fill => return None,
+    };
+    Some(Embroidery { stroke: Some(Box::new(PartSettings { stitch: Some(stitch.into()), ..Default::default() })), ..Default::default() })
+}
+
+/// Points in a millimetre.
+const PT_PER_MM: f64 = 1.0 / MM_PER_PT;
+
+/// The width of the stroke made of centre line `line` (points) in a design `px_per_mm` pixels a
+/// millimetre: the line's.
+fn line_width(line: &super::centre::CentreLine, px_per_mm: f64) -> f64 {
+    line.width_px / px_per_mm * PT_PER_MM
+}
+
+/// The object made of centre line `line` (working pixels, placed by `to_doc`), in `color`: a stroke
+/// along it `width` points wide ([`line_width`]), round at its ends and turns, and no fill.
+fn line_node(doc: &mut Document, line: &super::centre::CentreLine, to_doc: vectorcraft_geom::Affine, width: f64, color: Color) -> Node {
+    let path = PathData::from_bezpath(&(to_doc * line.path()));
+    let mut look = Appearance::basic(Paint::None, Paint::solid(color), width);
+    if let Some(AppearanceItem::Stroke(s)) = look.items.last_mut() {
+        s.cap = LineCap::Round;
+        s.join = LineJoin::Round;
+    }
+    Node::path(doc.alloc_id(), path, look)
 }
 
 /// The name of the template layer an image moves to, as File › Place names one: "Template" and
@@ -124,12 +171,25 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         }
         let thread = row.thread.as_ref().map(|m| m.thread.index);
         let [r, g, b] = thread.and_then(|i| palette.get(i)).map_or(row.color, |(rgb, _)| rgb);
-        let mut n = shape_node(doc, shape.transformed(d.working.to_doc), None);
-        n.appearance =
-            Appearance { items: vec![AppearanceItem::Fill(FillLayer::new(Paint::solid(Color::rgb8(r, g, b))))], ..Default::default() }.into();
-        if let Some(e) = settings_for(row.job) {
-            n.extras_mut().embroidery = Some(Box::new(e));
-        }
+        let n = match d.lines.get(a).and_then(Option::as_ref) {
+            Some(line) => {
+                let width = line_width(line, d.working.px_per_mm);
+                let mut n = line_node(doc, line, d.working.to_doc, width, Color::rgb8(r, g, b));
+                if let Some(e) = line_settings_for(row.job, width) {
+                    n.extras_mut().embroidery = Some(Box::new(e));
+                }
+                n
+            }
+            None => {
+                let mut n = shape_node(doc, shape.transformed(d.working.to_doc), None);
+                n.appearance =
+                    Appearance { items: vec![AppearanceItem::Fill(FillLayer::new(Paint::solid(Color::rgb8(r, g, b))))], ..Default::default() }.into();
+                if let Some(e) = settings_for(row.job) {
+                    n.extras_mut().embroidery = Some(Box::new(e));
+                }
+                n
+            }
+        };
         objects += 1;
         match blocks.last_mut() {
             Some((t, sewn, list)) if *t == thread && *sewn == row.sewn() => list.push(Arc::new(n)),

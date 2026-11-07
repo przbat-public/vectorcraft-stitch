@@ -292,7 +292,7 @@ fn native(s: &mut Session) -> Vec<u8> {
 fn unset() -> Value {
     let default = |value: Value| json!({"value": value, "source": "default", "preset": null, "changed": false});
     json!({
-        "settings": {"palette": null, "start": null, "label": null, "fabric": null, "threadWeight": null, "joinSameColor": null, "machine": null},
+        "settings": {"palette": null, "start": null, "label": null, "fabric": null, "threadWeight": null, "joinSameColor": null, "machine": null, "fillAngle": null},
         "resolved": {
             "palette": {"value": "jef", "source": "default"},
             "fabric": {
@@ -314,6 +314,7 @@ fn unset() -> Value {
                 "splitLength": {"value": 10.0, "source": "default"},
                 "speed": {"value": 650.0, "source": "default"},
             },
+            "fillAngle": {"value": 135.0, "source": "default"},
         },
         "overrides": {"pull": 0, "spacing": 0, "length": 0, "underlay": 0, "objectCount": 0},
     })
@@ -435,7 +436,8 @@ fn empty_settings_in_a_file_are_none() {
     // A frontend's params check refuses another key first; the command says it too.
     let refused = super::setup::setup(&mut blank(), &json!({"hoop": "large"})).unwrap_err().to_string();
     assert!(
-        refused.contains("unknown setting `hoop`: the settings are palette, start, label, fabric, threadWeight, joinSameColor and machine"),
+        refused
+            .contains("unknown setting `hoop`: the settings are palette, start, label, fabric, threadWeight, joinSameColor, machine and fillAngle"),
         "{refused}"
     );
 }

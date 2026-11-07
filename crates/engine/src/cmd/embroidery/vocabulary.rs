@@ -43,7 +43,7 @@ const PART: &[Place] = &[Place::Part];
 const DOCUMENT: &[Place] = &[Place::Document];
 
 /// Every setting, the export's options first, in the order `document.formats` lists them.
-pub(crate) const SETTINGS: [Setting; 30] = [
+pub(crate) const SETTINGS: [Setting; 31] = [
     Setting { name: "stitch", earlier: Some("stitchStyle"), file: "stitch", places: PART_AND_EXPORT },
     Setting { name: "spacing", earlier: Some("density"), file: "spacing", places: EVERYWHERE },
     Setting { name: "length", earlier: Some("stitchLength"), file: "length", places: EVERYWHERE },
@@ -72,6 +72,7 @@ pub(crate) const SETTINGS: [Setting; 30] = [
     Setting { name: "palette", earlier: None, file: "palette", places: DOCUMENT },
     Setting { name: "start", earlier: None, file: "start", places: DOCUMENT },
     Setting { name: "label", earlier: None, file: "label", places: DOCUMENT },
+    Setting { name: "fillAngle", earlier: None, file: "fill_angle", places: DOCUMENT },
     Setting { name: "trimAfter", earlier: None, file: "trim_after", places: &[Place::Object] },
     Setting { name: "stopAfter", earlier: None, file: "stop_after", places: &[Place::Object] },
 ];

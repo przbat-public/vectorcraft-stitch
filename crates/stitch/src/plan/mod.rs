@@ -32,6 +32,7 @@
 //! and `narrow` (a fill's narrow parts, sewn as satin columns).
 
 mod area;
+mod axis;
 mod ends;
 mod fill;
 mod geometry;
@@ -46,6 +47,8 @@ mod tests;
 #[cfg(test)]
 mod tests_aim;
 #[cfg(test)]
+mod tests_axis;
+#[cfg(test)]
 mod tests_caps;
 #[cfg(test)]
 mod tests_narrow;
@@ -55,6 +58,7 @@ mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
+pub use axis::{SHAPE_ANGLE_STEP, SHAPE_AXIS_BANDS, SHAPE_AXIS_MIN_ELONGATION, ShapeAxis, rows_across, shape_axis};
 pub use ends::{Ends, MAX_JOIN_EXITS, MAX_JOIN_STARTS, Through, ends};
 pub use fill::MIN_AREA;
 pub use fill::TATAMI_UNDERLAY_MIN;

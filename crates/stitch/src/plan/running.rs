@@ -18,19 +18,26 @@ use crate::{SAME_POINT, Stitch};
 /// in the line's own holes).
 const RUNNING: Finish = Finish { returns: false, flip: None, reach: COST_HIDDEN };
 
+/// [`running_until`] never asked to stop, for this crate's tests.
+#[cfg(test)]
+pub(super) fn running(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
+    running_until(path, p, aim, &|| false)
+}
+
 /// A running line of stitches along `path`, [`Params::stitch_length`] apart, each run locked at
 /// both ends when [`Params::lock`] is on (a closed one too, where it starts and ends, so that a cut
 /// after it can't pull it out), sewn from `aim`'s start: each line from its end nearest the needle,
 /// the nearest first; from an entry point, the line it lies nearest first, a closed one starting
 /// exactly there. Toward an exit point, its lines are ordered and turned to end nearest it, and a
 /// closed one sewn last goes on round to it ([`ordered_toward`], [`lapped`]). Pieces that meet end
-/// to end are sewn as routes ([`routed`]). With the stitches, the connecting stitches sewn between
-/// its lines (millimetres, [`Runs::connectors`]).
-pub(super) fn running(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
+/// to end are sewn as routes ([`routed`]), `stopped` asked between their drawings and in their
+/// routes' steps whether to stop: what it then returns is cut short. With the stitches, the
+/// connecting stitches sewn between its lines (millimetres, [`Runs::connectors`]).
+pub(super) fn running_until(path: &BezPath, p: &Params, aim: Aim, stopped: &dyn Fn() -> bool) -> (Vec<Stitch>, f64) {
     let p = p.sane();
     let subs = subpaths(path);
     if let Some(graph) = Graph::of(&subs) {
-        return routed(&subs, &graph, &p, aim);
+        return routed(&subs, &graph, &p, aim, stopped);
     }
     let mut runs = Runs::from(aim.start.point(), &p);
     for Line { pts, closed, toward, .. } in ordered_toward(subs, aim, &RUNNING, &p) {
@@ -131,15 +138,22 @@ fn twice(graph: &Graph, r: &Route) -> f64 {
 /// free, from its node nearest the needle when that sews nothing more twice (a closed one always,
 /// one whose ends cost the same), else, both ends free, from its end nearer the needle. `None` when
 /// there is no route through it.
-fn route_near(graph: &Graph, edges: &[usize], start: Option<usize>, end: Option<usize>, here: Option<Point>) -> Option<Route> {
-    let free = route(graph, edges, start, end)?;
+fn route_near(
+    graph: &Graph,
+    edges: &[usize],
+    start: Option<usize>,
+    end: Option<usize>,
+    here: Option<Point>,
+    stopped: &dyn Fn() -> bool,
+) -> Option<Route> {
+    let free = route(graph, edges, start, end, stopped)?;
     let (Some(h), None) = (here, start) else { return Some(free) };
     let free = if end.is_none() && node(graph, free.end).distance(h) < node(graph, free.start).distance(h) { reversed(free) } else { free };
     let Some((nearest, _)) = nearest_node(graph, edges, h) else { return Some(free) };
     if free.start == nearest {
         return Some(free);
     }
-    match route(graph, edges, Some(nearest), end) {
+    match route(graph, edges, Some(nearest), end, stopped) {
         Some(near) if twice(graph, &near) <= twice(graph, &free) + SAME_POINT => Some(near),
         _ => Some(free),
     }
@@ -162,10 +176,12 @@ fn reversed(r: Route) -> Route {
 /// first, a route starting at its node nearest it; then each time the nearest, a route as near the
 /// needle as it can start ([`route_near`]); toward an exit point, what lies nearest it last of the
 /// rest, a route ending at its node nearest it, a closed piece going on round to it. Past [`MAX_REORDERED`] of them, the drawing's
-/// order beyond the first. A route with no exit ends where taking it back sews least twice; a stretch
-/// sewn back over that costs more than a jump ([`sewn_back`]) is jumped instead. With the stitches,
+/// order beyond the first, each in turn, so that the line's drawings take time in proportion to
+/// them. A route with no exit ends where taking it back sews least twice; a stretch sewn back over
+/// that costs more than a jump ([`sewn_back`]) is jumped instead. `stopped` is asked between the
+/// drawings and in each route's steps, and once it says so the rest is left out. With the stitches,
 /// the connecting stitches sewn between them (millimetres, [`Runs::connectors`]).
-fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
+fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim, stopped: &dyn Fn() -> bool) -> (Vec<Stitch>, f64) {
     let parts = graph.components();
     // Each part of two pieces or more is routed, but one shorter than the shortest stitch, a speck
     // left out as each of its pieces would be; the others' pieces are sewn as they are.
@@ -217,7 +233,7 @@ fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>
         match item {
             Item::Part(c) => {
                 let edges = part(c);
-                match route_near(graph, edges, start, end, *here) {
+                match route_near(graph, edges, start, end, *here, stopped) {
                     Some(r) => sew_route(graph, &r, p, runs, here),
                     // No route through it (never, for a connected part): its pieces as they are.
                     None => {
@@ -249,14 +265,24 @@ fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>
     if let Some((e, item)) = first {
         sew(item, node_near(item, Some(e)), None, From::Entry(e), None, &mut runs, &mut here);
     }
-    // Then each time the nearest, or past MAX_REORDERED, the drawing's order.
-    let reorder = pending.len() <= MAX_REORDERED;
-    while !pending.is_empty() {
-        let i = if reorder { here.and_then(|h| nearest_to(&pending, h)).unwrap_or(0) } else { 0 };
-        let item = pending.remove(i);
-        sew(item, None, None, here.map_or(From::Drawn, From::Needle), None, &mut runs, &mut here);
+    // Then each time the nearest, or past MAX_REORDERED, the drawing's order, each in turn.
+    if pending.len() <= MAX_REORDERED {
+        while !pending.is_empty() && !stopped() {
+            let i = here.and_then(|h| nearest_to(&pending, h)).unwrap_or(0);
+            let item = pending.remove(i);
+            sew(item, None, None, here.map_or(From::Drawn, From::Needle), None, &mut runs, &mut here);
+        }
+    } else {
+        for item in pending {
+            if stopped() {
+                break;
+            }
+            sew(item, None, None, here.map_or(From::Drawn, From::Needle), None, &mut runs, &mut here);
+        }
     }
-    if let Some(item) = last {
+    if let Some(item) = last
+        && !stopped()
+    {
         sew(item, None, node_near(item, exit), here.map_or(From::Drawn, From::Needle), exit, &mut runs, &mut here);
     }
     let connectors = runs.connectors(p);
@@ -315,15 +341,11 @@ fn sewn_back(back: f64, from: Point, to: Point, p: &Params) -> bool {
 /// sewn back over that costs more than a jump ([`sewn_back`]) jumped instead; each run locked;
 /// `here` moved to its end.
 fn sew_route(graph: &Graph, r: &Route, p: &Params, runs: &mut Runs, here: &mut Option<Point>) {
-    // Each piece's needle points, from its first point to its last, made once.
-    let mut points: Vec<Option<Vec<Point>>> = vec![None; graph.edges.len()];
+    // Each piece's needle points, from its first point to its last, made once: kept for the route's
+    // own pieces only, so that a route costs its own pieces however many the line has.
+    let mut points: std::collections::BTreeMap<usize, Vec<Point>> = std::collections::BTreeMap::new();
     let mut needle = |edge: usize| -> Vec<Point> {
-        let Some(slot) = points.get_mut(edge) else { return Vec::new() };
-        if slot.is_none() {
-            let pts = graph.edges.get(edge).map_or_else(Vec::new, |e| resample(&e.pts, p.stitch_length, false));
-            *slot = Some(pts);
-        }
-        slot.clone().unwrap_or_default()
+        points.entry(edge).or_insert_with(|| graph.edges.get(edge).map_or_else(Vec::new, |e| resample(&e.pts, p.stitch_length, false))).clone()
     };
     let mut run: Vec<Point> = Vec::new();
     // A stretch sewn back over, held until it is known whether it is sewn or jumped: its points and

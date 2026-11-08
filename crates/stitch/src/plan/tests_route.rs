@@ -64,7 +64,7 @@ fn route_length(path: &BezPath) -> f64 {
     let graph = Graph::of(&subs).expect("pieces that meet");
     let parts = graph.components();
     assert_eq!(parts.len(), 1, "one drawing");
-    let r = route(&graph, &parts[0], None, None).expect("a route");
+    let r = route(&graph, &parts[0], None, None, &|| false).expect("a route");
     assert_eq!(r.steps.iter().filter(|s| !s.again).count(), graph.edges.len(), "every piece once");
     r.steps.iter().map(|s| graph.edges[s.edge].len).sum()
 }
@@ -319,6 +319,60 @@ fn huge_drawings_are_routed_in_time() {
     assert!(took.as_secs_f64() < 30.0, "{took:?}");
 }
 
+/// Many drawings in one line are each sewn, in turn: 20,000 V's of two pieces each, every V's apex
+/// a needle point; and two pieces that meet among 20,000 closed specks, the two sewn as one route.
+/// (How long such lines take is the perf report's: `perf_embroidery/routes.rs`.)
+#[test]
+fn many_drawings_in_one_line_are_each_sewn() {
+    let vs: Vec<Vec<(f64, f64)>> = (0..20_000)
+        .flat_map(|k: i32| {
+            let (x, y) = (f64::from(k % 200) * 3.0, f64::from(k / 200) * 3.0);
+            [vec![(x, y), (x + 0.5, y + 1.0)], vec![(x + 0.5, y + 1.0), (x + 1.0, y)]]
+        })
+        .collect();
+    let (out, _) = sewn(&pieces(&vs), Aim::from_needle(None));
+    let got: std::collections::BTreeSet<(i64, i64)> =
+        needle(&out).iter().map(|q| ((q.x * 1000.0).round() as i64, (q.y * 1000.0).round() as i64)).collect();
+    for k in 0..20_000 {
+        let apex = (f64::from(k % 200) * 3.0 + 0.5, f64::from(k / 200) * 3.0 + 1.0);
+        assert!(got.contains(&((apex.0 * 1000.0).round() as i64, (apex.1 * 1000.0).round() as i64)), "the V at {apex:?} isn't sewn");
+    }
+    let mut specks = pieces(&[vec![(-10.0, -10.0), (-5.0, -10.0)], vec![(-5.0, -10.0), (-5.0, -5.0)]]);
+    for k in 0..20_000 {
+        let (x, y) = (f64::from(k % 200) * 0.5, f64::from(k / 200) * 0.5);
+        specks.move_to((x, y));
+        specks.line_to((x + 0.5, y));
+        specks.line_to((x, y + 0.5));
+        specks.close_path();
+    }
+    let (out, _) = sewn(&specks, Aim::from_needle(Some(Point::new(-10.0, -10.0))));
+    let first: Vec<Point> = needle(&out).into_iter().take_while(|q| q.x < -1.0).collect();
+    assert!(first.iter().any(|q| q.distance(Point::new(-5.0, -5.0)) < 1e-9), "the two pieces that meet aren't one run: {first:?}");
+}
+
+/// A running line's routes stop at a cancel: asked at once, or once a few of its drawings are
+/// planned, the plan of 1,000 V's is dropped; never asked to, it is made.
+#[test]
+fn a_running_line_stops_at_a_cancel() {
+    let vs = pieces(
+        &(0..1_000)
+            .flat_map(|k: i32| {
+                let x = f64::from(k) * 3.0;
+                [vec![(x, 0.0), (x + 0.5, 1.0)], vec![(x + 0.5, 1.0), (x + 1.0, 0.0)]]
+            })
+            .collect::<Vec<_>>(),
+    );
+    let plan = |stopped: &dyn Fn() -> bool| try_stitches_aimed_until(&vs, FillRule::NonZero, &running(), Aim::from_needle(None), stopped).unwrap();
+    assert!(plan(&|| true).is_none(), "planned though stopped at once");
+    let asked = std::cell::Cell::new(0usize);
+    let later = || {
+        asked.set(asked.get() + 1);
+        asked.get() > 10
+    };
+    assert!(plan(&later).is_none() && asked.get() > 10, "planned though stopped partway");
+    assert!(plan(&|| false).is_some_and(|s| !s.is_empty()));
+}
+
 /// A line that ends on another's middle joins its route (the project owner's choice, 2026-11-07,
 /// „Zrobić teraz”): a T drawn as two strokes, its stem's end on the bar's middle, and a K whose two
 /// arms end on its stem's middle, each a stroke of its own, are sewn in one go, no jump and no
@@ -551,7 +605,7 @@ fn a_route_with_one_end_given_sews_least_twice() {
     let parts = graph.components();
     let tip = graph.nodes.iter().position(|q| q.distance(Point::new(10.0, 6.0)) < 1e-9).expect("the stem's tip");
     for (start, end) in [(Some(tip), None), (None, Some(tip))] {
-        let r = route(&graph, &parts[0], start, end).expect("a route");
+        let r = route(&graph, &parts[0], start, end, &|| false).expect("a route");
         let twice: f64 = r.steps.iter().filter(|s| s.again).map(|s| graph.edges[s.edge].len).sum();
         assert!((twice - 10.0).abs() < 1e-9 && r.start != r.end, "{start:?} {end:?}: {twice} mm twice");
     }

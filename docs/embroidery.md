@@ -913,7 +913,11 @@ the fabric.
   nearest first; a drawing shorter than the shortest stitch left out, as each of its pieces would
   be), and a route starts at its node nearest the needle whenever that sews nothing
   more twice, as a line's subpaths start nearest it: a closed drawing always, one whose ends cost
-  the same, and otherwise at its end nearer the needle. Every step is linear or n log n, the cycles walked capped.
+  the same, and otherwise at its end nearer the needle. Every step takes time in proportion to the pieces, or n log n (the pairing a few
+  shortest-path searches over a drawing), the search for nodes on the pieces' middles and the
+  cycles walked capped; a line's drawings are taken in turn, each route keeping only its own
+  pieces' needle points, and a cancel stops a running line between its drawings and in its routes'
+  steps (a satin or a fill finishes the unit it is planning).
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and
   the needle crosses from rail to rail, so the threads lie side by side. The column's spacing is
   measured between two penetrations on one rail (peak to peak), as Madeira's thread chart,

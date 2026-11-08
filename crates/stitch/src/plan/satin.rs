@@ -67,7 +67,7 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// needle is: each column starts at its end nearest the needle (a closed one at its point
 /// nearest), the nearest first, as Ink/Stitch starts satins; from an entry point, the column it
 /// lies nearest first, a ring starting exactly there ([`ordered`]). `p`'s style is satin (the
-/// caller, [`super::stitches_aimed`], sews a satin only then). With the stitches, the connecting
+/// caller, [`super::try_stitches_aimed`], sews a satin only then). With the stitches, the connecting
 /// stitches sewn between its columns (millimetres, [`Runs::connectors`]).
 pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
     let p = p.sane();

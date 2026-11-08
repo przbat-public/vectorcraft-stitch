@@ -596,13 +596,21 @@ pub(crate) fn stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Op
     stitches_aimed(path, rule, p, Aim::from_needle(from))
 }
 
-/// [`try_stitches_aimed`] without its checks: what the planners build. Unchecked, a shape far out
+/// [`stitches_aimed_until`] never asked to stop, for this crate's tests.
+#[cfg(test)]
+pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
+    stitches_aimed_until(path, rule, p, aim, &|| false)
+}
+
+/// [`try_stitches_aimed_until`] without its checks: what the planners build, a running line asking
+/// `stopped` between its drawings and in its routes' steps whether to stop (a plan that is
+/// cancelled), what it then returns cut short, for the caller to drop. Unchecked, a shape far out
 /// of range or a tiny stitch length builds without bound, so only the checked entry points are
 /// public.
-pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
+fn stitches_aimed_until(path: &BezPath, rule: FillRule, p: &Params, aim: Aim, stopped: &dyn Fn() -> bool) -> Vec<Stitch> {
     let p = p.sane();
     match sewn_style(&p) {
-        Style::Running => toward::nearer(aim, &p, |aim| running::running(path, &p, aim)),
+        Style::Running => toward::nearer(aim, &p, |aim| running::running_until(path, &p, aim, stopped)),
         Style::Satin => toward::nearer(aim, &p, |aim| satin::satin(path, &p, aim)),
         // Weighs its rows toward the exit itself, by their moves before they are joined.
         Style::Fill => fill::fill(path, rule, &p, aim),
@@ -690,11 +698,25 @@ pub fn try_stitches_from(path: &BezPath, rule: FillRule, p: &Params, from: Optio
 
 /// [`try_stitches`], sewn from and toward what `aim` says ([`Aim`]).
 pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> crate::Result<Vec<Stitch>> {
+    Ok(try_stitches_aimed_until(path, rule, p, aim, &|| false)?.unwrap_or_default())
+}
+
+/// [`try_stitches_aimed`], a running line asking `stopped` whether to stop as its drawings and
+/// routes are planned (a plan that is cancelled): `None` once it says so. A satin or a fill, which
+/// has no check of its own, is planned whole.
+pub fn try_stitches_aimed_until(
+    path: &BezPath,
+    rule: FillRule,
+    p: &Params,
+    aim: Aim,
+    stopped: &dyn Fn() -> bool,
+) -> crate::Result<Option<Vec<Stitch>>> {
     let p = p.sane();
     placed(path)?;
     let subs = subpaths(path);
     within_limit(estimate(&subs, &p) + aimed_extra(&subs, &p, &aim))?;
-    Ok(stitches_aimed(path, rule, &p, aim))
+    let stitches = stitches_aimed_until(path, rule, &p, aim, stopped);
+    Ok((sewn_style(&p) != Style::Running || !stopped()).then_some(stitches))
 }
 
 /// How many more points than [`estimate`] counts `subs` may plan into in style `p` when sewn

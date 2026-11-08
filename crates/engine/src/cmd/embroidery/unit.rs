@@ -120,9 +120,15 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result
     });
     let (planned, columns) = match (columns, parts.and_then(|p| p.cut.as_ref())) {
         (Some(satin), Some((rest, whole))) => {
-            (plan::try_fill_with_columns_aimed(whole, FillRule::NonZero, rest, found, &params, &satin, aim), Some(satin))
+            (plan::try_fill_with_columns_aimed(whole, FillRule::NonZero, rest, found, &params, &satin, aim).map_err(PlanError::from), Some(satin))
         }
-        _ => (plan::try_stitches_aimed(shape, rule, &params, aim), None),
+        // A running line's drawings and routes stop at a cancel.
+        _ => (
+            plan::try_stitches_aimed_until(shape, rule, &params, aim, &cancel::is_cancelled)
+                .map_err(PlanError::from)
+                .and_then(|s| s.ok_or(PlanError::Cancelled)),
+            None,
+        ),
     };
     let mut stitches = planned?;
     // A stroke inside a clip group: only the stitches inside the clipping path are sewn. (A

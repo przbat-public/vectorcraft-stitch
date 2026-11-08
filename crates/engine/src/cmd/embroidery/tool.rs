@@ -447,7 +447,12 @@ impl PlanFacts for FactsNow<'_> {
     }
 
     fn snap(&self, object: NodeId, part: PartKind, at: Point) -> Option<Point> {
-        Some(super::points::snapped(self.doc.node(object)?, part, at))
+        // A satin stroke's caps, by the plan's own settings, when the plan is of this document.
+        let cap = match (part, self.facts.as_deref()) {
+            (PartKind::Stroke, Some(f)) if std::ptr::eq(&*f.snapshot, self.doc) => super::points::cap_of(&f.planned.plan, object),
+            _ => 0.0,
+        };
+        Some(super::points::snapped(self.doc.node(object)?, part, at, cap))
     }
 
     fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {

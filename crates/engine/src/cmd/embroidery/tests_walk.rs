@@ -433,3 +433,22 @@ fn a_round_capped_dot_is_sewn() {
     let stats = run(&mut s, "embroidery.stats", json!({}));
     assert!(stats["stitches"].as_u64().unwrap() > 0, "the dot sews nothing: {stats}");
 }
+
+/// An exit snapped to a square-capped satin's end, as the Embroidery Tool snaps it, is met within the
+/// Check tab's 1 mm, and the check finds no point missed: the snap goes to where the cap carries
+/// the column, and the allowance reaches the cap's corner, where a 6 mm satin missed by 1.19 mm.
+#[test]
+fn a_square_capped_satin_meets_an_exit_snapped_to_its_end() {
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+    let id = run(&mut s, "path.create", json!({"d": "M 50 100 L 250 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 6.0 * PT_PER_MM, "cap": "square", "ids": [id]}));
+    run(&mut s, "embroidery.setEntryExit", json!({"id": id, "part": "stroke", "exit": [250.0, 100.0], "snap": true}));
+    let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+    let missed = unit["missedBy"]["exit"].as_f64().unwrap();
+    assert!(missed <= POINT_MISS_MM, "missed by {missed} mm: {unit}");
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    assert_eq!(check["rules"][0]["hits"].as_u64(), Some(0), "{check}");
+}

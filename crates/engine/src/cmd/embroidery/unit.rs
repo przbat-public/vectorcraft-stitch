@@ -170,7 +170,8 @@ const IN_COLUMN: f64 = 0.05;
 /// How far from the entry and the exit point it was planned toward (`asked`: whether each was) a
 /// unit's first and last needle points can lie at best, millimetres: a satin column's crossings
 /// end on a rail, half its width and its pull compensation aside, an open column's ends pushed in
-/// by its push compensation (a ring has none); a fill's narrow part sewn as satin the same where
+/// by its push compensation (a ring has none) and carried past the path's by its cap, so that its
+/// last crossing lies at the cap's corner (`plan::cap_reach_of`); a fill's narrow part sewn as satin the same where
 /// the needle point lies in it, at its width there (`satin` its parameters, `found` the parts); a
 /// fill's rows, a running line and a part not asked for, nothing.
 fn ends_reach(shape: &BezPath, params: &Params, satin: Option<&Params>, found: &[plan::Column], stitches: &[Stitch], asked: [bool; 2]) -> [f64; 2] {
@@ -181,12 +182,20 @@ fn ends_reach(shape: &BezPath, params: &Params, satin: Option<&Params>, found: &
         let [left, right] = p.compensation(width);
         width / 2.0 + left.max(right) + if open { p.push[0].max(p.push[1]) } else { 0.0 }
     };
+    // An open satin stroke ends past its path's end by its cap, on a rail: the allowance reaches
+    // that corner (a butt cap's is the plain column's).
+    let capped = |p: &Params, open: bool| {
+        let cap = if open { plan::cap_reach_of(p) } else { 0.0 };
+        let [left, right] = p.compensation(p.width);
+        let rail = p.width.min(plan::MAX_SATIN_WIDTH) / 2.0 + left.max(right);
+        if cap > 0.0 { rail.hypot(cap) + p.push[0].max(p.push[1]) } else { column(p, p.width.min(plan::MAX_SATIN_WIDTH), open) }
+    };
     let reach = |q: Point| match (plan::sewn_style(params), satin) {
         (plan::Style::Satin, _) => {
             // A ring has no ends to push in: every subpath closed.
             let open = shape.elements().iter().filter(|e| matches!(e, vectorcraft_geom::PathEl::MoveTo(_))).count()
                 > shape.elements().iter().filter(|e| matches!(e, vectorcraft_geom::PathEl::ClosePath)).count();
-            column(params, params.width.min(plan::MAX_SATIN_WIDTH), open)
+            capped(params, open)
         }
         (_, Some(p)) => found
             .iter()

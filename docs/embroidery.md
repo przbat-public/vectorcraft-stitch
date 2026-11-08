@@ -958,6 +958,10 @@ the fabric.
   and `.ai` files draw dots, a stroke of no length), is sewn as the small satin dot its cap paints,
   the stroke's width across, along its own direction or along x when it has none (SVG 2 § 9.5.3;
   the owner's choice, 2026-11-07, „Szyć jako małą kropkę (polecam)”), where it sewed nothing.
+  The Check tab's allowance for a point missed, the Embroidery Tool's snap and the planner's pass
+  toward an exit know the cap: a point snapped to an open satin's end goes where the cap carries
+  its stitches, the allowance reaches the cap's corner, and the pass along the middle is priced
+  over the caps too.
   Every crossing goes across the column, the last one too (the
   last point's direction used to be taken as left to right, so a column running any other way
   ended with a stitch along it or on the rail the one before used). The underlay holds the

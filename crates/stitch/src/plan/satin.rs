@@ -473,6 +473,17 @@ fn capped(pts: &[Point], cap: super::Cap, half: f64, tip: &Tip, on_piece: [bool;
     Some(Capped { pts: line, cap, carried })
 }
 
+/// How far a satin sewn with `p` carries an open column's top stitching past each of its ends by
+/// its cap (millimetres, [`cap_reach`]): where its stitches end, past the path's own end, for the
+/// Check tab's allowance, the tool's snap and the planned exits; none for a butt cap.
+pub fn cap_reach_of(p: &Params) -> f64 {
+    let p = p.sane();
+    let ([left, right], [fixed_left, fixed_right]) = (p.compensation(p.width), p.compensation(0.0));
+    let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
+    let reach = cap_reach(p.cap, p.width / 2.0, &tip);
+    if reach.is_finite() { reach } else { 0.0 }
+}
+
 /// The directions out of the ends of line `pts` (its first point, then its last), as
 /// [`end_directions`] found them for the subpath it is, either way round; none for a line it
 /// didn't.

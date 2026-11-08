@@ -362,14 +362,64 @@ fn jumps(p: &vectorcraft_stitch::Pattern) -> usize {
     p.blocks.iter().flat_map(|b| &b.stitches).filter(|q| q.command == vectorcraft_stitch::Command::Jump).count()
 }
 
+/// How many moves `p` makes between stitches: each run of jumps one move, however many records a
+/// long one takes.
+fn moves(p: &vectorcraft_stitch::Pattern) -> usize {
+    let jump: Vec<bool> = p.blocks.iter().flat_map(|b| &b.stitches).map(|q| q.command == vectorcraft_stitch::Command::Jump).collect();
+    (0..jump.len()).filter(|&k| jump[k] && (k == 0 || !jump[k - 1])).count()
+}
+
+/// How many separate drawings [`LINE_ART`] and the ring make, counted here from the drawing itself
+/// rather than by the planner: its pieces joined where one ends at another's end (as the T's and
+/// the X's do).
+fn drawings() -> usize {
+    use vectorcraft_geom::kurbo::{BezPath, PathEl};
+    let mut ends: Vec<(vectorcraft_geom::Point, vectorcraft_geom::Point)> = Vec::new();
+    for d in LINE_ART {
+        let (mut first, mut last) = (None, None);
+        for el in BezPath::from_svg(d).unwrap().elements() {
+            match *el {
+                PathEl::MoveTo(p) => {
+                    ends.extend(first.zip(last));
+                    (first, last) = (Some(p), Some(p));
+                }
+                PathEl::LineTo(p) | PathEl::QuadTo(_, p) | PathEl::CurveTo(_, _, p) => last = Some(p),
+                PathEl::ClosePath => last = first,
+            }
+        }
+        ends.extend(first.zip(last));
+    }
+    fn root(up: &[usize], mut i: usize) -> usize {
+        while up[i] != i {
+            i = up[i];
+        }
+        i
+    }
+    let mut up: Vec<usize> = (0..ends.len()).collect();
+    for i in 0..ends.len() {
+        for j in 0..i {
+            let ((a0, a1), (b0, b1)) = (ends[i], ends[j]);
+            if [a0, a1].iter().any(|a| [b0, b1].iter().any(|b| a.distance(*b) < 1e-9)) {
+                let (ri, rj) = (root(&up, i), root(&up, j));
+                up[ri] = rj;
+            }
+        }
+    }
+    let pieces = (0..ends.len()).filter(|&i| root(&up, i) == i).count();
+    // And the ring, a drawing of its own.
+    pieces + 1
+}
+
 /// Line art drawn here (no corpus needed), drawn as a picture as the real designs' artwork is and
 /// digitized, against its vector path (the strokes sewn as drawn): its thin lines are sewn along
 /// their middle through their junctions, as the vector path sews them, so that every one is a
 /// running line as the vector path's are, the image path makes no more jumps than the vector path,
-/// its needle points lie on the vector path's stitches and cover them, and it sews about as many
-/// (measured 2026-11-07: 208 needle points to the vector path's 205, 6 jumps each, every needle
-/// point on the line and covered). With centre lines off, each line is a fill whose narrow parts
-/// the planner sews along their middle: as near, but no running line.
+/// and no more moves than it takes to go from each of the drawing's seven separate drawings to the
+/// next (counted in the test from the drawing, not by the planner that sews both paths), its needle
+/// points lie on the vector path's stitches and cover them, and it sews
+/// about as many (measured 2026-11-07: 208 needle points to the vector path's 205, 6 jumps each,
+/// every needle point on the line and covered). With centre lines off, each line is a fill whose
+/// narrow parts the planner sews along their middle: as near, but no running line.
 #[test]
 fn line_art_digitized_stays_on_the_vector_path() {
     let mut s = vectorcraft_engine::Session::new();
@@ -412,6 +462,9 @@ fn line_art_digitized_stays_on_the_vector_path() {
     );
     assert!(same, "the dry run's figures aren't Create's");
     assert!(jumps(&image) <= jumps(&vector), "the image path jumps {} times, the vector path {}", jumps(&image), jumps(&vector));
+    let apart = drawings();
+    assert_eq!(apart, 7, "the line art's drawings");
+    assert!(moves(&image) < apart, "the image path moves {} times between {apart} drawings", moves(&image));
     assert!(on_line >= ON_LINE_SHARE && covered >= ON_LINE_SHARE, "on the line {on_line:.3}, covered {covered:.3}");
     assert!((LINE_STITCHES_RANGE.0..=LINE_STITCHES_RANGE.1).contains(&(is / vs)), "{is} needle points, the vector path's {vs}");
 }

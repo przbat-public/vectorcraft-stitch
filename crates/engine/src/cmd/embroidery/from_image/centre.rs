@@ -590,13 +590,14 @@ fn pruned(nodes: &mut [Node], edges: &mut Vec<Edge>, w: usize, line_px: f64) {
     edges.retain(|e| !e.gone);
 }
 
-/// Junctions whose discs overlap made one: the piece between them (`len` long) taken away, the
-/// node lying where the deepest of them does, and every piece's ends the merged node's.
+/// Junctions whose discs overlap made one: two joined by a piece (`len` long) no longer than their
+/// two radii together, the piece taken away, the node lying where the deeper of them does, and
+/// every piece's ends the merged node's.
 fn merge_junctions(nodes: &mut [Node], edges: &mut [Edge], len: &impl Fn(&Edge) -> f64) {
     let mut parent: Vec<usize> = (0..nodes.len()).collect();
     for e in edges.iter_mut() {
         let (Some(a), Some(b)) = (nodes.get(e.a), nodes.get(e.b)) else { continue };
-        if e.a != e.b && a.junction && b.junction && len(e) <= a.radius.max(b.radius) {
+        if e.a != e.b && a.junction && b.junction && len(e) <= a.radius + b.radius {
             unite(&mut parent, e.a, e.b);
             e.gone = true;
         }
@@ -1104,5 +1105,24 @@ mod tests {
         let ring = map(30, 30, |x, y| ((f64::from(x) + 0.5 - 15.0).hypot(f64::from(y) + 0.5 - 15.0) - 2.5).abs() <= 1.0);
         let line = line_of(&ring);
         assert!(line.pieces.len() == 1 && line.pieces[0].closed && line.length_px >= 10.0, "{line:?}");
+    }
+
+    /// An X of lines 4 pixels wide crossing at 60° thins to two forks, whose discs overlap: they are
+    /// one junction, four ends. With the merging off, two junctions.
+    #[test]
+    fn a_crossing_thinning_splits_is_one_junction() {
+        let a = 30f64.to_radians();
+        let (c, d) = (Point::new(50.0, 30.0), vectorcraft_geom::Vec2::new(40.0 * a.cos(), 40.0 * a.sin()));
+        let e = vectorcraft_geom::Vec2::new(d.x, -d.y);
+        let near = |q: Point, p0: Point, p1: Point| {
+            let ab = p1 - p0;
+            q.distance(p0 + ab * ((q - p0).dot(ab) / ab.hypot2()).clamp(0.0, 1.0)) <= 2.0
+        };
+        let x = map(100, 60, |x, y| {
+            let q = Point::new(f64::from(x) + 0.5, f64::from(y) + 0.5);
+            near(q, c - d, c + d) || near(q, c - e, c + e)
+        });
+        let line = line_of(&x);
+        assert_eq!((line.junctions, line.ends), (1, 4), "{line:?}");
     }
 }

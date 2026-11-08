@@ -699,3 +699,15 @@ fn a_hairline_set_to_lines_stays_a_line() {
     let banded = r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == json!("bandsJoined"));
     assert!(banded && r["areas"].as_array().unwrap().iter().all(|a| a["line"].is_null()), "{}", r["warnings"]);
 }
+
+/// An X whose lines cross at 60° is one junction with four ends: thinning splits the crossing into
+/// two forks a few pixels apart, whose discs overlap, and they are made one.
+#[test]
+fn an_x_at_sixty_degrees_is_one_junction() {
+    let c = Point::new(12.5, 12.5);
+    let d = vectorcraft_geom::Vec2::new(8.0 * 30f64.to_radians().cos(), 8.0 * 30f64.to_radians().sin());
+    let x = vec![(c - d, c + d), (Point::new(c.x - d.x, c.y + d.y), Point::new(c.x + d.x, c.y - d.y))];
+    let mut s = placed(&picture(25.0, 25.0, PX_PER_MM, lines(x, NAVY, WHITE)), PX_PER_MM);
+    let line = &areas_of(&digitize(&mut s, json!({"colors": 2}), true), NAVY)[0]["line"];
+    assert_eq!((&line["junctions"], &line["ends"]), (&json!(1), &json!(4)), "{line}");
+}

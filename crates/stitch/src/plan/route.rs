@@ -8,32 +8,42 @@
 //! within [`GAP_BRIDGE`] of a node's point, its first end, is that node's, so that two ends that
 //! close meet wherever they lie, and no node is wider than the gap either side of its point). A
 //! piece whose middle passes within the gap of a node is cut there, so that a line ending on
-//! another's middle (a "T" or a "K" drawn as two strokes, a "6" drawn as one) joins its route
-//! (the project owner's choice, 2026-11-07, „Zrobić teraz”). Sewing every edge and coming back along as few as
-//! possible is the route inspection ("Chinese postman") problem of Edmonds and Johnson (1973,
-//! *Matching, Euler tours and the Chinese postman*, Mathematical Programming 5, §1–2): the edges
-//! sewn twice must make every node even (an Euler path then exists, §2), so they form a *T-join*
-//! for T the nodes where an odd number of edges meet, and the fewest millimetres sewn twice is a
-//! T-join of least length. An open route may leave two nodes odd, where it starts and ends.
+//! another's middle (a "T" drawn as two strokes, a "K" whose arms end on its stem) joins its route
+//! (the project owner's choice, 2026-11-07, „Zrobić teraz”).
+//!
+//! Sewing every edge and coming back along as few as possible is the route inspection ("Chinese
+//! postman") problem: Edmonds and Johnson (1973, *Matching, Euler tours and the Chinese postman*,
+//! Mathematical Programming 5, §1–2) set it out, an Euler path needing every node even but its two
+//! ends, the pieces sewn twice the copies that make them so: a *T-join* for T the nodes where an
+//! odd number of pieces meet, the least one the fewest millimetres sewn twice. Their §3 pairs the
+//! odd nodes along shortest paths, by a matching (p. 92). An open route leaves two nodes odd, where
+//! it starts and ends (Hierholzer's case (c), below).
 //!
 //! Written here in a structure of its own, with no matching algorithm:
-//! - **The T-join on a spanning tree** ([`tree_join`]): an edge of the tree is in it exactly when
-//!   the part of the tree below it holds an odd number of T's nodes, the one T-join a tree has. On a
-//!   tree that is the least one (every edge of a tree is sewn twice but those of the path between
-//!   the route's two ends, Edmonds and Johnson's §3 on trees).
+//! - **The odd nodes paired nearest first** ([`paired`]): a shortest-path search from all of them
+//!   at once (Dijkstra's, 1959, *A note on two problems in connexion with graphs*, Numerische
+//!   Mathematik 1, with many sources) reaches each node from the odd node nearest it; each piece
+//!   between two nodes reached from different odd nodes offers those two a pair, as long as the way
+//!   through it, and the pairs are taken shortest first, each odd node once (the matching of
+//!   Edmonds and Johnson's §3 done greedily). The odd nodes left unpaired are paired so among
+//!   themselves in turn, and, past [`PAIR_ROUNDS`], along a spanning tree. The pieces of each pair's
+//!   way are sewn twice, a piece two ways pass not at all.
 //! - **The route's two ends** ([`ends`]): taking the path between two nodes out of the join leaves
-//!   those two odd, so the route ends there; the path that takes most off (its edges in the join
-//!   counted for, those out of it against) is found on the tree as its heaviest path, the way a
-//!   tree's longest path is.
-//! - **Each cycle the tree leaves out made shorter** ([`shorten_cycles`]): a join changed on a
-//!   cycle (its edges in and out of it swapped) leaves the same nodes odd, since every node of a
-//!   cycle meets it an even number of times; it is swapped where that makes it shorter (more than
-//!   half of the cycle's length in it). On a graph with cycles this is not always the least, but it
-//!   never sews more twice than the tree's join, and it is exact on trees.
+//!   those two odd, so the route ends there; the path that takes most off (its pieces in the join
+//!   counted for, those out of it against) is found on a spanning tree as its heaviest path, the
+//!   way a tree's longest path is, from an end asked for (an entry or an exit) when one is. On a
+//!   tree, whose join is the only one, that is the least route: every piece twice but those of the
+//!   path between its ends.
+//! - **Each cycle sewn twice more than half way made shorter** ([`shorten_cycles`]): the pieces sewn
+//!   twice on a cycle (one a spanning tree leaves out, with the tree's path between its ends)
+//!   swapped with those sewn once leave the same nodes odd, since every node of a cycle meets it an
+//!   even number of times; swapped where more than half of the cycle's length is sewn twice (the
+//!   condition Kwan Mei-Ko's least route meets on every cycle: 1962, *Graphic programming using odd
+//!   or even points*, Chinese Mathematics 1), again until none is, within [`MAX_CYCLE_WORK`].
 //! - **The Euler path** ([`euler`]): Hierholzer's (1873, *Ueber die Möglichkeit, einen Linienzug ohne
 //!   Wiederholung und ohne Unterbrechung zu umfahren*, Mathematische Annalen 6) walk from the start,
 //!   each edge as many times as it is sewn, the closed tours it finds spliced in where they leave the
-//!   walk.
+//!   walk; an open one runs between the two odd nodes (his case (c), p. 31).
 //!
 //! The planner's own weights then decide where coming back costs more than lifting the needle: a
 //! stretch sewn back over longer than a jump is worth ([`COST_HIDDEN`] a millimetre against
@@ -71,6 +81,11 @@ pub(super) const MAX_ROUTED_PIECES: usize = 200_000;
 /// route stays right, sewing a little more twice). An estimate: a drawing of a thousand cycles of
 /// a thousand edges.
 const MAX_CYCLE_WORK: usize = 1_000_000;
+
+/// How many times the odd nodes left unpaired are paired among themselves ([`paired`]) before the
+/// rest are paired along a spanning tree: each time pairs some, the nodes left fewer, a handful in
+/// a drawing (an estimate, a bound on the work: each time is one search over the drawing).
+const PAIR_ROUNDS: usize = 8;
 
 /// The nodes a component's walk is cut short at ([`euler`]): a guard, never reached by a graph
 /// whose degrees are right, against looping on a wrong one.
@@ -395,26 +410,6 @@ fn odd_nodes(part: &Part<'_>) -> Vec<bool> {
     odd
 }
 
-/// The T-join of a part's spanning tree for T the nodes `odd` marks: the tree's edges whose part of
-/// the tree below them holds an odd number of them (the module's notes). As a mark on each of the
-/// part's edges.
-fn tree_join(part: &Part<'_>, t: &Tree, odd: &[bool]) -> Vec<bool> {
-    let mut join = vec![false; part.ends.len()];
-    let mut parity: Vec<bool> = odd.to_vec();
-    for &v in t.order.iter().rev() {
-        let Some(Some((p, k))) = t.up.get(v).copied() else { continue };
-        if parity.get(v).copied().unwrap_or(false) {
-            if let Some(j) = join.get_mut(k) {
-                *j = true;
-            }
-            if let Some(q) = parity.get_mut(p) {
-                *q = !*q;
-            }
-        }
-    }
-    join
-}
-
 /// The tree's edges on the path between nodes `u` and `v`, walked up from both to where they meet.
 fn tree_path(t: &Tree, mut u: usize, mut v: usize) -> Vec<usize> {
     let mut path = Vec::new();
@@ -449,29 +444,227 @@ fn tree_path(t: &Tree, mut u: usize, mut v: usize) -> Vec<usize> {
 
 /// `join` changed on each cycle the tree leaves out where that makes it shorter: the cycle of a
 /// non-tree edge and the tree's path between its ends, its edges in the join swapped with those out
-/// of it when more than half the cycle's length is in it (the module's notes). At most
-/// [`MAX_CYCLE_WORK`] edges walked in all.
+/// of it when more than half the cycle's length is in it (the module's notes), passes over every
+/// cycle again until one changes none. At most [`MAX_CYCLE_WORK`] edges walked in all.
 fn shorten_cycles(part: &Part<'_>, t: &Tree, join: &mut [bool]) {
     let mut work = 0usize;
-    for (k, &(a, b)) in part.ends.iter().enumerate() {
-        if t.in_tree.get(k).copied().unwrap_or(true) || a == b {
-            continue;
-        }
-        let mut cycle = tree_path(t, a, b);
-        cycle.push(k);
-        work = work.saturating_add(cycle.len());
-        if work > MAX_CYCLE_WORK {
-            return;
-        }
-        let total: f64 = cycle.iter().map(|&e| part.len(e)).sum();
-        let joined: f64 = cycle.iter().filter(|&&e| join.get(e).copied().unwrap_or(false)).map(|&e| part.len(e)).sum();
-        if 2.0 * joined > total {
-            for &e in &cycle {
-                if let Some(j) = join.get_mut(e) {
-                    *j = !*j;
+    loop {
+        let mut swapped = false;
+        for (k, &(a, b)) in part.ends.iter().enumerate() {
+            if t.in_tree.get(k).copied().unwrap_or(true) || a == b {
+                continue;
+            }
+            let mut cycle = tree_path(t, a, b);
+            cycle.push(k);
+            work = work.saturating_add(cycle.len());
+            if work > MAX_CYCLE_WORK {
+                return;
+            }
+            let total: f64 = cycle.iter().map(|&e| part.len(e)).sum();
+            let joined: f64 = cycle.iter().filter(|&&e| join.get(e).copied().unwrap_or(false)).map(|&e| part.len(e)).sum();
+            if 2.0 * joined > total {
+                for &e in &cycle {
+                    if let Some(j) = join.get_mut(e) {
+                        *j = !*j;
+                    }
                 }
+                swapped = true;
             }
         }
+        if !swapped {
+            return;
+        }
+    }
+}
+
+/// What a shortest-path search from many nodes at once reached ([`reached`]): each node's
+/// distance, the source it is nearest and the edge it was reached by, with the node before.
+struct Reached {
+    dist: Vec<f64>,
+    source: Vec<Option<usize>>,
+    via: Vec<Option<(usize, usize)>>,
+}
+
+/// Dijkstra's search over a part from `sources` at once: each node reached from the source nearest
+/// it, ties to the first reached.
+fn reached(part: &Part<'_>, sources: &[usize]) -> Reached {
+    use std::cmp::Reverse;
+    let n = part.nodes.len();
+    let mut r = Reached { dist: vec![f64::INFINITY; n], source: vec![None; n], via: vec![None; n] };
+    // The heap holds each distance by its bits (distances are never negative, so their bits sort
+    // as they do).
+    let mut heap: std::collections::BinaryHeap<Reverse<(u64, usize)>> = std::collections::BinaryHeap::new();
+    for &v in sources {
+        if let (Some(d), Some(src)) = (r.dist.get_mut(v), r.source.get_mut(v)) {
+            *d = 0.0;
+            *src = Some(v);
+            heap.push(Reverse((0.0f64.to_bits(), v)));
+        }
+    }
+    while let Some(Reverse((bits, v))) = heap.pop() {
+        let d = f64::from_bits(bits);
+        if r.dist.get(v).is_none_or(|&best| d > best) {
+            continue;
+        }
+        let from = r.source.get(v).copied().flatten();
+        for &(k, w) in part.around.get(v).map_or(&[][..], Vec::as_slice) {
+            let next = d + part.len(k);
+            if r.dist.get(w).is_some_and(|&best| next < best) {
+                if let Some(slot) = r.dist.get_mut(w) {
+                    *slot = next;
+                }
+                if let Some(slot) = r.source.get_mut(w) {
+                    *slot = from;
+                }
+                if let Some(slot) = r.via.get_mut(w) {
+                    *slot = Some((k, v));
+                }
+                heap.push(Reverse((next.to_bits(), w)));
+            }
+        }
+    }
+    r
+}
+
+/// The edges from node `v` back to the source the search reached it from.
+fn way_back(r: &Reached, mut v: usize) -> Vec<usize> {
+    let mut path = Vec::new();
+    while let Some(Some((k, u))) = r.via.get(v).copied() {
+        path.push(k);
+        v = u;
+        if path.len() > r.via.len() {
+            break;
+        }
+    }
+    path
+}
+
+/// A pair of odd nodes: the two, the length of the way between them and its edges.
+struct Pair {
+    nodes: (usize, usize),
+    len: f64,
+    way: Vec<usize>,
+}
+
+/// One round of pairing the nodes `left` of a part ([`paired`]): the pairs each piece between two of
+/// their regions offers, shortest first, each node once; `left` keeps those not paired.
+fn pair_round(part: &Part<'_>, left: &mut Vec<usize>, pairs: &mut Vec<Pair>) {
+    let r = reached(part, left);
+    let dist = |v: usize| r.dist.get(v).copied().unwrap_or(f64::INFINITY);
+    let source = |v: usize| r.source.get(v).copied().flatten();
+    // Each piece between nodes reached from two of them offers those two a pair.
+    let mut offers: Vec<(f64, usize)> = Vec::new();
+    for (k, &(a, b)) in part.ends.iter().enumerate() {
+        if let (Some(sa), Some(sb)) = (source(a), source(b))
+            && sa != sb
+        {
+            offers.push((dist(a) + part.len(k) + dist(b), k));
+        }
+    }
+    offers.sort_by(|x, y| x.0.total_cmp(&y.0).then(x.1.cmp(&y.1)));
+    let mut taken = vec![false; part.nodes.len()];
+    for (len, k) in offers {
+        let Some(&(a, b)) = part.ends.get(k) else { continue };
+        let (Some(sa), Some(sb)) = (source(a), source(b)) else { continue };
+        if taken.get(sa).copied().unwrap_or(true) || taken.get(sb).copied().unwrap_or(true) {
+            continue;
+        }
+        for v in [sa, sb] {
+            if let Some(x) = taken.get_mut(v) {
+                *x = true;
+            }
+        }
+        let mut way = way_back(&r, a);
+        way.push(k);
+        way.extend(way_back(&r, b));
+        pairs.push(Pair { nodes: (sa, sb), len, way });
+    }
+    left.retain(|&v| !taken.get(v).copied().unwrap_or(false));
+}
+
+/// The odd nodes `odd` marks of a part paired along shortest ways, nearest first (the module's
+/// notes), those left past [`PAIR_ROUNDS`] paired in turn along the spanning tree `t`; and the one
+/// left over when they are odd in number.
+fn paired(part: &Part<'_>, t: &Tree, odd: &[bool]) -> (Vec<Pair>, Option<usize>) {
+    let mut left: Vec<usize> = (0..part.nodes.len()).filter(|&v| odd.get(v).copied().unwrap_or(false)).collect();
+    let mut pairs: Vec<Pair> = Vec::new();
+    for _ in 0..PAIR_ROUNDS {
+        if left.len() < 2 {
+            break;
+        }
+        pair_round(part, &mut left, &mut pairs);
+    }
+    let one = if left.len() % 2 == 1 { left.pop() } else { None };
+    for &[a, b] in left.as_chunks::<2>().0 {
+        let way = tree_path(t, a, b);
+        let len = way.iter().map(|&k| part.len(k)).sum();
+        pairs.push(Pair { nodes: (a, b), len, way });
+    }
+    (pairs, one)
+}
+
+/// The edges an odd number of `pairs`' ways pass, as a mark on each of a part's `edges`: the
+/// T-join the pairs make.
+fn join_of(pairs: &[Pair], edges: usize) -> Vec<bool> {
+    let mut join = vec![false; edges];
+    for &k in pairs.iter().flat_map(|p| &p.way) {
+        if let Some(j) = join.get_mut(k) {
+            *j = !*j;
+        }
+    }
+    join
+}
+
+/// How long the edges `join` marks are, in all.
+fn join_len(part: &Part<'_>, join: &[bool]) -> f64 {
+    join.iter().enumerate().filter(|&(_, &j)| j).map(|(k, _)| part.len(k)).sum()
+}
+
+/// The route's ends and its join (the module's notes), by the better of two ways: the odd nodes
+/// all paired and the ends on the spanning tree's heaviest path ([`ends`]); or the ends left out of
+/// the pairing, both free the two of the longest pair, one asked for paired with what the pairing
+/// leaves over. Each shortened on its cycles; the one that sews less twice, the tree's on a tie.
+fn ends_and_join(part: &Part<'_>, t: &Tree, start: Option<usize>, end: Option<usize>) -> (usize, usize, Vec<bool>) {
+    let odd = odd_nodes(part);
+    let (mut pairs, _) = paired(part, t, &odd);
+    let all = join_of(&pairs, part.ends.len());
+    let (s, e) = ends(part, t, &all, start, end);
+    let mut by_tree = all.clone();
+    for k in tree_path(t, s, e) {
+        if let Some(j) = by_tree.get_mut(k) {
+            *j = !*j;
+        }
+    }
+    shorten_cycles(part, t, &mut by_tree);
+    let left_out = match (start, end) {
+        (None, None) => {
+            let longest = pairs.iter().enumerate().max_by(|a, b| a.1.len.total_cmp(&b.1.len).then(b.0.cmp(&a.0))).map(|(i, _)| i);
+            longest.map(|i| pairs.swap_remove(i)).map(|p| (p.nodes.0, p.nodes.1, join_of(&pairs, part.ends.len())))
+        }
+        _ => {
+            // The ends asked for counted odd once more, the other end what the pairing leaves.
+            let mut asked = odd;
+            for v in [start, end].into_iter().flatten() {
+                if let Some(o) = asked.get_mut(v) {
+                    *o = !*o;
+                }
+            }
+            let (pairs, one) = paired(part, t, &asked);
+            let join = join_of(&pairs, part.ends.len());
+            match (start, end) {
+                (Some(a), Some(b)) => Some((a, b, join)),
+                (Some(a), None) => one.map(|b| (a, b, join)),
+                (None, Some(b)) => one.map(|a| (a, b, join)),
+                (None, None) => None,
+            }
+        }
+    };
+    match left_out {
+        Some((a, b, mut join)) => {
+            shorten_cycles(part, t, &mut join);
+            if join_len(part, &join) < join_len(part, &by_tree) { (a, b, join) } else { (s, e, by_tree) }
+        }
+        None => (s, e, by_tree),
     }
 }
 
@@ -586,9 +779,9 @@ fn euler(part: &Part<'_>, start: usize, times: &[u8]) -> Option<Vec<(usize, usiz
 }
 
 /// The route through the connected part of `graph` made of `edges` from node `start` to node `end`
-/// (each the graph's node, or free: [`ends`] picks it): every edge once, and those of the join twice
-/// ([`tree_join`], [`shorten_cycles`]), the second time marked [`Step::again`]. `None` when there is
-/// no such route (a part with no edge), and then its pieces are sewn as before.
+/// (each the graph's node, or free: [`ends_and_join`] picks it): every edge once, and those of the
+/// join twice ([`paired`], [`shorten_cycles`]), the second time marked [`Step::again`]. `None` when
+/// there is no such route (a part with no edge), and then its pieces are sewn as before.
 pub(super) fn route(graph: &Graph, edges: &[usize], start: Option<usize>, end: Option<usize>) -> Option<Route> {
     let part = Part::of(graph, edges)?;
     let local = |n: usize| part.nodes.iter().position(|&m| m == n);
@@ -599,17 +792,7 @@ pub(super) fn route(graph: &Graph, edges: &[usize], start: Option<usize>, end: O
     let (s0, e0) = (s0.flatten(), e0.flatten());
     let root = s0.or(e0).unwrap_or(0);
     let t = tree(&part, root);
-    let odd = odd_nodes(&part);
-    let mut join = tree_join(&part, &t, &odd);
-    let (s, e) = ends(&part, &t, &join, s0, e0);
-    // The path between the ends taken out of the join leaves them odd: the route ends at them.
-    for k in tree_path(&t, s, e) {
-        if let Some(j) = join.get_mut(k) {
-            *j = !*j;
-        }
-    }
-    // Then shortened on the cycles the tree leaves out, which keeps the same nodes odd.
-    shorten_cycles(&part, &t, &mut join);
+    let (s, e, join) = ends_and_join(&part, &t, s0, e0);
     let times: Vec<u8> = join.iter().map(|&j| if j { 2 } else { 1 }).collect();
     let walked = euler(&part, s, &times)?;
     let mut sewn = vec![false; part.ends.len()];

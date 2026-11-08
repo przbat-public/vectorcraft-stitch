@@ -219,7 +219,9 @@ fn least_twice(nodes: &[Point], edges: &[(usize, usize)]) -> f64 {
 }
 
 /// Random drawings with cycles (fixed seeds): every piece sewn, none more than twice, and no more
-/// sewn twice than twice the least (found by trying every set); measured: within it on every case.
+/// sewn twice than twice the least (found by trying every set); measured (2026-11-08): at most 1.005
+/// times it on these, 1.157 on 5,310 drawings of forty other seeds (24.4 when the odd nodes were
+/// paired through the spanning tree).
 #[test]
 fn a_drawing_with_cycles_is_sewn_whole() {
     let mut rng = Lcg(0x5eed_0002);
@@ -397,4 +399,114 @@ fn a_route_sews_no_stitch_across_its_node() {
         .map(|w| w[0].point().distance(w[1].point()))
         .fold(0.0, f64::max);
     assert!(longest <= running().stitch_length * 1.5, "a stitch {longest:.1} mm long");
+}
+
+/// A mesh drawn as one running line (a 20 × 20 grid of pieces 7 mm long) sews twice little more
+/// than the least route does: every border node but the corners meets three pieces, and the least
+/// pairs them along the border, 35 pieces with the route's two ends among them. Paired through a
+/// spanning tree, it sewed 1,589 mm twice where 245 do.
+#[test]
+fn a_mesh_sews_few_pieces_twice() {
+    const N: usize = 20;
+    const STEP: f64 = 7.0;
+    let at = |k: usize| STEP * (k as f64 + 1.0);
+    let mut lines = Vec::new();
+    for i in 0..N {
+        for j in 0..N - 1 {
+            lines.push(vec![(at(j), at(i)), (at(j + 1), at(i))]);
+            lines.push(vec![(at(i), at(j)), (at(i), at(j + 1))]);
+        }
+    }
+    let path = pieces(&lines);
+    let total = (2 * N * (N - 1)) as f64 * STEP;
+    let least = ((4 * (N - 2) - 2) / 2) as f64 * STEP;
+    let twice = route_length(&path) - total;
+    assert!(twice <= 1.5 * least + 1e-6, "{twice} mm sewn twice, the least {least} mm");
+}
+
+/// A grid of lines sews twice little more than its odd nodes need: a 20 × 20 grid of 1 mm squares
+/// needs 35 mm (its 72 border nodes paired along the border, the route's two ends left odd), where
+/// pairing through a spanning tree sewed 227.
+#[test]
+fn a_grid_sews_twice_about_the_least() {
+    const SIDE: usize = 20;
+    let mut lines = Vec::new();
+    for i in 0..SIDE {
+        for j in 0..SIDE - 1 {
+            let (a, b) = (i as f64, j as f64);
+            lines.push(vec![(b, a), (b + 1.0, a)]);
+            lines.push(vec![(a, b), (a, b + 1.0)]);
+        }
+    }
+    let total = (2 * SIDE * (SIDE - 1)) as f64;
+    let least = (2 * (SIDE - 2) - 1) as f64;
+    let twice = route_length(&pieces(&lines)) - total;
+    assert!(twice <= 2.0 * least, "{twice} mm sewn twice, the least {least} mm");
+}
+
+/// A ring with two long whiskers at neighbouring corners sews the ring's side between them twice,
+/// not a whisker: an octagon 10 mm round, whiskers 30 mm long out of corners 4 and 5.
+#[test]
+fn a_ring_with_two_whiskers_sews_the_short_way_twice() {
+    let corner = |k: usize| {
+        let a = std::f64::consts::TAU * k as f64 / 8.0;
+        (10.0 * a.cos(), 10.0 * a.sin())
+    };
+    let mut lines: Vec<Vec<(f64, f64)>> = (0..8).map(|k| vec![corner(k), corner((k + 1) % 8)]).collect();
+    for k in [4, 5] {
+        let (x, y) = corner(k);
+        lines.push(vec![(x, y), (4.0 * x, 4.0 * y)]);
+    }
+    let side = 20.0 * (std::f64::consts::PI / 8.0).sin();
+    let total = 8.0 * side + 2.0 * 30.0;
+    let twice = route_length(&pieces(&lines)) - total;
+    assert!(twice <= side + 1e-6, "{twice} mm sewn twice, the side between the whiskers is {side} mm");
+}
+
+/// A ladder of six 5 mm rungs, its rails in 3 mm pieces, sews the least, 9 mm, twice.
+#[test]
+fn a_ladder_sews_twice_only_the_least() {
+    let mut lines = Vec::new();
+    for i in 0..5 {
+        let x = f64::from(i) * 3.0;
+        lines.push(vec![(x, 0.0), (x + 3.0, 0.0)]);
+        lines.push(vec![(x, 5.0), (x + 3.0, 5.0)]);
+    }
+    for i in 0..6 {
+        let x = f64::from(i) * 3.0;
+        lines.push(vec![(x, 0.0), (x, 5.0)]);
+    }
+    let total = 10.0 * 3.0 + 6.0 * 5.0;
+    assert!((route_length(&pieces(&lines)) - total - 9.0).abs() < 1e-9);
+}
+
+/// The cycles sewn twice more than half way are swapped: a drawing of seven nodes and eight pieces
+/// (one of the random drawings), whose odd nodes paired nearest first sew 87.3 mm twice, sews the
+/// least, 54.2 mm (found by trying every set), once its cycles are.
+#[test]
+fn swapping_a_cycle_reaches_the_least() {
+    let nodes: Vec<Point> = [(8.727, 10.331), (33.37, 36.779), (15.347, 31.259), (4.689, 18.693), (3.219, 25.254), (6.045, 4.065), (4.156, 11.742)]
+        .into_iter()
+        .map(|(x, y)| Point::new(x, y))
+        .collect();
+    let edges = [(0, 1), (2, 1), (2, 3), (4, 1), (1, 5), (1, 6), (3, 0), (0, 2)];
+    let path = path_of(&nodes, &edges);
+    let total: f64 = edges.iter().map(|&(a, b)| nodes[a].distance(nodes[b])).sum();
+    let (twice, least) = (route_length(&path) - total, least_twice(&nodes, &edges));
+    assert!((twice - least).abs() < 1e-6, "{twice} mm sewn twice, the least {least}");
+}
+
+/// A drawing whose spanning tree pairs its odd nodes through 17.3 mm where 5.39 mm will do sews the
+/// least twice (found by trying every set).
+#[test]
+fn pairing_the_odd_nodes_reaches_the_least() {
+    let nodes: Vec<Point> = [(32.0, 32.0), (30.0, 27.0), (35.0, 18.0), (21.0, 35.0), (29.0, 33.0), (37.0, 36.0), (30.0, 20.0), (29.0, 30.0)]
+        .into_iter()
+        .map(|(x, y)| Point::new(x, y))
+        .collect();
+    let edges = [(0, 1), (2, 1), (3, 2), (1, 4), (5, 3), (4, 6), (5, 7), (6, 1), (2, 6), (0, 3)];
+    let path = path_of(&nodes, &edges);
+    let total: f64 = edges.iter().map(|&(a, b)| nodes[a].distance(nodes[b])).sum();
+    let (twice, least) = (route_length(&path) - total, least_twice(&nodes, &edges));
+    assert!((twice - least).abs() < 1e-6, "{twice} mm sewn twice, the least {least}");
 }

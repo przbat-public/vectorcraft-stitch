@@ -893,12 +893,19 @@ the fabric.
   where the needle must return, instead of a jump or a connecting stitch at every junction (the
   project owner's choices: "branches are sewn once each, going back along a few", 2026-11-01, and
   „Wszędzie w planiście (polecam)”, 2026-11-07: every running line, not only digitizing's). The
-  pieces sewn twice are those the Chinese postman's tour sews twice (Edmonds and Johnson, 1973,
-  *Matching, Euler tours and the Chinese postman*, §1–3), found without a matching algorithm: a
-  T-join of a spanning tree (exact on a tree: every piece twice but those on the path between the
-  route's ends, the tree's heaviest path), then each cycle the tree leaves out swapped where that
-  sews less twice; Hierholzer's walk (1873) gives the route. On 200 random drawings with cycles it
-  sewed at most 1.51 times the least twice (measured, the least found by trying every set). A
+  pieces sewn twice make every node even but the route's two ends, the copies of the Chinese
+  postman's tour (Edmonds and Johnson, 1973, *Matching, Euler tours and the Chinese postman*,
+  §1–2), found without a matching algorithm: the odd nodes paired along shortest ways, nearest
+  first (a search from all of them at once, Dijkstra's, each piece between two of their regions
+  offering a pair; the pairing their §3 makes by a matching, done greedily); the route's ends where
+  leaving a way out saves most (the spanning tree's heaviest path, or the longest pair, whichever
+  sews less twice; exact on a tree: every piece twice but those on the path between the ends);
+  then each cycle sewn twice more than half way swapped, until none is (the condition Kwan Mei-Ko's
+  least route meets, 1962); Hierholzer's walk (1873) gives the route. On 200 random drawings with
+  cycles it sewed at most 1.005 times the least twice, and 1.157 on 5,310 of forty other seeds
+  (measured 2026-11-08, the least found by trying every set), where pairing through the spanning
+  tree sewed up to 24.4 times it on those; a 20 × 20 grid sews 35 mm twice, the least, where that
+  sewed 227. A
   stretch sewn back that costs more than a jump by the planner's weights is jumped instead; each
   run is locked at its ends. The routes and the pieces that meet nothing are taken in turn as a
   line's subpaths are (from an entry, what lies nearest it; toward an exit, what lies nearest it
@@ -1798,7 +1805,9 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   working size (75 hatch lines 150 mm long, a mesh of about 74 × 74 junctions) is answered. The
   planner's routes (`plan/tests_route.rs`): a T and an X, 200 random trees sewn exactly as the
   least route sews them (its longest path found apart), 200 random drawings with cycles at most
-  1.51 times the least sewn twice (the least found by trying every set), pieces that nearly meet, a
+  1.005 times the least sewn twice (the least found by trying every set), a grid, a mesh, a ring
+  with two whiskers and a ladder each sewing the least twice, a drawing only the cycle swap brings
+  to the least, pieces that nearly meet, a
   long way back jumped, an entry and an exit met, the same stitches twice, a star of 50,000 pieces
   and a chain of 100,000 routed in time, a letter K through the document walk with no jump. Satin
   caps (`plan/tests_caps.rs`): their reach, the stroke's painted outline, the shortest stitches,

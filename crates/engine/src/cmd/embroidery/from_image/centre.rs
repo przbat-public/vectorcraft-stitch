@@ -39,8 +39,9 @@
 //!   a closed piece keeping three points and an open one its two ends.
 //!
 //! Every step takes time in proportion to the line's pixels (thinning looks again only beside what
-//! it took away), or their logarithm besides (the smoothing's heap); a cancel stops it between
-//! lines and within one every [`CANCEL_EVERY`] pixels looked at.
+//! it took away), or their logarithm besides (the smoothing's heap, and a chain of nodes joined
+//! through, the shorter piece moved onto the longer at each); a cancel stops it between lines and
+//! within one every [`CANCEL_EVERY`] pixels looked at, walked or joined and points smoothed.
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
@@ -98,8 +99,24 @@ pub(super) const SIMPLIFY_AREA_MM2: f64 = 0.08;
 /// and the repeat, a triangle round the ring, so that a small ring keeps its length.
 const CLOSED_LEAST_POINTS: usize = 4;
 
-/// How many pixels are thinned between two cancel checks.
+/// How many pixels are thinned, walked or joined, or points smoothed, between two cancel checks.
 const CANCEL_EVERY: usize = 1 << 14;
+
+/// The work a line's steps have done since the last cancel check ([`CANCEL_EVERY`]).
+#[derive(Default)]
+struct Ticks(usize);
+
+impl Ticks {
+    /// `n` more pixels or points worked on; a cancel stops it once they pass [`CANCEL_EVERY`].
+    fn add(&mut self, n: usize) -> Result<()> {
+        self.0 = self.0.saturating_add(n);
+        if self.0 >= CANCEL_EVERY {
+            self.0 = 0;
+            vectorcraft_doc::cancel::check()?;
+        }
+        Ok(())
+    }
+}
 
 /// The half of a pixel from its corner to its centre: a pixel `(x, y)` lies at `(x + ½, y + ½)`.
 const HALF_PIXEL: f64 = 0.5;
@@ -408,17 +425,19 @@ impl<'s, 'a> Skeleton<'s, 'a> {
 /// The graph of a thinned line's skeleton (its pixels `skeleton`, each `on`; `d2` the map's squared
 /// distances to the line's edge): its nodes, and its pieces between them, loops with no node among
 /// them as edges from a node of their own to itself.
-fn graph(line: &Line<'_>, skeleton: &[usize], d2: &[f64]) -> (Vec<Node>, Vec<Edge>) {
+fn graph(line: &Line<'_>, skeleton: &[usize], d2: &[f64], ticks: &mut Ticks) -> Result<(Vec<Node>, Vec<Edge>)> {
     let sk = Skeleton::new(line, skeleton, d2);
+    ticks.add(sk.len())?;
     let (mut nodes, node_of) = nodes_of(&sk);
+    ticks.add(sk.len())?;
     let mut visited = vec![false; sk.len()];
-    let mut edges = pieces(&sk, &node_of, &mut visited);
-    for (node, pixels) in loops(&sk, &node_of, &mut visited) {
+    let mut edges = pieces(&sk, &node_of, &mut visited, ticks)?;
+    for (node, pixels) in loops(&sk, &node_of, &mut visited, ticks)? {
         nodes.push(node);
         let id = nodes.len() - 1;
         edges.push(Edge { a: id, b: id, pixels, gone: false });
     }
-    (nodes, edges)
+    Ok((nodes, edges))
 }
 
 /// The skeleton's nodes: junction pixels side by side one node, at the centre of its deepest pixels
@@ -472,10 +491,11 @@ fn nodes_of(sk: &Skeleton<'_, '_>) -> (Vec<Node>, Vec<Option<usize>>) {
 /// The skeleton's pieces between its nodes (`node_of`, each pixel's): from each node's pixel along
 /// each run of two-neighbour pixels to the next node, each run's pixels marked `visited`; two nodes
 /// side by side a piece of two pixels.
-fn pieces(sk: &Skeleton<'_, '_>, node_of: &[Option<usize>], visited: &mut [bool]) -> Vec<Edge> {
+fn pieces(sk: &Skeleton<'_, '_>, node_of: &[Option<usize>], visited: &mut [bool], ticks: &mut Ticks) -> Result<Vec<Edge>> {
     let node = |k: usize| node_of.get(k).copied().flatten();
     let mut edges: Vec<Edge> = Vec::new();
     for k in 0..sk.len() {
+        ticks.add(1)?;
         let Some(from) = node(k) else { continue };
         for m in sk.neighbours(k) {
             let piece = match node(m) {
@@ -484,11 +504,12 @@ fn pieces(sk: &Skeleton<'_, '_>, node_of: &[Option<usize>], visited: &mut [bool]
                 None => run_from(sk, &node, visited, k, m),
             };
             if let Some((to, run)) = piece {
+                ticks.add(run.len())?;
                 edges.push(Edge { a: from, b: to, pixels: sk.pixels_of(&run), gone: false });
             }
         }
     }
-    edges
+    Ok(edges)
 }
 
 /// The run of two-neighbour pixels from node pixel `k` through its neighbour `m` to the next node
@@ -523,9 +544,10 @@ fn run_from(sk: &Skeleton<'_, '_>, node: &impl Fn(usize) -> Option<usize>, visit
 
 /// The skeleton's loops with no node (pixels neither `visited` nor a node's, `node_of`): each one's
 /// node, at its first pixel, and its pixels round from there back to it, each marked `visited`.
-fn loops(sk: &Skeleton<'_, '_>, node_of: &[Option<usize>], visited: &mut [bool]) -> Vec<(Node, Vec<usize>)> {
+fn loops(sk: &Skeleton<'_, '_>, node_of: &[Option<usize>], visited: &mut [bool], ticks: &mut Ticks) -> Result<Vec<(Node, Vec<usize>)>> {
     let mut found = Vec::new();
     for k in 0..sk.len() {
+        ticks.add(1)?;
         if visited.get(k).copied().unwrap_or(true) || node_of.get(k).copied().flatten().is_some() {
             continue;
         }
@@ -548,9 +570,10 @@ fn loops(sk: &Skeleton<'_, '_>, node_of: &[Option<usize>], visited: &mut [bool])
             }
             (prev, cur) = (Some(cur), next);
         }
+        ticks.add(run.len())?;
         found.push((node, sk.pixels_of(&run)));
     }
-    found
+    Ok(found)
 }
 
 /// Each node's edges still there (a loop twice at its node).
@@ -575,19 +598,21 @@ const PRUNE_ROUNDS: usize = 4;
 /// overlap made one, spurs that reach hardly past their junction's disc taken away (only from a
 /// junction that keeps two pieces or more), and each node left with two pieces joined through.
 /// Each round goes over every piece once, the nodes' degrees kept as pieces go.
-fn pruned(nodes: &mut [Node], edges: &mut Vec<Edge>, w: usize, line_px: f64) {
+fn pruned(nodes: &mut [Node], edges: &mut Vec<Edge>, w: usize, line_px: f64, ticks: &mut Ticks) -> Result<()> {
     let len = |e: &Edge| length(&e.pixels.iter().map(|&i| centre_of(i, w)).collect::<Vec<_>>());
     merge_junctions(nodes, edges, &len);
     let mut lengths: Vec<f64> = edges.iter().map(len).collect();
     let most = SPUR_SLACK_PX.max(SPUR_WIDTH_SHARE * line_px);
     for _ in 0..PRUNE_ROUNDS {
+        ticks.add(edges.len())?;
         let pruned_any = prune_spurs(nodes, edges, &lengths, most);
-        let joined_any = join_through(nodes.len(), edges, &mut lengths);
+        let joined_any = join_through(nodes.len(), edges, &mut lengths, ticks)?;
         if !(pruned_any || joined_any) {
             break;
         }
     }
     edges.retain(|e| !e.gone);
+    Ok(())
 }
 
 /// Junctions whose discs overlap made one: two joined by a piece (`len` long) no longer than their
@@ -663,7 +688,12 @@ fn prune_spurs(nodes: &[Node], edges: &mut [Edge], lengths: &[f64], most: f64) -
 
 /// Each of `node_count` nodes left with two pieces, neither a loop: the two joined through it into
 /// the first (its length in `lengths` theirs together), the second gone. Whether any were.
-fn join_through(node_count: usize, edges: &mut [Edge], lengths: &mut [f64]) -> bool {
+///
+/// A chain of such nodes joins one piece onto the next again and again: each piece's pixels are kept
+/// as a [`Chain`] while it is joined, so that each join moves the shorter's pixels onto the longer's
+/// end, neither copied nor turned round, and the chain takes time in proportion to its pixels (and
+/// their logarithm). A cancel stops it.
+fn join_through(node_count: usize, edges: &mut [Edge], lengths: &mut [f64], ticks: &mut Ticks) -> Result<bool> {
     let mut at: Vec<Vec<usize>> = vec![Vec::new(); node_count];
     for (k, e) in edges.iter().enumerate().filter(|(_, e)| !e.gone) {
         for n in [e.a, e.b] {
@@ -672,18 +702,26 @@ fn join_through(node_count: usize, edges: &mut [Edge], lengths: &mut [f64]) -> b
             }
         }
     }
+    let mut chains: Vec<Option<Chain>> = (0..edges.len()).map(|_| None).collect();
     let mut joined_any = false;
     for n in 0..node_count {
         let live: Vec<usize> = at.get(n).map_or(Vec::new(), |l| l.iter().copied().filter(|&k| edges.get(k).is_some_and(|e| !e.gone)).collect());
         let [first, second] = live[..] else { continue };
-        let (Some(e1), Some(e2)) = (edges.get(first).cloned(), edges.get(second).cloned()) else { continue };
-        if first == second || e1.a == e1.b || e2.a == e2.b {
+        let (Some(&Edge { a: a1, b: b1, .. }), Some(&Edge { a: a2, b: b2, .. })) = (edges.get(first), edges.get(second)) else { continue };
+        if first == second || a1 == b1 || a2 == b2 {
             continue;
         }
-        let (from, to, pixels) = joined(e1, e2, n);
+        let (Some(c1), Some(c2)) = (Chain::take(&mut chains, edges, first), Chain::take(&mut chains, edges, second)) else { continue };
+        ticks.add(c1.len().min(c2.len()))?;
+        // The first toward the node, the second away from it.
+        let (from, c1) = if b1 == n { (a1, c1) } else { (b1, c1.turned()) };
+        let (to, c2) = if a2 == n { (b2, c2) } else { (a2, c2.turned()) };
+        if let Some(slot) = chains.get_mut(first) {
+            *slot = Some(Chain::joined(c1, c2));
+        }
         let joined_len = lengths.get(first).copied().unwrap_or(0.0) + lengths.get(second).copied().unwrap_or(0.0);
         if let Some(e) = edges.get_mut(first) {
-            *e = Edge { a: from, b: to, pixels, gone: false };
+            (e.a, e.b, e.gone) = (from, to, false);
         }
         if let Some(e) = edges.get_mut(second) {
             e.gone = true;
@@ -699,39 +737,78 @@ fn join_through(node_count: usize, edges: &mut [Edge], lengths: &mut [f64]) -> b
         }
         joined_any = true;
     }
-    joined_any
+    // The pieces joined, their pixels back in order.
+    for (k, chain) in chains.into_iter().enumerate() {
+        if let (Some(chain), Some(e)) = (chain, edges.get_mut(k)) {
+            e.pixels = chain.into_pixels();
+        }
+    }
+    Ok(joined_any)
 }
 
-/// Pieces `e1` and `e2`, which meet at node `n`, as one: its far ends (`e1`'s, then `e2`'s) and its
-/// pixels, the first's toward the node, then the second's away from it.
-fn joined(e1: Edge, e2: Edge, n: usize) -> (usize, usize, Vec<usize>) {
-    let mut p1 = e1.pixels;
-    let from = if e1.b == n {
-        e1.a
-    } else {
-        p1.reverse();
-        e1.b
-    };
-    let mut p2 = e2.pixels;
-    let to = if e2.a == n {
-        e2.b
-    } else {
-        p2.reverse();
-        e2.a
-    };
-    p1.extend(p2.into_iter().skip(1));
-    (from, to, p1)
+/// A piece's pixels while it is joined through its nodes ([`join_through`]): a double-ended queue,
+/// read from its back when `turned`, so that turning it round takes no time and pixels go onto
+/// either end.
+struct Chain {
+    pixels: std::collections::VecDeque<usize>,
+    turned: bool,
+}
+
+impl Chain {
+    /// Piece `k`'s pixels as a chain: the one it is already, or its pixels taken from `edges`.
+    fn take(chains: &mut [Option<Chain>], edges: &mut [Edge], k: usize) -> Option<Chain> {
+        match chains.get_mut(k)?.take() {
+            Some(chain) => Some(chain),
+            None => Some(Chain { pixels: std::mem::take(&mut edges.get_mut(k)?.pixels).into(), turned: false }),
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.pixels.len()
+    }
+
+    /// The same pixels the other way round.
+    fn turned(self) -> Self {
+        Self { turned: !self.turned, ..self }
+    }
+
+    /// Its pixels in order.
+    fn into_pixels(self) -> Vec<usize> {
+        let mut v: Vec<usize> = self.pixels.into();
+        if self.turned {
+            v.reverse();
+        }
+        v
+    }
+
+    /// `a`'s pixels, then `b`'s but its first (the node's pixel, `a`'s last): the shorter's moved
+    /// onto the longer's end.
+    fn joined(a: Chain, mut b: Chain) -> Chain {
+        let _ = if b.turned { b.pixels.pop_back() } else { b.pixels.pop_front() };
+        if a.len() >= b.len() {
+            let mut a = a;
+            for p in b.into_pixels() {
+                if a.turned { a.pixels.push_front(p) } else { a.pixels.push_back(p) }
+            }
+            a
+        } else {
+            for p in a.into_pixels().into_iter().rev() {
+                if b.turned { b.pixels.push_back(p) } else { b.pixels.push_front(p) }
+            }
+            b
+        }
+    }
 }
 
 /// `pts` (an open piece, or a `closed` one whose first point is repeated at its end) with the points
 /// whose triangle with their neighbours has less area than `least_px2` (square working pixels)
 /// taken away, the least first (the module's notes), its ends kept, and a closed piece three points
 /// at least ([`CLOSED_LEAST_POINTS`]).
-fn smoothed(pts: &[Point], closed: bool, least_px2: f64) -> Vec<Point> {
+fn smoothed(pts: &[Point], closed: bool, least_px2: f64, ticks: &mut Ticks) -> Result<Vec<Point>> {
     let n = pts.len();
     let keep = if closed { CLOSED_LEAST_POINTS } else { 2 };
     if n < 3 || n <= keep {
-        return pts.to_vec();
+        return Ok(pts.to_vec());
     }
     let mut left = n;
     let triangle = |a: Point, b: Point, c: Point| ((b - a).cross(c - a) / 2.0).abs();
@@ -749,6 +826,7 @@ fn smoothed(pts: &[Point], closed: bool, least_px2: f64) -> Vec<Point> {
     // as they do), with the point's version when pushed.
     let mut heap: BinaryHeap<Reverse<(u64, usize, u32)>> = (1..n - 1).map(|i| Reverse((area_of(i, &prev, &next).to_bits(), i, 0))).collect();
     while let Some(Reverse((bits, i, v))) = heap.pop() {
+        ticks.add(1)?;
         if gone.get(i).copied().unwrap_or(true) || version.get(i) != Some(&v) {
             continue;
         }
@@ -776,7 +854,7 @@ fn smoothed(pts: &[Point], closed: bool, least_px2: f64) -> Vec<Point> {
             }
         }
     }
-    pts.iter().zip(&gone).filter(|(_, g)| !**g).map(|(p, _)| *p).collect()
+    Ok(pts.iter().zip(&gone).filter(|(_, g)| !**g).map(|(p, _)| *p).collect())
 }
 
 /// Whether a stretch of a centre line (`nodes` and `edges`, each node's degree `deg`) away from its
@@ -855,9 +933,10 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, px_per_
         let mut line = Line { regions, label, alive: &mut alive };
         thinned(&mut line, own)?;
         let skeleton: Vec<usize> = own.iter().copied().filter(|&i| line.on(i)).collect();
-        let (mut nodes, mut edges) = graph(&line, &skeleton, &d2);
+        let mut ticks = Ticks::default();
+        let (mut nodes, mut edges) = graph(&line, &skeleton, &d2, &mut ticks)?;
         let ridge = regions.areas.get(a).map_or(0.0, |s| s.ridge_px);
-        pruned(&mut nodes, &mut edges, w, ridge);
+        pruned(&mut nodes, &mut edges, w, ridge, &mut ticks)?;
         let deg = degrees(&nodes, &edges);
         if let Some(&Wanted::NoWiderThan(limit)) = want.get(a)
             && widens_away_from_junctions(&nodes, &edges, &deg, &|i| width_at(labels, &d2, w, h, i), limit, w)
@@ -870,6 +949,8 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, px_per_
         let mut pieces: Vec<Piece> = Vec::with_capacity(edges.len());
         let radius = |i: usize| d2.get(i).copied().unwrap_or(0.0).sqrt() + HALF_PIXEL;
         for e in &edges {
+            // Its ends trimmed and carried, and its pixels copied as points.
+            ticks.add(e.pixels.len())?;
             let closed = e.a == e.b && deg.get(e.a) == Some(&2);
             // A free end's corner taken off.
             let free = |n: usize| !closed && deg.get(n) == Some(&1);
@@ -889,7 +970,7 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, px_per_
                     }
                 }
             }
-            let pts = smoothed(&pts, closed, least_px2);
+            let pts = smoothed(&pts, closed, least_px2, &mut ticks)?;
             if pts.len() >= 2 {
                 pieces.push(Piece { pts, closed });
             }
@@ -1124,5 +1205,106 @@ mod tests {
         });
         let line = line_of(&x);
         assert_eq!((line.junctions, line.ends), (1, 4), "{line:?}");
+    }
+
+    /// A long line with a bump on its edge every few pixels (each a spur pruned, its junction left
+    /// with two pieces, joined through) is one piece with two ends: a serpentine 3 pixels wide, its
+    /// rows 7 apart, a bump 1 × 2 pixels below each row every 4, 1,500 pixels a side.
+    #[test]
+    fn a_long_bumpy_line_is_one_piece() {
+        let side = 1500u32;
+        let rows = (side - 8) / 7;
+        let on = move |x: u32, y: u32| {
+            if y < 4 || x < 4 || x >= side - 4 {
+                return false;
+            }
+            let (k, dy) = ((y - 4) / 7, (y - 4) % 7);
+            if k >= rows {
+                return false;
+            }
+            let bump = (3..5).contains(&dy) && (13..side - 13).contains(&x) && (x - 13).is_multiple_of(4);
+            let turn = dy >= 3 && k + 1 < rows && if k.is_multiple_of(2) { x >= side - 7 } else { x < 7 };
+            dy < 3 || bump || turn
+        };
+        let line = line_of(&map(side, side, on));
+        assert_eq!((line.junctions, line.ends, line.pieces.len()), (0, 2, 1));
+    }
+
+    /// A chain of nodes of two pieces each is joined into one piece, its pixels in order, every
+    /// other piece drawn the other way, in time in proportion to its pixels: 200,000 pieces, which
+    /// joined by copying the piece built so far at each node moved about 4 × 10¹⁰ pixels.
+    #[test]
+    fn a_chain_of_nodes_is_joined_in_time() {
+        let n = 200_000usize;
+        let mut edges: Vec<Edge> = (0..n)
+            .map(|k| {
+                let pixels = vec![2 * k, 2 * k + 1, 2 * k + 2];
+                if k.is_multiple_of(2) {
+                    Edge { a: k, b: k + 1, pixels, gone: false }
+                } else {
+                    Edge { a: k + 1, b: k, pixels: pixels.into_iter().rev().collect(), gone: false }
+                }
+            })
+            .collect();
+        let mut lengths = vec![2.0; n];
+        let started = std::time::Instant::now();
+        assert!(join_through(n + 1, &mut edges, &mut lengths, &mut Ticks::default()).unwrap());
+        let took = started.elapsed();
+        let live: Vec<&Edge> = edges.iter().filter(|e| !e.gone).collect();
+        assert_eq!(live.len(), 1);
+        assert_eq!((live[0].a, live[0].b), (0, n));
+        assert!(live[0].pixels.iter().copied().eq(0..=2 * n), "the pixels in order");
+        assert_eq!(lengths[0], 2.0 * n as f64);
+        assert!(took.as_secs_f64() < 10.0, "{took:?}");
+    }
+
+    /// Two pieces joined through their node are the first toward it and then the second away from
+    /// it, the node's pixel once, whichever way each is drawn and whichever is longer.
+    #[test]
+    fn two_pieces_join_in_order_whichever_way_they_run() {
+        for (short_first, a_turned, b_turned) in (0..8).map(|k| (k & 1 == 1, k & 2 == 2, k & 4 == 4)) {
+            let (la, lb) = if short_first { (3, 9) } else { (9, 3) };
+            let first: Vec<usize> = (0..la).collect();
+            let second: Vec<usize> = (la - 1..la - 1 + lb).collect();
+            let edge = |a: usize, b: usize, pixels: &[usize], turned: bool| {
+                if turned {
+                    Edge { a: b, b: a, pixels: pixels.iter().rev().copied().collect(), gone: false }
+                } else {
+                    Edge { a, b, pixels: pixels.to_vec(), gone: false }
+                }
+            };
+            let mut edges = vec![edge(0, 1, &first, a_turned), edge(1, 2, &second, b_turned)];
+            let mut lengths = vec![1.0, 1.0];
+            assert!(join_through(3, &mut edges, &mut lengths, &mut Ticks::default()).unwrap());
+            let e = &edges[0];
+            let want: Vec<usize> = (0..la + lb - 1).collect();
+            let (from, to, got) = if e.a == 0 { (e.a, e.b, e.pixels.clone()) } else { (e.b, e.a, e.pixels.iter().rev().copied().collect()) };
+            assert_eq!((from, to, got), (0, 2, want), "short first {short_first}, turned {a_turned} {b_turned}");
+            assert!(edges[1].gone);
+        }
+    }
+
+    /// The graph's walk, the pruning and joining, and the smoothing each stop at a cancel within
+    /// [`CANCEL_EVERY`] of their work: each given work just short of a check, a cancel set.
+    #[test]
+    fn every_step_stops_at_a_cancel() {
+        use vectorcraft_doc::cancel::{self, CancelToken};
+        let regions = map(60, 60, |x, y| (20..23).contains(&y) || (20..23).contains(&x));
+        let mut alive: Vec<bool> = regions.labels.iter().map(|&l| l == 0).collect();
+        let pixels: Vec<usize> = (0..alive.len()).filter(|&i| alive[i]).collect();
+        let d2 = vec![1.0; alive.len()];
+        let token = CancelToken::new();
+        token.cancel();
+        let almost = || Ticks(CANCEL_EVERY - 1);
+        let mut line = Line { regions: &regions, label: 0, alive: &mut alive };
+        thinned(&mut line, &pixels).unwrap();
+        let skeleton: Vec<usize> = pixels.iter().copied().filter(|&i| line.on(i)).collect();
+        assert!(cancel::scope(&token, None, || graph(&line, &skeleton, &d2, &mut almost())).is_err(), "the graph");
+        let (mut nodes, mut edges) = graph(&line, &skeleton, &d2, &mut Ticks::default()).unwrap();
+        assert!(!edges.is_empty(), "a cross has arms");
+        assert!(cancel::scope(&token, None, || pruned(&mut nodes, &mut edges, 60, 3.0, &mut almost())).is_err(), "the pruning");
+        let pts: Vec<Point> = (0..50).map(|k| Point::new(f64::from(k), f64::from(k % 2))).collect();
+        assert!(cancel::scope(&token, None, || smoothed(&pts, false, 8.0, &mut almost())).is_err(), "the smoothing");
+        assert!(smoothed(&pts, false, 8.0, &mut almost()).is_ok(), "not cancelled");
     }
 }

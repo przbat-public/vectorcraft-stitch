@@ -3344,8 +3344,11 @@ millimetres again. The stages, each a module, each reported to a progress sink
    curve make no corner the planner stitches into, a closed piece keeping three points at least,
    so that a small ring keeps its shape. The line's width is its pixels over its
    skeleton's length (the same at 8, 10 and 12 pixels a millimetre within a working pixel). Every
-   step is linear in the line's pixels, or n log n (the smoothing's heap); a cancel stops it
-   between lines and within one every 16,384 pixels. A line by the rules (not one of a colour set
+   step is linear in the line's pixels, or n log n (the smoothing's heap, and a chain of nodes
+   joined through, the shorter piece moved onto the longer at each node: joined by copying the
+   piece built so far, a chain of 50,000 bumps took time as its pixels squared); a cancel stops it
+   between lines and within one every 16,384 pixels thinned, walked or joined and points
+   smoothed. A line by the rules (not one of a colour set
    to Lines) that widens past 1 mm and a pixel away from its junctions, for as long as it is wide,
    has none. They are found before the order, which sews a
    line after the fills it touches: an area that comes to no centre line, or to one shorter than it

@@ -120,28 +120,41 @@ fn push_compensation_shortens_a_capped_column_from_its_caps() {
     assert!((hi - (LENGTH + HALF - 2.0)).abs() < TIP && hi <= LENGTH + HALF - 2.0 + 1e-9, "the end at {hi}");
 }
 
-/// The underlay stays on the path, inside the column, whatever the cap: a centre run along a
-/// narrow column ends at the path's ends.
+/// The underlay holds up the caps too (the project owner's choice, 2026-11-07, „Podszycie w
+/// zakończeniach (polecam)”), inside the stroke as it is painted: a centre run along a narrow
+/// round-capped column goes on into each cap, stopping short of its tip by the underlay's inset; an
+/// edge run and a zigzag along a wide one keep inside the round-capped stroke, the zigzag reaching
+/// into the caps, its sides narrowing with them.
 #[test]
-fn the_underlay_stays_on_the_path() {
-    let p = Params { width: 1.5, cap: Cap::Round, underlay: Underlay::Center, lock: false, ..Params::for_style(Style::Satin) };
+fn the_underlay_reaches_into_the_caps_inside_the_stroke() {
+    let p = Params { width: 1.5, cap: Cap::Round, underlay: Underlay::Center, lock: false, pull: [0.0; 2], ..Params::for_style(Style::Satin) };
     let q = points(&stitches(&straight(), FillRule::NonZero, &p));
     let on_the_middle: Vec<&Point> = q.iter().filter(|a| a.y.abs() <= 1e-9).collect();
-    assert!(!on_the_middle.is_empty(), "no centre run");
-    assert!(on_the_middle.iter().all(|a| a.x >= -1e-9 && a.x <= LENGTH + 1e-9), "the centre run leaves the path: {on_the_middle:?}");
-    assert!(extent(&q).0 < -0.5, "the cap isn't sewn over the underlay");
+    let (lo, hi) = extent(&on_the_middle.iter().map(|a| **a).collect::<Vec<_>>());
+    let (tip_lo, tip_hi) = extent(&q);
+    assert!(lo < -0.25 && hi > LENGTH + 0.25, "the centre run stops at the path's ends: {lo}..{hi}");
+    assert!(lo > tip_lo && hi < tip_hi, "the centre run reaches the tips {tip_lo}..{tip_hi}: {lo}..{hi}");
+    let wide = 6.0;
+    let p = Params { width: wide, cap: Cap::Round, underlay: Underlay::EdgeZigzag, lock: false, pull: [0.0; 2], ..Params::for_style(Style::Satin) };
+    let q = points(&stitches(&straight(), FillRule::NonZero, &p));
+    let inside = |a: &Point| {
+        let x = a.x.clamp(0.0, LENGTH);
+        a.distance(Point::new(x, 0.0)) <= wide / 2.0 + 1e-9
+    };
+    assert!(q.iter().all(inside), "a needle point outside the round-capped stroke");
+    assert!(q.iter().any(|a| a.x > LENGTH + 1.0 && a.y.abs() > 0.5 && a.y.abs() < wide / 2.0 - 0.3), "no zigzag in the end's cap");
 }
 
 /// A capped column's ends ([`ends`]): it ends past the path's by its cap, where its top stitching
-/// ends; it starts there too without an underlay, and at the path's end with one, where the
-/// underlay starts. Sewn from each start, its first needle point lies within the column's half
-/// width and pull compensation of it, on a rail.
+/// ends; a square-capped one starts there too, with an underlay or without, the underlay going
+/// into the cap. Sewn from each start, its first needle point lies within the column's half width
+/// and pull compensation of it, on a rail.
 #[test]
 fn a_capped_column_starts_and_ends_where_its_stitches_do() {
     let near = |a: Point, b: Point| a.distance(b) < 1e-9;
     let capped = [Point::new(-HALF, 0.0), Point::new(LENGTH + HALF, 0.0)];
     let path_ends = [Point::new(0.0, 0.0), Point::new(LENGTH, 0.0)];
-    for (underlay, starts) in [(Underlay::None, capped), (Underlay::Auto, path_ends)] {
+    for (underlay, starts) in [(Underlay::None, capped), (Underlay::Auto, capped)] {
         let p = Params { width: WIDTH, cap: Cap::Square, underlay, ..Params::for_style(Style::Satin) };
         let e = ends(&straight(), &p, false).expect("an open column has ends");
         assert!(capped.iter().all(|&c| e.ends.iter().any(|&q| near(q, c))), "{:?}: ends {:?}", underlay, e.ends);
@@ -293,4 +306,14 @@ fn a_round_cap_with_push_stays_on_its_half_disc() {
         };
         assert!(inside, "{a:?} lies outside the round-capped stroke");
     }
+}
+
+/// The underlay holds up a square cap too: a centre run reaches into it, where it stopped at the
+/// path's ends.
+#[test]
+fn the_underlay_reaches_into_a_square_cap() {
+    let p = Params { width: 1.5, cap: Cap::Square, underlay: Underlay::Center, lock: false, ..Params::for_style(Style::Satin) };
+    let q = points(&stitches(&straight(), FillRule::NonZero, &p));
+    let middle: Vec<&Point> = q.iter().filter(|a| a.y.abs() <= 1e-9).collect();
+    assert!(middle.iter().any(|a| a.x < -0.25) && middle.iter().any(|a| a.x > LENGTH + 0.25), "the centre run stops at the path's ends: {middle:?}");
 }

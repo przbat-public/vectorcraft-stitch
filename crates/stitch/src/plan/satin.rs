@@ -96,8 +96,8 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
         let push = if reversed { [p.push[1], p.push[0]] } else { p.push };
-        // The cap carries an open column's top stitching past its ends (its underlay stays on the
-        // path, inside the column, where a round cap's narrowing would leave an edge run outside).
+        // The cap carries an open column's top stitching past its ends, and its underlay with it
+        // ([`underlay_lines`]).
         let cap = if closed || p.cap == super::Cap::Butt {
             None
         } else {
@@ -125,7 +125,11 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
         // top stitching starts there and comes back.
         let mut back = false;
         if let Some(kind) = satin_kind(p.underlay, p.width) {
-            for (under, ends_far) in satin_underlay(&under, closed, p.width, kind) {
+            let inset = (p.width * UNDERLAY_INSET).min(UNDERLAY_INSET_MAX);
+            let lines = underlay_lines(&under, &pts, cap.as_ref(), inset);
+            // Within a round cap the zigzag's sides narrow with the half disc, inset as along it.
+            let side_at = |s: f64| cap.as_ref().map_or(f64::INFINITY, |c| half * c.across(s + lines.from, half) - inset);
+            for (under, ends_far) in satin_underlay(&lines, closed, p.width, kind, &side_at) {
                 if under.len() >= 2 {
                     push_split(&mut runs, under, travel, p.max_satin);
                     travel = Travel::Sew;
@@ -691,21 +695,15 @@ pub fn satin_auto_underlay(width: f64) -> Underlay {
     }
 }
 
-/// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`]
-/// ([`satin_auto_underlay`]); `None` for none.
 /// Whether an open satin line sewn with `p` ends where it starts: its top stitching comes back over
 /// an underlay that went to its far end (a centre run; an edge run and zigzag), as a fill's narrow
 /// part does ([`column_returns`]).
-/// Whether a satin column sewn with `p` has an underlay: its first needle point is then the
-/// underlay's, on the path.
-pub(super) fn has_underlay(p: &Params) -> bool {
-    satin_kind(p.underlay, p.width).is_some()
-}
-
 pub(super) fn line_returns(p: &Params) -> bool {
     matches!(satin_kind(p.underlay, p.width), Some(SatinUnderlay::Center | SatinUnderlay::EdgeZigzag))
 }
 
+/// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`]
+/// ([`satin_auto_underlay`]); `None` for none.
 fn satin_kind(u: Underlay, width: f64) -> Option<SatinUnderlay> {
     match u {
         Underlay::None => None,
@@ -716,17 +714,65 @@ fn satin_kind(u: Underlay, width: f64) -> Option<SatinUnderlay> {
     }
 }
 
-/// The underlay of a satin column along `pts` (its centreline), `width` wide, of `kind`: a centre
-/// run, an edge run (along one side and back along the other), or an edge run then a zigzag
-/// between its sides. Each run comes with whether it
-/// ends at the column's far end. The thresholds are estimates from the usual practice. (The
-/// zigzag's stitches run at an angle across the column, longer than its width, and the edge run
-/// crosses the column at its far end: the caller splits them like the top stitching, as
-/// Ink/Stitch's underlay guide recommends; an unbounded zigzag destabilises the column.)
-fn satin_underlay(pts: &[Point], closed: bool, width: f64, kind: SatinUnderlay) -> Vec<(Vec<Point>, bool)> {
-    let centre = resample(pts, UNDERLAY_STITCH, closed);
+/// The lines a satin column's underlay runs along ([`underlay_lines`]): its edge run's, its centre
+/// run's and zigzag's, and how far along the top stitching the latter starts (millimetres).
+struct UnderlayLines {
+    edge: Vec<Point>,
+    middle: Vec<Point>,
+    from: f64,
+}
+
+/// Where an open column's underlay runs, so that it holds up its caps too (the project owner's
+/// choice, 2026-11-07, „Podszycie w zakończeniach (polecam)”): along `top`, the top stitching's
+/// centre line (carried past the path's ends by its cap, push compensation off it), where a square
+/// cap is the column carried on at its width; in a round cap the centre run and the zigzag stop
+/// `inset` short of its tip (the zigzag's sides narrowing with the half disc: [`satin_underlay`])
+/// and the edge run, whose sides a half disc can't hold, stays on the path (`under`). Without a
+/// cap, `under` for all.
+fn underlay_lines(under: &[Point], top: &[Point], cap: Option<&CapAlong>, inset: f64) -> UnderlayLines {
+    match cap {
+        Some(c) if c.cap == super::Cap::Round => {
+            // An end whose cap the push left some of stops `inset` short of its tip.
+            let short = |k: usize| if c.carried.get(k).zip(c.pushed.get(k)).is_some_and(|(r, p)| r > p) { inset } else { 0.0 };
+            let (start, end) = (short(0), short(1));
+            let keeps = length(top, false) > start + end;
+            let middle = if keeps { trimmed(top, start, end) } else { top.to_vec() };
+            UnderlayLines { edge: under.to_vec(), middle, from: if keeps { start } else { 0.0 } }
+        }
+        Some(_) => UnderlayLines { edge: top.to_vec(), middle: top.to_vec(), from: 0.0 },
+        None => UnderlayLines { edge: under.to_vec(), middle: under.to_vec(), from: 0.0 },
+    }
+}
+
+/// Where an open satin line `pts` (one of the satin's pieces `all`) sewn with `p` starts its
+/// underlay at each of its ends ([`underlay_lines`], without push compensation): its first run's
+/// end there, a centre run's or an edge run's. `None` without an underlay.
+pub(super) fn underlay_ends(pts: &[Point], all: &[SubPath], p: &Params) -> Option<[Point; 2]> {
+    let kind = satin_kind(p.underlay, p.width)?;
+    let top = capped_line(pts, all, p);
+    let cap = (top.len() > pts.len()).then_some(p.cap);
+    let ends = |line: &[Point]| Some([*line.first()?, *line.last()?]);
+    match (kind, cap) {
+        (SatinUnderlay::Center, Some(super::Cap::Round)) => {
+            let inset = (p.width * UNDERLAY_INSET).min(UNDERLAY_INSET_MAX);
+            ends(&trimmed(&top, inset, inset))
+        }
+        (_, Some(super::Cap::Round)) => ends(pts),
+        _ => ends(&top),
+    }
+}
+
+/// The underlay of a satin column along `lines` ([`underlay_lines`]: its centreline as each run
+/// takes it), `width` wide, of `kind`: a centre run, an edge run (along one side and back along the
+/// other), or an edge run then a zigzag between its sides, the zigzag's sides at most `side_at(s)`
+/// from the middle `s` millimetres along it. Each run comes with whether it ends at the column's far
+/// end. The thresholds are estimates from the usual practice. (The zigzag's stitches run at an angle
+/// across the column, longer than its width, and the edge run crosses the column at its far end:
+/// the caller splits them like the top stitching, as Ink/Stitch's underlay guide recommends; an
+/// unbounded zigzag destabilises the column.)
+fn satin_underlay(lines: &UnderlayLines, closed: bool, width: f64, kind: SatinUnderlay, side_at: &dyn Fn(f64) -> f64) -> Vec<(Vec<Point>, bool)> {
     if kind == SatinUnderlay::Center {
-        return vec![(centre, !closed)];
+        return vec![(resample(&lines.middle, UNDERLAY_STITCH, closed), !closed)];
     }
     // The sides, kept inside the column so the underlay doesn't show at its edges.
     let side = (width / 2.0 - (width * UNDERLAY_INSET).min(UNDERLAY_INSET_MAX)).max(0.0);
@@ -735,12 +781,21 @@ fn satin_underlay(pts: &[Point], closed: bool, width: f64, kind: SatinUnderlay) 
         let t = tangent(samples, i, closed);
         Some(q + Vec2::new(-t.y, t.x) * d)
     };
+    let centre = resample(&lines.edge, UNDERLAY_STITCH, closed);
     let mut edge: Vec<Point> = (0..centre.len()).filter_map(|i| offset(&centre, i, side)).collect();
     edge.extend((0..centre.len()).rev().filter_map(|i| offset(&centre, i, -side)));
     let mut out = vec![(edge, false)];
     if kind == SatinUnderlay::EdgeZigzag {
-        let steps = resample(pts, ZIGZAG_UNDERLAY_SPACING, closed);
-        let zigzag: Vec<Point> = (0..steps.len()).filter_map(|i| offset(&steps, i, if i % 2 == 0 { side } else { -side })).collect();
+        let steps = resample_by(&lines.middle, closed, &|_| ZIGZAG_UNDERLAY_SPACING);
+        let points: Vec<Point> = steps.iter().map(|&(q, _)| q).collect();
+        let zigzag: Vec<Point> = steps
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &(_, s))| {
+                let d = side.min(side_at(s)).max(0.0);
+                offset(&points, i, if i % 2 == 0 { d } else { -d })
+            })
+            .collect();
         out.push((zigzag, !closed));
     }
     out

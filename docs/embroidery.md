@@ -941,9 +941,11 @@ the fabric.
   stitching on past each open end by half its width, a round one narrowing its crossings round a
   half disc (the width's share of the pull compensation narrowing with them, the fixed pull kept
   whole, as along the column) and stopping where a crossing would be shorter than the shortest
-  stitch, a butt cap
-  stopping at the end; the underlay stays on the path, inside the column, and push compensation
-  shortens the column from its caps' ends, a round cap pressed along the column into the length the
+  stitch, a butt cap stopping at the end; the underlay holds up the caps too (the owner's choice,
+  2026-11-07, „Podszycie w zakończeniach (polecam)”): it runs on into a square cap as along the
+  column, and into a round one its centre run and zigzag stop short of the tip by the underlay's
+  inset, the zigzag's sides narrowing with the half disc, its edge run staying on the path; and
+  push compensation shortens the column from its caps' ends, a round cap pressed along the column into the length the
   push leaves it and so kept round, its tip crossing as narrow as without the push (the owner's
   choice, 2026-11-07, „Okrągły koniec zostaje okrągły (polecam)”). An open column whose two ends meet within a thread's
   width (0.4 mm, as a running line's pieces meet: a ring drawn without closing it) is sewn as a

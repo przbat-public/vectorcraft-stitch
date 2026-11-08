@@ -188,10 +188,13 @@ pub fn ends(path: &BezPath, p: &Params, columns: bool) -> Option<Ends> {
                 return Some(Ends { starts: vec![a, b], ends: vec![a, b], through: Through::Table(table) });
             }
             // A satin's top stitching reaches past the path's ends by its cap, and ends there; it
-            // starts there too, unless its underlay, which stays on the path, starts it.
+            // starts there too, unless its underlay starts it, where its first run ends.
             let capped = super::satin::capped_line(&pts, &subs, &p);
             let (&ca, &cb) = (capped.first()?, capped.last()?);
-            let starts = if super::satin::has_underlay(&p) { vec![a, b] } else { vec![ca, cb] };
+            let starts = match super::satin::underlay_ends(&pts, &subs, &p) {
+                Some(under) => under.to_vec(),
+                None => vec![ca, cb],
+            };
             // Where its underlay leaves it, and the other end at a pass along its middle.
             let pass = Some(COST_HIDDEN * length(&capped, false));
             let (home, away) = if super::satin::line_returns(&p) { (Some(0.0), pass) } else { (pass, Some(0.0)) };

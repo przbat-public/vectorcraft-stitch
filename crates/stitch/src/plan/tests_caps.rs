@@ -233,3 +233,17 @@ fn a_dot_is_sewn_as_its_cap_paints_it() {
         }
     }
 }
+
+/// Pull compensation reaches as far past the painted half disc round a round cap as along the
+/// column: its fixed 0.2 mm is kept whole at every crossing of the cap, where it was scaled with
+/// the half chord, to almost nothing at the tip.
+#[test]
+fn pull_compensation_holds_round_a_round_cap() {
+    let pull = 0.2;
+    let p = Params { width: WIDTH, cap: Cap::Round, underlay: Underlay::None, lock: false, pull: [pull; 2], ..Params::for_style(Style::Satin) };
+    let q = points(&stitches(&straight(), FillRule::NonZero, &p));
+    for a in q.iter().filter(|a| a.x > LENGTH + 0.2 && a.x < LENGTH + 1.2) {
+        let painted = (HALF * HALF - (a.x - LENGTH).powi(2)).sqrt();
+        assert!(a.y.abs() >= painted + pull - 1e-6, "{a:?}: {} beside a half chord of {painted}", a.y.abs());
+    }
+}

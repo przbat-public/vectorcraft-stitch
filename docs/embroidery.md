@@ -939,7 +939,9 @@ the fabric.
   published, so it is off by default. A stroke's cap is sewn as it is painted (the project owner's
   choice of 2026-11-01, „Tak, wszędzie (polecam)”): a round or square cap carries the column's top
   stitching on past each open end by half its width, a round one narrowing its crossings round a
-  half disc and stopping where a crossing would be shorter than the shortest stitch, a butt cap
+  half disc (the width's share of the pull compensation narrowing with them, the fixed pull kept
+  whole, as along the column) and stopping where a crossing would be shorter than the shortest
+  stitch, a butt cap
   stopping at the end; the underlay stays on the path, inside the column, and push compensation
   shortens the column from its caps' ends. An open column whose two ends meet within a thread's
   width (0.4 mm, as a running line's pieces meet: a ring drawn without closing it) is sewn as a

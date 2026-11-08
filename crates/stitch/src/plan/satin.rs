@@ -75,8 +75,10 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
         return (Vec::new(), 0.0);
     }
     // Pull compensation widens the column at each rail ([`Params::compensation`]): the left one as
-    // the path is drawn, then the right one.
+    // the path is drawn, then the right one; and the fixed part of it (millimetres, the share of the
+    // width aside), which a round cap keeps whole round its half disc.
     let [left, right] = p.compensation(p.width);
+    let [fixed_left, fixed_right] = p.compensation(0.0);
     let half = p.width / 2.0;
     let spacing = p.column_spacing(p.width);
     // The crossings go to one rail and the other in turn: half the spacing apart.
@@ -99,7 +101,8 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
         let cap = if closed || p.cap == super::Cap::Butt {
             None
         } else {
-            capped(&pts, p.cap, half, p.width + left + right, p.min_stitch, ends_on_pieces(&pts, &all, half, &mut meet_work))
+            let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
+            capped(&pts, p.cap, half, &tip, ends_on_pieces(&pts, &all, half, &mut meet_work))
         };
         let under = if closed { pts.clone() } else { pushed(&pts, push, shortest) };
         let (pts, cap) = match cap {
@@ -199,11 +202,13 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
                 // Even crossings go to one rail, odd ones to the other. The normal points to the
                 // right of the way the needle goes along the column (y runs down the page).
                 let side = if i % 2 == 0 { 1.0 } else { -1.0 };
-                let mut reach = half + if (side > 0.0) != against { right } else { left };
-                // Within a round cap, the crossing spans the half disc where it lies.
-                if let Some(c) = &cap {
-                    reach *= c.across(s, half);
-                }
+                let (pull, fixed) = if (side > 0.0) != against { (right, fixed_right) } else { (left, fixed_left) };
+                // Within a round cap, the crossing spans the half disc where it lies, its share of
+                // the width's pull with it, the fixed pull whole.
+                let reach = match &cap {
+                    Some(c) => (half + pull - fixed) * c.across(s, half) + fixed,
+                    None => half + pull,
+                };
                 (q, Vec2::new(-t.y, t.x) * reach * side)
             })
             .collect();
@@ -386,19 +391,28 @@ impl CapAlong {
     }
 }
 
-/// How far a cap carries a column `full` millimetres across (its width and both rails'
-/// compensation), `half` its half width, past each end: half its width for a square cap; for a
-/// round one, as far as a crossing of the half disc stays `min_stitch` long, so that no stitch at
-/// its tip is shorter than the planner sews; none for a butt cap.
-fn cap_reach(cap: super::Cap, half: f64, full: f64, min_stitch: f64) -> f64 {
+/// What a round cap's tip crossing is made of ([`cap_reach`]): the width that narrows round the half
+/// disc (the column's, and both rails' pull compensation by the width), the fixed pull compensation
+/// of both rails that stays whole, and the shortest stitch the planner sews (millimetres).
+struct Tip {
+    width: f64,
+    fixed: f64,
+    min_stitch: f64,
+}
+
+/// How far a cap carries a column past each end, `half` its half width: half its width for a
+/// square cap; for a round one, as far as a crossing of the half disc (the share of `tip`'s width
+/// the half chord there leaves, and its fixed pull) stays the shortest stitch long, so that no
+/// stitch at its tip is shorter than the planner sews; none for a butt cap.
+fn cap_reach(cap: super::Cap, half: f64, tip: &Tip) -> f64 {
     match cap {
         super::Cap::Butt => 0.0,
         super::Cap::Square => half,
         super::Cap::Round => {
-            if full <= min_stitch || half <= 0.0 {
+            if tip.width + tip.fixed <= tip.min_stitch || half <= 0.0 || tip.width <= 0.0 {
                 return 0.0;
             }
-            let share = min_stitch / full;
+            let share = ((tip.min_stitch - tip.fixed) / tip.width).max(0.0);
             half * (1.0 - share * share).sqrt()
         }
     }
@@ -412,8 +426,8 @@ fn cap_reach(cap: super::Cap, half: f64, full: f64, min_stitch: f64) -> f64 {
 /// carried both ways along its own direction, or along x when it has none, as SVG 2 paints a
 /// subpath of no length (§ 9.5.3), so that it is sewn as the small satin dot its cap paints (the
 /// project owner's choice, 2026-11-07, „Szyć jako małą kropkę (polecam)”).
-fn capped(pts: &[Point], cap: super::Cap, half: f64, full: f64, min_stitch: f64, on_piece: [bool; 2]) -> Option<Capped> {
-    let reach = cap_reach(cap, half, full, min_stitch);
+fn capped(pts: &[Point], cap: super::Cap, half: f64, tip: &Tip, on_piece: [bool; 2]) -> Option<Capped> {
+    let reach = cap_reach(cap, half, tip);
     if reach <= 0.0 || !reach.is_finite() || on_piece == [true; 2] {
         return None;
     }
@@ -448,9 +462,10 @@ fn capped(pts: &[Point], cap: super::Cap, half: f64, full: f64, min_stitch: f64,
 /// start and end (`super::ends`). `pts` as they are when nothing is carried.
 pub(super) fn capped_line(pts: &[Point], all: &[SubPath], p: &Params) -> Vec<Point> {
     let half = p.width / 2.0;
-    let [left, right] = p.compensation(p.width);
+    let ([left, right], [fixed_left, fixed_right]) = (p.compensation(p.width), p.compensation(0.0));
+    let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
     let on_piece = ends_on_pieces(pts, all, half, &mut 0);
-    match capped(pts, p.cap, half, p.width + left + right, p.min_stitch, on_piece) {
+    match capped(pts, p.cap, half, &tip, on_piece) {
         Some(c) => c.pts,
         None => pts.to_vec(),
     }

@@ -200,8 +200,9 @@ fn draw(labels: &mut [u32], w: u32, h: u32, edges: &[(Point, Point)], label: u32
 
 /// The squared distance from each of `n` samples to the nearest feature, where `f` holds 0 at a
 /// feature and [`FAR`] elsewhere (or a squared distance already found): the lower envelope of
-/// parabolas, one dimension at a time (the distance transform's paper, §2).
-fn transform_1d(f: &[f64], d: &mut [f64], v: &mut [usize], z: &mut [f64]) {
+/// parabolas, one dimension at a time (the distance transform's paper, §2). `from` takes, for each
+/// sample, the sample whose parabola gives its distance.
+fn transform_1d(f: &[f64], d: &mut [f64], v: &mut [usize], z: &mut [f64], from: &mut [usize]) {
     let n = f.len();
     if n == 0 {
         return;
@@ -235,35 +236,56 @@ fn transform_1d(f: &[f64], d: &mut [f64], v: &mut [usize], z: &mut [f64]) {
         z[k + 1] = FAR;
     }
     k = 0;
-    for (q, out) in d.iter_mut().enumerate().take(n) {
+    for (q, (out, at)) in d.iter_mut().zip(from.iter_mut()).enumerate().take(n) {
         while z[k + 1] < q as f64 {
             k += 1;
         }
         let p = v[k];
         *out = (q as f64 - p as f64) * (q as f64 - p as f64) + f[p];
+        *at = p;
     }
 }
 
 /// The squared distance (pixels) from each pixel of a `w × h` image to the nearest of `feature`.
 pub(super) fn distances(feature: &[bool], w: usize, h: usize) -> Vec<f64> {
+    nearest(feature, w, h).0
+}
+
+/// The squared distance (pixels) from each pixel of a `w × h` image to the nearest of `feature`,
+/// and that feature pixel (`None` with no feature in the image): [`transform_1d`] down each column
+/// and then along each row, each pixel's nearest feature the one in the column whose distance
+/// along the row is least (the distance transform's paper, §2.2, the parabolas' feet kept).
+pub(super) fn nearest(feature: &[bool], w: usize, h: usize) -> (Vec<f64>, Vec<Option<usize>>) {
     let mut grid: Vec<f64> = feature.iter().map(|&f| if f { 0.0 } else { FAR }).collect();
     let n = w.max(h);
-    let (mut f, mut d, mut v, mut z) = (vec![0.0; n], vec![0.0; n], vec![0usize; n], vec![0.0; n + 1]);
+    let (mut f, mut d, mut v, mut z, mut at) = (vec![0.0; n], vec![0.0; n], vec![0usize; n], vec![0.0; n + 1], vec![0usize; n]);
+    // Each pixel's nearest feature's row in its column.
+    let mut row = vec![0usize; grid.len()];
     for x in 0..w {
         for y in 0..h {
             f[y] = grid[y * w + x];
         }
-        transform_1d(&f[..h], &mut d[..h], &mut v, &mut z);
+        transform_1d(&f[..h], &mut d[..h], &mut v, &mut z, &mut at[..h]);
         for y in 0..h {
             grid[y * w + x] = d[y];
+            row[y * w + x] = at[y];
         }
     }
+    let mut from: Vec<Option<usize>> = vec![None; grid.len()];
     for y in 0..h {
         f[..w].copy_from_slice(&grid[y * w..y * w + w]);
-        transform_1d(&f[..w], &mut d[..w], &mut v, &mut z);
+        transform_1d(&f[..w], &mut d[..w], &mut v, &mut z, &mut at[..w]);
         grid[y * w..y * w + w].copy_from_slice(&d[..w]);
+        for x in 0..w {
+            // Beyond any feature the distance stays about FAR: no feature.
+            if d[x] < FAR / 2.0
+                && let Some(&r) = at.get(x).and_then(|&c| row.get(y * w + c))
+            {
+                from[y * w + x] = Some(r * w + at[x]);
+            }
+        }
     }
-    grid
+    (grid, from)
 }
 
 /// Each of `count` areas' ridge width (pixels; `labels` and `d2`, the squared distances to the

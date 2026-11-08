@@ -294,7 +294,8 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         })
     };
     let lines = centre::lines(&areas.regions, &along_middle)?;
-    let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm, &lines)?;
+    let shapes =
+        overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm, &lines, overlap::LINE_REACH_MM * w.px_per_mm)?;
     if shapes.failed > 0 {
         warnings.push(Warning::new(
             "shapesNotJoined",

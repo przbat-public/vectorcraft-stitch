@@ -239,7 +239,7 @@ fn outlines_are_rounded_and_capped() {
 }
 
 /// How far from a centre line's middle the colours either side of it meet (millimetres): each
-/// reaches half a working pixel past it (`overlap::LINE_SLACK_PX`), the one sewn later giving way
+/// reaches half a working pixel past it (`overlap::PAST_MIDDLE_PX`), the one sewn later giving way
 /// where the two would overlap.
 const MIDDLE_MM: f64 = 0.05 + NEAR_MM;
 

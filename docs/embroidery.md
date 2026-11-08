@@ -327,7 +327,9 @@ drives it comes next; `docs/mcp.md` gives its params and reply in full):
   stroke along its centre line, as wide as the line and round at its ends and turns, which the
   planner sews as one running line through its junctions (each branch once, back along a few:
   How a shape becomes stitches › Running). The colours beside it reach its middle under it
-  whatever `overlap` is, so that no fabric shows round it. A stroke 1 mm wide or more is set to a
+  whatever `overlap` is, so that no fabric shows round it: each of its pixels goes to the colour
+  nearest it, and half a pixel past, never more than 2 mm from that colour's edge (the background,
+  an unsewn colour and a colour sewn after it take none). A stroke 1 mm wide or more is set to a
   running line. The reply gives each such area's `line`: its width, length, pieces, ends and
   junctions.
 - **The order:** details after the fills they touch, an area after the one it lies inside and
@@ -3272,8 +3274,16 @@ millimetres again. The stages, each a module, each reported to a progress sink
    takes about a second at the 10,000-area limit); each strip is cut only from the outlines near
    it, straightened, and gives way only to the strips it may overlap, so that its cost is its own
    stretch of edge. A line grows under nothing, and the colours beside it reach its middle under it
-   and half a pixel past, whatever the overlap (the owner's choice, 2026-11-07), the one sewn later
-   giving way where they would overlap.
+   whatever the overlap (the owner's choices, 2026-11-07, „Sąsiedzi wchodzą pod linię (polecam)”
+   and „Do środka, najwyżej 2 mm (polecam)”): each of the line's pixels goes to the area nearest it
+   outside the lines (an exact distance transform that keeps each pixel's nearest feature,
+   `regions::nearest`), so that each side reaches the middle wherever the line is wider or
+   narrower; the share, traced along the pixels' edges, is widened by half a pixel
+   (`PAST_MIDDLE_PX`), so that the two sides meet under the middle and cover the line's traced
+   outline; never more than 2 mm from the colour's own edge (`LINE_REACH_MM`, the largest
+   overlap), so that a colour set to Lines however wide leaves the colours in it as drawn; a pixel
+   nearer the background, an unsewn area or one sewn after the line goes to none. The one sewn
+   later gives way where two would overlap.
 10. **Create** (`create.rs`): one group in the image's place, a group a colour block in sewing order
    named after its thread as its swatch is, one object an area painted with its thread's own colour
    (so the plan sews it in exactly that thread; a line a stroke along its centre line, as wide as

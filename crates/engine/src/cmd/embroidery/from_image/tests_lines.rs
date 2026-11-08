@@ -389,6 +389,72 @@ fn the_colours_round_a_colour_set_to_lines_reach_its_middle() {
     }
 }
 
+/// The area (mm²) the outlines of the areas of `colour` cover.
+fn outlined(r: &Value, colour: [u8; 4]) -> f64 {
+    areas_of(r, colour)
+        .iter()
+        .filter_map(|a| a["outline"].as_str())
+        .map(|d| vectorcraft_geom::kurbo::Shape::area(&vectorcraft_geom::BezPath::from_svg(d).unwrap()).abs())
+        .sum()
+}
+
+/// The colours either side of a line reach its middle wherever it is narrower than at its widest
+/// (the project owner's choices, 2026-11-07, „Sąsiedzi wchodzą pod linię (polecam)” and „Do
+/// środka, najwyżej 2 mm (polecam)”), at no overlap: each field covers its own side, half the line
+/// and half a pixel past its middle. A navy wedge set to Lines widening from 1 to 4 mm between a
+/// yellow field and a red one (each field 375 mm² and half the wedge's 50); a band 1 mm wide for
+/// half its length and 2 mm for the rest (each field 100 mm², half a square millimetre past the
+/// middle).
+#[test]
+fn the_colours_beside_a_line_reach_its_middle_wherever_it_lies() {
+    let half = |y: f64| (1.0 + 3.0 * y / 20.0) / 2.0;
+    let wedge = move |q: Point| {
+        if (q.x - 20.0).abs() <= half(q.y) {
+            NAVY
+        } else if q.x < 20.0 {
+            YELLOW
+        } else {
+            RED
+        }
+    };
+    let band = |q: Point| {
+        let half = if q.y < 5.0 { WIDE_MM / 4.0 } else { WIDE_MM / 2.0 };
+        if (q.x - 10.0).abs() <= half {
+            NAVY
+        } else if q.x < 10.0 {
+            YELLOW
+        } else {
+            RED
+        }
+    };
+    for (raster, each, near) in [(picture(40.0, 20.0, PX_PER_MM, wedge), 400.0, 2.0), (picture(20.0, 10.0, PX_PER_MM, band), 100.0, 1.0)] {
+        let mut s = placed(&raster, PX_PER_MM);
+        let p = json!({"colors": 3, "background": "none", "overlap": 0.0, "outlines": true,
+            "colorChoices": [{"color": hex(NAVY), "job": "lines"}]});
+        let r = digitize(&mut s, p, true);
+        let (yellow, red) = (outlined(&r, YELLOW), outlined(&r, RED));
+        assert!((yellow - each).abs() <= near && (red - each).abs() <= near, "yellow {yellow} mm², red {red} mm²: {}", r["areas"]);
+    }
+}
+
+/// A colour reaches no more than 2 mm under a colour set to Lines however wide that is (the
+/// project owner's choice, 2026-11-07, „Do środka, najwyżej 2 mm (polecam)”): a red dot 3 mm across
+/// in a white field 60 × 30 mm set to Lines grows under the field by 2 mm and half a pixel, its top
+/// at 11.45 mm, not to the field's middle or its edge.
+#[test]
+fn a_colour_grows_no_more_than_two_millimetres_under_a_field_set_to_lines() {
+    let paint = |q: Point| if q.distance(Point::new(15.0, 15.0)) <= 1.5 { RED } else { WHITE };
+    let mut s = placed(&picture(60.0, 30.0, PX_PER_MM, paint), PX_PER_MM);
+    let p = json!({"colors": 2, "background": "none", "outlines": true,
+        "colorChoices": [{"color": hex(WHITE), "job": "lines"}]});
+    let r = digitize(&mut s, p, true);
+    let red = areas_of(&r, RED);
+    let outline = vectorcraft_geom::BezPath::from_svg(red[0]["outline"].as_str().unwrap()).unwrap();
+    let top = vectorcraft_geom::kurbo::Shape::bounding_box(&outline).y0;
+    let grown = 13.5 - super::settings::OVERLAP_RANGE_MM.1 - 0.05;
+    assert!((top - grown).abs() <= 0.15, "the red dot's top at {top} mm, not {grown}: {}", red[0]);
+}
+
 /// A job that isn't one is refused, naming the four.
 #[test]
 fn a_job_that_isnt_one_is_refused() {

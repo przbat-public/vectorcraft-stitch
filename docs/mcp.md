@@ -7307,7 +7307,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   round it with no hole cut, and where two colours meet the one sewn first reaches `overlap` under the one sewn after,
   only along the edge they share. A line (and every area of a colour set to `lines`) is sewn along its centre line, a
   stroke as wide as it, round at its ends, which the planner sews as one running line through its junctions; the
-  colours beside it reach its middle under it whatever `overlap` is. Without `dryRun` it
+  colours beside it reach its middle under it whatever `overlap` is (each of its pixels to the colour nearest it, and
+  half a pixel past, at most 2 mm from that colour's edge). Without `dryRun` it
   creates the objects: one group in the image's place (named as the image is), in it a group for each colour block in
   sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
   its thread's own colour (a line, a stroke along its centre line), embroidery settings set only where a colour's job

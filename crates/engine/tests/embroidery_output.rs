@@ -41,10 +41,12 @@
 //! (`settings_that_change_nothing_change_no_export`).
 //!
 //! Only the hashes and summaries are kept here, never the files. They were recorded on macOS
-//! (aarch64). The planner calls the platform's sine, cosine and power functions, whose last bit may
-//! differ in another maths library: there a needle point can round to the next 0.1 mm, and a hash
-//! differ with no change to the code. On another platform an export passes when its summary is
-//! within that much of the recorded one.
+//! (aarch64), computed with one maths library (`one_maths`, the `libm` crate in place of the
+//! system's `sin`, `cos`, `pow`…), so that macOS, Linux and FreeBSD export the same bytes: the
+//! planner calls those functions, whose last bit differs between the systems' own libraries, and
+//! one bit can round a needle point to the next 0.1 mm. On another platform (Windows, where the
+//! system's library is used) a hash may differ with no change to the code, and an export passes
+//! when its summary is within that much of the recorded one.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -58,6 +60,9 @@ use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread, quantize};
 
 mod embroidery_common;
 use embroidery_common::{DESIGNS, artwork, corpus, export, open, run, sha256};
+
+#[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
+mod one_maths;
 
 /// The documents built here ([`documents`]), as `sha256sum` lists files: the hash, two spaces, the
 /// document's name and the format's extension.

@@ -1698,7 +1698,9 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   a running line turned round for its exit, a satin entered at one end and leaving at the other, a
   loop carried on round, each checked met within 1 mm; always run), the test sheet on each of the
   8 fabric presets (64 exports), and the eleven real designs' artwork at the person's size (when
-  the corpus is present): 288 exports in all. A change to what is sewn
+  the corpus is present): 288 exports in all, computed with one maths library as the golden
+  corpus is (`tests/one_maths`), so that a needle point rounds alike on macOS, Linux and FreeBSD
+  (declaring it moved no hash on macOS). A change to what is sewn
   fails it, listing the exports that changed and printing the listing as it now stands: such a
   change is made on purpose, with the listing updated in the same commit. Each PES, PEC and JEF export
   is also pinned apart from its thread numbers (the hash of its bytes with them blanked, and the

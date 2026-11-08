@@ -407,21 +407,30 @@ fn cap_reach(cap: super::Cap, half: f64, full: f64, min_stitch: f64) -> f64 {
 /// An open column's centreline `pts` carried past its ends by its `cap` ([`cap_reach`]), each along
 /// the direction its end segment points out, but an end that lies on a piece of the same satin
 /// (`on_piece`, [`ends_on_pieces`]); `None` when nothing is carried: a butt cap, a column whose
-/// two ends meet ([`ENDS_MEET`]), both ends on pieces, or one without a direction at an end.
+/// two ends meet ([`ENDS_MEET`]), both ends on pieces, or one without a direction at an end. A dot
+/// (a piece shorter than the column is wide, its two ends near each other) is no ring: it is
+/// carried both ways along its own direction, or along x when it has none, as SVG 2 paints a
+/// subpath of no length (§ 9.5.3), so that it is sewn as the small satin dot its cap paints (the
+/// project owner's choice, 2026-11-07, „Szyć jako małą kropkę (polecam)”).
 fn capped(pts: &[Point], cap: super::Cap, half: f64, full: f64, min_stitch: f64, on_piece: [bool; 2]) -> Option<Capped> {
     let reach = cap_reach(cap, half, full, min_stitch);
     if reach <= 0.0 || !reach.is_finite() || on_piece == [true; 2] {
         return None;
     }
     let (&first, &last) = (pts.first()?, pts.last()?);
-    if first.distance(last) <= ENDS_MEET {
+    let dot = length(pts, false) < 2.0 * half;
+    if first.distance(last) <= ENDS_MEET && !dot {
         return None;
     }
-    // The direction out of each end: along its first segment with a length.
+    // The direction out of each end: along its first segment with a length; a dot with none, x.
     let away = |end: Point, q: Option<&Point>| q.and_then(|&q| unit(end - q));
     let back = away(first, pts.iter().find(|q| q.distance(first) > NO_LENGTH));
     let on = away(last, pts.iter().rev().find(|q| q.distance(last) > NO_LENGTH));
-    let (Some(back), Some(on)) = (back, on) else { return None };
+    let (back, on) = match (back, on) {
+        (Some(back), Some(on)) => (back, on),
+        _ if dot => (Vec2::new(-1.0, 0.0), Vec2::new(1.0, 0.0)),
+        _ => return None,
+    };
     let carried = on_piece.map(|on| if on { 0.0 } else { reach });
     let mut line: Vec<Point> = Vec::with_capacity(pts.len() + 2);
     if carried[0] > 0.0 {

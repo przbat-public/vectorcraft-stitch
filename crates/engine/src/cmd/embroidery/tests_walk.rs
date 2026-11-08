@@ -419,3 +419,17 @@ fn a_running_line_whose_pieces_meet_is_sewn_in_one_go() {
     ));
     assert!(apart["jumps"].as_u64().unwrap() > 0, "the K apart: {apart}");
 }
+
+/// A dot drawn as an icon set draws it (a line a hundredth of a point long, round caps, as the
+/// "info" icon's `M12 8h.01`) is sewn through the document walk, where it sewed nothing.
+#[test]
+fn a_round_capped_dot_is_sewn() {
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+    let id = run(&mut s, "path.create", json!({"d": "M 100 100 h 0.01"}))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 4.0 * PT_PER_MM, "cap": "round", "ids": [id]}));
+    let stats = run(&mut s, "embroidery.stats", json!({}));
+    assert!(stats["stitches"].as_u64().unwrap() > 0, "the dot sews nothing: {stats}");
+}

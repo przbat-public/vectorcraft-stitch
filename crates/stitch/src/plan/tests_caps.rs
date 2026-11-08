@@ -214,3 +214,22 @@ fn no_cap_is_sewn_where_pieces_of_one_satin_meet() {
     assert_eq!(crossings(&q, false, &|m| m.x < -1e-9), 0, "a cap over the stem");
     assert!(crossings(&q, true, &|m| m.y > 30.0) > 0, "no cap at the stem's foot");
 }
+
+/// A dot (the project owner's choice, 2026-11-07, „Szyć jako małą kropkę (polecam)”): a subpath of
+/// no length, or nearly none, with a round or a square cap is painted as a disc or a square as wide
+/// as the stroke (SVG 2 § 9.5.3; the renderer's `zero_length_subpaths_draw_dots_with_their_cap`):
+/// its column sews it, a stroke's width across, where it sewed nothing.
+#[test]
+fn a_dot_is_sewn_as_its_cap_paints_it() {
+    for cap in [Cap::Round, Cap::Square] {
+        for len in [0.0, 0.05] {
+            let mut dot = BezPath::new();
+            dot.move_to((10.0, 10.0));
+            dot.line_to((10.0 + len, 10.0));
+            let q = column(&dot, cap);
+            assert!(q.len() > 2, "a {} dot {len} mm long sews {} needle points", cap.id(), q.len());
+            let (lo, hi) = extent(&q);
+            assert!(hi - lo >= WIDTH - 2.0 * TIP, "a {} dot spans {lo}..{hi}", cap.id());
+        }
+    }
+}

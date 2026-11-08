@@ -423,8 +423,8 @@ listed (`skipped`, at most 1,000), and at most 100,000 ids are taken.
 the document's fabric (`fabric`), the thread's weight (`threadWeight`), whether one colour's objects
 join (`joinSameColor`), the machine's values (`machine`: `jumpLength`, `trimLength`, `minStitch`,
 `splitLength`, `speed`), each merged value by value, and the rows of every fill that sets no angle
-(`fillAngle`: degrees counter-clockwise on the page, −360 to 360, turned with each object as the
-built-in 135° are, or `"acrossShape"`, each fill's rows square to its length, piece by piece: How a
+(`fillAngle`: degrees counter-clockwise on the page, −360 to 360, a file's number past a full turn
+read within one in the same direction, turned with each object as the built-in 135° are, or `"acrossShape"`, each fill's rows square to its length, piece by piece: How a
 shape becomes stitches › Tatami fill; Document Setup's row for it comes with the digitizing window), `null`
 unsetting one; `embroidery.settings`
 reads them. Each is answered as stored (`settings`, which can be passed back: what equals the

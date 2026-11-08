@@ -7222,10 +7222,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   file opens in its own format's palette. It also takes `start`, `label`, `fabric` (a preset's id, an object of values
   merged value by value, or null), `threadWeight`, `joinSameColor`, `machine` (`{jumpLength, trimLength, minStitch,
   splitLength, speed}`, merged) and `fillAngle` (the rows of every fill that sets no angle: degrees counter-clockwise on
-  the page, −360 to 360, turned with each object as the built-in 135° are; `"acrossShape"`, each fill's rows square to
+  the page, −360 to 360 (a file's number past a full turn is read within one, the same direction: 450 is 90),
+  turned with each object as the built-in 135° are; `"acrossShape"`, each fill's rows square to
   its length when it is at least 1.5 times as long as wide, each separate piece of a fill measured alone; `null`, the
   built-in rows), all reported in `settings` and
-  `resolved` (`fillAngle`: `{value, source}`, 135 by default) (each fabric value, the information values `thickness`,
+  `resolved` (`fillAngle`: `{value, source}`, 135 by default, the value the plan uses) (each fabric value, the information values `thickness`,
   `stabilizer`, `topping` and `needlePoint` included, `{value, source, preset, changed}`; the colour `{value, source}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
   themselves, by key, and how many set any (`objectCount`), symbols' art included (read only, as `resolved`).
   `embroidery.applyFabric` without `ids` acts on the selection, else on every object, symbols' art included; with

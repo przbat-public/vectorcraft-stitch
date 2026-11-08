@@ -346,6 +346,20 @@ impl Default for DocLayer {
 
 /// A value read from a file, brought within `range` (one already within it stays as it is, bit for
 /// bit); `clamped` set when it wasn't.
+/// The rows a document's `fillAngle` read from a file gives (`embroidery.setup` takes a full turn
+/// either way): a number of degrees past a full turn is the same direction within one (450° is
+/// 90°, −400° is −40°), never clamped, which would turn it; one that isn't a number gives none (the
+/// built-in rows, the settings said to lie outside what this version sews); the rule as it is.
+pub(crate) fn file_rows(rows: FillAngle) -> Option<FillAngle> {
+    let (lo, hi) = super::options::ANGLE_RANGE;
+    match rows {
+        FillAngle::Degrees(d) if !d.is_finite() => None,
+        FillAngle::Degrees(d) if (lo..=hi).contains(&d) => Some(rows),
+        FillAngle::Degrees(d) => Some(FillAngle::Degrees(d % hi)),
+        rule => Some(rule),
+    }
+}
+
 fn within(v: f64, (lo, hi): (f64, f64), clamped: &mut bool) -> f64 {
     if v.is_finite() && (lo..=hi).contains(&v) {
         return v;
@@ -406,10 +420,12 @@ impl DocLayer {
             every.min_stitch = min_stitch.map(|m| within(m, MIN_STITCH_RANGE, &mut clamped));
             every.split_length = split_length.map(|s| within(s, MAX_SATIN_STITCH_RANGE, &mut clamped));
         }
-        // A number of degrees from a file is brought within a full turn either way, as typed.
-        let fill_angle = e.fill_angle.map(|a| match a {
-            FillAngle::Degrees(d) => FillAngle::Degrees(within(d, super::options::ANGLE_RANGE, &mut clamped)),
-            rule => rule,
+        // A number of degrees from a file is brought within a full turn either way, as typed, in
+        // the same direction ([`file_rows`]).
+        let fill_angle = e.fill_angle.and_then(|a| {
+            let read = file_rows(a);
+            clamped |= read.is_none();
+            read
         });
         let notes = [(unread, DOCUMENT_SETTINGS_UNREAD), (clamped, DOCUMENT_SETTINGS_OUT_OF_RANGE)]
             .into_iter()

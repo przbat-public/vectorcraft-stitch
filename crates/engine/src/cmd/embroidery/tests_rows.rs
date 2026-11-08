@@ -288,3 +288,24 @@ fn info_and_the_arrow_measure_the_area_the_plan_sews() {
     let (arrow, unplanned) = arrow_rows(&s, wide);
     assert!(apart(arrow, planned) < 0.05 && apart(unplanned, planned) < 0.05, "the arrow at {arrow} and {unplanned}");
 }
+
+/// A file's rows past a full turn keep their direction: 450° is sewn as 90° and 400° as 40°,
+/// never clamped to 360° (which would turn them to 0°), with no note that a setting lies out of
+/// range; `embroidery.settings` reports what the plan uses, beside the number as stored.
+#[test]
+fn a_files_rows_past_a_full_turn_keep_their_direction() {
+    let mut s = blank();
+    let tall = bar(&mut s, 20.0, 20.0, 10.0, 40.0);
+    for (stored, sewn) in [(450.0, 90.0), (400.0, 40.0), (-400.0, -40.0)] {
+        s.edit("file", |d, _| {
+            d.embroidery = Some(Box::new(serde_json::from_value(json!({"fill_angle": stored})).unwrap()));
+            Ok(())
+        })
+        .unwrap();
+        assert!(apart(rows_of(&s, tall), options::planner_angle(sewn)) < 1e-9, "{stored}°: rows at {}", rows_of(&s, tall));
+        let plan = digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
+        assert!(!plan.notes.iter().any(|n| n == super::resolve::DOCUMENT_SETTINGS_OUT_OF_RANGE), "{stored}°: {:?}", plan.notes);
+        let r = run(&mut s, "embroidery.settings", json!({}));
+        assert_eq!((&r["settings"]["fillAngle"], &r["resolved"]["fillAngle"]["value"]), (&json!(stored), &json!(sewn)), "{stored}°");
+    }
+}

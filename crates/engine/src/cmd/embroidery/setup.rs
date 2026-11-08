@@ -248,9 +248,13 @@ pub(super) fn document_settings(d: &Document) -> DocumentSettings {
             thread_weight: Resolved { value: resolved_weight, source: source(weight.is_some()) },
             join_same_color: Resolved { value: join.unwrap_or(true), source: source(join.is_some()) },
             machine: resolved_machine(machine),
-            fill_angle: Resolved {
-                value: rows.map_or(Value::from(super::options::planner_angle(vectorcraft_stitch::plan::FILL_ANGLE)), FillAngle::to_value),
-                source: source(rows.is_some()),
+            // As the plan reads it: a file's number past a full turn within one, the same direction.
+            fill_angle: {
+                let used = rows.and_then(super::resolve::file_rows);
+                Resolved {
+                    value: used.map_or(Value::from(super::options::planner_angle(vectorcraft_stitch::plan::FILL_ANGLE)), FillAngle::to_value),
+                    source: source(used.is_some()),
+                }
             },
         },
         overrides: overrides(d),

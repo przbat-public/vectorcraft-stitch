@@ -24,8 +24,8 @@
 //! - **Spurs pruned** as the medial axis's are (Blum, 1967, *A transformation for extracting new
 //!   descriptors of shape*; Shaked and Bruckstein, 1998, *Pruning medial axes*, CVIU 69(2)): a piece
 //!   from a junction to an end that reaches hardly past the largest disc the line holds at the
-//!   junction draws nothing the disc doesn't ([`SPUR_SLACK_PX`], [`SPUR_SHARE`]); two junctions
-//!   whose discs overlap are one (a crossing thinning splits in two).
+//!   junction draws nothing the disc doesn't ([`SPUR_SLACK_PX`], [`SPUR_WIDTH_SHARE`]); two
+//!   junctions whose discs overlap are one (a crossing thinning splits in two).
 //! - **The ends carried to the ink**: thinning stops short of a line's end by about its half width;
 //!   each end goes on along its piece to where the ink ends, less half the line's width, so that the
 //!   stroke made, round at its ends, ends where the line does.
@@ -55,15 +55,18 @@ const MAX_THIN_PASSES: usize = 1_000;
 /// those it can, and one or two leave none. An estimate, a bound on the work.
 const MAX_CLEANUP_PASSES: usize = 8;
 
-/// How far past the largest disc at its junction a spur may reach and be pruned (working pixels): a
-/// pixel and a half, a pixel's diagonal and a little, what a bump of anti-aliasing on the line's
-/// edge and the thinning's own pixel make. An estimate, the session's choice.
-pub(super) const SPUR_SLACK_PX: f64 = 1.5;
+/// How far past the largest disc at its junction a spur may reach and be pruned (working pixels):
+/// two, what anti-aliasing leaves on a line's edge: a hair a pixel wide and two long thins to a
+/// spur reaching 1.6 to 1.8 pixels past its junction's disc (measured on drawn pixels in the
+/// review, 2026-11-07). An estimate.
+pub(super) const SPUR_SLACK_PX: f64 = 2.0;
 
-/// The share of the junction's disc a spur may reach past it and be pruned, on a wider line: half,
-/// past the (√2 − 1) ≈ 0.41 of it that the corners of a line's square end reach. An estimate, the
-/// session's choice.
-pub(super) const SPUR_SHARE: f64 = 0.5;
+/// The share of the line's width (`AreaStats::ridge_px`) a branch must reach past its junction's
+/// disc to be kept, on a wider line: a third (the project owner's choice, 2026-11-07, „Zostawić
+/// dłuższe (polecam)”), so that the top of a "t" rising 0.8 mm above its bar on lines 0.9 mm wide
+/// stays, and the corners of a square end, which reach (√2 − 1) ≈ 0.41 of the line's half width,
+/// go.
+pub(super) const SPUR_WIDTH_SHARE: f64 = 1.0 / 3.0;
 
 /// The least area a point's triangle with its neighbours keeps it by (square working pixels): 8, so
 /// that the stairs pixels leave along a gentle curve go and a corner whose arms reach 0.4 mm stays
@@ -538,16 +541,17 @@ fn degrees(nodes: &[Node], edges: &[Edge]) -> Vec<usize> {
 /// turn. An estimate, a bound on the work.
 const PRUNE_ROUNDS: usize = 4;
 
-/// The graph pruned and tidied (the module's notes): junctions whose discs overlap made one, spurs
-/// that reach hardly past their junction's disc taken away (only from a junction that keeps two
-/// pieces or more), and each node left with two pieces joined through. Each round goes over every
-/// piece once, the nodes' degrees kept as pieces go.
-fn pruned(nodes: &mut [Node], edges: &mut Vec<Edge>, w: usize) {
+/// The graph of a line `line_px` wide pruned and tidied (the module's notes): junctions whose discs
+/// overlap made one, spurs that reach hardly past their junction's disc taken away (only from a
+/// junction that keeps two pieces or more), and each node left with two pieces joined through.
+/// Each round goes over every piece once, the nodes' degrees kept as pieces go.
+fn pruned(nodes: &mut [Node], edges: &mut Vec<Edge>, w: usize, line_px: f64) {
     let len = |e: &Edge| length(&e.pixels.iter().map(|&i| centre_of(i, w)).collect::<Vec<_>>());
     merge_junctions(nodes, edges, &len);
     let mut lengths: Vec<f64> = edges.iter().map(len).collect();
+    let most = SPUR_SLACK_PX.max(SPUR_WIDTH_SHARE * line_px);
     for _ in 0..PRUNE_ROUNDS {
-        let pruned_any = prune_spurs(nodes, edges, &lengths);
+        let pruned_any = prune_spurs(nodes, edges, &lengths, most);
         let joined_any = join_through(nodes.len(), edges, &mut lengths);
         if !(pruned_any || joined_any) {
             break;
@@ -588,9 +592,9 @@ fn merge_junctions(nodes: &mut [Node], edges: &mut [Edge], len: &impl Fn(&Edge) 
 }
 
 /// Spurs taken away: each piece (`lengths` long) from an end to a junction that keeps two pieces or
-/// more, reaching hardly past the junction's disc ([`SPUR_SLACK_PX`], [`SPUR_SHARE`]), the nodes'
-/// degrees kept as they go. Whether any went.
-fn prune_spurs(nodes: &[Node], edges: &mut [Edge], lengths: &[f64]) -> bool {
+/// more, reaching past the junction's disc no more than `most` (working pixels: [`SPUR_SLACK_PX`],
+/// [`SPUR_WIDTH_SHARE`]), the nodes' degrees kept as they go. Whether any went.
+fn prune_spurs(nodes: &[Node], edges: &mut [Edge], lengths: &[f64], most: f64) -> bool {
     let mut deg = degrees(nodes, edges);
     let mut pruned_any = false;
     for (k, e) in edges.iter_mut().enumerate() {
@@ -605,7 +609,7 @@ fn prune_spurs(nodes: &[Node], edges: &mut [Edge], lengths: &[f64]) -> bool {
         };
         let (Some(end_node), Some(junction_node)) = (nodes.get(end), nodes.get(junction)) else { continue };
         let reach = lengths.get(k).copied().unwrap_or(0.0) + end_node.radius - junction_node.radius;
-        if reach <= SPUR_SLACK_PX.max(SPUR_SHARE * junction_node.radius) {
+        if reach <= most {
             e.gone = true;
             pruned_any = true;
             for n in [end, junction] {
@@ -807,7 +811,8 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted) -> Resu
         thinned(&mut line, own)?;
         let skeleton: Vec<usize> = own.iter().copied().filter(|&i| line.on(i)).collect();
         let (mut nodes, mut edges) = graph(&line, &skeleton, &d2);
-        pruned(&mut nodes, &mut edges, w);
+        let ridge = regions.areas.get(a).map_or(0.0, |s| s.ridge_px);
+        pruned(&mut nodes, &mut edges, w, ridge);
         let deg = degrees(&nodes, &edges);
         if let Some(&Wanted::NoWiderThan(limit)) = want.get(a)
             && widens_away_from_junctions(&nodes, &edges, &deg, &|i| width_at(labels, &d2, w, h, i), limit, w)
@@ -945,13 +950,38 @@ mod tests {
         assert!(line.pieces[0].closed);
     }
 
-    /// A bump of a pixel on a bar's edge is a spur that reaches hardly past the bar's middle: pruned,
-    /// the bar one piece with two ends and no junction.
+    /// Bumps on a bar's edge thin to spurs that reach hardly past the bar's middle: pruned, the bar
+    /// joined through, one piece with two ends and no junction. A bump 3 pixels square on a bar 5
+    /// wide, one 4 pixels square on a bar 5 wide, and a hair a pixel wide and two long on a bar 6
+    /// wide, as anti-aliasing leaves one (it reaches 1.6 to 1.8 pixels past the junction's disc).
+    /// With the pruning off, each is a junction with three ends.
     #[test]
-    fn a_bump_on_a_lines_edge_is_pruned() {
-        let bumped = map(60, 15, |x, y| ((5..55).contains(&x) && (5..10).contains(&y)) || (x == 30 && y == 10));
-        let line = line_of(&bumped);
-        assert_eq!((line.junctions, line.ends, line.pieces.len()), (0, 2, 1), "{line:?}");
+    fn bumps_and_hairs_on_a_lines_edge_are_pruned() {
+        let bars = [
+            map(60, 15, |x, y| ((5..55).contains(&x) && (5..10).contains(&y)) || ((30..33).contains(&x) && (10..13).contains(&y))),
+            map(70, 25, |x, y| ((5..65).contains(&x) && (8..13).contains(&y)) || ((30..34).contains(&x) && (4..8).contains(&y))),
+            map(70, 25, |x, y| ((5..65).contains(&x) && (8..14).contains(&y)) || (x == 30 && (6..8).contains(&y))),
+        ];
+        for (k, bar) in bars.iter().enumerate() {
+            let line = line_of(bar);
+            assert_eq!((line.junctions, line.ends, line.pieces.len()), (0, 2, 1), "bar {k}: {line:?}");
+        }
+    }
+
+    /// A real branch is kept, short as it is, and a nub shorter than a third of the line's width
+    /// is pruned (the project owner's choice, 2026-11-07, „Zostawić dłuższe (polecam)”): the top of a
+    /// "t" of lines 13 pixels wide rising 9 pixels above its bar reaches 4.78 pixels past the
+    /// junction's disc, more than a third of the width (4.33): one junction, four ends; rising 8 it
+    /// reaches 3.78, and is pruned: a T, one junction and three ends.
+    #[test]
+    fn the_top_of_a_t_is_kept_and_a_nub_pruned() {
+        let t = |rise: u32| {
+            map(120, 90, move |x, y| ((10..110).contains(&x) && (25..38).contains(&y)) || ((50..63).contains(&x) && (25 - rise..80).contains(&y)))
+        };
+        let line = line_of(&t(9));
+        assert_eq!((line.junctions, line.ends, line.pieces.len()), (1, 4, 4), "{line:?}");
+        let line = line_of(&t(8));
+        assert_eq!((line.junctions, line.ends, line.pieces.len()), (1, 3, 3), "{line:?}");
     }
 
     /// A dot has no centre line wherever it lies among the pixels: it is sewn as the area it is.

@@ -3261,9 +3261,12 @@ millimetres again. The stages, each a module, each reported to a progress sink
    beside those taken looked at again; the stairs left taken away by Yokoi, Toriwaki and
    Fukumura's connectivity number (1975); the skeleton as a graph of ends, junctions (junction
    pixels side by side one node, at the centre of its deepest pixels) and the pieces between them,
-   a loop with neither a node of its own; spurs that reach less than 1.5 pixels or half the
-   junction's disc past it pruned, as the medial axis's are (Blum 1967; Shaked and Bruckstein
-   1998), and junctions whose discs overlap made one; each end carried on along its piece to the
+   a loop with neither a node of its own; spurs that reach past the junction's disc no more than
+   2 pixels (a hair anti-aliasing leaves on a line's edge reaches 1.6 to 1.8) or a third of the
+   line's width pruned, as the medial axis's are (Blum 1967; Shaked and Bruckstein 1998), so that
+   a real branch reaching farther stays, the top of a "t" rising 0.8 mm above its bar on lines
+   0.9 mm wide among them (the owner's choice, 2026-11-07, „Zostawić dłuższe (polecam)”), and
+   junctions whose discs overlap made one; each end carried on along its piece to the
    ink, less half the line's width; the pieces made smooth by Visvalingam and Whyatt's line
    generalisation (1993) at an effective area of 8 square pixels, so that the stairs pixels leave
    along a curve make no corner the planner stitches into. The line's width is its pixels over its

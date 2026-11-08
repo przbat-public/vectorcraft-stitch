@@ -883,8 +883,10 @@ the fabric.
   already stitched into is passed, so along a fine zigzag the stitches keep their length (at most
   1.3 stitch lengths) instead of one point moving from corner to corner.
 
-  A running line whose pieces meet end to end (their ends within a thread's width, 0.4 mm: a
-  letter's strokes, a drawing's lines, a centre line's branches) is sewn as one *route* through each
+  A running line whose pieces meet end to end (their ends within a thread's width, 0.4 mm, of the
+  point where the first of them lies, wherever the drawing is, so that no meeting point is wider
+  than that either side of its point: a letter's strokes, a drawing's lines, a centre line's
+  branches) is sewn as one *route* through each
   drawing they make: every piece once, and back along a few of them in their own needle points
   where the needle must return, instead of a jump or a connecting stitch at every junction (the
   project owner's choices: "branches are sewn once each, going back along a few", 2026-11-01, and

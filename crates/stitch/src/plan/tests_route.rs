@@ -44,12 +44,16 @@ fn sewn(path: &BezPath, aim: Aim) -> (Vec<Stitch>, f64) {
 }
 
 /// Every piece's needle points, as a piece on its own is sewn, are sewn: each within a hair of one
-/// of `out`'s.
+/// of `out`'s, a closed piece's within half a stitch.
 fn every_piece_sewn(path: &BezPath, out: &[Stitch]) {
     let got = needle(out);
     for sub in subpaths(path) {
+        // A closed piece is entered at its point nearest the needle, so its needle points lie
+        // elsewhere along it than its own resampling's: each of those lies within half a stitch
+        // of one sewn.
+        let near = if sub.closed { running().stitch_length / 2.0 + 1e-9 } else { 1e-9 };
         for q in resample(&sub.pts, running().stitch_length, sub.closed) {
-            assert!(got.iter().any(|g| g.distance(q) < 1e-9), "{q:?} of a piece isn't sewn");
+            assert!(got.iter().any(|g| g.distance(q) < near), "{q:?} of a piece isn't sewn");
         }
     }
 }
@@ -295,4 +299,54 @@ fn huge_drawings_are_routed_in_time() {
     assert_eq!(jumps(&out), 0);
     let took = started.elapsed();
     assert!(took.as_secs_f64() < 30.0, "{took:?}");
+}
+
+/// Ends within a thread's width meet wherever the drawing lies: two pieces 10 mm long whose ends lie
+/// 0.8 of the gap apart, the gap moved along x by hundredths of a millimetre, and to x = 0.28 and
+/// 3 mm, where the cells fall differently.
+#[test]
+fn pieces_that_nearly_meet_are_one_drawing_wherever_they_lie() {
+    for x in (0..100).map(|k| 10.0 + f64::from(k) * 0.01).chain([0.28, 3.0]) {
+        let near = pieces(&[vec![(x - 10.0, 0.0), (x, 0.0)], vec![(x + 0.8 * GAP_BRIDGE, 0.0), (x + 10.0, 0.0)]]);
+        assert!(Graph::of(&subpaths(&near)).is_some(), "ends {} mm apart at x = {x} don't meet", 0.8 * GAP_BRIDGE);
+    }
+}
+
+/// Ends meet within the gap of a node's point, not through a chain: thirty strands whose roots lie
+/// 0.25 mm apart in a row (7.25 mm end to end) make no node whose ends lie farther than the gap
+/// from its point.
+#[test]
+fn a_node_is_no_wider_than_the_gap() {
+    let strands: Vec<Vec<(f64, f64)>> = (0..30)
+        .map(|k| {
+            let x = 0.25 * f64::from(k);
+            vec![(x, 0.0), (x + f64::from(k) - 15.0, 3.0)]
+        })
+        .collect();
+    let subs = subpaths(&pieces(&strands));
+    let graph = Graph::of(&subs).expect("pieces that meet");
+    for e in &graph.edges {
+        for (end, node) in [(subs[e.sub].pts[0], e.a), (*subs[e.sub].pts.last().unwrap(), e.b)] {
+            assert!(end.distance(graph.nodes[node]) <= GAP_BRIDGE + 1e-9, "an end {} mm from its node", end.distance(graph.nodes[node]));
+        }
+    }
+}
+
+/// A route sews no stitch across a node longer than a stitch: two hundred dashes 0.2 mm long 0.25 mm
+/// apart, drawn out of order, joined end to end through a chain of ends, sewed a stitch 45 mm long
+/// across the one node they made.
+#[test]
+fn a_route_sews_no_stitch_across_its_node() {
+    let dash = |k: u32| {
+        let x = 0.45 * f64::from(k);
+        vec![(x, 0.0), (x + 0.2, 0.0)]
+    };
+    let path = pieces(&(0..100).flat_map(|k| [dash(k), dash(k + 100)]).collect::<Vec<_>>());
+    let (out, _) = sewn(&path, Aim::from_needle(None));
+    let longest = out
+        .windows(2)
+        .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
+        .map(|w| w[0].point().distance(w[1].point()))
+        .fold(0.0, f64::max);
+    assert!(longest <= running().stitch_length * 1.5, "a stitch {longest:.1} mm long");
 }

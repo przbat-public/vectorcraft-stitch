@@ -4,8 +4,9 @@
 //! along a few", 2026-11-01, and „Wszędzie w planiście (polecam)”, 2026-11-07: for every running
 //! line, not only those digitizing makes).
 //!
-//! The pieces are the edges of a graph whose nodes are where their ends meet ([`Graph`]: ends within
-//! [`GAP_BRIDGE`] of each other are one node). Sewing every edge and coming back along as few as
+//! The pieces are the edges of a graph whose nodes are where their ends meet ([`Graph`]: an end
+//! within [`GAP_BRIDGE`] of a node's point, its first end, is that node's, so that two ends that
+//! close meet wherever they lie, and no node is wider than the gap either side of its point). Sewing every edge and coming back along as few as
 //! possible is the route inspection ("Chinese postman") problem of Edmonds and Johnson (1973,
 //! *Matching, Euler tours and the Chinese postman*, Mathematical Programming 5, §1–2): the edges
 //! sewn twice must make every node even (an Euler path then exists, §2), so they form a *T-join*
@@ -48,13 +49,10 @@ use super::geometry::{SubPath, length};
 /// research's estimate, the session's choice.
 pub(super) const GAP_BRIDGE: f64 = THREAD_WIDTH;
 
-/// The grid ends are looked up in ([`Graph::of`]): cells whose diagonal is [`GAP_BRIDGE`], so that
-/// any two ends in one cell meet.
-const CELL: f64 = GAP_BRIDGE / std::f64::consts::SQRT_2;
-
-/// How many ends of a cell are compared with a neighbouring cell's, at most: a bound on the work at
-/// a point where very many pieces end (every end in one cell meets the others anyway). An estimate.
-const MAX_CELL_ENDS: usize = 16;
+/// The grid the nodes' points are looked up in ([`Graph::of`]): cells [`GAP_BRIDGE`] wide, so that
+/// a node an end meets lies in the end's cell or one beside it, corner to corner at most. Two
+/// nodes' points lie farther apart than the gap, so a cell holds a few at most.
+const CELL: f64 = GAP_BRIDGE;
 
 /// The most pieces a line is routed with: past them it is sewn piece by piece, as before routing.
 /// Every step here takes time in proportion to the pieces (or their logarithm besides), so this
@@ -137,48 +135,39 @@ impl Graph {
         if ends.len() != 2 * open.len() {
             return None;
         }
+        // Each end in turn meets the node whose point lies nearest it within the gap, or is a new
+        // node's point: the nodes' points are each farther than the gap from the others.
         let mut cells: BTreeMap<(i64, i64), Vec<usize>> = BTreeMap::new();
-        for (k, &q) in ends.iter().enumerate() {
-            cells.entry(cell(q)?).or_default().push(k);
-        }
-        let mut parent: Vec<usize> = (0..ends.len()).collect();
-        for (&(cx, cy), here) in &cells {
-            // Every end of a cell meets the others.
-            if let Some((&first, rest)) = here.split_first() {
-                for &k in rest {
-                    join(&mut parent, first, k);
-                }
-            }
-            // A neighbouring cell's ends, each pair of cells once.
-            for (dx, dy) in [(1, -1), (1, 0), (1, 1), (0, 1)] {
-                let Some(there) = cells.get(&(cx + dx, cy + dy)) else { continue };
-                for &k in here.iter().take(MAX_CELL_ENDS) {
-                    for &m in there.iter().take(MAX_CELL_ENDS) {
-                        if let (Some(p), Some(q)) = (ends.get(k), ends.get(m))
-                            && p.distance(*q) <= GAP_BRIDGE
-                        {
-                            join(&mut parent, k, m);
+        let mut nodes: Vec<Point> = Vec::new();
+        let mut node_of: Vec<usize> = Vec::with_capacity(ends.len());
+        for &q in &ends {
+            let (cx, cy) = cell(q)?;
+            let mut met: Option<(f64, usize)> = None;
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    let (Some(nx), Some(ny)) = (cx.checked_add(dx), cy.checked_add(dy)) else { continue };
+                    for &n in cells.get(&(nx, ny)).map_or(&[][..], Vec::as_slice) {
+                        let d = nodes.get(n).map_or(f64::INFINITY, |p| p.distance(q));
+                        if d <= GAP_BRIDGE && met.is_none_or(|(best, m)| d < best || (d == best && n < m)) {
+                            met = Some((d, n));
                         }
                     }
                 }
             }
-        }
-        // A node for each group, numbered in the order of its first end.
-        let mut node_of: Vec<Option<usize>> = vec![None; ends.len()];
-        let mut nodes: Vec<Point> = Vec::new();
-        for k in 0..ends.len() {
-            let r = root(&mut parent, k);
-            if node_of.get(r).copied().flatten().is_none() {
-                if let Some(slot) = node_of.get_mut(r) {
-                    *slot = Some(nodes.len());
+            let n = match met {
+                Some((_, n)) => n,
+                None => {
+                    cells.entry((cx, cy)).or_default().push(nodes.len());
+                    nodes.push(q);
+                    nodes.len() - 1
                 }
-                nodes.push(*ends.get(r)?);
-            }
+            };
+            node_of.push(n);
         }
         let mut edges: Vec<Edge> = Vec::with_capacity(open.len());
         for (j, &sub) in open.iter().enumerate() {
-            let a = node_of.get(root(&mut parent, 2 * j)).copied().flatten()?;
-            let b = node_of.get(root(&mut parent, 2 * j + 1)).copied().flatten()?;
+            let a = node_of.get(2 * j).copied()?;
+            let b = node_of.get(2 * j + 1).copied()?;
             let len = subs.get(sub).map_or(0.0, |s| length(&s.pts, false));
             edges.push(Edge { sub, a, b, len });
         }

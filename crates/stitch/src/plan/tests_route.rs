@@ -510,3 +510,49 @@ fn pairing_the_odd_nodes_reaches_the_least() {
     let (twice, least) = (route_length(&path) - total, least_twice(&nodes, &edges));
     assert!((twice - least).abs() < 1e-6, "{twice} mm sewn twice, the least {least}");
 }
+
+/// A drawing of pieces starts nearest the needle where that sews no more twice, as a line's
+/// subpaths do: a rectangle of four pieces, the needle by its bottom-right corner, starts there,
+/// where it started at its first piece, a 45 mm move away; a plus of four equal arms, the needle by
+/// its right arm's tip, starts at that tip.
+#[test]
+fn a_route_starts_nearest_the_needle_when_that_costs_nothing() {
+    let rect =
+        pieces(&[vec![(0.0, 0.0), (40.0, 0.0)], vec![(40.0, 0.0), (40.0, 20.0)], vec![(40.0, 20.0), (0.0, 20.0)], vec![(0.0, 20.0), (0.0, 0.0)]]);
+    let (out, _) = sewn(&rect, Aim::from_needle(Some(Point::new(40.5, 20.5))));
+    let first = needle(&out).first().copied();
+    assert!(first.is_some_and(|q| q.distance(Point::new(40.0, 20.0)) < 1e-9), "the rectangle starts at {first:?}");
+    let plus =
+        pieces(&[vec![(0.0, 0.0), (0.0, -10.0)], vec![(0.0, 0.0), (10.0, 0.0)], vec![(0.0, 0.0), (0.0, 10.0)], vec![(0.0, 0.0), (-10.0, 0.0)]]);
+    let (out, _) = sewn(&plus, Aim::from_needle(Some(Point::new(10.5, 0.0))));
+    let first = needle(&out).first().copied();
+    assert!(first.is_some_and(|q| q.distance(Point::new(10.0, 0.0)) < 1e-9), "the plus starts at {first:?}");
+}
+
+/// An entry is met whatever the exit: two V's drawn as pieces, the entry and the exit at the right
+/// V's two tips, start at the entry, where the exit took the right V and the line started at the
+/// left one.
+#[test]
+fn an_exit_on_the_entrys_drawing_leaves_the_entry_met() {
+    let path = pieces(&[vec![(0.0, 0.0), (2.0, 4.0)], vec![(2.0, 4.0), (4.0, 0.0)], vec![(-7.0, 0.0), (-5.0, 4.0)], vec![(-5.0, 4.0), (-3.0, 0.0)]]);
+    let entry = Point::new(0.0, 0.0);
+    let out = stitches_aimed(&path, FillRule::NonZero, &running(), Aim { start: Start::Entry(entry), exit: Some(Point::new(4.0, 0.0)) });
+    let first = needle(&out).first().copied();
+    assert!(first.is_some_and(|q| q.distance(entry) < 1e-9), "starts at {first:?}");
+}
+
+/// A route given only an entry, or only an exit, is free at its other end: a T from its stem's tip
+/// sews the least, one arm twice, and ends elsewhere than it starts.
+#[test]
+fn a_route_with_one_end_given_sews_least_twice() {
+    let t = pieces(&[vec![(0.0, 0.0), (10.0, 0.0)], vec![(10.0, 0.0), (20.0, 0.0)], vec![(10.0, 0.0), (10.0, 6.0)]]);
+    let subs = subpaths(&t);
+    let graph = Graph::of(&subs).expect("pieces that meet");
+    let parts = graph.components();
+    let tip = graph.nodes.iter().position(|q| q.distance(Point::new(10.0, 6.0)) < 1e-9).expect("the stem's tip");
+    for (start, end) in [(Some(tip), None), (None, Some(tip))] {
+        let r = route(&graph, &parts[0], start, end).expect("a route");
+        let twice: f64 = r.steps.iter().filter(|s| s.again).map(|s| graph.edges[s.edge].len).sum();
+        assert!((twice - 10.0).abs() < 1e-9 && r.start != r.end, "{start:?} {end:?}: {twice} mm twice");
+    }
+}

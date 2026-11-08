@@ -121,6 +121,30 @@ fn nearest_node(graph: &Graph, part: &[usize], q: Point) -> Option<(usize, f64)>
         .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
 }
 
+/// How many millimetres route `r` through `graph` sews twice.
+fn twice(graph: &Graph, r: &Route) -> f64 {
+    r.steps.iter().filter(|s| s.again).map(|s| graph.edges.get(s.edge).map_or(0.0, |e| e.len)).sum()
+}
+
+/// The route through `graph`'s part `edges` from node `start` to node `end` (free when `None`), as
+/// near the needle (`here`) as it can start, as a line's subpaths start nearest it: with its start
+/// free, from its node nearest the needle when that sews nothing more twice (a closed one always,
+/// one whose ends cost the same), else, both ends free, from its end nearer the needle. `None` when
+/// there is no route through it.
+fn route_near(graph: &Graph, edges: &[usize], start: Option<usize>, end: Option<usize>, here: Option<Point>) -> Option<Route> {
+    let free = route(graph, edges, start, end)?;
+    let (Some(h), None) = (here, start) else { return Some(free) };
+    let free = if end.is_none() && node(graph, free.end).distance(h) < node(graph, free.start).distance(h) { reversed(free) } else { free };
+    let Some((nearest, _)) = nearest_node(graph, edges, h) else { return Some(free) };
+    if free.start == nearest {
+        return Some(free);
+    }
+    match route(graph, edges, Some(nearest), end) {
+        Some(near) if twice(graph, &near) <= twice(graph, &free) + SAME_POINT => Some(near),
+        _ => Some(free),
+    }
+}
+
 /// `r` walked the other way, from its end to its start, each piece again sewn the first time it is
 /// reached.
 fn reversed(r: Route) -> Route {
@@ -135,9 +159,9 @@ fn reversed(r: Route) -> Route {
 /// A line whose pieces meet end to end ([`Graph::of`]) sewn from `aim`'s start: each connected part
 /// of its pieces as one route ([`route`]), every other piece as a line is sewn, in turn by the rules
 /// a line's subpaths take ([`super::geometry::ordered`]): from an entry point, what it lies nearest
-/// first, a route starting at its node nearest it; then each time the nearest, a route from its end
-/// nearer the needle; toward an exit point, what lies nearest it last, a route ending at its node
-/// nearest it, a closed piece going on round to it. Past [`MAX_REORDERED`] of them, the drawing's
+/// first, a route starting at its node nearest it; then each time the nearest, a route as near the
+/// needle as it can start ([`route_near`]); toward an exit point, what lies nearest it last of the
+/// rest, a route ending at its node nearest it, a closed piece going on round to it. Past [`MAX_REORDERED`] of them, the drawing's
 /// order beyond the first. A route with no exit ends where taking it back sews least twice; a stretch
 /// sewn back over that costs more than a jump ([`sewn_back`]) is jumped instead. With the stitches,
 /// the connecting stitches sewn between them (millimetres, [`Runs::connectors`]).
@@ -188,12 +212,7 @@ fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>
         match item {
             Item::Part(c) => {
                 let edges = part(c);
-                // A route that may end at either end starts at the one nearer the needle.
-                let r = match (route(graph, edges, start, end), start, end, *here) {
-                    (Some(r), None, None, Some(h)) if node(graph, r.end).distance(h) < node(graph, r.start).distance(h) => Some(reversed(r)),
-                    (r, ..) => r,
-                };
-                match r {
+                match route_near(graph, edges, start, end, *here) {
                     Some(r) => sew_route(graph, &r, p, runs, here),
                     // No route through it (never, for a connected part): its pieces as they are.
                     None => {
@@ -218,13 +237,11 @@ fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>
         let connectors = runs.connectors(p);
         return (runs.join(), connectors);
     }
-    // Sewn last: what lies nearest the exit.
+    // Sewn first: what the entry lies nearest, from it; then last, of the rest, what lies nearest
+    // the exit, so that an exit on the entry's own drawing never takes it from the entry.
+    let first = entry.and_then(|e| nearest_to(&pending, e).map(|i| (e, pending.remove(i))));
     let last = exit.and_then(|x| nearest_to(&pending, x)).map(|i| pending.remove(i));
-    // Sewn first: what the entry lies nearest, from it.
-    if let Some(e) = entry
-        && let Some(i) = nearest_to(&pending, e)
-    {
-        let item = pending.remove(i);
+    if let Some((e, item)) = first {
         sew(item, node_near(item, Some(e)), None, From::Entry(e), None, &mut runs, &mut here);
     }
     // Then each time the nearest, or past MAX_REORDERED, the drawing's order.

@@ -229,6 +229,7 @@ pub fn rows_by_piece(path: &BezPath, rule: FillRule, fixed: f64) -> Vec<PieceRow
     if outlines.is_empty() {
         return Vec::new();
     }
-    let grid = Grid::new(&outlines);
+    // The grid only speeds telling outlines apart: one outline is one piece.
+    let grid = if outlines.len() > 1 { Grid::new(&outlines) } else { None };
     piece_rows(Area { outlines: &outlines, rule, grid: grid.as_ref() }, fixed).into_iter().map(|(_, r)| r).collect()
 }

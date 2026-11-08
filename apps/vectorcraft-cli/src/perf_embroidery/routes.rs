@@ -1,29 +1,47 @@
 //! The routes rows of `vectorcraft-cli perf --embroidery`: running lines whose pieces meet end to
 //! end, which the stitch planner sews as one route each (`vectorcraft_stitch::plan`'s routes), and
 //! fills whose rows run across their shape (`embroidery.setup {fillAngle: "acrossShape"}`), each
-//! planned cold.
+//! planned cold; and that document planned warm and its objects read by the Object tab, the rows
+//! measured once, inside each unit's plan, which the cache keeps.
 //!
 //! The documents, built here:
 //! - a running line of 32,766 pieces meeting as an H-tree fourteen levels deep: a tree, each piece
 //!   sewn once but those the needle goes back along;
 //! - a running line of a 100 × 100 grid's 19,800 pieces: cycles, the pieces sewn twice chosen among
 //!   them;
-//! - the 1,000-path document with its fills' rows across their shape.
+//! - the 1,000-path document with its fills' rows across their shape: planned cold, planned again
+//!   after a nudge (warm), and read by the Object tab after a nudge (each of its fills measured on
+//!   the area the plan sews).
 
 use serde_json::json;
 use vectorcraft_doc::Document;
 use vectorcraft_engine::Session;
 
-use super::{PATHS, cold, err, fresh};
+use super::{PATHS, cold, err, fresh, object_tab, warm};
 use crate::perf::synthetic;
 
 /// The rows' names, in order (at most 42 characters, the report's column).
-pub(super) const ROWS: [&str; 3] =
-    ["routes: a running line, 32,766-piece tree", "routes: a running line, 100 × 100 grid", "rows across shapes, 1,000 paths"];
+pub(super) const ROWS: [&str; 5] = [
+    "routes: a running line, 32,766-piece tree",
+    "routes: a running line, 100 × 100 grid",
+    "rows across shapes, 1,000 paths",
+    "rows across shapes: warm plan, 1,000 paths",
+    "rows across shapes: object tab, 1,000",
+];
 
-/// Each row's budget, milliseconds, in the order of [`ROWS`]: about 2.5 times what each measured
-/// ([`MEASURED_MS`]), as the other rows', so that a regression of that size shows.
-pub(super) const BUDGETS: [f64; 3] = [MEASURED_MS[0] * 2.5, MEASURED_MS[1] * 2.5, MEASURED_MS[2] * 2.5];
+/// Each row's budget, milliseconds, in the order of [`ROWS`]: the cold rows about 2.5 times what
+/// each measured ([`MEASURED_MS`]), as the other rows', so that a regression of that size shows;
+/// the warm plan and the Object tab's read those of the same rows with the fixed rows
+/// ([`WARM_PLAN_MS`], [`OBJECT_TAB_MS`]): the rule must cost them nothing they can see.
+pub(super) const BUDGETS: [f64; 5] = [MEASURED_MS[0] * 2.5, MEASURED_MS[1] * 2.5, MEASURED_MS[2] * 2.5, WARM_PLAN_MS, OBJECT_TAB_MS];
+
+/// The warm plan's budget, milliseconds: the 1,000-path document's warm plan with the fixed rows
+/// (`embroidery: warm plan, 1,000 paths`).
+const WARM_PLAN_MS: f64 = 100.0;
+
+/// The Object tab's read's budget, milliseconds: its re-read of 1,000 selected objects with the
+/// fixed rows, a third of a frame (`object tab: re-read after a nudge, 1,000`).
+const OBJECT_TAB_MS: f64 = 6.0;
 
 /// What each row measured on 2026-11-07 (release, 12-core Apple Silicon, load about 3 to 5, the
 /// median of three, the later of two runs within 2 % of the first): the tree routed in 24.5 ms, the
@@ -92,5 +110,6 @@ pub(super) fn times() -> Result<Vec<f64>, String> {
     let mut s = fresh(&synthetic(PATHS)?);
     s.execute("embroidery.setup", &json!({"fillAngle": "acrossShape"})).map_err(err)?;
     let across = (*s.doc().map_err(err)?.doc).clone();
-    Ok(vec![tree_ms, grid_ms, cold(&across)?])
+    let [read, _] = object_tab(&across, &across)?;
+    Ok(vec![tree_ms, grid_ms, cold(&across)?, warm(&across)?, read])
 }

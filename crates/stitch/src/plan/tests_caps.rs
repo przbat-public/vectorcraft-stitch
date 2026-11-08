@@ -317,3 +317,18 @@ fn the_underlay_reaches_into_a_square_cap() {
     let middle: Vec<&Point> = q.iter().filter(|a| a.y.abs() <= 1e-9).collect();
     assert!(middle.iter().any(|a| a.x < -0.25) && middle.iter().any(|a| a.x > LENGTH + 0.25), "the centre run stops at the path's ends: {middle:?}");
 }
+
+/// A cap goes on along the curve's own end, not the last chord it is flattened into: a quarter of a
+/// circle 2 mm round, square-capped, ends with its last crossing's middle on the circle's tangent
+/// at its end, within a degree, where the last chord turns from it by 11°.
+#[test]
+fn a_cap_goes_on_along_the_curves_end() {
+    let arc = vectorcraft_geom::kurbo::Arc::new((0.0, 0.0), (2.0, 2.0), 0.0, std::f64::consts::FRAC_PI_2, 0.0);
+    let path: BezPath = vectorcraft_geom::Shape::path_elements(&arc, 0.01).collect();
+    let p = Params { width: 1.0, cap: Cap::Square, underlay: Underlay::None, lock: false, pull: [0.0; 2], ..Params::for_style(Style::Satin) };
+    let q = points(&stitches(&path, FillRule::NonZero, &p));
+    let (a, b) = (q[q.len() - 2], q[q.len() - 1]);
+    let out = a.midpoint(b) - Point::new(0.0, 2.0);
+    let off = out.y.atan2(-out.x).to_degrees().abs();
+    assert!(off < 1.0, "the cap goes on {off}° off the curve's end");
+}

@@ -206,14 +206,14 @@ b20992b7856d058115f889b35679dfcbeb0b683a306da77cb64ee516b91281f7  exits.vp3
 181d9ac9fc9d6c34d7f776e58dc502dc98d61b2c25f589383d779d2041364431  stops.pec
 d2238d55ce687e38e34bda4876c983f1b21034c978580abc19e3b61dc48259bc  stops.jef
 a77bc0e2ff5f19ceb4bea099c075139bab412a8c1cf02da2759b55e301d16acf  stops.vp3
-570e24efad3cfb814ec1fdb4377642bd4c36c14b598d5084c66c5f36a69afe83  capped-strokes.dst
-41d4c0d76819b894f3e2e77d077f2faefa6ecc5c5da9443b467bb0c38670d23c  capped-strokes.tap
-41d4c0d76819b894f3e2e77d077f2faefa6ecc5c5da9443b467bb0c38670d23c  capped-strokes.t01
-3504127ca53569c783ac65352793042c6697a69a0fdbe3b8ad629520efcc51f6  capped-strokes.exp
-3ebc5ecf89ae212033be5b4239e663540b0e8a1d34d52e4236a372067ee527a4  capped-strokes.pes
-ccb04282b608466b5e90711bef638adc53e56c7534cf6f72395e21660a546298  capped-strokes.pec
-e0c0e066aeaf60c5e10fad2d49775d435082cd309f7fc43b8e9c0c93c3c7c1e8  capped-strokes.jef
-a8e825781c1206f7ae2649e082f6f1a0321aace62ab74ed5d206d986be128915  capped-strokes.vp3
+170de223979a965509b03984e8e64dccb9d92e02ae781e87605591cf2d0285c7  capped-strokes.dst
+533a712e12ba9842941a6e67f870ef1024a665da9a9f3a5e8b660ebfcf0cd5d6  capped-strokes.tap
+533a712e12ba9842941a6e67f870ef1024a665da9a9f3a5e8b660ebfcf0cd5d6  capped-strokes.t01
+d6370e91dfed18ac02e02cab146d31e2320bada721ef8af8488461009ee223f4  capped-strokes.exp
+1a67cb7368a5944887a67f50a55ec65e31d199ead766e873670a86dda6015050  capped-strokes.pes
+64e2542d2aa4b564731d42d2c70be2a349561f2179e93326cd6adb20ff61ac39  capped-strokes.pec
+a386695a2e80cd6f33720a5fa476f640c39fffd61795e570324ce3f3b3edfc89  capped-strokes.jef
+6104907b81adc10c0d84c38266d04e9f6a4de43c441cedf874bc1924fc2a4cc3  capped-strokes.vp3
 cceb764acd016ac3ea21c3a10fd934fa9044fbd9e3e8d1c288881e10d84bfbaa  rows-across-shapes.dst
 ef63c60a0517c8e987a00932ebcc60b00af8a644bc01cdecc21b5f957ad5f060  rows-across-shapes.tap
 ef63c60a0517c8e987a00932ebcc60b00af8a644bc01cdecc21b5f957ad5f060  rows-across-shapes.t01
@@ -381,9 +381,9 @@ a3e4b067d744441d2a8c4ddeef48373d866aebe41326aade0c20252f59ee69d1  exits.jef  33 
 0cbdbeaf8f5a6b54c08931ca2b8a8132f27e10b2ee67498351caa446d8ed9915  stops.pes  5 5 55 5 5 21 56 56 56
 0de51589ee049991fc511ff98f549cb9742893c818db4450209a826ac44b9043  stops.pec  5 5 55 5 5 21 56 56 56
 e4484bd08cdd4abbc709e8285797662885f60e3f1eff64d4ce448f1ec03db8cd  stops.jef  33 33 59 33 33 59 75 75 75
-29b2e08c91ca9cbe713570e083eb3ac8757ef5503e43fa03109239565ab039cb  capped-strokes.pes  5 21 37 7 52 24
-0282d00b8dbbcbe96812f328a4233164e426858e6b7c18f8b24c92ea24107e4f  capped-strokes.pec  5 21 37 7 52 24
-b918c4b708a5013872f1d8e1edadaddb7df9f534ec5974df9e36217edfc93d60  capped-strokes.jef  33 59 45 59 71 14
+99403da4047f7c9032a850e990b4e8da0bbdf1cb02d08419cbbd55752e399f44  capped-strokes.pes  5 21 37 7 52 24
+1d18e3d39ab1bec96c2a627a669e619a2fd6367cf3506bde399680ba0075aad8  capped-strokes.pec  5 21 37 7 52 24
+efb28864ad241ea1cbde14c1d84b344e00c88d209b6297ec3f3bb418e168251e  capped-strokes.jef  33 59 45 59 71 14
 3692ca5c1488cd855b071989101e4fa5b6887416f69075d797b728c841caf0d2  rows-across-shapes.pes  5 21 7 52 24
 51870ca37f5aab9c8010ace1daef6fc749acdf7f2d196b6ca53e1e66e7a6af0e  rows-across-shapes.pec  5 21 7 52 24
 19388eae9810b1b84b260589bbc0ad3c8f192154c1d1bb7dc0e4cf6ca3bf0f74  rows-across-shapes.jef  33 59 59 71 14
@@ -576,14 +576,14 @@ stops.pes  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trim
 stops.pec  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
 stops.jef  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
 stops.vp3  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/0/0/0/0/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
-capped-strokes.dst  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1668
-capped-strokes.tap  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1668
-capped-strokes.t01  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1668
-capped-strokes.exp  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1668
-capped-strokes.pes  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1671
-capped-strokes.pec  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1671
-capped-strokes.jef  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1666
-capped-strokes.vp3  blocks 6  needle 346/379/334/389/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.03  shortest 0.80  cells 1666
+capped-strokes.dst  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.tap  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.t01  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.exp  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.pes  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1678
+capped-strokes.pec  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1678
+capped-strokes.jef  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.2x89.8  longest 4.03  shortest 0.80  cells 1671
+capped-strokes.vp3  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.2x89.8  longest 4.03  shortest 0.80  cells 1671
 rows-across-shapes.dst  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2875
 rows-across-shapes.tap  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2875
 rows-across-shapes.t01  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2875

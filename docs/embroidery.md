@@ -938,7 +938,8 @@ the fabric.
   drawn (Wilcom's push and pull article, Ink/Stitch's push compensation). No starting value is
   published, so it is off by default. A stroke's cap is sewn as it is painted (the project owner's
   choice of 2026-11-01, „Tak, wszędzie (polecam)”): a round or square cap carries the column's top
-  stitching on past each open end by half its width, a round one narrowing its crossings round a
+  stitching on past each open end by half its width, along the curve's own end tangent (not the
+  last chord it is flattened into, up to 13° off it at a curve 2 mm round), a round one narrowing its crossings round a
   half disc (the width's share of the pull compensation narrowing with them, the fixed pull kept
   whole, as along the column) and stopping where a crossing would be shorter than the shortest
   stitch, a butt cap stopping at the end; the underlay holds up the caps too (the owner's choice,

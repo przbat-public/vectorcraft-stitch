@@ -5,7 +5,10 @@
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
 use super::area::TRAVEL_STITCH;
-use super::geometry::{CORNER, Line, NO_LENGTH, SubPath, length, nearest_on, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
+use super::geometry::{
+    CORNER, EndDirections, Line, NO_LENGTH, SubPath, end_directions, length, nearest_on, resample, resample_by, subpaths, tangent, trimmed, turn,
+    unit,
+};
 use super::narrow::Column;
 use super::runs::{COST_HIDDEN, Runs, Travel};
 use super::toward::{Finish, ordered_toward};
@@ -89,8 +92,9 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
     // other end, and a ring travels along its middle to the exit before its top stitching; both are
     // weighed as travel hidden under stitching still to come.
     let finish = Finish { returns: line_returns(&p), flip: Some(COST_HIDDEN), reach: COST_HIDDEN };
-    // The satin's pieces, an end lying on one taking no cap.
+    // The satin's pieces, an end lying on one taking no cap, and the directions out of their ends.
     let all = subpaths(path);
+    let directions = end_directions(path);
     let mut meet_work = 0usize;
     for Line { pts, closed, reversed, toward } in ordered_toward(all.clone(), aim, &finish, &p) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
@@ -102,7 +106,7 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
             None
         } else {
             let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
-            capped(&pts, p.cap, half, &tip, ends_on_pieces(&pts, &all, half, &mut meet_work))
+            capped(&pts, p.cap, half, &tip, ends_on_pieces(&pts, &all, half, &mut meet_work), directions_of(&pts, &directions))
         };
         let under = if closed { pts.clone() } else { pushed(&pts, push, shortest) };
         let (pts, cap) = match cap {
@@ -436,7 +440,7 @@ fn cap_reach(cap: super::Cap, half: f64, tip: &Tip) -> f64 {
 /// carried both ways along its own direction, or along x when it has none, as SVG 2 paints a
 /// subpath of no length (§ 9.5.3), so that it is sewn as the small satin dot its cap paints (the
 /// project owner's choice, 2026-11-07, „Szyć jako małą kropkę (polecam)”).
-fn capped(pts: &[Point], cap: super::Cap, half: f64, tip: &Tip, on_piece: [bool; 2]) -> Option<Capped> {
+fn capped(pts: &[Point], cap: super::Cap, half: f64, tip: &Tip, on_piece: [bool; 2], out: [Option<Vec2>; 2]) -> Option<Capped> {
     let reach = cap_reach(cap, half, tip);
     if reach <= 0.0 || !reach.is_finite() || on_piece == [true; 2] {
         return None;
@@ -446,10 +450,12 @@ fn capped(pts: &[Point], cap: super::Cap, half: f64, tip: &Tip, on_piece: [bool;
     if first.distance(last) <= ENDS_MEET && !dot {
         return None;
     }
-    // The direction out of each end: along its first segment with a length; a dot with none, x.
+    // The direction out of each end: the curve's own (`out`), else along its first segment with a
+    // length; a dot with none, x.
     let away = |end: Point, q: Option<&Point>| q.and_then(|&q| unit(end - q));
-    let back = away(first, pts.iter().find(|q| q.distance(first) > NO_LENGTH));
-    let on = away(last, pts.iter().rev().find(|q| q.distance(last) > NO_LENGTH));
+    let [back, on] = out;
+    let back = back.or_else(|| away(first, pts.iter().find(|q| q.distance(first) > NO_LENGTH)));
+    let on = on.or_else(|| away(last, pts.iter().rev().find(|q| q.distance(last) > NO_LENGTH)));
     let (back, on) = match (back, on) {
         (Some(back), Some(on)) => (back, on),
         _ if dot => (Vec2::new(-1.0, 0.0), Vec2::new(1.0, 0.0)),
@@ -467,15 +473,34 @@ fn capped(pts: &[Point], cap: super::Cap, half: f64, tip: &Tip, on_piece: [bool;
     Some(Capped { pts: line, cap, carried })
 }
 
-/// An open satin line `pts` (one of the satin's pieces `all`) as its top stitching runs
-/// (millimetres), carried past its ends by the cap `p` gives ([`capped`]): where its stitches can
-/// start and end (`super::ends`). `pts` as they are when nothing is carried.
-pub(super) fn capped_line(pts: &[Point], all: &[SubPath], p: &Params) -> Vec<Point> {
+/// The directions out of the ends of line `pts` (its first point, then its last), as
+/// [`end_directions`] found them for the subpath it is, either way round; none for a line it
+/// didn't.
+fn directions_of(pts: &[Point], found: &[EndDirections]) -> [Option<Vec2>; 2] {
+    let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return [None; 2] };
+    found
+        .iter()
+        .find_map(|e| {
+            if e.first == first && e.last == last {
+                Some([e.back, e.on])
+            } else if e.first == last && e.last == first {
+                Some([e.on, e.back])
+            } else {
+                None
+            }
+        })
+        .unwrap_or([None; 2])
+}
+
+/// An open satin line `pts` (one of the satin's pieces `all`, drawn by `path`) as its top stitching
+/// runs (millimetres), carried past its ends by the cap `p` gives ([`capped`]): where its stitches
+/// can start and end (`super::ends`). `pts` as they are when nothing is carried.
+pub(super) fn capped_line(pts: &[Point], all: &[SubPath], path: &BezPath, p: &Params) -> Vec<Point> {
     let half = p.width / 2.0;
     let ([left, right], [fixed_left, fixed_right]) = (p.compensation(p.width), p.compensation(0.0));
     let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
     let on_piece = ends_on_pieces(pts, all, half, &mut 0);
-    match capped(pts, p.cap, half, &tip, on_piece) {
+    match capped(pts, p.cap, half, &tip, on_piece, directions_of(pts, &end_directions(path))) {
         Some(c) => c.pts,
         None => pts.to_vec(),
     }
@@ -744,12 +769,12 @@ fn underlay_lines(under: &[Point], top: &[Point], cap: Option<&CapAlong>, inset:
     }
 }
 
-/// Where an open satin line `pts` (one of the satin's pieces `all`) sewn with `p` starts its
+/// Where an open satin line `pts` (one of the satin's pieces `all`, drawn by `path`) sewn with `p` starts its
 /// underlay at each of its ends ([`underlay_lines`], without push compensation): its first run's
 /// end there, a centre run's or an edge run's. `None` without an underlay.
-pub(super) fn underlay_ends(pts: &[Point], all: &[SubPath], p: &Params) -> Option<[Point; 2]> {
+pub(super) fn underlay_ends(pts: &[Point], all: &[SubPath], path: &BezPath, p: &Params) -> Option<[Point; 2]> {
     let kind = satin_kind(p.underlay, p.width)?;
-    let top = capped_line(pts, all, p);
+    let top = capped_line(pts, all, path, p);
     let cap = (top.len() > pts.len()).then_some(p.cap);
     let ends = |line: &[Point]| Some([*line.first()?, *line.last()?]);
     match (kind, cap) {

@@ -194,12 +194,12 @@ fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>
                     (r, ..) => r,
                 };
                 match r {
-                    Some(r) => sew_route(subs, graph, &r, p, runs, here),
+                    Some(r) => sew_route(graph, &r, p, runs, here),
                     // No route through it (never, for a connected part): its pieces as they are.
                     None => {
-                        for s in edges.iter().filter_map(|&e| graph.edges.get(e)).filter_map(|e| subs.get(e.sub)) {
+                        for e in edges.iter().filter_map(|&e| graph.edges.get(e)) {
                             let from = here.map_or(From::Drawn, From::Needle);
-                            sew_piece(s, from, None, p, runs, here);
+                            sew_piece(&SubPath { pts: e.pts.clone(), closed: false }, from, None, p, runs, here);
                         }
                     }
                 }
@@ -292,13 +292,13 @@ fn sewn_back(back: f64, from: Point, to: Point, p: &Params) -> bool {
 /// it is sewn back over (in its own holes), the pieces' points run on into one another; a stretch
 /// sewn back over that costs more than a jump ([`sewn_back`]) jumped instead; each run locked;
 /// `here` moved to its end.
-fn sew_route(subs: &[SubPath], graph: &Graph, r: &Route, p: &Params, runs: &mut Runs, here: &mut Option<Point>) {
+fn sew_route(graph: &Graph, r: &Route, p: &Params, runs: &mut Runs, here: &mut Option<Point>) {
     // Each piece's needle points, from its first point to its last, made once.
     let mut points: Vec<Option<Vec<Point>>> = vec![None; graph.edges.len()];
     let mut needle = |edge: usize| -> Vec<Point> {
         let Some(slot) = points.get_mut(edge) else { return Vec::new() };
         if slot.is_none() {
-            let pts = graph.edges.get(edge).and_then(|e| subs.get(e.sub)).map_or_else(Vec::new, |s| resample(&s.pts, p.stitch_length, false));
+            let pts = graph.edges.get(edge).map_or_else(Vec::new, |e| resample(&e.pts, p.stitch_length, false));
             *slot = Some(pts);
         }
         slot.clone().unwrap_or_default()

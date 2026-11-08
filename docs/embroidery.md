@@ -886,7 +886,9 @@ the fabric.
   A running line whose pieces meet end to end (their ends within a thread's width, 0.4 mm, of the
   point where the first of them lies, wherever the drawing is, so that no meeting point is wider
   than that either side of its point: a letter's strokes, a drawing's lines, a centre line's
-  branches) is sewn as one *route* through each
+  branches; and a line that ends within that of another's middle, a T or a K's arms drawn as
+  strokes of their own, the other cut there, the owner's choice, 2026-11-07, „Zrobić teraz”) is
+  sewn as one *route* through each
   drawing they make: every piece once, and back along a few of them in their own needle points
   where the needle must return, instead of a jump or a connecting stitch at every junction (the
   project owner's choices: "branches are sewn once each, going back along a few", 2026-11-01, and

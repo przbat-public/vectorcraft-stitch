@@ -6,7 +6,10 @@
 //!
 //! The pieces are the edges of a graph whose nodes are where their ends meet ([`Graph`]: an end
 //! within [`GAP_BRIDGE`] of a node's point, its first end, is that node's, so that two ends that
-//! close meet wherever they lie, and no node is wider than the gap either side of its point). Sewing every edge and coming back along as few as
+//! close meet wherever they lie, and no node is wider than the gap either side of its point). A
+//! piece whose middle passes within the gap of a node is cut there, so that a line ending on
+//! another's middle (a "T" or a "K" drawn as two strokes, a "6" drawn as one) joins its route
+//! (the project owner's choice, 2026-11-07, „Zrobić teraz”). Sewing every edge and coming back along as few as
 //! possible is the route inspection ("Chinese postman") problem of Edmonds and Johnson (1973,
 //! *Matching, Euler tours and the Chinese postman*, Mathematical Programming 5, §1–2): the edges
 //! sewn twice must make every node even (an Euler path then exists, §2), so they form a *T-join*
@@ -54,6 +57,11 @@ pub(super) const GAP_BRIDGE: f64 = THREAD_WIDTH;
 /// nodes' points lie farther apart than the gap, so a cell holds a few at most.
 const CELL: f64 = GAP_BRIDGE;
 
+/// How many steps along the pieces the search for nodes on their middles takes at most
+/// ([`cuts`]): one a cell along every piece. Past them no piece is cut, the pieces meeting end to
+/// end only. A bound on the work, an estimate: two million, the cells along 800 m of line.
+const MAX_CUT_STEPS: usize = 2_000_000;
+
 /// The most pieces a line is routed with: past them it is sewn piece by piece, as before routing.
 /// Every step here takes time in proportion to the pieces (or their logarithm besides), so this
 /// only bounds memory; an estimate, far past a colouring page's few thousand.
@@ -75,14 +83,15 @@ pub(super) struct Graph {
     pub(super) edges: Vec<Edge>,
 }
 
-/// A piece of the line: its subpath (its place in the line's subpaths), the nodes at its first and
-/// last points, and its length (millimetres).
-#[derive(Clone, Copy, Debug)]
+/// A piece of the line: the subpath it is (or is cut from: its place in the line's subpaths), the
+/// nodes at its first and last points, its length (millimetres) and its points.
+#[derive(Clone, Debug)]
 pub(super) struct Edge {
     pub(super) sub: usize,
     pub(super) a: usize,
     pub(super) b: usize,
     pub(super) len: f64,
+    pub(super) pts: Vec<Point>,
 }
 
 /// The root of `i` among `parent`'s groups, the path halved on the way.
@@ -164,12 +173,23 @@ impl Graph {
             };
             node_of.push(n);
         }
+        // Each piece, cut where a node lies on its middle.
+        let cut = cuts(subs, &open, &nodes, &cells);
         let mut edges: Vec<Edge> = Vec::with_capacity(open.len());
         for (j, &sub) in open.iter().enumerate() {
-            let a = node_of.get(2 * j).copied()?;
-            let b = node_of.get(2 * j + 1).copied()?;
-            let len = subs.get(sub).map_or(0.0, |s| length(&s.pts, false));
-            edges.push(Edge { sub, a, b, len });
+            let (a, b) = (node_of.get(2 * j).copied()?, node_of.get(2 * j + 1).copied()?);
+            let pts = &subs.get(sub)?.pts;
+            let mut from = (a, 0usize, *pts.first()?);
+            for &(seg, at, n) in cut.get(j).map_or(&[][..], Vec::as_slice) {
+                let mut part = vec![from.2];
+                part.extend(pts.get(from.1 + 1..=seg).unwrap_or(&[]));
+                part.push(at);
+                edges.push(Edge { sub, a: from.0, b: n, len: length(&part, false), pts: part });
+                from = (n, seg, at);
+            }
+            let mut part = vec![from.2];
+            part.extend(pts.get(from.1 + 1..).unwrap_or(&[]));
+            edges.push(Edge { sub, a: from.0, b, len: length(&part, false), pts: part });
         }
         let graph = Self { nodes, edges };
         // Nothing to route unless two pieces meet.
@@ -197,6 +217,63 @@ impl Graph {
         }
         out
     }
+}
+
+/// Where each of the line's pieces (`subs`, the open ones at `open`'s places) is cut: at each node
+/// (`nodes`, their points looked up in `cells`) that lies within [`GAP_BRIDGE`] of its middle,
+/// farther than that along it from its own ends, nearest there. By piece (its place in `open`),
+/// each cut's segment, its point and its node, in order along the piece. None at all past
+/// [`MAX_CUT_STEPS`].
+fn cuts(subs: &[SubPath], open: &[usize], nodes: &[Point], cells: &BTreeMap<(i64, i64), Vec<usize>>) -> Vec<Vec<(usize, Point, usize)>> {
+    let mut steps = 0usize;
+    let mut out: Vec<Vec<(usize, Point, usize)>> = Vec::with_capacity(open.len());
+    for &i in open {
+        let Some(pts) = subs.get(i).map(|s| &s.pts) else {
+            out.push(Vec::new());
+            continue;
+        };
+        let total = length(pts, false);
+        // The nearest point of the piece to each node within the gap of it: its distance, where it
+        // lies along the piece, its segment and the point.
+        let mut found: BTreeMap<usize, (f64, f64, usize, Point)> = BTreeMap::new();
+        let mut along = 0.0;
+        for (seg, w) in pts.windows(2).enumerate() {
+            let (Some(&p0), Some(&p1)) = (w.first(), w.get(1)) else { continue };
+            let len = p0.distance(p1);
+            let samples = (len / CELL).ceil().max(1.0);
+            if !samples.is_finite() {
+                return vec![Vec::new(); open.len()];
+            }
+            for k in 0..=samples as usize {
+                steps += 1;
+                if steps > MAX_CUT_STEPS {
+                    return vec![Vec::new(); open.len()];
+                }
+                let Some((cx, cy)) = cell(p0 + (p1 - p0) * (k as f64 / samples)) else { continue };
+                for dx in -1..=1 {
+                    for dy in -1..=1 {
+                        let (Some(nx), Some(ny)) = (cx.checked_add(dx), cy.checked_add(dy)) else { continue };
+                        for &n in cells.get(&(nx, ny)).map_or(&[][..], Vec::as_slice) {
+                            let Some(&q) = nodes.get(n) else { continue };
+                            let ab = p1 - p0;
+                            let t = if ab.hypot2() > 0.0 { ((q - p0).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+                            let at = p0 + ab * t;
+                            let (d, s) = (at.distance(q), along + len * t);
+                            let middle = s > GAP_BRIDGE && total - s > GAP_BRIDGE;
+                            if d <= GAP_BRIDGE && middle && found.get(&n).is_none_or(|&(best, ..)| d < best) {
+                                found.insert(n, (d, s, seg, at));
+                            }
+                        }
+                    }
+                }
+            }
+            along += len;
+        }
+        let mut here: Vec<(f64, usize, Point, usize)> = found.into_iter().map(|(n, (_, s, seg, at))| (s, seg, at, n)).collect();
+        here.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.3.cmp(&b.3)));
+        out.push(here.into_iter().map(|(_, seg, at, n)| (seg, at, n)).collect());
+    }
+    out
 }
 
 /// One step of a route: an edge (its place in [`Graph::edges`]), whether it is sewn from its first

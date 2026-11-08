@@ -123,6 +123,19 @@ fn random_tree(rng: &mut Lcg, n: usize) -> (Vec<Point>, Vec<(usize, usize)>) {
     (nodes, edges)
 }
 
+/// Whether every node of the drawing lies well clear of the pieces it isn't on (twice the gap), so
+/// that no piece is cut at a node on its middle and the drawing is the graph drawn.
+fn clear(nodes: &[Point], edges: &[(usize, usize)]) -> bool {
+    edges.iter().all(|&(a, b)| {
+        let (p, q) = (nodes[a], nodes[b]);
+        nodes.iter().enumerate().filter(|&(n, _)| n != a && n != b).all(|(_, &c)| {
+            let ab = q - p;
+            let t = ((c - p).dot(ab) / ab.hypot2()).clamp(0.0, 1.0);
+            c.distance(p + ab * t) > 2.0 * GAP_BRIDGE
+        })
+    })
+}
+
 fn path_of(nodes: &[Point], edges: &[(usize, usize)]) -> BezPath {
     pieces(&edges.iter().map(|&(a, b)| vec![(nodes[a].x, nodes[a].y), (nodes[b].x, nodes[b].y)]).collect::<Vec<_>>())
 }
@@ -164,6 +177,9 @@ fn a_random_tree_is_sewn_as_the_least_route_sews_it() {
     for case in 0..200 {
         let n = 3 + rng.below(10);
         let (nodes, edges) = random_tree(&mut rng, n);
+        if !clear(&nodes, &edges) {
+            continue;
+        }
         let path = path_of(&nodes, &edges);
         let total: f64 = edges.iter().map(|&(a, b)| nodes[a].distance(nodes[b])).sum();
         let least = 2.0 * total - tree_diameter(&nodes, &edges);
@@ -218,7 +234,7 @@ fn a_drawing_with_cycles_is_sewn_whole() {
                 edges.push((a, b));
             }
         }
-        if edges.len() > 12 {
+        if edges.len() > 12 || !clear(&nodes, &edges) {
             continue;
         }
         let path = path_of(&nodes, &edges);
@@ -301,6 +317,38 @@ fn huge_drawings_are_routed_in_time() {
     assert!(took.as_secs_f64() < 30.0, "{took:?}");
 }
 
+/// A line that ends on another's middle joins its route (the project owner's choice, 2026-11-07,
+/// „Zrobić teraz”): a T drawn as two strokes, its stem's end on the bar's middle, and a K whose two
+/// arms end on its stem's middle, each a stroke of its own, are sewn in one go, no jump and no
+/// connecting stitch, the touched line cut where the other ends; the T sews its stem twice, the
+/// shortest way, as a T of three pieces does. A line ending 1 mm off the other stays apart.
+#[test]
+fn a_line_that_ends_on_anothers_middle_joins_its_route() {
+    let t = pieces(&[vec![(0.0, 0.0), (20.0, 0.0)], vec![(10.0, 0.0), (10.0, 6.0)]]);
+    let k = pieces(&[vec![(0.0, 0.0), (0.0, 20.0)], vec![(9.0, 0.0), (0.0, 10.0)], vec![(0.0, 10.0), (9.0, 20.0)]]);
+    for (name, path) in [("T", &t), ("K", &k)] {
+        let (out, connectors) = sewn(path, Aim::from_needle(None));
+        assert_eq!(jumps(&out), 0, "{name}: a jump");
+        assert!(connectors.abs() < 1e-9, "{name}: {connectors} mm of connecting stitches");
+        let got = needle(&out);
+        for sub in subpaths(path) {
+            for q in resample(&sub.pts, 0.5, false) {
+                assert!(got.windows(2).any(|w| to_segment(q, w[0], w[1]) < 1e-6), "{name}: {q:?} isn't sewn");
+            }
+        }
+    }
+    assert!((route_length(&t) - (26.0 + 6.0)).abs() < 1e-9, "the T sews its stem twice");
+    let apart = pieces(&[vec![(0.0, 0.0), (20.0, 0.0)], vec![(10.0, 1.0), (10.0, 6.0)]]);
+    assert!(Graph::of(&subpaths(&apart)).is_none(), "a line ending 1 mm off the bar joins it");
+}
+
+/// How far `q` lies from the segment `a`–`b`.
+fn to_segment(q: Point, a: Point, b: Point) -> f64 {
+    let ab = b - a;
+    let t = if ab.hypot2() > 0.0 { ((q - a).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+    q.distance(a + ab * t)
+}
+
 /// Ends within a thread's width meet wherever the drawing lies: two pieces 10 mm long whose ends lie
 /// 0.8 of the gap apart, the gap moved along x by hundredths of a millimetre, and to x = 0.28 and
 /// 3 mm, where the cells fall differently.
@@ -326,7 +374,7 @@ fn a_node_is_no_wider_than_the_gap() {
     let subs = subpaths(&pieces(&strands));
     let graph = Graph::of(&subs).expect("pieces that meet");
     for e in &graph.edges {
-        for (end, node) in [(subs[e.sub].pts[0], e.a), (*subs[e.sub].pts.last().unwrap(), e.b)] {
+        for (end, node) in [(e.pts[0], e.a), (*e.pts.last().unwrap(), e.b)] {
             assert!(end.distance(graph.nodes[node]) <= GAP_BRIDGE + 1e-9, "an end {} mm from its node", end.distance(graph.nodes[node]));
         }
     }

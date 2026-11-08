@@ -465,3 +465,54 @@ fn a_job_that_isnt_one_is_refused() {
         assert!(e.contains(r#"`job` is "auto", "fill", "lines" or "none""#), "{job}: {e}");
     }
 }
+
+/// A dot of a colour set to Lines has no centre line to sew along, and is sewn as the shape it is
+/// (the project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), the reply counting it:
+/// a navy dot 6 × 5.8 mm on white, whose middle thins to a piece about 0.4 mm long, is a fill, sewn
+/// across most of its width, and the warning `notLines` names its colour and one area.
+#[test]
+fn a_dot_set_to_lines_is_sewn_as_the_shape_it_is() {
+    let dot = |q: Point| if ((q.x - 10.0) / 3.0).powi(2) + ((q.y - 10.0) / 2.9).powi(2) <= 1.0 { NAVY } else { WHITE };
+    let mut s = placed(&picture(20.0, 20.0, PX_PER_MM, dot), PX_PER_MM);
+    let p = json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "lines"}]});
+    let r = digitize(&mut s, p.clone(), true);
+    let navy = areas_of(&r, NAVY);
+    assert!(navy.len() == 1 && navy[0]["kind"] == json!("fill") && navy[0]["line"].is_null(), "{}", r["areas"]);
+    let warned = r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == json!("notLines")).cloned();
+    assert!(warned.is_some_and(|w| w["values"]["count"] == json!(1) && w["values"]["color"] == navy[0]["color"]), "{}", r["warnings"]);
+    digitize(&mut s, p, false);
+    let pts = needle_points(&s);
+    let lo = pts.iter().map(|q| q.x).fold(f64::INFINITY, f64::min);
+    let hi = pts.iter().map(|q| q.x).fold(f64::NEG_INFINITY, f64::max);
+    assert!(pts.len() >= 2 && hi - lo >= 3.0, "a 6 mm dot sewn as {} needle points over {} mm", pts.len(), hi - lo);
+}
+
+/// The dots of an "i" and a "j" in lettering set to Lines are sewn wherever they lie among the
+/// pixels: drawn a tenth of a pixel to half a pixel apart from one picture to the next, each dot,
+/// 1.4 mm across, is a fill with needle points inside it, and each letter's stroke a line.
+#[test]
+fn the_dots_of_lettering_set_to_lines_are_sewn_wherever_they_lie() {
+    for shift in [0.0, 0.01, 0.03, 0.05, 0.07] {
+        let (i, j) = (Point::new(8.0 + shift, 6.0 + shift), Point::new(16.0 + shift, 6.0));
+        let strokes = [
+            (Point::new(i.x, 9.0), Point::new(i.x, 18.0)),
+            (Point::new(j.x, 9.0), Point::new(j.x, 20.0)),
+            (Point::new(j.x, 20.0), Point::new(j.x - 3.0, 22.0)),
+        ];
+        let paint = move |q: Point| {
+            if q.distance(i) <= 0.7 || q.distance(j) <= 0.7 || strokes.iter().any(|&s| to_segment(q, s) <= LINE_MM / 2.0) { NAVY } else { WHITE }
+        };
+        let mut s = placed(&picture(24.0, 26.0, PX_PER_MM, paint), PX_PER_MM);
+        let p = json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "lines"}]});
+        let r = digitize(&mut s, p.clone(), true);
+        let navy = areas_of(&r, NAVY);
+        let kinds: Vec<&Value> = navy.iter().map(|a| &a["kind"]).collect();
+        assert_eq!(navy.iter().filter(|a| a["kind"] == json!("fill")).count(), 2, "shift {shift}: {kinds:?}: {}", r["areas"]);
+        assert_eq!(navy.iter().filter(|a| !a["line"].is_null()).count(), 2, "shift {shift}: {}", r["areas"]);
+        digitize(&mut s, p, false);
+        let pts = needle_points(&s);
+        for dot in [i, j] {
+            assert!(pts.iter().any(|q| q.distance(dot) <= 0.5), "shift {shift}: the dot at {dot:?} isn't sewn");
+        }
+    }
+}

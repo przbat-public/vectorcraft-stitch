@@ -144,6 +144,11 @@ fn since(started: std::time::Instant) -> Option<f64> {
     Some(hundredths(started.elapsed().as_secs_f64() * MS_PER_SEC))
 }
 
+/// Two stretches' times added (milliseconds, to hundredths); none on the web.
+fn added(a: Option<f64>, b: Option<f64>) -> Option<f64> {
+    Some(hundredths(a? + b?))
+}
+
 /// The clock a stage's time is read from; none on the web.
 #[cfg(not(target_arch = "wasm32"))]
 fn clock() -> std::time::Instant {
@@ -280,20 +285,36 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     }
     let mut areas = rules::joined_by_thread(areas, &colours)?;
     rules::lines_by_job(&mut areas, &colours);
+    let colours_ms = since(started);
+    // A line along its middle: a thin one of a colour sewn by the rules (or kept unsewn, to be sewn
+    // later), and every area of a colour sewn as Lines; not a colour sewn as Fill. Found before the
+    // order, which sews a line after the fills it touches: an area with no centre line to sew along
+    // is sewn as the shape it is, in its turn as a fill.
+    vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    let started = clock();
+    let along: Vec<bool> = areas
+        .areas
+        .iter()
+        .map(|x| {
+            x.kind == AreaKind::Line && colours.rows.get(x.row).is_some_and(|r| !r.background && matches!(r.job, Job::Auto | Job::Lines | Job::None))
+        })
+        .collect();
+    let lines = centre::lines(&areas.regions, &|a| along.get(a).copied().unwrap_or(false))?;
+    for (row, count) in rules::fills_without_centre_lines(&mut areas, &colours, &along, &lines) {
+        let color = colours.rows.get(row).map(|r| super::super::hex(r.color)).unwrap_or_default();
+        warnings.push(Warning::new(
+            "notLines",
+            json!({"color": color, "count": count}),
+            format!("areas of {color} with no centre line to sew along (a dot, or a blob shorter than it is wide) are sewn as the shapes they are: {count}"),
+        ));
+    }
+    let lines_ms = since(started);
+    let started = clock();
     inside::containers(&mut areas, &colours, w.px_per_mm)?;
     let order = order::ordered(&areas.areas, &areas.regions, &colours)?;
     inside::sewn_over(&mut areas, &colours, &order);
-    let colors_ms = since(started);
-    vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    let colors_ms = added(colours_ms, since(started));
     let started = clock();
-    // A line along its middle: a thin one of a colour sewn by the rules (or kept unsewn, to be sewn
-    // later), and every area of a colour sewn as Lines; not a colour sewn as Fill.
-    let along_middle = |a: usize| {
-        areas.areas.get(a).is_some_and(|x| {
-            x.kind == AreaKind::Line && colours.rows.get(x.row).is_some_and(|r| !r.background && matches!(r.job, Job::Auto | Job::Lines | Job::None))
-        })
-    };
-    let lines = centre::lines(&areas.regions, &along_middle)?;
     let shapes =
         overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm, &lines, overlap::LINE_REACH_MM * w.px_per_mm)?;
     if shapes.failed > 0 {
@@ -303,7 +324,8 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
             format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed),
         ));
     }
-    let shapes_ms = since(started);
+    // The centre lines are timed with the shapes, which they are made into.
+    let shapes_ms = added(since(started), lines_ms);
     vectorcraft_doc::cancel::progress(MAKING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     if traced.paths.is_empty() {
         warnings.push(Warning::new("nothingTraced", json!({}), "nothing in the image was traced: it is empty or transparent"));

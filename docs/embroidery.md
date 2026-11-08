@@ -329,7 +329,10 @@ drives it comes next; `docs/mcp.md` gives its params and reply in full):
   How a shape becomes stitches › Running). The colours beside it reach its middle under it
   whatever `overlap` is, so that no fabric shows round it: each of its pixels goes to the colour
   nearest it, and half a pixel past, never more than 2 mm from that colour's edge (the background,
-  an unsewn colour and a colour sewn after it take none). A stroke 1 mm wide or more is set to a
+  an unsewn colour and a colour sewn after it take none). An area with no centre line to sew along
+  (a dot, or a blob shorter than it is wide, as the dot of an "i") is sewn as the shape it is, in
+  its turn as a fill, and the reply's warning `notLines` counts those of a colour set to `lines`.
+  A stroke 1 mm wide or more is set to a
   running line. The reply gives each such area's `line`: its width, length, pieces, ends and
   junctions.
 - **The order:** details after the fills they touch, an area after the one it lies inside and
@@ -3240,12 +3243,7 @@ millimetres again. The stages, each a module, each reported to a progress sink
    it is long; an area inside one other alone is sewn
    after it, and over it with no hole cut when narrower than 4 mm (the owner's choice). More than
    10,000 areas is refused with advice.
-7. **The order** (`order.rs`), which Create stacks the objects in: a line after the fills it
-   touches, an area after the one it lies inside, an area after a neighbour more than twice its
-   size, each rule kept only where it agrees with one order of every area (lines last, then the
-   more nested, then the smaller), so the rules never ask for a circle; within them, one thread
-   while its areas can be sewn, the nearest next.
-8. **The centre lines** (`centre.rs`), of every line of a colour sewn by the rules, kept unsewn or
+7. **The centre lines** (`centre.rs`), of every line of a colour sewn by the rules, kept unsewn or
    set to Lines (not Fill), written from the papers in a structure of their own: the skeleton by
    Guo and Hall's two-subiteration parallel thinning (1989, *Parallel thinning with
    two-subiteration algorithms*, CACM 32(3), algorithm A1), each pass in two halves that take away
@@ -3261,7 +3259,16 @@ millimetres again. The stages, each a module, each reported to a progress sink
    along a curve make no corner the planner stitches into. The line's width is its pixels over its
    skeleton's length (the same at 8, 10 and 12 pixels a millimetre within a working pixel). Every
    step is linear in the line's pixels, or n log n (the smoothing's heap); a cancel stops it
-   between lines and within one every 16,384 pixels.
+   between lines and within one every 16,384 pixels. They are found before the order, which sews a
+   line after the fills it touches: an area that comes to no centre line, or to one shorter than it
+   is wide (a dot, a blob), has no line to sew along and is a fill, sewn as the shape it is (the
+   owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), the reply's warning `notLines`
+   counting those of a colour set to Lines.
+8. **The order** (`order.rs`), which Create stacks the objects in: a line after the fills it
+   touches, an area after the one it lies inside, an area after a neighbour more than twice its
+   size, each rule kept only where it agrees with one order of every area (lines last, then the
+   more nested, then the smaller), so the rules never ask for a circle; within them, one thread
+   while its areas can be sewn, the nearest next.
 9. **The shapes and the overlap** (`overlap.rs`): each area's traced shape joined with the specks
    that joined it, made solid under the islands sewn over it, and grown under the neighbours sewn
    after it by `overlap` (0.4 mm, the owner's choice), only along the edge they share (the

@@ -7328,7 +7328,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `decodedSmaller` {decoded, pixels, maxMegapixels}, `notFlatArt` {by: `"colors"` with found and colors, `"anchors"`
   with maxAnchors and colors, or `"gradual"` with percent}, `noBackgroundColor`, `cornersDisagree`, `choiceNotGray`
   {color, thread: {palette, index, name}}, `colorJoined` {color, minArea}, `specksJoined` {count, minArea},
-  `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `shapesNotJoined` {count}, `nothingTraced` and
+  `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `notLines` {color, count} (areas of a colour set
+  to `lines` with no centre line to sew along, a dot or a blob shorter than it is wide, sewn as the shapes they are),
+  `shapesNotJoined` {count}, `nothingTraced` and
   `nothingToMake` (a dry run's; Create is refused instead). `unusedChoices` lists `{choice, reason}` for each choice
   that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
   names none, the background's aside, so the colours it took are sewn as their own). An area's `area` is its number in

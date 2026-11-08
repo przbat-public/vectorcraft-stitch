@@ -304,6 +304,29 @@ pub(super) fn lines_by_job(areas: &mut Areas, colours: &Colours) {
     }
 }
 
+/// The areas meant to be sewn along their middle (`along`, by area) that came to no centre line
+/// (`lines`, by area: a dot, or a blob shorter than it is wide) made fills, sewn as the shapes they
+/// are (the project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), sewn in their turn
+/// as fills are; how many of each colour set to Lines did, by row.
+pub(super) fn fills_without_centre_lines(
+    areas: &mut Areas,
+    colours: &Colours,
+    along: &[bool],
+    lines: &[Option<super::centre::CentreLine>],
+) -> BTreeMap<usize, usize> {
+    let mut by_row: BTreeMap<usize, usize> = BTreeMap::new();
+    for (a, area) in areas.areas.iter_mut().enumerate() {
+        if area.kind != AreaKind::Line || !along.get(a).copied().unwrap_or(false) || lines.get(a).is_some_and(Option::is_some) {
+            continue;
+        }
+        area.kind = AreaKind::Fill;
+        if colours.rows.get(area.row).is_some_and(|r| r.job == Job::Lines) {
+            *by_row.entry(area.row).or_insert(0) += 1;
+        }
+    }
+    by_row
+}
+
 /// The areas once the colours have their threads (`colours`): touching areas sewn in one thread
 /// joined into one, so that one colour of the design is one area, with no seam through it and no
 /// strip sewn twice in one thread. Colours merge into one thread (two sharing their only near

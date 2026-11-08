@@ -719,9 +719,11 @@ fn smoothed(pts: &[Point]) -> Vec<Point> {
     pts.iter().zip(&gone).filter(|(_, g)| !**g).map(|(p, _)| *p).collect()
 }
 
-/// The centre lines of the areas `wanted` picks among `regions`' (their places in its map), each
-/// `None` where it isn't wanted or has no skeleton: thinned, made a graph, pruned, its ends carried
-/// to the ink and its pieces smoothed (the module's notes). A cancel stops it.
+/// The centre lines of the areas `wanted` picks among `regions`' (their places in its map): thinned,
+/// made a graph, pruned, its ends carried to the ink and its pieces smoothed (the module's notes).
+/// Each is `None` where it isn't wanted, has no skeleton, or comes to a centre line shorter than
+/// the line is wide: a dot, or a blob, has no line to sew along, and is sewn as the area it is
+/// (the project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”). A cancel stops it.
 pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> bool) -> Result<Vec<Option<CentreLine>>> {
     let count = regions.areas.len();
     let want: Vec<bool> = (0..count).map(wanted).collect();
@@ -791,10 +793,10 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> bool) -> Result
                 pieces.push(Piece { pts, closed });
             }
         }
-        if pieces.is_empty() {
+        let length_px: f64 = pieces.iter().map(|p| length(&p.pts)).sum();
+        if pieces.is_empty() || length_px < width {
             continue;
         }
-        let length_px = pieces.iter().map(|p| length(&p.pts)).sum();
         let ends = deg.iter().filter(|&&d| d == 1).count();
         let junctions = deg.iter().filter(|&&d| d >= 3).count();
         if let Some(slot) = out.get_mut(a) {
@@ -906,5 +908,15 @@ mod tests {
         let bumped = map(60, 15, |x, y| ((5..55).contains(&x) && (5..10).contains(&y)) || (x == 30 && y == 10));
         let line = line_of(&bumped);
         assert_eq!((line.junctions, line.ends, line.pieces.len()), (0, 2, 1), "{line:?}");
+    }
+
+    /// A dot has no centre line wherever it lies among the pixels: it is sewn as the area it is.
+    #[test]
+    fn a_dot_has_no_centre_line_wherever_it_lies() {
+        for (cx, cy) in [(20.0, 20.0), (20.5, 20.0), (20.5, 20.5)] {
+            let dot = map(40, 40, |x, y| (f64::from(x) + 0.5 - cx).hypot(f64::from(y) + 0.5 - cy) <= 5.0);
+            let found = lines(&dot, &|a| a == 0).unwrap();
+            assert!(found[0].is_none(), "a dot at ({cx}, {cy}): {:?}", found[0]);
+        }
     }
 }

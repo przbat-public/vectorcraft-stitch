@@ -1017,7 +1017,11 @@ the fabric.
   measures the pieces itself, once the plan's size is checked, inside the unit's plan the cache
   keeps. `embroidery.info` reports such rows as `"auto"` with the rule (`rowsAcrossShape`: the rows
   chosen, how much longer than wide the shape is, and how many pieces it has; its largest piece's
-  for an object of several), and the embroidery tool's arrow points at them, hollow. The defaults,
+  for an object of several), measured on the area the plan sews, as the walk makes it without
+  planning a stitch: a stroke sewn as tatami is the band it paints (dashed, its dashes), a fill is
+  grown by its `expand` and cut by its clip groups, an object the walk expands is its pieces. The
+  embroidery tool's arrow points at the rows the plan sews, hollow (before the first plan, at those
+  the walk would). The defaults,
   rows 0.38 mm apart and stitches up to 4 mm, are Wilcom's tatami
   defaults ([Wilcom: satin and tatami stitch](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)),
   and 0.38 mm is the spacing David Morrish's *Digital Embroidery* (2025, ch. 2) gives for 40 wt

@@ -62,6 +62,7 @@ pub use axis::{PieceRows, SHAPE_ANGLE_STEP, SHAPE_AXIS_BANDS, SHAPE_AXIS_MIN_ELO
 pub use ends::{Ends, MAX_JOIN_EXITS, MAX_JOIN_STARTS, Through, ends};
 pub use fill::MIN_AREA;
 pub use fill::TATAMI_UNDERLAY_MIN;
+#[cfg(test)]
 pub(crate) use fill::fill_with_columns;
 pub use joins::{JoinShape, Joined, Link, MAX_JOIN_EDGES, Role, apart, joined_cost, joins, move_cost, stitches_cost, thinned_to};
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
@@ -799,12 +800,33 @@ pub fn try_fill_with_columns_aimed(
     satin: &Params,
     aim: Aim,
 ) -> crate::Result<Vec<Stitch>> {
+    try_fill_with_columns_measured(shape, rule, rest, columns, fill, satin, aim, None)
+}
+
+/// [`try_fill_with_columns_aimed`], the rows across the shape ([`Rows::AcrossShape`]) measured on
+/// `measured` (a path and its fill rule: the shape as it was before its narrow parts were cut out,
+/// which the parts' rows are told by), when given, instead of `shape`, which reaches a hair past it
+/// where its narrow parts were cut out.
+#[allow(clippy::too_many_arguments)]
+pub fn try_fill_with_columns_measured(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    aim: Aim,
+    measured: Option<(&BezPath, FillRule)>,
+) -> crate::Result<Vec<Stitch>> {
     /// More than a column's points per millimetre of its middle beyond its crossings: its
     /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
     const UNDERLAYS: f64 = 3.0;
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
     placed(shape)?;
     placed(rest)?;
+    if let Some((m, _)) = measured {
+        placed(m)?;
+    }
     let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight) * s.spacing_scale);
     let column = |c: &Column| {
         // Its widest crossing, with the most pull compensation at both sides, split as satin's are.
@@ -818,7 +840,7 @@ pub fn try_fill_with_columns_aimed(
         if aim.finite_exit().is_some() { columns.iter().map(|c| c.length() / area::TRAVEL_STITCH + satin::PASS_ENDS).sum::<f64>() } else { 0.0 };
     let subs = subpaths(shape);
     within_limit(estimate(&subs, &f) + aimed_extra(&subs, &f, &aim) + columns.iter().map(column).sum::<f64>() + passes)?;
-    Ok(fill_with_columns(shape, rule, rest, columns, &f, &s, aim))
+    Ok(fill::fill_with_columns_measured(shape, rule, rest, columns, &f, &s, aim, measured))
 }
 
 /// Refused with [`Error::TooLarge`] when `path` lies beyond [`MAX_COORD_MM`] or has a coordinate

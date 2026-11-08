@@ -17,7 +17,7 @@ use vectorcraft_stitch::plan::Params;
 use vectorcraft_stitch::thread::{Palette, PaletteThread};
 use vectorcraft_stitch::{Block, Command, SAME_POINT, Stitch};
 
-use super::plan::{Asked, BlockThread, Choice, DesignPlan, FIRST_NUMBER, Origin, ThreadBlock, Unit, runs};
+use super::plan::{Asked, BlockThread, Choice, DesignPlan, FIRST_NUMBER, Origin, RowsAcross, ThreadBlock, Unit, runs};
 
 /// How far apart two blocks' stitches must be not to touch: a thread's width and a satin's pull.
 /// An estimate.
@@ -45,6 +45,8 @@ pub(super) struct Facts {
     pub(super) why: Choice,
     /// The entry and exit points it was planned toward.
     pub(super) asked: Asked,
+    /// A fill's rows laid across its shape, as the planner measured them (`Unit::rows`).
+    pub(super) rows: Option<RowsAcross>,
 }
 
 /// One sewing unit's stitches as planned, in document order.
@@ -308,7 +310,12 @@ impl Sequence {
                 let range = m.start..end;
                 let runs = runs(&stitches, range.clone());
                 let Member {
-                    facts: Facts { origin, occurrence, params, columns, satin_widths, scale, why, asked }, bounds, own, met, walked, ..
+                    facts: Facts { origin, occurrence, params, columns, satin_widths, scale, why, asked, rows },
+                    bounds,
+                    own,
+                    met,
+                    walked,
+                    ..
                 } = m;
                 plan.units.push(Unit {
                     own,
@@ -327,6 +334,7 @@ impl Sequence {
                     stitches: range,
                     runs,
                     asked,
+                    rows,
                 });
             }
             let first_number = number;
@@ -399,6 +407,7 @@ mod tests {
             scale: None,
             why: Choice::Fill,
             asked: Asked::default(),
+            rows: None,
         };
         Planned { facts, block: b, literal: None, cut_before: false }
     }

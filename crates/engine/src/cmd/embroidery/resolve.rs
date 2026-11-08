@@ -109,8 +109,9 @@ impl<'a> UnitSettings<'a> {
 
     /// Whether a fill's rows run across its shape: the document's rule (`fillAngle:
     /// "acrossShape"`), where neither the object nor the export sets an angle. The rows the rule
-    /// chooses come from the shape planned ([`vectorcraft_stitch::plan::rows_across`]); a shape about as
-    /// long as wide keeps the rows [`UnitSettings::params`] give (the default, turned with the object).
+    /// chooses come from the shape planned, each separate piece's
+    /// ([`vectorcraft_stitch::plan::rows_by_piece`]); a piece about as long as wide keeps the rows
+    /// [`UnitSettings::params`] give (the default, turned with the object).
     pub(crate) fn by_shape(&self) -> bool {
         self.object.values.angle.is_none() && self.export.angle.is_none() && self.doc.fill_angle == Some(FillAngle::AcrossShape)
     }

@@ -458,7 +458,10 @@ impl PlanFacts for FactsNow<'_> {
     fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {
         let n = self.doc.node(object)?;
         let layer = self.layer.get_or_init(|| super::resolve::DocLayer::of(self.doc));
-        let (degrees, set) = super::info::fill_rows(self.doc, n, &super::Options::default(), layer)?;
+        // The rows the plan sews (a plan of an earlier state of the document too: the next one is
+        // on its way), else those it would.
+        let plan = self.facts.as_deref().map(|f| &*f.planned.plan);
+        let (degrees, set) = super::info::fill_rows(self.doc, n, &super::Options::default(), layer, plan)?;
         Some(FillAngle { degrees, set })
     }
 

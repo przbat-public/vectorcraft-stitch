@@ -141,7 +141,7 @@ fn info_and_the_arrow_say_what_the_rows_are() {
     assert!((rule["values"]["elongation"].as_f64().unwrap() - 4.0).abs() < 0.01, "{rule}");
     let doc = &s.doc().unwrap().doc;
     let n = doc.node(vectorcraft_doc::NodeId(tall)).unwrap();
-    let (degrees, set) = super::info::fill_rows(doc, n, &Options::default(), &super::resolve::DocLayer::of(doc)).unwrap();
+    let (degrees, set) = super::info::fill_rows(doc, n, &Options::default(), &super::resolve::DocLayer::of(doc), None).unwrap();
     assert!(apart(degrees, chose) < 1e-9 && !set, "the arrow at {degrees}, set {set}");
 }
 
@@ -213,4 +213,78 @@ fn each_piece_with_narrow_parts_has_rows_across_it() {
     assert!(unit.columns.is_some(), "the tab is sewn as a satin column");
     assert!(apart(sewn_rows(&s, (11.0, 21.0, 19.0, 37.0)), 0.0) < 1.0, "the tall bar's rows");
     assert!(apart(sewn_rows(&s, (51.0, 21.0, 89.0, 29.0)), 90.0) < 1.0, "the wide bar's rows");
+}
+
+/// The rows `embroidery.info` reports for part `part` of object `id` under the rule (planner
+/// degrees), whether they run across it, and how many pieces it measured.
+fn info_rows(s: &mut Session, id: u64, part: &str) -> (f64, bool, u64) {
+    let r = run(s, "embroidery.info", json!({"ids": [id]}));
+    let rule = &r[part]["settings"]["angle"]["rule"];
+    (options::planner_angle(rule["chose"].as_f64().unwrap()), rule["values"]["across"] == json!(true), rule["values"]["pieces"].as_u64().unwrap())
+}
+
+/// The rows the embroidery tool's arrow shows for object `id`'s fill (planner degrees): from the
+/// plan, and from the document alone when there is none.
+fn arrow_rows(s: &Session, id: u64) -> (f64, f64) {
+    let doc = &s.doc().unwrap().doc;
+    let n = doc.node(vectorcraft_doc::NodeId(id)).unwrap();
+    let layer = super::resolve::DocLayer::of(doc);
+    let plan = digitize(doc, &Options::default(), None).unwrap();
+    let from =
+        |plan: Option<&super::plan::DesignPlan>| options::planner_angle(super::info::fill_rows(doc, n, &Options::default(), &layer, plan).unwrap().0);
+    (from(Some(&plan)), from(None))
+}
+
+/// `embroidery.info` and the embroidery tool's arrow measure the rows across the shape on the area
+/// the plan sews, not on the object's own path: a stroke sewn as tatami is its painted band (80 ×
+/// 10 mm and 50 × 5 mm: rows up and down, 90° to the planner, though its path has no area), dashed
+/// it is the dashes it paints; a tall bar a transform effect turns a quarter turn is sewn wide; a
+/// wide bar a clip group cuts to a sliver 4 mm wide is sewn tall (rows across it, 0°).
+#[test]
+fn info_and_the_arrow_measure_the_area_the_plan_sews() {
+    for (length, weight, dash) in [(80.0, 10.0, None), (50.0, 5.0, None), (80.0, 10.0, Some(20.0))] {
+        let mut s = blank();
+        run(&mut s, "paint.setFill", json!({"none": true}));
+        run(&mut s, "paint.setStroke", json!({"color": "#cc2222"}));
+        let d = format!("M {} {} L {} {}", 10.0 * PT_PER_MM, 40.0 * PT_PER_MM, (10.0 + length) * PT_PER_MM, 40.0 * PT_PER_MM);
+        let id = run(&mut s, "path.create", json!({"d": d}))["id"].as_u64().unwrap();
+        run(&mut s, "stroke.set", json!({"ids": [id], "weight": weight * PT_PER_MM}));
+        if let Some(dash) = dash {
+            run(&mut s, "stroke.set", json!({"ids": [id], "dash": [dash * PT_PER_MM, dash * PT_PER_MM]}));
+        }
+        run(&mut s, "embroidery.set", json!({"ids": [id], "part": "stroke", "stitch": "tatami"}));
+        run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+        let planned = rows_of(&s, id);
+        assert!(apart(planned, 90.0) < 0.05, "{length} × {weight}, dash {dash:?}: planned at {planned}");
+        let (chose, across, pieces) = info_rows(&mut s, id, "stroke");
+        assert!(
+            apart(chose, planned) < 0.05 && across && pieces >= 1,
+            "{length} × {weight}, dash {dash:?}: info says {chose}, the plan sews {planned}"
+        );
+    }
+    // A tall bar turned a quarter turn by an effect: the walk sews the turned piece.
+    let mut s = blank();
+    let tall = bar(&mut s, 20.0, 20.0, 10.0, 40.0);
+    run(&mut s, "effect.apply", json!({"effect": "distort.transform", "ids": [tall], "item": null, "params": {"rotate": 90}}));
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    let planned = rows_of(&s, tall);
+    assert!(apart(planned, 90.0) < 0.05, "the turned bar planned at {planned}");
+    let (chose, across, _) = info_rows(&mut s, tall, "fill");
+    assert!(apart(chose, planned) < 0.05 && across, "info says {chose}, the plan sews {planned}");
+    let (arrow, unplanned) = arrow_rows(&s, tall);
+    assert!(apart(arrow, planned) < 0.05 && apart(unplanned, planned) < 0.05, "the arrow at {arrow} and {unplanned}");
+    // A wide bar a clip group cuts to a sliver 4 mm wide and 10 mm tall.
+    let mut s = blank();
+    let wide = bar(&mut s, 20.0, 20.0, 40.0, 10.0);
+    let clip = bar(&mut s, 20.0, 10.0, 4.0, 30.0);
+    run(&mut s, "select.set", json!({"ids": [wide, clip]}));
+    run(&mut s, "object.clippingMask.make", json!({}));
+    run(&mut s, "select.none", json!({}));
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    let planned = rows_of(&s, wide);
+    assert!(apart(planned, 0.0) < 0.05, "the clipped bar planned at {planned}");
+    let (chose, across, _) = info_rows(&mut s, wide, "fill");
+    assert!(apart(chose, planned) < 0.05 && across, "info says {chose}, the plan sews {planned}");
+    let (arrow, unplanned) = arrow_rows(&s, wide);
+    assert!(apart(arrow, planned) < 0.05 && apart(unplanned, planned) < 0.05, "the arrow at {arrow} and {unplanned}");
 }

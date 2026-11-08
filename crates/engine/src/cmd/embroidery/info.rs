@@ -16,20 +16,19 @@ use std::collections::{BTreeMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::embroidery::{Embroidery, PartKey, PartKind, PartSettings, PartValue};
+use vectorcraft_doc::embroidery::{Embroidery, FillAngle, PartKey, PartKind, PartSettings, PartValue};
 use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
-use vectorcraft_geom::FillRule;
 use vectorcraft_stitch::plan::{
-    Params, PieceRows, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, SHAPE_AXIS_MIN_ELONGATION, Style, TATAMI_UNDERLAY_MIN, Underlay, rows_by_piece,
+    Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, SHAPE_AXIS_MIN_ELONGATION, Style, TATAMI_UNDERLAY_MIN, Underlay, rows_by_piece,
     satin_auto_underlay,
 };
 use vectorcraft_stitch::{Command, pt_to_mm};
 
-use super::digitize::{in_mm, outlined_rule, part_rule, sews};
+use super::digitize::{AreaAcross, AreasFound, areas_across, outlined_rule, part_rule, sews};
 use super::objects::{MAX_IDS, MAX_SKIPPED, has_part, part_kind, takers, value_json};
 use super::options::stitch_id;
-use super::plan::{Choice, DesignPlan, Part};
+use super::plan::{Choice, DesignPlan, Part, RowsAcross};
 use super::printed::needs_expanding;
 use super::resolve::report::{REPORTED, Resolved, Source};
 use super::resolve::{DocLayer, Found, PartLayer, Stitch, UnitSettings};
@@ -299,8 +298,9 @@ fn reply_asking(
     let nodes: Vec<&Node> = take.iter().filter_map(|id| doc.node(*id)).collect();
     let layer = DocLayer::of(doc);
     let mut found = Found::default();
-    let fill = part_section(doc, &nodes, PartKind::Fill, opts, &layer, plan, &mut found);
-    let stroke = part_section(doc, &nodes, PartKind::Stroke, opts, &layer, plan, &mut found);
+    let areas = across_areas(doc, &take, opts, &layer);
+    let fill = part_section(doc, &nodes, PartKind::Fill, opts, &layer, plan, &areas, &mut found);
+    let stroke = part_section(doc, &nodes, PartKind::Stroke, opts, &layer, plan, &areas, &mut found);
     ObjectSettings {
         object_count: nodes.len(),
         offset: page.offset,
@@ -532,7 +532,19 @@ impl PointMerge {
     }
 }
 
-/// Part `kind` of `nodes` of `doc`, merged ([`PartInfo`]; `None` when none of them has the part).
+/// The areas the walk fills, as it plans them, for the rows across the shape of objects `ids`
+/// ([`areas_across`]): walked only when the document lays rows across shapes (else no fill's rows
+/// are by shape).
+fn across_areas(doc: &Document, ids: &[NodeId], opts: &Options, layer: &DocLayer) -> AreasFound {
+    if layer.fill_angle != Some(FillAngle::AcrossShape) {
+        return AreasFound::new();
+    }
+    areas_across(doc, opts, &ids.iter().copied().collect())
+}
+
+/// Part `kind` of `nodes` of `doc`, merged ([`PartInfo`]; `None` when none of them has the part);
+/// `areas` the areas the walk fills for the rows across the shape ([`across_areas`]).
+#[allow(clippy::too_many_arguments)]
 fn part_section(
     doc: &Document,
     nodes: &[&Node],
@@ -540,6 +552,7 @@ fn part_section(
     opts: &Options,
     layer: &DocLayer,
     plan: Option<&DesignPlan>,
+    areas: &AreasFound,
     found: &mut Found,
 ) -> Option<PartInfo> {
     let (mut object_count, mut item_count) = (0usize, 0usize);
@@ -568,7 +581,7 @@ fn part_section(
         };
         let mut rules = if sewn_as == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
         if sewn_as != "none"
-            && let Some(rows) = rows_by_shape(n, style, &settings)
+            && let Some(rows) = rows_by_shape(style, &settings, areas.get(&(n.id, kind)).map_or(&[][..], Vec::as_slice))
         {
             rules.push(("angle", rows));
         }
@@ -625,9 +638,12 @@ fn sewn_as(doc: &Document, n: &Node, kind: PartKind, settings: &UnitSettings) ->
 /// The rows of `n`'s fill, when it is sewn as tatami (rows at an angle): their angle (degrees
 /// counter-clockwise on the page, as the commands take it: the object's own, else the export's or
 /// the default rows, turned with the object) and whether the object sets it. Read from the document
-/// alone with options `opts` over the document's `layer`, as `embroidery.info {plan: false}`
-/// reports the fill's `angle`; `None` for a fill sewn otherwise, or not at all.
-pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLayer) -> Option<(f64, bool)> {
+/// with options `opts` over the document's `layer`, as `embroidery.info {plan: false}` reports the
+/// fill's `angle`; rows the document lays across the shape as `plan` measured them when it sews the
+/// fill (a plan of an earlier state of the document will do: what the embroidery tool's arrow
+/// shows while the next is made), else as the walk would ([`areas_across`]). `None` for a fill
+/// sewn otherwise, or not at all.
+pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLayer, plan: Option<&DesignPlan>) -> Option<(f64, bool)> {
     if !has_part(n, PartKind::Fill) {
         return None;
     }
@@ -640,45 +656,42 @@ pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLay
         return None;
     }
     let angle = settings.angle(&object);
-    // The rule across the shape: the rows it chooses for the object's own outline.
     let degrees = match angle.value.as_f64() {
         Some(a) => a,
-        None => rows_by_shape(n, style, &settings)?.get("chose").and_then(Value::as_f64)?,
+        // The rule across the shape: the rows the plan sews, else those it would.
+        None => match plan.and_then(|p| planned_rows(p, n.id)) {
+            Some(rows) => super::options::planner_angle(rows.largest.angle),
+            None => {
+                let areas = areas_across(doc, opts, &HashSet::from([n.id]));
+                rows_by_shape(style, &settings, areas.get(&(n.id, PartKind::Fill)).map_or(&[][..], Vec::as_slice))?
+                    .get("chose")
+                    .and_then(Value::as_f64)?
+            }
+        },
     };
     degrees.is_finite().then_some((degrees, angle.source == Source::Object))
 }
 
-/// Object `n`'s outline (millimetres) and its fill rule: a path's, or a compound path's paths
-/// together; `None` for anything else (a symbol's instance, a group).
-fn outline_mm(n: &Node) -> Option<(BezPath, FillRule)> {
-    match &n.kind {
-        NodeKind::Path { path, rule, .. } => Some((in_mm(&path.to_bezpath()), *rule)),
-        NodeKind::Compound { children, rule } => {
-            let mut bp = BezPath::new();
-            for p in children.iter().filter_map(|c| c.path_data()) {
-                bp.extend(p.to_bezpath());
-            }
-            Some((in_mm(&bp), *rule))
-        }
-        _ => None,
-    }
+/// The rows across the shape `plan` measured for object `id`'s fills (as a person selects it), all
+/// its units together ([`RowsAcross::together`]); `None` where it laid none.
+fn planned_rows(plan: &DesignPlan, id: NodeId) -> Option<RowsAcross> {
+    RowsAcross::together(plan.units.iter().filter(|u| u.origin.selected() == id && matches!(u.origin.part, Part::Fill(_))).filter_map(|u| u.rows))
 }
 
-/// What the document's rows across the shape chose for a fill of `n` sewn with `settings`, as
-/// `info`'s rules give it: the rows square to its outline's long axis (degrees counter-clockwise on
-/// the page), with how much longer it is than wide; for one about as long as wide, the rows it
-/// keeps. An object of separate pieces has each measured alone and sewn across its own length
-/// ([`rows_by_piece`]): its largest piece says, and `pieces` how many it has. `None` where the rule
-/// doesn't decide (an angle set, no rule, not a fill). The plan measures the shape as it is planned
-/// (grown and clipped); this, the object's own outline.
-fn rows_by_shape(n: &Node, style: Style, settings: &UnitSettings) -> Option<Value> {
+/// What the document's rows across the shape chose for a part sewn with `settings` as tatami, as
+/// `info`'s rules give it, measured on `areas`, the areas the walk fills for it ([`areas_across`]):
+/// the rows square to its long axis (degrees counter-clockwise on the page), with how much longer
+/// it is than wide; for one about as long as wide, the rows it keeps. Separate pieces are each
+/// measured alone and sewn across their own length ([`rows_by_piece`]): the largest says, and
+/// `pieces` how many there are. `None` where the rule doesn't decide (an angle set, no rule, not
+/// sewn as tatami).
+fn rows_by_shape(style: Style, settings: &UnitSettings, areas: &[AreaAcross]) -> Option<Value> {
     if style != Style::Fill || !settings.by_shape() {
         return None;
     }
     let kept = settings.params(Style::Fill, 0.0).angle;
-    let (outline, rule) = outline_mm(n)?;
-    let pieces = rows_by_piece(&outline, rule, kept);
-    let largest = PieceRows::largest(&pieces);
+    let measured = RowsAcross::together(areas.iter().filter_map(|a| RowsAcross::of(&rows_by_piece(&a.area, a.rule, a.fixed))));
+    let largest = measured.map(|r| r.largest);
     let across = largest.filter(|p| p.across);
     Some(json!({
         "id": "rowsAcrossShape",
@@ -687,7 +700,7 @@ fn rows_by_shape(n: &Node, style: Style, settings: &UnitSettings) -> Option<Valu
             "elongation": largest.and_then(|p| p.axis).map(|a| (a.elongation * ELONGATION_HUNDREDTHS).round() / ELONGATION_HUNDREDTHS),
             "elongationMin": SHAPE_AXIS_MIN_ELONGATION,
             "across": across.is_some(),
-            "pieces": pieces.len(),
+            "pieces": measured.map_or(0, |r| r.pieces),
         },
     }))
 }

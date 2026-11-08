@@ -184,6 +184,49 @@ pub(crate) struct Walked {
 /// [`digitize`], recording each unit's ends ([`UnitEnds`]) as it plans it when `collect`: the
 /// plan is the same either way.
 pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>, collect: bool) -> Result<Walked, PlanError> {
+    walk(doc, opts, cache, collect, None).map(|(walked, _)| walked)
+}
+
+/// One unit's area as the walk plans it, whose rows the document lays across the shape
+/// ([`areas_across`]): in millimetres with its fill rule, and the angle (as the planner counts
+/// them) a piece of it about as long as wide keeps.
+#[derive(Clone, Debug)]
+pub(crate) struct AreaAcross {
+    pub(crate) area: BezPath,
+    pub(crate) rule: FillRule,
+    pub(crate) fixed: f64,
+}
+
+/// The areas a walk that plans no stitch records ([`areas_across`]), by object (as a person
+/// selects it) and kind of part.
+pub(crate) type AreasFound = HashMap<(NodeId, PartKind), Vec<AreaAcross>>;
+
+/// What a walk that plans no stitch records ([`areas_across`]): of the objects `ids` (as a person
+/// selects them), each part's units whose rows the document lays across the shape.
+struct Areas<'a> {
+    ids: &'a HashSet<NodeId>,
+    found: AreasFound,
+}
+
+/// The areas the walk fills, as it plans them, for the parts of objects `ids` (as a person selects
+/// them) whose rows the document lays across the shape (`fillAngle: "acrossShape"`), by object and
+/// kind of part: a fill grown by its `expand` and cut by the clip groups around it, a stroke sewn as
+/// the area it paints (its outline, dashed or offset as painted), an expanded object's pieces. No
+/// stitch is planned: what `embroidery.info` and the embroidery tool's arrow measure the rows on,
+/// as the planner does ([`plan::rows_by_piece`]). Empty when the design can't be walked.
+pub(crate) fn areas_across(doc: &Document, opts: &Options, ids: &HashSet<NodeId>) -> AreasFound {
+    walk(doc, opts, None, false, Some(ids)).map(|(_, found)| found).unwrap_or_default()
+}
+
+/// [`walked`], and with `areas` the walk plans no stitch and records the areas of those objects'
+/// parts ([`areas_across`]) instead.
+fn walk(
+    doc: &Document,
+    opts: &Options,
+    cache: Option<&Mutex<UnitCache>>,
+    collect: bool,
+    areas: Option<&HashSet<NodeId>>,
+) -> Result<(Walked, AreasFound), PlanError> {
     // The document's embroidery settings, read once a plan.
     let doc_layer = DocLayer::of(doc);
     let (design, trim_note) = DesignSettings::new(opts, &doc_layer);
@@ -238,9 +281,11 @@ pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCa
         occurrences: HashMap::new(),
         found: Found::default(),
         collected: collect.then(Vec::new),
+        areas: areas.map(|ids| Areas { ids, found: HashMap::new() }),
     };
     d.run();
     notes.extend(d.found.notes().map(String::from));
+    let areas = d.areas.take().map(|a| a.found).unwrap_or_default();
     match d.failed {
         Some(e) => Err(e),
         None => {
@@ -250,7 +295,7 @@ pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCa
             plan.warned = d.warned;
             plan.notes = notes;
             plan.start = doc.embroidery.as_ref().and_then(|e| e.start).map(|p| Point::new(pt_to_mm(p.x), pt_to_mm(p.y)));
-            Ok(Walked { plan, ends: d.collected.unwrap_or_default(), trim: d.design.connect.trim })
+            Ok((Walked { plan, ends: d.collected.unwrap_or_default(), trim: d.design.connect.trim }, areas))
         }
     }
 }
@@ -331,6 +376,8 @@ struct Digitizer<'a> {
     found: Found,
     /// Each unit's ends, recorded when asked ([`walked`]).
     collected: Option<Vec<UnitEnds>>,
+    /// A walk that plans no stitch: the areas it records instead ([`areas_across`]).
+    areas: Option<Areas<'a>>,
 }
 
 /// How far a plan has got: the units come to, of about how many ([`units_under`]).
@@ -558,7 +605,8 @@ impl<'a> Digitizer<'a> {
     /// other runs of its group (that file's colour block); a run of manual stitches
     /// (`StitchRun::manual`) is placed as art is.
     fn literal(&mut self, n: &Node, path: &PathData, run: &StitchRun) {
-        if !self.step() {
+        // A walk that plans no stitch records areas only.
+        if self.areas.is_some() || !self.step() {
             return;
         }
         // Unpainted (or a pattern): it shows nothing, so it sews nothing.
@@ -622,7 +670,7 @@ impl<'a> Digitizer<'a> {
         // How much its stitches were scaled since they were made, as walked: a symbol's art carries
         // its instance's transform too.
         let scale = run.since_made.and_then(scale_factors);
-        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default() };
+        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default(), rows: None };
         // The cut before it: as its file had it, or one a stitch edit passed to a manual run.
         self.seq.add(Planned { facts, block, literal, cut_before });
     }
@@ -682,6 +730,12 @@ impl<'a> Digitizer<'a> {
     /// Stitch `bp` (document points) once per visible appearance item: each one a sewing unit,
     /// one fill or one stroke of `n`.
     fn shape(&mut self, n: &Node, bp: &BezPath, rule: FillRule) {
+        // A walk that plans no stitch shapes only the objects it is asked about.
+        if let Some(areas) = &self.areas
+            && !self.object.is_some_and(|o| areas.ids.contains(&o))
+        {
+            return;
+        }
         let mm = in_mm(bp);
         if !plan::in_range(&mm) {
             if n.appearance.items.iter().any(|i| i.visible() && painted(i)) {
@@ -705,7 +759,7 @@ impl<'a> Digitizer<'a> {
             if !item.visible() {
                 continue;
             }
-            if painted(item) && !self.step() {
+            if painted(item) && self.areas.is_none() && !self.step() {
                 return;
             }
             let unit = self.origin(n, part);
@@ -921,6 +975,18 @@ impl<'a> Digitizer<'a> {
         if plan::sewn_style(&params) == Style::Fill && settings.by_shape() {
             params.rows = plan::Rows::AcrossShape;
         }
+        // A walk that plans no stitch records the area instead.
+        if let Some(areas) = self.areas.as_mut() {
+            let kind = match unit.part {
+                Part::Fill(_) => Some(PartKind::Fill),
+                Part::Stroke(_) => Some(PartKind::Stroke),
+                Part::Literal | Part::Manual => None,
+            };
+            if let Some(kind) = kind.filter(|_| params.rows == plan::Rows::AcrossShape) {
+                areas.found.entry((unit.selected(), kind)).or_default().push(AreaAcross { area: bp.clone(), rule, fixed: params.angle });
+            }
+            return;
+        }
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
         let bounds = bp.bounding_box();
@@ -970,7 +1036,7 @@ impl<'a> Digitizer<'a> {
             Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths, kept.reach, kept.rows),
         };
         // Recorded with the rows its largest piece is sewn at, when the planner laid them across it.
-        let params = plan::Params { angle: rows.unwrap_or(params.angle), ..params };
+        let params = plan::Params { angle: rows.map_or(params.angle, |r| r.largest.angle), ..params };
         let satin_widths = match plan::sewn_style(&params) {
             Style::Satin => Some([params.width; 2]),
             Style::Fill => widths,
@@ -999,7 +1065,7 @@ impl<'a> Digitizer<'a> {
             collected.push(record);
         }
         let asked = Asked { entry: settings.entry(), exit: settings.exit(), reach };
-        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, scale: None, why, asked };
+        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, scale: None, why, asked, rows };
         self.seq.add(Planned { facts, block, literal: None, cut_before: false });
     }
 

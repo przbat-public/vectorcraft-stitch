@@ -7523,7 +7523,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `{id: "rowsAcrossShape", chose: degrees (the rows across, as `angle` counts them), values: {elongation,
   elongationMin, across, pieces}}` for a fill's rows the document lays across its shape (`across: false`: about as long as
   wide, the fixed rows kept; `pieces`: how many separate pieces it has, each measured alone and sewn across its own
-  length, `chose`, `elongation` and `across` its largest piece's); `null` for a value set.
+  length, `chose`, `elongation` and `across` its largest piece's), for a fill and for a stroke sewn as tatami, measured
+  on the area the plan sews (a stroke's painted band, dashed or not; a fill grown and cut by its clip groups; an
+  object's expanded pieces); `null` for a value set.
   A fill's `angle` set by the document's number is that number turned with its object, `source: "document"`, `section:
   "fillAngle"`.
   `applies` says whether the planner uses the key for the stitch the part is sewn in: a running line's `pull` or

@@ -278,6 +278,7 @@ const MIN_PIECE: f64 = 1.0;
 /// smaller than [`MIN_PIECE`] is left out. With the rows across the shape ([`Rows::AcrossShape`]),
 /// each piece of the rest is sewn at the rows of the separate piece of the whole `shape` it lies in
 /// ([`rows_of_rest`]).
+#[cfg(test)]
 pub(crate) fn fill_with_columns(
     shape: &BezPath,
     rule: FillRule,
@@ -286,6 +287,22 @@ pub(crate) fn fill_with_columns(
     fill: &Params,
     satin: &Params,
     aim: Aim,
+) -> Vec<Stitch> {
+    fill_with_columns_measured(shape, rule, rest, columns, fill, satin, aim, None)
+}
+
+/// [`fill_with_columns`], the rows across the shape measured on `measured` (the shape before its
+/// narrow parts were cut out, with its fill rule) when given, else on `shape`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn fill_with_columns_measured(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    aim: Aim,
+    measured: Option<(&BezPath, FillRule)>,
 ) -> Vec<Stitch> {
     let fill = Params { style: Style::Fill, ..*fill }.sane();
     let satin = Params { style: Style::Satin, ..*satin }.sane();
@@ -300,7 +317,14 @@ pub(crate) fn fill_with_columns(
     let pieces = pieces(&rest_subs);
     let grids: Vec<Option<Grid>> = pieces.iter().map(|p| Grid::new(p)).collect();
     let areas: Vec<Area<'_>> = pieces.iter().zip(&grids).map(|(p, g)| Area { outlines: p, rule: FillRule::NonZero, grid: g.as_ref() }).collect();
-    let angles = rows_of_rest(whole, &areas, &fill);
+    let measured_subs = measured.map(|(path, _)| closed_subpaths(path)).unwrap_or_default();
+    let measured_outlines = self::outlines(&measured_subs);
+    let measured_grid = Grid::new(&measured_outlines);
+    let on = match measured {
+        Some((_, rule)) if !measured_outlines.is_empty() => Area { outlines: &measured_outlines, rule, grid: measured_grid.as_ref() },
+        _ => whole,
+    };
+    let angles = rows_of_rest(on, &areas, &fill);
     sew_parts(whole, &areas, &angles, columns, &fill, &satin, aim, &|| Runs::from(aim.start.point(), &fill)).join()
 }
 
@@ -403,9 +427,9 @@ fn sew_parts(
 }
 
 /// The rows each piece of a fill's rest (`areas`) is sewn at: [`Params::angle`], or with the rows
-/// across the shape ([`Rows::AcrossShape`]) those of the separate piece of `whole` it lies in
-/// ([`piece_rows`]), found by a point well inside it ([`inner_point`]); a piece in none keeps
-/// [`Params::angle`].
+/// across the shape ([`Rows::AcrossShape`]) those of the separate piece of `whole` (the shape the
+/// rows are measured on) it lies in ([`piece_rows`]), found by a point well inside it
+/// ([`inner_point`]); a piece in none keeps [`Params::angle`].
 fn rows_of_rest(whole: Area<'_>, areas: &[Area<'_>], fill: &Params) -> Vec<f64> {
     if fill.rows == Rows::Fixed {
         return vec![fill.angle; areas.len()];

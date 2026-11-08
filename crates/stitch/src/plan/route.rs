@@ -62,14 +62,23 @@ use super::geometry::{SubPath, length};
 /// research's estimate, the session's choice.
 pub(super) const GAP_BRIDGE: f64 = THREAD_WIDTH;
 
-/// The grid the nodes' points are looked up in ([`Graph::of`]): cells [`GAP_BRIDGE`] wide, so that
-/// a node an end meets lies in the end's cell or one beside it, corner to corner at most. Two
-/// nodes' points lie farther apart than the gap, so a cell holds a few at most.
+/// The grid the nodes' points are looked up in ([`Graph::of`], [`Cells`]): cells at least
+/// [`GAP_BRIDGE`] wide, so that a node an end meets lies in the end's cell or one beside it,
+/// corner to corner at most. Two nodes' points lie farther apart than the gap, so a cell holds a
+/// few at most.
 const CELL: f64 = GAP_BRIDGE;
 
-/// How many steps along the pieces the search for nodes on their middles takes at most
-/// ([`cuts`]): one a cell along every piece. Past them no piece is cut, the pieces meeting end to
-/// end only. A bound on the work, an estimate: two million, the cells along 800 m of line.
+/// The cells the search for nodes on the pieces' middles walks along them ([`cuts`]): at least four
+/// times the ends' cells, so that it takes a quarter of the steps, and at least twice the gap, so
+/// that a node within the gap of any point of a piece lies in the 3 × 3 cells round the step
+/// nearest that point (half a cell along the piece and the gap across it are within one cell
+/// either way).
+const CUT_CELL: f64 = 4.0 * CELL;
+
+/// How many steps along the pieces, and nodes looked at, the search for nodes on their middles
+/// takes at most ([`cuts`]): one step a cell along every piece. Past them no piece is cut, the
+/// pieces meeting end to end only. A bound on the work, an estimate: two million, the cells along
+/// 3.2 km of line.
 const MAX_CUT_STEPS: usize = 2_000_000;
 
 /// The most pieces a line is routed with: past them it is sewn piece by piece, as before routing.
@@ -140,6 +149,94 @@ fn cell(p: Point) -> Option<(i64, i64)> {
     (x.is_finite() && y.is_finite()).then_some((x as i64, y as i64))
 }
 
+/// The most cells a [`Cells`] grid takes, a bound on its memory (four bytes a cell): past it, its
+/// cells are wider than asked. An estimate: a thousand a side.
+const MAX_CELLS: f64 = 1_048_576.0;
+
+/// No point: the end of a cell's list ([`Cells`]).
+const NO_POINT: u32 = u32::MAX;
+
+/// Points sorted into square cells over a box, to find those near a point: each cell's points a
+/// list, from its last point added (`head`) through each point's next (`next`), so that points can
+/// be added one at a time as they are found. The cells are at least as wide as asked, wider where
+/// the box would need more than [`MAX_CELLS`]: a point within a cell's width of another, either
+/// way along each axis, lies in its cell or one beside it.
+struct Cells {
+    x0: f64,
+    y0: f64,
+    side: f64,
+    nx: usize,
+    ny: usize,
+    head: Vec<u32>,
+    next: Vec<u32>,
+}
+
+impl Cells {
+    /// Empty cells at least `side` wide over the box of `pts` (millimetres); `None` for no point,
+    /// or one that isn't finite.
+    fn over(pts: impl Iterator<Item = Point>, side: f64) -> Option<Self> {
+        let (mut x0, mut y0, mut x1, mut y1) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
+        for p in pts {
+            (x0, y0, x1, y1) = (x0.min(p.x), y0.min(p.y), x1.max(p.x), y1.max(p.y));
+        }
+        let (w, h) = (x1 - x0, y1 - y0);
+        if !(w.is_finite() && h.is_finite() && w >= 0.0 && h >= 0.0 && side > 0.0) {
+            return None;
+        }
+        let side = side.max(((w + side) * (h + side) / MAX_CELLS).sqrt());
+        let (nx, ny) = ((w / side).floor() + 1.0, (h / side).floor() + 1.0);
+        // A guard: the side chosen keeps them within MAX_CELLS and a row and a column besides (the
+        // box and the side are finite numbers here).
+        if nx * ny > 2.0 * MAX_CELLS {
+            return None;
+        }
+        let (nx, ny) = (nx as usize, ny as usize);
+        Some(Self { x0, y0, side, nx, ny, head: vec![NO_POINT; nx * ny], next: Vec::new() })
+    }
+
+    /// Where `p` lies in the grid, in cells from its first (beyond the box too); `None` for a point
+    /// that isn't finite.
+    fn cell(&self, p: Point) -> Option<(i64, i64)> {
+        let (x, y) = (((p.x - self.x0) / self.side).floor(), ((p.y - self.y0) / self.side).floor());
+        (x.is_finite() && y.is_finite()).then_some((x as i64, y as i64))
+    }
+
+    /// The cell at `(cx, cy)`'s place in `head`, `None` outside the grid.
+    fn at(&self, cx: i64, cy: i64) -> Option<usize> {
+        let (x, y) = (usize::try_from(cx).ok()?, usize::try_from(cy).ok()?);
+        (x < self.nx && y < self.ny).then(|| y * self.nx + x)
+    }
+
+    /// Point `p` added, numbered as the points added before it are counted; `false` when it lies
+    /// outside the grid (or the count is past what the lists hold).
+    fn add(&mut self, p: Point) -> bool {
+        let Some(c) = self.cell(p).and_then(|(cx, cy)| self.at(cx, cy)) else { return false };
+        let (Ok(id), Some(slot)) = (u32::try_from(self.next.len()), self.head.get_mut(c)) else { return false };
+        if id == NO_POINT {
+            return false;
+        }
+        self.next.push(*slot);
+        *slot = id;
+        true
+    }
+
+    /// `visit` called with every point added in the 3 × 3 cells round `p`'s.
+    fn near(&self, p: Point, mut visit: impl FnMut(usize)) {
+        let Some((cx, cy)) = self.cell(p) else { return };
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                let (Some(x), Some(y)) = (cx.checked_add(dx), cy.checked_add(dy)) else { continue };
+                let Some(c) = self.at(x, y) else { continue };
+                let mut k = self.head.get(c).copied().unwrap_or(NO_POINT);
+                while k != NO_POINT {
+                    visit(k as usize);
+                    k = self.next.get(k as usize).copied().unwrap_or(NO_POINT);
+                }
+            }
+        }
+    }
+}
+
 impl Graph {
     /// The graph of `subs`' open pieces (closed ones have no ends, and are sewn on their own):
     /// `None` when no two pieces meet, so that the line is sewn as before, piece by piece; and
@@ -161,27 +258,23 @@ impl Graph {
         }
         // Each end in turn meets the node whose point lies nearest it within the gap, or is a new
         // node's point: the nodes' points are each farther than the gap from the others.
-        let mut cells: BTreeMap<(i64, i64), Vec<usize>> = BTreeMap::new();
+        let mut cells = Cells::over(ends.iter().copied(), CELL)?;
         let mut nodes: Vec<Point> = Vec::new();
         let mut node_of: Vec<usize> = Vec::with_capacity(ends.len());
         for &q in &ends {
-            let (cx, cy) = cell(q)?;
             let mut met: Option<(f64, usize)> = None;
-            for dx in -1..=1 {
-                for dy in -1..=1 {
-                    let (Some(nx), Some(ny)) = (cx.checked_add(dx), cy.checked_add(dy)) else { continue };
-                    for &n in cells.get(&(nx, ny)).map_or(&[][..], Vec::as_slice) {
-                        let d = nodes.get(n).map_or(f64::INFINITY, |p| p.distance(q));
-                        if d <= GAP_BRIDGE && met.is_none_or(|(best, m)| d < best || (d == best && n < m)) {
-                            met = Some((d, n));
-                        }
-                    }
+            cells.near(q, |n| {
+                let d = nodes.get(n).map_or(f64::INFINITY, |p| p.distance(q));
+                if d <= GAP_BRIDGE && met.is_none_or(|(best, m)| d < best || (d == best && n < m)) {
+                    met = Some((d, n));
                 }
-            }
+            });
             let n = match met {
                 Some((_, n)) => n,
                 None => {
-                    cells.entry((cx, cy)).or_default().push(nodes.len());
+                    if !cells.add(q) {
+                        return None;
+                    }
                     nodes.push(q);
                     nodes.len() - 1
                 }
@@ -189,7 +282,7 @@ impl Graph {
             node_of.push(n);
         }
         // Each piece, cut where a node lies on its middle.
-        let cut = cuts(subs, &open, &nodes, &cells);
+        let cut = cuts(subs, &open, &nodes);
         let mut edges: Vec<Edge> = Vec::with_capacity(open.len());
         for (j, &sub) in open.iter().enumerate() {
             let (a, b) = (node_of.get(2 * j).copied()?, node_of.get(2 * j + 1).copied()?);
@@ -235,11 +328,19 @@ impl Graph {
 }
 
 /// Where each of the line's pieces (`subs`, the open ones at `open`'s places) is cut: at each node
-/// (`nodes`, their points looked up in `cells`) that lies within [`GAP_BRIDGE`] of its middle,
-/// farther than that along it from its own ends, nearest there. By piece (its place in `open`),
-/// each cut's segment, its point and its node, in order along the piece. None at all past
-/// [`MAX_CUT_STEPS`].
-fn cuts(subs: &[SubPath], open: &[usize], nodes: &[Point], cells: &BTreeMap<(i64, i64), Vec<usize>>) -> Vec<Vec<(usize, Point, usize)>> {
+/// (`nodes`) that lies within [`GAP_BRIDGE`] of its middle, farther than that along it from its own
+/// ends, nearest there, the nodes looked up in the cells (at least [`CUT_CELL`] wide) round each
+/// step along the piece, a cell apart. By piece (its place in `open`), each cut's segment, its point
+/// and its node, in order along the piece. None at all past [`MAX_CUT_STEPS`] steps and nodes
+/// looked at.
+fn cuts(subs: &[SubPath], open: &[usize], nodes: &[Point]) -> Vec<Vec<(usize, Point, usize)>> {
+    let none = || vec![Vec::new(); open.len()];
+    let Some(mut cells) = Cells::over(nodes.iter().copied(), CUT_CELL) else { return none() };
+    for &q in nodes {
+        if !cells.add(q) {
+            return none();
+        }
+    }
     let mut steps = 0usize;
     let mut out: Vec<Vec<(usize, Point, usize)>> = Vec::with_capacity(open.len());
     for &i in open {
@@ -255,31 +356,26 @@ fn cuts(subs: &[SubPath], open: &[usize], nodes: &[Point], cells: &BTreeMap<(i64
         for (seg, w) in pts.windows(2).enumerate() {
             let (Some(&p0), Some(&p1)) = (w.first(), w.get(1)) else { continue };
             let len = p0.distance(p1);
-            let samples = (len / CELL).ceil().max(1.0);
+            let samples = (len / cells.side).ceil().max(1.0);
             if !samples.is_finite() {
-                return vec![Vec::new(); open.len()];
+                return none();
             }
             for k in 0..=samples as usize {
                 steps += 1;
-                if steps > MAX_CUT_STEPS {
-                    return vec![Vec::new(); open.len()];
-                }
-                let Some((cx, cy)) = cell(p0 + (p1 - p0) * (k as f64 / samples)) else { continue };
-                for dx in -1..=1 {
-                    for dy in -1..=1 {
-                        let (Some(nx), Some(ny)) = (cx.checked_add(dx), cy.checked_add(dy)) else { continue };
-                        for &n in cells.get(&(nx, ny)).map_or(&[][..], Vec::as_slice) {
-                            let Some(&q) = nodes.get(n) else { continue };
-                            let ab = p1 - p0;
-                            let t = if ab.hypot2() > 0.0 { ((q - p0).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
-                            let at = p0 + ab * t;
-                            let (d, s) = (at.distance(q), along + len * t);
-                            let middle = s > GAP_BRIDGE && total - s > GAP_BRIDGE;
-                            if d <= GAP_BRIDGE && middle && found.get(&n).is_none_or(|&(best, ..)| d < best) {
-                                found.insert(n, (d, s, seg, at));
-                            }
-                        }
+                cells.near(p0 + (p1 - p0) * (k as f64 / samples), |n| {
+                    steps += 1;
+                    let Some(&q) = nodes.get(n) else { return };
+                    let ab = p1 - p0;
+                    let t = if ab.hypot2() > 0.0 { ((q - p0).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+                    let at = p0 + ab * t;
+                    let (d, s) = (at.distance(q), along + len * t);
+                    let middle = s > GAP_BRIDGE && total - s > GAP_BRIDGE;
+                    if d <= GAP_BRIDGE && middle && found.get(&n).is_none_or(|&(best, ..)| d < best) {
+                        found.insert(n, (d, s, seg, at));
                     }
+                });
+                if steps > MAX_CUT_STEPS {
+                    return none();
                 }
             }
             along += len;

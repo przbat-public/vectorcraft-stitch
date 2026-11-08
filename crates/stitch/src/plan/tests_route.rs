@@ -3,7 +3,7 @@
 //! twice, on a drawing with cycles never more than twice, a long way back jumped, an entry and an
 //! exit met, and the same stitches every time.
 
-use vectorcraft_geom::{BezPath, FillRule, Point};
+use vectorcraft_geom::{BezPath, FillRule, Point, Vec2};
 
 use super::geometry::{length, resample, subpaths};
 use super::route::{GAP_BRIDGE, Graph, route};
@@ -635,4 +635,41 @@ fn a_line_of_tiny_pieces_is_sewn() {
     let (out, _) = sewn(&pieces(&line), Aim::from_needle(None));
     let xs: Vec<f64> = needle(&out).iter().map(|q| q.x).collect();
     assert!(xs.iter().any(|&x| x < 0.5) && xs.iter().any(|&x| x > 29.5), "{xs:?}");
+}
+
+/// A line ending within the gap of a slanted line's middle joins it wherever along it it ends, on
+/// either side: a stroke 100 mm long at 20° and a short one ending 0.95 of the gap from it, at forty
+/// places along it, each makes one drawing of three pieces, the long one cut there.
+#[test]
+fn a_line_ending_near_a_slanted_lines_middle_joins_it_anywhere() {
+    let (a, b) = (Point::new(3.0, 5.0), Point::new(3.0 + 100.0 * 20f64.to_radians().cos(), 5.0 + 100.0 * 20f64.to_radians().sin()));
+    let across = Vec2::new(-(b - a).y, (b - a).x) / (b - a).hypot();
+    for k in 1..40 {
+        for side in [-1.0, 1.0] {
+            let on = a + (b - a) * (f64::from(k) / 40.0);
+            let end = on + across * (side * 0.95 * GAP_BRIDGE);
+            let from = end + across * (side * 5.0);
+            let path = pieces(&[vec![(a.x, a.y), (b.x, b.y)], vec![(from.x, from.y), (end.x, end.y)]]);
+            let graph = Graph::of(&subpaths(&path)).unwrap_or_else(|| panic!("{k}/40, side {side}: the two don't meet"));
+            assert_eq!(graph.edges.len(), 3, "{k}/40, side {side}: the slanted line isn't cut");
+        }
+    }
+}
+
+/// In a drawing a kilometre across, whose cells the grid makes wider to keep their number bounded,
+/// ends still meet within the gap and a line ending on another's middle still joins it.
+#[test]
+fn ends_meet_in_a_drawing_a_kilometre_across() {
+    let far = 1.0e6;
+    let path = pieces(&[
+        vec![(0.0, 0.0), (20.0, 0.0)],
+        vec![(10.0, 0.9 * GAP_BRIDGE), (10.0, 6.0)],
+        vec![(20.0 + 0.8 * GAP_BRIDGE, 0.0), (30.0, 0.0)],
+        vec![(far, far), (far + 10.0, far)],
+    ]);
+    let graph = Graph::of(&subpaths(&path)).expect("pieces that meet");
+    assert_eq!(graph.edges.len(), 5, "the bar cut where the stem ends, and the far piece");
+    // The bar's two ends (the third piece's first end meeting the bar's last), the stem's two,
+    // the third piece's last and the far piece's two.
+    assert_eq!(graph.nodes.len(), 7, "{:?}", graph.nodes);
 }

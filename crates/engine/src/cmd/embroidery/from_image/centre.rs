@@ -269,13 +269,17 @@ fn peeled(set: [bool; 8], second: bool) -> bool {
 /// `pixels` (one line's, each `on` in `line`) thinned (the module's notes): passes of two halves,
 /// each half's pixels found from the line as it was and taken away together, the pixels beside
 /// those taken looked at again in the next, until a pass takes none; then the stairs left taken away.
-/// A cancel stops it.
-fn thinned(line: &mut Line<'_>, pixels: &[usize]) -> Result<()> {
+/// A cancel stops it. How many pixels it looked at, in its passes.
+fn thinned(line: &mut Line<'_>, pixels: &[usize]) -> Result<usize> {
     // The pixels to look at: at first every one on the line's edge, then those beside the pixels
     // taken away; each once a half.
     let mut todo: Vec<usize> = pixels.iter().copied().filter(|&i| line.around(i).iter().any(|&s| !s)).collect();
+    // How many halves in a row each pixel to look at has been looked at with nothing beside it
+    // taken: once both halves have kept it, it stays until a neighbour goes (whether a half takes
+    // a pixel depends on its neighbours alone), and is looked at again only then.
+    let mut looked: std::collections::HashMap<usize, u8> = std::collections::HashMap::new();
     let mut queued = std::collections::BTreeSet::new();
-    let mut done = 0usize;
+    let (mut done, mut looked_at) = (0usize, 0usize);
     for _ in 0..MAX_THIN_PASSES {
         let mut taken_any = false;
         for second in [false, true] {
@@ -285,13 +289,26 @@ fn thinned(line: &mut Line<'_>, pixels: &[usize]) -> Result<()> {
             }
             taken_any |= !taken.is_empty();
             done += todo.len();
-            // The next half looks again at what it looked at and is still there (the other half
-            // may take it), and at what lies beside what went (the edge moved in).
+            looked_at = looked_at.saturating_add(todo.len());
+            // The next half looks at what lies beside what went (the edge moved in), afresh, and
+            // again at what it looked at and is still there (the other half may take it), until
+            // both halves have kept it.
             queued.clear();
             let mut next: Vec<usize> = Vec::with_capacity(todo.len());
             let beside: Vec<usize> = taken.iter().flat_map(|&i| (0..8).map(move |k| (i, k))).filter_map(|(i, k)| line.neighbour(i, k)).collect();
-            for j in todo.iter().copied().chain(beside) {
+            for j in beside {
                 if line.on(j) && queued.insert(j) {
+                    looked.insert(j, 0);
+                    next.push(j);
+                }
+            }
+            for &j in &todo {
+                if !line.on(j) || queued.contains(&j) {
+                    continue;
+                }
+                let halves = looked.entry(j).or_insert(0);
+                *halves = halves.saturating_add(1);
+                if *halves < 2 && queued.insert(j) {
                     next.push(j);
                 }
             }
@@ -317,7 +334,7 @@ fn thinned(line: &mut Line<'_>, pixels: &[usize]) -> Result<()> {
             break;
         }
     }
-    Ok(())
+    Ok(looked_at)
 }
 
 /// A node of a skeleton's graph: its point (working pixels), the radius of the largest disc the line
@@ -1306,5 +1323,35 @@ mod tests {
         let pts: Vec<Point> = (0..50).map(|k| Point::new(f64::from(k), f64::from(k % 2))).collect();
         assert!(cancel::scope(&token, None, || smoothed(&pts, false, 8.0, &mut almost())).is_err(), "the smoothing");
         assert!(smoothed(&pts, false, 8.0, &mut almost()).is_ok(), "not cancelled");
+    }
+
+    /// Thinning looks again only beside what it took away: a disc joined by a column to a long
+    /// serpentine (its skeleton found early, while the disc takes as many passes as its radius) is
+    /// looked at about as often a pixel at four times the size as at one (2.4 times a pixel at 150
+    /// and 600 pixels), where every pixel kept was looked at again at every pass (12 and 44).
+    #[test]
+    fn thinning_looks_again_only_beside_what_it_took() {
+        let looks = |side: u32| {
+            let r = side / 3;
+            let (cx, cy) = (r + 2, r + 2);
+            let on = move |x: u32, y: u32| {
+                let disc = (f64::from(x) - f64::from(cx)).hypot(f64::from(y) - f64::from(cy)) <= f64::from(r);
+                // A column from the disc's right to the serpentine, and the serpentine's bars every
+                // 6 rows on the right two thirds, turning at alternate ends.
+                let column = (cx..2 * r + 6).contains(&x) && (cy..cy + 3).contains(&y);
+                let (x0, x1) = (2 * r + 6, side - 2);
+                let k = y / 6;
+                let bar = (x0..x1).contains(&x) && y % 6 < 3 && y >= 2 && y + 2 < side;
+                let turn = y % 6 >= 3 && y + 6 < side && if k.is_multiple_of(2) { x + 3 >= x1 && x < x1 } else { (x0..x0 + 3).contains(&x) };
+                disc || column || bar || turn
+            };
+            let regions = map(side, side, on);
+            let mut alive: Vec<bool> = regions.labels.iter().map(|&l| l == 0).collect();
+            let pixels: Vec<usize> = (0..alive.len()).filter(|&i| alive[i]).collect();
+            let mut line = Line { regions: &regions, label: 0, alive: &mut alive };
+            thinned(&mut line, &pixels).unwrap() as f64 / pixels.len() as f64
+        };
+        let (small, large) = (looks(150), looks(600));
+        assert!(large < 2.0 * small, "{large} looks a pixel at 600 pixels, {small} at 150");
     }
 }

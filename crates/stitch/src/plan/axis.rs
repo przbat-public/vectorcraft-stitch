@@ -26,11 +26,23 @@ use super::geometry::{Axes, SubPath};
 /// turned every 15°, the axis comes within a hundredth of a degree.
 pub const SHAPE_AXIS_BANDS: usize = 128;
 
-/// How much longer than wide a shape must be (the square root of its moments' eigenvalues' ratio)
-/// for its rows to follow it: rounder, its axis turns at a touch and the rows keep the fixed angle.
-/// An estimate (the research's), the session's choice: a 3 × 2 rectangle is 1.5 times as long as
-/// wide by this measure.
+/// How much longer than wide a shape must be (the square root of its moments' eigenvalues' ratio,
+/// as [`told_elongation`] tells it) for its rows to follow it: rounder, its axis turns at a touch
+/// and the rows keep the fixed angle. An estimate (the research's), the session's choice: a 3 × 2
+/// rectangle is 1.5 times as long as wide by this measure, on the line, and its rows run across it.
 pub const SHAPE_AXIS_MIN_ELONGATION: f64 = 1.5;
+
+/// How finely a shape's elongation is told: in hundredths. The rule decides on it so rounded, and
+/// `embroidery.info` reports it so: the two agree, and a shape on the line, which the bands
+/// measure a few ten-thousandths either side of it as it is turned, keeps one kind of rows at
+/// every turn.
+pub const ELONGATION_STEPS: f64 = 100.0;
+
+/// `elongation` as the rule decides on it and `embroidery.info` reports it: rounded to
+/// hundredths ([`ELONGATION_STEPS`]).
+pub fn told_elongation(elongation: f64) -> f64 {
+    (elongation * ELONGATION_STEPS).round() / ELONGATION_STEPS
+}
 
 /// The step the rows' angle is rounded to (degrees): the embroidery tool's arrow keeps an angle to
 /// a tenth of a degree, and two systems' arctangents that differ in their last bit give the same
@@ -109,17 +121,18 @@ fn measured(shape: Area<'_>) -> Option<(f64, Option<ShapeAxis>)> {
 
 /// The angle a fill's rows run at across `path`'s length (degrees as the planner counts them,
 /// rounded to [`SHAPE_ANGLE_STEP`]): square to its long axis ([`shape_axis`]), all its outlines
-/// together, when it is at least [`SHAPE_AXIS_MIN_ELONGATION`] times as long as wide; `None`
-/// otherwise (the rows keep the fixed angle). With the axis.
+/// together, when it is at least [`SHAPE_AXIS_MIN_ELONGATION`] times as long as wide (told in
+/// hundredths, [`told_elongation`]); `None` otherwise (the rows keep the fixed angle). With the
+/// axis.
 pub fn rows_across(path: &BezPath, rule: FillRule) -> Option<(f64, ShapeAxis)> {
     let axis = shape_axis(path, rule)?;
     Some((across(axis)?, axis))
 }
 
 /// The rows across a shape with long axis `axis` ([`rows_across`]), `None` for one about as long
-/// as wide.
+/// as wide (its elongation, as [`told_elongation`] tells it, under [`SHAPE_AXIS_MIN_ELONGATION`]).
 fn across(axis: ShapeAxis) -> Option<f64> {
-    if axis.elongation < SHAPE_AXIS_MIN_ELONGATION {
+    if told_elongation(axis.elongation) < SHAPE_AXIS_MIN_ELONGATION {
         return None;
     }
     let across = ((axis.angle + QUARTER_TURN) / SHAPE_ANGLE_STEP).round() * SHAPE_ANGLE_STEP;

@@ -53,7 +53,7 @@ fn a_bars_axis_is_its_length_at_every_turn() {
 }
 
 /// A square, a disc and a ring are as wide every way: their rows keep the fixed angle; a 3 × 2
-/// rectangle is just past the line.
+/// rectangle is 1.5 times as long as wide, on the line.
 #[test]
 fn round_shapes_keep_the_fixed_angle() {
     let square = rectangle(Point::new(0.0, 0.0), 20.0, 20.0, 30.0, true);
@@ -213,4 +213,29 @@ fn past_the_most_directions_the_pieces_are_measured_together() {
     };
     assert_eq!(rows_by_piece(&bars(MAX_DIRECTIONS), FillRule::NonZero, 45.0).len(), MAX_DIRECTIONS);
     assert_eq!(rows_by_piece(&bars(MAX_DIRECTIONS + 1), FillRule::NonZero, 45.0).len(), 1);
+}
+
+/// A 3 × 2 rectangle lies on the line, which the bands measure a few ten-thousandths either side
+/// of as it turns: told in hundredths, it is 1.5 times as long as wide at every turn, and its rows
+/// run across it at every turn, square to its length.
+#[test]
+fn a_shape_on_the_line_keeps_its_rows_across_at_every_turn() {
+    for k in 0..=36 {
+        let turn = 5.0 * f64::from(k);
+        let shape = rectangle(Point::new(0.0, 0.0), 3.0, 2.0, turn, true);
+        let rows = rows_across(&shape, FillRule::NonZero);
+        assert!(rows.is_some_and(|(r, _)| apart(r, turn + 90.0) <= SHAPE_ANGLE_STEP / 2.0 + 1e-9), "{turn}°: {rows:?}");
+        let axis = shape_axis(&shape, FillRule::NonZero).expect("an axis");
+        assert_eq!(told_elongation(axis.elongation), SHAPE_AXIS_MIN_ELONGATION, "{turn}°: {}", axis.elongation);
+    }
+}
+
+/// The line is at 1.5, told in hundredths: a rectangle 1.49 times as long as wide keeps the fixed
+/// rows, one 1.5 times runs across, upright and turned.
+#[test]
+fn the_line_is_at_one_and_a_half() {
+    for turn in [0.0, 20.0] {
+        assert!(rows_across(&rectangle(Point::new(0.0, 0.0), 14.9, 10.0, turn, true), FillRule::NonZero).is_none(), "{turn}°: 1.49");
+        assert!(rows_across(&rectangle(Point::new(0.0, 0.0), 15.0, 10.0, turn, true), FillRule::NonZero).is_some(), "{turn}°: 1.5");
+    }
 }

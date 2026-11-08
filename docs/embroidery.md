@@ -1004,8 +1004,17 @@ the fabric.
   The axis comes from the second moments of the shape's area (the direction of its largest
   spread), summed over the planner's own row sweep in 128 bands, so that holes and either fill
   rule count as they are sewn; the rows are rounded to a tenth of a degree. A shape less than 1.5
-  times as long as wide by that measure (a disc, a square) keeps the fixed rows (an estimate, the
-  session's choice). A fill made of separate pieces (outlines that neither cross, touch nor lie one
+  times as long as wide by that measure, told in hundredths (a disc, a square), keeps the fixed
+  rows (an estimate, the session's choice). The rule decides on the elongation `embroidery.info`
+  reports, rounded to hundredths, so that the two agree and a shape on the line (a 3 × 2
+  rectangle), which the bands measure a few ten-thousandths either side of it as it is turned,
+  keeps its rows across it at every turn; it used to flip between the two at a turn of half a
+  degree. How near the line real art lies, measured 2026-11-08: of the 82 fill pieces of the
+  eleven real designs' artwork, at the sizes of the persons' designs, 13 (16 %) are within a tenth
+  of it (1.35 to 1.65 times as long as wide) and 1 within a hundredth; of the 253 areas Create
+  makes of six pictures of an invented logo used for testing (100 × 80 mm, 9 colours; kept
+  outside the repository), 27 (11 %) and 4. A piece that near the line may change its rows when
+  it is turned or reshaped a little. A fill made of separate pieces (outlines that neither cross, touch nor lie one
   inside the other, as an SVG keeps a word's letters in one path) has each piece measured alone and
   sewn across its own length (the owner's choice, 2026-11-07, „Każdy kawałek osobno (polecam)”):
   together, two upright bars side by side are wider than tall, and their rows ran along each bar.

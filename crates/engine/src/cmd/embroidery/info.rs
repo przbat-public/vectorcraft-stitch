@@ -21,7 +21,7 @@ use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
 use vectorcraft_stitch::plan::{
     Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, SHAPE_AXIS_MIN_ELONGATION, Style, TATAMI_UNDERLAY_MIN, Underlay, rows_by_piece,
-    satin_auto_underlay,
+    satin_auto_underlay, told_elongation,
 };
 use vectorcraft_stitch::{Command, pt_to_mm};
 
@@ -697,16 +697,13 @@ fn rows_by_shape(style: Style, settings: &UnitSettings, areas: &[AreaAcross]) ->
         "id": "rowsAcrossShape",
         "chose": super::options::planner_angle(across.map_or(kept, |p| p.angle)),
         "values": {
-            "elongation": largest.and_then(|p| p.axis).map(|a| (a.elongation * ELONGATION_HUNDREDTHS).round() / ELONGATION_HUNDREDTHS),
+            "elongation": largest.and_then(|p| p.axis).map(|a| told_elongation(a.elongation)),
             "elongationMin": SHAPE_AXIS_MIN_ELONGATION,
             "across": across.is_some(),
             "pieces": measured.map_or(0, |r| r.pieces),
         },
     }))
 }
-
-/// How finely a shape's elongation is reported: to hundredths.
-const ELONGATION_HUNDREDTHS: f64 = 100.0;
 
 /// What `plan` sews of part `kind` of objects `ids` (as a person selects them).
 fn sewn_of(plan: &DesignPlan, ids: &[NodeId], kind: PartKind) -> Sewing {

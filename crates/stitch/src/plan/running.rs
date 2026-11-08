@@ -167,7 +167,8 @@ fn reversed(r: Route) -> Route {
 /// the connecting stitches sewn between them (millimetres, [`Runs::connectors`]).
 fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
     let parts = graph.components();
-    // Each part of two pieces or more is routed; the others' pieces are sewn as they are.
+    // Each part of two pieces or more is routed, but one shorter than the shortest stitch, a speck
+    // left out as each of its pieces would be; the others' pieces are sewn as they are.
     let mut in_part = vec![false; subs.len()];
     let mut items: Vec<(usize, Item)> = Vec::new();
     for (c, edges) in parts.iter().enumerate() {
@@ -175,13 +176,17 @@ fn routed(subs: &[SubPath], graph: &Graph, p: &Params, aim: Aim) -> (Vec<Stitch>
             continue;
         }
         let mut first = usize::MAX;
+        let mut total = 0.0;
         for e in edges.iter().filter_map(|&e| graph.edges.get(e)) {
             if let Some(slot) = in_part.get_mut(e.sub) {
                 *slot = true;
             }
             first = first.min(e.sub);
+            total += e.len;
         }
-        items.push((first, Item::Part(c)));
+        if total >= p.min_stitch {
+            items.push((first, Item::Part(c)));
+        }
     }
     items.extend((0..subs.len()).filter(|&i| !in_part.get(i).copied().unwrap_or(true)).map(|i| (i, Item::Piece(i))));
     items.sort_by_key(|&(first, _)| first);

@@ -910,7 +910,8 @@ the fabric.
   run is locked at its ends. The routes and the pieces that meet nothing are taken in turn as a
   line's subpaths are (from an entry, what lies nearest it; toward an exit, what lies nearest it
   last of the rest, so that an exit on the entry's own drawing never takes it from the entry; else
-  nearest first), and a route starts at its node nearest the needle whenever that sews nothing
+  nearest first; a drawing shorter than the shortest stitch left out, as each of its pieces would
+  be), and a route starts at its node nearest the needle whenever that sews nothing
   more twice, as a line's subpaths start nearest it: a closed drawing always, one whose ends cost
   the same, and otherwise at its end nearer the needle. Every step is linear or n log n, the cycles walked capped.
 - **Satin** sews a column: the path is its centre line, its stroke width the column's width, and

@@ -556,3 +556,29 @@ fn a_route_with_one_end_given_sews_least_twice() {
         assert!((twice - 10.0).abs() < 1e-9 && r.start != r.end, "{start:?} {end:?}: {twice} mm twice");
     }
 }
+
+/// A drawing shorter than the shortest stitch is left out, as each of its pieces would be: a 0.1 mm V
+/// 20 mm past a line adds no jump and no needle point, where it was sewn as a lone needle point
+/// with a jump to it.
+#[test]
+fn a_drawing_shorter_than_the_shortest_stitch_is_left_out() {
+    let path = pieces(&[vec![(0.0, 0.0), (30.0, 0.0)], vec![(50.0, 0.0), (50.1, 0.0)], vec![(50.1, 0.0), (50.1, 0.1)]]);
+    let (out, _) = sewn(&path, Aim::from_needle(None));
+    assert_eq!(jumps(&out), 0, "a jump to a speck");
+    assert!(needle(&out).iter().all(|q| q.x <= 30.0 + 1e-9), "a speck sewn");
+}
+
+/// A line cut into pieces shorter than the shortest stitch is sewn, as the drawing they make is long
+/// enough (each piece on its own would be left out): 100 pieces 0.3 mm long in a row.
+#[test]
+fn a_line_of_tiny_pieces_is_sewn() {
+    let line: Vec<Vec<(f64, f64)>> = (0..100)
+        .map(|k| {
+            let x = 0.3 * f64::from(k);
+            vec![(x, 0.0), (x + 0.3, 0.0)]
+        })
+        .collect();
+    let (out, _) = sewn(&pieces(&line), Aim::from_needle(None));
+    let xs: Vec<f64> = needle(&out).iter().map(|q| q.x).collect();
+    assert!(xs.iter().any(|&x| x < 0.5) && xs.iter().any(|&x| x > 29.5), "{xs:?}");
+}

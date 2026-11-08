@@ -287,9 +287,6 @@ pub enum Cap {
 }
 
 impl Cap {
-    /// Every kind.
-    pub const ALL: [Self; 3] = [Self::Butt, Self::Round, Self::Square];
-
     /// Its name: `butt`, `round`, `square`.
     pub fn id(self) -> &'static str {
         match self {

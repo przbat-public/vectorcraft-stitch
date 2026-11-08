@@ -319,7 +319,7 @@ const LINE_PT: f64 = 0.5 * 72.0 / 25.4;
 
 /// How near the vector path's stitches a needle point of the image path must lie to be on the line
 /// (millimetres), and how near the image path's stitches a needle point of the vector path must lie
-/// to be covered: a working pixel and a half, and a thread's width more.
+/// to be covered: three working pixels (at 10 a millimetre), and half a thread's width more.
 const ON_LINE_MM: f64 = 0.3;
 const COVERED_MM: f64 = 0.5;
 

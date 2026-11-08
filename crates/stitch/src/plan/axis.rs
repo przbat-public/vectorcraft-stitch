@@ -28,7 +28,8 @@ pub const SHAPE_AXIS_BANDS: usize = 128;
 
 /// How much longer than wide a shape must be (the square root of its moments' eigenvalues' ratio,
 /// as [`told_elongation`] tells it) for its rows to follow it: rounder, its axis turns at a touch
-/// and the rows keep the fixed angle. An estimate (the research's), the session's choice: a 3 × 2
+/// and the rows keep the fixed angle. An estimate, the session's choice (of the real designs' 82
+/// fill pieces, 13 lie within a tenth of it and one within a hundredth, 2026-11-08): a 3 × 2
 /// rectangle is 1.5 times as long as wide by this measure, on the line, and its rows run across it.
 pub const SHAPE_AXIS_MIN_ELONGATION: f64 = 1.5;
 

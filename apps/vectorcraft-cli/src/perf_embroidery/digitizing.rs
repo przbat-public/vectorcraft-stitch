@@ -122,6 +122,10 @@ const LINE_PX: u32 = 6;
 const LINE_STEP_PX: u32 = 20;
 const MESH_MARGIN_PX: u32 = 10;
 
+/// The line pictures' navy, and their transparency.
+const LINE_NAVY: [u8; 4] = [29, 42, 107, 255];
+const LINE_CLEAR: [u8; 4] = [0, 0, 0, 0];
+
 /// A picture of `width` × `height` opaque pixels, each `colour(x, y)`, as PNG.
 fn png(width: u32, height: u32, colour: impl Fn(u32, u32) -> [u8; 3]) -> Result<Vec<u8>, String> {
     let mut pixels = Vec::with_capacity(width as usize * height as usize * 4);
@@ -305,7 +309,7 @@ pub(super) fn times() -> Result<Vec<f64>, String> {
         rgba(LINES_PX, LINES_PX, |x, y| {
             let on =
                 if mesh { inner(x) && inner(y) && (x % LINE_STEP_PX < LINE_PX || y % LINE_STEP_PX < LINE_PX) } else { y % LINE_STEP_PX < LINE_PX };
-            if on { [29, 42, 107, 255] } else { [0, 0, 0, 0] }
+            if on { LINE_NAVY } else { LINE_CLEAR }
         })
     };
     let mut mesh = placed("mesh.png", &lines(true)?, LINES_PX, LINES_PX)?;

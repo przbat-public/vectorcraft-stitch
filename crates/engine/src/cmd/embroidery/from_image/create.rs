@@ -113,7 +113,8 @@ fn line_width(line: &super::centre::CentreLine, px_per_mm: f64) -> f64 {
 fn line_node(doc: &mut Document, line: &super::centre::CentreLine, to_doc: vectorcraft_geom::Affine, width: f64, color: Color) -> Node {
     let path = PathData::from_bezpath(&(to_doc * line.path()));
     let mut look = Appearance::basic(Paint::None, Paint::solid(color), width);
-    if let Some(AppearanceItem::Stroke(s)) = look.items.last_mut() {
+    // Its stroke wherever the basic appearance holds it (upstream's own accessor, not its place).
+    if let Some(s) = look.stroke_mut() {
         s.cap = if vectorcraft_stitch::pt_to_mm(width) >= SATIN_MIN_WIDTH { LineCap::Butt } else { LineCap::Round };
         s.join = LineJoin::Round;
     }

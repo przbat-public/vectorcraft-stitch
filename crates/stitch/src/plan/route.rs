@@ -1,8 +1,9 @@
 //! A running line whose pieces meet end to end, sewn as one route: every piece once, and back along
-//! a few of them in their own holes where the needle must return, with no jump and no connecting
-//! stitch inside a drawing (the project owner's choices: "branches are sewn once each, going back
-//! along a few", 2026-11-01, and „Wszędzie w planiście (polecam)”, 2026-11-07: for every running
-//! line, not only those digitizing makes).
+//! a few of them in their own holes where the needle must return, with no connecting stitch inside
+//! a drawing and no jump but where a way back is much longer than the jump across it (the project
+//! owner's choices: "branches are sewn once each, going back along a few", 2026-11-01, and
+//! „Wszędzie w planiście (polecam)”, 2026-11-07: for every running line, not only those digitizing
+//! makes).
 //!
 //! The pieces are the edges of a graph whose nodes are where their ends meet ([`Graph`]: an end
 //! within [`GAP_BRIDGE`] of a node's point, its first end, is that node's, so that two ends that
@@ -58,8 +59,8 @@ use super::geometry::{SubPath, length};
 
 /// Two ends of a running line's pieces closer than this meet (millimetres): a thread's width
 /// (`super::THREAD_WIDTH`, 0.4 mm for 40 wt), the narrowest gap that can show between two lines
-/// sewn in it. A line broken by a picture's noise into pieces that nearly touch is one line. The
-/// research's estimate, the session's choice.
+/// sewn in it. A line broken by a picture's noise into pieces that nearly touch is one line. An
+/// estimate, the session's choice.
 pub(super) const GAP_BRIDGE: f64 = THREAD_WIDTH;
 
 /// The grid the nodes' points are looked up in ([`Graph::of`], [`Cells`]): cells at least

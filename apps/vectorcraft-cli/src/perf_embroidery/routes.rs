@@ -29,11 +29,17 @@ pub(super) const ROWS: [&str; 5] = [
     "rows across shapes: object tab, 1,000",
 ];
 
-/// Each row's budget, milliseconds, in the order of [`ROWS`]: the cold rows about 2.5 times what
-/// each measured ([`MEASURED_MS`]), as the other rows', so that a regression of that size shows;
-/// the warm plan and the Object tab's read those of the same rows with the fixed rows
-/// ([`WARM_PLAN_MS`], [`OBJECT_TAB_MS`]): the rule must cost them nothing they can see.
-pub(super) const BUDGETS: [f64; 5] = [MEASURED_MS[0] * 2.5, MEASURED_MS[1] * 2.5, MEASURED_MS[2] * 2.5, WARM_PLAN_MS, OBJECT_TAB_MS];
+/// Each row's budget, milliseconds, in the order of [`ROWS`]: the cold rows [`OVER_MEASURED`] times
+/// what each measured ([`MEASURED_MS`]); the warm plan and the Object tab's read those of the same
+/// rows with the fixed rows ([`WARM_PLAN_MS`], [`OBJECT_TAB_MS`]): the rule must cost them nothing
+/// they can see.
+pub(super) const BUDGETS: [f64; 5] =
+    [MEASURED_MS[0] * OVER_MEASURED, MEASURED_MS[1] * OVER_MEASURED, MEASURED_MS[2] * OVER_MEASURED, WARM_PLAN_MS, OBJECT_TAB_MS];
+
+/// How many times what a cold row measured its budget is: 2.5, as the other rows' budgets are
+/// (`perf_embroidery.rs`), so that a regression of that size shows and a busy machine's noise
+/// doesn't.
+const OVER_MEASURED: f64 = 2.5;
 
 /// The warm plan's budget, milliseconds: the 1,000-path document's warm plan with the fixed rows
 /// (`embroidery: warm plan, 1,000 paths`).
@@ -54,6 +60,10 @@ const MEASURED_MS: [f64; 3] = [24.5, 18.6, 82.5];
 /// that the last level's are 4.4 points (1.6 mm) and no two pieces touch but at their nodes.
 const TREE_DEPTH: u32 = 14;
 const TREE_FIRST_PT: f64 = 400.0;
+
+/// The H-tree's page, a side, in first pieces: four, room for the tree (about two across) with a
+/// margin round it.
+const TREE_PAGE_PIECES: f64 = 4.0;
 
 /// The grid: nodes a side, and how far apart (points: 7 mm).
 const GRID_NODES: usize = 100;
@@ -95,7 +105,7 @@ fn h_tree(x: f64, y: f64, length: f64, depth: u32, across: bool, out: &mut Vec<P
 /// The routes rows' milliseconds, in the order of [`ROWS`].
 pub(super) fn times() -> Result<Vec<f64>, String> {
     let mut tree = Vec::new();
-    let side = 4.0 * TREE_FIRST_PT;
+    let side = TREE_PAGE_PIECES * TREE_FIRST_PT;
     h_tree(side / 2.0, side / 2.0, TREE_FIRST_PT, TREE_DEPTH, true, &mut tree);
     let tree_ms = cold(&running_line(&tree, side)?)?;
     let at = |k: usize| GRID_STEP_PT * (k as f64 + 1.0);

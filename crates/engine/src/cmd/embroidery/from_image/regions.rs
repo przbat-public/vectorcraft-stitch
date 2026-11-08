@@ -34,9 +34,23 @@ const FLATTEN_TOLERANCE_PX: f64 = 0.01;
 /// "no feature here": finite, so that its arithmetic never meets infinity minus infinity.
 const FAR: f64 = 1.0e20;
 
-/// A pixel's eight neighbours, and its four side neighbours.
-const NEIGHBOURS: [(i64, i64); 8] = [(1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1)];
+/// A pixel's eight neighbours, in turn round it: east, then counter-clockwise as seen on the page
+/// (north is up, `y − 1`).
+pub(super) const NEIGHBOURS: [(i64, i64); 8] = [(1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1)];
+
+/// A pixel's four side neighbours, those across its edges, in the same turn.
 const SIDES: [(i64, i64); 4] = [(1, 0), (0, -1), (-1, 0), (0, 1)];
+
+/// The width (pixels) of a shape across a pixel `d2` squared pixels from its edge: twice its distance
+/// to the edge and the half pixel past it to the edge's own middle, and a pixel more where the
+/// shape's middle lies between two pixels as deep (`even`, an even width).
+fn width_across(d2: f64, even: bool) -> f64 {
+    /// The half pixel from a pixel's centre to its edge.
+    const HALF_PIXEL: f64 = 0.5;
+    /// The pixel an even width adds: its two middle pixels, each as deep.
+    const EVEN_PIXEL: f64 = 1.0;
+    2.0 * (d2.sqrt() + HALF_PIXEL) + if even { EVEN_PIXEL } else { 0.0 }
+}
 
 /// What the map knows of one area.
 #[derive(Clone, Debug, PartialEq)]
@@ -335,7 +349,7 @@ pub(super) fn width_at(labels: &[u32], d2: &[f64], w: usize, h: usize, i: usize)
     };
     let deep = |dx: i64, dy: i64| at(dx, dy).is_some_and(|j| labels.get(j) == Some(&l) && d2.get(j) == Some(&d));
     let even = SIDES.iter().any(|&(dx, dy)| deep(dx, dy) && !deep(2 * dx, 2 * dy));
-    2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 }
+    width_across(d, even)
 }
 
 /// Whether the ridge through pixel `i` of a `w × h` map is two pixels thick across it (an even
@@ -369,7 +383,7 @@ pub(super) fn widest_of(mask: &[bool], w: usize, h: usize) -> f64 {
     }
     let Some((d, i)) = deepest else { return 0.0 };
     let deep = |j: usize| mask.get(j).copied().unwrap_or(false) && d2.get(j) == Some(&d);
-    2.0 * (d.sqrt() + 0.5) + if two_pixels_thick(i, w, h, deep) { 1.0 } else { 0.0 }
+    width_across(d, two_pixels_thick(i, w, h, deep))
 }
 
 impl Regions {
@@ -484,7 +498,7 @@ impl Regions {
             // either's own distance says.
             let deep = |j: usize| labels.get(j).is_some_and(|&o| o as usize == l) && d2.get(j) == Some(&d);
             let even = two_pixels_thick(i, wu, hu, deep);
-            a.widest_px = 2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 };
+            a.widest_px = width_across(d, even);
             a.deepest = (x as u32, y as u32);
         }
         // Each area's width along its ridge, which a junction or a blob doesn't widen.

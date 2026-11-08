@@ -1,7 +1,7 @@
 //! Running stitch ([`Style::Running`](super::Style::Running)): a single line of stitches along a
 //! path, locked at both ends. A line whose pieces meet end to end is sewn as routes through them
-//! ([`super::route`]), every piece once and a few back in their own holes, with no jump and no
-//! connecting stitch inside a drawing.
+//! ([`super::route`]), every piece once and a few back in their own holes, with no connecting
+//! stitch inside a drawing and no jump but where a way back is much longer than the jump across it.
 
 use vectorcraft_geom::{BezPath, Point};
 

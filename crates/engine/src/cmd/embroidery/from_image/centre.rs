@@ -5,7 +5,12 @@
 //! middle rather than a fill, so that the planner sews it as one running line through its junctions
 //! (`vectorcraft_stitch::plan`'s routes) instead of a running line per arm with a jump at each.
 //!
-//! Written here from the papers, in a structure of its own:
+//! Written here from the papers, in a structure of its own over digitizing's region map, step for
+//! step as upstream's Create Strokes goes (the trace crate's `centerline.rs`, which works on a
+//! trace's colour layers and has no hook for this), whose design the spurs, the junctions, the
+//! ends and the width follow rather than the papers': spurs measured past the largest disc at their
+//! junction, junctions whose discs overlap made one, ends carried to the ink less half a width, and
+//! a line's width told as its pixels over its length:
 //! - **The skeleton, by two-subiteration parallel thinning** (Guo and Hall, 1989, *Parallel thinning
 //!   with two-subiteration algorithms*, Communications of the ACM 32(3), 359–373, algorithm A1): the
 //!   line's pixels are peeled from its edge in passes, each pass in two halves that take away, all
@@ -81,7 +86,8 @@ const CORNER_TIP_PX: f64 = 1.5;
 
 /// The least area a point's triangle with its neighbours keeps it by (square working pixels): 8, so
 /// that the stairs pixels leave along a gentle curve go and a corner whose arms reach 0.4 mm stays
-/// (at 10 pixels a millimetre). An estimate, measured on the line art of the tests (2026-11-07): at
+/// (at 10 pixels a millimetre). An estimate, the session's choice for the owner to confirm,
+/// measured on the line art of the tests (2026-11-07): at
 /// 1 the centre lines of a ring 29 mm across and of an S curve turned more sharply than the
 /// planner's corners (30°) at 245 and 145 of their points, each a needle point of its own, and were
 /// sewn with 1.9 and 1.8 times the vector path's needle points; at 8 they turn so at none but where
@@ -99,7 +105,10 @@ pub(super) const SIMPLIFY_AREA_MM2: f64 = 0.08;
 /// and the repeat, a triangle round the ring, so that a small ring keeps its length.
 const CLOSED_LEAST_POINTS: usize = 4;
 
-/// How many pixels are thinned, walked or joined, or points smoothed, between two cancel checks.
+/// How many pixels are thinned, walked or joined, or points smoothed, between two cancel checks:
+/// 16,384, so that a cancel is seen soon (measured 2026-11-08: the hostile mesh's centre lines
+/// stopped within 0.084 s of a cancel asked after its trace) and the checks cost nothing that
+/// shows. An estimate.
 const CANCEL_EVERY: usize = 1 << 14;
 
 /// The work a line's steps have done since the last cancel check ([`CANCEL_EVERY`]).
@@ -121,13 +130,18 @@ impl Ticks {
 /// The half of a pixel from its corner to its centre: a pixel `(x, y)` lies at `(x + ½, y + ½)`.
 const HALF_PIXEL: f64 = 0.5;
 
-/// How far an end is followed back along its piece to find which way it points: at least this
-/// many pixels, and at least [`END_DIRECTION_WIDTHS`] of the line's widths, past the stair thinning
-/// leaves at a line's tip.
+/// How far an end is followed back along its piece to find which way it points (pixels): at least
+/// four, and at least [`END_DIRECTION_WIDTHS`] of the line's widths, past the stair thinning leaves
+/// at a line's tip. An estimate.
 const END_DIRECTION_PX: usize = 4;
+
+/// How far an end is followed back along its piece to find which way it points, as a share of the
+/// line's width: twice it, past where a wide line's tip turns toward one of its corners. An
+/// estimate.
 const END_DIRECTION_WIDTHS: f64 = 2.0;
 
-/// The steps an end is carried along toward the ink's end (pixels).
+/// The steps an end is carried along toward the ink's end (pixels): half a pixel, so that it stops
+/// within a quarter of a pixel of where the ink ends. An estimate.
 const END_STEP_PX: f64 = 0.5;
 
 /// How far an end may be carried, as a share of the line's width: the ink ends within about half a
@@ -145,8 +159,15 @@ const END_TRIM_SHARE: f64 = 0.75;
 const END_TRIM_LOOK: f64 = 2.0;
 
 /// The eight neighbours of a pixel in turn round it, as Yokoi's connectivity number counts them:
-/// east, then counter-clockwise as seen on the page (north is up, `y − 1`).
-const AROUND: [(i64, i64); 8] = [(1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1)];
+/// the areas' own ([`super::regions::NEIGHBOURS`]), east, then counter-clockwise as seen on the page
+/// (north is up, `y − 1`).
+const AROUND: [(i64, i64); 8] = super::regions::NEIGHBOURS;
+
+/// The fewest pieces that meet at a junction: three (two make a line go on, one an end).
+const JUNCTION_PIECES: usize = 3;
+
+/// The narrowest a centre line is told (working pixels): a pixel, the narrowest the skeleton is.
+const NARROWEST_PX: f64 = 1.0;
 
 /// A centre line: its pieces (working pixels, through the pixels' centres), each open from an end
 /// or a junction to another, or a closed loop; its width and its length (working pixels), and its
@@ -200,7 +221,7 @@ impl CentreLine {
 
 /// The connectivity number of a pixel whose eight neighbours (in [`AROUND`]'s order) `set` says
 /// are the line's: of the four side neighbours, how many are off with the corner after them and the
-/// side after that not both on (Yokoi, Toriwaki and Fukumura's eight-connected number, each term
+/// side after that not both off (Yokoi, Toriwaki and Fukumura's eight-connected number, each term
 /// `x̄ₖ − x̄ₖ·x̄ₖ₊₁·x̄ₖ₊₂` with `x̄` a neighbour off). One: taking the pixel away keeps the line in one
 /// piece and opens no hole; none: it lies inside; two or more: it joins pieces.
 fn connectivity(set: [bool; 8]) -> u32 {
@@ -251,8 +272,8 @@ impl Line<'_> {
 /// Whether a pixel whose eight neighbours (in [`AROUND`]'s order) `set` says are the line's is
 /// taken away in half `second` of a pass (Guo and Hall's algorithm A1, the module's notes): its
 /// neighbours form one piece (their `C(p)` one: of the four side neighbours, those off with the
-/// corner or the side after them on), it has two or three neighbours by both of the paper's counts
-/// (`N(p)`, so that an end and a pixel inside stay), and it lies on the side the half takes: the
+/// corner or the side after them on), it has two or three neighbours by the lesser of the paper's
+/// two counts (`N(p)`, so that an end and a pixel inside stay), and it lies on the side the half takes: the
 /// first half the east and north-east edge (`(x₂ ∨ x₃ ∨ ¬x₈) ∧ x₁` false), the second the west and
 /// south-west.
 fn peeled(set: [bool; 8], second: bool) -> bool {
@@ -462,8 +483,8 @@ fn graph(line: &Line<'_>, skeleton: &[usize], d2: &[f64], ticks: &mut Ticks) -> 
 /// node of its own. With each of the skeleton's pixels' node, if any.
 fn nodes_of(sk: &Skeleton<'_, '_>) -> (Vec<Node>, Vec<Option<usize>>) {
     let mut parent: Vec<usize> = (0..sk.len()).collect();
-    for k in (0..sk.len()).filter(|&k| sk.count(k) >= 3) {
-        for m in sk.neighbours(k).into_iter().filter(|&m| sk.count(m) >= 3) {
+    for k in (0..sk.len()).filter(|&k| sk.count(k) >= JUNCTION_PIECES) {
+        for m in sk.neighbours(k).into_iter().filter(|&m| sk.count(m) >= JUNCTION_PIECES) {
             unite(&mut parent, k, m);
         }
     }
@@ -476,7 +497,7 @@ fn nodes_of(sk: &Skeleton<'_, '_>) -> (Vec<Node>, Vec<Option<usize>>) {
         let id = match node_of.get(r).copied().flatten() {
             Some(id) => id,
             None => {
-                nodes.push(Node { at: Point::ZERO, radius: 0.0, junction: sk.count(k) >= 3 });
+                nodes.push(Node { at: Point::ZERO, radius: 0.0, junction: sk.count(k) >= JUNCTION_PIECES });
                 sums.push((0.0, 0.0, 0.0));
                 if let Some(slot) = node_of.get_mut(r) {
                     *slot = Some(nodes.len() - 1);
@@ -676,8 +697,8 @@ fn prune_spurs(nodes: &[Node], edges: &mut [Edge], lengths: &[f64], most: f64) -
     for (k, e) in edges.iter().enumerate().filter(|(_, e)| !e.gone) {
         let (Some(&da), Some(&db)) = (deg.get(e.a), deg.get(e.b)) else { continue };
         let (end, junction) = match (da, db) {
-            (1, d) if d >= 3 => (e.a, e.b),
-            (d, 1) if d >= 3 => (e.b, e.a),
+            (1, d) if d >= JUNCTION_PIECES => (e.a, e.b),
+            (d, 1) if d >= JUNCTION_PIECES => (e.b, e.a),
             _ => continue,
         };
         let (Some(end_node), Some(junction_node)) = (nodes.get(end), nodes.get(junction)) else { continue };
@@ -879,7 +900,7 @@ fn smoothed(pts: &[Point], closed: bool, least_px2: f64, ticks: &mut Ticks) -> R
 /// wide) for as long as `limit`: a thick stretch, not a bump of a pixel or two nor a junction's
 /// disc. A pixel's disc overlapping a junction's lies by it.
 fn widens_away_from_junctions(nodes: &[Node], edges: &[Edge], deg: &[usize], width: &dyn Fn(usize) -> f64, limit: f64, w: usize) -> bool {
-    let junctions: Vec<&Node> = nodes.iter().zip(deg).filter(|&(_, &d)| d >= 3).map(|(n, _)| n).collect();
+    let junctions: Vec<&Node> = nodes.iter().zip(deg).filter(|&(_, &d)| d >= JUNCTION_PIECES).map(|(n, _)| n).collect();
     for e in edges {
         let (mut run, mut last): (f64, Option<Point>) = (0.0, None);
         for &i in &e.pixels {
@@ -963,8 +984,8 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, px_per_
             continue;
         }
         let total: f64 = edges.iter().map(|e| length(&e.pixels.iter().map(|&i| centre_of(i, w)).collect::<Vec<_>>())).sum();
-        let widest = regions.areas.get(a).map_or(1.0, |s| s.widest_px).max(1.0);
-        let width = if total > 0.0 { (own.len() as f64 / total).clamp(1.0, widest) } else { widest };
+        let widest = regions.areas.get(a).map_or(NARROWEST_PX, |s| s.widest_px).max(NARROWEST_PX);
+        let width = if total > 0.0 { (own.len() as f64 / total).clamp(NARROWEST_PX, widest) } else { widest };
         let mut pieces: Vec<Piece> = Vec::with_capacity(edges.len());
         let radius = |i: usize| d2.get(i).copied().unwrap_or(0.0).sqrt() + HALF_PIXEL;
         for e in &edges {
@@ -999,7 +1020,7 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, px_per_
             continue;
         }
         let ends = deg.iter().filter(|&&d| d == 1).count();
-        let junctions = deg.iter().filter(|&&d| d >= 3).count();
+        let junctions = deg.iter().filter(|&&d| d >= JUNCTION_PIECES).count();
         if let Some(slot) = out.get_mut(a) {
             *slot = Some(CentreLine { pieces, width_px: width, length_px, ends, junctions });
         }

@@ -66,8 +66,8 @@ pub(super) const MEASURE_SLACK_PX: f64 = 1.0;
 pub(super) const CROSSING_SLACK_PX: f64 = 3.0;
 
 /// How long a thin area must be, measured along it, to stay below the smallest area (millimetres):
-/// a line, not a speck. The project owner's choice (2026-11-03), taken from the research's estimate
-/// of two stitches of a running line at their shortest.
+/// a line, not a speck. The project owner's choice (2026-11-03), an estimate of two stitches of a
+/// running line at their shortest.
 pub(super) const LINE_KEEP_LENGTH_MM: f64 = 2.0;
 
 /// The widest a band may be and join a neighbour for its colour (millimetres): a thread's width
@@ -108,7 +108,8 @@ pub(super) fn is_mix(c: [u8; 3], a: [u8; 3], b: [u8; 3]) -> bool {
 pub(super) enum AreaKind {
     /// A filled area.
     Fill,
-    /// A thin line kept below the smallest area: sewn along its middle.
+    /// An area sewn along its middle: a thin line (kept below the smallest area too), or any area
+    /// of a colour set to Lines; one with no centre line to sew along is made a fill again.
     Line,
 }
 

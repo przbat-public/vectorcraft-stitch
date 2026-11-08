@@ -7349,8 +7349,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `nearest`, `nextFree` with the colour that took its nearest in `by`, `shared`, `merged`), the five nearest
   `alternatives` after its own, its `area` (mm²), `areaCount`, `share` of the image and `sewnShare` of what is sewn
   (percent), `mergedInto` and the `choice` it took; each of `areas` gives `thread`, `kind` (`"fill"`, or `"line"` for
-  a thin line kept below the smallest area), `sewn`, `size` `{area, width, height}` (mm², mm), `widest` (its widest
-  inscribed width, mm), `box` `[left, top, right, bottom]` (mm), the area it lies `inside` alone and whether it is
+  an area sewn along its middle: a thin line, one kept below the smallest area too, or any area of a colour set to
+  `lines`; an area with no centre line to sew along is a `"fill"`), `sewn`, `size` `{area, width, height}` (mm², mm),
+  `widest` (its widest inscribed width, mm), its `line` (null for an area not sewn along its middle) `{width (mm: its
+  pixels over its centre line's length), length (mm, of its centre line), pieces, ends, junctions}`, `box` `[left,
+  top, right, bottom]` (mm), the area it lies `inside` alone and whether it is
   `sewnOver` that one, how many smaller areas `joined` it, what it `touches` `[{area, edge, under}]` (the edge in mm;
   `under`: that one is sewn before it), the areas it is `grownUnder`, its `outline` (with `outlines: true`) and its
   `order` `{taken: "notSewn"|"sameThread"|"newThread", after: [{area, because: "detail"|"inside"|"larger"}]}`. The
@@ -7359,9 +7362,12 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `areaAt` the area there (null: none, outside the image or the crop, or no `at`). `regions` (with `regions: true`) is
   `{width, height, base64}`: each working pixel's area number (0 for none), two bytes little-endian. `traced` is what
   the trace made before the rules (`{paths, colors}`), `joined` and `leftOut` how many specks joined an area or were
-  left out, `doubledArea` the mm² the overlap sews twice, and `timings` each stage's milliseconds (`{image, trace,
+  left out, `doubledArea` the mm² sewn twice (where the overlap grows an area under the next, and under a centre line
+  the strips the colours beside it reach to its middle, so that it isn't 0 at `overlap: 0` when a line is sewn), and
+  `timings` each stage's milliseconds (`{image, trace,
   areas, shapes, objects, stitches}`, null on the web). `outline` (with `outlines: true`) is an area's shape as sewn,
-  an SVG path in millimetres from the document's origin, to hundredths. An interface runs it off its thread through
+  an SVG path in millimetres from the document's origin, to hundredths; a line's is its centre line, open, with no
+  area. An interface runs it off its thread through
   the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`, `Session::apply_digitize_image`), which a
   document changed meanwhile refuses.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
@@ -7517,7 +7523,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   or not: `embroidery.set` keeps settings for it either way. `setCount` counts the objects that set a value as this
   version reads it: a stitch or an underlay it doesn't know is kept, listed in the object's `kept` (`fill.stitch`),
   and not counted. `kept` lists what an object keeps that this version doesn't read, as file keys: a newer version's
-  (`branch`, `fill.grain`, `fill.points.rails`), such ids, and `embroidery` when the settings are no object. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
+  (`branch`, `fill.grain`, `fill.points.rails`), such ids, and `embroidery` when the settings are no object. `source` is `object`, `export`, `document` (then `section`: `fabric`, `machine` or `fillAngle`, for the document's
+  number and for its rule's `"auto"`) or `default`, a list
   that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
   chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
   area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing,

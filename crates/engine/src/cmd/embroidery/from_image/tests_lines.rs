@@ -716,3 +716,13 @@ fn an_x_at_sixty_degrees_is_one_junction() {
     let line = &areas_of(&digitize(&mut s, json!({"colors": 2}), true), NAVY)[0]["line"];
     assert_eq!((&line["junctions"], &line["ends"]), (&json!(1), &json!(4)), "{line}");
 }
+
+/// A line's reply keeps its shape, as the reply's other parts are pinned (`tests_contract`): its
+/// width, length, pieces, ends and junctions, each of its type.
+#[test]
+fn a_lines_reply_keeps_its_shape() {
+    let mut s = placed(&picture(30.0, 25.0, PX_PER_MM, lines(t_segments(), NAVY, WHITE)), PX_PER_MM);
+    let r = digitize(&mut s, json!({"colors": 2}), true);
+    let line = &areas_of(&r, NAVY)[0]["line"];
+    assert_eq!(super::super::tests_contract::shape(line), "{ends: int, junctions: int, length: float, pieces: int, width: float}");
+}

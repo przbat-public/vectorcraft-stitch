@@ -455,6 +455,29 @@ fn a_colour_grows_no_more_than_two_millimetres_under_a_field_set_to_lines() {
     assert!((top - grown).abs() <= 0.15, "the red dot's top at {top} mm, not {grown}: {}", red[0]);
 }
 
+/// A small ring keeps its shape at a coarse resolution too: a ring 2 mm across of a line 0.5 mm wide,
+/// drawn at 5 pixels a millimetre (the working resolution of a design 300 mm wide), is one closed
+/// centre line whose every stretch keeps within a fifth of a millimetre of the ring's middle,
+/// smoothed by the same least area in millimetres as at 10 pixels a millimetre; by the same area in
+/// pixels, four times as much, it was cut to a pentagon whose sides lie 0.27 mm inside it.
+#[test]
+fn a_small_ring_keeps_its_shape_at_a_coarse_resolution() {
+    let px_per_mm = 5.0;
+    let (c, radius) = (Point::new(5.0, 5.0), 1.0);
+    let ring = move |q: Point| if (q.distance(c) - radius).abs() <= 0.25 { NAVY } else { WHITE };
+    let mut s = placed(&picture(10.0, 10.0, px_per_mm, ring), px_per_mm);
+    let r = digitize(&mut s, json!({"colors": 2, "outlines": true}), true);
+    let navy = areas_of(&r, NAVY);
+    let line = &navy[0]["line"];
+    assert_eq!((&line["pieces"], &line["ends"]), (&json!(1), &json!(0)), "{}", r["areas"]);
+    let path = vectorcraft_geom::BezPath::from_svg(navy[0]["outline"].as_str().unwrap()).unwrap();
+    let off = vectorcraft_geom::kurbo::Shape::path_segments(&path, 0.01)
+        .map(|seg| vectorcraft_geom::kurbo::ParamCurve::eval(&seg, 0.5))
+        .map(|m| (m.distance(c) - radius).abs())
+        .fold(0.0, f64::max);
+    assert!(off <= 0.2, "a stretch {off} mm off the ring's middle: {}", navy[0]["outline"]);
+}
+
 /// A job that isn't one is refused, naming the four.
 #[test]
 fn a_job_that_isnt_one_is_refused() {

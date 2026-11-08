@@ -35,7 +35,8 @@
 //! - **The pieces made smooth** by Visvalingam and Whyatt's line generalisation (1993, *Line
 //!   generalisation by repeated elimination of points*, The Cartographic Journal 30(1)): the pixels'
 //!   stairs taken away, the point whose triangle with its neighbours has the least area removed in
-//!   turn until none is smaller than [`SIMPLIFY_AREA_PX2`] ([`smoothed`]).
+//!   turn until none is smaller than [`SIMPLIFY_AREA_MM2`], at most [`SIMPLIFY_AREA_PX2`] ([`smoothed`]),
+//!   a closed piece keeping three points and an open one its two ends.
 //!
 //! Every step takes time in proportion to the line's pixels (thinning looks again only beside what
 //! it took away), or their logarithm besides (the smoothing's heap); a cancel stops it between
@@ -86,6 +87,16 @@ const CORNER_TIP_PX: f64 = 1.5;
 /// a closed piece starts, and are sewn with as many. A point taken away lies about a pixel off the
 /// line kept, along a ring that size (a triangle of 8 square pixels on a base of 13 is 1.2 high).
 pub(super) const SIMPLIFY_AREA_PX2: f64 = 8.0;
+
+/// The same least area in square millimetres: 0.08, [`SIMPLIFY_AREA_PX2`] at 10 pixels a
+/// millimetre, so that a coarser working copy (5 pixels a millimetre for a design 300 mm wide)
+/// takes away no more of a line than a fine one; the stairs pixels leave are a pixel high however
+/// coarse, so at finer resolutions [`SIMPLIFY_AREA_PX2`] bounds it.
+pub(super) const SIMPLIFY_AREA_MM2: f64 = 0.08;
+
+/// The fewest points smoothing leaves a closed piece (its first point repeated at its end): three
+/// and the repeat, a triangle round the ring, so that a small ring keeps its length.
+const CLOSED_LEAST_POINTS: usize = 4;
 
 /// How many pixels are thinned between two cancel checks.
 const CANCEL_EVERY: usize = 1 << 14;
@@ -711,14 +722,17 @@ fn joined(e1: Edge, e2: Edge, n: usize) -> (usize, usize, Vec<usize>) {
     (from, to, p1)
 }
 
-/// `pts` (an open piece, or a closed one whose first point is repeated at its end) with the points
-/// whose triangle with their neighbours has less area than [`SIMPLIFY_AREA_PX2`] taken away, the
-/// least first (the module's notes), its ends kept.
-fn smoothed(pts: &[Point]) -> Vec<Point> {
+/// `pts` (an open piece, or a `closed` one whose first point is repeated at its end) with the points
+/// whose triangle with their neighbours has less area than `least_px2` (square working pixels)
+/// taken away, the least first (the module's notes), its ends kept, and a closed piece three points
+/// at least ([`CLOSED_LEAST_POINTS`]).
+fn smoothed(pts: &[Point], closed: bool, least_px2: f64) -> Vec<Point> {
     let n = pts.len();
-    if n < 3 {
+    let keep = if closed { CLOSED_LEAST_POINTS } else { 2 };
+    if n < 3 || n <= keep {
         return pts.to_vec();
     }
+    let mut left = n;
     let triangle = |a: Point, b: Point, c: Point| ((b - a).cross(c - a) / 2.0).abs();
     let mut prev: Vec<usize> = (0..n).map(|i| i.saturating_sub(1)).collect();
     let mut next: Vec<usize> = (0..n).map(|i| (i + 1).min(n - 1)).collect();
@@ -737,12 +751,13 @@ fn smoothed(pts: &[Point]) -> Vec<Point> {
         if gone.get(i).copied().unwrap_or(true) || version.get(i) != Some(&v) {
             continue;
         }
-        if f64::from_bits(bits) >= SIMPLIFY_AREA_PX2 {
+        if f64::from_bits(bits) >= least_px2 || left <= keep {
             break;
         }
         let (Some(&p), Some(&q)) = (prev.get(i), next.get(i)) else { continue };
         if let Some(g) = gone.get_mut(i) {
             *g = true;
+            left -= 1;
         }
         if let Some(slot) = next.get_mut(p) {
             *slot = q;
@@ -794,7 +809,9 @@ fn widens_away_from_junctions(nodes: &[Node], edges: &[Edge], deg: &[usize], wid
 /// line is wide (a dot, or a blob, has no line to sew along, and is sewn as the area it is: the
 /// project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), or, held to a width, widens
 /// past it away from its junctions. A cancel stops it.
-pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, thread_px: f64) -> Result<Vec<Option<CentreLine>>> {
+pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, px_per_mm: f64) -> Result<Vec<Option<CentreLine>>> {
+    let thread_px = vectorcraft_stitch::plan::THREAD_WIDTH * px_per_mm;
+    let least_px2 = SIMPLIFY_AREA_PX2.min(SIMPLIFY_AREA_MM2 * px_per_mm * px_per_mm);
     let count = regions.areas.len();
     let want: Vec<Wanted> = (0..count).map(wanted).collect();
     let mut out: Vec<Option<CentreLine>> = vec![None; count];
@@ -871,7 +888,7 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, thread_
                     }
                 }
             }
-            let pts = smoothed(&pts);
+            let pts = smoothed(&pts, closed, least_px2);
             if pts.len() >= 2 {
                 pieces.push(Piece { pts, closed });
             }
@@ -943,8 +960,10 @@ mod tests {
 
     use super::*;
 
-    /// A thread's width at ten pixels a millimetre (working pixels).
-    const THREAD_PX: f64 = vectorcraft_stitch::plan::THREAD_WIDTH * 10.0;
+    /// The working copy's resolution the maps here stand for (pixels a millimetre), and a thread's
+    /// width at it (working pixels).
+    const PX_PER_MM: f64 = 10.0;
+    const THREAD_PX: f64 = vectorcraft_stitch::plan::THREAD_WIDTH * PX_PER_MM;
 
     /// A pixel's eight neighbours (in [`AROUND`]'s order) from a 3 × 3 picture read row by row,
     /// `#` on, the pixel itself in the middle.
@@ -959,7 +978,7 @@ mod tests {
     }
 
     fn line_of(regions: &Regions) -> CentreLine {
-        lines(regions, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }, THREAD_PX)
+        lines(regions, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }, PX_PER_MM)
             .unwrap()
             .into_iter()
             .next()
@@ -1051,7 +1070,7 @@ mod tests {
     fn a_dot_has_no_centre_line_wherever_it_lies() {
         for (cx, cy) in [(20.0, 20.0), (20.5, 20.0), (20.5, 20.5)] {
             let dot = map(40, 40, |x, y| (f64::from(x) + 0.5 - cx).hypot(f64::from(y) + 0.5 - cy) <= 5.0);
-            let found = lines(&dot, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }, THREAD_PX).unwrap();
+            let found = lines(&dot, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }, PX_PER_MM).unwrap();
             assert!(found[0].is_none(), "a dot at ({cx}, {cy}): {:?}", found[0]);
         }
     }
@@ -1075,5 +1094,15 @@ mod tests {
             let reach = line.pieces.iter().flat_map(|p| &p.pts).map(|&q| (q - c).dot(u).abs()).fold(0.0, f64::max);
             assert!(reach >= 50.0 - THREAD_PX / 2.0 - 1.5, "half width {half_width}: reaching {reach} px of 50: {line:?}");
         }
+    }
+
+    /// A small ring (its middle 5 pixels across, a line 2 pixels wide) keeps a closed centre line
+    /// with a length: smoothing leaves a closed piece three points, where it took every point but
+    /// its start, a piece of no length.
+    #[test]
+    fn a_small_ring_keeps_its_length() {
+        let ring = map(30, 30, |x, y| ((f64::from(x) + 0.5 - 15.0).hypot(f64::from(y) + 0.5 - 15.0) - 2.5).abs() <= 1.0);
+        let line = line_of(&ring);
+        assert!(line.pieces.len() == 1 && line.pieces[0].closed && line.length_px >= 10.0, "{line:?}");
     }
 }

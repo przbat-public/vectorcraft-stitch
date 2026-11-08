@@ -3272,8 +3272,10 @@ millimetres again. The stages, each a module, each reported to a progress sink
    quarters of the largest a little way in go), and the end carried on along its piece to the ink,
    less half a thread's width, so that the running stitch ends with the ink on the line's middle,
    however wide the line; the pieces made smooth by Visvalingam and Whyatt's line
-   generalisation (1993) at an effective area of 8 square pixels, so that the stairs pixels leave
-   along a curve make no corner the planner stitches into. The line's width is its pixels over its
+   generalisation (1993) at an effective area of 0.08 mm² (8 square pixels at 10 pixels a
+   millimetre, and no more than 8 at a finer resolution), so that the stairs pixels leave along a
+   curve make no corner the planner stitches into, a closed piece keeping three points at least,
+   so that a small ring keeps its shape. The line's width is its pixels over its
    skeleton's length (the same at 8, 10 and 12 pixels a millimetre within a working pixel). Every
    step is linear in the line's pixels, or n log n (the smoothing's heap); a cancel stops it
    between lines and within one every 16,384 pixels. A line by the rules (not one of a colour set

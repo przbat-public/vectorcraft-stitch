@@ -6,6 +6,9 @@ use serde_json::{Value, json};
 /// The embroidery commands' junk cases: (command, params).
 pub fn structured() -> Vec<(&'static str, Value)> {
     vec![
+        // Accepted, and first: where the cases run one after another on one document, those after it
+        // plan with the rows across each shape.
+        ("embroidery.setup", json!({"fillAngle": "acrossShape"})),
         ("embroidery.setup", json!({"palette": {"chart": ["madeira", null]}, "threadPalette": 1e308})),
         ("embroidery.setup", json!({"palette": "PEC", "fabric": "knit"})),
         ("embroidery.setup", json!({"palette": [null], "threadPalette": "jef"})),
@@ -150,6 +153,8 @@ pub fn structured() -> Vec<(&'static str, Value)> {
             "embroidery.digitizeImage",
             json!({"colorChoices": [{"color": "#141414", "job": "lines", "mergeInto": "#ffffff"}], "overlap": 0, "outlines": true}),
         ),
+        // Accepted as it is read: black sewn as lines, a picture's other colours as the rules say.
+        ("embroidery.digitizeImage", json!({"colorChoices": [{"color": "#000000", "job": "lines"}], "overlap": 0, "dryRun": true})),
         ("embroidery.digitizeImage", json!({"crop": [10, 10, 5, 5], "at": [1e308, f64::NAN], "overlap": 1e308, "mode": "photo", "background": [1]})),
         ("embroidery.digitizeImage", json!({"offset": u64::MAX, "limit": u64::MAX, "regions": "yes", "outlines": [true], "height": -1e-300})),
         ("embroidery.copyFrom", json!({"source": "first", "ids": [1], "keys": ["angle", "angle"]})),
@@ -168,6 +173,8 @@ pub fn structured() -> Vec<(&'static str, Value)> {
         ("embroidery.setup", json!({"fillAngle": [f64::NAN], "palette": "pec"})),
         ("embroidery.setup", json!({"fillAngle": "acrossShape", "machine": {"minStitch": -1}})),
         ("embroidery.setup", json!({"fillAngle": {"value": 30}, "settings": {"fillAngle": 1e308}})),
+        // Accepted: a full turn back, the rows at 0°.
+        ("embroidery.setup", json!({"fillAngle": -360})),
         ("embroidery.setup", json!({"fabric": {"preset": "unknownPreset", "thickness": f64::NAN, "needlePoint": "x".repeat(1000)}})),
         ("embroidery.setup", json!({"fabric": "cotton", "machine": null, "threadWeight": 150, "joinSameColor": false})),
         ("embroidery.fabrics", json!({"id": "cotton"})),

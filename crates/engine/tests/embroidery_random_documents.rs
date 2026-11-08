@@ -1,7 +1,8 @@
 //! Random documents with embroidery among their edits: the generated editing of the other
 //! property tests (`vectorcraft_testkit::strategies::arb_ops`) with embroidery steps between its
-//! steps (a cut after random objects, the document's thread palette, start point and label, a
-//! machine file placed, a picture placed and digitized). Every embroidery step is done (a cut after an object that isn't sewn
+//! steps (a cut after random objects, the document's thread palette, start point, label and fills'
+//! rows, a machine file placed, a picture placed and digitized, its bar sewn as a line or as the
+//! rules say). Every embroidery step is done (a cut after an object that isn't sewn
 //! refused, as the command refuses it), the document saves and reads back as it was (its
 //! embroidery included), and its embroidery is read, checked and exported, or refused, without a
 //! panic.
@@ -27,11 +28,14 @@ enum Step {
     Start(Option<(f64, f64)>),
     /// The design's label, or unset.
     Label(Option<String>),
+    /// The rows the document's fills run at (`fillAngle`): across each shape, a number of degrees,
+    /// or unset.
+    FillAngle(Value),
     /// A small design placed from a machine file: its runs literal stitches.
     Place,
     /// A small picture placed and digitized (`embroidery.digitizeImage`): its objects made, the
-    /// picture on a template layer.
-    Digitize,
+    /// picture on a template layer; its navy bar's colour set to Lines when `true`.
+    Digitize(bool),
 }
 
 fn step() -> impl Strategy<Value = Step> {
@@ -40,8 +44,9 @@ fn step() -> impl Strategy<Value = Step> {
         1 => prop::option::of(any::<bool>()).prop_map(Step::Palette),
         1 => prop::option::of((-50.0..450.0f64, -50.0..350.0f64)).prop_map(Step::Start),
         1 => prop::option::of("[A-Za-z0-9 ]{0,12}").prop_map(Step::Label),
+        1 => prop_oneof![Just(json!("acrossShape")), (-360.0..=360.0f64).prop_map(|a| json!(a)), Just(Value::Null)].prop_map(Step::FillAngle),
         1 => Just(Step::Place),
-        1 => Just(Step::Digitize),
+        1 => any::<bool>().prop_map(Step::Digitize),
     ]
 }
 
@@ -94,11 +99,14 @@ fn small_dst() -> String {
     vectorcraft_format::base64_encode(&vectorcraft_stitch::format::Format::Dst.write(&p).unwrap())
 }
 
+/// The small picture's bar's colour ([`small_picture`]): navy.
+const BAR: [u8; 4] = [20, 40, 120, 255];
+
 /// A small picture as PNG: an orange square with a navy bar across it, on white, 60 × 40 pixels.
 fn small_picture() -> String {
     let picture = vectorcraft_trace::Raster::from_fn(60, 40, |x, y| {
         if (8..52).contains(&x) && (18..22).contains(&y) {
-            [20, 40, 120, 255]
+            BAR
         } else if (8..52).contains(&x) && (6..34).contains(&y) {
             [240, 130, 20, 255]
         } else {
@@ -124,11 +132,14 @@ impl Step {
             Step::Palette(p) => s.execute("embroidery.setup", &json!({"palette": p.map(|pec| if pec { "pec" } else { "jef" })})),
             Step::Start(p) => s.execute("embroidery.setup", &json!({"start": p.map(|(x, y)| json!([x, y]))})),
             Step::Label(l) => s.execute("embroidery.setup", &json!({"label": l})),
+            Step::FillAngle(a) => s.execute("embroidery.setup", &json!({"fillAngle": a})),
             Step::Place => s.execute("file.place", &json!({"name": "design.dst", "dataBase64": small_dst()})),
             // Placing selects the picture alone, which is what is digitized.
-            Step::Digitize => {
+            Step::Digitize(lines) => {
                 s.execute("file.place", &json!({"name": "picture.png", "dataBase64": small_picture()}))?;
-                s.execute("embroidery.digitizeImage", &json!({"colors": 3}))
+                let bar = format!("#{:02x}{:02x}{:02x}", BAR[0], BAR[1], BAR[2]);
+                let choices = if *lines { json!([{"color": bar, "job": "lines"}]) } else { json!([]) };
+                s.execute("embroidery.digitizeImage", &json!({"colors": 3, "colorChoices": choices}))
             }
         }
     }
@@ -157,7 +168,7 @@ proptest! {
         }
         let d = s.doc().unwrap().doc.clone();
         check_native_roundtrip(&d).map_err(TestCaseError::fail)?;
-        for command in ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check", "embroidery.setup"] {
+        for command in ["embroidery.threads", "embroidery.stats", "embroidery.sequence", "embroidery.check", "embroidery.setup", "embroidery.info"] {
             let _ = s.execute(command, &json!({}));
         }
         for format in ["dst", "pes", "vp3"] {

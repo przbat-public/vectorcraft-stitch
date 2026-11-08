@@ -625,7 +625,7 @@ fn edit_node(v: &mut Value, id: u64, f: impl FnOnce(&mut Value) + Copy) {
 
 /// The keys an object's embroidery and the document's are read by: those this version reads, so
 /// that random JSON holds them, with any value, often enough to test what they read as.
-const EMBROIDERY_KEYS: [&str; 51] = [
+const EMBROIDERY_KEYS: [&str; 52] = [
     "stitches",
     "trim_after",
     "trim_before",
@@ -663,6 +663,7 @@ const EMBROIDERY_KEYS: [&str; 51] = [
     "thread_weight",
     "join_same_color",
     "machine",
+    "fill_angle",
     "preset",
     "id",
     "values",

@@ -8,6 +8,13 @@
 //! - a larger smallest area never adds areas, either side of the trace's own noise cap;
 //! - what the overlap sews twice, measured from the outlines, is what the reply says, and a larger
 //!   overlap never sews less twice.
+//!
+//! And on random line art: navy lines 0.3 to 0.9 mm wide over bands of colour, at 10 pixels a
+//! millimetre, their colour left to the rules or set to Lines, at no overlap or 0.4 mm:
+//! - each line is an area sewn along its middle, every point of which lies within a pixel of the
+//!   line drawn;
+//! - the bands beside each line cover it under its whole width;
+//! - each line, drawn as one stroke, is sewn with no jump but the move to it.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -206,6 +213,180 @@ proptest! {
         let threads: Vec<String> = Palette::Jef.threads().iter().map(|&([r, g, b], _)| vectorcraft_color::Color::rgb8(r, g, b).to_hex()).collect();
         for fill in fills(&s) {
             prop_assert!(threads.contains(&fill), "{} is no thread's colour", fill);
+        }
+    }
+}
+
+/// A line of line art: from `a` to `b` (shares of the picture's width and height), `width_mm` wide.
+#[derive(Clone, Debug)]
+struct Line {
+    a: (f64, f64),
+    b: (f64, f64),
+    width_mm: f64,
+}
+
+/// Line art: navy lines over bands of colour, `size_mm` at [`LINE_ART_PX_PER_MM`]; the bands split
+/// where `splits` say (shares of the width, in order), each line in a slot of the height of its
+/// own so that no two touch; navy set to Lines (`as_lines`) or left to the rules; the overlap.
+#[derive(Clone, Debug)]
+struct LineArt {
+    size_mm: (f64, f64),
+    splits: Vec<f64>,
+    lines: Vec<Line>,
+    as_lines: bool,
+    overlap: f64,
+}
+
+/// The line art's resolution (pixels a millimetre): the working resolution, so that the thinnest
+/// line is three pixels wide.
+const LINE_ART_PX_PER_MM: f64 = 10.0;
+
+/// Where the bands may be split (shares of the width), the first ones taken, and how far each is
+/// moved, the same way: bands a fifth of the width apart, at least 6 mm, wider than any line.
+const SPLITS: [f64; 3] = [0.3, 0.5, 0.7];
+const SPLIT_JITTER: f64 = 0.05;
+
+/// The lines' colour, and the bands'.
+const LINE_COLOUR: [u8; 4] = COLOURS[0];
+const BANDS: [[u8; 4]; 3] = [COLOURS[1], COLOURS[2], COLOURS[3]];
+
+/// How far apart along a line its points are looked at under the bands (millimetres): a quarter
+/// of a millimetre, a few working pixels.
+const SAMPLE_MM: f64 = 0.25;
+
+fn arb_line_art() -> impl Strategy<Value = LineArt> {
+    let line = (0.1..0.45f64, 0.55..0.9f64, -0.2..0.2f64, -0.2..0.2f64, 0.3..0.9f64);
+    (
+        30.0..50.0f64,
+        30.0..50.0f64,
+        0..=SPLITS.len(),
+        -SPLIT_JITTER..SPLIT_JITTER,
+        prop::collection::vec(line, 1..5),
+        any::<bool>(),
+        prop_oneof![Just(0.0), Just(0.4)],
+    )
+        .prop_map(|(w, h, bands, jitter, lines, as_lines, overlap)| {
+            let splits = SPLITS.iter().take(bands).map(|s| s + jitter).collect();
+            let slot = 1.0 / lines.len() as f64;
+            let lines = lines
+                .into_iter()
+                .enumerate()
+                .map(|(k, (x0, x1, dy0, dy1, width_mm))| {
+                    // Within the middle half of its slot, so that the slots' lines stay apart.
+                    let middle = slot * (k as f64 + 0.5);
+                    Line { a: (x0, middle + dy0 * slot), b: (x1, middle + dy1 * slot), width_mm }
+                })
+                .collect();
+            LineArt { size_mm: (w, h), splits, lines, as_lines, overlap }
+        })
+}
+
+/// How far point `q` (millimetres) lies from line `l`'s middle, drawn on a picture `size` mm.
+fn from_line(q: (f64, f64), l: &Line, size: (f64, f64)) -> f64 {
+    let (a, b) = ((l.a.0 * size.0, l.a.1 * size.1), (l.b.0 * size.0, l.b.1 * size.1));
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let t = (((q.0 - a.0) * dx + (q.1 - a.1) * dy) / (dx * dx + dy * dy)).clamp(0.0, 1.0);
+    ((q.0 - a.0 - t * dx).powi(2) + (q.1 - a.1 - t * dy).powi(2)).sqrt()
+}
+
+impl LineArt {
+    fn raster(&self) -> Raster {
+        let (w, h) = ((self.size_mm.0 * LINE_ART_PX_PER_MM).round() as u32, (self.size_mm.1 * LINE_ART_PX_PER_MM).round() as u32);
+        Raster::from_fn(w, h, |x, y| {
+            let q = ((f64::from(x) + 0.5) / LINE_ART_PX_PER_MM, (f64::from(y) + 0.5) / LINE_ART_PX_PER_MM);
+            if self.lines.iter().any(|l| from_line(q, l, self.size_mm) <= l.width_mm / 2.0) {
+                return LINE_COLOUR;
+            }
+            let band = self.splits.iter().filter(|&&s| q.0 / self.size_mm.0 >= s).count();
+            BANDS[band.min(BANDS.len() - 1)]
+        })
+    }
+
+    /// A session holding the picture placed at its size, selected.
+    fn placed(&self) -> Session {
+        let (w, h) = (self.size_mm.0 * PT_PER_MM, self.size_mm.1 * PT_PER_MM);
+        let mut s = Session::new();
+        s.execute("file.new", &json!({"width": w, "height": h, "artboards": 1})).unwrap();
+        let png = vectorcraft_format::base64_encode(&self.raster().encode_png());
+        s.execute("file.place", &json!({"name": "lines.png", "dataBase64": png, "rect": [0, 0, w, h]})).unwrap();
+        s.execute("select.all", &json!({})).unwrap();
+        s
+    }
+}
+
+/// The ids of the objects in `s`'s document sewn along a line: those stroked and not filled (a
+/// fill of no paint is none).
+fn stroked_only(s: &Session) -> Vec<u64> {
+    use vectorcraft_color::Paint;
+    use vectorcraft_doc::appearance::AppearanceItem;
+    let doc = s.doc().unwrap().doc.clone();
+    let mut out = Vec::new();
+    doc.walk(|n| {
+        let stroked = n.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Stroke(st) if !matches!(st.paint, Paint::None)));
+        let filled = n.appearance.items.iter().any(|i| matches!(i, AppearanceItem::Fill(f) if !matches!(f.paint, Paint::None)));
+        if stroked && !filled && matches!(n.kind, vectorcraft_doc::NodeKind::Path { .. }) {
+            out.push(n.id.0);
+        }
+    });
+    out
+}
+
+proptest! {
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(24))]
+
+    #[test]
+    fn random_line_art_is_sewn_along_its_lines(art in arb_line_art()) {
+        use vectorcraft_geom::kurbo::{BezPath, ParamCurve, Shape};
+        let mut s = art.placed();
+        let navy = format!("#{:02x}{:02x}{:02x}", LINE_COLOUR[0], LINE_COLOUR[1], LINE_COLOUR[2]);
+        let choices = if art.as_lines { json!([{"color": navy, "job": "lines"}]) } else { json!([]) };
+        let params = json!({"colors": art.splits.len() + 2, "background": "none", "overlap": art.overlap, "colorChoices": choices});
+        let mut asked = params.clone();
+        asked["outlines"] = json!(true);
+        asked["limit"] = json!(LISTED);
+        let r = dry(&mut s, &asked);
+        let areas = r["areas"].as_array().unwrap();
+        let (lines, fields): (Vec<&Value>, Vec<&Value>) = areas.iter().partition(|a| !a["line"].is_null());
+        prop_assert_eq!(lines.len(), art.lines.len(), "the lines sewn along their middle: {}", r["areas"]);
+        // Every point of each centre line within a pixel of a line drawn.
+        let pixel = 1.0 / LINE_ART_PX_PER_MM;
+        for a in &lines {
+            let path = BezPath::from_svg(a["outline"].as_str().unwrap()).unwrap();
+            for seg in path.segments() {
+                for t in [0.0, 0.25, 0.5, 0.75, 1.0] {
+                    let q = seg.eval(t);
+                    let off = art.lines.iter().map(|l| from_line((q.x, q.y), l, art.size_mm) - l.width_mm / 2.0).fold(f64::INFINITY, f64::min);
+                    prop_assert!(off <= pixel + ROUNDED_MM, "a centre line {} mm past its line at {:?}", off, q);
+                }
+            }
+        }
+        // The bands beside each line cover it under its whole width: points along its middle and
+        // half a pixel inside its edges lie in a band's outline.
+        let bands: Vec<BezPath> = fields.iter().filter_map(|a| a["outline"].as_str()).map(|d| BezPath::from_svg(d).unwrap()).collect();
+        for l in &art.lines {
+            let (a, b) = ((l.a.0 * art.size_mm.0, l.a.1 * art.size_mm.1), (l.b.0 * art.size_mm.0, l.b.1 * art.size_mm.1));
+            let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+            let length = (dx * dx + dy * dy).sqrt();
+            let (nx, ny) = (-dy / length, dx / length);
+            let steps = (length / SAMPLE_MM).ceil() as usize;
+            for k in 0..=steps {
+                let t = k as f64 / steps as f64;
+                for side in [-0.5, 0.0, 0.5] {
+                    let off = side * (l.width_mm - pixel);
+                    let q = vectorcraft_geom::Point::new(a.0 + t * dx + off * nx, a.1 + t * dy + off * ny);
+                    prop_assert!(bands.iter().any(|band| band.contains(q)), "fabric under a line at {:?}", q);
+                }
+            }
+        }
+        // Each line, drawn as one stroke, sewn with no jump but the move to it (sewn after the
+        // bands, it is never the design's first).
+        s.execute("embroidery.digitizeImage", &params).unwrap();
+        let made = stroked_only(&s);
+        prop_assert_eq!(made.len(), art.lines.len(), "the lines made");
+        for id in made {
+            let info = s.execute("embroidery.info", &json!({"ids": [id], "plan": true})).unwrap();
+            let jumps = info["stroke"]["sewing"]["jumps"].as_u64().unwrap();
+            prop_assert!(jumps <= 1, "line {} jumps inside it: {}", id, info["stroke"]["sewing"]);
         }
     }
 }

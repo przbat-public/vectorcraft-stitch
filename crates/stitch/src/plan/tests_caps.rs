@@ -247,3 +247,50 @@ fn pull_compensation_holds_round_a_round_cap() {
         assert!(a.y.abs() >= painted + pull - 1e-6, "{a:?}: {} beside a half chord of {painted}", a.y.abs());
     }
 }
+
+/// Push compensation shortens a round cap and keeps it round (the project owner's choice,
+/// 2026-11-07, „Okrągły koniec zostaje okrągły (polecam)”): its tip crossing is no wider than
+/// without push, where a 0.5 mm push cut a 3 mm cap's tip to a crossing 2.26 mm wide.
+#[test]
+fn push_compensation_keeps_a_round_cap_round() {
+    let tip = |push: f64| {
+        let p = Params {
+            width: WIDTH,
+            cap: Cap::Round,
+            underlay: Underlay::None,
+            lock: false,
+            pull: [0.0; 2],
+            push: [push; 2],
+            ..Params::for_style(Style::Satin)
+        };
+        let q = points(&stitches(&straight(), FillRule::NonZero, &p));
+        let (lo, _) = extent(&q);
+        q.iter().filter(|a| (a.x - lo).abs() < 1e-9).map(|a| a.y.abs()).fold(0.0, f64::max)
+    };
+    assert!(tip(0.5) <= tip(0.0) + 1e-6, "a 0.5 mm push cuts the tip {} mm off the middle", tip(0.5));
+}
+
+/// A round cap pressed by push compensation stays within the half disc it paints: with a 0.6 mm push
+/// every needle point lies inside the round-capped stroke.
+#[test]
+fn a_round_cap_with_push_stays_on_its_half_disc() {
+    let p = Params {
+        width: WIDTH,
+        cap: Cap::Round,
+        underlay: Underlay::None,
+        lock: false,
+        pull: [0.0; 2],
+        push: [0.6, 0.6],
+        ..Params::for_style(Style::Satin)
+    };
+    for a in &points(&stitches(&straight(), FillRule::NonZero, &p)) {
+        let inside = if a.x < 0.0 {
+            a.distance(Point::new(0.0, 0.0)) <= HALF + 1e-9
+        } else if a.x > LENGTH {
+            a.distance(Point::new(LENGTH, 0.0)) <= HALF + 1e-9
+        } else {
+            a.y.abs() <= HALF + 1e-9
+        };
+        assert!(inside, "{a:?} lies outside the round-capped stroke");
+    }
+}

@@ -943,7 +943,9 @@ the fabric.
   whole, as along the column) and stopping where a crossing would be shorter than the shortest
   stitch, a butt cap
   stopping at the end; the underlay stays on the path, inside the column, and push compensation
-  shortens the column from its caps' ends. An open column whose two ends meet within a thread's
+  shortens the column from its caps' ends, a round cap pressed along the column into the length the
+  push leaves it and so kept round, its tip crossing as narrow as without the push (the owner's
+  choice, 2026-11-07, „Okrągły koniec zostaje okrągły (polecam)”). An open column whose two ends meet within a thread's
   width (0.4 mm, as a running line's pieces meet: a ring drawn without closing it) is sewn as a
   closed one is, no cap at its ends (2026-11-07, „Nie, tam bez zakończeń (polecam)” and „Jak
   zamknięte (polecam)”), and no cap is sewn where pieces of one satin meet: an end within 0.4 mm

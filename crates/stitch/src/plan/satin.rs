@@ -109,8 +109,9 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
             Some(Capped { pts: top, cap, carried }) => {
                 let total = length(&top, false);
                 let k = push_share(total, push[0], push[1], shortest);
-                let (cut, top) = if push[0] + push[1] > 0.0 { (push[0] * k, trimmed(&top, push[0] * k, push[1] * k)) } else { (0.0, top) };
-                (top, Some(CapAlong { cut, total, cap, carried }))
+                let pushed = [push[0] * k, push[1] * k];
+                let top = if pushed[0] + pushed[1] > 0.0 { trimmed(&top, pushed[0], pushed[1]) } else { top };
+                (top, Some(CapAlong { total, cap, carried, pushed }))
             }
             None => (under.clone(), None),
         };
@@ -363,29 +364,34 @@ struct Capped {
     carried: [f64; 2],
 }
 
-/// [`Capped`] as the top stitching sews it, push compensation cut off its ends: `cut` millimetres
-/// off its start, `total` its length before.
+/// [`Capped`] as the top stitching sews it, push compensation cut off its ends: `pushed`
+/// millimetres off its start and its end, `total` its length before.
 #[derive(Clone, Debug)]
 struct CapAlong {
-    cut: f64,
     total: f64,
     cap: super::Cap,
     carried: [f64; 2],
+    pushed: [f64; 2],
 }
 
 impl CapAlong {
     /// The share of its full reach a crossing `s` millimetres along the top stitching takes: 1
     /// along the column and across a square cap; within a round cap, the half chord of the half
     /// disc of radius `half` (the column's half width) where the crossing lies, as a share of
-    /// `half`.
+    /// `half`. Push compensation shortens a round cap and keeps it round: the half disc pressed along
+    /// the column into the length the push leaves it (a half ellipse), so that its tip crossing is
+    /// as narrow as without the push (the project owner's choice, 2026-11-07, „Okrągły koniec
+    /// zostaje okrągły (polecam)”); a push past the cap cuts the column itself, square.
     fn across(&self, s: f64, half: f64) -> f64 {
         if self.cap != super::Cap::Round || half <= 0.0 {
             return 1.0;
         }
-        let along = s + self.cut;
+        let [cut, cut_end] = self.pushed;
+        let along = s + cut;
         let [start, end] = self.carried;
-        // How far past the path's own end the crossing lies.
-        let past = (start - along).max(along - (self.total - end)).max(0.0);
+        // How far past the path's own end the crossing lies, in the half disc the push pressed.
+        let pressed = |past: f64, reach: f64, push: f64| if past > 0.0 && reach > push { past * reach / (reach - push) } else { 0.0 };
+        let past = pressed(start - along, start, cut).max(pressed(along - (self.total - end), end, cut_end));
         let share = past / half;
         if share >= 1.0 { 0.0 } else { (1.0 - share * share).sqrt() }
     }

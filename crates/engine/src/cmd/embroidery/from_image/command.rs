@@ -292,14 +292,22 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     // is sewn as the shape it is, in its turn as a fill.
     vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     let started = clock();
-    let along: Vec<bool> = areas
+    // A line by the rules is held to its width away from where its lines meet.
+    let thin_px = rules::THIN_LINE_MM * w.px_per_mm + rules::MEASURE_SLACK_PX;
+    let wanted: Vec<centre::Wanted> = areas
         .areas
         .iter()
-        .map(|x| {
-            x.kind == AreaKind::Line && colours.rows.get(x.row).is_some_and(|r| !r.background && matches!(r.job, Job::Auto | Job::Lines | Job::None))
+        .map(|x| match colours.rows.get(x.row) {
+            Some(r) if x.kind == AreaKind::Line && !r.background => match r.job {
+                Job::Lines => centre::Wanted::AnyWidth,
+                Job::Auto | Job::None => centre::Wanted::NoWiderThan(thin_px),
+                Job::Fill => centre::Wanted::No,
+            },
+            _ => centre::Wanted::No,
         })
         .collect();
-    let lines = centre::lines(&areas.regions, &|a| along.get(a).copied().unwrap_or(false))?;
+    let lines = centre::lines(&areas.regions, &|a| wanted.get(a).copied().unwrap_or(centre::Wanted::No))?;
+    let along: Vec<bool> = wanted.iter().map(|&x| x != centre::Wanted::No).collect();
     for (row, count) in rules::fills_without_centre_lines(&mut areas, &colours, &along, &lines) {
         let color = colours.rows.get(row).map(|r| super::super::hex(r.color)).unwrap_or_default();
         warnings.push(Warning::new(

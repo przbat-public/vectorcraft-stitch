@@ -516,3 +516,84 @@ fn the_dots_of_lettering_set_to_lines_are_sewn_wherever_they_lie() {
         }
     }
 }
+
+/// Dots and an arrow's head wider than a millimetre on thin lines keep their fill (the project
+/// owner's choice, 2026-11-07, „Tylko na skrzyżowaniach (polecam)”: the extra width only where lines
+/// meet): a "share" icon's three dots 1.3 mm across joined by lines 0.5 mm wide, an arrow whose
+/// shaft is 0.5 mm wide and its head 2 mm, and a dot 1.4 mm across on a line 0.5 mm wide have no
+/// centre line.
+#[test]
+fn dots_and_arrow_heads_on_thin_lines_keep_their_fill() {
+    let dots = [Point::new(5.0, 10.0), Point::new(20.0, 5.0), Point::new(20.0, 15.0)];
+    let segs = [(dots[0], dots[1]), (dots[0], dots[2])];
+    let share = move |q: Point| {
+        if dots.iter().any(|d| q.distance(*d) <= 0.65) || segs.iter().any(|&s| to_segment(q, s) <= 0.25) { NAVY } else { WHITE }
+    };
+    let arrow = |q: Point| {
+        let shaft = (2.0..=17.0).contains(&q.x) && (q.y - 5.0).abs() <= 0.25;
+        let head = (17.0..=19.0).contains(&q.x) && (q.y - 5.0).abs() <= (19.0 - q.x) / 2.0;
+        if shaft || head { NAVY } else { WHITE }
+    };
+    let dotted =
+        |q: Point| if q.distance(Point::new(12.0, 5.0)) <= 0.7 || ((3.0..=21.0).contains(&q.x) && (q.y - 5.0).abs() <= 0.25) { NAVY } else { WHITE };
+    for raster in [picture(25.0, 20.0, PX_PER_MM, share), picture(21.0, 10.0, PX_PER_MM, arrow), picture(24.0, 10.0, PX_PER_MM, dotted)] {
+        let mut s = placed(&raster, PX_PER_MM);
+        let r = digitize(&mut s, json!({"colors": 2}), true);
+        let navy = areas_of(&r, NAVY);
+        assert!(!navy.is_empty() && navy.iter().all(|a| a["line"].is_null() && a["kind"] == json!("fill")), "{}", r["areas"]);
+    }
+}
+
+/// A thin line whose width grows past a millimetre away from any junction is no centre line, but
+/// a fill or a satin column: a bar 0.6 mm wide for 14 mm and then 1.25 mm for 6 mm, wider at its
+/// widest than its lines' crossing would make it; a bar 0.8 mm wide for 14 mm and then 1.2 mm for
+/// 6 mm, as wide at its widest as a crossing of its lines (held by the width along it); a stroke
+/// tapering from 0.3 mm to 1.3 mm over 15 mm, round at its wide end as a brush leaves it.
+#[test]
+fn a_line_that_widens_past_a_millimetre_keeps_its_fill() {
+    let stepped = |narrow: f64, wide: f64| {
+        move |q: Point| {
+            let half = if q.x < 19.0 { narrow / 2.0 } else { wide / 2.0 };
+            if (5.0..=25.0).contains(&q.x) && (q.y - 6.0).abs() <= half { NAVY } else { WHITE }
+        }
+    };
+    let tapered = |q: Point| {
+        let half = (0.3 + (q.x - 5.0) / 15.0) / 2.0;
+        let end = q.distance(Point::new(20.0, 6.0)) <= 0.65;
+        if end || ((5.0..=20.0).contains(&q.x) && (q.y - 6.0).abs() <= half) { NAVY } else { WHITE }
+    };
+    for (name, raster) in [
+        ("0.6 to 1.25 mm", picture(30.0, 12.0, PX_PER_MM, stepped(0.6, 1.25))),
+        ("0.8 to 1.2 mm", picture(30.0, 12.0, PX_PER_MM, stepped(0.8, 1.2))),
+        ("tapered", picture(25.0, 12.0, PX_PER_MM, tapered)),
+    ] {
+        let mut s = placed(&raster, PX_PER_MM);
+        let r = digitize(&mut s, json!({"colors": 2}), true);
+        let navy = areas_of(&r, NAVY);
+        assert!(!navy.is_empty() && navy.iter().all(|a| a["line"].is_null() && a["kind"] == json!("fill")), "{name}: {}", r["areas"]);
+    }
+}
+
+/// Where lines meet they are still lines, the extra width at their junction allowed: a Y of three
+/// arms at 120°, and crossings at 60° and at 45°, of lines 0.6 and 0.9 mm wide, are each one centre
+/// line through its junction.
+#[test]
+fn lines_that_meet_are_still_lines() {
+    let c = Point::new(10.0, 10.0);
+    let arm = |degrees: f64, len: f64| {
+        let a = degrees.to_radians();
+        Point::new(c.x + len * a.cos(), c.y + len * a.sin())
+    };
+    let y = vec![(c, arm(-90.0, 7.0)), (c, arm(30.0, 7.0)), (c, arm(150.0, 7.0))];
+    let crossing =
+        |degrees: f64| vec![(arm(-degrees / 2.0, 7.0), arm(180.0 - degrees / 2.0, 7.0)), (arm(degrees / 2.0, 7.0), arm(180.0 + degrees / 2.0, 7.0))];
+    for width in [LINE_MM, CROSS_LINE_MM] {
+        for (name, segments, junctions) in [("Y", y.clone(), 1), ("X at 60°", crossing(60.0), 1), ("X at 45°", crossing(45.0), 1)] {
+            let mut s = placed(&picture(20.0, 20.0, PX_PER_MM, lines_of(width, segments, NAVY, WHITE)), PX_PER_MM);
+            let r = digitize(&mut s, json!({"colors": 2}), true);
+            let navy = areas_of(&r, NAVY);
+            assert!(navy.len() == 1 && navy[0]["kind"] == json!("line") && !navy[0]["line"].is_null(), "{name}, {width} mm: {}", r["areas"]);
+            assert!(navy[0]["line"]["junctions"].as_u64() >= Some(junctions), "{name}, {width} mm: {}", navy[0]);
+        }
+    }
+}

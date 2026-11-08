@@ -307,9 +307,7 @@ fn ridge_widths(labels: &[u32], d2: &[f64], wu: usize, hu: usize, count: usize) 
         if deeper {
             continue;
         }
-        let deep = |dx: i64, dy: i64| same(at(dx, dy)) && at(dx, dy).and_then(|j| d2.get(j)) == Some(&d);
-        let even = SIDES.iter().any(|&(dx, dy)| deep(dx, dy) && !deep(2 * dx, 2 * dy));
-        list.push(2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 });
+        list.push(width_at(labels, d2, wu, hu, i));
     }
     ridge
         .into_iter()
@@ -322,6 +320,22 @@ fn ridge_widths(labels: &[u32], d2: &[f64], wu: usize, hu: usize, count: usize) 
             widths.get(mid).copied()
         })
         .collect()
+}
+
+/// The width (pixels) of the shape round pixel `i` of a `w × h` map (`labels`, and `d2`, the squared
+/// distances to the areas' edges), measured as [`AreaStats::ridge_px`] measures it along a ridge:
+/// twice the pixel's distance to the edge and the half pixel beyond, a pixel more where an as deep
+/// pixel beside it across the ridge makes it two pixels thick (an even width).
+pub(super) fn width_at(labels: &[u32], d2: &[f64], w: usize, h: usize, i: usize) -> f64 {
+    let (Some(&l), Some(&d)) = (labels.get(i), d2.get(i)) else { return 0.0 };
+    let (x, y) = ((i % w.max(1)) as i64, (i / w.max(1)) as i64);
+    let at = |dx: i64, dy: i64| {
+        let (nx, ny) = (x + dx, y + dy);
+        (nx >= 0 && ny >= 0 && (nx as usize) < w && (ny as usize) < h).then(|| ny as usize * w + nx as usize)
+    };
+    let deep = |dx: i64, dy: i64| at(dx, dy).is_some_and(|j| labels.get(j) == Some(&l) && d2.get(j) == Some(&d));
+    let even = SIDES.iter().any(|&(dx, dy)| deep(dx, dy) && !deep(2 * dx, 2 * dy));
+    2.0 * (d.sqrt() + 0.5) + if even { 1.0 } else { 0.0 }
 }
 
 /// Whether the ridge through pixel `i` of a `w × h` map is two pixels thick across it (an even

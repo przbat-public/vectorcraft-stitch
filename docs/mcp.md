@@ -7303,7 +7303,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   colours; each colour gets a thread of the document's palette, chosen together (CIEDE2000, flagged past ΔE 10; two
   colours whose only thread within ΔE 10 is the same one are merged); the background is only what touches the
   image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than 1 mm along its middle, up to
-  √2 times that where its lines meet, and at least 2 mm long stays), an island narrower than 4 mm is sewn over the area
+  √2 times its own width where its lines meet and no wider than 1 mm away from them, and at least 2 mm long stays), an island narrower than 4 mm is sewn over the area
   round it with no hole cut, and where two colours meet the one sewn first reaches `overlap` under the one sewn after,
   only along the edge they share. A line (and every area of a colour set to `lines`) is sewn along its centre line, a
   stroke as wide as it, round at its ends, which the planner sews as one running line through its junctions; the

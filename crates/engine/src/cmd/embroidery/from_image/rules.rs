@@ -7,10 +7,11 @@
 //!   whatever its noise setting is) and what the trace is told to keep for the next rule.
 //! - **Long thin lines stay**, whatever their area (the project owner's choice, 2026-11-01): a
 //!   hairline weighs less than a crumb, but it is drawn. A line is narrower than [`THIN_LINE_MM`]
-//!   along its middle (at most [`JUNCTION_ALLOWANCE`] times wider where its lines meet) and,
-//!   measured along it, at least [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so that a
-//!   stroke tapering to a point counts its whole length. It is sewn along its centre line
-//!   (`super::centre`).
+//!   along its middle, at its widest no more than [`JUNCTION_ALLOWANCE`] times that (and a
+//!   [`MEASURE_SLACK_PX`]), the largest disc where lines meet, and, measured along it, at least
+//!   [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so that a stroke tapering to a point
+//!   counts its whole length. It is sewn along its centre line (`super::centre`), which holds it
+//!   to the width away from where its lines meet.
 //! - **Bands a thread wide join, whatever their size.** A band no wider than a thread
 //!   ([`SLIVER_MAX_MM`], the project owner's choice, 2026-11-03) whose colour is a neighbour's,
 //!   near enough ([`SLIVER_DELTA_E`]), or a mix of two neighbours' ([`is_mix`]), is no drawn line
@@ -39,11 +40,28 @@ use super::settings::Job;
 pub(super) const THIN_LINE_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
 /// How much wider than its lines a drawing of lines may be where they meet and still be lines: √2,
-/// a right-angle crossing's largest disc as wide as its lines' diagonal (the research's geometry:
-/// a T's is 1.26 times its lines, a Y's 1.16, a crossing's 1.41). A line is narrower than
-/// [`THIN_LINE_MM`] along its middle (`AreaStats::ridge_px`), and at most this much wider at its
-/// widest; the session's choice, for the owner to confirm.
+/// a right-angle crossing's largest disc as wide as its lines' diagonal (where two lines meet, the
+/// largest disc is 1.25 times their width at a T, 2/√3 ≈ 1.155 at a Y and √2 at a crossing). A
+/// line is narrower than [`THIN_LINE_MM`] along its middle (`AreaStats::ridge_px`), and at its
+/// widest at most this many times its own width there; only where its lines meet (the project
+/// owner's choice, 2026-11-07, „Tylko na skrzyżowaniach (polecam)”): a dot, an arrowhead or a
+/// stretch wider than that ends, so a drawing holding one is filled, and away from its junctions
+/// a line is held to [`THIN_LINE_MM`] (`super::centre`).
 pub(super) const JUNCTION_ALLOWANCE: f64 = std::f64::consts::SQRT_2;
+
+/// How much a width measured on the region map's pixels may exceed the width it stands for
+/// (working pixels): a pixel, the trace's anti-aliased edges moving each side by up to half of one.
+pub(super) const MEASURE_SLACK_PX: f64 = 1.0;
+
+/// How much more than [`JUNCTION_ALLOWANCE`] times its lines' width a junction may measure on the
+/// region map's pixels (working pixels): three. A disc's width is measured from pixel centres to
+/// the nearest pixels on the edge, and where lines meet the edge turns a corner the pixels step
+/// round: measured 2026-11-08 at 10 pixels a millimetre, lines 0.4 to 0.9 mm wide meeting as a T,
+/// a Y and crossings at 45° to 90°, turned or upright, measure 1.28 to 1.80 times their width at
+/// their junction, at most 2.6 pixels past √2 times it (lines 0.6 mm wide crossing at ±45°: 12
+/// pixels where the lines measure 6.66); a dot or an arrowhead on lines that wide measures 2 to 3
+/// times their width.
+pub(super) const CROSSING_SLACK_PX: f64 = 3.0;
 
 /// How long a thin area must be, measured along it, to stay below the smallest area (millimetres):
 /// a line, not a speck. The project owner's choice (2026-11-03), taken from the research's estimate
@@ -155,9 +173,14 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     let thin_px = THIN_LINE_MM * px_per_mm;
     let long_px = LINE_KEEP_LENGTH_MM * px_per_mm;
     let band_px = SLIVER_MAX_MM * px_per_mm;
-    // A line: narrower than a satin column along its middle (a little wider where its lines meet),
-    // and long enough along it not to be a speck.
-    let thin = |i: usize| regions.areas.get(i).is_some_and(|a| a.pixels > 0 && a.ridge_px < thin_px && a.widest_px < thin_px * JUNCTION_ALLOWANCE);
+    // A line: narrower than a satin column along its middle, at its widest no more than where its
+    // lines meet makes it, and long enough along it not to be a speck.
+    let thin = |i: usize| {
+        regions
+            .areas
+            .get(i)
+            .is_some_and(|a| a.pixels > 0 && a.ridge_px < thin_px && a.widest_px <= JUNCTION_ALLOWANCE * a.ridge_px + CROSSING_SLACK_PX)
+    };
     let lengths = regions.lengths(thin)?;
     let is_line = |i: usize| thin(i) && lengths.get(i).is_some_and(|&l| l >= long_px);
     let colour = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).map(|r| r.color);

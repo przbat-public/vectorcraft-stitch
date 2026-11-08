@@ -43,7 +43,7 @@ use std::collections::BinaryHeap;
 
 use vectorcraft_geom::Point;
 
-use super::regions::{NONE, Regions, distances};
+use super::regions::{NONE, Regions, distances, width_at};
 use crate::Result;
 
 /// How many passes of thinning a line takes at most: each peels a pixel off every side, so a line
@@ -108,6 +108,19 @@ pub(super) struct CentreLine {
     pub(super) length_px: f64,
     pub(super) ends: usize,
     pub(super) junctions: usize,
+}
+
+/// Whether an area's centre line is wanted, and how wide it may be.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum Wanted {
+    /// No: the area is sewn as it is.
+    No,
+    /// Whatever its width: an area of a colour set to Lines.
+    AnyWidth,
+    /// Only where no stretch of it away from its junctions is wider than this (working pixels) for
+    /// as long as it is wide: a line by the rules, the extra width where its lines meet alone (the
+    /// project owner's choice, 2026-11-07, „Tylko na skrzyżowaniach (polecam)”).
+    NoWiderThan(f64),
 }
 
 /// One piece of a centre line.
@@ -719,16 +732,42 @@ fn smoothed(pts: &[Point]) -> Vec<Point> {
     pts.iter().zip(&gone).filter(|(_, g)| !**g).map(|(p, _)| *p).collect()
 }
 
+/// Whether a stretch of a centre line (`nodes` and `edges`, each node's degree `deg`) away from its
+/// junctions is wider than `limit` (working pixels, `width` at each of the map's pixels, a map `w`
+/// wide) for as long as `limit`: a thick stretch, not a bump of a pixel or two nor a junction's
+/// disc. A pixel's disc overlapping a junction's lies by it.
+fn widens_away_from_junctions(nodes: &[Node], edges: &[Edge], deg: &[usize], width: &dyn Fn(usize) -> f64, limit: f64, w: usize) -> bool {
+    let junctions: Vec<&Node> = nodes.iter().zip(deg).filter(|&(_, &d)| d >= 3).map(|(n, _)| n).collect();
+    for e in edges {
+        let (mut run, mut last): (f64, Option<Point>) = (0.0, None);
+        for &i in &e.pixels {
+            let (c, wide) = (centre_of(i, w), width(i));
+            let by_junction = junctions.iter().any(|j| c.distance(j.at) <= j.radius + wide / 2.0);
+            if wide <= limit || by_junction {
+                (run, last) = (0.0, None);
+                continue;
+            }
+            run += last.map_or(0.0, |p| c.distance(p));
+            last = Some(c);
+            if run >= limit {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// The centre lines of the areas `wanted` picks among `regions`' (their places in its map): thinned,
 /// made a graph, pruned, its ends carried to the ink and its pieces smoothed (the module's notes).
-/// Each is `None` where it isn't wanted, has no skeleton, or comes to a centre line shorter than
-/// the line is wide: a dot, or a blob, has no line to sew along, and is sewn as the area it is
-/// (the project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”). A cancel stops it.
-pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> bool) -> Result<Vec<Option<CentreLine>>> {
+/// Each is `None` where it isn't wanted, has no skeleton, comes to a centre line shorter than the
+/// line is wide (a dot, or a blob, has no line to sew along, and is sewn as the area it is: the
+/// project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), or, held to a width, widens
+/// past it away from its junctions. A cancel stops it.
+pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted) -> Result<Vec<Option<CentreLine>>> {
     let count = regions.areas.len();
-    let want: Vec<bool> = (0..count).map(wanted).collect();
+    let want: Vec<Wanted> = (0..count).map(wanted).collect();
     let mut out: Vec<Option<CentreLine>> = vec![None; count];
-    if !want.iter().any(|&w| w) {
+    if want.iter().all(|&w| w == Wanted::No) {
         return Ok(out);
     }
     let (w, h) = (regions.w as usize, regions.h as usize);
@@ -749,7 +788,7 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> bool) -> Result
     let mut pixels: Vec<Vec<usize>> = vec![Vec::new(); count];
     let mut alive = vec![false; labels.len()];
     for (i, &l) in labels.iter().enumerate() {
-        if want.get(l as usize).copied().unwrap_or(false)
+        if want.get(l as usize).is_some_and(|&w| w != Wanted::No)
             && let Some(list) = pixels.get_mut(l as usize)
         {
             list.push(i);
@@ -769,10 +808,15 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> bool) -> Result
         let skeleton: Vec<usize> = own.iter().copied().filter(|&i| line.on(i)).collect();
         let (mut nodes, mut edges) = graph(&line, &skeleton, &d2);
         pruned(&mut nodes, &mut edges, w);
+        let deg = degrees(&nodes, &edges);
+        if let Some(&Wanted::NoWiderThan(limit)) = want.get(a)
+            && widens_away_from_junctions(&nodes, &edges, &deg, &|i| width_at(labels, &d2, w, h, i), limit, w)
+        {
+            continue;
+        }
         let total: f64 = edges.iter().map(|e| length(&e.pixels.iter().map(|&i| centre_of(i, w)).collect::<Vec<_>>())).sum();
         let widest = regions.areas.get(a).map_or(1.0, |s| s.widest_px).max(1.0);
         let width = if total > 0.0 { (own.len() as f64 / total).clamp(1.0, widest) } else { widest };
-        let deg = degrees(&nodes, &edges);
         let mut pieces: Vec<Piece> = Vec::with_capacity(edges.len());
         for e in &edges {
             let closed = e.a == e.b && deg.get(e.a) == Some(&2);
@@ -853,7 +897,7 @@ mod tests {
     }
 
     fn line_of(regions: &Regions) -> CentreLine {
-        lines(regions, &|a| a == 0).unwrap().into_iter().next().flatten().expect("a centre line")
+        lines(regions, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }).unwrap().into_iter().next().flatten().expect("a centre line")
     }
 
     /// Yokoi's connectivity number: none for a pixel alone or inside, one for an end and for a
@@ -915,7 +959,7 @@ mod tests {
     fn a_dot_has_no_centre_line_wherever_it_lies() {
         for (cx, cy) in [(20.0, 20.0), (20.5, 20.0), (20.5, 20.5)] {
             let dot = map(40, 40, |x, y| (f64::from(x) + 0.5 - cx).hypot(f64::from(y) + 0.5 - cy) <= 5.0);
-            let found = lines(&dot, &|a| a == 0).unwrap();
+            let found = lines(&dot, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }).unwrap();
             assert!(found[0].is_none(), "a dot at ({cx}, {cy}): {:?}", found[0]);
         }
     }

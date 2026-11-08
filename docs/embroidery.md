@@ -319,8 +319,9 @@ drives it comes next; `docs/mcp.md` gives its params and reply in full):
   `none` (made but not sewn). The background (transparency, or the colour three corners agree on)
   is only what touches the image's edge.
 - **Areas:** smaller than `minArea` (1 mm²) an area joins the neighbour it shares the longest edge
-  with; a line narrower than 1 mm along its middle (up to √2 times that where its lines meet) and
-  at least 2 mm long stays; an island narrower than 4 mm is sewn on top of the area round it, with
+  with; a line narrower than 1 mm along its middle (up to √2 times its own width where its lines
+  meet, and no wider than 1 mm away from them, so that a dot, an arrowhead or a thick stretch on
+  it leaves it filled) and at least 2 mm long stays; an island narrower than 4 mm is sewn on top of the area round it, with
   no hole cut. Where two colours meet, the one sewn first reaches `overlap` (0.4 mm) under the one
   sewn after, along their shared edge only.
 - **Lines:** a thin line, and every area of a colour set to `lines`, is sewn along its middle: a
@@ -3234,9 +3235,15 @@ millimetres again. The stages, each a module, each reported to a progress sink
 6. **The rules** (`rules.rs`), on the map: an area smaller than `minArea` (1 mm², the owner's
    choice) joins the area it shares the longest edge with, smallest first, or is left out with
    only transparency round it; a line narrower than 1 mm along its middle (the median width of its
-   ridge, the pixels no neighbour is deeper than; up to √2 times that at its widest, where its
-   lines meet, a crossing's disc being as wide as its lines' diagonal) and at least 2 mm long
-   stays, and every area of a colour set to Lines is a line; a band no
+   ridge, the pixels no neighbour is deeper than) and at least 2 mm long stays, at its widest no
+   more than a junction makes it: √2 times its own width, a crossing's disc being as wide as its
+   lines' diagonal (1.25 at a T, 2/√3 ≈ 1.155 at a Y), and three pixels for how a junction's
+   corners measure on the pixels (measured: lines 0.4 to 0.9 mm wide meeting at 45° to 120° measure
+   1.28 to 1.80 times their width there; a dot or an arrowhead on them 2 to 3 times); its centre
+   line (step 7) holds it to 1 mm away from its junctions, so that the extra width is allowed only
+   where lines meet (the owner's choice, 2026-11-07, „Tylko na skrzyżowaniach (polecam)”): a
+   stretch wider than 1 mm and a pixel, for as long as that, makes it a fill; and every area of a
+   colour set to Lines is a line; a band no
    wider than a thread (0.4 mm, the owner's choice) in nearly a neighbour's colour, or a blend of
    two as anti-aliasing paints it, joins the neighbour nearest its colour, whatever its size, while
    a wider one (a grey outline round black on white) is drawn on purpose and kept, as a line when
@@ -3259,7 +3266,9 @@ millimetres again. The stages, each a module, each reported to a progress sink
    along a curve make no corner the planner stitches into. The line's width is its pixels over its
    skeleton's length (the same at 8, 10 and 12 pixels a millimetre within a working pixel). Every
    step is linear in the line's pixels, or n log n (the smoothing's heap); a cancel stops it
-   between lines and within one every 16,384 pixels. They are found before the order, which sews a
+   between lines and within one every 16,384 pixels. A line by the rules (not one of a colour set
+   to Lines) that widens past 1 mm and a pixel away from its junctions, for as long as it is wide,
+   has none. They are found before the order, which sews a
    line after the fills it touches: an area that comes to no centre line, or to one shorter than it
    is wide (a dot, a blob), has no line to sew along and is a fill, sewn as the shape it is (the
    owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), the reply's warning `notLines`

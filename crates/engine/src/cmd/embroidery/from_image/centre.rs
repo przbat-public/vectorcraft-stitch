@@ -1357,6 +1357,43 @@ mod tests {
         assert!(large < 2.0 * small, "{large} looks a pixel at 600 pixels, {small} at 150");
     }
 
+    /// The spur constants at their bounds, from a junction whose disc's radius is 3 working pixels,
+    /// meeting two long pieces and a spur: on a thin line a spur reaching 1.99 pixels past the disc
+    /// is pruned and one reaching 2.01 kept ([`SPUR_SLACK_PX`]); on a line 9 pixels wide, 2.99 and
+    /// 3.01 (a third of it, [`SPUR_WIDTH_SHARE`]); a spur ending in a corner (its end's disc 1.5
+    /// pixels, [`CORNER_TIP_PX`]) up to (√2 − 1) of the junction's radius more, 3.24 pruned and 3.25
+    /// kept, but not with an end's disc of 1.6.
+    #[test]
+    fn spurs_are_pruned_up_to_their_bounds() {
+        let pruned = |reach: f64, end_radius: f64, line_px: f64| -> bool {
+            let node = |x: f64, y: f64, radius: f64, junction: bool| Node { at: Point::new(x, y), radius, junction };
+            let nodes =
+                vec![node(0.0, 0.0, 3.0, true), node(-50.0, 0.0, 1.0, false), node(50.0, 0.0, 1.0, false), node(0.0, 10.0, end_radius, false)];
+            let edge = |a: usize, b: usize| Edge { a, b, pixels: Vec::new(), gone: false };
+            let mut edges = vec![edge(1, 0), edge(0, 2), edge(3, 0)];
+            // A piece's reach past the junction's disc: its length, with its end's disc and less the junction's.
+            let lengths = vec![50.0, 50.0, reach - end_radius + 3.0];
+            prune_spurs(&nodes, &mut edges, &lengths, SPUR_SLACK_PX.max(SPUR_WIDTH_SHARE * line_px));
+            edges[2].gone
+        };
+        assert!(pruned(1.99, 2.0, 3.0) && !pruned(2.01, 2.0, 3.0), "the slack");
+        assert!(pruned(2.99, 2.0, 9.0) && !pruned(3.01, 2.0, 9.0), "a third of the width");
+        assert!(pruned(3.24, 1.5, 3.0) && !pruned(3.25, 1.5, 3.0) && !pruned(3.24, 1.6, 3.0), "a corner");
+    }
+
+    /// Smoothing takes away a point whose triangle with its neighbours has less area than it is
+    /// given (as the lines are: 8 square working pixels at 10 pixels a millimetre, from
+    /// [`SIMPLIFY_AREA_PX2`] and [`SIMPLIFY_AREA_MM2`]) and keeps one with more: 7.9 and 8.1.
+    #[test]
+    fn smoothing_stops_at_its_area() {
+        let least = SIMPLIFY_AREA_PX2.min(SIMPLIFY_AREA_MM2 * PX_PER_MM * PX_PER_MM);
+        for (h, kept) in [(0.79, false), (0.81, true)] {
+            let pts = vec![Point::new(0.0, 0.0), Point::new(10.0, h), Point::new(20.0, 0.0)];
+            let out = smoothed(&pts, false, least, &mut Ticks::default()).unwrap();
+            assert_eq!(out.len() == 3, kept, "a triangle of {} square pixels", 10.0 * h);
+        }
+    }
+
     /// The wide stretches of a line held to a width are looked for through its junctions only at
     /// its pixels past the width: a piece of a million pixels no wider than the limit, among 5,000
     /// junctions (a mesh's), is passed within a quarter of a second (measured 2026-11-08: 2 ms),

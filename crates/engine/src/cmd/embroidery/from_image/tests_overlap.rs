@@ -243,6 +243,31 @@ fn outlines_are_rounded_and_capped() {
 /// where the two would overlap.
 const MIDDLE_MM: f64 = 0.05 + NEAR_MM;
 
+/// How near (square working pixels) a band's area must be to a rounded rectangle's: the round
+/// corners' curves err far under it, half a pixel more or less of reach far over it.
+const BAND_AREA_PX2: f64 = 0.01;
+
+/// A neighbour's share of a centre line reaches half a working pixel past the share's pixels, no
+/// more and no less (`overlap::PAST_MIDDLE_PX`): a block of 4 × 3 pixels makes a band from half a
+/// pixel before it to half a pixel past it, its corners rounded by half a pixel (12 + 7 + π / 4
+/// square pixels), where reaching a twentieth of a pixel farther adds 0.87.
+#[test]
+fn a_share_reaches_half_a_pixel_past_its_pixels() {
+    let (w, (x0, x1), (y0, y1)) = (10usize, (3usize, 7usize), (2usize, 5usize));
+    let pixels: Vec<usize> = (y0..y1).flat_map(|y| (x0..x1).map(move |x| y * w + x)).collect();
+    let band = super::overlap::share_band(&pixels, w).expect("a band").to_bezpath();
+    let b = band.bounding_box();
+    let reach = 0.5;
+    let want = [x0 as f64 - reach, y0 as f64 - reach, x1 as f64 + reach, y1 as f64 + reach];
+    for (got, want) in [b.x0, b.y0, b.x1, b.y1].into_iter().zip(want) {
+        assert!((got - want).abs() < 1e-6, "the band {b:?}, not {want:?}");
+    }
+    let (bw, bh) = ((x1 - x0) as f64, (y1 - y0) as f64);
+    let rounded = bw * bh + 2.0 * (bw + bh) * reach + std::f64::consts::PI * reach * reach;
+    let area = band.area().abs();
+    assert!((area - rounded).abs() < BAND_AREA_PX2, "{area} square pixels, not {rounded}");
+}
+
 /// The overlap never reaches the background or an area left unsewn, and under a thin line the
 /// colours either side of it meet at its middle: two fills either side of a navy band 0.6 mm wide
 /// meet within half a pixel of its middle, with no fabric between them.

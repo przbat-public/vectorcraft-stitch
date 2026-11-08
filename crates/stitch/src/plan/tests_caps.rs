@@ -98,15 +98,19 @@ fn a_butt_cap_a_ring_and_ends_that_meet_are_sewn_as_before() {
     }
 }
 
-/// No stitch at a round tip is shorter than the shortest the planner sews: the cap stops where a
-/// crossing of its half disc would be.
+/// A round cap stops where its crossing would be the shortest stitch the planner sews: its tip
+/// lies half the width × √(1 − (shortest ÷ width)²) past each end, so that no stitch at the tip is
+/// shorter than the shortest, whatever the width.
 #[test]
-fn no_stitch_at_a_round_tip_is_shorter_than_the_shortest() {
+fn a_round_cap_stops_where_its_crossing_is_the_shortest_stitch() {
     for width in [1.0, 1.5, 3.0, 6.0, 9.0] {
-        let p = Params { width, cap: Cap::Round, underlay: Underlay::None, lock: false, ..Params::for_style(Style::Satin) };
+        let p = Params { width, cap: Cap::Round, underlay: Underlay::None, lock: false, pull: [0.0; 2], ..Params::for_style(Style::Satin) };
         let q = points(&stitches(&straight(), FillRule::NonZero, &p));
         let shortest = q.windows(2).map(|w| w[0].distance(w[1])).fold(f64::INFINITY, f64::min);
         assert!(shortest >= p.min_stitch - 1e-9, "{width} mm: a stitch of {shortest}");
+        let reach = width / 2.0 * (1.0 - (p.min_stitch / width).powi(2)).sqrt();
+        let (lo, hi) = extent(&q);
+        assert!((lo + reach).abs() < 1e-6 && (hi - LENGTH - reach).abs() < 1e-6, "{width} mm: the tips at {lo} and {hi}, not {reach} past the ends");
     }
 }
 
@@ -177,7 +181,8 @@ fn a_capped_column_starts_and_ends_where_its_stitches_do() {
 
 /// Ends within a thread's width meet (the project owner's choice, 2026-11-07, „Jak zamknięte
 /// (polecam)”): a ring drawn open with its ends 0.3 mm apart, or 0.39 mm, sews no cap over its
-/// column, as a ring whose ends meet exactly; its ends 0.5 mm apart, they take their caps.
+/// column, as a ring whose ends meet exactly; its ends 0.41 mm or 0.5 mm apart, they take their
+/// caps.
 #[test]
 fn ends_within_a_threads_width_meet() {
     let arc = |gap: f64| -> BezPath {
@@ -188,7 +193,9 @@ fn ends_within_a_threads_width_meet() {
         for gap in [0.3, 0.39] {
             assert_eq!(column(&arc(gap), cap), column(&arc(gap), Cap::Butt), "{gap} mm apart, a {} cap", cap.id());
         }
-        assert_ne!(column(&arc(0.5), cap), column(&arc(0.5), Cap::Butt), "0.5 mm apart, no {} cap", cap.id());
+        for gap in [0.41, 0.5] {
+            assert_ne!(column(&arc(gap), cap), column(&arc(gap), Cap::Butt), "{gap} mm apart, no {} cap", cap.id());
+        }
     }
 }
 

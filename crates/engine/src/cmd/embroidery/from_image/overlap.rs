@@ -283,7 +283,7 @@ fn line_shares(
 /// The band a neighbour grows under a centre line by: its share of the line's pixels (`pixels`, of
 /// a map `w` wide) as their own outline, along the pixels' edges, widened by [`PAST_MIDDLE_PX`];
 /// `None` when it has no pixel or the path operations refuse it.
-fn share_band(pixels: &[usize], w: usize) -> Option<PathData> {
+pub(super) fn share_band(pixels: &[usize], w: usize) -> Option<PathData> {
     let w = w.max(1);
     let (x0, y0) = pixels.iter().fold((usize::MAX, usize::MAX), |(x, y), &i| (x.min(i % w), y.min(i / w)));
     let (x1, y1) = pixels.iter().fold((0, 0), |(x, y), &i| (x.max(i % w + 1), y.max(i / w + 1)));

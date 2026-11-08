@@ -326,3 +326,17 @@ fn info_tells_the_rows_in_tenths_from_0_up_to_180() {
     assert_eq!(chose(&mut s, tall), 30.3);
     assert_eq!(chose(&mut s, round), 55.0);
 }
+
+/// `embroidery.info` says a turned bar's rows as the commands count them, counter-clockwise on the
+/// page, as they are sewn: a wide bar turned 30° has its rows square to its length, at 120°.
+#[test]
+fn info_says_a_turned_bars_rows_as_sewn() {
+    let mut s = blank();
+    let b = bar(&mut s, 20.0, 40.0, 40.0, 10.0);
+    run(&mut s, "object.rotate", json!({"ids": [b], "angle": 30}));
+    let turn = s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(b)).unwrap().bbox_angle;
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    let chose = run(&mut s, "embroidery.info", json!({"ids": [b]}))["fill"]["settings"]["angle"]["rule"]["chose"].as_f64().unwrap();
+    assert!(apart(chose, turn + 90.0) < 0.05, "chose {chose}, turned {turn}");
+    assert!(apart(chose, options::planner_angle(rows_of(&s, b))) < 0.05);
+}

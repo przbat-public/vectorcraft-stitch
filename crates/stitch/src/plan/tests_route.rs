@@ -197,6 +197,12 @@ fn a_random_tree_is_sewn_as_the_least_route_sews_it() {
 /// edges to sew twice (a graph of a dozen edges at most): those whose ends, added to the graph's,
 /// leave no node odd but where the route starts and ends.
 fn least_twice(nodes: &[Point], edges: &[(usize, usize)]) -> f64 {
+    least_twice_from(nodes, edges, None)
+}
+
+/// [`least_twice`] for a route that starts (or ends) at node `start` when one is given: the two
+/// nodes left odd, if any, include it.
+fn least_twice_from(nodes: &[Point], edges: &[(usize, usize)], start: Option<usize>) -> f64 {
     let mut best = f64::INFINITY;
     for mask in 0u32..(1 << edges.len()) {
         let mut odd = vec![false; nodes.len()];
@@ -211,7 +217,8 @@ fn least_twice(nodes: &[Point], edges: &[(usize, usize)]) -> f64 {
                 odd[b] = !odd[b];
             }
         }
-        if odd.iter().filter(|&&o| o).count() <= 2 {
+        let left: Vec<usize> = (0..nodes.len()).filter(|&n| odd[n]).collect();
+        if left.is_empty() || (left.len() == 2 && start.is_none_or(|s| left.contains(&s))) {
             best = best.min(twice);
         }
     }
@@ -611,6 +618,72 @@ fn a_route_with_one_end_given_sews_least_twice() {
     }
 }
 
+/// Each of the two ways to a route's ends and join (the spanning tree's heaviest path, and the ends
+/// left out of the pairing) is shortened on its cycles, and the one that sews less is taken: four of
+/// the random drawings (found among 4,012 by switching each step off in turn), each routed from one
+/// of its nodes, sew the least (found by trying every set), where without the tree's cycle swap the
+/// first sews 98.1 mm twice for 62.8, without the left-out way's the second 77.6 for 63.1, without
+/// the tree's free end the third 144.7 for 79.9, and without the ends left out the fourth 65.5 for
+/// none.
+#[test]
+fn each_way_to_a_routes_ends_is_taken_where_it_sews_least() {
+    type Drawing = (&'static [(f64, f64)], &'static [(usize, usize)], usize);
+    let drawings: [Drawing; 4] = [
+        (
+            &[
+                (34.077, 31.508),
+                (20.594, 3.751),
+                (13.311, 17.87),
+                (7.185, 33.647),
+                (28.997, 16.115),
+                (35.302, 7.771),
+                (30.336, 35.334),
+                (33.805, 16.032),
+            ],
+            &[(0, 1), (2, 1), (1, 3), (1, 4), (5, 3), (4, 6), (3, 7), (3, 0), (3, 4)],
+            6,
+        ),
+        (
+            &[(35.31, 27.08), (3.61, 0.53), (12.369, 5.325), (37.144, 24.138), (1.689, 1.253), (37.49, 31.617), (16.832, 26.507)],
+            &[(0, 1), (0, 2), (2, 3), (4, 2), (5, 1), (6, 4), (4, 0), (4, 1)],
+            3,
+        ),
+        (
+            &[(34.764, 37.005), (39.399, 1.705), (35.026, 9.906), (22.814, 2.134), (29.255, 37.207), (38.629, 36.708), (3.382, 12.542)],
+            &[(0, 1), (2, 1), (3, 0), (2, 4), (1, 5), (5, 6)],
+            5,
+        ),
+        (
+            &[
+                (5.632, 32.605),
+                (35.789, 11.929),
+                (17.393, 32.646),
+                (30.486, 8.613),
+                (11.371, 23.313),
+                (3.856, 5.131),
+                (0.501, 17.303),
+                (28.812, 14.375),
+            ],
+            &[(0, 1), (1, 2), (3, 1), (4, 2), (1, 5), (0, 6), (5, 7), (6, 3), (4, 6)],
+            6,
+        ),
+    ];
+    for (k, &(points, edges, from)) in drawings.iter().enumerate() {
+        let nodes: Vec<Point> = points.iter().map(|&(x, y)| Point::new(x, y)).collect();
+        let path = path_of(&nodes, edges);
+        let subs = subpaths(&path);
+        let graph = Graph::of(&subs).expect("pieces that meet");
+        let parts = graph.components();
+        let at = graph.nodes.iter().position(|q| q.distance(nodes[from]) < 1e-9).expect("the given node");
+        let least = least_twice_from(&nodes, edges, Some(from));
+        for (start, end) in [(Some(at), None), (None, Some(at))] {
+            let r = route(&graph, &parts[0], start, end, &|| false).expect("a route");
+            let twice: f64 = r.steps.iter().filter(|s| s.again).map(|s| graph.edges[s.edge].len).sum();
+            assert!((twice - least).abs() < 1e-6, "drawing {k}, {start:?} {end:?}: {twice} mm twice, the least {least}");
+        }
+    }
+}
+
 /// A drawing shorter than the shortest stitch is left out, as each of its pieces would be: a 0.1 mm V
 /// 20 mm past a line adds no jump and no needle point, where it was sewn as a lone needle point
 /// with a jump to it.
@@ -672,4 +745,45 @@ fn ends_meet_in_a_drawing_a_kilometre_across() {
     // The bar's two ends (the third piece's first end meeting the bar's last), the stem's two,
     // the third piece's last and the far piece's two.
     assert_eq!(graph.nodes.len(), 7, "{:?}", graph.nodes);
+}
+
+/// A line drawn as pieces end to end is one run, locked at its two ends only (each piece was locked
+/// at both ends before routes): ten 5 mm pieces in a row turn back four times, the two locks.
+#[test]
+fn pieces_end_to_end_are_locked_once() {
+    let line: Vec<Vec<(f64, f64)>> = (0..10)
+        .map(|k| {
+            let x = 5.0 * f64::from(k);
+            vec![(x, 0.0), (x + 5.0, 0.0)]
+        })
+        .collect();
+    let (out, _) = sewn(&pieces(&line), Aim::from_needle(None));
+    let xs: Vec<f64> = needle(&out).iter().map(|q| q.x).collect();
+    let turns = xs.windows(3).filter(|w| (w[1] - w[0]) * (w[2] - w[1]) < 0.0).count();
+    assert_eq!(turns, 4, "{xs:?}");
+}
+
+/// Pieces apart from a route are sewn beside it: a T of three pieces, a stroke apart from it and
+/// a circle (a closed piece) in one line, every piece sewn.
+#[test]
+fn pieces_apart_are_sewn_beside_a_route() {
+    let mut path =
+        pieces(&[vec![(0.0, 0.0), (10.0, 0.0)], vec![(10.0, 0.0), (20.0, 0.0)], vec![(10.0, 0.0), (10.0, 6.0)], vec![(30.0, 0.0), (30.0, 10.0)]]);
+    path.extend(vectorcraft_geom::Shape::path_elements(&vectorcraft_geom::kurbo::Circle::new((50.0, 5.0), 4.0), 0.01));
+    let (out, _) = sewn(&path, Aim::from_needle(None));
+    every_piece_sewn(&path, &out);
+}
+
+/// The gap is a thread's width ([`THREAD_WIDTH`], not the constant itself, so that a gap set
+/// wider or narrower fails here), at its bound: two pieces whose ends lie 0.99 of it apart meet
+/// and 1.01 of it apart don't; a stroke ending 0.99 of it from another's middle cuts it there,
+/// 1.01 of it away it doesn't.
+#[test]
+fn ends_meet_within_the_gap_and_not_past_it() {
+    for (share, meet) in [(0.99, true), (1.01, false)] {
+        let ends = pieces(&[vec![(0.0, 0.0), (10.0, 0.0)], vec![(10.0 + share * THREAD_WIDTH, 0.0), (20.0, 0.0)]]);
+        assert_eq!(Graph::of(&subpaths(&ends)).is_some(), meet, "ends {share} of a thread's width apart");
+        let t = pieces(&[vec![(0.0, 0.0), (20.0, 0.0)], vec![(10.0, share * THREAD_WIDTH), (10.0, 6.0)]]);
+        assert_eq!(Graph::of(&subpaths(&t)).map(|g| g.edges.len()), meet.then_some(3), "a stem {share} of a thread's width off the bar");
+    }
 }

@@ -321,7 +321,7 @@ proptest! {
 #[test]
 fn a_key_changes_with_every_value_a_unit_depends_on() {
     use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape};
-    use vectorcraft_stitch::plan::{Params, Start, Style, Underlay};
+    use vectorcraft_stitch::plan::{Cap, Params, Rows, Start, Style, Underlay};
     let shape = Rect::new(0.0, 0.0, 20.0, 10.0).to_path(0.1);
     let clip = (Rect::new(0.0, 0.0, 15.0, 15.0).to_path(0.1), FillRule::NonZero);
     let base = UnitRequest {
@@ -379,6 +379,8 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         |p| p.auto_spacing = !p.auto_spacing,
         |p| p.spacing_scale += 0.1,
         |p| p.narrow += 0.1,
+        |p| p.cap = if p.cap == Cap::Butt { Cap::Round } else { Cap::Butt },
+        |p| p.rows = if p.rows == Rows::Fixed { Rows::AcrossShape } else { Rows::Fixed },
     ];
     for tweak in &tweaks {
         let mut params = base.params;
@@ -391,6 +393,9 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
     for (k, req) in changed.iter().enumerate() {
         assert_ne!(UnitKey::of(req, None), key, "change {k}");
     }
+    // Every cap tells apart from the others, not only from none.
+    let capped = |cap| UnitKey::of(&UnitRequest { params: Params { cap, ..base.params }, ..base }, None);
+    assert_ne!(capped(Cap::Round), capped(Cap::Square), "a round and a square cap");
 }
 
 /// The cache holds at most its limit, dropping the units used least recently: one looked up is

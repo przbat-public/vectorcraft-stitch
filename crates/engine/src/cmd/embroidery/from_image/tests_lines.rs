@@ -33,6 +33,10 @@ const LINE_MM: f64 = 0.6;
 /// How far a needle point may lie from the line drawn (millimetres): a working pixel and a half.
 const ON_LINE_MM: f64 = 0.15;
 
+/// How near (millimetres) a shape's edge must lie to where it is asked: a fifth of a working
+/// pixel, so that a pixel's error shows, the reply's hundredths under it.
+const NEAR_MM: f64 = 0.02;
+
 /// A picture `w` × `h` millimetres at `px_per_mm`, each pixel the mean of [`SAMPLES`]² samples of
 /// `paint` at points in millimetres.
 fn picture(w: f64, h: f64, px_per_mm: f64, paint: impl Fn(Point) -> [u8; 4]) -> tr::Raster {
@@ -440,7 +444,8 @@ fn the_colours_beside_a_line_reach_its_middle_wherever_it_lies() {
 /// A colour reaches no more than 2 mm under a colour set to Lines however wide that is (the
 /// project owner's choice, 2026-11-07, „Do środka, najwyżej 2 mm (polecam)”): a red dot 3 mm across
 /// in a white field 60 × 30 mm set to Lines grows under the field by 2 mm and half a pixel, its top
-/// at 11.45 mm, not to the field's middle or its edge.
+/// at 11.45 mm (within a fifth of a pixel, so that a pixel more of reach, 11.35 mm, shows), not to
+/// the field's middle or its edge.
 #[test]
 fn a_colour_grows_no_more_than_two_millimetres_under_a_field_set_to_lines() {
     let paint = |q: Point| if q.distance(Point::new(15.0, 15.0)) <= 1.5 { RED } else { WHITE };
@@ -452,7 +457,7 @@ fn a_colour_grows_no_more_than_two_millimetres_under_a_field_set_to_lines() {
     let outline = vectorcraft_geom::BezPath::from_svg(red[0]["outline"].as_str().unwrap()).unwrap();
     let top = vectorcraft_geom::kurbo::Shape::bounding_box(&outline).y0;
     let grown = 13.5 - super::settings::OVERLAP_RANGE_MM.1 - 0.05;
-    assert!((top - grown).abs() <= 0.15, "the red dot's top at {top} mm, not {grown}: {}", red[0]);
+    assert!((top - grown).abs() <= NEAR_MM, "the red dot's top at {top} mm, not {grown}: {}", red[0]);
 }
 
 /// A small ring keeps its shape at a coarse resolution too: a ring 2 mm across of a line 0.5 mm wide,

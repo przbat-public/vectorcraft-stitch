@@ -1258,3 +1258,43 @@ fn only_a_design_that_may_outline_type_depends_on_the_fonts() {
     run(&mut s, "text.rescanFonts", json!({}));
     assert_ne!(s.embroidery_plan_key(&opts).unwrap(), key, "with type to outline, the fonts count");
 }
+
+/// The rows across the shape the Object tab reads are measured once an area, its fill rule and
+/// the angle a round piece keeps, and kept: asked again, nothing more is measured, and each answer
+/// is what measuring gives.
+#[test]
+fn the_rows_across_are_measured_once_an_area() {
+    use vectorcraft_geom::{FillRule, Rect, Shape};
+    let service = PlanService::default();
+    let area = super::digitize::AreaAcross { area: Rect::new(0.0, 0.0, 10.0, 40.0).to_path(0.1), rule: FillRule::NonZero, fixed: 45.0 };
+    let measured = super::plan::RowsAcross::of(&vectorcraft_stitch::plan::rows_by_piece(&area.area, area.rule, area.fixed));
+    assert_eq!(service.rows_across(&area), measured);
+    assert_eq!((service.rows_across(&area), service.kept_rows()), (measured, 1), "asked again");
+    let turned = super::digitize::AreaAcross { fixed: 30.0, ..area.clone() };
+    service.rows_across(&turned);
+    assert_eq!(service.kept_rows(), 2, "another angle a round piece keeps");
+}
+
+/// The Object tab's read of the rows across the shape (kept between reads) says what
+/// `embroidery.info` says (measured afresh), and again after one of the objects moved.
+#[test]
+fn the_object_tabs_rows_across_are_infos() {
+    let mut s = super::test_support::blank();
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    let mut ids = Vec::new();
+    for (x, w, h) in [(10.0, 30.0, 100.0), (60.0, 100.0, 30.0), (200.0, 60.0, 60.0)] {
+        ids.push(vectorcraft_doc::NodeId(
+            run(&mut s, "shape.rectangle", json!({"x": x, "y": 20.0, "width": w, "height": h}))["id"].as_u64().unwrap(),
+        ));
+    }
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    let same = |s: &mut Session| {
+        let merged = serde_json::to_value(s.embroidery_merged(&ids).unwrap()).unwrap();
+        let info = serde_json::to_value(s.embroidery_info(&ids, false, &Options::default()).unwrap()).unwrap();
+        assert_eq!(merged["fill"]["settings"]["angle"], info["fill"]["settings"]["angle"]);
+    };
+    same(&mut s);
+    run(&mut s, "object.rotate", json!({"ids": [ids[0].0], "angle": 30}));
+    same(&mut s);
+}

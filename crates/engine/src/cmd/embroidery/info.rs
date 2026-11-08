@@ -124,12 +124,15 @@ impl Session {
     /// planning, but with no object listed (`objects` empty; the skipped ones still are): what the
     /// Object tab reads, which merges and never lists.
     pub fn embroidery_merged(&mut self, ids: &[NodeId]) -> Result<ObjectSettings> {
+        // The rows across the shape it reads are kept by the document's planning between reads.
+        let uid = self.doc()?.uid;
+        let service = self.embroidery_plans.of(uid);
         let d = &self.doc()?.doc;
         if let Some(missing) = ids.iter().find(|id| d.node(**id).is_none()) {
             return Err(EngineError::NoNode(*missing));
         }
         // Whether stitches were edited is asked when Restore is clicked, not at every change.
-        Ok(reply_asking(d, ids, &Options::default(), None, Page { offset: 0, limit: 0 }, Vec::new(), false))
+        Ok(reply_asking(d, ids, &Options::default(), None, Page { offset: 0, limit: 0 }, Vec::new(), false, Some(&service)))
     }
 }
 
@@ -280,11 +283,13 @@ pub struct Sewing {
 /// The reply for objects `ids` of `doc` with the call's options `opts`, with what `plan` (the
 /// design's, when planned) sews of each part.
 pub(super) fn reply(doc: &Document, ids: &[NodeId], opts: &Options, plan: Option<&DesignPlan>, page: Page, warnings: Vec<String>) -> ObjectSettings {
-    reply_asking(doc, ids, opts, plan, page, warnings, true)
+    reply_asking(doc, ids, opts, plan, page, warnings, true, None)
 }
 
 /// [`reply`], whether converted objects' stitches were edited since converting asked only when
-/// `edited` (each one's needle points fingerprinted).
+/// `edited` (each one's needle points fingerprinted), the rows across the shape measured by the
+/// document's planning (`kept`, which keeps them between reads) when given.
+#[allow(clippy::too_many_arguments)]
 fn reply_asking(
     doc: &Document,
     ids: &[NodeId],
@@ -293,14 +298,20 @@ fn reply_asking(
     page: Page,
     warnings: Vec<String>,
     edited: bool,
+    kept: Option<&super::service::PlanService>,
 ) -> ObjectSettings {
     let (take, skipped) = takers(doc, ids);
     let nodes: Vec<&Node> = take.iter().filter_map(|id| doc.node(*id)).collect();
     let layer = DocLayer::of(doc);
     let mut found = Found::default();
     let areas = across_areas(doc, &take, opts, &layer);
-    let fill = part_section(doc, &nodes, PartKind::Fill, opts, &layer, plan, &areas, &mut found);
-    let stroke = part_section(doc, &nodes, PartKind::Stroke, opts, &layer, plan, &areas, &mut found);
+    let measure = |a: &AreaAcross| match kept {
+        Some(service) => service.rows_across(a),
+        None => RowsAcross::of(&rows_by_piece(&a.area, a.rule, a.fixed)),
+    };
+    let across = Across { areas: &areas, measure: &measure };
+    let fill = part_section(doc, &nodes, PartKind::Fill, opts, &layer, plan, across, &mut found);
+    let stroke = part_section(doc, &nodes, PartKind::Stroke, opts, &layer, plan, across, &mut found);
     ObjectSettings {
         object_count: nodes.len(),
         offset: page.offset,
@@ -542,8 +553,16 @@ fn across_areas(doc: &Document, ids: &[NodeId], opts: &Options, layer: &DocLayer
     areas_across(doc, opts, &ids.iter().copied().collect())
 }
 
+/// The areas the walk fills for the rows across the shape ([`across_areas`]), and how each is
+/// measured.
+#[derive(Clone, Copy)]
+struct Across<'a> {
+    areas: &'a AreasFound,
+    measure: &'a dyn Fn(&AreaAcross) -> Option<RowsAcross>,
+}
+
 /// Part `kind` of `nodes` of `doc`, merged ([`PartInfo`]; `None` when none of them has the part);
-/// `areas` the areas the walk fills for the rows across the shape ([`across_areas`]).
+/// `across` the areas the walk fills for the rows across the shape and how they are measured.
 #[allow(clippy::too_many_arguments)]
 fn part_section(
     doc: &Document,
@@ -552,7 +571,7 @@ fn part_section(
     opts: &Options,
     layer: &DocLayer,
     plan: Option<&DesignPlan>,
-    areas: &AreasFound,
+    across: Across<'_>,
     found: &mut Found,
 ) -> Option<PartInfo> {
     let (mut object_count, mut item_count) = (0usize, 0usize);
@@ -581,7 +600,7 @@ fn part_section(
         };
         let mut rules = if sewn_as == "none" { Vec::new() } else { rules(style, &settings.params(style, width)) };
         if sewn_as != "none"
-            && let Some(rows) = rows_by_shape(style, &settings, areas.get(&(n.id, kind)).map_or(&[][..], Vec::as_slice))
+            && let Some(rows) = rows_by_shape(style, &settings, across.areas.get(&(n.id, kind)).map_or(&[][..], Vec::as_slice), across.measure)
         {
             rules.push(("angle", rows));
         }
@@ -663,7 +682,8 @@ pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLay
             Some(rows) => told_rows(super::options::planner_angle(rows.largest.angle)),
             None => {
                 let areas = areas_across(doc, opts, &HashSet::from([n.id]));
-                rows_by_shape(style, &settings, areas.get(&(n.id, PartKind::Fill)).map_or(&[][..], Vec::as_slice))?
+                let measure = |a: &AreaAcross| RowsAcross::of(&rows_by_piece(&a.area, a.rule, a.fixed));
+                rows_by_shape(style, &settings, areas.get(&(n.id, PartKind::Fill)).map_or(&[][..], Vec::as_slice), &measure)?
                     .get("chose")
                     .and_then(Value::as_f64)?
             }
@@ -679,18 +699,19 @@ fn planned_rows(plan: &DesignPlan, id: NodeId) -> Option<RowsAcross> {
 }
 
 /// What the document's rows across the shape chose for a part sewn with `settings` as tatami, as
-/// `info`'s rules give it, measured on `areas`, the areas the walk fills for it ([`areas_across`]):
+/// `info`'s rules give it, measured (`measure`) on `areas`, the areas the walk fills for it
+/// ([`areas_across`]):
 /// the rows square to its long axis (degrees counter-clockwise on the page), with how much longer
 /// it is than wide; for one about as long as wide, the rows it keeps. Separate pieces are each
 /// measured alone and sewn across their own length ([`rows_by_piece`]): the largest says, and
 /// `pieces` how many there are. `None` where the rule doesn't decide (an angle set, no rule, not
 /// sewn as tatami).
-fn rows_by_shape(style: Style, settings: &UnitSettings, areas: &[AreaAcross]) -> Option<Value> {
+fn rows_by_shape(style: Style, settings: &UnitSettings, areas: &[AreaAcross], measure: &dyn Fn(&AreaAcross) -> Option<RowsAcross>) -> Option<Value> {
     if style != Style::Fill || !settings.by_shape() {
         return None;
     }
     let kept = settings.params(Style::Fill, 0.0).angle;
-    let measured = RowsAcross::together(areas.iter().filter_map(|a| RowsAcross::of(&rows_by_piece(&a.area, a.rule, a.fixed))));
+    let measured = RowsAcross::together(areas.iter().filter_map(measure));
     let largest = measured.map(|r| r.largest);
     let across = largest.filter(|p| p.across);
     Some(json!({

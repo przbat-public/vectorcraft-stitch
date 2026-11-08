@@ -104,12 +104,14 @@ fn measured(shape: Area<'_>) -> Option<(f64, Option<ShapeAxis>)> {
     let (left, right) = shape.extent(axes.along)?;
     let (mx, my) = ((left + right) / 2.0, (lo + hi) / 2.0);
     let mut sweep = shape.sweep(axes);
+    let mut spans = Vec::new();
     // The moments: the area, the first moments, and the second ones.
     let (mut a, mut sx, mut sy, mut sxx, mut syy, mut sxy) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     for k in 0..SHAPE_AXIS_BANDS {
         let row = lo + (k as f64 + 0.5) * band;
         let y = row - my;
-        for (x0, x1) in sweep.spans(row) {
+        sweep.spans_into(row, &mut spans);
+        for &(x0, x1) in &spans {
             let (x0, x1) = (x0 - mx, x1 - mx);
             let w = x1 - x0;
             a += w * band;

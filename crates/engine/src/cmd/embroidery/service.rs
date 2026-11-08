@@ -39,8 +39,8 @@ use vectorcraft_doc::{Document, Node, NodeId, NodeKind};
 
 use super::Options;
 use super::cache::UnitCache;
-use super::digitize::digitize;
-use super::plan::DesignPlan;
+use super::digitize::{AreaAcross, digitize};
+use super::plan::{DesignPlan, RowsAcross};
 use super::scene::{StitchScene, scene};
 use super::unit::PlanError;
 
@@ -342,10 +342,28 @@ impl PartialEq for Planned {
     }
 }
 
+/// The most words of the areas whose rows a service keeps measured ([`PlanService::rows_across`]),
+/// a bound on their memory (eight bytes a word, two a point): past it they are all forgotten and
+/// measured again as asked. An estimate: the fills of a design of 20,000 objects of a few dozen
+/// points each.
+const MAX_KEPT_ROW_WORDS: usize = 2_000_000;
+
+/// The rows across the shape measured of the areas the walk would fill ([`PlanService::rows_across`]),
+/// by each area's words, its fill rule and the angle a round piece keeps; and how many words their
+/// keys hold.
+#[derive(Default)]
+struct KeptRows {
+    rows: HashMap<Vec<u64>, Option<RowsAcross>>,
+    words: usize,
+}
+
 /// One document's planning: its units' stitches kept between plans, and its last plans.
 #[derive(Default)]
 pub(crate) struct PlanService {
     units: Mutex<UnitCache>,
+    /// The rows across the shape measured for `embroidery.info` and the Object tab, which read the
+    /// document at every snapshot, most of its objects unchanged.
+    rows: Mutex<KeptRows>,
     /// The plans remembered, with those of the other documents' services, and which are its own.
     memos: Arc<Memos>,
     owner: u64,
@@ -361,6 +379,35 @@ impl PlanService {
     /// documents'.
     pub(crate) fn sharing(memos: Arc<Memos>, owner: u64) -> Self {
         Self { memos, owner, ..Self::default() }
+    }
+
+    /// The rows across the shape of the area the walk would fill `area` ([`RowsAcross::of`] its
+    /// pieces' rows, [`vectorcraft_stitch::plan::rows_by_piece`]): measured once for each area,
+    /// fill rule and angle a round piece keeps, and kept, so that a read after an edit measures
+    /// again only what the edit changed. Past [`MAX_KEPT_ROW_WORDS`] every area kept is forgotten.
+    /// A list that a panic elsewhere left locked is passed by: the rows are measured afresh.
+    pub(crate) fn rows_across(&self, area: &AreaAcross) -> Option<RowsAcross> {
+        let mut key = Vec::new();
+        super::cache::path(&mut key, &area.area);
+        key.extend([super::cache::rule_word(area.rule), area.fixed.to_bits()]);
+        if let Some(kept) = self.rows.lock().ok().and_then(|k| k.rows.get(&key).copied()) {
+            return kept;
+        }
+        let rows = RowsAcross::of(&vectorcraft_stitch::plan::rows_by_piece(&area.area, area.rule, area.fixed));
+        if let Ok(mut kept) = self.rows.lock() {
+            if kept.words.saturating_add(key.len()) > MAX_KEPT_ROW_WORDS {
+                *kept = KeptRows::default();
+            }
+            kept.words = kept.words.saturating_add(key.len());
+            kept.rows.insert(key, rows);
+        }
+        rows
+    }
+
+    /// How many areas' rows it keeps measured.
+    #[cfg(test)]
+    pub(crate) fn kept_rows(&self) -> usize {
+        self.rows.lock().map_or(0, |k| k.rows.len())
     }
 
     /// The plan of `doc`, the document planned of `of`, with `opts`: the last plan when it was of

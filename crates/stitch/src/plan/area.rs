@@ -256,7 +256,7 @@ impl Area<'_> {
             .filter(|e| e.ta.is_finite() && e.tb.is_finite() && e.ta != e.tb)
             .collect();
         edges.sort_by(|x, y| x.ta.min(x.tb).total_cmp(&y.ta.min(y.tb)));
-        Sweep { rule: self.rule, edges, met: 0, active: Vec::new(), last: f64::NEG_INFINITY }
+        Sweep { rule: self.rule, edges, met: 0, active: Vec::new(), last: f64::NEG_INFINITY, crossings: Vec::new() }
     }
 
     /// Corner `i` of outline `corners` moved [`TRAVEL_MARGIN`] inside along the bisector of its two
@@ -494,12 +494,24 @@ pub(super) struct Sweep {
     active: Vec<usize>,
     /// The last row asked for.
     last: f64,
+    /// Where the current row crosses the active edges: kept from row to row, so that a row
+    /// allocates nothing once the rows have grown it.
+    crossings: Vec<(f64, i32, usize)>,
 }
 
 impl Sweep {
     /// Where the row at `t` crosses the area: the stretches along it that are inside, by the fill
     /// rule. Rows are asked for in order; one asked for out of order starts the sweep again.
     pub(super) fn spans(&mut self, t: f64) -> Vec<(f64, f64)> {
+        let mut spans = Vec::new();
+        self.spans_into(t, &mut spans);
+        spans
+    }
+
+    /// [`Sweep::spans`] into `spans` (emptied first), so that rows asked for one after another
+    /// reuse one list.
+    pub(super) fn spans_into(&mut self, t: f64, spans: &mut Vec<(f64, f64)>) {
+        spans.clear();
         if t < self.last {
             (self.met, self.last) = (0, f64::NEG_INFINITY);
             self.active.clear();
@@ -516,7 +528,8 @@ impl Sweep {
         }
         let edges = &self.edges;
         self.active.retain(|&i| edges.get(i).is_some_and(|e| e.ta.max(e.tb) > t));
-        let mut crossings: Vec<(f64, i32, usize)> = Vec::with_capacity(self.active.len());
+        let crossings = &mut self.crossings;
+        crossings.clear();
         for &i in &self.active {
             let Some(e) = edges.get(i) else { continue };
             let f = (t - e.ta) / (e.tb - e.ta);
@@ -528,7 +541,6 @@ impl Sweep {
         // Along the row; crossings at one place in the outlines' order of their edges (which
         // decides, by the fill rule, whether two stretches that meet there are one).
         crossings.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.2.cmp(&b.2)));
-        let mut spans: Vec<(f64, f64)> = Vec::new();
         match self.rule {
             FillRule::EvenOdd => {
                 for pair in crossings.chunks(2) {
@@ -542,7 +554,7 @@ impl Sweep {
             FillRule::NonZero => {
                 let mut winding = 0;
                 let mut start = 0.0;
-                for (s, dir, _) in crossings {
+                for &(s, dir, _) in crossings.iter() {
                     let before = winding;
                     winding += dir;
                     if before == 0 && winding != 0 {
@@ -553,7 +565,6 @@ impl Sweep {
                 }
             }
         }
-        spans
     }
 }
 

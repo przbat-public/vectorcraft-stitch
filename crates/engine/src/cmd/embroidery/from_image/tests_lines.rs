@@ -673,3 +673,29 @@ fn a_wide_line_set_to_lines_is_sewn_end_to_end() {
     });
     assert_eq!(cap, Some(vectorcraft_doc::LineCap::Butt));
 }
+
+/// A hairline of a colour set to Lines stays a line, however narrow (the project owner's choice,
+/// 2026-11-07, „Włoski w „Liniach” zostają (polecam)”): a grey line 0.3 mm wide between black and
+/// white, a blend of the two as anti-aliasing paints one and narrower than a thread, is one line
+/// along its middle, not a band joined to its neighbour; set to Auto, it is such a band.
+#[test]
+fn a_hairline_set_to_lines_stays_a_line() {
+    const GREY: [u8; 4] = [96, 96, 96, 255];
+    let paint = |q: Point| {
+        if (q.x - 10.0).abs() <= 0.15 {
+            GREY
+        } else if q.x < 10.0 {
+            [0, 0, 0, 255]
+        } else {
+            WHITE
+        }
+    };
+    let mut s = placed(&picture(20.0, 10.0, PX_PER_MM, paint), PX_PER_MM);
+    let p = json!({"colors": 3, "background": "none", "colorChoices": [{"color": hex(GREY), "job": "lines"}]});
+    let r = digitize(&mut s, p, true);
+    let lines = r["areas"].as_array().unwrap().iter().filter(|a| !a["line"].is_null()).count();
+    assert_eq!(lines, 1, "warnings {}; areas {}", r["warnings"], r["areas"]);
+    let r = digitize(&mut s, json!({"colors": 3, "background": "none"}), true);
+    let banded = r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == json!("bandsJoined"));
+    assert!(banded && r["areas"].as_array().unwrap().iter().all(|a| a["line"].is_null()), "{}", r["warnings"]);
+}

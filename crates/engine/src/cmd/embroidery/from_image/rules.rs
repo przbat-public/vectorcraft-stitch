@@ -18,7 +18,9 @@
 //!   but what a picture leaves along an edge: the darker or lighter band a JPEG rings round a sharp
 //!   edge, the blend anti-aliasing paints between two colours, a pixel or three wide. It joins the
 //!   neighbour nearest its colour. A wider thin area in an in-between colour (a grey outline round
-//!   black on white) is drawn on purpose: the line rule keeps it when it is long.
+//!   black on white) is drawn on purpose: the line rule keeps it when it is long. So is a band of a
+//!   colour a person set to Lines, however narrow (the project owner's choice, 2026-11-07, „Włoski
+//!   w „Liniach” zostają (polecam)”): it is no band, and stays a line.
 //!
 //! The background is never sewn, and areas join it as they join any area: a speck in it vanishes.
 //! What lies inside what, and which islands are sewn over the area round them, is decided once
@@ -208,10 +210,12 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         near.iter().any(|&o| o != c && delta_e_rgb(c, o) <= SLIVER_DELTA_E)
             || near.iter().enumerate().any(|(k, &x)| near.iter().skip(k + 1).any(|&y| is_mix(c, x, y)))
     };
+    // A colour set to Lines has no bands: a hairline of it is drawn on purpose.
+    let as_lines = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).is_some_and(|r| r.job == Job::Lines);
     let mut sliver: Vec<bool> = Vec::with_capacity(n);
     for i in 0..n {
         vectorcraft_doc::cancel::check()?;
-        sliver.push(!background(i) && is_sliver(i));
+        sliver.push(!background(i) && !as_lines(i) && is_sliver(i));
     }
     let mut parent: Vec<usize> = (0..n).collect();
     let mut pixels: Vec<usize> = regions.areas.iter().map(|a| a.pixels).collect();

@@ -3251,7 +3251,8 @@ millimetres again. The stages, each a module, each reported to a progress sink
    wider than a thread (0.4 mm, the owner's choice) in nearly a neighbour's colour, or a blend of
    two as anti-aliasing paints it, joins the neighbour nearest its colour, whatever its size, while
    a wider one (a grey outline round black on white) is drawn on purpose and kept, as a line when
-   it is long; an area inside one other alone is sewn
+   it is long, and so is one of a colour set to Lines, however narrow (the owner's choice,
+   2026-11-07, „Włoski w „Liniach” zostają (polecam)”); an area inside one other alone is sewn
    after it, and over it with no hole cut when narrower than 4 mm (the owner's choice). More than
    10,000 areas is refused with advice.
 7. **The centre lines** (`centre.rs`), of every line of a colour sewn by the rules, kept unsewn or

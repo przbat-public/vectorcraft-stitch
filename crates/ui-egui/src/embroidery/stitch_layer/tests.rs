@@ -95,6 +95,7 @@ fn until_stitches(app: &mut VectorcraftApp, ctx: &egui::Context, mut time: f64) 
 #[test]
 fn the_stitches_are_drawn_from_their_own_texture_over_the_fabric() {
     let mut app = app();
+    app.canvas.worker_started = true; // every frame on this thread, however long it takes
     let ctx = egui::Context::default();
     let shapes = frame(&mut app, &ctx, 0.0);
     assert!(!drawn_with(&shapes, art_texture(&app)).is_empty(), "the art");
@@ -187,6 +188,7 @@ fn the_fabric_has_the_documents_colour() {
 #[test]
 fn back_to_the_art_never_shows_stale_art() {
     let mut app = app();
+    app.canvas.worker_started = true; // every frame on this thread, however long it takes
     let ctx = egui::Context::default();
     frame(&mut app, &ctx, 0.0);
     app.run("view.stitchPreview", json!({"on": true})).unwrap();

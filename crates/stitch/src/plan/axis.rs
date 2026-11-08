@@ -9,12 +9,18 @@
 //! planner's own row sweep (`super::area::Sweep`, by the shape's fill rule, holes left out),
 //! exactly along each of [`SHAPE_AXIS_BANDS`] bands across the shape and by the band's middle
 //! across it: so a shape's holes, crossings and either fill rule are measured as its rows are sewn.
+//!
+//! A fill made of separate pieces (outlines that neither cross, touch nor lie one inside the
+//! other: a word's letters, or a logo's parts, saved as one shape) is measured piece by piece, each
+//! piece's rows across its own length (the project owner's choice, 2026-11-07, „Każdy kawałek
+//! osobno (polecam)”): measured together, two upright bars side by side are wider than tall, and
+//! their rows would run along each bar.
 
 use vectorcraft_geom::{BezPath, FillRule};
 
-use super::area::Area;
+use super::area::{Area, Grid};
 use super::fill::{closed_subpaths, outlines};
-use super::geometry::Axes;
+use super::geometry::{Axes, SubPath};
 
 /// How many bands across the shape its moments are summed over. An estimate: on a 10 × 30 mm bar
 /// turned every 15°, the axis comes within a hundredth of a degree.
@@ -47,8 +53,8 @@ pub struct ShapeAxis {
 }
 
 /// The long axis of `path` (millimetres) filled by `rule`, from its area's second moments (the
-/// module's notes); `None` for a shape with no area, as wide every way (its spread the same in
-/// every direction), or not finite.
+/// module's notes), all its outlines together; `None` for a shape with no area, as wide every way
+/// (its spread the same in every direction), or not finite.
 pub fn shape_axis(path: &BezPath, rule: FillRule) -> Option<ShapeAxis> {
     if !super::in_range(path) {
         return None;
@@ -58,7 +64,12 @@ pub fn shape_axis(path: &BezPath, rule: FillRule) -> Option<ShapeAxis> {
     if outlines.is_empty() {
         return None;
     }
-    let shape = Area { outlines: &outlines, rule, grid: None };
+    measured(Area { outlines: &outlines, rule, grid: None })?.1
+}
+
+/// `shape`'s area (square millimetres, by its fill rule) and its long axis ([`shape_axis`]), `None`
+/// for an area that isn't a positive number; the axis `None` for a shape as wide every way.
+fn measured(shape: Area<'_>) -> Option<(f64, Option<ShapeAxis>)> {
     let axes = Axes::new(0.0);
     let (lo, hi) = shape.extent(axes.across)?;
     let band = (hi - lo) / SHAPE_AXIS_BANDS as f64;
@@ -90,21 +101,121 @@ pub fn shape_axis(path: &BezPath, rule: FillRule) -> Option<ShapeAxis> {
     let spread = (((m20 - m02) / 2.0).powi(2) + m11 * m11).sqrt();
     let (long, short) = (half_sum + spread, half_sum - spread);
     if !(long.is_finite() && short.is_finite()) || short <= 0.0 || spread <= 0.0 {
-        return None;
+        return Some((a, None));
     }
     let angle = (0.5 * (2.0 * m11).atan2(m20 - m02)).to_degrees().rem_euclid(HALF_TURN);
-    Some(ShapeAxis { angle, elongation: (long / short).sqrt() })
+    Some((a, Some(ShapeAxis { angle, elongation: (long / short).sqrt() })))
 }
 
 /// The angle a fill's rows run at across `path`'s length (degrees as the planner counts them,
-/// rounded to [`SHAPE_ANGLE_STEP`]): square to its long axis ([`shape_axis`]), when it is at least
-/// [`SHAPE_AXIS_MIN_ELONGATION`] times as long as wide; `None` otherwise (the rows keep the fixed
-/// angle). With the axis.
+/// rounded to [`SHAPE_ANGLE_STEP`]): square to its long axis ([`shape_axis`]), all its outlines
+/// together, when it is at least [`SHAPE_AXIS_MIN_ELONGATION`] times as long as wide; `None`
+/// otherwise (the rows keep the fixed angle). With the axis.
 pub fn rows_across(path: &BezPath, rule: FillRule) -> Option<(f64, ShapeAxis)> {
     let axis = shape_axis(path, rule)?;
+    Some((across(axis)?, axis))
+}
+
+/// The rows across a shape with long axis `axis` ([`rows_across`]), `None` for one about as long
+/// as wide.
+fn across(axis: ShapeAxis) -> Option<f64> {
     if axis.elongation < SHAPE_AXIS_MIN_ELONGATION {
         return None;
     }
     let across = ((axis.angle + QUARTER_TURN) / SHAPE_ANGLE_STEP).round() * SHAPE_ANGLE_STEP;
-    Some((across.rem_euclid(HALF_TURN), axis))
+    Some(across.rem_euclid(HALF_TURN))
+}
+
+/// One separate piece of a fill as the rows across the shape measure it ([`rows_by_piece`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PieceRows {
+    /// The direction its rows run (degrees as the planner counts them): across it
+    /// ([`rows_across`]), or the fixed angle given for a piece about as long as wide.
+    pub angle: f64,
+    /// Whether they run across it: it is at least [`SHAPE_AXIS_MIN_ELONGATION`] times as long as
+    /// wide.
+    pub across: bool,
+    /// Its long axis; `None` for a piece with no area or as wide every way.
+    pub axis: Option<ShapeAxis>,
+    /// Its area by the fill rule (square millimetres).
+    pub area: f64,
+}
+
+impl PieceRows {
+    /// The rows of `shape`, one piece, `fixed` the angle it keeps when about as long as wide.
+    fn of(shape: Area<'_>, fixed: f64) -> Self {
+        let (area, axis) = measured(shape).unwrap_or((0.0, None));
+        let rows = axis.and_then(across);
+        Self { angle: rows.unwrap_or(fixed), across: rows.is_some(), axis, area }
+    }
+
+    /// The largest of `pieces` (the first of equally large ones): the one whose rows an object's
+    /// rows are reported by.
+    pub fn largest(pieces: &[PieceRows]) -> Option<PieceRows> {
+        pieces.iter().copied().reduce(|a, b| if b.area > a.area { b } else { a })
+    }
+}
+
+/// The most directions a fill's pieces are sewn in, one after another ([`Rows::AcrossShape`]):
+/// past it, the shape's rows are measured all its pieces together, a bound on the work of ordering
+/// them (each step of the order weighs every direction left). An estimate: a sunburst of 36 rays
+/// saved as one shape has 36.
+///
+/// [`Rows::AcrossShape`]: super::Rows::AcrossShape
+pub(super) const MAX_DIRECTIONS: usize = 64;
+
+/// The rows of each separate piece of `shape` ([`Area::pieces_apart`]), with the piece's outlines,
+/// in the order of the pieces' first outlines; `fixed` the angle a piece about as long as wide
+/// keeps. Past [`MAX_DIRECTIONS`] directions, one piece of every outline.
+pub(super) fn piece_rows<'a>(shape: Area<'a>, fixed: f64) -> Vec<(Vec<&'a SubPath>, PieceRows)> {
+    let pieces: Vec<(Vec<&'a SubPath>, PieceRows)> = shape
+        .pieces_apart()
+        .into_iter()
+        .map(|piece| {
+            let outlines: Vec<&'a SubPath> = piece.iter().filter_map(|&i| shape.outlines.get(i).copied()).collect();
+            let rows = PieceRows::of(Area { outlines: &outlines, rule: shape.rule, grid: None }, fixed);
+            (outlines, rows)
+        })
+        .collect();
+    if directions(pieces.iter().map(|(_, r)| r.angle)).len() > MAX_DIRECTIONS {
+        return vec![(shape.outlines.to_vec(), PieceRows::of(Area { grid: None, ..shape }, fixed))];
+    }
+    pieces
+}
+
+/// The different directions among `angles` (degrees), in the order they first come: two within
+/// half a [`SHAPE_ANGLE_STEP`] are one.
+pub(super) fn directions(angles: impl Iterator<Item = f64>) -> Vec<f64> {
+    let mut out: Vec<f64> = Vec::new();
+    for a in angles {
+        if !out.iter().any(|b| same_direction(a, *b)) {
+            out.push(a);
+        }
+    }
+    out
+}
+
+/// Whether two directions of rows (degrees) are one: within half a [`SHAPE_ANGLE_STEP`].
+pub(super) fn same_direction(a: f64, b: f64) -> bool {
+    (a - b).abs() < SHAPE_ANGLE_STEP / 2.0
+}
+
+/// The rows of each separate piece of `path` (millimetres) filled by `rule`, as a fill whose rows
+/// run across the shape sews them ([`Rows::AcrossShape`]): outlines that neither cross, touch nor
+/// lie one inside the other are pieces apart, each measured alone; `fixed` the angle a piece about
+/// as long as wide keeps. In the order of the pieces' first outlines; none for a shape with no
+/// closed outline or out of range.
+///
+/// [`Rows::AcrossShape`]: super::Rows::AcrossShape
+pub fn rows_by_piece(path: &BezPath, rule: FillRule, fixed: f64) -> Vec<PieceRows> {
+    if !super::in_range(path) {
+        return Vec::new();
+    }
+    let subs = closed_subpaths(path);
+    let outlines = outlines(&subs);
+    if outlines.is_empty() {
+        return Vec::new();
+    }
+    let grid = Grid::new(&outlines);
+    piece_rows(Area { outlines: &outlines, rule, grid: grid.as_ref() }, fixed).into_iter().map(|(_, r)| r).collect()
 }

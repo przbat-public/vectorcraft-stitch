@@ -915,13 +915,11 @@ impl<'a> Digitizer<'a> {
         }
         let Sewing { unit, settings, style, why, width, cap, clip_stitches } = sewing;
         let mut params = plan::Params { cap, ..settings.params(style, width) };
-        // The document's rows across the shape: a fill long enough rows square to its length, the
-        // shape as it is planned (grown and clipped); one about as long as wide, the rows it had.
-        if plan::sewn_style(&params) == Style::Fill
-            && settings.by_shape()
-            && let Some((across, _)) = plan::rows_across(bp, rule)
-        {
-            params.angle = across;
+        // The document's rows across the shape: each separate piece of a fill long enough rows
+        // square to its length, the shape as it is planned (grown and clipped); one about as long
+        // as wide, the rows it had. The planner measures them, once the plan's size is known.
+        if plan::sewn_style(&params) == Style::Fill && settings.by_shape() {
+            params.rows = plan::Rows::AcrossShape;
         }
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
@@ -967,10 +965,12 @@ impl<'a> Digitizer<'a> {
             }
         };
         // Kept in the cache too, the stitches are copied into the block.
-        let (stitches, columns, widths, reach) = match Arc::try_unwrap(planned) {
-            Ok(UnitStitches { stitches, columns, widths, reach }) => (stitches, columns, widths, reach),
-            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths, kept.reach),
+        let (stitches, columns, widths, reach, rows) = match Arc::try_unwrap(planned) {
+            Ok(UnitStitches { stitches, columns, widths, reach, rows }) => (stitches, columns, widths, reach, rows),
+            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths, kept.reach, kept.rows),
         };
+        // Recorded with the rows its largest piece is sewn at, when the planner laid them across it.
+        let params = plan::Params { angle: rows.unwrap_or(params.angle), ..params };
         let satin_widths = match plan::sewn_style(&params) {
             Style::Satin => Some([params.width; 2]),
             Style::Fill => widths,

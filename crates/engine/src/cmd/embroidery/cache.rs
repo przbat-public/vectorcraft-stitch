@@ -22,7 +22,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use vectorcraft_geom::{BezPath, FillRule, PathEl, Point};
-use vectorcraft_stitch::plan::{Cap, Params, Start, Style, Underlay};
+use vectorcraft_stitch::plan::{Cap, Params, Rows, Start, Style, Underlay};
 
 use super::unit::{Parted, UnitRequest, UnitStitches};
 
@@ -207,6 +207,7 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
         stitch_length,
         density,
         angle,
+        rows,
         pull,
         pull_percent,
         push,
@@ -267,6 +268,10 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
         Cap::Butt => 0,
         Cap::Round => 1,
         Cap::Square => 2,
+    });
+    k.push(match rows {
+        Rows::Fixed => 0,
+        Rows::AcrossShape => 1,
     });
 }
 

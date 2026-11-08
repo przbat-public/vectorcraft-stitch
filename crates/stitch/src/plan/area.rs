@@ -128,6 +128,100 @@ impl Area<'_> {
         }
     }
 
+    /// `visit` called with every edge that may cross the horizontal line through `q` to its right
+    /// (and maybe others), each once, with its place in the outlines' list of edges
+    /// ([`Area::edges_along`]): with the grid, the edges in the cells that line passes; without,
+    /// all of them.
+    fn edges_right_of(&self, q: Point, mut visit: impl FnMut(usize, Point, Point)) {
+        match self.grid {
+            Some(grid) => {
+                for i in grid.right_of_index(q) {
+                    if let (Some(&id), Some(&(c, d))) = (grid.ids.get(i), grid.edges.get(i)) {
+                        visit(id, c, d);
+                    }
+                }
+            }
+            None => self.edges().enumerate().for_each(|(id, (c, d))| visit(id, c, d)),
+        }
+    }
+
+    /// The area's separate pieces, as indices into its outlines: two outlines that cross or touch
+    /// (an edge of one meets an edge of the other, [`meet`]) or that lie one inside the other are
+    /// in one piece, so that each piece is an outline with everything inside it and whatever
+    /// crosses or touches them. A piece's outlines come in their order here, the pieces in the
+    /// order of their first outline. Every outline is one piece once the edges looked at pass
+    /// [`MAX_APART_WORK`], a bound on the work.
+    pub(super) fn pieces_apart(&self) -> Vec<Vec<usize>> {
+        let n = self.outlines.len();
+        let whole = || if n == 0 { Vec::new() } else { vec![(0..n).collect::<Vec<usize>>()] };
+        if n <= 1 {
+            return whole();
+        }
+        // Where each outline's edges start in the list of edges, and which outline an edge is of.
+        let starts: Vec<usize> = self
+            .outlines
+            .iter()
+            .scan(0usize, |next, s| {
+                let start = *next;
+                *next = next.saturating_add(s.pts.len());
+                Some(start)
+            })
+            .collect();
+        let owner = |id: usize| starts.partition_point(|&s| s <= id).saturating_sub(1);
+        // Each outline's piece, as a forest of outlines (union and find).
+        let mut up: Vec<usize> = (0..n).collect();
+        let mut work = 0usize;
+        for (i, sub) in self.outlines.iter().enumerate() {
+            // Its edges against the edges near them: crossing or touching.
+            let k = sub.pts.len();
+            for e in 0..k {
+                let (Some(&a), Some(&b)) = (sub.pts.get(e), sub.pts.get((e + 1) % k)) else { continue };
+                self.edges_along(a, b, |id, c, d| {
+                    work = work.saturating_add(1);
+                    let j = owner(id);
+                    if j != i && root(&mut up, i) != root(&mut up, j) && meet(a, b, c, d) {
+                        join(&mut up, i, j);
+                    }
+                });
+                if work > MAX_APART_WORK {
+                    return whole();
+                }
+            }
+            // Inside another (they neither cross nor touch, else they are joined already): its
+            // first point is, by that outline's own winding round it.
+            let Some(&q) = sub.pts.first() else { continue };
+            let mut windings: HashMap<usize, i32> = HashMap::new();
+            self.edges_right_of(q, |id, c, d| {
+                work = work.saturating_add(1);
+                let j = owner(id);
+                if j != i {
+                    *windings.entry(j).or_insert(0) += edge_winding(c, d, q);
+                }
+            });
+            if work > MAX_APART_WORK {
+                return whole();
+            }
+            for (j, w) in windings {
+                if w != 0 {
+                    join(&mut up, i, j);
+                }
+            }
+        }
+        let mut pieces: Vec<Vec<usize>> = Vec::new();
+        let mut piece_of: HashMap<usize, usize> = HashMap::new();
+        for i in 0..n {
+            let r = root(&mut up, i);
+            let k = *piece_of.entry(r).or_insert_with(|| {
+                pieces.push(Vec::new());
+                pieces.len() - 1
+            });
+            if let Some(piece) = pieces.get_mut(k) {
+                piece.push(i);
+            }
+        }
+        pieces
+    }
+
     /// Whether `q` lies on one of the outlines' edges (within [`ON_EDGE`]).
     pub(super) fn on_outline(&self, q: Point) -> bool {
         self.any_edge_along(q, q, |c, d| near_segment(q, c, d))
@@ -467,23 +561,56 @@ impl Sweep {
 /// its right counts one, plus or minus by its direction. Edges that don't cross it count nothing,
 /// so any set that includes every crossing one will do; none may come twice.
 fn winding(edges: impl Iterator<Item = (Point, Point)>, q: Point) -> i32 {
-    let mut winding = 0i32;
-    for (a, b) in edges {
-        let side = (b - a).cross(q - a);
-        if a.y <= q.y {
-            if b.y > q.y && side > 0.0 {
-                winding += 1;
-            }
-        } else if b.y <= q.y && side < 0.0 {
-            winding -= 1;
-        }
-    }
-    winding
+    edges.map(|(a, b)| edge_winding(a, b, q)).sum()
+}
+
+/// What edge `a`–`b` adds to a winding number round `q` ([`winding`]): one, plus or minus by its
+/// direction, when it crosses the horizontal line through `q` to its right; else nothing.
+fn edge_winding(a: Point, b: Point, q: Point) -> i32 {
+    let side = (b - a).cross(q - a);
+    if a.y <= q.y { i32::from(b.y > q.y && side > 0.0) } else { -i32::from(b.y <= q.y && side < 0.0) }
+}
+
+/// Whether segments `a`–`b` and `c`–`d` meet: they cross, or an end of one lies on the other
+/// (within [`ON_EDGE`]: they touch, or run along each other).
+fn meet(a: Point, b: Point, c: Point, d: Point) -> bool {
+    crossing(a, b, c, d) || near_segment(a, c, d) || near_segment(b, c, d) || near_segment(c, a, b) || near_segment(d, a, b)
 }
 
 /// How near a point must be to an edge to lie on it (millimetres): row ends are computed on the
 /// edges, so they lie within rounding of them.
 const ON_EDGE: f64 = 1e-6;
+
+/// The most edges [`Area::pieces_apart`] looks at, against the edges near each one and along a
+/// line from each outline: past it, the area is one piece (a bound on the work, an estimate: a
+/// design's fill of 100,000 edges with a few near each, several times over).
+const MAX_APART_WORK: usize = 2_000_000;
+
+/// The outline at the root of outline `i`'s piece in the forest `up` ([`Area::pieces_apart`]),
+/// each outline on the way pointed at the one two up (path halving).
+fn root(up: &mut [usize], mut i: usize) -> usize {
+    while let Some(&parent) = up.get(i) {
+        if parent == i {
+            break;
+        }
+        let grand = up.get(parent).copied().unwrap_or(parent);
+        if let Some(u) = up.get_mut(i) {
+            *u = grand;
+        }
+        i = grand;
+    }
+    i
+}
+
+/// Outlines `i` and `j` in one piece of the forest `up` ([`root`]).
+fn join(up: &mut [usize], i: usize, j: usize) {
+    let (a, b) = (root(up, i), root(up, j));
+    if a != b
+        && let Some(u) = up.get_mut(a.max(b))
+    {
+        *u = a.min(b);
+    }
+}
 /// How far inside a line (a share of its length) a corner it passes counts as passed inside it,
 /// not at its ends, where row ends and corners lie within rounding.
 const CORNER_INSIDE: f64 = 1e-6;
@@ -631,6 +758,11 @@ impl Grid {
     /// passes: where the cell before (to the left, also passed) doesn't hold it. Nothing is
     /// allocated: the inside test runs millions of times in a fill.
     fn right_of(&self, q: Point) -> impl Iterator<Item = (Point, Point)> + '_ {
+        self.right_of_index(q).filter_map(|i| self.edges.get(i).copied())
+    }
+
+    /// [`Grid::right_of`], each edge given by its index in the grid's list.
+    fn right_of_index(&self, q: Point) -> impl Iterator<Item = usize> + '_ {
         let passed = q.x.is_finite() && q.y.is_finite() && q.y >= self.y0 && q.y <= self.y0 + self.cell * self.ny as f64;
         let (r, first) = if passed { (self.row(q.y), self.col(q.x)) } else { (0, self.nx) };
         let cell = move |c: usize| self.cells.get(r * self.nx + c).map_or(&[][..], Vec::as_slice);
@@ -639,7 +771,7 @@ impl Grid {
                 let before = if c > first { cell(c - 1) } else { &[][..] };
                 cell(c).iter().filter(move |i| !before.contains(i))
             })
-            .filter_map(|&i| self.edges.get(i as usize).copied())
+            .map(|&i| i as usize)
     }
 
     /// Whether `hit` holds for any edge in the cells segment `a`–`b` passes through (walked cell by

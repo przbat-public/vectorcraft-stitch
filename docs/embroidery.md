@@ -424,8 +424,8 @@ the document's fabric (`fabric`), the thread's weight (`threadWeight`), whether 
 join (`joinSameColor`), the machine's values (`machine`: `jumpLength`, `trimLength`, `minStitch`,
 `splitLength`, `speed`), each merged value by value, and the rows of every fill that sets no angle
 (`fillAngle`: degrees counter-clockwise on the page, −360 to 360, turned with each object as the
-built-in 135° are, or `"acrossShape"`, each fill's rows square to its length: How a shape becomes
-stitches › Tatami fill; Document Setup's row for it comes with the digitizing window), `null`
+built-in 135° are, or `"acrossShape"`, each fill's rows square to its length, piece by piece: How a
+shape becomes stitches › Tatami fill; Document Setup's row for it comes with the digitizing window), `null`
 unsetting one; `embroidery.settings`
 reads them. Each is answered as stored (`settings`, which can be passed back: what equals the
 document's own changes nothing and isn't checked again, so a newer version's value passes back) and as
@@ -1005,10 +1005,20 @@ the fabric.
   spread), summed over the planner's own row sweep in 128 bands, so that holes and either fill
   rule count as they are sewn; the rows are rounded to a tenth of a degree. A shape less than 1.5
   times as long as wide by that measure (a disc, a square) keeps the fixed rows (an estimate, the
-  session's choice). `embroidery.info` reports such rows as `"auto"` with the rule
-  (`rowsAcrossShape`: the rows chosen, how much longer than wide the shape is), and the embroidery
-  tool's arrow points at them, hollow. The defaults, rows 0.38 mm apart and stitches up to 4 mm,
-  are Wilcom's tatami
+  session's choice). A fill made of separate pieces (outlines that neither cross, touch nor lie one
+  inside the other, as an SVG keeps a word's letters in one path) has each piece measured alone and
+  sewn across its own length (the owner's choice, 2026-11-07, „Każdy kawałek osobno (polecam)”):
+  together, two upright bars side by side are wider than tall, and their rows ran along each bar.
+  The pieces that run one way are sewn together, and the directions one after another, whichever
+  starts nearest the needle, as a fill's narrow parts and its rest are; a fill with narrow parts
+  sews each piece of its rest at the rows of the piece it lies in. An island inside a hole is
+  measured with the piece around it. Past 64 directions, or past 2,000,000 edges looked at to tell
+  the pieces apart, the shape is measured whole (bounds on the work, estimates). The planner
+  measures the pieces itself, once the plan's size is checked, inside the unit's plan the cache
+  keeps. `embroidery.info` reports such rows as `"auto"` with the rule (`rowsAcrossShape`: the rows
+  chosen, how much longer than wide the shape is, and how many pieces it has; its largest piece's
+  for an object of several), and the embroidery tool's arrow points at them, hollow. The defaults,
+  rows 0.38 mm apart and stitches up to 4 mm, are Wilcom's tatami
   defaults ([Wilcom: satin and tatami stitch](https://wilcom.com/resources/blog/mastering-basic-stitch-types-satin-stitch-and-tatami-stitch)),
   and 0.38 mm is the spacing David Morrish's *Digital Embroidery* (2025, ch. 2) gives for 40 wt
   thread without gaps (0.40 mm lies the threads flush). Fabrics that need more or less wait for

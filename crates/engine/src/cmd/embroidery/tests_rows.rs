@@ -144,3 +144,73 @@ fn info_and_the_arrow_say_what_the_rows_are() {
     let (degrees, set) = super::info::fill_rows(doc, n, &Options::default(), &super::resolve::DocLayer::of(doc)).unwrap();
     assert!(apart(degrees, chose) < 1e-9 && !set, "the arrow at {degrees}, set {set}");
 }
+
+/// Two upright bars 10 × 40 mm in one path, 40 mm apart (as an SVG keeps a word's letters): under
+/// the rule each bar's rows run across it (0° to the planner), as each alone's do, though the two
+/// together are wider than tall; `embroidery.info` says so, the path's two pieces measured apart.
+#[test]
+fn each_part_of_one_path_has_rows_across_it() {
+    let mut s = blank();
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    let bar = |x: f64| {
+        let (a, b, t, u) = (x * PT_PER_MM, (x + 10.0) * PT_PER_MM, 20.0 * PT_PER_MM, 60.0 * PT_PER_MM);
+        format!("M {a} {t} L {b} {t} L {b} {u} L {a} {u} Z ")
+    };
+    let id = run(&mut s, "path.create", json!({"d": bar(10.0) + &bar(60.0)}))["id"].as_u64().unwrap();
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    assert!(apart(rows_of(&s, id), 0.0) < 0.05, "rows at {}", rows_of(&s, id));
+    let r = run(&mut s, "embroidery.info", json!({"ids": [id]}));
+    let rule = &r["fill"]["settings"]["angle"]["rule"];
+    assert_eq!((&rule["values"]["pieces"], &rule["values"]["across"]), (&json!(2), &json!(true)), "{rule}");
+    assert!(apart(rule["chose"].as_f64().unwrap(), 0.0) < 0.05, "{rule}");
+}
+
+/// The direction most of the needle-down stitches longer than a millimetre with both ends inside
+/// `(x0, y0, x1, y1)` (millimetres) run in, planned without underlay so that a fill's stitches are
+/// its rows: degrees as the planner counts them, from 0 up to a half turn (the median).
+fn sewn_rows(s: &Session, (x0, y0, x1, y1): (f64, f64, f64, f64)) -> f64 {
+    let plan = digitize(&s.doc().unwrap().doc, &Options::from_json(&json!({"underlay": false})).unwrap(), None).unwrap();
+    let inside = |p: &vectorcraft_stitch::Stitch| p.x > x0 && p.x < x1 && p.y > y0 && p.y < y1;
+    let mut angles: Vec<f64> = plan
+        .blocks
+        .iter()
+        .flat_map(|b| b.stitches.windows(2))
+        .filter_map(|w| {
+            let [a, z] = w else { return None };
+            let sewn = a.command == vectorcraft_stitch::Command::Stitch && z.command == vectorcraft_stitch::Command::Stitch;
+            (sewn && inside(a) && inside(z) && a.distance(*z) > 1.0).then(|| (z.y - a.y).atan2(z.x - a.x).to_degrees().rem_euclid(180.0))
+        })
+        .collect();
+    assert!(!angles.is_empty(), "no stitch inside");
+    angles.sort_by(f64::total_cmp);
+    angles[angles.len() / 2]
+}
+
+/// Two pieces apart in one path, one with a narrow tab sewn as a satin column: the rest of each is
+/// sewn across its own piece's length, the tall bar's rows across it (0° to the planner) and the
+/// wide bar's up and down (90°).
+#[test]
+fn each_piece_with_narrow_parts_has_rows_across_it() {
+    let mut s = blank();
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    let at = |pts: &[(f64, f64)]| {
+        let mut d = String::new();
+        for (k, (x, y)) in pts.iter().enumerate() {
+            d += &format!("{} {} {} ", if k == 0 { "M" } else { "L" }, x * PT_PER_MM, y * PT_PER_MM);
+        }
+        d + "Z "
+    };
+    // A tall bar 10 × 40 mm with a tab 3 mm wide reaching 15 mm out of its middle, and a wide bar
+    // 40 × 10 mm.
+    let tall = at(&[(10.0, 20.0), (20.0, 20.0), (20.0, 38.5), (35.0, 38.5), (35.0, 41.5), (20.0, 41.5), (20.0, 60.0), (10.0, 60.0)]);
+    let wide = at(&[(50.0, 20.0), (90.0, 20.0), (90.0, 30.0), (50.0, 30.0)]);
+    let id = run(&mut s, "path.create", json!({"d": tall + &wide}))["id"].as_u64().unwrap();
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    let plan = digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap();
+    let unit = plan.units.iter().find(|u| u.origin.node.0 == id).unwrap();
+    assert!(unit.columns.is_some(), "the tab is sewn as a satin column");
+    assert!(apart(sewn_rows(&s, (11.0, 21.0, 19.0, 37.0)), 0.0) < 1.0, "the tall bar's rows");
+    assert!(apart(sewn_rows(&s, (51.0, 21.0, 89.0, 29.0)), 90.0) < 1.0, "the wide bar's rows");
+}

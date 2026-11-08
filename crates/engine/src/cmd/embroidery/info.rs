@@ -21,7 +21,7 @@ use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
 use vectorcraft_geom::FillRule;
 use vectorcraft_stitch::plan::{
-    Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, SHAPE_AXIS_MIN_ELONGATION, Style, TATAMI_UNDERLAY_MIN, Underlay, rows_across,
+    Params, PieceRows, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, SHAPE_AXIS_MIN_ELONGATION, Style, TATAMI_UNDERLAY_MIN, Underlay, rows_by_piece,
     satin_auto_underlay,
 };
 use vectorcraft_stitch::{Command, pt_to_mm};
@@ -667,20 +667,28 @@ fn outline_mm(n: &Node) -> Option<(BezPath, FillRule)> {
 /// What the document's rows across the shape chose for a fill of `n` sewn with `settings`, as
 /// `info`'s rules give it: the rows square to its outline's long axis (degrees counter-clockwise on
 /// the page), with how much longer it is than wide; for one about as long as wide, the rows it
-/// keeps. `None` where the rule doesn't decide (an angle set, no rule, not a fill). The plan
-/// measures the shape as it is planned (grown and clipped); this, the object's own outline.
+/// keeps. An object of separate pieces has each measured alone and sewn across its own length
+/// ([`rows_by_piece`]): its largest piece says, and `pieces` how many it has. `None` where the rule
+/// doesn't decide (an angle set, no rule, not a fill). The plan measures the shape as it is planned
+/// (grown and clipped); this, the object's own outline.
 fn rows_by_shape(n: &Node, style: Style, settings: &UnitSettings) -> Option<Value> {
     if style != Style::Fill || !settings.by_shape() {
         return None;
     }
-    let kept = super::options::planner_angle(settings.params(Style::Fill, 0.0).angle);
+    let kept = settings.params(Style::Fill, 0.0).angle;
     let (outline, rule) = outline_mm(n)?;
-    let axis = vectorcraft_stitch::plan::shape_axis(&outline, rule);
-    let across = rows_across(&outline, rule).map(|(a, _)| super::options::planner_angle(a));
+    let pieces = rows_by_piece(&outline, rule, kept);
+    let largest = PieceRows::largest(&pieces);
+    let across = largest.filter(|p| p.across);
     Some(json!({
         "id": "rowsAcrossShape",
-        "chose": across.unwrap_or(kept),
-        "values": {"elongation": axis.map(|a| (a.elongation * ELONGATION_HUNDREDTHS).round() / ELONGATION_HUNDREDTHS), "elongationMin": SHAPE_AXIS_MIN_ELONGATION, "across": across.is_some()},
+        "chose": super::options::planner_angle(across.map_or(kept, |p| p.angle)),
+        "values": {
+            "elongation": largest.and_then(|p| p.axis).map(|a| (a.elongation * ELONGATION_HUNDREDTHS).round() / ELONGATION_HUNDREDTHS),
+            "elongationMin": SHAPE_AXIS_MIN_ELONGATION,
+            "across": across.is_some(),
+            "pieces": pieces.len(),
+        },
     }))
 }
 

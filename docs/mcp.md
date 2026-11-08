@@ -7223,7 +7223,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   merged value by value, or null), `threadWeight`, `joinSameColor`, `machine` (`{jumpLength, trimLength, minStitch,
   splitLength, speed}`, merged) and `fillAngle` (the rows of every fill that sets no angle: degrees counter-clockwise on
   the page, −360 to 360, turned with each object as the built-in 135° are; `"acrossShape"`, each fill's rows square to
-  its length when it is at least 1.5 times as long as wide; `null`, the built-in rows), all reported in `settings` and
+  its length when it is at least 1.5 times as long as wide, each separate piece of a fill measured alone; `null`, the
+  built-in rows), all reported in `settings` and
   `resolved` (`fillAngle`: `{value, source}`, 135 by default) (each fabric value, the information values `thickness`,
   `stabilizer`, `topping` and `needlePoint` included, `{value, source, preset, changed}`; the colour `{value, source}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
   themselves, by key, and how many set any (`objectCount`), symbols' art included (read only, as `resolved`).
@@ -7520,8 +7521,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
   area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing,
   `{id: "rowsAcrossShape", chose: degrees (the rows across, as `angle` counts them), values: {elongation,
-  elongationMin, across}}` for a fill's rows the document lays across its shape (`across: false`: about as long as
-  wide, the fixed rows kept); `null` for a value set.
+  elongationMin, across, pieces}}` for a fill's rows the document lays across its shape (`across: false`: about as long as
+  wide, the fixed rows kept; `pieces`: how many separate pieces it has, each measured alone and sewn across its own
+  length, `chose`, `elongation` and `across` its largest piece's); `null` for a value set.
   A fill's `angle` set by the document's number is that number turned with its object, `source: "document"`, `section:
   "fillAngle"`.
   `applies` says whether the planner uses the key for the stitch the part is sewn in: a running line's `pull` or

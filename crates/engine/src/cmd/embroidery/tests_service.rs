@@ -423,7 +423,8 @@ fn the_units_used_least_recently_are_dropped_first() {
         )
     };
     // Each unit 100 stitches and a key of about 40 words: 4 such units don't fit a limit of 320.
-    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2] });
+    let unit =
+        || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2], rows: None });
     // Each step a plan of its own (one plan's units are never dropped for each other).
     let mut cache = UnitCache::with_limit(320);
     cache.begin();
@@ -444,7 +445,7 @@ fn the_units_used_least_recently_are_dropped_first() {
     let before = cache.units();
     cache.insert(
         key(&shapes[1]),
-        Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None, reach: [0.0; 2] }),
+        Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None, reach: [0.0; 2], rows: None }),
     );
     assert_eq!(cache.units(), before);
     assert!(cache.get(&key(&shapes[1])).is_none());
@@ -480,7 +481,8 @@ fn a_plan_keeps_its_first_units_when_not_all_fit() {
             None,
         )
     };
-    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2] });
+    let unit =
+        || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2], rows: None });
     // Two units of 100 stitches and their keys fit 320, three don't.
     let mut cache = UnitCache::with_limit(320);
     for _ in 0..3 {

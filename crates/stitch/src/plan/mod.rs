@@ -58,7 +58,7 @@ mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
-pub use axis::{SHAPE_ANGLE_STEP, SHAPE_AXIS_BANDS, SHAPE_AXIS_MIN_ELONGATION, ShapeAxis, rows_across, shape_axis};
+pub use axis::{PieceRows, SHAPE_ANGLE_STEP, SHAPE_AXIS_BANDS, SHAPE_AXIS_MIN_ELONGATION, ShapeAxis, rows_across, rows_by_piece, shape_axis};
 pub use ends::{Ends, MAX_JOIN_EXITS, MAX_JOIN_STARTS, Through, ends};
 pub use fill::MIN_AREA;
 pub use fill::TATAMI_UNDERLAY_MIN;
@@ -296,6 +296,19 @@ impl Cap {
     }
 }
 
+/// Which way a fill's rows run ([`Params::rows`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Rows {
+    /// At [`Params::angle`].
+    #[default]
+    Fixed,
+    /// Across each separate piece of the shape ([`rows_by_piece`]: outlines that neither cross,
+    /// touch nor lie one inside the other are pieces apart, as a word's letters saved as one shape
+    /// are), square to the piece's long axis when it is at least [`SHAPE_AXIS_MIN_ELONGATION`] times
+    /// as long as wide ([`rows_across`]); a rounder piece at [`Params::angle`].
+    AcrossShape,
+}
+
 /// What one shape is stitched as.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Params {
@@ -310,6 +323,9 @@ pub struct Params {
     /// commands count angles counter-clockwise, as everywhere else in VectorCraft; the engine
     /// converts them in one place (`cmd::embroidery::options::planner_angle`).
     pub angle: f64,
+    /// Fill only: whether the rows run at [`Params::angle`] or across each separate piece of the
+    /// shape ([`Rows`]), a piece about as long as wide keeping [`Params::angle`].
+    pub rows: Rows,
     /// Pull compensation: how much farther the stitches reach at each side so the fabric's pull
     /// does not leave a gap of background at an edge, millimetres, at two sides: a satin
     /// column's rails (the left one as its path runs, then the right one), a fill row's ends (its
@@ -437,6 +453,7 @@ impl Params {
                 stitch_length: RUNNING_STITCH,
                 density,
                 angle: 0.0,
+                rows: Rows::Fixed,
                 pull: [0.0; 2],
                 pull_percent: [0.0; 2],
                 push: [0.0; 2],
@@ -460,6 +477,7 @@ impl Params {
                 stitch_length: RUNNING_STITCH,
                 density,
                 angle: 0.0,
+                rows: Rows::Fixed,
                 pull: [PULL; 2],
                 pull_percent: [PULL_PERCENT; 2],
                 push: [PUSH; 2],
@@ -482,6 +500,7 @@ impl Params {
                 stitch_length: FILL_STITCH,
                 density,
                 angle: FILL_ANGLE,
+                rows: Rows::Fixed,
                 pull: [PULL; 2],
                 pull_percent: [PULL_PERCENT; 2],
                 push: [0.0; 2],
@@ -516,6 +535,7 @@ impl Params {
             stitch_length: clamp(self.stitch_length, d.stitch_length, STITCH_LENGTH_RANGE),
             density: clamp(self.density, d.density, DENSITY_RANGE),
             angle: if angle < 0.0 { angle + 360.0 } else { angle },
+            rows: self.rows,
             pull: sides(self.pull, d.pull, PULL_RANGE),
             pull_percent: sides(self.pull_percent, d.pull_percent, PULL_PERCENT_RANGE),
             push: sides(self.push, d.push, PUSH_RANGE),

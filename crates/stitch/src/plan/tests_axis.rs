@@ -1,10 +1,13 @@
 //! A filled shape's long axis and the rows across it: a bar's axis at every turn, rows square to
 //! it, round shapes left to the fixed angle, holes and either fill rule, shapes with no area or out
-//! of range, and an axis that moves with its shape and turns with it.
+//! of range, and an axis that moves with its shape and turns with it; a shape's separate pieces,
+//! each sewn across its own length, and the outlines that stay one piece.
 
 use vectorcraft_geom::{Affine, BezPath, FillRule, Point, Vec2};
 
+use super::axis::MAX_DIRECTIONS;
 use super::*;
+use crate::Command;
 
 /// How near a measured axis lies to the true one (degrees): the bands' rounding across the shape.
 const AXIS_TOLERANCE: f64 = 0.01;
@@ -130,4 +133,84 @@ fn the_axis_moves_and_turns_with_its_shape() {
         assert!(apart(there.angle, base.angle + turn) < AXIS_TOLERANCE * 10.0, "case {case}: {} turned {turn} is {}", base.angle, there.angle);
         assert!((there.elongation - base.elongation).abs() < 1e-2 * base.elongation, "case {case}");
     }
+}
+
+/// The direction (degrees as the planner counts them, from 0 up to a half turn) most of `out`'s
+/// needle-down stitches longer than a millimetre with both ends where `inside` holds run in: the
+/// median of their directions.
+fn sewn_direction(out: &[Stitch], inside: impl Fn(Point) -> bool) -> f64 {
+    let mut angles: Vec<f64> = out
+        .windows(2)
+        .filter_map(|w| {
+            let [a, z] = w else { return None };
+            let (pa, pz) = (Point::new(a.x, a.y), Point::new(z.x, z.y));
+            let sewn = a.command == Command::Stitch && z.command == Command::Stitch && inside(pa) && inside(pz) && pa.distance(pz) > 1.0;
+            sewn.then(|| (pz.y - pa.y).atan2(pz.x - pa.x).to_degrees().rem_euclid(180.0))
+        })
+        .collect();
+    assert!(!angles.is_empty(), "no stitch there");
+    angles.sort_by(f64::total_cmp);
+    angles[angles.len() / 2]
+}
+
+/// The fill parameters without underlay (its stitches are its rows), with the rows across the
+/// shape, `fixed` the angle a round piece keeps.
+fn across_shape(fixed: f64) -> Params {
+    Params { underlay: Underlay::None, rows: Rows::AcrossShape, angle: fixed, ..Params::for_style(Style::Fill) }
+}
+
+/// A tall bar and a wide bar apart in one path: each is measured alone and sewn across its own
+/// length, the tall one's rows at 0°, the wide one's at 90°, and each is covered; two tall bars
+/// have one direction and are sewn whole at it, exactly as fixed rows at that angle.
+#[test]
+fn separate_pieces_are_sewn_across_each_one() {
+    let mut path = rectangle(Point::new(5.0, 20.0), 10.0, 40.0, 0.0, true);
+    path.extend(rectangle(Point::new(50.0, 5.0), 40.0, 10.0, 0.0, true));
+    let pieces = rows_by_piece(&path, FillRule::NonZero, 45.0);
+    assert_eq!(pieces.len(), 2, "{pieces:?}");
+    assert!(pieces.iter().all(|p| p.across) && apart(pieces[0].angle, 0.0) < 1e-9 && apart(pieces[1].angle, 90.0) < 1e-9, "{pieces:?}");
+    let out = stitches(&path, FillRule::NonZero, &across_shape(45.0));
+    assert!(apart(sewn_direction(&out, |q| q.x < 10.5), 0.0) < 1.0, "the tall bar's rows");
+    assert!(apart(sewn_direction(&out, |q| q.x > 29.5), 90.0) < 1.0, "the wide bar's rows");
+    let mut two = rectangle(Point::new(5.0, 20.0), 10.0, 40.0, 0.0, true);
+    two.extend(rectangle(Point::new(55.0, 20.0), 10.0, 40.0, 0.0, true));
+    let fixed = Params { rows: Rows::Fixed, angle: 0.0, ..across_shape(45.0) };
+    assert_eq!(stitches(&two, FillRule::NonZero, &across_shape(45.0)), stitches(&two, FillRule::NonZero, &fixed));
+}
+
+/// Outlines that touch, cross or lie one inside the other are one piece: two squares sharing an
+/// edge are one rectangle twice as long as wide (rows across it), a plus of two crossing bars is as
+/// wide every way (the fixed rows), and a frame keeps its hole, and an island in the hole, by
+/// either fill rule.
+#[test]
+fn touching_crossing_and_nested_outlines_are_one_piece() {
+    let mut side_by_side = rectangle(Point::new(5.0, 5.0), 10.0, 10.0, 0.0, true);
+    side_by_side.extend(rectangle(Point::new(15.0, 5.0), 10.0, 10.0, 0.0, true));
+    let pieces = rows_by_piece(&side_by_side, FillRule::NonZero, 45.0);
+    assert!(pieces.len() == 1 && pieces[0].across && apart(pieces[0].angle, 90.0) < 1e-9, "{pieces:?}");
+    let mut plus = rectangle(Point::new(0.0, 0.0), 30.0, 6.0, 0.0, true);
+    plus.extend(rectangle(Point::new(0.0, 0.0), 6.0, 30.0, 0.0, true));
+    let pieces = rows_by_piece(&plus, FillRule::NonZero, 45.0);
+    assert!(pieces.len() == 1 && !pieces[0].across && pieces[0].angle == 45.0, "{pieces:?}");
+    let mut frame = rectangle(Point::new(0.0, 0.0), 40.0, 40.0, 0.0, true);
+    frame.extend(rectangle(Point::new(0.0, 0.0), 36.0, 10.0, 0.0, false));
+    frame.extend(rectangle(Point::new(0.0, 0.0), 20.0, 4.0, 0.0, true));
+    for rule in [FillRule::NonZero, FillRule::EvenOdd] {
+        assert_eq!(rows_by_piece(&frame, rule, 45.0).len(), 1, "{rule:?}");
+    }
+}
+
+/// Past [`MAX_DIRECTIONS`] directions a shape's pieces are measured together: small bars each
+/// turned 2.5° more than the one before are as many pieces as bars up to it, one piece past it.
+#[test]
+fn past_the_most_directions_the_pieces_are_measured_together() {
+    let bars = |n: usize| {
+        let mut p = BezPath::new();
+        for k in 0..n {
+            p.extend(rectangle(Point::new(10.0 * k as f64, 0.0), 6.0, 1.0, 2.5 * k as f64, true));
+        }
+        p
+    };
+    assert_eq!(rows_by_piece(&bars(MAX_DIRECTIONS), FillRule::NonZero, 45.0).len(), MAX_DIRECTIONS);
+    assert_eq!(rows_by_piece(&bars(MAX_DIRECTIONS + 1), FillRule::NonZero, 45.0).len(), 1);
 }

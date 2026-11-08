@@ -91,6 +91,11 @@ pub(crate) struct UnitStitches {
     /// How far from its entry and its exit point its first and last needle points can lie at best,
     /// millimetres ([`ends_reach`]): 0 where none is asked.
     pub(crate) reach: [f64; 2],
+    /// A fill whose rows run across its shape ([`plan::Rows::AcrossShape`]): the rows its largest
+    /// piece is sewn at when they run across it (degrees as the planner counts them), measured on
+    /// the shape the planner measured; `None` for a fill whose rows keep their angle, and for
+    /// everything else.
+    pub(crate) rows: Option<f64>,
 }
 
 /// The stitches `req` asks for: the shape planned in its style from where the needle is, a fill's
@@ -142,7 +147,18 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result
     stitches.shrink_to_fit();
     let asked = [matches!(start, Start::Entry(_)), exit.is_some()];
     let reach = ends_reach(shape, &params, columns.as_ref(), found, &stitches, asked);
-    Ok(UnitStitches { stitches, columns, widths, reach })
+    // The rows the planner laid across the shape it measured: with narrow parts, the rest and the
+    // parts together, as it travels in them.
+    let rows = if params.rows == plan::Rows::AcrossShape && plan::sewn_style(&params) == plan::Style::Fill {
+        let measured = match (columns, parts.and_then(|p| p.cut.as_ref())) {
+            (Some(_), Some((_, whole))) => plan::rows_by_piece(whole, FillRule::NonZero, params.angle),
+            _ => plan::rows_by_piece(shape, rule, params.angle),
+        };
+        plan::PieceRows::largest(&measured).filter(|p| p.across).map(|p| p.angle)
+    } else {
+        None
+    };
+    Ok(UnitStitches { stitches, columns, widths, reach, rows })
 }
 
 /// A fill's narrow parts sewn as satin ([`plan::narrow_columns`], by the widest narrow part

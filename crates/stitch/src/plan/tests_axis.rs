@@ -239,3 +239,26 @@ fn the_line_is_at_one_and_a_half() {
         assert!(rows_across(&rectangle(Point::new(0.0, 0.0), 15.0, 10.0, turn, true), FillRule::NonZero).is_some(), "{turn}°: 1.5");
     }
 }
+
+/// Far from the page's origin the moments keep their precision: a 3 × 1 mm bar turned 30° a
+/// kilometre out, and 1.4 km out, has its axis within the tolerance of 30°, as at the origin.
+#[test]
+fn far_from_the_origin_the_moments_keep_their_precision() {
+    for far in [0.0, 1.0e6, 1.4e6] {
+        let axis = shape_axis(&rectangle(Point::new(far, far), 3.0, 1.0, 30.0, true), FillRule::NonZero).expect("an axis");
+        assert!(apart(axis.angle, 30.0) < AXIS_TOLERANCE, "{far} mm out: the axis at {}", axis.angle);
+    }
+}
+
+/// The rows across are told in tenths by dividing, the decimal number itself (94.1, not
+/// 94.10000000000001), and from 0 up to a half turn: an upright bar's are 0°, never 180°.
+#[test]
+fn the_rows_are_told_in_tenths_from_0_up_to_a_half_turn() {
+    for (turn, rows) in [(4.1, 94.1), (55.7, 145.7), (90.0, 0.0), (0.0, 90.0)] {
+        let (across, _) = rows_across(&rectangle(Point::new(0.0, 0.0), 30.0, 10.0, turn, true), FillRule::NonZero).expect("rows across");
+        assert_eq!(across, rows, "turned {turn}°");
+    }
+    assert_eq!(told_rows(180.0), 0.0);
+    assert_eq!(told_rows(-45.04), 135.0);
+    assert_eq!(told_rows(359.96), 0.0);
+}

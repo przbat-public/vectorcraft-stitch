@@ -1003,7 +1003,10 @@ the fabric.
   ([PE-Design](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/15_1161138.html)).
   The axis comes from the second moments of the shape's area (the direction of its largest
   spread), summed over the planner's own row sweep in 128 bands, so that holes and either fill
-  rule count as they are sewn; the rows are rounded to a tenth of a degree. A shape less than 1.5
+  rule count as they are sewn, and taken from the middle of the shape's box, so that a shape far
+  from the page's origin keeps its precision (a 3 × 1 mm bar a kilometre out read its axis 26°
+  off); the rows are rounded to a tenth of a degree, by dividing (94.1°, not 94.10000000000001°),
+  from 0 up to 180° (an upright bar's rows are reported at 0°, not 180°). A shape less than 1.5
   times as long as wide by that measure, told in hundredths (a disc, a square), keeps the fixed
   rows (an estimate, the session's choice). The rule decides on the elongation `embroidery.info`
   reports, rounded to hundredths, so that the two agree and a shape on the line (a 3 × 2

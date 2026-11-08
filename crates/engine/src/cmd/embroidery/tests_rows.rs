@@ -137,7 +137,7 @@ fn info_and_the_arrow_say_what_the_rows_are() {
     let rule = &angle["rule"];
     assert_eq!((&rule["id"], &rule["values"]["across"]), (&json!("rowsAcrossShape"), &json!(true)), "{rule}");
     let chose = rule["chose"].as_f64().unwrap();
-    assert!(apart(chose, 0.0) < 0.05, "chose {chose}");
+    assert_eq!(chose, 0.0, "an upright bar's rows across it are 0°, not 180°");
     assert!((rule["values"]["elongation"].as_f64().unwrap() - 4.0).abs() < 0.01, "{rule}");
     let doc = &s.doc().unwrap().doc;
     let n = doc.node(vectorcraft_doc::NodeId(tall)).unwrap();
@@ -308,4 +308,21 @@ fn a_files_rows_past_a_full_turn_keep_their_direction() {
         let r = run(&mut s, "embroidery.settings", json!({}));
         assert_eq!((&r["settings"]["fillAngle"], &r["resolved"]["fillAngle"]["value"]), (&json!(stored), &json!(sewn)), "{stored}°");
     }
+}
+
+/// `embroidery.info` tells the rows the rule chose as the Object tab shows an angle, from 0 up to
+/// 180° in tenths, with no noise of the arithmetic: a tall bar turned 30.3° has its rows at 30.3°,
+/// and a disc turned 100° keeps the fixed rows turned with it, 55°, not 235°.
+#[test]
+fn info_tells_the_rows_in_tenths_from_0_up_to_180() {
+    let mut s = blank();
+    let tall = bar(&mut s, 20.0, 20.0, 10.0, 40.0);
+    run(&mut s, "object.rotate", json!({"ids": [tall], "angle": 30.3}));
+    let round = disc(&mut s, 60.0, 20.0, 20.0);
+    run(&mut s, "object.rotate", json!({"ids": [round], "angle": 100}));
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    let chose =
+        |s: &mut Session, id: u64| run(s, "embroidery.info", json!({"ids": [id]}))["fill"]["settings"]["angle"]["rule"]["chose"].as_f64().unwrap();
+    assert_eq!(chose(&mut s, tall), 30.3);
+    assert_eq!(chose(&mut s, round), 55.0);
 }

@@ -49,6 +49,16 @@ pub fn told_elongation(elongation: f64) -> f64 {
 /// rows.
 pub const SHAPE_ANGLE_STEP: f64 = 0.1;
 
+/// [`SHAPE_ANGLE_STEP`]s in a degree: the rows' angle is rounded by dividing by it, so that it is
+/// the decimal number of tenths (94.1, not the 94.10000000000001 that 941 steps of 0.1 make).
+pub const ANGLE_STEPS: f64 = 10.0;
+
+/// `degrees` (a direction of rows) as its rows are told: from 0 up to a half turn, rounded to
+/// [`SHAPE_ANGLE_STEP`] by [`ANGLE_STEPS`] (an upright bar's rows across are 0°, never 180°).
+pub fn told_rows(degrees: f64) -> f64 {
+    ((degrees * ANGLE_STEPS).round() / ANGLE_STEPS).rem_euclid(HALF_TURN)
+}
+
 /// Degrees in a half turn: a line's direction is the same either way round it.
 const HALF_TURN: f64 = 180.0;
 
@@ -88,12 +98,19 @@ fn measured(shape: Area<'_>) -> Option<(f64, Option<ShapeAxis>)> {
     if !(band.is_finite() && band > 0.0) {
         return None;
     }
+    // The moments are taken from the middle of the shape's box: far from the page's origin, the
+    // coordinates' cubes would lose the shape's own size to rounding (a 3 × 1 mm bar a kilometre
+    // out read its axis 26° off).
+    let (left, right) = shape.extent(axes.along)?;
+    let (mx, my) = ((left + right) / 2.0, (lo + hi) / 2.0);
     let mut sweep = shape.sweep(axes);
     // The moments: the area, the first moments, and the second ones.
     let (mut a, mut sx, mut sy, mut sxx, mut syy, mut sxy) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     for k in 0..SHAPE_AXIS_BANDS {
-        let y = lo + (k as f64 + 0.5) * band;
-        for (x0, x1) in sweep.spans(y) {
+        let row = lo + (k as f64 + 0.5) * band;
+        let y = row - my;
+        for (x0, x1) in sweep.spans(row) {
+            let (x0, x1) = (x0 - mx, x1 - mx);
             let w = x1 - x0;
             a += w * band;
             sx += (x1 * x1 - x0 * x0) / 2.0 * band;
@@ -135,8 +152,7 @@ fn across(axis: ShapeAxis) -> Option<f64> {
     if told_elongation(axis.elongation) < SHAPE_AXIS_MIN_ELONGATION {
         return None;
     }
-    let across = ((axis.angle + QUARTER_TURN) / SHAPE_ANGLE_STEP).round() * SHAPE_ANGLE_STEP;
-    Some(across.rem_euclid(HALF_TURN))
+    Some(told_rows(axis.angle + QUARTER_TURN))
 }
 
 /// One separate piece of a fill as the rows across the shape measure it ([`rows_by_piece`]).

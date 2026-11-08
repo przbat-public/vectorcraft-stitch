@@ -21,7 +21,7 @@ use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind};
 use vectorcraft_geom::BezPath;
 use vectorcraft_stitch::plan::{
     Params, SATIN_EDGE_UNDERLAY, SATIN_ZIGZAG_UNDERLAY, SHAPE_AXIS_MIN_ELONGATION, Style, TATAMI_UNDERLAY_MIN, Underlay, rows_by_piece,
-    satin_auto_underlay, told_elongation,
+    satin_auto_underlay, told_elongation, told_rows,
 };
 use vectorcraft_stitch::{Command, pt_to_mm};
 
@@ -660,7 +660,7 @@ pub(crate) fn fill_rows(doc: &Document, n: &Node, opts: &Options, layer: &DocLay
         Some(a) => a,
         // The rule across the shape: the rows the plan sews, else those it would.
         None => match plan.and_then(|p| planned_rows(p, n.id)) {
-            Some(rows) => super::options::planner_angle(rows.largest.angle),
+            Some(rows) => told_rows(super::options::planner_angle(rows.largest.angle)),
             None => {
                 let areas = areas_across(doc, opts, &HashSet::from([n.id]));
                 rows_by_shape(style, &settings, areas.get(&(n.id, PartKind::Fill)).map_or(&[][..], Vec::as_slice))?
@@ -695,7 +695,8 @@ fn rows_by_shape(style: Style, settings: &UnitSettings, areas: &[AreaAcross]) ->
     let across = largest.filter(|p| p.across);
     Some(json!({
         "id": "rowsAcrossShape",
-        "chose": super::options::planner_angle(across.map_or(kept, |p| p.angle)),
+        // As the Object tab shows an angle: from 0 up to a half turn, in tenths.
+        "chose": told_rows(super::options::planner_angle(across.map_or(kept, |p| p.angle))),
         "values": {
             "elongation": largest.and_then(|p| p.axis).map(|a| told_elongation(a.elongation)),
             "elongationMin": SHAPE_AXIS_MIN_ELONGATION,

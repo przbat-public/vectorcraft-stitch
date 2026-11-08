@@ -59,8 +59,8 @@ mod toward;
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
 pub use axis::{
-    ELONGATION_STEPS, PieceRows, SHAPE_ANGLE_STEP, SHAPE_AXIS_BANDS, SHAPE_AXIS_MIN_ELONGATION, ShapeAxis, rows_across, rows_by_piece, shape_axis,
-    told_elongation,
+    ANGLE_STEPS, ELONGATION_STEPS, PieceRows, SHAPE_ANGLE_STEP, SHAPE_AXIS_BANDS, SHAPE_AXIS_MIN_ELONGATION, ShapeAxis, rows_across, rows_by_piece,
+    shape_axis, told_elongation, told_rows,
 };
 pub use ends::{Ends, MAX_JOIN_EXITS, MAX_JOIN_STARTS, Through, ends};
 pub use fill::MIN_AREA;

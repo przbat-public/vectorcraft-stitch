@@ -7521,8 +7521,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
   chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
   area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing,
-  `{id: "rowsAcrossShape", chose: degrees (the rows across, as `angle` counts them), values: {elongation (in
-  hundredths, as the rule decides on it), elongationMin, across, pieces}}` for a fill's rows the document lays across
+  `{id: "rowsAcrossShape", chose: degrees (the rows across, as `angle` counts them, from 0 up to 180 in tenths), values:
+  {elongation (in hundredths, as the rule decides on it; `null` for a shape with no area or as wide every way),
+  elongationMin, across, pieces}}` for a fill's rows the document lays across
   its shape (`across: false`: about as long as
   wide, the fixed rows kept; `pieces`: how many separate pieces it has, each measured alone and sewn across its own
   length, `chose`, `elongation` and `across` its largest piece's), for a fill and for a stroke sewn as tatami, measured

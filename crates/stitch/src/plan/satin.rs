@@ -87,13 +87,20 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
     // other end, and a ring travels along its middle to the exit before its top stitching; both are
     // weighed as travel hidden under stitching still to come.
     let finish = Finish { returns: line_returns(&p), flip: Some(COST_HIDDEN), reach: COST_HIDDEN };
-    for Line { pts, closed, reversed, toward } in ordered_toward(subpaths(path), aim, &finish, &p) {
+    // The satin's pieces, an end lying on one taking no cap.
+    let all = subpaths(path);
+    let mut meet_work = 0usize;
+    for Line { pts, closed, reversed, toward } in ordered_toward(all.clone(), aim, &finish, &p) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
         let push = if reversed { [p.push[1], p.push[0]] } else { p.push };
         // The cap carries an open column's top stitching past its ends (its underlay stays on the
         // path, inside the column, where a round cap's narrowing would leave an edge run outside).
-        let cap = if closed { None } else { capped(&pts, p.cap, half, p.width + left + right, p.min_stitch) };
+        let cap = if closed || p.cap == super::Cap::Butt {
+            None
+        } else {
+            capped(&pts, p.cap, half, p.width + left + right, p.min_stitch, ends_on_pieces(&pts, &all, half, &mut meet_work))
+        };
         let under = if closed { pts.clone() } else { pushed(&pts, push, shortest) };
         let (pts, cap) = match cap {
             Some(Capped { pts: top, cap, carried }) => {
@@ -270,10 +277,77 @@ fn push_share(len: f64, start: f64, end: f64, shortest: f64) -> f64 {
 }
 
 /// Two ends of an open column closer than this (millimetres) meet: the column comes back to where
-/// it starts (a ring drawn without closing it), and no cap shows there, its half discs lying on the
-/// column itself (the project owner's choice, 2026-11-07). A machine's step, the formats' 0.1 mm
-/// ([`crate::UNITS_PER_MM`]): ends nearer than that are one needle point to the machine.
-pub(super) const ENDS_MEET: f64 = 1.0 / crate::UNITS_PER_MM;
+/// it starts (a ring drawn without closing it), and it is sewn as a closed one is, no cap at its
+/// ends, their half discs lying on the column itself (the project owner's choices, 2026-11-07: no
+/// caps where an open column's ends meet, and „Jak zamknięte (polecam)”: within a thread's width,
+/// `super::THREAD_WIDTH`, 0.4 mm for 40 wt, as a running line's pieces meet, `super::route`).
+pub(super) const ENDS_MEET: f64 = super::THREAD_WIDTH;
+
+/// How many of a column's segments the search for an end lying on a piece of its satin measures
+/// at most ([`ends_on_pieces`]): past them every end takes its cap. A bound on the work, an
+/// estimate: a satin of a few thousand pieces.
+const MAX_MEET_WORK: usize = 2_000_000;
+
+/// Whether each end of the open column `pts` (its first, then its last) meets a piece of the same
+/// satin (`all`, its subpaths, the column among them): lies within [`ENDS_MEET`] of another
+/// piece's end, as two strokes drawn end to end; or within `half` (the column's half width) of a
+/// piece's middle (farther than `half` along it from its ends), as a T's stem ends on its bar, or
+/// of its own column's farther than its width along it, as a P's end on its own stem. Such an end
+/// takes no cap: no caps are sewn where pieces of one satin meet (the project owner's choice,
+/// 2026-11-07, „Jak zamknięte (polecam)”). An end beside another end but farther than
+/// [`ENDS_MEET`] keeps its cap. None past [`MAX_MEET_WORK`] (`work` counts the segments measured).
+fn ends_on_pieces(pts: &[Point], all: &[SubPath], half: f64, work: &mut usize) -> [bool; 2] {
+    let own = |s: &SubPath| {
+        s.pts.len() == pts.len()
+            && ((s.pts.first() == pts.first() && s.pts.last() == pts.last()) || (s.pts.first() == pts.last() && s.pts.last() == pts.first()))
+    };
+    let mut on = [false; 2];
+    for (k, end) in [pts.first(), pts.last()].into_iter().enumerate() {
+        let Some(&q) = end else { continue };
+        for sub in all {
+            *work = work.saturating_add(sub.pts.len());
+            if *work > MAX_MEET_WORK {
+                return [false; 2];
+            }
+            let mine = own(sub);
+            let ends_near = !sub.closed && !mine && [sub.pts.first(), sub.pts.last()].into_iter().flatten().any(|e| e.distance(q) <= ENDS_MEET);
+            // Its own column walked from this end, another piece as it is drawn.
+            let line: Vec<Point> = if mine && sub.pts.first() != Some(&q) { sub.points().into_iter().rev().collect() } else { sub.points() };
+            let total = length(&line, false);
+            let (from, to) = match (sub.closed, mine) {
+                (true, _) => (0.0, total),
+                (false, true) => ((2.0 * half).max(half), total - half),
+                (false, false) => (half, total - half),
+            };
+            if ends_near || on_middle(q, &line, from, to, half) {
+                if let Some(slot) = on.get_mut(k) {
+                    *slot = true;
+                }
+                break;
+            }
+        }
+    }
+    on
+}
+
+/// Whether `q` lies within `near` of polyline `line` where it runs from `from` to `to` millimetres
+/// along it.
+fn on_middle(q: Point, line: &[Point], from: f64, to: f64, near: f64) -> bool {
+    let mut along = 0.0;
+    line.windows(2).any(|w| {
+        let (Some(&a), Some(&b)) = (w.first(), w.get(1)) else { return false };
+        let len = a.distance(b);
+        let before = along;
+        along += len;
+        if len <= 0.0 || along <= from || before >= to {
+            return false;
+        }
+        let (a, b) = (a.lerp(b, ((from - before) / len).clamp(0.0, 1.0)), a.lerp(b, ((to - before) / len).clamp(0.0, 1.0)));
+        let ab = b - a;
+        let t = if ab.hypot2() > 0.0 { ((q - a).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+        q.distance(a + ab * t) <= near
+    })
+}
 
 /// An open column's centreline carried past its ends by its cap ([`capped`]): the points, the cap,
 /// and how far each end was carried (millimetres).
@@ -331,11 +405,12 @@ fn cap_reach(cap: super::Cap, half: f64, full: f64, min_stitch: f64) -> f64 {
 }
 
 /// An open column's centreline `pts` carried past its ends by its `cap` ([`cap_reach`]), each along
-/// the direction its end segment points out; `None` when nothing is carried: a butt cap, a
-/// column whose two ends meet ([`ENDS_MEET`]), or one without a direction at an end.
-fn capped(pts: &[Point], cap: super::Cap, half: f64, full: f64, min_stitch: f64) -> Option<Capped> {
+/// the direction its end segment points out, but an end that lies on a piece of the same satin
+/// (`on_piece`, [`ends_on_pieces`]); `None` when nothing is carried: a butt cap, a column whose
+/// two ends meet ([`ENDS_MEET`]), both ends on pieces, or one without a direction at an end.
+fn capped(pts: &[Point], cap: super::Cap, half: f64, full: f64, min_stitch: f64, on_piece: [bool; 2]) -> Option<Capped> {
     let reach = cap_reach(cap, half, full, min_stitch);
-    if reach <= 0.0 || !reach.is_finite() {
+    if reach <= 0.0 || !reach.is_finite() || on_piece == [true; 2] {
         return None;
     }
     let (&first, &last) = (pts.first()?, pts.last()?);
@@ -347,20 +422,26 @@ fn capped(pts: &[Point], cap: super::Cap, half: f64, full: f64, min_stitch: f64)
     let back = away(first, pts.iter().find(|q| q.distance(first) > NO_LENGTH));
     let on = away(last, pts.iter().rev().find(|q| q.distance(last) > NO_LENGTH));
     let (Some(back), Some(on)) = (back, on) else { return None };
-    let mut carried: Vec<Point> = Vec::with_capacity(pts.len() + 2);
-    carried.push(first + back * reach);
-    carried.extend_from_slice(pts);
-    carried.push(last + on * reach);
-    Some(Capped { pts: carried, cap, carried: [reach; 2] })
+    let carried = on_piece.map(|on| if on { 0.0 } else { reach });
+    let mut line: Vec<Point> = Vec::with_capacity(pts.len() + 2);
+    if carried[0] > 0.0 {
+        line.push(first + back * carried[0]);
+    }
+    line.extend_from_slice(pts);
+    if carried[1] > 0.0 {
+        line.push(last + on * carried[1]);
+    }
+    Some(Capped { pts: line, cap, carried })
 }
 
-/// An open satin line `pts` as its top stitching runs (millimetres), carried past its ends by the
-/// cap `p` gives ([`capped`]): where its stitches can start and end (`super::ends`). `pts` as they
-/// are when nothing is carried.
-pub(super) fn capped_line(pts: &[Point], p: &Params) -> Vec<Point> {
+/// An open satin line `pts` (one of the satin's pieces `all`) as its top stitching runs
+/// (millimetres), carried past its ends by the cap `p` gives ([`capped`]): where its stitches can
+/// start and end (`super::ends`). `pts` as they are when nothing is carried.
+pub(super) fn capped_line(pts: &[Point], all: &[SubPath], p: &Params) -> Vec<Point> {
     let half = p.width / 2.0;
     let [left, right] = p.compensation(p.width);
-    match capped(pts, p.cap, half, p.width + left + right, p.min_stitch) {
+    let on_piece = ends_on_pieces(pts, all, half, &mut 0);
+    match capped(pts, p.cap, half, p.width + left + right, p.min_stitch, on_piece) {
         Some(c) => c.pts,
         None => pts.to_vec(),
     }

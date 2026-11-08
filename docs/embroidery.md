@@ -941,9 +941,13 @@ the fabric.
   stitching on past each open end by half its width, a round one narrowing its crossings round a
   half disc and stopping where a crossing would be shorter than the shortest stitch, a butt cap
   stopping at the end; the underlay stays on the path, inside the column, and push compensation
-  shortens the column from its caps' ends. An open column whose two ends meet within a machine step
-  (0.1 mm: a ring drawn without closing it) sews no cap there (2026-11-07, „Nie, tam bez zakończeń
-  (polecam)”). Every crossing goes across the column, the last one too (the
+  shortens the column from its caps' ends. An open column whose two ends meet within a thread's
+  width (0.4 mm, as a running line's pieces meet: a ring drawn without closing it) is sewn as a
+  closed one is, no cap at its ends (2026-11-07, „Nie, tam bez zakończeń (polecam)” and „Jak
+  zamknięte (polecam)”), and no cap is sewn where pieces of one satin meet: an end within 0.4 mm
+  of another piece's end, or within half the column's width of a piece's middle (a T's stem on its
+  bar, a P's end on its own stem); an end beside another end but farther than 0.4 mm keeps its
+  cap. Every crossing goes across the column, the last one too (the
   last point's direction used to be taken as left to right, so a column running any other way
   ended with a stitch along it or on the rail the one before used). The underlay holds the
   column up and follows its width: a centre run under columns narrower than 2 mm, an edge run (along one side and back along

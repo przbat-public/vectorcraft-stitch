@@ -161,3 +161,56 @@ fn a_capped_column_starts_and_ends_where_its_stitches_do() {
     let butt = ends(&straight(), &Params { width: WIDTH, ..Params::for_style(Style::Satin) }, false).expect("ends");
     assert!(path_ends.iter().all(|&c| butt.starts.iter().any(|&q| near(q, c)) && butt.ends.iter().any(|&q| near(q, c))), "{butt:?}");
 }
+
+/// Ends within a thread's width meet (the project owner's choice, 2026-11-07, „Jak zamknięte
+/// (polecam)”): a ring drawn open with its ends 0.3 mm apart, or 0.39 mm, sews no cap over its
+/// column, as a ring whose ends meet exactly; its ends 0.5 mm apart, they take their caps.
+#[test]
+fn ends_within_a_threads_width_meet() {
+    let arc = |gap: f64| -> BezPath {
+        let a = vectorcraft_geom::kurbo::Arc::new((0.0, 0.0), (10.0, 10.0), 0.0, std::f64::consts::TAU - gap / 10.0, 0.0);
+        vectorcraft_geom::Shape::path_elements(&a, 0.01).collect()
+    };
+    for cap in [Cap::Round, Cap::Square] {
+        for gap in [0.3, 0.39] {
+            assert_eq!(column(&arc(gap), cap), column(&arc(gap), Cap::Butt), "{gap} mm apart, a {} cap", cap.id());
+        }
+        assert_ne!(column(&arc(0.5), cap), column(&arc(0.5), Cap::Butt), "0.5 mm apart, no {} cap", cap.id());
+    }
+}
+
+/// No cap is sewn where pieces of one satin meet (the project owner's choice, 2026-11-07, „Jak
+/// zamknięte (polecam)”): a T drawn as two pieces of one path, its stem's end on its bar, sews no
+/// cap there, no crossing of the stem's lying past the bar's middle, but one at the stem's foot; a
+/// P drawn as one open path, its end on its own stem, sews none there, no crossing of its bowl past
+/// the stem's middle.
+#[test]
+fn no_cap_is_sewn_where_pieces_of_one_satin_meet() {
+    // Crossings running along x (`along_x`) or along y, lying where `at` says.
+    let crossings = |q: &[Point], along_x: bool, at: &dyn Fn(Point) -> bool| {
+        q.windows(2)
+            .filter(|w| {
+                let d = w[1] - w[0];
+                let (run, off) = if along_x { (d.x.abs(), d.y.abs()) } else { (d.y.abs(), d.x.abs()) };
+                run > 0.8 * WIDTH && off < 0.5 && at(w[0].midpoint(w[1]))
+            })
+            .count()
+    };
+    let mut t = BezPath::new();
+    t.move_to((0.0, 0.0));
+    t.line_to((LENGTH, 0.0));
+    t.move_to((LENGTH / 2.0, 0.0));
+    t.line_to((LENGTH / 2.0, 15.0));
+    let q = column(&t, Cap::Square);
+    assert_eq!(crossings(&q, true, &|m| m.y < -1e-9), 0, "a cap over the bar");
+    assert!(crossings(&q, true, &|m| m.y > 15.0) > 0, "no cap at the stem's foot");
+    let mut p = BezPath::new();
+    p.move_to((0.0, 30.0));
+    p.line_to((0.0, 0.0));
+    p.line_to((8.0, 0.0));
+    p.line_to((8.0, 10.0));
+    p.line_to((0.0, 10.0));
+    let q = column(&p, Cap::Square);
+    assert_eq!(crossings(&q, false, &|m| m.x < -1e-9), 0, "a cap over the stem");
+    assert!(crossings(&q, true, &|m| m.y > 30.0) > 0, "no cap at the stem's foot");
+}

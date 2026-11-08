@@ -189,7 +189,7 @@ pub fn ends(path: &BezPath, p: &Params, columns: bool) -> Option<Ends> {
             }
             // A satin's top stitching reaches past the path's ends by its cap, and ends there; it
             // starts there too, unless its underlay, which stays on the path, starts it.
-            let capped = super::satin::capped_line(&pts, &p);
+            let capped = super::satin::capped_line(&pts, &subs, &p);
             let (&ca, &cb) = (capped.first()?, capped.last()?);
             let starts = if super::satin::has_underlay(&p) { vec![a, b] } else { vec![ca, cb] };
             // Where its underlay leaves it, and the other end at a pass along its middle.

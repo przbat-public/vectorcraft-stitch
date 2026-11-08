@@ -548,7 +548,8 @@ fn dots_and_arrow_heads_on_thin_lines_keep_their_fill() {
 /// a fill or a satin column: a bar 0.6 mm wide for 14 mm and then 1.25 mm for 6 mm, wider at its
 /// widest than its lines' crossing would make it; a bar 0.8 mm wide for 14 mm and then 1.2 mm for
 /// 6 mm, as wide at its widest as a crossing of its lines (held by the width along it); a stroke
-/// tapering from 0.3 mm to 1.3 mm over 15 mm, round at its wide end as a brush leaves it.
+/// tapering from 0.3 mm to 1.3 mm over 15 mm, round at its wide end as a brush leaves it, and the
+/// same cut square there (its skeleton forks to the corners, which are pruned).
 #[test]
 fn a_line_that_widens_past_a_millimetre_keeps_its_fill() {
     let stepped = |narrow: f64, wide: f64| {
@@ -557,15 +558,18 @@ fn a_line_that_widens_past_a_millimetre_keeps_its_fill() {
             if (5.0..=25.0).contains(&q.x) && (q.y - 6.0).abs() <= half { NAVY } else { WHITE }
         }
     };
-    let tapered = |q: Point| {
-        let half = (0.3 + (q.x - 5.0) / 15.0) / 2.0;
-        let end = q.distance(Point::new(20.0, 6.0)) <= 0.65;
-        if end || ((5.0..=20.0).contains(&q.x) && (q.y - 6.0).abs() <= half) { NAVY } else { WHITE }
+    let tapered = |square: bool| {
+        move |q: Point| {
+            let half = (0.3 + (q.x - 5.0) / 15.0) / 2.0;
+            let end = !square && q.distance(Point::new(20.0, 6.0)) <= 0.65;
+            if end || ((5.0..=20.0).contains(&q.x) && (q.y - 6.0).abs() <= half) { NAVY } else { WHITE }
+        }
     };
     for (name, raster) in [
         ("0.6 to 1.25 mm", picture(30.0, 12.0, PX_PER_MM, stepped(0.6, 1.25))),
         ("0.8 to 1.2 mm", picture(30.0, 12.0, PX_PER_MM, stepped(0.8, 1.2))),
-        ("tapered", picture(25.0, 12.0, PX_PER_MM, tapered)),
+        ("tapered", picture(25.0, 12.0, PX_PER_MM, tapered(false))),
+        ("tapered to a square end", picture(25.0, 12.0, PX_PER_MM, tapered(true))),
     ] {
         let mut s = placed(&raster, PX_PER_MM);
         let r = digitize(&mut s, json!({"colors": 2}), true);
@@ -623,4 +627,26 @@ fn a_colour_set_to_lines_keeps_its_job_beside_its_thread() {
     assert!(navy.len() == 1 && !navy[0]["line"].is_null(), "{}", r["areas"]);
     assert!(red.len() == 1 && red[0]["kind"] == json!("fill") && red[0]["joined"] == json!(0), "{}", r["areas"]);
     assert_eq!(navy[0]["thread"]["index"], red[0]["thread"]["index"], "one thread");
+}
+
+/// A line set to Lines is sewn to its shape's ends, however wide: a navy bar 4 mm wide from 5 to
+/// 35 mm, its ends square, is sewn from within half a thread and a working pixel of each end, where
+/// its centre line stopped half its width short; and Create makes it a stroke whose ends are butt,
+/// as the bar's are, not round past them.
+#[test]
+fn a_wide_line_set_to_lines_is_sewn_end_to_end() {
+    let paint = |q: Point| if (5.0..=35.0).contains(&q.x) && (q.y - 6.0).abs() <= 2.0 { NAVY } else { WHITE };
+    let mut s = placed(&picture(40.0, 12.0, PX_PER_MM, paint), PX_PER_MM);
+    let created = digitize(&mut s, json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "lines"}]}), false)["created"].clone();
+    let pts = needle_points(&s);
+    let (lo, hi) = (pts.iter().map(|q| q.x).fold(f64::INFINITY, f64::min), pts.iter().map(|q| q.x).fold(f64::NEG_INFINITY, f64::max));
+    let near = vectorcraft_stitch::plan::THREAD_WIDTH / 2.0 + 1.0 / PX_PER_MM;
+    assert!(lo <= 5.0 + near && hi >= 35.0 - near, "sewn from {lo} to {hi} mm of a bar from 5 to 35");
+    assert!(pts.iter().all(|q| (q.y - 6.0).abs() <= ON_LINE_MM), "a needle point off the bar's middle");
+    let objects = made(&s, &created);
+    let cap = objects[0].appearance.items.iter().find_map(|i| match i {
+        vectorcraft_doc::AppearanceItem::Stroke(st) => Some(st.cap),
+        vectorcraft_doc::AppearanceItem::Fill(_) => None,
+    });
+    assert_eq!(cap, Some(vectorcraft_doc::LineCap::Butt));
 }

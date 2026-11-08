@@ -325,7 +325,8 @@ drives it comes next; `docs/mcp.md` gives its params and reply in full):
   no hole cut. Where two colours meet, the one sewn first reaches `overlap` (0.4 mm) under the one
   sewn after, along their shared edge only.
 - **Lines:** a thin line, and every area of a colour set to `lines`, is sewn along its middle: a
-  stroke along its centre line, as wide as the line and round at its ends and turns, which the
+  stroke along its centre line, as wide as the line and round at its turns (and at its ends, on a
+  line narrower than 1 mm; butt on a wider one, ending with the ink), which the
   planner sews as one running line through its junctions (each branch once, back along a few:
   How a shape becomes stitches › Running). The colours beside it reach its middle under it
   whatever `overlap` is, so that no fabric shows round it: each of its pixels goes to the colour
@@ -3266,8 +3267,11 @@ millimetres again. The stages, each a module, each reported to a progress sink
    line's width pruned, as the medial axis's are (Blum 1967; Shaked and Bruckstein 1998), so that
    a real branch reaching farther stays, the top of a "t" rising 0.8 mm above its bar on lines
    0.9 mm wide among them (the owner's choice, 2026-11-07, „Zostawić dłuższe (polecam)”), and
-   junctions whose discs overlap made one; each end carried on along its piece to the
-   ink, less half the line's width; the pieces made smooth by Visvalingam and Whyatt's line
+   junctions whose discs overlap made one; each end's corner taken off (a square end's skeleton
+   forks to its corners, both pruned, or runs into one: the pixels whose disc is under three
+   quarters of the largest a little way in go), and the end carried on along its piece to the ink,
+   less half a thread's width, so that the running stitch ends with the ink on the line's middle,
+   however wide the line; the pieces made smooth by Visvalingam and Whyatt's line
    generalisation (1993) at an effective area of 8 square pixels, so that the stairs pixels leave
    along a curve make no corner the planner stitches into. The line's width is its pixels over its
    skeleton's length (the same at 8, 10 and 12 pixels a millimetre within a working pixel). Every
@@ -3309,7 +3313,8 @@ millimetres again. The stages, each a module, each reported to a progress sink
 10. **Create** (`create.rs`): one group in the image's place, a group a colour block in sewing order
    named after its thread as its swatch is, one object an area painted with its thread's own colour
    (so the plan sews it in exactly that thread; a line a stroke along its centre line, as wide as
-   the line, round at its ends and turns, set to a running line where it is a satin column's width),
+   the line, round at its turns and, narrower than a satin column, at its ends (butt on a wider one,
+   set to a running line),
    settings set only where a job asks; the image
    moves, with its id, to a hidden, locked template layer below every layer, scaled with the
    design; one undo step. Nearest Connection is not run.

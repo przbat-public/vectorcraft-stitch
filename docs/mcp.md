@@ -7306,7 +7306,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   √2 times its own width where its lines meet and no wider than 1 mm away from them, and at least 2 mm long stays), an island narrower than 4 mm is sewn over the area
   round it with no hole cut, and where two colours meet the one sewn first reaches `overlap` under the one sewn after,
   only along the edge they share. A line (and every area of a colour set to `lines`) is sewn along its centre line, a
-  stroke as wide as it, round at its ends, which the planner sews as one running line through its junctions; the
+  stroke as wide as it, round at its ends under 1 mm wide (butt at 1 mm or more, its ends half a thread short of the
+  ink's), which the planner sews as one running line through its junctions; the
   colours beside it reach its middle under it whatever `overlap` is (each of its pixels to the colour nearest it, and
   half a pixel past, at most 2 mm from that colour's edge). Without `dryRun` it
   creates the objects: one group in the image's place (named as the image is), in it a group for each colour block in

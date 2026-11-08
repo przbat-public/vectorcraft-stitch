@@ -26,9 +26,12 @@
 //!   from a junction to an end that reaches hardly past the largest disc the line holds at the
 //!   junction draws nothing the disc doesn't ([`SPUR_SLACK_PX`], [`SPUR_WIDTH_SHARE`]); two
 //!   junctions whose discs overlap are one (a crossing thinning splits in two).
-//! - **The ends carried to the ink**: thinning stops short of a line's end by about its half width;
-//!   each end goes on along its piece to where the ink ends, less half the line's width, so that the
-//!   stroke made, round at its ends, ends where the line does.
+//! - **The ends carried to the ink**: thinning stops short of a line's end by about its half width,
+//!   and at a square end turns into a corner; each end's corner is taken off (its pixels' discs
+//!   under [`END_TRIM_SHARE`] of the line's a little way in), and the end goes on along its piece
+//!   to where the ink ends, less half a thread's width (or half the line's, for a line narrower
+//!   than a thread), so that the running stitch sewn along it ends with the ink, on the line's
+//!   middle, however wide the line.
 //! - **The pieces made smooth** by Visvalingam and Whyatt's line generalisation (1993, *Line
 //!   generalisation by repeated elimination of points*, The Cartographic Journal 30(1)): the pixels'
 //!   stairs taken away, the point whose triangle with its neighbours has the least area removed in
@@ -68,6 +71,12 @@ pub(super) const SPUR_SLACK_PX: f64 = 2.0;
 /// go.
 pub(super) const SPUR_WIDTH_SHARE: f64 = 1.0 / 3.0;
 
+/// The largest disc a corner's tip holds (working pixels): a pixel and a half, the centre of a pixel
+/// beside the edge. A spur ending in one that reaches past its junction's disc no farther than a
+/// square end's corner does ((√2 − 1) of the disc, and [`SPUR_SLACK_PX`]) is that corner, and goes
+/// however wide the line, so that a line of changing width ends on its middle at a square end.
+const CORNER_TIP_PX: f64 = 1.5;
+
 /// The least area a point's triangle with its neighbours keeps it by (square working pixels): 8, so
 /// that the stairs pixels leave along a gentle curve go and a corner whose arms reach 0.4 mm stays
 /// (at 10 pixels a millimetre). An estimate, measured on the line art of the tests (2026-11-07): at
@@ -96,6 +105,16 @@ const END_STEP_PX: f64 = 0.5;
 /// How far an end may be carried, as a share of the line's width: the ink ends within about half a
 /// width of where thinning stopped; twice the width bounds a slanted end.
 const END_REACH_SHARE: f64 = 2.0;
+
+/// The share of the largest disc a little way in ([`END_TRIM_LOOK`]) under which a pixel at a
+/// piece's free end is taken off: about three quarters, so that the corner a square end's skeleton
+/// turns into, its discs narrowing to nothing, goes, and a round end, whose discs stay about the
+/// line's half width to its tip, stays (the review's method, 2026-11-07). An estimate.
+const END_TRIM_SHARE: f64 = 0.75;
+
+/// How far in from a piece's free end the discs are looked at to judge its tip, as a share of the
+/// tip's own radius, and a pixel more: twice it, past the corner of a square end the tip lies in.
+const END_TRIM_LOOK: f64 = 2.0;
 
 /// The eight neighbours of a pixel in turn round it, as Yokoi's connectivity number counts them:
 /// east, then counter-clockwise as seen on the page (north is up, `y − 1`).
@@ -591,16 +610,16 @@ fn merge_junctions(nodes: &mut [Node], edges: &mut [Edge], len: &impl Fn(&Edge) 
     }
 }
 
-/// Spurs taken away: each piece (`lengths` long) from an end to a junction that keeps two pieces or
-/// more, reaching past the junction's disc no more than `most` (working pixels: [`SPUR_SLACK_PX`],
-/// [`SPUR_WIDTH_SHARE`]), the nodes' degrees kept as they go. Whether any went.
+/// Spurs taken away: each piece (`lengths` long) from an end to a junction, both as they are at the
+/// round's start, reaching past the junction's disc no more than `most` (working pixels:
+/// [`SPUR_SLACK_PX`], [`SPUR_WIDTH_SHARE`]) or ending in a corner ([`CORNER_TIP_PX`]), the least
+/// reaching first, a junction left with one piece at the least (an end), never none: so that both
+/// corners of a square end go, the line ending where they forked. Whether any went.
 fn prune_spurs(nodes: &[Node], edges: &mut [Edge], lengths: &[f64], most: f64) -> bool {
     let mut deg = degrees(nodes, edges);
-    let mut pruned_any = false;
-    for (k, e) in edges.iter_mut().enumerate() {
-        if e.gone {
-            continue;
-        }
+    // The spurs by the degrees at the round's start: how far each reaches, which it is, its junction.
+    let mut spurs: Vec<(f64, usize, usize)> = Vec::new();
+    for (k, e) in edges.iter().enumerate().filter(|(_, e)| !e.gone) {
         let (Some(&da), Some(&db)) = (deg.get(e.a), deg.get(e.b)) else { continue };
         let (end, junction) = match (da, db) {
             (1, d) if d >= 3 => (e.a, e.b),
@@ -609,13 +628,21 @@ fn prune_spurs(nodes: &[Node], edges: &mut [Edge], lengths: &[f64], most: f64) -
         };
         let (Some(end_node), Some(junction_node)) = (nodes.get(end), nodes.get(junction)) else { continue };
         let reach = lengths.get(k).copied().unwrap_or(0.0) + end_node.radius - junction_node.radius;
-        if reach <= most {
+        let corner = end_node.radius <= CORNER_TIP_PX && reach <= (std::f64::consts::SQRT_2 - 1.0) * junction_node.radius + SPUR_SLACK_PX;
+        if reach <= most || corner {
+            spurs.push((reach, k, junction));
+        }
+    }
+    spurs.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+    let mut pruned_any = false;
+    for (_, k, junction) in spurs {
+        if deg.get(junction).is_some_and(|&d| d > 1)
+            && let Some(e) = edges.get_mut(k)
+        {
             e.gone = true;
             pruned_any = true;
-            for n in [end, junction] {
-                if let Some(d) = deg.get_mut(n) {
-                    *d = d.saturating_sub(1);
-                }
+            if let Some(d) = deg.get_mut(junction) {
+                *d -= 1;
             }
         }
     }
@@ -767,7 +794,7 @@ fn widens_away_from_junctions(nodes: &[Node], edges: &[Edge], deg: &[usize], wid
 /// line is wide (a dot, or a blob, has no line to sew along, and is sewn as the area it is: the
 /// project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), or, held to a width, widens
 /// past it away from its junctions. A cancel stops it.
-pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted) -> Result<Vec<Option<CentreLine>>> {
+pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted, thread_px: f64) -> Result<Vec<Option<CentreLine>>> {
     let count = regions.areas.len();
     let want: Vec<Wanted> = (0..count).map(wanted).collect();
     let mut out: Vec<Option<CentreLine>> = vec![None; count];
@@ -823,14 +850,21 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted) -> Resu
         let widest = regions.areas.get(a).map_or(1.0, |s| s.widest_px).max(1.0);
         let width = if total > 0.0 { (own.len() as f64 / total).clamp(1.0, widest) } else { widest };
         let mut pieces: Vec<Piece> = Vec::with_capacity(edges.len());
+        let radius = |i: usize| d2.get(i).copied().unwrap_or(0.0).sqrt() + HALF_PIXEL;
         for e in &edges {
             let closed = e.a == e.b && deg.get(e.a) == Some(&2);
-            let mut pts: Vec<Point> = e.pixels.iter().map(|&i| centre_of(i, w)).collect();
+            // A free end's corner taken off.
+            let free = |n: usize| !closed && deg.get(n) == Some(&1);
+            let from = if free(e.a) { trimmed(&e.pixels, true, &radius) } else { 0 };
+            let to = e.pixels.len() - if free(e.b) { trimmed(&e.pixels, false, &radius) } else { 0 };
+            let kept = e.pixels.get(from..to).filter(|k| k.len() >= 2).unwrap_or(&e.pixels);
+            let mut pts: Vec<Point> = kept.iter().map(|&i| centre_of(i, w)).collect();
             if !closed {
-                // The ends on their nodes, an end carried to the ink.
+                // The ends on their nodes, a free end carried to the ink.
                 for (end, first) in [(e.a, true), (e.b, false)] {
                     let Some(node) = nodes.get(end) else { continue };
-                    let at = if deg.get(end) == Some(&1) { carried(&line, &pts, first, width).unwrap_or(node.at) } else { node.at };
+                    let tip = if first { pts.first() } else { pts.last() }.copied().unwrap_or(node.at);
+                    let at = if free(end) { carried(&line, &pts, first, width, thread_px).unwrap_or(tip) } else { node.at };
                     let slot = if first { pts.first_mut() } else { pts.last_mut() };
                     if let Some(slot) = slot {
                         *slot = at;
@@ -855,10 +889,30 @@ pub(super) fn lines(regions: &Regions, wanted: &dyn Fn(usize) -> Wanted) -> Resu
     Ok(out)
 }
 
+/// How many of piece `pixels`' pixels are taken off at its `first` end, or its last, as the corner
+/// of a square end (the module's notes): those from the tip whose disc (`radius`) is under
+/// [`END_TRIM_SHARE`] of the largest within [`END_TRIM_LOOK`] of their own radius in; at most half
+/// the piece.
+fn trimmed(pixels: &[usize], first: bool, radius: &dyn Fn(usize) -> f64) -> usize {
+    let along: Vec<f64> = if first { pixels.iter().map(|&i| radius(i)).collect() } else { pixels.iter().rev().map(|&i| radius(i)).collect() };
+    let mut k = 0;
+    while k < along.len() / 2 {
+        let Some(&r) = along.get(k) else { break };
+        let look = (END_TRIM_LOOK * r).ceil() as usize + 1;
+        let ahead = along.iter().skip(k + 1).take(look).copied().fold(0.0, f64::max);
+        if r >= END_TRIM_SHARE * ahead {
+            break;
+        }
+        k += 1;
+    }
+    k
+}
+
 /// Where an end of piece `pts` (its `first` point, or its last) is carried to: on along the way it
-/// points, to where `line`'s ink ends, less half the line's `width` (so a round end drawn there
-/// ends with the ink); `None` when it can't be told which way it points.
-fn carried(line: &Line<'_>, pts: &[Point], first: bool, width: f64) -> Option<Point> {
+/// points, to where `line`'s ink ends, less half a thread's width (`thread_px`) or half the line's
+/// `width` where that is less, so that the stitch sewn there ends with the ink; `None` when it
+/// can't be told which way it points.
+fn carried(line: &Line<'_>, pts: &[Point], first: bool, width: f64, thread_px: f64) -> Option<Point> {
     let along: Vec<Point> = if first { pts.to_vec() } else { pts.iter().rev().copied().collect() };
     let end = *along.first()?;
     let steps = END_DIRECTION_PX.max((width * END_DIRECTION_WIDTHS).ceil() as usize);
@@ -878,8 +932,8 @@ fn carried(line: &Line<'_>, pts: &[Point], first: bool, width: f64) -> Option<Po
     while t + END_STEP_PX <= most && ink(end + d * (t + END_STEP_PX)) {
         t += END_STEP_PX;
     }
-    // The ink ends half a step past the last point inside it, about; less half the width.
-    let reach = (t + END_STEP_PX / 2.0 - width / 2.0).max(0.0);
+    // The ink ends half a step past the last point inside it, about; less half a thread.
+    let reach = (t + END_STEP_PX / 2.0 - width.min(thread_px) / 2.0).max(0.0);
     Some(end + d * reach)
 }
 
@@ -888,6 +942,9 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
 
     use super::*;
+
+    /// A thread's width at ten pixels a millimetre (working pixels).
+    const THREAD_PX: f64 = vectorcraft_stitch::plan::THREAD_WIDTH * 10.0;
 
     /// A pixel's eight neighbours (in [`AROUND`]'s order) from a 3 × 3 picture read row by row,
     /// `#` on, the pixel itself in the middle.
@@ -902,7 +959,12 @@ mod tests {
     }
 
     fn line_of(regions: &Regions) -> CentreLine {
-        lines(regions, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }).unwrap().into_iter().next().flatten().expect("a centre line")
+        lines(regions, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }, THREAD_PX)
+            .unwrap()
+            .into_iter()
+            .next()
+            .flatten()
+            .expect("a centre line")
     }
 
     /// Yokoi's connectivity number: none for a pixel alone or inside, one for an end and for a
@@ -989,8 +1051,29 @@ mod tests {
     fn a_dot_has_no_centre_line_wherever_it_lies() {
         for (cx, cy) in [(20.0, 20.0), (20.5, 20.0), (20.5, 20.5)] {
             let dot = map(40, 40, |x, y| (f64::from(x) + 0.5 - cx).hypot(f64::from(y) + 0.5 - cy) <= 5.0);
-            let found = lines(&dot, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }).unwrap();
+            let found = lines(&dot, &|a| if a == 0 { Wanted::AnyWidth } else { Wanted::No }, THREAD_PX).unwrap();
             assert!(found[0].is_none(), "a dot at ({cx}, {cy}): {:?}", found[0]);
+        }
+    }
+
+    /// A bar at 30°, its ends square, 6 and 20 pixels wide: its centre line keeps to its middle and
+    /// reaches its ends. Thinning forks at a square end to its two corners, or runs into one of
+    /// them: both corners are pruned (the degrees as the round starts), the corner a tip runs into
+    /// is taken off, and the end carried along the line to the ink, less half a thread.
+    #[test]
+    fn a_slanted_square_end_ends_on_the_middle() {
+        let (c, a) = (Point::new(70.0, 70.0), 30f64.to_radians());
+        let (u, n) = (vectorcraft_geom::Vec2::new(a.cos(), a.sin()), vectorcraft_geom::Vec2::new(-a.sin(), a.cos()));
+        for half_width in [3.0, 10.0] {
+            let bar = map(140, 140, |x, y| {
+                let q = Point::new(f64::from(x) + 0.5, f64::from(y) + 0.5) - c;
+                q.dot(u).abs() <= 50.0 && q.dot(n).abs() <= half_width
+            });
+            let line = line_of(&bar);
+            let off = line.pieces.iter().flat_map(|p| &p.pts).map(|&q| (q - c).dot(n).abs()).fold(0.0, f64::max);
+            assert!(off <= 1.5, "half width {half_width}: a point {off} px off the middle: {line:?}");
+            let reach = line.pieces.iter().flat_map(|p| &p.pts).map(|&q| (q - c).dot(u).abs()).fold(0.0, f64::max);
+            assert!(reach >= 50.0 - THREAD_PX / 2.0 - 1.5, "half width {half_width}: reaching {reach} px of 50: {line:?}");
         }
     }
 }

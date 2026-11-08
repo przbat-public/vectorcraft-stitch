@@ -306,7 +306,8 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
             _ => centre::Wanted::No,
         })
         .collect();
-    let lines = centre::lines(&areas.regions, &|a| wanted.get(a).copied().unwrap_or(centre::Wanted::No))?;
+    let thread_px = vectorcraft_stitch::plan::THREAD_WIDTH * w.px_per_mm;
+    let lines = centre::lines(&areas.regions, &|a| wanted.get(a).copied().unwrap_or(centre::Wanted::No), thread_px)?;
     let along: Vec<bool> = wanted.iter().map(|&x| x != centre::Wanted::No).collect();
     for (row, count) in rules::fills_without_centre_lines(&mut areas, &colours, &along, &lines) {
         let color = colours.rows.get(row).map(|r| super::super::hex(r.color)).unwrap_or_default();

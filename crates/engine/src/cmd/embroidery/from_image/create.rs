@@ -9,8 +9,9 @@
 //! its thread's own colour, so that the plan sews it in exactly that thread.
 //!
 //! An area along whose middle a centre line runs (`super::centre`) is made a stroke along it, as
-//! wide as the line, round at its ends and turns, with no fill: the planner sews a stroke that
-//! narrow as one running line through its junctions.
+//! wide as the line, round at its turns, with no fill: the planner sews a stroke that narrow as one
+//! running line through its junctions. Its ends are round on a line narrower than a satin column
+//! and butt on a wider one, whose centre line ends half a thread short of the ink.
 //!
 //! An area's embroidery settings are set only where its colour's job departs from what it would
 //! inherit: `fill` sets its fill's narrowAsSatin to none (tatami, its narrow parts too), `none` sets
@@ -105,12 +106,15 @@ fn line_width(line: &super::centre::CentreLine, px_per_mm: f64) -> f64 {
 }
 
 /// The object made of centre line `line` (working pixels, placed by `to_doc`), in `color`: a stroke
-/// along it `width` points wide ([`line_width`]), round at its ends and turns, and no fill.
+/// along it `width` points wide ([`line_width`]), round at its turns, and no fill. Its ends are round
+/// on a line the planner sews as a running line by its width (narrower than a satin column), as a
+/// thin line's are drawn; butt on a wider one, set to a running line, whose ends lie half a thread
+/// short of the ink's (`super::centre`), so that the stroke drawn ends with the line.
 fn line_node(doc: &mut Document, line: &super::centre::CentreLine, to_doc: vectorcraft_geom::Affine, width: f64, color: Color) -> Node {
     let path = PathData::from_bezpath(&(to_doc * line.path()));
     let mut look = Appearance::basic(Paint::None, Paint::solid(color), width);
     if let Some(AppearanceItem::Stroke(s)) = look.items.last_mut() {
-        s.cap = LineCap::Round;
+        s.cap = if vectorcraft_stitch::pt_to_mm(width) >= SATIN_MIN_WIDTH { LineCap::Butt } else { LineCap::Round };
         s.join = LineJoin::Round;
     }
     Node::path(doc.alloc_id(), path, look)

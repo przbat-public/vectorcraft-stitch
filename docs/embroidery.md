@@ -3231,7 +3231,10 @@ millimetres again. The stages, each a module, each reported to a progress sink
    it, flagged, with alternatives (the project owner's choices); in greys mode only grey threads
    are matched, but a thread a person chose is sewn even when it isn't grey, with a warning. Each
    colour has a job: Auto, Fill (tatami, its narrow parts too, its thin lines filled), Lines (every
-   area along its middle) or Don't sew.
+   area along its middle) or Don't sew. Touching areas sewn in one thread are then joined into one,
+   so that no seam runs through a colour of the design, only where their jobs agree: two colours
+   of one thread with two jobs stay apart, each sewn as its colour asks (the owner's choice,
+   2026-11-07, „Każdy kolor swoje zadanie (polecam)”).
 6. **The rules** (`rules.rs`), on the map: an area smaller than `minArea` (1 mm², the owner's
    choice) joins the area it shares the longest edge with, smallest first, or is left out with
    only transparency round it; a line narrower than 1 mm along its middle (the median width of its

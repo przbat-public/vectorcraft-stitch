@@ -597,3 +597,30 @@ fn lines_that_meet_are_still_lines() {
         }
     }
 }
+
+/// Each colour keeps its own job when two colours share a thread (the project owner's choice,
+/// 2026-11-07, „Każdy kolor swoje zadanie (polecam)”): a navy ring set to Lines round a red disc,
+/// both chosen to be sewn in one thread of the document's palette, stays a line along its middle,
+/// and the disc a fill of its own; joined, the ring was filled with the disc.
+#[test]
+fn a_colour_set_to_lines_keeps_its_job_beside_its_thread() {
+    let paint = |q: Point| {
+        let d = q.distance(Point::new(15.0, 12.5));
+        if (d - 8.0).abs() <= 0.3 {
+            NAVY
+        } else if d < 8.0 {
+            RED
+        } else {
+            WHITE
+        }
+    };
+    let mut s = placed(&picture(30.0, 25.0, PX_PER_MM, paint), PX_PER_MM);
+    let thread = json!({"palette": "jef", "index": 5});
+    let p = json!({"colors": 3, "colorChoices": [
+        {"color": hex(NAVY), "job": "lines", "thread": thread}, {"color": hex(RED), "thread": thread}]});
+    let r = digitize(&mut s, p, true);
+    let (navy, red) = (areas_of(&r, NAVY), areas_of(&r, RED));
+    assert!(navy.len() == 1 && !navy[0]["line"].is_null(), "{}", r["areas"]);
+    assert!(red.len() == 1 && red[0]["kind"] == json!("fill") && red[0]["joined"] == json!(0), "{}", r["areas"]);
+    assert_eq!(navy[0]["thread"]["index"], red[0]["thread"]["index"], "one thread");
+}

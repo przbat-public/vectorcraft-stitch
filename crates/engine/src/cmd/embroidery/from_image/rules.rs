@@ -350,9 +350,11 @@ pub(super) fn fills_without_centre_lines(
     by_row
 }
 
-/// The areas once the colours have their threads (`colours`): touching areas sewn in one thread
-/// joined into one, so that one colour of the design is one area, with no seam through it and no
-/// strip sewn twice in one thread. Colours merge into one thread (two sharing their only near
+/// The areas once the colours have their threads (`colours`): touching areas sewn in one thread,
+/// with one job, joined into one, so that one colour of the design is one area, with no seam
+/// through it and no strip sewn twice in one thread; areas of two jobs stay apart, each sewn as
+/// its colour asks (the project owner's choice, 2026-11-07, „Każdy kolor swoje zadanie
+/// (polecam)”): a colour set to Lines is sewn along its middle beside a field in its thread. Colours merge into one thread (two sharing their only near
 /// thread, the project owner's choice of 2026-11-01, or a merge a person asks for), and a speck
 /// joined to one area of a colour can make it touch another of that colour (as in the trace's own
 /// noise removal, where a speck merged into a colour joins the regions of it that it touches).
@@ -376,16 +378,16 @@ pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result
         }
         r
     };
-    // What two areas must share to be one: a sewn area's thread, an unsewn one's colour.
-    let key = |a: usize| -> Option<(bool, usize)> {
+    // What two areas must share to be one: a sewn area's thread and job, an unsewn one's colour.
+    let key = |a: usize| -> Option<(bool, usize, Job)> {
         let row_index = list.get(a)?.row;
         let row = rows.get(row_index)?;
         if row.background {
             None
         } else if row.sewn() {
-            row.thread.as_ref().map(|m| (true, m.thread.index))
+            row.thread.as_ref().map(|m| (true, m.thread.index, row.job))
         } else {
-            Some((false, end(row_index)))
+            Some((false, end(row_index), row.job))
         }
     };
     let mut parent: Vec<usize> = (0..n).collect();

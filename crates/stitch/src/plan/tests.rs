@@ -602,6 +602,25 @@ fn the_estimate_is_an_upper_bound() {
     assert!(started.elapsed().as_secs() < 5, "refused from the edges alone");
 }
 
+/// The estimate holds for capped satins too: a cap carries a column past each end by up to half
+/// its width, so dashes far shorter than the column is wide sew mostly caps, which the estimate
+/// counts (forty dashes 0.5 mm long, 6 mm wide, round and square).
+#[test]
+fn the_estimate_bounds_capped_satins() {
+    let mut dashes = BezPath::new();
+    for k in 0..40 {
+        let x = 10.0 * f64::from(k);
+        dashes.move_to((x, 0.0));
+        dashes.line_to((x + 0.5, 0.0));
+    }
+    for cap in [Cap::Round, Cap::Square] {
+        let p = Params { width: 6.0, cap, ..Params::for_style(Style::Satin) }.sane();
+        let sewn = stitches(&dashes, FillRule::NonZero, &p).len() as f64;
+        let estimated = estimate(&subpaths(&dashes), &p);
+        assert!(estimated >= sewn, "{cap:?}: {estimated} estimated, {sewn} sewn");
+    }
+}
+
 /// A shape whose control points lie far beyond the document's range, or aren't numbers, is
 /// refused before it is flattened (a curve's flattened points grow with its size, without bound),
 /// and has no narrow parts to look for.

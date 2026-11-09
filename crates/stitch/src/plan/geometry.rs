@@ -101,6 +101,57 @@ pub(super) fn subpaths(path: &BezPath) -> Vec<SubPath> {
     out
 }
 
+/// A subpath's two ends as its path draws them ([`end_directions`]): its first and last points, and
+/// the unit directions out of its first point (backward) and out of its last (forward), each `None`
+/// where the curve has no length there.
+#[derive(Clone, Copy, Debug)]
+pub(super) struct EndDirections {
+    pub(super) first: Point,
+    pub(super) last: Point,
+    pub(super) back: Option<Vec2>,
+    pub(super) on: Option<Vec2>,
+}
+
+/// The directions out of each subpath's two ends as `path` draws them, from its curves' own end
+/// tangents (not the chords [`subpaths`] flattens them into, which turn from them by up to half a
+/// chord's turn: 13° at the end of a curve 2 mm round), for each subpath [`subpaths`] keeps.
+pub(super) fn end_directions(path: &BezPath) -> Vec<EndDirections> {
+    // The direction a segment from `at` leaves along through its control points, and the one it
+    // arrives along at its end: the first control point unlike the end.
+    let leave = |at: Point, rest: &[Point]| rest.iter().find_map(|&q| unit(q - at));
+    let arrive = |end: Point, before: &[Point]| before.iter().rev().find_map(|&q| unit(end - q));
+    let mut out = Vec::new();
+    // The subpath being read (`last` where the pen is, `back` the way it leaves its first point),
+    // and whether it has a segment.
+    let mut cur: Option<(EndDirections, bool)> = None;
+    let push = |c: Option<(EndDirections, bool)>, out: &mut Vec<EndDirections>| {
+        if let Some((e, true)) = c {
+            out.push(EndDirections { back: e.back.map(|v| -v), ..e });
+        }
+    };
+    for el in path.elements() {
+        let (end, ctrl): (Point, Vec<Point>) = match *el {
+            PathEl::MoveTo(p) => {
+                push(cur.take(), &mut out);
+                cur = Some((EndDirections { first: p, last: p, back: None, on: None }, false));
+                continue;
+            }
+            PathEl::LineTo(p) => (p, vec![p]),
+            PathEl::QuadTo(a, p) => (p, vec![a, p]),
+            PathEl::CurveTo(a, b, p) => (p, vec![a, b, p]),
+            PathEl::ClosePath => continue,
+        };
+        let e = cur.map_or(EndDirections { first: end, last: end, back: None, on: None }, |(e, _)| e);
+        let mut before = vec![e.last];
+        before.extend(ctrl.iter().take(ctrl.len().saturating_sub(1)));
+        // A segment of no length keeps the directions found before it.
+        let leaving = leave(e.last, &ctrl);
+        cur = Some((EndDirections { first: e.first, last: end, back: e.back.or(leaving), on: arrive(end, &before).or(e.on) }, true));
+    }
+    push(cur, &mut out);
+    out
+}
+
 /// Points along a polyline every `step` millimetres, both ends included. A closed polyline ends
 /// where it started. Sharp corners get a point of their own (the steps start again from them),
 /// so stitches follow the outline instead of cutting across a corner — into a notch or a gap

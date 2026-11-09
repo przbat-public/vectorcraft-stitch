@@ -321,7 +321,7 @@ proptest! {
 #[test]
 fn a_key_changes_with_every_value_a_unit_depends_on() {
     use vectorcraft_geom::{BezPath, FillRule, Point, Rect, Shape};
-    use vectorcraft_stitch::plan::{Params, Start, Style, Underlay};
+    use vectorcraft_stitch::plan::{Cap, Params, Rows, Start, Style, Underlay};
     let shape = Rect::new(0.0, 0.0, 20.0, 10.0).to_path(0.1);
     let clip = (Rect::new(0.0, 0.0, 15.0, 15.0).to_path(0.1), FillRule::NonZero);
     let base = UnitRequest {
@@ -379,6 +379,8 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
         |p| p.auto_spacing = !p.auto_spacing,
         |p| p.spacing_scale += 0.1,
         |p| p.narrow += 0.1,
+        |p| p.cap = if p.cap == Cap::Butt { Cap::Round } else { Cap::Butt },
+        |p| p.rows = if p.rows == Rows::Fixed { Rows::AcrossShape } else { Rows::Fixed },
     ];
     for tweak in &tweaks {
         let mut params = base.params;
@@ -391,6 +393,9 @@ fn a_key_changes_with_every_value_a_unit_depends_on() {
     for (k, req) in changed.iter().enumerate() {
         assert_ne!(UnitKey::of(req, None), key, "change {k}");
     }
+    // Every cap tells apart from the others, not only from none.
+    let capped = |cap| UnitKey::of(&UnitRequest { params: Params { cap, ..base.params }, ..base }, None);
+    assert_ne!(capped(Cap::Round), capped(Cap::Square), "a round and a square cap");
 }
 
 /// The cache holds at most its limit, dropping the units used least recently: one looked up is
@@ -423,7 +428,8 @@ fn the_units_used_least_recently_are_dropped_first() {
         )
     };
     // Each unit 100 stitches and a key of about 40 words: 4 such units don't fit a limit of 320.
-    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2] });
+    let unit =
+        || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2], rows: None });
     // Each step a plan of its own (one plan's units are never dropped for each other).
     let mut cache = UnitCache::with_limit(320);
     cache.begin();
@@ -444,7 +450,7 @@ fn the_units_used_least_recently_are_dropped_first() {
     let before = cache.units();
     cache.insert(
         key(&shapes[1]),
-        Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None, reach: [0.0; 2] }),
+        Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 400], columns: None, widths: None, reach: [0.0; 2], rows: None }),
     );
     assert_eq!(cache.units(), before);
     assert!(cache.get(&key(&shapes[1])).is_none());
@@ -480,7 +486,8 @@ fn a_plan_keeps_its_first_units_when_not_all_fit() {
             None,
         )
     };
-    let unit = || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2] });
+    let unit =
+        || Arc::new(UnitStitches { stitches: vec![Stitch::sew(Point::ORIGIN); 100], columns: None, widths: None, reach: [0.0; 2], rows: None });
     // Two units of 100 stitches and their keys fit 320, three don't.
     let mut cache = UnitCache::with_limit(320);
     for _ in 0..3 {
@@ -1255,4 +1262,44 @@ fn only_a_design_that_may_outline_type_depends_on_the_fonts() {
     let key = s.embroidery_plan_key(&opts).unwrap();
     run(&mut s, "text.rescanFonts", json!({}));
     assert_ne!(s.embroidery_plan_key(&opts).unwrap(), key, "with type to outline, the fonts count");
+}
+
+/// The rows across the shape the Object tab reads are measured once an area, its fill rule and
+/// the angle a round piece keeps, and kept: asked again, nothing more is measured, and each answer
+/// is what measuring gives.
+#[test]
+fn the_rows_across_are_measured_once_an_area() {
+    use vectorcraft_geom::{FillRule, Rect, Shape};
+    let service = PlanService::default();
+    let area = super::digitize::AreaAcross { area: Rect::new(0.0, 0.0, 10.0, 40.0).to_path(0.1), rule: FillRule::NonZero, fixed: 45.0 };
+    let measured = super::plan::RowsAcross::of(&vectorcraft_stitch::plan::rows_by_piece(&area.area, area.rule, area.fixed));
+    assert_eq!(service.rows_across(&area), measured);
+    assert_eq!((service.rows_across(&area), service.kept_rows()), (measured, 1), "asked again");
+    let turned = super::digitize::AreaAcross { fixed: 30.0, ..area.clone() };
+    service.rows_across(&turned);
+    assert_eq!(service.kept_rows(), 2, "another angle a round piece keeps");
+}
+
+/// The Object tab's read of the rows across the shape (kept between reads) says what
+/// `embroidery.info` says (measured afresh), and again after one of the objects moved.
+#[test]
+fn the_object_tabs_rows_across_are_infos() {
+    let mut s = super::test_support::blank();
+    run(&mut s, "paint.setStroke", json!({"none": true}));
+    run(&mut s, "paint.setFill", json!({"color": "#cc2222"}));
+    let mut ids = Vec::new();
+    for (x, w, h) in [(10.0, 30.0, 100.0), (60.0, 100.0, 30.0), (200.0, 60.0, 60.0)] {
+        ids.push(vectorcraft_doc::NodeId(
+            run(&mut s, "shape.rectangle", json!({"x": x, "y": 20.0, "width": w, "height": h}))["id"].as_u64().unwrap(),
+        ));
+    }
+    run(&mut s, "embroidery.setup", json!({"fillAngle": "acrossShape"}));
+    let same = |s: &mut Session| {
+        let merged = serde_json::to_value(s.embroidery_merged(&ids).unwrap()).unwrap();
+        let info = serde_json::to_value(s.embroidery_info(&ids, false, &Options::default()).unwrap()).unwrap();
+        assert_eq!(merged["fill"]["settings"]["angle"], info["fill"]["settings"]["angle"]);
+    };
+    same(&mut s);
+    run(&mut s, "object.rotate", json!({"ids": [ids[0].0], "angle": 30}));
+    same(&mut s);
 }

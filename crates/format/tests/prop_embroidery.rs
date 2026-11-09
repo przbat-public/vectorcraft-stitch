@@ -411,6 +411,10 @@ fn setup_as_saved(v: &Value) -> Value {
     read_keys(m, |k, x| match (k, x) {
         ("palette" | "fabric" | "thread_weight" | "join_same_color" | "machine", Value::Null) => Some(None),
         ("start", x) => point(x).map(Some),
+        // The rows: a number of degrees is written as a float, a null is unset, and the rule's id
+        // or anything else is kept as it was.
+        ("fill_angle", Value::Null) => Some(None),
+        ("fill_angle", x) if x.is_number() => float(x).map(Some),
         ("fabric", Value::Object(f)) => Some(fabric(f)),
         ("machine", Value::Object(mc)) => Some(machine(mc)),
         ("thread_weight", x) => float(x).map(Some),

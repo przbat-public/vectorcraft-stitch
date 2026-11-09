@@ -15,6 +15,15 @@
 //! later gives way, so that no third layer stacks there. Upstream's Overlapping method (every lower
 //! colour whole under every upper one) and `expand` (growth all round, details and the outline too)
 //! are not used: the visible edges stay where the picture has them.
+//!
+//! Under a centre line (`super::centre`), sewn on top of what lies beside it, each pixel of the line
+//! goes to the colour nearest it outside the lines (an exact distance transform that keeps each
+//! pixel's nearest, `super::regions::nearest`), so that each neighbour reaches the line's middle on
+//! its side, wherever the line is wider or narrower, and half a pixel past it, so that the two
+//! sides meet; never more than [`LINE_REACH_MM`] from its own edge, and none where the pixel lies
+//! nearer the background, an area left unsewn or an area sewn after the line (the project owner's
+//! choices, 2026-11-07, „Sąsiedzi wchodzą pod linię (polecam)” and „Do środka, najwyżej 2 mm
+//! (polecam)”).
 
 use std::collections::BTreeMap;
 
@@ -22,9 +31,10 @@ use vectorcraft_geom::kurbo::{BezPath, ParamCurve, ParamCurveDeriv, PathEl, Path
 use vectorcraft_geom::{FillRule, PathData, Point, Rect, SubPath};
 use vectorcraft_pathops::{BoolOp, Cap, Join, outline_stroke, try_boolean, try_unite_all_with};
 
+use super::centre::CentreLine;
 use super::colours::Colours;
 use super::order::Order;
-use super::regions::{NONE, Regions};
+use super::regions::{NONE, Regions, nearest};
 use super::rules::Areas;
 use crate::Result;
 
@@ -40,6 +50,20 @@ const BEYOND_PX: f64 = 0.5;
 /// neighbours growing under it from both sides meet in its middle. The session's choice
 /// (2026-11-02), for the owner to confirm.
 const THIN_SHARE: f64 = 0.5;
+
+/// How far past its share of a centre line a neighbour reaches (working pixels): half a pixel, so
+/// that the two sides of a line meet under its middle rather than at it, and the share, made of
+/// whole pixels, covers the line's traced outline, which the trace's anti-aliased edges move by up
+/// to half a pixel from the pixels' (measured 2026-11-07: a ring 2 mm wide set to Lines left
+/// 1.9 mm² of fabric under its middle when each side reached its middle alone).
+const PAST_MIDDLE_PX: f64 = 0.5;
+
+/// The farthest a neighbour reaches under a centre line from its own edge (millimetres): the
+/// largest overlap a person may ask for (`super::settings::OVERLAP_RANGE_MM`, `expand`'s 2 mm), so
+/// that a colour set to Lines however wide (a field) leaves the colours in it as they are drawn,
+/// grown by no more than an overlap grows them (the project owner's choice, 2026-11-07, „Do środka,
+/// najwyżej 2 mm (polecam)”).
+pub(super) const LINE_REACH_MM: f64 = super::settings::OVERLAP_RANGE_MM.1;
 
 /// The miter limit the strip's widened edge is drawn with: none is drawn, its joins and ends being
 /// round, so that the strip reaches no farther than its width from the shared edge anywhere.
@@ -223,10 +247,88 @@ fn joined_edges(edges: &[BezPath]) -> PathData {
     PathData::from_bezpath(&all)
 }
 
+/// Each centre line's pixels by the area they go to (the module's notes), for each area of
+/// `regions` along whose middle a line runs (`line`): the area nearest each pixel outside the
+/// lines, when `takes` says it may grow under a line and the pixel lies within `reach_px` of it.
+/// A cancel stops it.
+fn line_shares(
+    regions: &Regions,
+    line: &dyn Fn(usize) -> bool,
+    takes: &dyn Fn(usize) -> bool,
+    reach_px: f64,
+) -> Result<Vec<BTreeMap<usize, Vec<usize>>>> {
+    let (w, h) = (regions.w as usize, regions.h as usize);
+    let labels = &regions.labels;
+    let in_line = |l: u32| l != NONE && line(l as usize);
+    let outside: Vec<bool> = labels.iter().map(|&l| !in_line(l)).collect();
+    let (d2, from) = nearest(&outside, w, h);
+    vectorcraft_doc::cancel::check()?;
+    let mut shares: Vec<BTreeMap<usize, Vec<usize>>> = vec![BTreeMap::new(); regions.areas.len()];
+    for (i, &l) in labels.iter().enumerate() {
+        if !in_line(l) || d2.get(i).is_none_or(|&d| d > reach_px * reach_px) {
+            continue;
+        }
+        let Some(a) = from.get(i).copied().flatten().and_then(|j| labels.get(j)).copied().filter(|&a| a != NONE).map(|a| a as usize) else {
+            continue;
+        };
+        if takes(a)
+            && let Some(by) = shares.get_mut(l as usize)
+        {
+            by.entry(a).or_default().push(i);
+        }
+    }
+    Ok(shares)
+}
+
+/// The band a neighbour grows under a centre line by: its share of the line's pixels (`pixels`, of
+/// a map `w` wide) as their own outline, along the pixels' edges, widened by [`PAST_MIDDLE_PX`];
+/// `None` when it has no pixel or the path operations refuse it.
+pub(super) fn share_band(pixels: &[usize], w: usize) -> Option<PathData> {
+    let w = w.max(1);
+    let (x0, y0) = pixels.iter().fold((usize::MAX, usize::MAX), |(x, y), &i| (x.min(i % w), y.min(i / w)));
+    let (x1, y1) = pixels.iter().fold((0, 0), |(x, y), &i| (x.max(i % w + 1), y.max(i / w + 1)));
+    if x0 >= x1 || y0 >= y1 {
+        return None;
+    }
+    let (bw, bh) = (x1 - x0, y1 - y0);
+    let mut mask = vec![false; bw * bh];
+    for &i in pixels {
+        if let Some(m) = mask.get_mut((i / w - y0) * bw + (i % w - x0)) {
+            *m = true;
+        }
+    }
+    let mut outline = BezPath::new();
+    for c in vectorcraft_trace::trace_mask(&mask, bw, bh) {
+        for l in std::iter::once(&c.outer).chain(&c.holes) {
+            let mut pts = l.pts.iter().map(|&(x, y)| Point::new(f64::from(x) + x0 as f64, f64::from(y) + y0 as f64));
+            let Some(first) = pts.next() else { continue };
+            outline.move_to(first);
+            for p in pts {
+                outline.line_to(p);
+            }
+            outline.close_path();
+        }
+    }
+    let share = PathData::from_bezpath(&straightened(&outline));
+    let rim = outline_stroke(&share, 2.0 * PAST_MIDDLE_PX, Cap::Round, Join::Round, NO_MITER);
+    united(&[&share, &rim])
+}
+
 /// The shapes of `areas` (traced as `traced`), sewn in `order`, with `overlap_px` working pixels of
-/// overlap. A cancel stops it between areas.
-pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, colours: &Colours, order: &Order, overlap_px: f64) -> Result<Shapes> {
+/// overlap. An area sewn along its centre line (`lines`) grows under nothing, and its neighbours
+/// grow under it to its middle on their side, whatever the overlap, at most `line_reach_px` (the
+/// module's notes): a line is sewn on top of what lies beside it. A cancel stops it between areas.
+pub(super) fn shaped(
+    traced: &[vectorcraft_trace::TracedPath],
+    areas: &Areas,
+    colours: &Colours,
+    order: &Order,
+    overlap_px: f64,
+    lines: &[Option<CentreLine>],
+    line_reach_px: f64,
+) -> Result<Shapes> {
     let n = areas.areas.len();
+    let line = |a: usize| lines.get(a).is_some_and(Option::is_some);
     let sewn = |a: usize| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(super::colours::Colour::sewn);
     let background = |a: usize| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(|r| r.background);
     let mut failed = 0usize;
@@ -288,6 +390,7 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
         for &a in &placed.under {
             let sewn_over = areas.areas.get(b).is_some_and(|x| x.inside == Some(a) && x.sewn_over);
             if sewn(a)
+                && !line(a)
                 && !sewn_over
                 && let Some(g) = under.get_mut(a)
             {
@@ -305,22 +408,37 @@ pub(super) fn shaped(traced: &[vectorcraft_trace::TracedPath], areas: &Areas, co
     // What strips already lie under each area, from the areas sewn before, each with its box: a
     // later strip there gives way to those it may overlap.
     let mut taken: Vec<Vec<(Rect, PathData)>> = vec![Vec::new(); n];
-    if overlap_px > 0.0 {
+    let any_line = lines.iter().any(Option::is_some);
+    if overlap_px > 0.0 || any_line {
+        let shares = if any_line { line_shares(&areas.regions, &line, &|a| sewn(a) && !line(a), line_reach_px)? } else { Vec::new() };
+        let map_w = areas.regions.w as usize;
         for &a in &order.sewn {
             vectorcraft_doc::cancel::check()?;
             let Some(later) = under.get(a).filter(|l| !l.is_empty()) else { continue };
             let Some(base) = own.get(a) else { continue };
-            let edges = shared_edges(base, a, &areas.regions);
+            // The edges `a` shares with the others, found once when a band is cut along them.
+            let mut edges: Option<BTreeMap<usize, Vec<BezPath>>> = None;
             let (mut strips, mut reached, mut strip_px): (Vec<PathData>, Vec<usize>, f64) = (Vec::new(), Vec::new(), 0.0);
             for &b in later {
-                let (Some(lines), Some(into), Some(stats), Some(outlines)) =
-                    (edges.get(&b), own.get(b), areas.regions.areas.get(b), boxed.get_mut(b))
-                else {
+                let (Some(into), Some(stats), Some(outlines)) = (own.get(b), areas.regions.areas.get(b), boxed.get_mut(b)) else {
                     continue;
                 };
-                // As far as asked, or half as wide as a thin neighbour.
-                let width = overlap_px.min(stats.widest_px * THIN_SHARE);
-                let band = outline_stroke(&joined_edges(lines), 2.0 * width, Cap::Round, Join::Round, NO_MITER);
+                let band = if line(b) {
+                    // Under a centre line, `a`'s share of it.
+                    let Some(pixels) = shares.get(b).and_then(|s| s.get(&a)) else { continue };
+                    let Some(band) = share_band(pixels, map_w) else {
+                        failed += 1;
+                        continue;
+                    };
+                    band
+                } else {
+                    // As far as asked, or half as wide as a thin neighbour, along the edge they share.
+                    let width = overlap_px.min(stats.widest_px * THIN_SHARE);
+                    let Some(shared) = edges.get_or_insert_with(|| shared_edges(base, a, &areas.regions)).get(&b).filter(|_| width > 0.0) else {
+                        continue;
+                    };
+                    outline_stroke(&joined_edges(shared), 2.0 * width, Cap::Round, Join::Round, NO_MITER)
+                };
                 let Some(reach) = band.control_bounds() else { continue };
                 let outlines = outlines.get_or_insert_with(|| straightened_outlines(into));
                 let near = PathData::new(outlines.iter().filter(|(r, _)| r.overlaps(reach)).map(|(_, sp)| sp.clone()).collect());

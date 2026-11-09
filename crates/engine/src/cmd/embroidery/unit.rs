@@ -12,6 +12,8 @@ use vectorcraft_pathops::{BoolOp, Cap, Join, boolean, outline_stroke, unite_all}
 use vectorcraft_stitch::plan::{self, Aim, Carried, Params, Start};
 use vectorcraft_stitch::{Command, Stitch};
 
+use super::plan::RowsAcross;
+
 /// The miter limit given for a band grown along an outline (a fill's `expand`, a narrow column's
 /// [`COLUMN_GROWTH`]): its joins are round, which have none; this is a stroke's usual default.
 pub(super) const ROUND_JOINS: f64 = 4.0;
@@ -91,6 +93,10 @@ pub(crate) struct UnitStitches {
     /// How far from its entry and its exit point its first and last needle points can lie at best,
     /// millimetres ([`ends_reach`]): 0 where none is asked.
     pub(crate) reach: [f64; 2],
+    /// A fill whose rows run across its shape ([`plan::Rows::AcrossShape`]): its pieces' rows as
+    /// the planner measured them ([`plan::rows_by_piece`]); `None` for a fill whose rows keep their
+    /// angle, and for everything else.
+    pub(crate) rows: Option<RowsAcross>,
 }
 
 /// The stitches `req` asks for: the shape planned in its style from where the needle is, a fill's
@@ -120,9 +126,17 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result
     });
     let (planned, columns) = match (columns, parts.and_then(|p| p.cut.as_ref())) {
         (Some(satin), Some((rest, whole))) => {
-            (plan::try_fill_with_columns_aimed(whole, FillRule::NonZero, rest, found, &params, &satin, aim), Some(satin))
+            // The rows across the shape are measured on the shape itself, as `embroidery.info` does.
+            let planned = plan::try_fill_with_columns_measured(whole, FillRule::NonZero, rest, found, &params, &satin, aim, Some((shape, rule)));
+            (planned.map_err(PlanError::from), Some(satin))
         }
-        _ => (plan::try_stitches_aimed(shape, rule, &params, aim), None),
+        // A running line's drawings and routes stop at a cancel.
+        _ => (
+            plan::try_stitches_aimed_until(shape, rule, &params, aim, &cancel::is_cancelled)
+                .map_err(PlanError::from)
+                .and_then(|s| s.ok_or(PlanError::Cancelled)),
+            None,
+        ),
     };
     let mut stitches = planned?;
     // A stroke inside a clip group: only the stitches inside the clipping path are sewn. (A
@@ -136,7 +150,13 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result
     stitches.shrink_to_fit();
     let asked = [matches!(start, Start::Entry(_)), exit.is_some()];
     let reach = ends_reach(shape, &params, columns.as_ref(), found, &stitches, asked);
-    Ok(UnitStitches { stitches, columns, widths, reach })
+    // The rows the planner laid across the shape, each piece's, as it measured them.
+    let rows = if params.rows == plan::Rows::AcrossShape && plan::sewn_style(&params) == plan::Style::Fill {
+        RowsAcross::of(&plan::rows_by_piece(shape, rule, params.angle))
+    } else {
+        None
+    };
+    Ok(UnitStitches { stitches, columns, widths, reach, rows })
 }
 
 /// A fill's narrow parts sewn as satin ([`plan::narrow_columns`], by the widest narrow part
@@ -164,7 +184,8 @@ const IN_COLUMN: f64 = 0.05;
 /// How far from the entry and the exit point it was planned toward (`asked`: whether each was) a
 /// unit's first and last needle points can lie at best, millimetres: a satin column's crossings
 /// end on a rail, half its width and its pull compensation aside, an open column's ends pushed in
-/// by its push compensation (a ring has none); a fill's narrow part sewn as satin the same where
+/// by its push compensation (a ring has none) and carried past the path's by its cap, so that its
+/// last crossing lies at the cap's corner (`plan::cap_reach_of`); a fill's narrow part sewn as satin the same where
 /// the needle point lies in it, at its width there (`satin` its parameters, `found` the parts); a
 /// fill's rows, a running line and a part not asked for, nothing.
 fn ends_reach(shape: &BezPath, params: &Params, satin: Option<&Params>, found: &[plan::Column], stitches: &[Stitch], asked: [bool; 2]) -> [f64; 2] {
@@ -175,12 +196,20 @@ fn ends_reach(shape: &BezPath, params: &Params, satin: Option<&Params>, found: &
         let [left, right] = p.compensation(width);
         width / 2.0 + left.max(right) + if open { p.push[0].max(p.push[1]) } else { 0.0 }
     };
+    // An open satin stroke ends past its path's end by its cap, on a rail: the allowance reaches
+    // that corner (a butt cap's is the plain column's).
+    let capped = |p: &Params, open: bool| {
+        let cap = if open { plan::cap_reach_of(p) } else { 0.0 };
+        let [left, right] = p.compensation(p.width);
+        let rail = p.width.min(plan::MAX_SATIN_WIDTH) / 2.0 + left.max(right);
+        if cap > 0.0 { rail.hypot(cap) + p.push[0].max(p.push[1]) } else { column(p, p.width.min(plan::MAX_SATIN_WIDTH), open) }
+    };
     let reach = |q: Point| match (plan::sewn_style(params), satin) {
         (plan::Style::Satin, _) => {
             // A ring has no ends to push in: every subpath closed.
             let open = shape.elements().iter().filter(|e| matches!(e, vectorcraft_geom::PathEl::MoveTo(_))).count()
                 > shape.elements().iter().filter(|e| matches!(e, vectorcraft_geom::PathEl::ClosePath)).count();
-            column(params, params.width.min(plan::MAX_SATIN_WIDTH), open)
+            capped(params, open)
         }
         (_, Some(p)) => found
             .iter()

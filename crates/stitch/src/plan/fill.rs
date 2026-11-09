@@ -4,11 +4,12 @@
 use vectorcraft_geom::{BezPath, FillRule, Point, Vec2};
 
 use super::area::{Area, Grid, TRAVEL_STITCH, Travels};
+use super::axis::{PieceRows, directions, piece_rows, same_direction};
 use super::geometry::{Axes, SubPath, area, length, nearest_on, resample, subpaths, unit};
 use super::narrow::Column;
 use super::runs::{COST_EXIT, COST_HIDDEN, COST_SEEN, FILL_SEEN_SLACK, Moves, Runs, Travel, can_gain, gains};
 use super::satin::{column_returns, sew_column};
-use super::{Aim, MAX_STITCHES, Params, Start, Style, UNDERLAY_STITCH, Underlay};
+use super::{Aim, MAX_STITCHES, Params, Rows, Start, Style, UNDERLAY_STITCH, Underlay};
 use crate::{SAME_POINT, Stitch};
 
 /// The smallest area (square millimetres) a subpath must enclose for a fill to treat it as a
@@ -66,13 +67,14 @@ const MIN_ROW: f64 = 0.8;
 /// underlay holds the fabric the other way. By judgement (square to the top rows).
 pub(super) const UNDERLAY_TURN: f64 = 90.0;
 
-/// A tatami fill of `path`: rows of stitches at [`Params::angle`] degrees, [`Params::density`]
-/// apart, each split into stitches at most [`Params::stitch_length`] long and reaching past the
-/// edge at its ends by its pull compensation ([`Params::compensation`] of its length), over an
-/// edge run and, for a large shape, a tatami underlay when [`Params::underlay`] is on. A subpath
-/// that encloses no area is a line: it is sewn as a running line. The needle is at `from` before it
-/// starts: the fill starts as near it as it can (its edge run at the corner nearest, its first
-/// region the one nearest), as Ink/Stitch starts fills.
+/// A tatami fill of `path`: rows of stitches at [`Params::angle`] degrees (or across each separate
+/// piece of the shape, [`Params::rows`]), [`Params::density`] apart, each split into stitches at
+/// most [`Params::stitch_length`] long and reaching past the edge at its ends by its pull
+/// compensation ([`Params::compensation`] of its length), over an edge run and, for a large shape,
+/// a tatami underlay when [`Params::underlay`] is on. A subpath that encloses no area is a line: it
+/// is sewn as a running line. The needle is at `from` before it starts: the fill starts as near it
+/// as it can (its edge run at the corner nearest, its first region the one nearest), as Ink/Stitch
+/// starts fills.
 pub(super) fn fill(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<Stitch> {
     let p = p.sane();
     fill_runs(path, rule, &p, aim).join()
@@ -80,24 +82,66 @@ pub(super) fn fill(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Vec<
 
 /// [`fill`]'s runs before they are joined into stitches: what the moves between them are
 /// ([`Runs::moves`]) is known then. `p` is sane.
+///
+/// With the rows across the shape ([`Rows::AcrossShape`]), each separate piece's rows run across
+/// it ([`piece_rows`]): the pieces of one direction are sewn together, as one area, and the
+/// directions one after another as a fill's parts are ([`sew_parts`]); a shape of one direction is
+/// sewn whole at it.
 pub(super) fn fill_runs(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) -> Runs {
     let subs = closed_subpaths(path);
-    let mut runs = Runs::from(aim.start.point(), p);
-    for sub in subs.iter().filter(|s| !s.closed) {
-        let line = sub.points();
-        if length(&line, false) >= p.min_stitch {
-            runs.push(resample(&line, p.stitch_length, false), Travel::Auto);
+    let lines: Vec<Vec<Point>> = subs
+        .iter()
+        .filter(|s| !s.closed)
+        .map(SubPath::points)
+        .filter(|line| length(line, false) >= p.min_stitch)
+        .map(|line| resample(&line, p.stitch_length, false))
+        .collect();
+    // The fill's lines are sewn first.
+    let begun = || {
+        let mut runs = Runs::from(aim.start.point(), p);
+        for line in &lines {
+            runs.push(line.clone(), Travel::Auto);
         }
-    }
+        runs
+    };
     let outlines = outlines(&subs);
     if outlines.is_empty() {
-        return runs;
+        return begun();
     }
     let grid = Grid::new(&outlines);
     let shape = Area { outlines: &outlines, rule, grid: grid.as_ref() };
+    let angle = match p.rows {
+        Rows::Fixed => p.angle,
+        Rows::AcrossShape => {
+            let pieces = piece_rows(shape, p.angle);
+            match directions(pieces.iter().map(|(_, r)| r.angle)).as_slice() {
+                [] => p.angle,
+                [one] => *one,
+                _ => return by_direction(shape, &pieces, p, aim, &begun),
+            }
+        }
+    };
+    let mut runs = begun();
     let mut travels = Travels::new(shape);
-    sew_area(shape, &mut travels, p, entered(aim.start), aim.exit, &[], &mut runs, &|_| 0.0);
+    sew_area(shape, &mut travels, &Params { angle, ..*p }, entered(aim.start), aim.exit, &[], &mut runs, &|_| 0.0);
     runs
+}
+
+/// A fill of `shape` whose separate `pieces` run in more than one direction ([`fill_runs`]): the
+/// pieces of each direction one area, sewn at it, the areas one after another, whichever starts
+/// nearest the needle next ([`sew_parts`]), after what `begun` sews. `p` is sane.
+fn by_direction(shape: Area<'_>, pieces: &[(Vec<&SubPath>, PieceRows)], p: &Params, aim: Aim, begun: &dyn Fn() -> Runs) -> Runs {
+    let mut groups: Vec<(f64, Vec<&SubPath>)> = Vec::new();
+    for (outlines, rows) in pieces {
+        match groups.iter_mut().find(|(a, _)| same_direction(*a, rows.angle)) {
+            Some((_, group)) => group.extend(outlines.iter().copied()),
+            None => groups.push((rows.angle, outlines.clone())),
+        }
+    }
+    let grids: Vec<Option<Grid>> = groups.iter().map(|(_, g)| Grid::new(g)).collect();
+    let areas: Vec<Area<'_>> = groups.iter().zip(&grids).map(|((_, g), grid)| Area { outlines: g, rule: shape.rule, grid: grid.as_ref() }).collect();
+    let angles: Vec<f64> = groups.iter().map(|(a, _)| *a).collect();
+    sew_parts(shape, &areas, &angles, &[], p, p, aim, begun)
 }
 
 /// The entry point a fill is sewn from, when `start` is one (and a number).
@@ -230,15 +274,11 @@ const MIN_PIECE: f64 = 1.0;
 /// A filled shape sewn in parts: `rest`, the shape without its narrow columns (cut out by the
 /// caller with path operations), as a tatami fill, and each of `columns` as a satin column whose
 /// width follows the shape ([`sew_column`]). The pieces of the rest (each outline with the holes
-/// inside it) and the columns are sewn one after another, whichever starts nearest the needle
-/// next, so that the needle moves on to what lies next to where it is. It travels inside the whole
-/// `shape` (`rule` decides what it covers) from part to part, under the parts still to come where
-/// it can; over a piece of the rest already sewn a travel may show for at most [`MAX_SEEN`], and
-/// over a column already sewn it is not counted as showing. `fill` and `satin`
-/// are the two kinds of parts' parameters. A piece of the rest smaller than [`MIN_PIECE`] is left
-/// out. Toward an exit the parts are sewn twice, without and with it, and a last piece's top rows
-/// three times (in the plain parts, then [`sew_toward`]'s own plain and aimed rows): the work the
-/// stitch estimate allows for.
+/// inside it) and the columns are sewn one after another ([`sew_parts`]). A piece of the rest
+/// smaller than [`MIN_PIECE`] is left out. With the rows across the shape ([`Rows::AcrossShape`]),
+/// each piece of the rest is sewn at the rows of the separate piece of the whole `shape` it lies in
+/// ([`rows_of_rest`]).
+#[cfg(test)]
 pub(crate) fn fill_with_columns(
     shape: &BezPath,
     rule: FillRule,
@@ -248,11 +288,24 @@ pub(crate) fn fill_with_columns(
     satin: &Params,
     aim: Aim,
 ) -> Vec<Stitch> {
+    fill_with_columns_measured(shape, rule, rest, columns, fill, satin, aim, None)
+}
+
+/// [`fill_with_columns`], the rows across the shape measured on `measured` (the shape before its
+/// narrow parts were cut out, with its fill rule) when given, else on `shape`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn fill_with_columns_measured(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    aim: Aim,
+    measured: Option<(&BezPath, FillRule)>,
+) -> Vec<Stitch> {
     let fill = Params { style: Style::Fill, ..*fill }.sane();
     let satin = Params { style: Style::Satin, ..*satin }.sane();
-    // An entry point starts the first part: a piece of the rest there, a column from its nearer end
-    // after a travel from there.
-    let entry = entered(aim.start);
     let subs = closed_subpaths(shape);
     let outlines = outlines(&subs);
     if outlines.is_empty() {
@@ -260,11 +313,45 @@ pub(crate) fn fill_with_columns(
     }
     let grid = Grid::new(&outlines);
     let whole = Area { outlines: &outlines, rule, grid: grid.as_ref() };
-    let mut travels = Travels::new(whole);
     let rest_subs = closed_subpaths(rest);
     let pieces = pieces(&rest_subs);
     let grids: Vec<Option<Grid>> = pieces.iter().map(|p| Grid::new(p)).collect();
     let areas: Vec<Area<'_>> = pieces.iter().zip(&grids).map(|(p, g)| Area { outlines: p, rule: FillRule::NonZero, grid: g.as_ref() }).collect();
+    let measured_subs = measured.map(|(path, _)| closed_subpaths(path)).unwrap_or_default();
+    let measured_outlines = self::outlines(&measured_subs);
+    let measured_grid = Grid::new(&measured_outlines);
+    let on = match measured {
+        Some((_, rule)) if !measured_outlines.is_empty() => Area { outlines: &measured_outlines, rule, grid: measured_grid.as_ref() },
+        _ => whole,
+    };
+    let angles = rows_of_rest(on, &areas, &fill);
+    sew_parts(whole, &areas, &angles, columns, &fill, &satin, aim, &|| Runs::from(aim.start.point(), &fill)).join()
+}
+
+/// A filled shape's parts sewn one after another, after what `begun` sews: the pieces `areas` as
+/// tatami fills, piece `i` at the rows `angles[i]` (else [`Params::angle`]), and `columns` as satin
+/// columns, whichever starts nearest the needle next, so that the needle moves on to what lies
+/// next to where it is. It travels inside `whole` from part to part, under the parts still to come
+/// where it can; over a piece already sewn a travel may show for at most [`MAX_SEEN`], and over a
+/// column already sewn it is not counted as showing. `fill` and `satin` are the two kinds of
+/// parts' parameters (sane). Toward an exit the parts are sewn twice, without and with it, and a
+/// last piece's top rows three times (in the plain parts, then [`sew_toward`]'s own plain and
+/// aimed rows): the work the stitch estimate allows for.
+#[allow(clippy::too_many_arguments)]
+fn sew_parts(
+    whole: Area<'_>,
+    areas: &[Area<'_>],
+    angles: &[f64],
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    aim: Aim,
+    begun: &dyn Fn() -> Runs,
+) -> Runs {
+    // An entry point starts the first part: a piece there, a column from its nearer end after a
+    // travel from there.
+    let entry = entered(aim.start);
+    let mut travels = Travels::new(whole);
     let parts: Vec<Part> = (0..areas.len()).map(Part::Piece).chain((0..columns.len()).map(Part::Column)).collect();
     let contacts: Vec<Vec<Point>> = parts
         .iter()
@@ -274,13 +361,12 @@ pub(crate) fn fill_with_columns(
         })
         .collect();
     // An open column that does not come back is left at its other end.
-    let through =
-        |k: usize| matches!(parts.get(k), Some(Part::Column(i)) if columns.get(*i).is_some_and(|c| !c.closed && !column_returns(c, &satin)));
-    let here = Runs::from(aim.start.point(), &fill).here_inside();
+    let through = |k: usize| matches!(parts.get(k), Some(Part::Column(i)) if columns.get(*i).is_some_and(|c| !c.closed && !column_returns(c, satin)));
+    let here = begun().here_inside();
     let order = Order { contacts: &contacts, through: &through, exit: None, first: None }.best(here);
     // The parts sewn in `order`, the last one toward `exit` when given.
-    let mut sew_parts = |order: &[usize], exit: Option<Point>| -> Runs {
-        let mut runs = Runs::from(aim.start.point(), &fill);
+    let mut in_order = |order: &[usize], exit: Option<Point>| -> Runs {
+        let mut runs = begun();
         let mut sewn: Vec<bool> = vec![false; areas.len()];
         for (step, &k) in order.iter().enumerate() {
             if runs.full() {
@@ -294,7 +380,8 @@ pub(crate) fn fill_with_columns(
                     // Its travels show where they cross a piece already sewn, as a column's do.
                     let finished = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
                     if let Some(&area) = areas.get(i) {
-                        sew_area(area, &mut travels, &fill, entry.filter(|_| step == 0), last, &toward, &mut runs, &finished);
+                        let p = Params { angle: angles.get(i).copied().unwrap_or(fill.angle), ..*fill };
+                        sew_area(area, &mut travels, &p, entry.filter(|_| step == 0), last, &toward, &mut runs, &finished);
                     }
                     if let Some(s) = sewn.get_mut(i) {
                         *s = true;
@@ -303,7 +390,7 @@ pub(crate) fn fill_with_columns(
                 Some(&Part::Column(i)) => {
                     // A travel shows where it crosses a piece of the rest already sewn.
                     let seen = |route: &[Point]| areas.iter().zip(&sewn).filter(|(_, s)| **s).map(|(a, _)| inside(*a, route)).sum::<f64>();
-                    let mut reach = |runs: &mut Runs, to: Point, to_inside: Point| runs.approach(&mut travels, to, to_inside, MAX_SEEN, &seen, &fill);
+                    let mut reach = |runs: &mut Runs, to: Point, to_inside: Point| runs.approach(&mut travels, to, to_inside, MAX_SEEN, &seen, fill);
                     if let Some(column) = columns.get(i) {
                         // An entry point by a column sewn first: the needle goes in there and travels
                         // inside to the column's nearer end, hidden under its stitches still to come,
@@ -313,7 +400,7 @@ pub(crate) fn fill_with_columns(
                         {
                             runs.lead_from(e, nearest_on(&column.middles(), column.closed, e).map(|(_, q, _)| q));
                         }
-                        sew_column(column, &satin, &mut runs, &mut reach, last);
+                        sew_column(column, satin, &mut runs, &mut reach, last);
                     }
                 }
                 None => {}
@@ -321,11 +408,11 @@ pub(crate) fn fill_with_columns(
         }
         runs
     };
-    let plain = sew_parts(&order, None);
-    let Some(exit) = aim.exit.filter(|x| x.x.is_finite() && x.y.is_finite()) else { return plain.join() };
+    let plain = in_order(&order, None);
+    let Some(exit) = aim.exit.filter(|x| x.x.is_finite() && x.y.is_finite()) else { return plain };
     let from_exit = |r: &Runs| r.here().map_or(f64::INFINITY, |h| h.distance(exit));
     if !can_gain(from_exit(&plain)) {
-        return plain.join();
+        return plain;
     }
     // Toward an exit: the parts ordered to end nearest it, the last aimed at it; the part a set entry
     // starts kept first, any part first otherwise (a set entry beats a set exit, which beats where
@@ -334,10 +421,40 @@ pub(crate) fn fill_with_columns(
     // and nearer the exit.
     let first = entry.and(order.first().copied());
     let aimed_order = Order { contacts: &contacts, through: &through, exit: Some(exit), first }.best(here);
-    let aimed = sew_parts(&aimed_order, Some(exit));
-    let moves = |r: &Runs| r.moves.moved_in(aim.start.point(), r.first(), &fill);
-    let keep = if moves(&aimed).within(&moves(&plain), FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain };
-    keep.join()
+    let aimed = in_order(&aimed_order, Some(exit));
+    let moves = |r: &Runs| r.moves.moved_in(aim.start.point(), r.first(), fill);
+    if moves(&aimed).within(&moves(&plain), FILL_SEEN_SLACK) && gains(from_exit(&aimed), from_exit(&plain)) { aimed } else { plain }
+}
+
+/// The rows each piece of a fill's rest (`areas`) is sewn at: [`Params::angle`], or with the rows
+/// across the shape ([`Rows::AcrossShape`]) those of the separate piece of `whole` (the shape the
+/// rows are measured on) it lies in ([`piece_rows`]), found by a point well inside it
+/// ([`inner_point`]); a piece in none keeps [`Params::angle`].
+fn rows_of_rest(whole: Area<'_>, areas: &[Area<'_>], fill: &Params) -> Vec<f64> {
+    if fill.rows == Rows::Fixed {
+        return vec![fill.angle; areas.len()];
+    }
+    let pieces = piece_rows(whole, fill.angle);
+    if let [one] = directions(pieces.iter().map(|(_, r)| r.angle)).as_slice() {
+        return vec![*one; areas.len()];
+    }
+    areas
+        .iter()
+        .map(|a| {
+            let held = |q: Point| pieces.iter().find(|(outlines, _)| Area { outlines, rule: whole.rule, grid: None }.contains(q));
+            inner_point(*a).and_then(held).map_or(fill.angle, |(_, r)| r.angle)
+        })
+        .collect()
+}
+
+/// A point well inside `area`: the middle of the longest stretch of its row halfway across it, from
+/// left to right; `None` for an area with none.
+fn inner_point(area: Area<'_>) -> Option<Point> {
+    let axes = Axes::new(0.0);
+    let (lo, hi) = area.extent(axes.across)?;
+    let t = (lo + hi) / 2.0;
+    let (a, b) = area.sweep(axes).spans(t).into_iter().max_by(|x, y| (x.1 - x.0).total_cmp(&(y.1 - y.0)))?;
+    Some(axes.point((a + b) / 2.0, t))
 }
 
 /// The pieces of a shape's rest (`subs`, from path operations): each outline wound as the largest

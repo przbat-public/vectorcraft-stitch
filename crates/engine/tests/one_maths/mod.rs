@@ -1,8 +1,8 @@
 //! One maths library on every system, for the test binary that declares this module (the
-//! embroidery golden corpus): the C maths functions Rust's `f64` and `f32` methods call (`sin`,
-//! `cos`, `pow`…), and those the compiler makes of them (`sincos` on Linux, `__sincos_stret` and
-//! `__exp10` on macOS), are defined here as the `libm` crate's, a Rust port of musl's, so that the
-//! binary computes the same bits on every system.
+//! embroidery golden corpus, the image listing and the pinned exports): the C maths functions
+//! Rust's `f64` and `f32` methods call (`sin`, `cos`, `pow`…), and those the compiler makes of them
+//! (`sincos` on Linux, `__sincos_stret` and `__exp10` on macOS), are defined here as the `libm`
+//! crate's, a Rust port of musl's, so that the binary computes the same bits on every system.
 //!
 //! Each system's own library rounds some results differently in the last bit (macOS's, glibc's and
 //! FreeBSD's each its own way), and one bit can move a stitch: on 2026-11-02 the corpus's document

@@ -25,7 +25,7 @@ const PART_KEYS: [&str; 12] =
     ["stitch", "spacing", "length", "angle", "pull", "pull_percent", "push", "expand", "narrow_as_satin", "underlay", "split_length", "points"];
 const POINT_KEYS: [&str; 4] = ["entry", "exit", "rails", "frame"];
 /// The keys the document's settings are saved under, and its fabric's and machine's.
-const SETUP_KEYS: [&str; 7] = ["palette", "start", "label", "fabric", "thread_weight", "join_same_color", "machine"];
+const SETUP_KEYS: [&str; 8] = ["palette", "start", "label", "fabric", "thread_weight", "join_same_color", "machine", "fill_angle"];
 const FABRIC_KEYS: [&str; 9] = ["preset", "tatami", "satin", "stabilizer", "topping", "needle_point", "thickness", "color", "values"];
 const STITCH_KEYS: [&str; 5] = ["pull", "spacing", "spacing_percent", "length", "underlay"];
 const MACHINE_KEYS: [&str; 5] = ["jump_length", "trim_length", "min_stitch", "split_length", "speed"];
@@ -35,9 +35,11 @@ const RUN_KEYS: [&str; 10] = ["manual", "trim_before", "trim_after", "stop_after
 /// A string far longer than any setting holds.
 const LONG: usize = 10_000;
 
-/// A value at the edges of what JSON holds, or any value at all.
+/// A value at the edges of what JSON holds, a value one key reads (the document's rows across
+/// each shape), or any value at all.
 fn edge() -> impl Strategy<Value = Value> {
     prop_oneof![
+        Just(json!("acrossShape")),
         Just(json!(1.7e308)),
         Just(json!(-1.7e308)),
         Just(json!(1e-300)),

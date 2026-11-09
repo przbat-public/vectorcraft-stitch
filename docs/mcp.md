@@ -7220,8 +7220,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   checked; `resolved` is only
   reported and refused as input. `embroidery.settings {}` reads the same without editing anything. A PES, PEC or JEF
   file opens in its own format's palette. It also takes `start`, `label`, `fabric` (a preset's id, an object of values
-  merged value by value, or null), `threadWeight`, `joinSameColor` and `machine` (`{jumpLength, trimLength, minStitch,
-  splitLength, speed}`, merged), all reported in `settings` and `resolved` (each fabric value, the information values `thickness`,
+  merged value by value, or null), `threadWeight`, `joinSameColor`, `machine` (`{jumpLength, trimLength, minStitch,
+  splitLength, speed}`, merged) and `fillAngle` (the rows of every fill that sets no angle: degrees counter-clockwise on
+  the page, −360 to 360 (a file's number past a full turn is read within one, the same direction: 450 is 90),
+  turned with each object as the built-in 135° are; `"acrossShape"`, each fill's rows square to
+  its length when it is at least 1.5 times as long as wide, each separate piece of a fill measured alone; `null`, the
+  built-in rows), all reported in `settings` and
+  `resolved` (`fillAngle`: `{value, source}`, 135 by default, the value the plan uses) (each fabric value, the information values `thickness`,
   `stabilizer`, `topping` and `needlePoint` included, `{value, source, preset, changed}`; the colour `{value, source}`), and the reply's `overrides` counts the objects that set the fabric's pull, spacing, length and underlay
   themselves, by key, and how many set any (`objectCount`), symbols' art included (read only, as `resolved`).
   `embroidery.applyFabric` without `ids` acts on the selection, else on every object, symbols' art included; with
@@ -7292,25 +7297,33 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `width`, `height` or `fit: [w, h]` (mm; default: the image as placed), `crop: [x0, y0, x1, y1]` (the image's own
   pixels), `background` (`"corners"`, the default: transparency, or the colour three corners agree on; `"none"`;
   `"#rrggbb"`), `mode` (`color`, `logo`, `grayscale`), `colors` (2 to the palette's threads, default 6),
-  `colorChoices: [{color, thread?: {palette, index}, mergeInto?, job?: "auto"|"fill"|"none"}]` (at most 256),
+  `colorChoices: [{color, thread?: {palette, index}, mergeInto?, job?: "auto"|"fill"|"lines"|"none"}]` (at most 256;
+  `lines`: every area of the colour sewn along its middle, whatever its width),
   `minArea` (mm², default 1), `smoothing` and `corners` (0 to 100) and `overlap` (mm, 0 to 2, default 0.4); the
   reply's `table` gives each setting's step, unit, range, default and its source. The image is worked at a copy of at
   most 10 pixels a millimetre (fewer past 1,500 pixels a side, or where the image has fewer) and traced in its own
   colours; each colour gets a thread of the document's palette, chosen together (CIEDE2000, flagged past ΔE 10; two
   colours whose only thread within ΔE 10 is the same one are merged); the background is only what touches the
-  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than 1 mm and at least 2 mm long
-  stays), an island narrower than 4 mm is sewn over the area round it with no hole cut, and where two colours meet the
-  one sewn first reaches `overlap` under the one sewn after, only along the edge they share. Without `dryRun` it
+  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than 1 mm along its middle, up to
+  √2 times its own width where its lines meet and no wider than 1 mm away from them, and at least 2 mm long stays), an island narrower than 4 mm is sewn over the area
+  round it with no hole cut, and where two colours meet the one sewn first reaches `overlap` under the one sewn after,
+  only along the edge they share. A line (and every area of a colour set to `lines`) is sewn along its centre line, a
+  stroke as wide as it, round at its ends under 1 mm wide (butt at 1 mm or more, its ends half a thread short of the
+  ink's), which the planner sews as one running line through its junctions; the
+  colours beside it reach its middle under it whatever `overlap` is (each of its pixels to the colour nearest it, and
+  half a pixel past, at most 2 mm from that colour's edge). Without `dryRun` it
   creates the objects: one group in the image's place (named as the image is), in it a group for each colour block in
   sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
-  its thread's own colour, embroidery settings set only where a colour's job asks (`fill`: `narrowAsSatin` 0; `none`:
-  not sewn); the image moves, with its id, to a new template layer below every layer, hidden and locked, scaled as the
+  its thread's own colour (a line, a stroke along its centre line), embroidery settings set only where a colour's job
+  asks (`fill`: `narrowAsSatin` 0; `none`: not sewn) or a line's stroke is 1 mm wide or more (`stitch: "running"`);
+  the image moves, with its id, to a new template layer below every layer, hidden and locked, scaled as the
   design is. One undo step "Digitize Image", the new group selected; Nearest Connection is not run. More than 10,000
   areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
   {group, layer, objects, blocks} (null for a dry run), image: {id, pixels, decoded, crop, worked, pxPerMm, limitedBy,
   size, scale, bounds, background}, colorCount, colors: [{color, background, sewn, job, thread, reason, alternatives,
   area, areaCount, share, sewnShare, mergedInto, choice}], unusedChoices, areaCount, offset, truncated, areas: [{area,
-  at, color, thread, kind, sewn, size, widest, box, inside, sewnOver, joined, touches, grownUnder, outline, order}],
+  at, color, thread, kind, sewn, size, widest, line, box, inside, sewnOver, joined, touches, grownUnder, outline,
+  order}],
   areaAt, doubledArea, traced, joined, leftOut, regions, stats, warnings, settings, table, timings}`: `stats` is what
   `embroidery.stats {selectedOnly: true}` answers with the new group selected (null when nothing is made), a dry run's
   as Create's. `warnings` lists `{id, values, message}`: `id` names the warning for a window to word in its own
@@ -7318,7 +7331,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `decodedSmaller` {decoded, pixels, maxMegapixels}, `notFlatArt` {by: `"colors"` with found and colors, `"anchors"`
   with maxAnchors and colors, or `"gradual"` with percent}, `noBackgroundColor`, `cornersDisagree`, `choiceNotGray`
   {color, thread: {palette, index, name}}, `colorJoined` {color, minArea}, `specksJoined` {count, minArea},
-  `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `shapesNotJoined` {count}, `nothingTraced` and
+  `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `notLines` {color, count} (areas of a colour set
+  to `lines` with no centre line to sew along, a dot or a blob shorter than it is wide, sewn as the shapes they are),
+  `shapesNotJoined` {count}, `nothingTraced` and
   `nothingToMake` (a dry run's; Create is refused instead). `unusedChoices` lists `{choice, reason}` for each choice
   that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
   names none, the background's aside, so the colours it took are sewn as their own). An area's `area` is its number in
@@ -7334,8 +7349,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `nearest`, `nextFree` with the colour that took its nearest in `by`, `shared`, `merged`), the five nearest
   `alternatives` after its own, its `area` (mm²), `areaCount`, `share` of the image and `sewnShare` of what is sewn
   (percent), `mergedInto` and the `choice` it took; each of `areas` gives `thread`, `kind` (`"fill"`, or `"line"` for
-  a thin line kept below the smallest area), `sewn`, `size` `{area, width, height}` (mm², mm), `widest` (its widest
-  inscribed width, mm), `box` `[left, top, right, bottom]` (mm), the area it lies `inside` alone and whether it is
+  an area sewn along its middle: a thin line, one kept below the smallest area too, or any area of a colour set to
+  `lines`; an area with no centre line to sew along is a `"fill"`), `sewn`, `size` `{area, width, height}` (mm², mm),
+  `widest` (its widest inscribed width, mm), its `line` (null for an area not sewn along its middle) `{width (mm: its
+  pixels over its centre line's length), length (mm, of its centre line), pieces, ends, junctions}`, `box` `[left,
+  top, right, bottom]` (mm), the area it lies `inside` alone and whether it is
   `sewnOver` that one, how many smaller areas `joined` it, what it `touches` `[{area, edge, under}]` (the edge in mm;
   `under`: that one is sewn before it), the areas it is `grownUnder`, its `outline` (with `outlines: true`) and its
   `order` `{taken: "notSewn"|"sameThread"|"newThread", after: [{area, because: "detail"|"inside"|"larger"}]}`. The
@@ -7344,9 +7362,12 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `areaAt` the area there (null: none, outside the image or the crop, or no `at`). `regions` (with `regions: true`) is
   `{width, height, base64}`: each working pixel's area number (0 for none), two bytes little-endian. `traced` is what
   the trace made before the rules (`{paths, colors}`), `joined` and `leftOut` how many specks joined an area or were
-  left out, `doubledArea` the mm² the overlap sews twice, and `timings` each stage's milliseconds (`{image, trace,
+  left out, `doubledArea` the mm² sewn twice (where the overlap grows an area under the next, and under a centre line
+  the strips the colours beside it reach to its middle, so that it isn't 0 at `overlap: 0` when a line is sewn), and
+  `timings` each stage's milliseconds (`{image, trace,
   areas, shapes, objects, stitches}`, null on the web). `outline` (with `outlines: true`) is an area's shape as sewn,
-  an SVG path in millimetres from the document's origin, to hundredths. An interface runs it off its thread through
+  an SVG path in millimetres from the document's origin, to hundredths; a line's is its centre line, open, with no
+  area. An interface runs it off its thread through
   the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`, `Session::apply_digitize_image`), which a
   document changed meanwhile refuses.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
@@ -7502,10 +7523,21 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   or not: `embroidery.set` keeps settings for it either way. `setCount` counts the objects that set a value as this
   version reads it: a stitch or an underlay it doesn't know is kept, listed in the object's `kept` (`fill.stitch`),
   and not counted. `kept` lists what an object keeps that this version doesn't read, as file keys: a newer version's
-  (`branch`, `fill.grain`, `fill.points.rails`), such ids, and `embroidery` when the settings are no object. `source` is `object`, `export`, `document` (then `section`: `fabric` or `machine`) or `default`, a list
+  (`branch`, `fill.grain`, `fill.points.rails`), such ids, and `embroidery` when the settings are no object. `source` is `object`, `export`, `document` (then `section`: `fabric`, `machine` or `fillAngle`, for the document's
+  number and for its rule's `"auto"`) or `default`, a list
   that may grow; a value chosen by a rule is `"auto"`, and its `rule` says what the rule chose: `{id: "underlayByWidth",
   chose, values}` for a satin's underlay, `{id: "underlayBySize", chose: null, values}` for a fill's (only its planned
-  area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing; `null` for a value set.
+  area tells), `{id: "spacingByWidth", chose: mm, values: {share}}` for a satin's spacing,
+  `{id: "rowsAcrossShape", chose: degrees (the rows across, as `angle` counts them, from 0 up to 180 in tenths), values:
+  {elongation (in hundredths, as the rule decides on it; `null` for a shape with no area or as wide every way),
+  elongationMin, across, pieces}}` for a fill's rows the document lays across
+  its shape (`across: false`: about as long as
+  wide, the fixed rows kept; `pieces`: how many separate pieces it has, each measured alone and sewn across its own
+  length, `chose`, `elongation` and `across` its largest piece's), for a fill and for a stroke sewn as tatami, measured
+  on the area the plan sews (a stroke's painted band, dashed or not; a fill grown and cut by its clip groups; an
+  object's expanded pieces); `null` for a value set.
+  A fill's `angle` set by the document's number is that number turned with its object, `source: "document"`, `section:
+  "fillAngle"`.
   `applies` says whether the planner uses the key for the stitch the part is sewn in: a running line's `pull` or
   `angle` is reported as set but `applies: false` (a fill's `push` applies: it reaches its narrow parts' satin
   columns); a part not sewn uses none but `stitch`. A `pull`, `pullPercent` or `push` is `[left, right]` (a fabric's one value as both sides). `entry` and `exit` are in

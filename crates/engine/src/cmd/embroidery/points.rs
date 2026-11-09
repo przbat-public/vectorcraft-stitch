@@ -43,11 +43,16 @@ pub(super) fn set_entry_exit(s: &mut Session, p: &Value) -> Result<Value> {
         },
     };
     let id = one_taker(d, id)?;
-    let Some(n) = d.node(id).filter(|n| has_part(n, kind)) else {
+    if !d.node(id).is_some_and(|n| has_part(n, kind)) {
         return Err(EngineError::Other(format!("object {} has no `{}`", id.0, kind.id())));
-    };
+    }
+    // A satin stroke's points go to where its caps carry its stitches, by the plan's own settings.
+    let cap =
+        if snap && kind == PartKind::Stroke { s.embroidery_plan(&super::Options::default()).ok().map_or(0.0, |plan| cap_of(&plan, id)) } else { 0.0 };
+    let d = &s.doc()?.doc;
+    let Some(n) = d.node(id) else { return Err(EngineError::NoNode(id)) };
     let points: Vec<(PartKey, Option<PartValue>)> =
-        points.into_iter().map(|(key, at)| (key, at.map(|q| PartValue::Point(if snap { snapped(n, kind, q) } else { q })))).collect();
+        points.into_iter().map(|(key, at)| (key, at.map(|q| PartValue::Point(if snap { snapped(n, kind, q, cap) } else { q })))).collect();
     let changed = edit_counted(s, ENTRY_EXIT, |d| {
         edit_each(d, &[id], |e| {
             e.edit_part(kind, |part| {
@@ -63,11 +68,24 @@ pub(super) fn set_entry_exit(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"id": id.0, "part": kind.id(), "entry": stored(PartKey::Entry), "exit": stored(PartKey::Exit), "changedCount": changed}))
 }
 
+/// How far the caps of object `id`'s stroke carry its stitches past its path's ends in `plan`
+/// (document points): its first stroke unit's, when it is a satin; none for a running line, a
+/// stroke filled, or a stroke the plan doesn't sew.
+pub(crate) fn cap_of(plan: &super::plan::DesignPlan, id: NodeId) -> f64 {
+    plan.units
+        .iter()
+        .find(|u| u.origin.node == id && matches!(u.origin.part, super::plan::Part::Stroke(_)))
+        .and_then(|u| u.params)
+        .filter(|p| vectorcraft_stitch::plan::sewn_style(p) == vectorcraft_stitch::plan::Style::Satin)
+        .map_or(0.0, |p| vectorcraft_stitch::mm_to_pt(vectorcraft_stitch::plan::cap_reach_of(&p)))
+}
+
 /// `q` (document points) taken to where part `kind` of `n` can start or end: a fill's nearest point
 /// on any of its outlines (a fill closes each subpath); a stroke's nearest point on a closed subpath,
-/// or the nearer end of an open one, of whichever subpath is nearest. `q` itself where `n` has no
-/// path to snap to, or the point found isn't a number.
-pub(crate) fn snapped(n: &Node, kind: PartKind, q: Point) -> Point {
+/// or the nearer end of an open one, carried on past it by `cap` (document points: how far its cap
+/// carries a satin's top stitching, `plan::cap_reach_of`), of whichever subpath is nearest. `q`
+/// itself where `n` has no path to snap to, or the point found isn't a number.
+pub(crate) fn snapped(n: &Node, kind: PartKind, q: Point, cap: f64) -> Point {
     let mut best: Option<(f64, Point)> = None;
     let mut keep = |p: Point| {
         let d = p.distance(q);
@@ -78,8 +96,14 @@ pub(crate) fn snapped(n: &Node, kind: PartKind, q: Point) -> Point {
     for (pts, closed) in outline::subpaths(n) {
         let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { continue };
         if kind == PartKind::Stroke && !closed {
-            keep(first);
-            keep(last);
+            // Each end carried on along its last segment with a length, where its stitches end.
+            let out = |end: Point, from: Option<&Point>| {
+                let d = from.map_or(vectorcraft_geom::Vec2::ZERO, |&f| end - f);
+                let len = d.hypot();
+                if cap > 0.0 && len.is_finite() && len > 0.0 { end + d * (cap / len) } else { end }
+            };
+            keep(out(first, pts.iter().find(|p| p.distance(first) > 0.0)));
+            keep(out(last, pts.iter().rev().find(|p| p.distance(last) > 0.0)));
             continue;
         }
         let mut ring = pts.clone();

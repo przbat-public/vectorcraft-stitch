@@ -149,29 +149,39 @@ pub(super) const MODES: &[&str] = &["color", "logo", "grayscale"];
 /// (upstream Image Trace's 256).
 pub(super) const MAX_COLOUR_CHOICES: usize = 256;
 
-/// What a colour of the image is sewn as ([`ColourChoice::job`]).
+/// What a colour of the image is sewn as ([`ColourChoice::job`]): the project owner's four jobs
+/// (2026-11-01: "each colour has a job (Auto, Fill, Lines, Don't sew)").
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Job {
-    /// By the planner's rules: a fill as tatami, its narrow parts as satin or a running line.
+    /// By the planner's rules: a fill as tatami, its narrow parts as satin or a running line; a thin
+    /// line along its middle.
     Auto,
-    /// As tatami, its narrow parts too.
+    /// As tatami, its narrow parts too, its thin lines filled.
     Fill,
+    /// Every area of it along its middle, as one running line whatever its width (a centre line,
+    /// `super::centre`), sewn after the fills it touches, the colours beside it reaching its middle
+    /// under it.
+    Lines,
     /// Not sewn: its objects are made, set not to be sewn, so that it can be sewn later.
     None,
 }
 
 impl Job {
+    /// Every job, as the commands list them.
+    pub(super) const ALL: [Self; 4] = [Self::Auto, Self::Fill, Self::Lines, Self::None];
+
     /// Its id in commands and replies.
     pub(super) fn id(self) -> &'static str {
         match self {
             Self::Auto => "auto",
             Self::Fill => "fill",
+            Self::Lines => "lines",
             Self::None => "none",
         }
     }
 
     fn from_id(id: &str) -> Option<Self> {
-        [Self::Auto, Self::Fill, Self::None].into_iter().find(|j| j.id() == id)
+        Self::ALL.into_iter().find(|j| j.id() == id)
     }
 }
 
@@ -364,7 +374,7 @@ fn wants(setting: &Setting) -> String {
         Kind::Rect => "[x0, y0, x1, y1]: whole pixels of the image, x0 < x1 and y0 < y1".into(),
         Kind::Background => "\"corners\", \"none\" or a colour \"#rrggbb\"".into(),
         Kind::Choices => format!(
-            "a list of at most {MAX_COLOUR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"none\"}}, mergeInto alone"
+            "a list of at most {MAX_COLOUR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"lines\"|\"none\"}}, mergeInto alone"
         ),
     }
 }
@@ -440,9 +450,11 @@ fn choice(v: &Value, s: &Setting, document: Palette) -> Result<ColourChoice> {
     };
     let job = match o.get("job") {
         None | Some(Value::Null) => None,
-        Some(j) => {
-            Some(j.as_str().and_then(Job::from_id).ok_or_else(|| bad(C, format!("`colorChoices` {v}: `job` is \"auto\", \"fill\" or \"none\"")))?)
-        }
+        Some(j) => Some(
+            j.as_str()
+                .and_then(Job::from_id)
+                .ok_or_else(|| bad(C, format!("`colorChoices` {v}: `job` is \"auto\", \"fill\", \"lines\" or \"none\"")))?,
+        ),
     };
     let merge_into = colour("mergeInto")?;
     if merge_into.is_some() && (thread.is_some() || job.is_some()) {

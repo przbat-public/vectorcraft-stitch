@@ -171,7 +171,9 @@ fn turned_or_passed(sub: SubPath, here: Point, exit: Point, flip: f64, turned: L
     let (mut turn, mut pass) = (Hops::default(), Hops::default());
     turn.add(here.distance(turned_from), p);
     pass.add(here.distance(from), p);
-    let way = length(&turned.pts, false) * flip;
+    // The pass runs along the column's top stitching, its caps included.
+    let caps = if turned.closed { 0.0 } else { 2.0 * super::satin::cap_reach_of(p) };
+    let way = (length(&turned.pts, false) + caps) * flip;
     if turn.lifts <= pass.lifts && turn.trims <= pass.trims && turn.cost <= pass.cost + way {
         return vec![turned];
     }

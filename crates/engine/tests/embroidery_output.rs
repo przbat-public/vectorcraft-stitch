@@ -13,8 +13,10 @@
 //!   them, an opened design's literal stitch runs (as they are, clipped, and with cuts at its
 //!   blocks' ends), the export's options away from their defaults, settings at every level
 //!   (objects', the document's and an export's together), objects the walk expands whose
-//!   strokes are sewn along their path, a path an effect reshapes too, and
-//!   entry and exit points the planner sews toward (checked met within the Check tab's 1 mm too).
+//!   strokes are sewn along their path, a path an effect reshapes too,
+//!   entry and exit points the planner sews toward (checked met within the Check tab's 1 mm too),
+//!   satin strokes sewn with their round, square and butt caps, and fills whose rows the document
+//!   sets (across each shape's length, or at a number of degrees).
 //! - A test sheet sewn on each fabric preset (`embroidery.setup {fabric}`), the default fabric's
 //!   checked to be the sheet with no fabric, byte for byte.
 //! - The real designs' artwork (`cargo xtask corpus --embroidery`, checked against its manifest),
@@ -39,10 +41,12 @@
 //! (`settings_that_change_nothing_change_no_export`).
 //!
 //! Only the hashes and summaries are kept here, never the files. They were recorded on macOS
-//! (aarch64). The planner calls the platform's sine, cosine and power functions, whose last bit may
-//! differ in another maths library: there a needle point can round to the next 0.1 mm, and a hash
-//! differ with no change to the code. On another platform an export passes when its summary is
-//! within that much of the recorded one.
+//! (aarch64), computed with one maths library (`one_maths`, the `libm` crate in place of the
+//! system's `sin`, `cos`, `pow`…), so that macOS, Linux and FreeBSD export the same bytes: the
+//! planner calls those functions, whose last bit differs between the systems' own libraries, and
+//! one bit can round a needle point to the next 0.1 mm. On another platform (Windows, where the
+//! system's library is used) a hash may differ with no change to the code, and an export passes
+//! when its summary is within that much of the recorded one.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -56,6 +60,9 @@ use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread, quantize};
 
 mod embroidery_common;
 use embroidery_common::{DESIGNS, artwork, corpus, export, open, run, sha256};
+
+#[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
+mod one_maths;
 
 /// The documents built here ([`documents`]), as `sha256sum` lists files: the hash, two spaces, the
 /// document's name and the format's extension.
@@ -204,6 +211,30 @@ b20992b7856d058115f889b35679dfcbeb0b683a306da77cb64ee516b91281f7  exits.vp3
 181d9ac9fc9d6c34d7f776e58dc502dc98d61b2c25f589383d779d2041364431  stops.pec
 d2238d55ce687e38e34bda4876c983f1b21034c978580abc19e3b61dc48259bc  stops.jef
 a77bc0e2ff5f19ceb4bea099c075139bab412a8c1cf02da2759b55e301d16acf  stops.vp3
+170de223979a965509b03984e8e64dccb9d92e02ae781e87605591cf2d0285c7  capped-strokes.dst
+533a712e12ba9842941a6e67f870ef1024a665da9a9f3a5e8b660ebfcf0cd5d6  capped-strokes.tap
+533a712e12ba9842941a6e67f870ef1024a665da9a9f3a5e8b660ebfcf0cd5d6  capped-strokes.t01
+d6370e91dfed18ac02e02cab146d31e2320bada721ef8af8488461009ee223f4  capped-strokes.exp
+1a67cb7368a5944887a67f50a55ec65e31d199ead766e873670a86dda6015050  capped-strokes.pes
+64e2542d2aa4b564731d42d2c70be2a349561f2179e93326cd6adb20ff61ac39  capped-strokes.pec
+a386695a2e80cd6f33720a5fa476f640c39fffd61795e570324ce3f3b3edfc89  capped-strokes.jef
+6104907b81adc10c0d84c38266d04e9f6a4de43c441cedf874bc1924fc2a4cc3  capped-strokes.vp3
+cceb764acd016ac3ea21c3a10fd934fa9044fbd9e3e8d1c288881e10d84bfbaa  rows-across-shapes.dst
+ef63c60a0517c8e987a00932ebcc60b00af8a644bc01cdecc21b5f957ad5f060  rows-across-shapes.tap
+ef63c60a0517c8e987a00932ebcc60b00af8a644bc01cdecc21b5f957ad5f060  rows-across-shapes.t01
+27d8096e8d1c6b2dc42d2e1814f53868145334252973a74203acc081cd36099a  rows-across-shapes.exp
+35a73c801451682155520924761e7f31890cb7389c2928771866790ae14962d4  rows-across-shapes.pes
+da9563409601d5ff808dab21911979c19e7bda501997276acf77ea64f88c468f  rows-across-shapes.pec
+04cbda7d83faa1da487e63ec44023fe357b962c358563b9e83b26a5acde7f9ec  rows-across-shapes.jef
+961d4a2fd98aa831a8f22ec3f5a584b78b378d183f5448169053e07f8be5b957  rows-across-shapes.vp3
+292c540d17d04225d4ed54c91fc608a579b8783097819bafc7c7aa186b0371f0  rows-at-30.dst
+54a2ac7f8b45675e8dbf144ba18dacab93a9e9d08d73562ec98d03d6d288c6f2  rows-at-30.tap
+54a2ac7f8b45675e8dbf144ba18dacab93a9e9d08d73562ec98d03d6d288c6f2  rows-at-30.t01
+35cb2d85f9321be131e4aa64315fa9427b7f26186ed107fb661fcf06e5f45dae  rows-at-30.exp
+b9bd6fcb5f7848a6477b6af7ae6ca168ab638b65a9e1f116bbe841c9a9fce2bc  rows-at-30.pes
+1e32c0c99b9a12ad283ee2b6c8ab5ddd3b1a4cae6e4c1fe55a30328b545d487c  rows-at-30.pec
+03c4ce05257eea234bf7469cb49595fe60c5d2a316deccf8d7e95832d3622bf8  rows-at-30.jef
+34ee3d096380232ae1dec80eeb31fb37d37a6c27aff7b605d99744f37deec4f1  rows-at-30.vp3
 ";
 
 /// The real designs' artwork at the person's size ([`DESIGNS`]), listed as [`SYNTHETIC`] is.
@@ -355,6 +386,15 @@ a3e4b067d744441d2a8c4ddeef48373d866aebe41326aade0c20252f59ee69d1  exits.jef  33 
 0cbdbeaf8f5a6b54c08931ca2b8a8132f27e10b2ee67498351caa446d8ed9915  stops.pes  5 5 55 5 5 21 56 56 56
 0de51589ee049991fc511ff98f549cb9742893c818db4450209a826ac44b9043  stops.pec  5 5 55 5 5 21 56 56 56
 e4484bd08cdd4abbc709e8285797662885f60e3f1eff64d4ce448f1ec03db8cd  stops.jef  33 33 59 33 33 59 75 75 75
+99403da4047f7c9032a850e990b4e8da0bbdf1cb02d08419cbbd55752e399f44  capped-strokes.pes  5 21 37 7 52 24
+1d18e3d39ab1bec96c2a627a669e619a2fd6367cf3506bde399680ba0075aad8  capped-strokes.pec  5 21 37 7 52 24
+efb28864ad241ea1cbde14c1d84b344e00c88d209b6297ec3f3bb418e168251e  capped-strokes.jef  33 59 45 59 71 14
+3692ca5c1488cd855b071989101e4fa5b6887416f69075d797b728c841caf0d2  rows-across-shapes.pes  5 21 7 52 24
+51870ca37f5aab9c8010ace1daef6fc749acdf7f2d196b6ca53e1e66e7a6af0e  rows-across-shapes.pec  5 21 7 52 24
+19388eae9810b1b84b260589bbc0ad3c8f192154c1d1bb7dc0e4cf6ca3bf0f74  rows-across-shapes.jef  33 59 59 71 14
+fb629669cf592de64f49de1c63dd1621ceb399eb31419b4239cda7e3f1cb0ccc  rows-at-30.pes  5 21 7 52 24
+33cecd68831eb6db47804ce6f9b4020b89f2163f87a0b6cb15fd4b21d1f73e8e  rows-at-30.pec  5 21 7 52 24
+d6da25fb9a56ae94f52bb5742904ace909b4fccc6a7cd2e01097a9d72c2b9cb3  rows-at-30.jef  33 59 59 71 14
 ";
 
 /// The PES, PEC and JEF exports of [`ARTWORK`] apart from their thread numbers, listed as
@@ -541,6 +581,30 @@ stops.pes  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trim
 stops.pec  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
 stops.jef  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/1/1/0/1/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
 stops.vp3  blocks 9  needle 5/5/10/88/87/24/3/7/5  jumps 1/1/1/1/1/1/1/2/1  trims 0/0/0/0/0/0/0/0/0  size 55.1x55.0  longest 4.46  shortest 0.50  cells 250
+capped-strokes.dst  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.tap  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.t01  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.exp  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1677
+capped-strokes.pes  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1678
+capped-strokes.pec  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.1x89.8  longest 4.02  shortest 0.80  cells 1678
+capped-strokes.jef  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.2x89.8  longest 4.03  shortest 0.80  cells 1671
+capped-strokes.vp3  blocks 6  needle 346/379/334/390/441/403  jumps 1/2/1/1/1/1  trims 0/1/0/0/0/0  size 70.2x89.8  longest 4.03  shortest 0.80  cells 1671
+rows-across-shapes.dst  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2875
+rows-across-shapes.tap  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2875
+rows-across-shapes.t01  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2875
+rows-across-shapes.exp  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2875
+rows-across-shapes.pes  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2874
+rows-across-shapes.pec  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.71  shortest 0.32  cells 2874
+rows-across-shapes.jef  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.72  shortest 0.32  cells 2786
+rows-across-shapes.vp3  blocks 5  needle 523/523/1065/417/514  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.4  longest 4.72  shortest 0.32  cells 2786
+rows-at-30.dst  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.3  longest 4.61  shortest 0.36  cells 2793
+rows-at-30.tap  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.3  longest 4.61  shortest 0.36  cells 2793
+rows-at-30.t01  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.3  longest 4.61  shortest 0.36  cells 2793
+rows-at-30.exp  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.3  longest 4.61  shortest 0.36  cells 2793
+rows-at-30.pes  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.3  longest 4.61  shortest 0.36  cells 2795
+rows-at-30.pec  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.3  longest 4.61  shortest 0.36  cells 2795
+rows-at-30.jef  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.2  longest 4.61  shortest 0.36  cells 2796
+rows-at-30.vp3  blocks 5  needle 602/555/1107/413/513  jumps 1/1/2/1/1  trims 0/0/1/0/0  size 80.8x102.2  longest 4.61  shortest 0.36  cells 2796
 ";
 
 /// What each export of [`ARTWORK`] holds, read back, listed as [`SYNTHETIC_SUMMARIES`] is.
@@ -1115,7 +1179,7 @@ fn the_real_designs_artwork_exports_unchanged() {
 /// Embroidery settings that set nothing a plan reads change no export, of the documents built here
 /// or of the real designs' artwork ([`Unchanging`]): what a newer version wrote at every level,
 /// every value of every part set and then reset, and the default fabric copied into the document
-/// with every machine value at its default.
+/// with every machine value at its default and the built-in rows as the document's.
 #[test]
 fn settings_that_change_nothing_change_no_export() {
     let mut summaries: Vec<(String, String)> = Vec::new();
@@ -1124,7 +1188,7 @@ fn settings_that_change_nothing_change_no_export() {
         for (name, s, options) in documents() {
             // The documents that set settings (or points) on purpose are exported as they are, but
             // converted to manual stitches as any other.
-            let set_on_purpose = matches!(name, "settings" | "expanded-strokes" | "exits");
+            let set_on_purpose = matches!(name, "settings" | "expanded-strokes" | "exits" | "rows-across-shapes" | "rows-at-30");
             let mut s = match how {
                 Unchanging::Converted => {
                     let (s, summary) = converted(s, &options);
@@ -1179,7 +1243,8 @@ enum Unchanging {
     /// must be the one it was, its file the same bytes.
     SetAndReset,
     /// The default fabric chosen by command (`embroidery.setup {fabric}`), its thread weight 40 and
-    /// joining on, and every machine value at the planner's default.
+    /// joining on, every machine value at the planner's default, and the built-in rows (135° on the
+    /// page) as the document's `fillAngle`.
     DefaultFabric,
     /// Every object converted to manual stitches (`embroidery.convertToManual`, with the options
     /// the document is exported with): its stitches frozen as planned, sewn as they are, placed as
@@ -1253,6 +1318,9 @@ settings  converted 5
 expanded-strokes  converted 3
 exits  converted 4
 stops  converted 3 · literal 4
+capped-strokes  converted 7
+rows-across-shapes  converted 6
+rows-at-30  converted 6
 bullseye-twemoji  converted 7
 fox-twemoji.clipart  converted 7
 heart-suit-twemoji.clipart  converted 1
@@ -1308,7 +1376,12 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
                 }
             });
             let setup = file["document"].as_object_mut().unwrap().entry("embroidery").or_insert_with(|| json!({}));
-            for (k, v) in [("fabric", json!({"grain": 45, "tatami": {"curve": [1, 2]}})), ("machine", json!({"model": "x"})), ("hoop", json!(1))] {
+            for (k, v) in [
+                ("fabric", json!({"grain": 45, "tatami": {"curve": [1, 2]}})),
+                ("machine", json!({"model": "x"})),
+                ("hoop", json!(1)),
+                ("fill_angle", json!("alongShape")),
+            ] {
                 setup.as_object_mut().unwrap().insert(k.to_string(), v);
             }
             let mut opened = Session::new();
@@ -1364,6 +1437,8 @@ fn unchanging(mut s: Session, how: Unchanging) -> Session {
             let setup = json!({
                 "fabric": vectorcraft_stitch::fabric::DEFAULT_FABRIC, "threadWeight": vectorcraft_stitch::plan::THREAD_WEIGHT, "joinSameColor": true,
                 "machine": {"jumpLength": fill.jump, "trimLength": fill.trim, "minStitch": fill.min_stitch, "splitLength": fill.max_satin},
+                // The built-in rows given as the document's: the default, turned with each object as it is.
+                "fillAngle": 180.0 - vectorcraft_stitch::plan::FILL_ANGLE,
             });
             run(&mut s, "embroidery.setup", setup);
             s
@@ -1523,7 +1598,53 @@ fn documents() -> Vec<(&'static str, Session, Value)> {
         ("expanded-strokes", expanded_strokes(), json!({})),
         ("exits", exits(), json!({})),
         ("stops", stops(), json!({})),
+        ("capped-strokes", capped_strokes(), json!({})),
+        ("rows-across-shapes", rows(json!("acrossShape")), json!({})),
+        ("rows-at-30", rows(json!(30)), json!({})),
     ]
+}
+
+/// Fills whose rows the document sets (`embroidery.setup {fillAngle}`, the project owner's choices
+/// of 2026-11-01: rows across the shape, a document setting): a tall bar, a wide one, one turned
+/// 30°, an ellipse three times as long as wide, a disc and an L; with the rule across the shape
+/// (each long fill's rows square to its length, the L's square to the diagonal its moments find it
+/// 1.8 times as long along, the disc's fixed) or with 30°, turned with each object.
+fn rows(fill_angle: Value) -> Session {
+    let mut s = blank(300.0, 300.0);
+    rect(&mut s, "#cc2222", 20.0, 20.0, 30.0, 120.0);
+    rect(&mut s, "#2233cc", 70.0, 20.0, 120.0, 30.0);
+    let turned = rect(&mut s, "#22aa44", 70.0, 80.0, 120.0, 30.0);
+    run(&mut s, "object.rotate", json!({"ids": [turned], "angle": 30}));
+    ellipse(&mut s, "#8822aa", 20.0, 160.0, 120.0, 40.0);
+    ellipse(&mut s, "#ff8800", 180.0, 160.0, 60.0, 60.0);
+    filled_mm(&mut s, "#552200", (180.0, 230.0), &[&[(0.0, 0.0), (8.0, 0.0), (8.0, 20.0), (24.0, 20.0), (24.0, 28.0), (0.0, 28.0)]]);
+    run(&mut s, "embroidery.setup", json!({"fillAngle": fill_angle}));
+    s
+}
+
+/// Satin strokes with caps (the project owner's choice, 2026-11-01, „Tak, wszędzie (polecam)”):
+/// lines with a round, a square and a butt cap, sewn past their ends by half their width as each is
+/// painted (the butt at its ends); an S curve with round caps; a closed ellipse and an open circle
+/// whose ends meet, both round-capped, sewn with no cap (the project owner's choice, 2026-11-07,
+/// „Nie, tam bez zakończeń (polecam)”); and a running line with round caps, which a running line
+/// doesn't sew.
+fn capped_strokes() -> Session {
+    let mut s = blank(300.0, 300.0);
+    let capped = |s: &mut Session, color: &str, weight: f64, d: &str, cap: &str| {
+        let id = stroked(s, color, weight, d);
+        run(s, "stroke.set", json!({"cap": cap, "ids": [id]}));
+    };
+    capped(&mut s, "#cc2222", 8.0, "M 30 30 L 200 30", "round");
+    capped(&mut s, "#2233cc", 8.0, "M 30 60 L 200 60", "square");
+    capped(&mut s, "#22aa44", 8.0, "M 30 90 L 200 90", "butt");
+    capped(&mut s, "#8822aa", 10.0, "M 30 150 C 100 110 130 210 200 160", "round");
+    let ring = ellipse(&mut s, "#ff8800", 40.0, 200.0, 80.0, 50.0);
+    run(&mut s, "paint.setFill", json!({"none": true, "ids": [ring]}));
+    run(&mut s, "paint.setStroke", json!({"color": "#ff8800", "ids": [ring]}));
+    run(&mut s, "stroke.set", json!({"weight": 6.0, "cap": "round", "ids": [ring]}));
+    capped(&mut s, "#552200", 6.0, "M 190 250 A 30 30 0 1 1 190.001 250", "round");
+    capped(&mut s, "#2233cc", 1.0, "M 30 280 L 200 280", "round");
+    s
 }
 
 /// Fills: a rectangle and an ellipse, a letter T (its strokes narrow enough to be sewn as satin

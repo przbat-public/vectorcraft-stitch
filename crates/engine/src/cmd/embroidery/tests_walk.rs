@@ -338,3 +338,117 @@ fn a_design_past_two_million_stitches_is_refused() {
     let refused = s.execute("document.export", &json!({"format": "dst"})).unwrap_err().to_string();
     assert!(refused.contains("more than 2000000 stitches"), "{refused}");
 }
+
+/// A stroke sewn as a satin column sews its cap as the stroke paints it (the project owner's choice,
+/// 2026-11-01, „Tak, wszędzie (polecam)”): a round or a square cap past each end of its path by half
+/// its width, a butt cap at the ends; a dashed stroke, filled as the area its dashes paint, has no
+/// column to cap.
+#[test]
+fn a_satin_stroke_sews_its_cap() {
+    /// The stroke's width and its ends along y = 30 mm (millimetres).
+    const WIDTH_MM: f64 = 3.0;
+    const FROM_MM: f64 = 20.0;
+    const TO_MM: f64 = 60.0;
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    // How short of a cap's full reach the column's last crossing may stop: its pitch, and the tip
+    // a round cap leaves to the shortest stitch.
+    const TIP_MM: f64 = 0.3;
+    let extent = |cap: &str, dash: Option<[f64; 2]>| {
+        let mut s = blank();
+        run(&mut s, "paint.setFill", json!({"none": true}));
+        run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+        let d = format!("M {} {} L {} {}", FROM_MM * PT_PER_MM, 30.0 * PT_PER_MM, TO_MM * PT_PER_MM, 30.0 * PT_PER_MM);
+        let id = run(&mut s, "path.create", json!({"d": d}))["id"].as_u64().unwrap();
+        let mut set = json!({"weight": WIDTH_MM * PT_PER_MM, "cap": cap, "ids": [id]});
+        if let Some(dash) = dash {
+            set["dash"] = json!(dash.map(|v| v * PT_PER_MM));
+        }
+        run(&mut s, "stroke.set", set);
+        let pattern = super::digitize::digitize(&s.doc().unwrap().doc, &Options::default(), None).unwrap().to_pattern();
+        let xs: Vec<f64> =
+            pattern.blocks.iter().flat_map(|b| &b.stitches).filter(|q| q.command == vectorcraft_stitch::Command::Stitch).map(|q| q.x).collect();
+        (xs.iter().copied().fold(f64::INFINITY, f64::min), xs.iter().copied().fold(f64::NEG_INFINITY, f64::max))
+    };
+    let half = WIDTH_MM / 2.0;
+    let (lo, hi) = extent("butt", None);
+    assert!(lo >= FROM_MM - 1e-6 && hi <= TO_MM + 1e-6, "a butt cap reaches {lo} to {hi}");
+    for cap in ["round", "square"] {
+        let (lo, hi) = extent(cap, None);
+        assert!((FROM_MM - half - 1e-6..=FROM_MM - half + TIP_MM).contains(&lo), "a {cap} cap starts at {lo}");
+        assert!((TO_MM + half - TIP_MM..=TO_MM + half + 1e-6).contains(&hi), "a {cap} cap ends at {hi}");
+    }
+    // Dashed: its dashes' area, the same whatever the cap but for the area the cap paints.
+    let (lo, _) = extent("butt", Some([5.0, 2.0]));
+    assert!(lo >= FROM_MM - 0.5, "a dashed butt stroke reaches {lo}");
+}
+
+/// A running line whose pieces meet end to end is sewn in one go through the document walk (the
+/// project owner's choices, 2026-11-01 and 2026-11-07, „Wszędzie w planiście (polecam)”): a letter
+/// K drawn as four pieces meeting at its junction, a thin stroke sewn as running stitch, makes no
+/// jump and no trim, where its pieces sewn one by one make jumps between them.
+#[test]
+fn a_running_line_whose_pieces_meet_is_sewn_in_one_go() {
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    let mm = |x: f64, y: f64| format!("{} {}", x * PT_PER_MM, y * PT_PER_MM);
+    let pieces = [
+        format!("M {} L {}", mm(20.0, 20.0), mm(20.0, 40.0)),
+        format!("M {} L {}", mm(20.0, 40.0), mm(20.0, 60.0)),
+        format!("M {} L {}", mm(20.0, 40.0), mm(38.0, 20.0)),
+        format!("M {} L {}", mm(20.0, 40.0), mm(38.0, 60.0)),
+    ];
+    let sew = |d: &str| {
+        let mut s = blank();
+        run(&mut s, "paint.setFill", json!({"none": true}));
+        run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+        let id = run(&mut s, "path.create", json!({"d": d}))["id"].as_u64().unwrap();
+        run(&mut s, "stroke.set", json!({"weight": 0.6 * PT_PER_MM, "ids": [id]}));
+        run(&mut s, "embroidery.stats", json!({}))
+    };
+    let k = sew(&pieces.join(" "));
+    assert_eq!((k["jumps"].as_u64(), k["trims"].as_u64()), (Some(0), Some(0)), "the K: {k}");
+    // The same pieces apart, a millimetre off the junction, are sewn one by one.
+    let apart = sew(&format!(
+        "{} M {} L {} M {} L {} M {} L {}",
+        pieces[0],
+        mm(20.0, 41.0),
+        mm(20.0, 60.0),
+        mm(21.0, 39.0),
+        mm(38.0, 20.0),
+        mm(21.0, 41.0),
+        mm(38.0, 60.0)
+    ));
+    assert!(apart["jumps"].as_u64().unwrap() > 0, "the K apart: {apart}");
+}
+
+/// A dot drawn as an icon set draws it (a line a hundredth of a point long, round caps, as the
+/// "info" icon's `M12 8h.01`) is sewn through the document walk, where it sewed nothing.
+#[test]
+fn a_round_capped_dot_is_sewn() {
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+    let id = run(&mut s, "path.create", json!({"d": "M 100 100 h 0.01"}))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 4.0 * PT_PER_MM, "cap": "round", "ids": [id]}));
+    let stats = run(&mut s, "embroidery.stats", json!({}));
+    assert!(stats["stitches"].as_u64().unwrap() > 0, "the dot sews nothing: {stats}");
+}
+
+/// An exit snapped to a square-capped satin's end, as the Embroidery Tool snaps it, is met within the
+/// Check tab's 1 mm, and the check finds no point missed: the snap goes to where the cap carries
+/// the column, and the allowance reaches the cap's corner, where a 6 mm satin missed by 1.19 mm.
+#[test]
+fn a_square_capped_satin_meets_an_exit_snapped_to_its_end() {
+    const PT_PER_MM: f64 = 72.0 / 25.4;
+    let mut s = blank();
+    run(&mut s, "paint.setFill", json!({"none": true}));
+    run(&mut s, "paint.setStroke", json!({"color": "#224488"}));
+    let id = run(&mut s, "path.create", json!({"d": "M 50 100 L 250 100"}))["id"].as_u64().unwrap();
+    run(&mut s, "stroke.set", json!({"weight": 6.0 * PT_PER_MM, "cap": "square", "ids": [id]}));
+    run(&mut s, "embroidery.setEntryExit", json!({"id": id, "part": "stroke", "exit": [250.0, 100.0], "snap": true}));
+    let unit = run(&mut s, "embroidery.sequence", json!({}))["blocks"][0]["units"][0].clone();
+    let missed = unit["missedBy"]["exit"].as_f64().unwrap();
+    assert!(missed <= POINT_MISS_MM, "missed by {missed} mm: {unit}");
+    let check = run(&mut s, "embroidery.check", json!({"rules": ["pointMissed"]}));
+    assert_eq!(check["rules"][0]["hits"].as_u64(), Some(0), "{check}");
+}

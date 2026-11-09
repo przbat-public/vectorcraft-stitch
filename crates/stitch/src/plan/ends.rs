@@ -5,7 +5,9 @@
 //!   itself.
 //! - **An open satin column** starts at either end and ends at the end its underlay leaves it at (the
 //!   same end where the top stitching comes back over the underlay, the other where it doesn't), or,
-//!   for a pass along its middle under its top stitching, at the other.
+//!   for a pass along its middle under its top stitching, at the other. Its top stitching reaches
+//!   past the path's ends by its cap ([`super::Params::cap`]) and ends there; it starts there too
+//!   unless an underlay, which stays on the path, starts it at the path's end.
 //! - **A closed running line or a satin ring** starts at any point of it and ends there, or goes on
 //!   round, the shorter way, to any other.
 //! - **A fill** is entered anywhere on its outline and ends at any row end (where the outline doesn't
@@ -181,15 +183,23 @@ pub fn ends(path: &BezPath, p: &Params, columns: bool) -> Option<Ends> {
             if a.distance(b) <= SAME_POINT {
                 return None;
             }
-            let table = if sewn_style(&p) == Style::Running {
-                vec![vec![None, Some(0.0)], vec![Some(0.0), None]]
-            } else {
-                // Where its underlay leaves it, and the other end at a pass along its middle.
-                let pass = Some(COST_HIDDEN * length(&pts, false));
-                let (home, away) = if super::satin::line_returns(&p) { (Some(0.0), pass) } else { (pass, Some(0.0)) };
-                vec![vec![home, away], vec![away, home]]
+            if sewn_style(&p) == Style::Running {
+                let table = vec![vec![None, Some(0.0)], vec![Some(0.0), None]];
+                return Some(Ends { starts: vec![a, b], ends: vec![a, b], through: Through::Table(table) });
+            }
+            // A satin's top stitching reaches past the path's ends by its cap, and ends there; it
+            // starts there too, unless its underlay starts it, where its first run ends.
+            let capped = super::satin::capped_line(&pts, &subs, path, &p);
+            let (&ca, &cb) = (capped.first()?, capped.last()?);
+            let starts = match super::satin::underlay_ends(&pts, &subs, path, &p) {
+                Some(under) => under.to_vec(),
+                None => vec![ca, cb],
             };
-            Some(Ends { starts: vec![a, b], ends: vec![a, b], through: Through::Table(table) })
+            // Where its underlay leaves it, and the other end at a pass along its middle.
+            let pass = Some(COST_HIDDEN * length(&capped, false));
+            let (home, away) = if super::satin::line_returns(&p) { (Some(0.0), pass) } else { (pass, Some(0.0)) };
+            let table = vec![vec![home, away], vec![away, home]];
+            Some(Ends { starts, ends: vec![ca, cb], through: Through::Table(table) })
         }
         Style::Fill if columns => None,
         Style::Fill => fill(&subs, &p),

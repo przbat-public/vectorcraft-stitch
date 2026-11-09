@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use vectorcraft_stitch::plan::{FILL_ANGLE, Params, Style, THREAD_WEIGHT};
 
 use super::super::options::{EXPAND_DEFAULT, planner_angle, stitch_id};
-use super::{PartLayer, Stitch, UnitSettings};
+use super::{FillAngle, PartLayer, Stitch, UnitSettings};
 
 /// Where a resolved value comes from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -30,6 +30,8 @@ pub(crate) enum Section {
     Fabric,
     /// The machine's.
     Machine,
+    /// The fills' rows (`fillAngle`).
+    Rows,
 }
 
 impl Source {
@@ -48,6 +50,7 @@ impl Source {
         match self {
             Source::Document(Section::Fabric) => Some("fabric"),
             Source::Document(Section::Machine) => Some("machine"),
+            Source::Document(Section::Rows) => Some("fillAngle"),
             Source::Object | Source::Export | Source::Default => None,
         }
     }
@@ -100,13 +103,19 @@ fn first(object: Option<Value>, export: Option<Value>, doc: Option<(Value, Secti
 impl UnitSettings<'_> {
     /// The angle a fill's rows run at with the object's layer `object`, as the report gives it, and
     /// where it comes from: read alone (the embroidery tool's arrow asks for nothing more). An angle
-    /// the object doesn't set turns with it ([`UnitSettings::above_the_document`]); the default rows
-    /// (135° on the page) too.
+    /// the object doesn't set turns with it ([`UnitSettings::above_the_document`]); the document's
+    /// number and the default rows (135° on the page) too. The document's rule across the shape is a
+    /// rule: `"auto"`, from the document, what it chose said beside it (`info`'s rules).
     pub(crate) fn angle(&self, object: &PartLayer) -> Resolved {
         let turned = |a: f64| if self.turn != 0.0 && self.turn.is_finite() { a + self.turn } else { a };
+        let doc = match self.doc.fill_angle {
+            Some(FillAngle::Degrees(a)) => Some((json!(turned(a)), Section::Rows)),
+            Some(FillAngle::AcrossShape) => Some((json!("auto"), Section::Rows)),
+            None => None,
+        };
         match object.values.angle {
             Some(a) => Resolved { value: json!(a), source: Source::Object },
-            None => first(None, self.export.angle.map(|a| json!(turned(a))), None, json!(turned(planner_angle(FILL_ANGLE)))),
+            None => first(None, self.export.angle.map(|a| json!(turned(a))), doc, json!(turned(planner_angle(FILL_ANGLE)))),
         }
     }
 

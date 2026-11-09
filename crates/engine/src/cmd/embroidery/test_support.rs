@@ -44,7 +44,7 @@ pub(super) fn planned(node: u64, params: Option<Params>, color: [u8; 3], points:
     let origin = Origin { node: NodeId(node), part: Part::Fill(0), instance: None };
     let why = if params.is_some() { Choice::Forced(super::plan::ForcedBy::Export) } else { Choice::Literal };
     Planned {
-        facts: Facts { origin, occurrence: 1, params, columns: None, satin_widths, scale: None, why, asked: Default::default() },
+        facts: Facts { origin, occurrence: 1, params, columns: None, satin_widths, scale: None, why, asked: Default::default(), rows: None },
         block,
         literal: None,
         cut_before: false,

@@ -7,16 +7,20 @@
 //!   whatever its noise setting is) and what the trace is told to keep for the next rule.
 //! - **Long thin lines stay**, whatever their area (the project owner's choice, 2026-11-01): a
 //!   hairline weighs less than a crumb, but it is drawn. A line is narrower than [`THIN_LINE_MM`]
-//!   and, measured along it, at least [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so
-//!   that a stroke tapering to a point counts its whole length. The planner sews a part that
-//!   narrow as a running line along its middle.
+//!   along its middle, at its widest no more than [`JUNCTION_ALLOWANCE`] times that (and a
+//!   [`MEASURE_SLACK_PX`]), the largest disc where lines meet, and, measured along it, at least
+//!   [`LINE_KEEP_LENGTH_MM`] long (the owner's, 2026-11-03), so that a stroke tapering to a point
+//!   counts its whole length. It is sewn along its centre line (`super::centre`), which holds it
+//!   to the width away from where its lines meet.
 //! - **Bands a thread wide join, whatever their size.** A band no wider than a thread
 //!   ([`SLIVER_MAX_MM`], the project owner's choice, 2026-11-03) whose colour is a neighbour's,
 //!   near enough ([`SLIVER_DELTA_E`]), or a mix of two neighbours' ([`is_mix`]), is no drawn line
 //!   but what a picture leaves along an edge: the darker or lighter band a JPEG rings round a sharp
 //!   edge, the blend anti-aliasing paints between two colours, a pixel or three wide. It joins the
 //!   neighbour nearest its colour. A wider thin area in an in-between colour (a grey outline round
-//!   black on white) is drawn on purpose: the line rule keeps it when it is long.
+//!   black on white) is drawn on purpose: the line rule keeps it when it is long. So is a band of a
+//!   colour a person set to Lines, however narrow (the project owner's choice, 2026-11-07, „Włoski
+//!   w „Liniach” zostają (polecam)”): it is no band, and stays a line.
 //!
 //! The background is never sewn, and areas join it as they join any area: a speck in it vanishes.
 //! What lies inside what, and which islands are sewn over the area round them, is decided once
@@ -30,15 +34,40 @@ use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
 use super::colours::Colours;
 use super::regions::Regions;
+use super::settings::Job;
 
 /// The narrowest a long area may be and still be no line (millimetres): the narrowest satin column
 /// the planner sews (`plan::SATIN_MIN_WIDTH`, from Melco's design checker); narrower, the planner
 /// sews it as a running line along its middle.
 pub(super) const THIN_LINE_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
+/// How much wider than its lines a drawing of lines may be where they meet and still be lines: √2,
+/// a right-angle crossing's largest disc as wide as its lines' diagonal (where two lines meet, the
+/// largest disc is 1.25 times their width at a T, 2/√3 ≈ 1.155 at a Y and √2 at a crossing). A
+/// line is narrower than [`THIN_LINE_MM`] along its middle (`AreaStats::ridge_px`), and at its
+/// widest at most this many times its own width there; only where its lines meet (the project
+/// owner's choice, 2026-11-07, „Tylko na skrzyżowaniach (polecam)”): a dot, an arrowhead or a
+/// stretch wider than that ends, so a drawing holding one is filled, and away from its junctions
+/// a line is held to [`THIN_LINE_MM`] (`super::centre`).
+pub(super) const JUNCTION_ALLOWANCE: f64 = std::f64::consts::SQRT_2;
+
+/// How much a width measured on the region map's pixels may exceed the width it stands for
+/// (working pixels): a pixel, the trace's anti-aliased edges moving each side by up to half of one.
+pub(super) const MEASURE_SLACK_PX: f64 = 1.0;
+
+/// How much more than [`JUNCTION_ALLOWANCE`] times its lines' width a junction may measure on the
+/// region map's pixels (working pixels): three. A disc's width is measured from pixel centres to
+/// the nearest pixels on the edge, and where lines meet the edge turns a corner the pixels step
+/// round: measured 2026-11-08 at 10 pixels a millimetre, lines 0.4 to 0.9 mm wide meeting as a T,
+/// a Y and crossings at 45° to 90°, turned or upright, measure 1.28 to 1.80 times their width at
+/// their junction, at most 2.6 pixels past √2 times it (lines 0.6 mm wide crossing at ±45°: 12
+/// pixels where the lines measure 6.66); a dot or an arrowhead on lines that wide measures 2 to 3
+/// times their width.
+pub(super) const CROSSING_SLACK_PX: f64 = 3.0;
+
 /// How long a thin area must be, measured along it, to stay below the smallest area (millimetres):
-/// a line, not a speck. The project owner's choice (2026-11-03), taken from the research's estimate
-/// of two stitches of a running line at their shortest.
+/// a line, not a speck. The project owner's choice (2026-11-03), an estimate of two stitches of a
+/// running line at their shortest.
 pub(super) const LINE_KEEP_LENGTH_MM: f64 = 2.0;
 
 /// The widest a band may be and join a neighbour for its colour (millimetres): a thread's width
@@ -79,7 +108,8 @@ pub(super) fn is_mix(c: [u8; 3], a: [u8; 3], b: [u8; 3]) -> bool {
 pub(super) enum AreaKind {
     /// A filled area.
     Fill,
-    /// A thin line kept below the smallest area: sewn along its middle.
+    /// An area sewn along its middle: a thin line (kept below the smallest area too), or any area
+    /// of a colour set to Lines; one with no centre line to sew along is made a fill again.
     Line,
 }
 
@@ -146,8 +176,14 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     let thin_px = THIN_LINE_MM * px_per_mm;
     let long_px = LINE_KEEP_LENGTH_MM * px_per_mm;
     let band_px = SLIVER_MAX_MM * px_per_mm;
-    // A line: narrower than a satin column, and long enough along it not to be a speck.
-    let thin = |i: usize| regions.areas.get(i).is_some_and(|a| a.pixels > 0 && a.widest_px < thin_px);
+    // A line: narrower than a satin column along its middle, at its widest no more than where its
+    // lines meet makes it, and long enough along it not to be a speck.
+    let thin = |i: usize| {
+        regions
+            .areas
+            .get(i)
+            .is_some_and(|a| a.pixels > 0 && a.ridge_px < thin_px && a.widest_px <= JUNCTION_ALLOWANCE * a.ridge_px + CROSSING_SLACK_PX)
+    };
     let lengths = regions.lengths(thin)?;
     let is_line = |i: usize| thin(i) && lengths.get(i).is_some_and(|&l| l >= long_px);
     let colour = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).map(|r| r.color);
@@ -175,10 +211,12 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
         near.iter().any(|&o| o != c && delta_e_rgb(c, o) <= SLIVER_DELTA_E)
             || near.iter().enumerate().any(|(k, &x)| near.iter().skip(k + 1).any(|&y| is_mix(c, x, y)))
     };
+    // A colour set to Lines has no bands: a hairline of it is drawn on purpose.
+    let as_lines = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).is_some_and(|r| r.job == Job::Lines);
     let mut sliver: Vec<bool> = Vec::with_capacity(n);
     for i in 0..n {
         vectorcraft_doc::cancel::check()?;
-        sliver.push(!background(i) && is_sliver(i));
+        sliver.push(!background(i) && !as_lines(i) && is_sliver(i));
     }
     let mut parent: Vec<usize> = (0..n).collect();
     let mut pixels: Vec<usize> = regions.areas.iter().map(|a| a.pixels).collect();
@@ -281,9 +319,47 @@ pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_
     Ok(Areas { areas, regions, joined, bands, dropped: left_out })
 }
 
-/// The areas once the colours have their threads (`colours`): touching areas sewn in one thread
-/// joined into one, so that one colour of the design is one area, with no seam through it and no
-/// strip sewn twice in one thread. Colours merge into one thread (two sharing their only near
+/// Every area of a colour sewn as Lines made a line, whatever its width (the project owner's
+/// choices: "each colour has a job (Auto, Fill, Lines, Don't sew)", 2026-11-01, and the job Lines
+/// with centre lines, 2026-11-03): sewn along its middle as one running line (`super::centre`),
+/// after the fills it touches (`super::order`), the colours beside it reaching its middle under it
+/// (`super::overlap`). The background's areas stay as they are: they are never sewn.
+pub(super) fn lines_by_job(areas: &mut Areas, colours: &Colours) {
+    for area in &mut areas.areas {
+        if colours.rows.get(area.row).is_some_and(|r| r.job == Job::Lines && !r.background) {
+            area.kind = AreaKind::Line;
+        }
+    }
+}
+
+/// The areas meant to be sewn along their middle (`along`, by area) that came to no centre line
+/// (`lines`, by area: a dot, or a blob shorter than it is wide) made fills, sewn as the shapes they
+/// are (the project owner's choice, 2026-11-07, „Szyć jako kształt (polecam)”), sewn in their turn
+/// as fills are; how many of each colour set to Lines did, by row.
+pub(super) fn fills_without_centre_lines(
+    areas: &mut Areas,
+    colours: &Colours,
+    along: &[bool],
+    lines: &[Option<super::centre::CentreLine>],
+) -> BTreeMap<usize, usize> {
+    let mut by_row: BTreeMap<usize, usize> = BTreeMap::new();
+    for (a, area) in areas.areas.iter_mut().enumerate() {
+        if area.kind != AreaKind::Line || !along.get(a).copied().unwrap_or(false) || lines.get(a).is_some_and(Option::is_some) {
+            continue;
+        }
+        area.kind = AreaKind::Fill;
+        if colours.rows.get(area.row).is_some_and(|r| r.job == Job::Lines) {
+            *by_row.entry(area.row).or_insert(0) += 1;
+        }
+    }
+    by_row
+}
+
+/// The areas once the colours have their threads (`colours`): touching areas sewn in one thread,
+/// with one job, joined into one, so that one colour of the design is one area, with no seam
+/// through it and no strip sewn twice in one thread; areas of two jobs stay apart, each sewn as
+/// its colour asks (the project owner's choice, 2026-11-07, „Każdy kolor swoje zadanie
+/// (polecam)”): a colour set to Lines is sewn along its middle beside a field in its thread. Colours merge into one thread (two sharing their only near
 /// thread, the project owner's choice of 2026-11-01, or a merge a person asks for), and a speck
 /// joined to one area of a colour can make it touch another of that colour (as in the trace's own
 /// noise removal, where a speck merged into a colour joins the regions of it that it touches).
@@ -307,16 +383,16 @@ pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result
         }
         r
     };
-    // What two areas must share to be one: a sewn area's thread, an unsewn one's colour.
-    let key = |a: usize| -> Option<(bool, usize)> {
+    // What two areas must share to be one: a sewn area's thread and job, an unsewn one's colour.
+    let key = |a: usize| -> Option<(bool, usize, Job)> {
         let row_index = list.get(a)?.row;
         let row = rows.get(row_index)?;
         if row.background {
             None
         } else if row.sewn() {
-            row.thread.as_ref().map(|m| (true, m.thread.index))
+            row.thread.as_ref().map(|m| (true, m.thread.index, row.job))
         } else {
-            Some((false, end(row_index)))
+            Some((false, end(row_index), row.job))
         }
     };
     let mut parent: Vec<usize> = (0..n).collect();

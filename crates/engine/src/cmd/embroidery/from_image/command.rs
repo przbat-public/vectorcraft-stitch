@@ -19,13 +19,14 @@ use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_
 use vectorcraft_trace as tr;
 
 use super::background::{self, Background};
+use super::centre::{self, CentreLine};
 use super::colours::{self, Colours};
 use super::create::{self, Made};
 use super::order::{self, Order};
 use super::overlap::{self, Shapes};
 use super::regions::Regions;
-use super::rules::{self, Areas};
-use super::settings::{BackgroundSetting, C, Mode, Settings, table};
+use super::rules::{self, AreaKind, Areas};
+use super::settings::{BackgroundSetting, C, Job, Mode, Settings, table};
 use super::warnings::Warning;
 use super::{flat, inside, trace, working};
 use crate::cmd::bad;
@@ -143,6 +144,11 @@ fn since(started: std::time::Instant) -> Option<f64> {
     Some(hundredths(started.elapsed().as_secs_f64() * MS_PER_SEC))
 }
 
+/// Two stretches' times added (milliseconds, to hundredths); none on the web.
+fn added(a: Option<f64>, b: Option<f64>) -> Option<f64> {
+    Some(hundredths(a? + b?))
+}
+
 /// The clock a stage's time is read from; none on the web.
 #[cfg(not(target_arch = "wasm32"))]
 fn clock() -> std::time::Instant {
@@ -166,6 +172,8 @@ pub(super) struct Digitized {
     pub(super) colours: Colours,
     pub(super) areas: Areas,
     pub(super) order: Order,
+    /// Each area's centre line, where it is sewn along its middle ([`centre`]), by its index.
+    pub(super) lines: Vec<Option<CentreLine>>,
     pub(super) shapes: Shapes,
     pub(super) warnings: Vec<Warning>,
     /// The time of each stage it went through (milliseconds), none on the web.
@@ -276,13 +284,47 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         ));
     }
     let mut areas = rules::joined_by_thread(areas, &colours)?;
+    rules::lines_by_job(&mut areas, &colours);
+    let colours_ms = since(started);
+    // A line along its middle: a thin one of a colour sewn by the rules (or kept unsewn, to be sewn
+    // later), and every area of a colour sewn as Lines; not a colour sewn as Fill. Found before the
+    // order, which sews a line after the fills it touches: an area with no centre line to sew along
+    // is sewn as the shape it is, in its turn as a fill.
+    vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    let started = clock();
+    // A line by the rules is held to its width away from where its lines meet.
+    let thin_px = rules::THIN_LINE_MM * w.px_per_mm + rules::MEASURE_SLACK_PX;
+    let wanted: Vec<centre::Wanted> = areas
+        .areas
+        .iter()
+        .map(|x| match colours.rows.get(x.row) {
+            Some(r) if x.kind == AreaKind::Line && !r.background => match r.job {
+                Job::Lines => centre::Wanted::AnyWidth,
+                Job::Auto | Job::None => centre::Wanted::NoWiderThan(thin_px),
+                Job::Fill => centre::Wanted::No,
+            },
+            _ => centre::Wanted::No,
+        })
+        .collect();
+    let lines = centre::lines(&areas.regions, &|a| wanted.get(a).copied().unwrap_or(centre::Wanted::No), w.px_per_mm)?;
+    let along: Vec<bool> = wanted.iter().map(|&x| x != centre::Wanted::No).collect();
+    for (row, count) in rules::fills_without_centre_lines(&mut areas, &colours, &along, &lines) {
+        let color = colours.rows.get(row).map(|r| super::super::hex(r.color)).unwrap_or_default();
+        warnings.push(Warning::new(
+            "notLines",
+            json!({"color": color, "count": count}),
+            format!("areas of {color} with no centre line to sew along (a dot, or a blob shorter than it is wide) are sewn as the shapes they are: {count}"),
+        ));
+    }
+    let lines_ms = since(started);
+    let started = clock();
     inside::containers(&mut areas, &colours, w.px_per_mm)?;
     let order = order::ordered(&areas.areas, &areas.regions, &colours)?;
     inside::sewn_over(&mut areas, &colours, &order);
-    let colors_ms = since(started);
-    vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    let colors_ms = added(colours_ms, since(started));
     let started = clock();
-    let shapes = overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm)?;
+    let shapes =
+        overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm, &lines, overlap::LINE_REACH_MM * w.px_per_mm)?;
     if shapes.failed > 0 {
         warnings.push(Warning::new(
             "shapesNotJoined",
@@ -290,7 +332,8 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
             format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed),
         ));
     }
-    let shapes_ms = since(started);
+    // The centre lines are timed with the shapes, which they are made into.
+    let shapes_ms = added(since(started), lines_ms);
     vectorcraft_doc::cancel::progress(MAKING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     if traced.paths.is_empty() {
         warnings.push(Warning::new("nothingTraced", json!({}), "nothing in the image was traced: it is empty or transparent"));
@@ -303,6 +346,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
         colours,
         areas,
         order,
+        lines,
         shapes,
         warnings,
         timings: [image_ms, trace_ms, colors_ms, shapes_ms],
@@ -387,12 +431,16 @@ fn background_json(found: Background, setting: BackgroundSetting, traced: Option
 /// artwork and the test logos are drawn in at most a few thousand.
 pub(super) const MAX_OUTLINE_ELEMENTS: usize = 20_000;
 
-/// Area `a`'s shape as sewn, as an SVG path in millimetres from the document's origin, each
-/// coordinate to hundredths as the reply gives millimetres; and how many path elements it has.
+/// Area `a`'s shape as sewn (a line's centre line), as an SVG path in millimetres from the
+/// document's origin, each coordinate to hundredths as the reply gives millimetres; and how many
+/// path elements it has.
 fn outline_of(d: &Digitized, a: usize) -> Option<(String, usize)> {
     use vectorcraft_geom::kurbo::{BezPath, PathEl};
     let to_mm = vectorcraft_geom::Affine::scale(MM_PER_PT) * d.working.to_doc;
-    let path = d.shapes.shapes.get(a)?.transformed(to_mm).to_bezpath();
+    let path = match d.lines.get(a).and_then(Option::as_ref) {
+        Some(line) => to_mm * line.path(),
+        None => d.shapes.shapes.get(a)?.transformed(to_mm).to_bezpath(),
+    };
     let r = |p: Point| Point::new(hundredths(p.x), hundredths(p.y));
     let rounded: BezPath = path
         .elements()
@@ -465,6 +513,13 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                     "height": hundredths((y1 - y0) / px),
                 },
                 "widest": hundredths(stats.widest_px / px),
+                "line": d.lines.get(a).and_then(Option::as_ref).map(|l| json!({
+                    "width": hundredths(l.width_px / px),
+                    "length": hundredths(l.length_px / px),
+                    "pieces": l.pieces.len(),
+                    "ends": l.ends,
+                    "junctions": l.junctions,
+                })),
                 "box": bounds,
                 "inside": area.inside.and_then(number),
                 "sewnOver": area.sewn_over,

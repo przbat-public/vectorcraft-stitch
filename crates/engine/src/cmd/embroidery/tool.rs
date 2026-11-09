@@ -447,13 +447,21 @@ impl PlanFacts for FactsNow<'_> {
     }
 
     fn snap(&self, object: NodeId, part: PartKind, at: Point) -> Option<Point> {
-        Some(super::points::snapped(self.doc.node(object)?, part, at))
+        // A satin stroke's caps, by the plan's own settings, when the plan is of this document.
+        let cap = match (part, self.facts.as_deref()) {
+            (PartKind::Stroke, Some(f)) if std::ptr::eq(&*f.snapshot, self.doc) => super::points::cap_of(&f.planned.plan, object),
+            _ => 0.0,
+        };
+        Some(super::points::snapped(self.doc.node(object)?, part, at, cap))
     }
 
     fn fill_angle(&self, object: NodeId) -> Option<FillAngle> {
         let n = self.doc.node(object)?;
         let layer = self.layer.get_or_init(|| super::resolve::DocLayer::of(self.doc));
-        let (degrees, set) = super::info::fill_rows(self.doc, n, &super::Options::default(), layer)?;
+        // The rows the plan sews (a plan of an earlier state of the document too: the next one is
+        // on its way), else those it would.
+        let plan = self.facts.as_deref().map(|f| &*f.planned.plan);
+        let (degrees, set) = super::info::fill_rows(self.doc, n, &super::Options::default(), layer, plan)?;
         Some(FillAngle { degrees, set })
     }
 

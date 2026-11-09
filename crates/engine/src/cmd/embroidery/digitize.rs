@@ -39,6 +39,8 @@ pub(super) const MARKS_LEFT_OUT: &str =
 pub(super) use vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 /// The column width given for what is not a satin column: fills and running lines have none.
 const NO_WIDTH: f64 = 0.0;
+/// The cap given for what is not a stroke sewn along its path: a fill's unit has no ends to cap.
+const NO_CAP: plan::Cap = plan::Cap::Butt;
 /// The first word of a kept area's key ([`Digitizer::area`]), saying what the path operations made
 /// the area from: a fill's own area, a stroke's painted area (dashed, aligned, of varying width,
 /// with arrowheads), a stroke filled at its width.
@@ -60,7 +62,7 @@ const MAX_SYMBOL_NESTING: u32 = 8;
 const MAX_SYMBOL_PLACEMENTS: u64 = 100_000;
 const PLACEMENTS_LEFT_OUT: &str = "symbols placed more than 100,000 times (placing one another) are left out past that";
 /// `bp` (document points) in millimetres, as the stitch planner counts.
-fn in_mm(bp: &BezPath) -> BezPath {
+pub(super) fn in_mm(bp: &BezPath) -> BezPath {
     let mut mm = bp.clone();
     mm.apply_affine(Affine::scale(vectorcraft_stitch::MM_PER_PT));
     mm
@@ -182,6 +184,49 @@ pub(crate) struct Walked {
 /// [`digitize`], recording each unit's ends ([`UnitEnds`]) as it plans it when `collect`: the
 /// plan is the same either way.
 pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCache>>, collect: bool) -> Result<Walked, PlanError> {
+    walk(doc, opts, cache, collect, None).map(|(walked, _)| walked)
+}
+
+/// One unit's area as the walk plans it, whose rows the document lays across the shape
+/// ([`areas_across`]): in millimetres with its fill rule, and the angle (as the planner counts
+/// them) a piece of it about as long as wide keeps.
+#[derive(Clone, Debug)]
+pub(crate) struct AreaAcross {
+    pub(crate) area: BezPath,
+    pub(crate) rule: FillRule,
+    pub(crate) fixed: f64,
+}
+
+/// The areas a walk that plans no stitch records ([`areas_across`]), by object (as a person
+/// selects it) and kind of part.
+pub(crate) type AreasFound = HashMap<(NodeId, PartKind), Vec<AreaAcross>>;
+
+/// What a walk that plans no stitch records ([`areas_across`]): of the objects `ids` (as a person
+/// selects them), each part's units whose rows the document lays across the shape.
+struct Areas<'a> {
+    ids: &'a HashSet<NodeId>,
+    found: AreasFound,
+}
+
+/// The areas the walk fills, as it plans them, for the parts of objects `ids` (as a person selects
+/// them) whose rows the document lays across the shape (`fillAngle: "acrossShape"`), by object and
+/// kind of part: a fill grown by its `expand` and cut by the clip groups around it, a stroke sewn as
+/// the area it paints (its outline, dashed or offset as painted), an expanded object's pieces. No
+/// stitch is planned: what `embroidery.info` and the embroidery tool's arrow measure the rows on,
+/// as the planner does ([`plan::rows_by_piece`]). Empty when the design can't be walked.
+pub(crate) fn areas_across(doc: &Document, opts: &Options, ids: &HashSet<NodeId>) -> AreasFound {
+    walk(doc, opts, None, false, Some(ids)).map(|(_, found)| found).unwrap_or_default()
+}
+
+/// [`walked`], and with `areas` the walk plans no stitch and records the areas of those objects'
+/// parts ([`areas_across`]) instead.
+fn walk(
+    doc: &Document,
+    opts: &Options,
+    cache: Option<&Mutex<UnitCache>>,
+    collect: bool,
+    areas: Option<&HashSet<NodeId>>,
+) -> Result<(Walked, AreasFound), PlanError> {
     // The document's embroidery settings, read once a plan.
     let doc_layer = DocLayer::of(doc);
     let (design, trim_note) = DesignSettings::new(opts, &doc_layer);
@@ -236,9 +281,11 @@ pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCa
         occurrences: HashMap::new(),
         found: Found::default(),
         collected: collect.then(Vec::new),
+        areas: areas.map(|ids| Areas { ids, found: HashMap::new() }),
     };
     d.run();
     notes.extend(d.found.notes().map(String::from));
+    let areas = d.areas.take().map(|a| a.found).unwrap_or_default();
     match d.failed {
         Some(e) => Err(e),
         None => {
@@ -248,7 +295,7 @@ pub(crate) fn walked(doc: &Document, opts: &Options, cache: Option<&Mutex<UnitCa
             plan.warned = d.warned;
             plan.notes = notes;
             plan.start = doc.embroidery.as_ref().and_then(|e| e.start).map(|p| Point::new(pt_to_mm(p.x), pt_to_mm(p.y)));
-            Ok(Walked { plan, ends: d.collected.unwrap_or_default(), trim: d.design.connect.trim })
+            Ok((Walked { plan, ends: d.collected.unwrap_or_default(), trim: d.design.connect.trim }, areas))
         }
     }
 }
@@ -264,6 +311,8 @@ struct Sewing<'a> {
     style: Style,
     why: Choice,
     width: f64,
+    /// How a satin column sews its open ends: a stroke's cap; a fill has none.
+    cap: plan::Cap,
     clip_stitches: bool,
 }
 
@@ -327,6 +376,8 @@ struct Digitizer<'a> {
     found: Found,
     /// Each unit's ends, recorded when asked ([`walked`]).
     collected: Option<Vec<UnitEnds>>,
+    /// A walk that plans no stitch: the areas it records instead ([`areas_across`]).
+    areas: Option<Areas<'a>>,
 }
 
 /// How far a plan has got: the units come to, of about how many ([`units_under`]).
@@ -554,7 +605,8 @@ impl<'a> Digitizer<'a> {
     /// other runs of its group (that file's colour block); a run of manual stitches
     /// (`StitchRun::manual`) is placed as art is.
     fn literal(&mut self, n: &Node, path: &PathData, run: &StitchRun) {
-        if !self.step() {
+        // A walk that plans no stitch records areas only.
+        if self.areas.is_some() || !self.step() {
             return;
         }
         // Unpainted (or a pattern): it shows nothing, so it sews nothing.
@@ -618,7 +670,7 @@ impl<'a> Digitizer<'a> {
         // How much its stitches were scaled since they were made, as walked: a symbol's art carries
         // its instance's transform too.
         let scale = run.since_made.and_then(scale_factors);
-        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default() };
+        let facts = Facts { origin, occurrence, params: None, columns: None, satin_widths: None, scale, why, asked: Asked::default(), rows: None };
         // The cut before it: as its file had it, or one a stitch edit passed to a manual run.
         self.seq.add(Planned { facts, block, literal, cut_before });
     }
@@ -678,6 +730,12 @@ impl<'a> Digitizer<'a> {
     /// Stitch `bp` (document points) once per visible appearance item: each one a sewing unit,
     /// one fill or one stroke of `n`.
     fn shape(&mut self, n: &Node, bp: &BezPath, rule: FillRule) {
+        // A walk that plans no stitch shapes only the objects it is asked about.
+        if let Some(areas) = &self.areas
+            && !self.object.is_some_and(|o| areas.ids.contains(&o))
+        {
+            return;
+        }
         let mm = in_mm(bp);
         if !plan::in_range(&mm) {
             if n.appearance.items.iter().any(|i| i.visible() && painted(i)) {
@@ -701,7 +759,7 @@ impl<'a> Digitizer<'a> {
             if !item.visible() {
                 continue;
             }
-            if painted(item) && !self.step() {
+            if painted(item) && self.areas.is_none() && !self.step() {
                 return;
             }
             let unit = self.origin(n, part);
@@ -716,14 +774,19 @@ impl<'a> Digitizer<'a> {
                     // Paint that isn't sewn is said so (or passed by) before any path operation
                     // runs on its area.
                     if !matches!(solid(&fill.paint), Colour::Solid(_) | Colour::Approx(_)) {
-                        self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, clip_stitches: false }, &mm, rule, &fill.paint);
+                        self.colour(
+                            Sewing { unit, settings, style, why, width: NO_WIDTH, cap: NO_CAP, clip_stitches: false },
+                            &mm,
+                            rule,
+                            &fill.paint,
+                        );
                         continue;
                     }
                     // A fill sewn as a running line follows its outline, as a stroke does: the
                     // clip groups around it cut its stitches, rather than its area, whose cut
                     // edge would be sewn as a line the art doesn't have.
                     if style == Style::Running {
-                        self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, clip_stitches: true }, &mm, rule, &fill.paint);
+                        self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, cap: NO_CAP, clip_stitches: true }, &mm, rule, &fill.paint);
                         continue;
                     }
                     let e = if style == Style::Fill { settings.expand() } else { 0.0 };
@@ -734,7 +797,12 @@ impl<'a> Digitizer<'a> {
                         Some(k)
                     };
                     let shaped = self.area(what, |d| d.expanded_and_clipped(&mm, rule, e));
-                    self.colour(Sewing { unit, settings, style, why, width: NO_WIDTH, clip_stitches: false }, &shaped.area, shaped.rule, &fill.paint);
+                    self.colour(
+                        Sewing { unit, settings, style, why, width: NO_WIDTH, cap: NO_CAP, clip_stitches: false },
+                        &shaped.area,
+                        shaped.rule,
+                        &fill.paint,
+                    );
                 }
                 AppearanceItem::Stroke(stroke) => {
                     let width = pt_to_mm(stroke.width).max(0.0);
@@ -757,8 +825,15 @@ impl<'a> Digitizer<'a> {
                             let outline = outline_region(&PathData::from_bezpath(bp), rule, stroke).to_bezpath();
                             d.expanded_and_clipped(&in_mm(&outline), FillRule::NonZero, e)
                         });
-                        let sewing =
-                            Sewing { unit, settings, style: Style::Fill, why: Choice::StrokeOutlined, width: NO_WIDTH, clip_stitches: false };
+                        let sewing = Sewing {
+                            unit,
+                            settings,
+                            style: Style::Fill,
+                            why: Choice::StrokeOutlined,
+                            width: NO_WIDTH,
+                            cap: NO_CAP,
+                            clip_stitches: false,
+                        };
                         self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         continue;
                     }
@@ -787,8 +862,15 @@ impl<'a> Digitizer<'a> {
                                 let outline = outline_stroke(&PathData::from_bezpath(&mm), width, cap, join, miter).to_bezpath();
                                 d.expanded_and_clipped(&outline, FillRule::NonZero, e)
                             });
-                            let sewing =
-                                Sewing { unit, settings, style: Style::Fill, why: Choice::StrokeFilled, width: NO_WIDTH, clip_stitches: false };
+                            let sewing = Sewing {
+                                unit,
+                                settings,
+                                style: Style::Fill,
+                                why: Choice::StrokeFilled,
+                                width: NO_WIDTH,
+                                cap: NO_CAP,
+                                clip_stitches: false,
+                            };
                             self.colour(sewing, &shaped.area, shaped.rule, &stroke.paint);
                         }
                         // A satin column or a running line along its path.
@@ -799,7 +881,14 @@ impl<'a> Digitizer<'a> {
                                     "strokes wider than {widest} mm are sewn as satin columns {widest} mm wide: fill them instead (stitch fill)"
                                 ));
                             }
-                            self.colour(Sewing { unit, settings, style, why, width, clip_stitches: true }, &mm, rule, &stroke.paint);
+                            // A satin column sews the stroke's cap at its ends, as the stroke paints it
+                            // (the project owner's choice, 2026-11-01).
+                            let cap = match stroke.cap {
+                                LineCap::Butt => plan::Cap::Butt,
+                                LineCap::Round => plan::Cap::Round,
+                                LineCap::Square => plan::Cap::Square,
+                            };
+                            self.colour(Sewing { unit, settings, style, why, width, cap, clip_stitches: true }, &mm, rule, &stroke.paint);
                         }
                     }
                 }
@@ -878,8 +967,26 @@ impl<'a> Digitizer<'a> {
         if self.failed.is_some() {
             return;
         }
-        let Sewing { unit, settings, style, why, width, clip_stitches } = sewing;
-        let params = settings.params(style, width);
+        let Sewing { unit, settings, style, why, width, cap, clip_stitches } = sewing;
+        let mut params = plan::Params { cap, ..settings.params(style, width) };
+        // The document's rows across the shape: each separate piece of a fill long enough rows
+        // square to its length, the shape as it is planned (grown and clipped); one about as long
+        // as wide, the rows it had. The planner measures them, once the plan's size is known.
+        if plan::sewn_style(&params) == Style::Fill && settings.by_shape() {
+            params.rows = plan::Rows::AcrossShape;
+        }
+        // A walk that plans no stitch records the area instead.
+        if let Some(areas) = self.areas.as_mut() {
+            let kind = match unit.part {
+                Part::Fill(_) => Some(PartKind::Fill),
+                Part::Stroke(_) => Some(PartKind::Stroke),
+                Part::Literal | Part::Manual => None,
+            };
+            if let Some(kind) = kind.filter(|_| params.rows == plan::Rows::AcrossShape) {
+                areas.found.entry((unit.selected(), kind)).or_default().push(AreaAcross { area: bp.clone(), rule, fixed: params.angle });
+            }
+            return;
+        }
         // Where the needle will be: at the end of the block this object is likely to join (its
         // bounds estimated from the path's), so it starts as near there as it can.
         let bounds = bp.bounding_box();
@@ -924,10 +1031,12 @@ impl<'a> Digitizer<'a> {
             }
         };
         // Kept in the cache too, the stitches are copied into the block.
-        let (stitches, columns, widths, reach) = match Arc::try_unwrap(planned) {
-            Ok(UnitStitches { stitches, columns, widths, reach }) => (stitches, columns, widths, reach),
-            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths, kept.reach),
+        let (stitches, columns, widths, reach, rows) = match Arc::try_unwrap(planned) {
+            Ok(UnitStitches { stitches, columns, widths, reach, rows }) => (stitches, columns, widths, reach, rows),
+            Err(kept) => (kept.stitches.clone(), kept.columns, kept.widths, kept.reach, kept.rows),
         };
+        // Recorded with the rows its largest piece is sewn at, when the planner laid them across it.
+        let params = plan::Params { angle: rows.map_or(params.angle, |r| r.largest.angle), ..params };
         let satin_widths = match plan::sewn_style(&params) {
             Style::Satin => Some([params.width; 2]),
             Style::Fill => widths,
@@ -956,7 +1065,7 @@ impl<'a> Digitizer<'a> {
             collected.push(record);
         }
         let asked = Asked { entry: settings.entry(), exit: settings.exit(), reach };
-        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, scale: None, why, asked };
+        let facts = Facts { origin: unit, occurrence, params: Some(params), columns, satin_widths, scale: None, why, asked, rows };
         self.seq.add(Planned { facts, block, literal: None, cut_before: false });
     }
 

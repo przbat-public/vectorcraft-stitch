@@ -5,7 +5,10 @@
 use vectorcraft_geom::{BezPath, Point, Vec2};
 
 use super::area::TRAVEL_STITCH;
-use super::geometry::{CORNER, Line, NO_LENGTH, SubPath, length, nearest_on, resample, resample_by, subpaths, tangent, trimmed, turn, unit};
+use super::geometry::{
+    CORNER, EndDirections, Line, NO_LENGTH, SubPath, end_directions, length, nearest_on, resample, resample_by, subpaths, tangent, trimmed, turn,
+    unit,
+};
 use super::narrow::Column;
 use super::runs::{COST_HIDDEN, Runs, Travel};
 use super::toward::{Finish, ordered_toward};
@@ -57,7 +60,9 @@ const GOLDEN: f64 = 0.618_033_988_75;
 
 /// A satin column sewn along `path`'s centreline, [`Params::width`] wide and wider at each rail by
 /// its pull compensation ([`Params::compensation`] of the width: the left rail as the path is
-/// drawn, then the right one), each open column shorter at its ends by [`Params::push`]. The
+/// drawn, then the right one), each open column carried past its ends by its cap ([`Params::cap`],
+/// [`capped`]: the top stitching, its underlay staying on the path) and shorter at its ends by
+/// [`Params::push`]. The
 /// penetrations on each rail are [`satin_spacing`] apart for 40 wt thread, closer for finer thread
 /// ([`thread_scale`]), or [`Params::density`] when auto spacing is off; the crossings, rail to rail
 /// in turn, lie half that apart ([`CROSSINGS_PER_SPACING`]). Round a bend the spacing is kept on
@@ -65,7 +70,7 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// needle is: each column starts at its end nearest the needle (a closed one at its point
 /// nearest), the nearest first, as Ink/Stitch starts satins; from an entry point, the column it
 /// lies nearest first, a ring starting exactly there ([`ordered`]). `p`'s style is satin (the
-/// caller, [`super::stitches_aimed`], sews a satin only then). With the stitches, the connecting
+/// caller, [`super::try_stitches_aimed`], sews a satin only then). With the stitches, the connecting
 /// stitches sewn between its columns (millimetres, [`Runs::connectors`]).
 pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
     let p = p.sane();
@@ -73,8 +78,10 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
         return (Vec::new(), 0.0);
     }
     // Pull compensation widens the column at each rail ([`Params::compensation`]): the left one as
-    // the path is drawn, then the right one.
+    // the path is drawn, then the right one; and the fixed part of it (millimetres, the share of the
+    // width aside), which a round cap keeps whole round its half disc.
     let [left, right] = p.compensation(p.width);
+    let [fixed_left, fixed_right] = p.compensation(0.0);
     let half = p.width / 2.0;
     let spacing = p.column_spacing(p.width);
     // The crossings go to one rail and the other in turn: half the spacing apart.
@@ -85,10 +92,33 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
     // other end, and a ring travels along its middle to the exit before its top stitching; both are
     // weighed as travel hidden under stitching still to come.
     let finish = Finish { returns: line_returns(&p), flip: Some(COST_HIDDEN), reach: COST_HIDDEN };
-    for Line { pts, closed, reversed, toward } in ordered_toward(subpaths(path), aim, &finish, &p) {
+    // The satin's pieces, an end lying on one taking no cap, and the directions out of their ends.
+    let all = subpaths(path);
+    let directions = end_directions(path);
+    let mut meet_work = 0usize;
+    for Line { pts, closed, reversed, toward } in ordered_toward(all.clone(), aim, &finish, &p) {
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
-        let pts = if closed { pts } else { pushed(&pts, if reversed { [p.push[1], p.push[0]] } else { p.push }, shortest) };
+        let push = if reversed { [p.push[1], p.push[0]] } else { p.push };
+        // The cap carries an open column's top stitching past its ends, and its underlay with it
+        // ([`underlay_lines`]).
+        let cap = if closed || p.cap == super::Cap::Butt {
+            None
+        } else {
+            let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
+            capped(&pts, p.cap, half, &tip, ends_on_pieces(&pts, &all, half, &mut meet_work), directions_of(&pts, &directions))
+        };
+        let under = if closed { pts.clone() } else { pushed(&pts, push, shortest) };
+        let (pts, cap) = match cap {
+            Some(Capped { pts: top, cap, carried }) => {
+                let total = length(&top, false);
+                let k = push_share(total, push[0], push[1], shortest);
+                let pushed = [push[0] * k, push[1] * k];
+                let top = if pushed[0] + pushed[1] > 0.0 { trimmed(&top, pushed[0], pushed[1]) } else { top };
+                (top, Some(CapAlong { total, cap, carried, pushed }))
+            }
+            None => (under.clone(), None),
+        };
         if length(&pts, closed) < shortest {
             continue;
         }
@@ -99,7 +129,11 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
         // top stitching starts there and comes back.
         let mut back = false;
         if let Some(kind) = satin_kind(p.underlay, p.width) {
-            for (under, ends_far) in satin_underlay(&pts, closed, p.width, kind) {
+            let inset = (p.width * UNDERLAY_INSET).min(UNDERLAY_INSET_MAX);
+            let lines = underlay_lines(&under, &pts, cap.as_ref(), inset);
+            // Within a round cap the zigzag's sides narrow with the half disc, inset as along it.
+            let side_at = |s: f64| cap.as_ref().map_or(f64::INFINITY, |c| half * c.across(s + lines.from, half) - inset);
+            for (under, ends_far) in satin_underlay(&lines, closed, p.width, kind, &side_at) {
                 if under.len() >= 2 {
                     push_split(&mut runs, under, travel, p.max_satin);
                     travel = Travel::Sew;
@@ -177,7 +211,13 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
                 // Even crossings go to one rail, odd ones to the other. The normal points to the
                 // right of the way the needle goes along the column (y runs down the page).
                 let side = if i % 2 == 0 { 1.0 } else { -1.0 };
-                let reach = half + if (side > 0.0) != against { right } else { left };
+                let (pull, fixed) = if (side > 0.0) != against { (right, fixed_right) } else { (left, fixed_left) };
+                // Within a round cap, the crossing spans the half disc where it lies, its share of
+                // the width's pull with it, the fixed pull whole.
+                let reach = match &cap {
+                    Some(c) => (half + pull - fixed) * c.across(s, half) + fixed,
+                    None => half + pull,
+                };
                 (q, Vec2::new(-t.y, t.x) * reach * side)
             })
             .collect();
@@ -248,6 +288,233 @@ fn push_share(len: f64, start: f64, end: f64, shortest: f64) -> f64 {
     let keep = (len * MIN_PUSHED).max(shortest).min(len);
     let most = len - keep;
     if start + end > most { most / (start + end) } else { 1.0 }
+}
+
+/// Two ends of an open column closer than this (millimetres) meet: the column comes back to where
+/// it starts (a ring drawn without closing it), and it is sewn as a closed one is, no cap at its
+/// ends, their half discs lying on the column itself (the project owner's choices, 2026-11-07: no
+/// caps where an open column's ends meet, and „Jak zamknięte (polecam)”: within a thread's width,
+/// `super::THREAD_WIDTH`, 0.4 mm for 40 wt, as a running line's pieces meet, `super::route`).
+pub(super) const ENDS_MEET: f64 = super::THREAD_WIDTH;
+
+/// How many of a column's segments the search for an end lying on a piece of its satin measures
+/// at most ([`ends_on_pieces`]): past them every end takes its cap. A bound on the work, an
+/// estimate: a satin of a few thousand pieces.
+const MAX_MEET_WORK: usize = 2_000_000;
+
+/// Whether each end of the open column `pts` (its first, then its last) meets a piece of the same
+/// satin (`all`, its subpaths, the column among them): lies within [`ENDS_MEET`] of another
+/// piece's end, as two strokes drawn end to end; or within `half` (the column's half width) of a
+/// piece's middle (farther than `half` along it from its ends), as a T's stem ends on its bar, or
+/// of its own column's farther than its width along it, as a P's end on its own stem. Such an end
+/// takes no cap: no caps are sewn where pieces of one satin meet (the project owner's choice,
+/// 2026-11-07, „Jak zamknięte (polecam)”). An end beside another end but farther than
+/// [`ENDS_MEET`] keeps its cap. None past [`MAX_MEET_WORK`] (`work` counts the segments measured).
+fn ends_on_pieces(pts: &[Point], all: &[SubPath], half: f64, work: &mut usize) -> [bool; 2] {
+    let own = |s: &SubPath| {
+        s.pts.len() == pts.len()
+            && ((s.pts.first() == pts.first() && s.pts.last() == pts.last()) || (s.pts.first() == pts.last() && s.pts.last() == pts.first()))
+    };
+    let mut on = [false; 2];
+    for (k, end) in [pts.first(), pts.last()].into_iter().enumerate() {
+        let Some(&q) = end else { continue };
+        for sub in all {
+            *work = work.saturating_add(sub.pts.len());
+            if *work > MAX_MEET_WORK {
+                return [false; 2];
+            }
+            let mine = own(sub);
+            let ends_near = !sub.closed && !mine && [sub.pts.first(), sub.pts.last()].into_iter().flatten().any(|e| e.distance(q) <= ENDS_MEET);
+            // Its own column walked from this end, another piece as it is drawn.
+            let line: Vec<Point> = if mine && sub.pts.first() != Some(&q) { sub.points().into_iter().rev().collect() } else { sub.points() };
+            let total = length(&line, false);
+            let (from, to) = match (sub.closed, mine) {
+                (true, _) => (0.0, total),
+                (false, true) => ((2.0 * half).max(half), total - half),
+                (false, false) => (half, total - half),
+            };
+            if ends_near || on_middle(q, &line, from, to, half) {
+                if let Some(slot) = on.get_mut(k) {
+                    *slot = true;
+                }
+                break;
+            }
+        }
+    }
+    on
+}
+
+/// Whether `q` lies within `near` of polyline `line` where it runs from `from` to `to` millimetres
+/// along it.
+fn on_middle(q: Point, line: &[Point], from: f64, to: f64, near: f64) -> bool {
+    let mut along = 0.0;
+    line.windows(2).any(|w| {
+        let (Some(&a), Some(&b)) = (w.first(), w.get(1)) else { return false };
+        let len = a.distance(b);
+        let before = along;
+        along += len;
+        if len <= 0.0 || along <= from || before >= to {
+            return false;
+        }
+        let (a, b) = (a.lerp(b, ((from - before) / len).clamp(0.0, 1.0)), a.lerp(b, ((to - before) / len).clamp(0.0, 1.0)));
+        let ab = b - a;
+        let t = if ab.hypot2() > 0.0 { ((q - a).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+        q.distance(a + ab * t) <= near
+    })
+}
+
+/// An open column's centreline carried past its ends by its cap ([`capped`]): the points, the cap,
+/// and how far each end was carried (millimetres).
+#[derive(Clone, Debug)]
+struct Capped {
+    pts: Vec<Point>,
+    cap: super::Cap,
+    carried: [f64; 2],
+}
+
+/// [`Capped`] as the top stitching sews it, push compensation cut off its ends: `pushed`
+/// millimetres off its start and its end, `total` its length before.
+#[derive(Clone, Debug)]
+struct CapAlong {
+    total: f64,
+    cap: super::Cap,
+    carried: [f64; 2],
+    pushed: [f64; 2],
+}
+
+impl CapAlong {
+    /// The share of its full reach a crossing `s` millimetres along the top stitching takes: 1
+    /// along the column and across a square cap; within a round cap, the half chord of the half
+    /// disc of radius `half` (the column's half width) where the crossing lies, as a share of
+    /// `half`. Push compensation shortens a round cap and keeps it round: the half disc pressed along
+    /// the column into the length the push leaves it (a half ellipse), so that its tip crossing is
+    /// as narrow as without the push (the project owner's choice, 2026-11-07, „Okrągły koniec
+    /// zostaje okrągły (polecam)”); a push past the cap cuts the column itself, square.
+    fn across(&self, s: f64, half: f64) -> f64 {
+        if self.cap != super::Cap::Round || half <= 0.0 {
+            return 1.0;
+        }
+        let [cut, cut_end] = self.pushed;
+        let along = s + cut;
+        let [start, end] = self.carried;
+        // How far past the path's own end the crossing lies, in the half disc the push pressed.
+        let pressed = |past: f64, reach: f64, push: f64| if past > 0.0 && reach > push { past * reach / (reach - push) } else { 0.0 };
+        let past = pressed(start - along, start, cut).max(pressed(along - (self.total - end), end, cut_end));
+        let share = past / half;
+        if share >= 1.0 { 0.0 } else { (1.0 - share * share).sqrt() }
+    }
+}
+
+/// What a round cap's tip crossing is made of ([`cap_reach`]): the width that narrows round the half
+/// disc (the column's, and both rails' pull compensation by the width), the fixed pull compensation
+/// of both rails that stays whole, and the shortest stitch the planner sews (millimetres).
+struct Tip {
+    width: f64,
+    fixed: f64,
+    min_stitch: f64,
+}
+
+/// How far a cap carries a column past each end, `half` its half width: half its width for a
+/// square cap; for a round one, as far as a crossing of the half disc (the share of `tip`'s width
+/// the half chord there leaves, and its fixed pull) stays the shortest stitch long, so that no
+/// stitch at its tip is shorter than the planner sews; none for a butt cap.
+fn cap_reach(cap: super::Cap, half: f64, tip: &Tip) -> f64 {
+    match cap {
+        super::Cap::Butt => 0.0,
+        super::Cap::Square => half,
+        super::Cap::Round => {
+            if tip.width + tip.fixed <= tip.min_stitch || half <= 0.0 || tip.width <= 0.0 {
+                return 0.0;
+            }
+            let share = ((tip.min_stitch - tip.fixed) / tip.width).max(0.0);
+            half * (1.0 - share * share).sqrt()
+        }
+    }
+}
+
+/// An open column's centreline `pts` carried past its ends by its `cap` ([`cap_reach`]), each along
+/// the direction its end segment points out, but an end that lies on a piece of the same satin
+/// (`on_piece`, [`ends_on_pieces`]); `None` when nothing is carried: a butt cap, a column whose
+/// two ends meet ([`ENDS_MEET`]), both ends on pieces, or one without a direction at an end. A dot
+/// (a piece shorter than the column is wide, its two ends near each other) is no ring: it is
+/// carried both ways along its own direction, or along x when it has none, as SVG 2 paints a
+/// subpath of no length (§ 9.5.3), so that it is sewn as the small satin dot its cap paints (the
+/// project owner's choice, 2026-11-07, „Szyć jako małą kropkę (polecam)”).
+fn capped(pts: &[Point], cap: super::Cap, half: f64, tip: &Tip, on_piece: [bool; 2], out: [Option<Vec2>; 2]) -> Option<Capped> {
+    let reach = cap_reach(cap, half, tip);
+    if reach <= 0.0 || !reach.is_finite() || on_piece == [true; 2] {
+        return None;
+    }
+    let (&first, &last) = (pts.first()?, pts.last()?);
+    let dot = length(pts, false) < 2.0 * half;
+    if first.distance(last) <= ENDS_MEET && !dot {
+        return None;
+    }
+    // The direction out of each end: the curve's own (`out`), else along its first segment with a
+    // length; a dot with none, x.
+    let away = |end: Point, q: Option<&Point>| q.and_then(|&q| unit(end - q));
+    let [back, on] = out;
+    let back = back.or_else(|| away(first, pts.iter().find(|q| q.distance(first) > NO_LENGTH)));
+    let on = on.or_else(|| away(last, pts.iter().rev().find(|q| q.distance(last) > NO_LENGTH)));
+    let (back, on) = match (back, on) {
+        (Some(back), Some(on)) => (back, on),
+        _ if dot => (Vec2::new(-1.0, 0.0), Vec2::new(1.0, 0.0)),
+        _ => return None,
+    };
+    let carried = on_piece.map(|on| if on { 0.0 } else { reach });
+    let mut line: Vec<Point> = Vec::with_capacity(pts.len() + 2);
+    if carried[0] > 0.0 {
+        line.push(first + back * carried[0]);
+    }
+    line.extend_from_slice(pts);
+    if carried[1] > 0.0 {
+        line.push(last + on * carried[1]);
+    }
+    Some(Capped { pts: line, cap, carried })
+}
+
+/// How far a satin sewn with `p` carries an open column's top stitching past each of its ends by
+/// its cap (millimetres, [`cap_reach`]): where its stitches end, past the path's own end, for the
+/// Check tab's allowance, the tool's snap and the planned exits; none for a butt cap.
+pub fn cap_reach_of(p: &Params) -> f64 {
+    let p = p.sane();
+    let ([left, right], [fixed_left, fixed_right]) = (p.compensation(p.width), p.compensation(0.0));
+    let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
+    let reach = cap_reach(p.cap, p.width / 2.0, &tip);
+    if reach.is_finite() { reach } else { 0.0 }
+}
+
+/// The directions out of the ends of line `pts` (its first point, then its last), as
+/// [`end_directions`] found them for the subpath it is, either way round; none for a line it
+/// didn't.
+fn directions_of(pts: &[Point], found: &[EndDirections]) -> [Option<Vec2>; 2] {
+    let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return [None; 2] };
+    found
+        .iter()
+        .find_map(|e| {
+            if e.first == first && e.last == last {
+                Some([e.back, e.on])
+            } else if e.first == last && e.last == first {
+                Some([e.on, e.back])
+            } else {
+                None
+            }
+        })
+        .unwrap_or([None; 2])
+}
+
+/// An open satin line `pts` (one of the satin's pieces `all`, drawn by `path`) as its top stitching
+/// runs (millimetres), carried past its ends by the cap `p` gives ([`capped`]): where its stitches
+/// can start and end (`super::ends`). `pts` as they are when nothing is carried.
+pub(super) fn capped_line(pts: &[Point], all: &[SubPath], path: &BezPath, p: &Params) -> Vec<Point> {
+    let half = p.width / 2.0;
+    let ([left, right], [fixed_left, fixed_right]) = (p.compensation(p.width), p.compensation(0.0));
+    let tip = Tip { width: p.width + (left - fixed_left) + (right - fixed_right), fixed: fixed_left + fixed_right, min_stitch: p.min_stitch };
+    let on_piece = ends_on_pieces(pts, all, half, &mut 0);
+    match capped(pts, p.cap, half, &tip, on_piece, directions_of(pts, &end_directions(path))) {
+        Some(c) => c.pts,
+        None => pts.to_vec(),
+    }
 }
 
 /// A stroke's centre line measured along, its direction turning smoothly round its curves. Where
@@ -464,8 +731,6 @@ pub fn satin_auto_underlay(width: f64) -> Underlay {
     }
 }
 
-/// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`]
-/// ([`satin_auto_underlay`]); `None` for none.
 /// Whether an open satin line sewn with `p` ends where it starts: its top stitching comes back over
 /// an underlay that went to its far end (a centre run; an edge run and zigzag), as a fill's narrow
 /// part does ([`column_returns`]).
@@ -473,6 +738,8 @@ pub(super) fn line_returns(p: &Params) -> bool {
     matches!(satin_kind(p.underlay, p.width), Some(SatinUnderlay::Center | SatinUnderlay::EdgeZigzag))
 }
 
+/// The underlay `u` asks of a satin column `width` wide: by its width with [`Underlay::Auto`]
+/// ([`satin_auto_underlay`]); `None` for none.
 fn satin_kind(u: Underlay, width: f64) -> Option<SatinUnderlay> {
     match u {
         Underlay::None => None,
@@ -483,17 +750,65 @@ fn satin_kind(u: Underlay, width: f64) -> Option<SatinUnderlay> {
     }
 }
 
-/// The underlay of a satin column along `pts` (its centreline), `width` wide, of `kind`: a centre
-/// run, an edge run (along one side and back along the other), or an edge run then a zigzag
-/// between its sides. Each run comes with whether it
-/// ends at the column's far end. The thresholds are estimates from the usual practice. (The
-/// zigzag's stitches run at an angle across the column, longer than its width, and the edge run
-/// crosses the column at its far end: the caller splits them like the top stitching, as
-/// Ink/Stitch's underlay guide recommends; an unbounded zigzag destabilises the column.)
-fn satin_underlay(pts: &[Point], closed: bool, width: f64, kind: SatinUnderlay) -> Vec<(Vec<Point>, bool)> {
-    let centre = resample(pts, UNDERLAY_STITCH, closed);
+/// The lines a satin column's underlay runs along ([`underlay_lines`]): its edge run's, its centre
+/// run's and zigzag's, and how far along the top stitching the latter starts (millimetres).
+struct UnderlayLines {
+    edge: Vec<Point>,
+    middle: Vec<Point>,
+    from: f64,
+}
+
+/// Where an open column's underlay runs, so that it holds up its caps too (the project owner's
+/// choice, 2026-11-07, „Podszycie w zakończeniach (polecam)”): along `top`, the top stitching's
+/// centre line (carried past the path's ends by its cap, push compensation off it), where a square
+/// cap is the column carried on at its width; in a round cap the centre run and the zigzag stop
+/// `inset` short of its tip (the zigzag's sides narrowing with the half disc: [`satin_underlay`])
+/// and the edge run, whose sides a half disc can't hold, stays on the path (`under`). Without a
+/// cap, `under` for all.
+fn underlay_lines(under: &[Point], top: &[Point], cap: Option<&CapAlong>, inset: f64) -> UnderlayLines {
+    match cap {
+        Some(c) if c.cap == super::Cap::Round => {
+            // An end whose cap the push left some of stops `inset` short of its tip.
+            let short = |k: usize| if c.carried.get(k).zip(c.pushed.get(k)).is_some_and(|(r, p)| r > p) { inset } else { 0.0 };
+            let (start, end) = (short(0), short(1));
+            let keeps = length(top, false) > start + end;
+            let middle = if keeps { trimmed(top, start, end) } else { top.to_vec() };
+            UnderlayLines { edge: under.to_vec(), middle, from: if keeps { start } else { 0.0 } }
+        }
+        Some(_) => UnderlayLines { edge: top.to_vec(), middle: top.to_vec(), from: 0.0 },
+        None => UnderlayLines { edge: under.to_vec(), middle: under.to_vec(), from: 0.0 },
+    }
+}
+
+/// Where an open satin line `pts` (one of the satin's pieces `all`, drawn by `path`) sewn with `p` starts its
+/// underlay at each of its ends ([`underlay_lines`], without push compensation): its first run's
+/// end there, a centre run's or an edge run's. `None` without an underlay.
+pub(super) fn underlay_ends(pts: &[Point], all: &[SubPath], path: &BezPath, p: &Params) -> Option<[Point; 2]> {
+    let kind = satin_kind(p.underlay, p.width)?;
+    let top = capped_line(pts, all, path, p);
+    let cap = (top.len() > pts.len()).then_some(p.cap);
+    let ends = |line: &[Point]| Some([*line.first()?, *line.last()?]);
+    match (kind, cap) {
+        (SatinUnderlay::Center, Some(super::Cap::Round)) => {
+            let inset = (p.width * UNDERLAY_INSET).min(UNDERLAY_INSET_MAX);
+            ends(&trimmed(&top, inset, inset))
+        }
+        (_, Some(super::Cap::Round)) => ends(pts),
+        _ => ends(&top),
+    }
+}
+
+/// The underlay of a satin column along `lines` ([`underlay_lines`]: its centreline as each run
+/// takes it), `width` wide, of `kind`: a centre run, an edge run (along one side and back along the
+/// other), or an edge run then a zigzag between its sides, the zigzag's sides at most `side_at(s)`
+/// from the middle `s` millimetres along it. Each run comes with whether it ends at the column's far
+/// end. The thresholds are estimates from the usual practice. (The zigzag's stitches run at an angle
+/// across the column, longer than its width, and the edge run crosses the column at its far end:
+/// the caller splits them like the top stitching, as Ink/Stitch's underlay guide recommends; an
+/// unbounded zigzag destabilises the column.)
+fn satin_underlay(lines: &UnderlayLines, closed: bool, width: f64, kind: SatinUnderlay, side_at: &dyn Fn(f64) -> f64) -> Vec<(Vec<Point>, bool)> {
     if kind == SatinUnderlay::Center {
-        return vec![(centre, !closed)];
+        return vec![(resample(&lines.middle, UNDERLAY_STITCH, closed), !closed)];
     }
     // The sides, kept inside the column so the underlay doesn't show at its edges.
     let side = (width / 2.0 - (width * UNDERLAY_INSET).min(UNDERLAY_INSET_MAX)).max(0.0);
@@ -502,12 +817,21 @@ fn satin_underlay(pts: &[Point], closed: bool, width: f64, kind: SatinUnderlay) 
         let t = tangent(samples, i, closed);
         Some(q + Vec2::new(-t.y, t.x) * d)
     };
+    let centre = resample(&lines.edge, UNDERLAY_STITCH, closed);
     let mut edge: Vec<Point> = (0..centre.len()).filter_map(|i| offset(&centre, i, side)).collect();
     edge.extend((0..centre.len()).rev().filter_map(|i| offset(&centre, i, -side)));
     let mut out = vec![(edge, false)];
     if kind == SatinUnderlay::EdgeZigzag {
-        let steps = resample(pts, ZIGZAG_UNDERLAY_SPACING, closed);
-        let zigzag: Vec<Point> = (0..steps.len()).filter_map(|i| offset(&steps, i, if i % 2 == 0 { side } else { -side })).collect();
+        let steps = resample_by(&lines.middle, closed, &|_| ZIGZAG_UNDERLAY_SPACING);
+        let points: Vec<Point> = steps.iter().map(|&(q, _)| q).collect();
+        let zigzag: Vec<Point> = steps
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &(_, s))| {
+                let d = side.min(side_at(s)).max(0.0);
+                offset(&points, i, if i % 2 == 0 { d } else { -d })
+            })
+            .collect();
         out.push((zigzag, !closed));
     }
     out

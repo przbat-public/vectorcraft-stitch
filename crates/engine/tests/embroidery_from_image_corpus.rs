@@ -42,6 +42,12 @@
 //!
 //! A table of the measures is printed. Local runs skip an absent corpus;
 //! `EMBROIDERY_CORPUS_REQUIRED=1` requires it.
+//!
+//! The real designs' artwork makes no thin line at 10 pixels a millimetre (centre lines moved none
+//! of its figures there, 2026-11-07), so line art is drawn here too, with no corpus: a T,
+//! an X, an S curve, hatch lines and a ring 0.5 mm wide, digitized against their vector path, every
+//! line sewn as a running line along its middle as the vector path sews it
+//! ([`line_art_digitized_stays_on_the_vector_path`]).
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -294,4 +300,171 @@ fn digitized_artwork_stays_near_the_vector_path() {
         }
     }
     assert!(failed.is_empty(), "{}", failed.join("\n"));
+}
+
+/// The line art [`line_art_digitized_stays_on_the_vector_path`] draws (document points), stroked
+/// [`LINE_PT`] wide with round caps and joins: a letter T and an X, each of pieces meeting end to
+/// end at its junction (so that the vector path routes it too); an S curve; three hatch lines apart;
+/// and a ring.
+const LINE_ART: [&str; 4] = [
+    "M 30 30 L 80 30 M 80 30 L 130 30 M 80 30 L 80 110",
+    "M 160 30 L 200 70 M 200 70 L 240 30 M 200 70 L 160 110 M 200 70 L 240 110",
+    "M 30 170 C 80 130 110 230 160 180",
+    "M 200 150 L 280 150 M 200 170 L 280 170 M 200 190 L 280 190",
+];
+const RING_PT: (f64, f64, f64) = (300.0, 30.0, 80.0);
+
+/// How wide the line art is drawn (points): half a millimetre, a fine pen's line.
+const LINE_PT: f64 = 0.5 * 72.0 / 25.4;
+
+/// How near the vector path's stitches a needle point of the image path must lie to be on the line
+/// (millimetres), and how near the image path's stitches a needle point of the vector path must lie
+/// to be covered: three working pixels (at 10 a millimetre), and half a thread's width more.
+const ON_LINE_MM: f64 = 0.3;
+const COVERED_MM: f64 = 0.5;
+
+/// The share of needle points on the line and covered that the image path must reach.
+const ON_LINE_SHARE: f64 = 0.98;
+
+/// The needle points the image path may sew, as a share of the vector path's.
+const LINE_STITCHES_RANGE: (f64, f64) = (0.8, 1.25);
+
+/// The needle-down stitches of `p` as segments (millimetres): each from the needle point before it.
+fn stitch_segments(p: &vectorcraft_stitch::Pattern) -> Vec<(vectorcraft_geom::Point, vectorcraft_geom::Point)> {
+    let mut out = Vec::new();
+    for b in &p.blocks {
+        for w in b.stitches.windows(2) {
+            if let [a, q] = w
+                && q.command == vectorcraft_stitch::Command::Stitch
+            {
+                out.push((a.point(), q.point()));
+            }
+        }
+    }
+    out
+}
+
+/// The share of `p`'s needle points within `reach` millimetres of one of `segments`.
+fn share_near(p: &vectorcraft_stitch::Pattern, segments: &[(vectorcraft_geom::Point, vectorcraft_geom::Point)], reach: f64) -> f64 {
+    let to = |q: vectorcraft_geom::Point, (a, b): (vectorcraft_geom::Point, vectorcraft_geom::Point)| {
+        let ab = b - a;
+        let t = if ab.hypot2() > 0.0 { ((q - a).dot(ab) / ab.hypot2()).clamp(0.0, 1.0) } else { 0.0 };
+        q.distance(a + ab * t)
+    };
+    let points: Vec<vectorcraft_geom::Point> =
+        p.blocks.iter().flat_map(|b| &b.stitches).filter(|q| q.command == vectorcraft_stitch::Command::Stitch).map(|q| q.point()).collect();
+    let near = points.iter().filter(|&&q| segments.iter().any(|&s| to(q, s) <= reach)).count();
+    near as f64 / points.len().max(1) as f64
+}
+
+/// How many jumps `p` makes.
+fn jumps(p: &vectorcraft_stitch::Pattern) -> usize {
+    p.blocks.iter().flat_map(|b| &b.stitches).filter(|q| q.command == vectorcraft_stitch::Command::Jump).count()
+}
+
+/// How many moves `p` makes between stitches: each run of jumps one move, however many records a
+/// long one takes.
+fn moves(p: &vectorcraft_stitch::Pattern) -> usize {
+    let jump: Vec<bool> = p.blocks.iter().flat_map(|b| &b.stitches).map(|q| q.command == vectorcraft_stitch::Command::Jump).collect();
+    (0..jump.len()).filter(|&k| jump[k] && (k == 0 || !jump[k - 1])).count()
+}
+
+/// How many separate drawings [`LINE_ART`] and the ring make, counted here from the drawing itself
+/// rather than by the planner: its pieces joined where one ends at another's end (as the T's and
+/// the X's do).
+fn drawings() -> usize {
+    use vectorcraft_geom::kurbo::{BezPath, PathEl};
+    let mut ends: Vec<(vectorcraft_geom::Point, vectorcraft_geom::Point)> = Vec::new();
+    for d in LINE_ART {
+        let (mut first, mut last) = (None, None);
+        for el in BezPath::from_svg(d).unwrap().elements() {
+            match *el {
+                PathEl::MoveTo(p) => {
+                    ends.extend(first.zip(last));
+                    (first, last) = (Some(p), Some(p));
+                }
+                PathEl::LineTo(p) | PathEl::QuadTo(_, p) | PathEl::CurveTo(_, _, p) => last = Some(p),
+                PathEl::ClosePath => last = first,
+            }
+        }
+        ends.extend(first.zip(last));
+    }
+    fn root(up: &[usize], mut i: usize) -> usize {
+        while up[i] != i {
+            i = up[i];
+        }
+        i
+    }
+    let mut up: Vec<usize> = (0..ends.len()).collect();
+    for i in 0..ends.len() {
+        for j in 0..i {
+            let ((a0, a1), (b0, b1)) = (ends[i], ends[j]);
+            if [a0, a1].iter().any(|a| [b0, b1].iter().any(|b| a.distance(*b) < 1e-9)) {
+                let (ri, rj) = (root(&up, i), root(&up, j));
+                up[ri] = rj;
+            }
+        }
+    }
+    let pieces = (0..ends.len()).filter(|&i| root(&up, i) == i).count();
+    // And the ring, a drawing of its own.
+    pieces + 1
+}
+
+/// Line art drawn here (no corpus needed), drawn as a picture as the real designs' artwork is and
+/// digitized, against its vector path (the strokes sewn as drawn): its thin lines are sewn along
+/// their middle through their junctions, as the vector path sews them, so that every one is a
+/// running line as the vector path's are, the image path makes no more jumps than the vector path,
+/// and no more moves than it takes to go from each of the drawing's seven separate drawings to the
+/// next (counted in the test from the drawing, not by the planner that sews both paths), its needle
+/// points lie on the vector path's stitches and cover them, and it sews
+/// about as many (measured 2026-11-07: 208 needle points to the vector path's 205, 6 jumps each,
+/// every needle point on the line and covered). With centre lines off, each line is a fill whose
+/// narrow parts the planner sews along their middle: as near, but no running line.
+#[test]
+fn line_art_digitized_stays_on_the_vector_path() {
+    let mut s = vectorcraft_engine::Session::new();
+    run(&mut s, "file.new", json!({"width": 420, "height": 260, "artboards": 1}));
+    for d in LINE_ART {
+        run(&mut s, "paint.setFill", json!({"none": true}));
+        run(&mut s, "paint.setStroke", json!({"color": "#141414"}));
+        let id = run(&mut s, "path.create", json!({"d": d}))["id"].clone();
+        run(&mut s, "stroke.set", json!({"ids": [id], "weight": LINE_PT, "cap": "round", "join": "round"}));
+        run(&mut s, "select.none", json!({}));
+    }
+    let (x, y, d) = RING_PT;
+    let ring = run(&mut s, "shape.ellipse", json!({"x": x, "y": y, "width": d, "height": d}))["id"].clone();
+    run(&mut s, "paint.setFill", json!({"none": true, "ids": [ring]}));
+    run(&mut s, "paint.setStroke", json!({"color": "#141414", "ids": [ring]}));
+    run(&mut s, "stroke.set", json!({"ids": [ring], "weight": LINE_PT}));
+    run(&mut s, "select.none", json!({}));
+    let vector_plan = s.embroidery_plan(&EmbroideryOptions::default()).unwrap();
+    let vector = vector_plan.to_pattern();
+    let (rect, png) = art_picture(&mut s);
+    let (image, same, _) = digitized("lines.png", &png, rect, "pec", MIN_COLORS, OVERLAP_MM);
+    // Each path's units by the style they are sewn in: every one a running line.
+    let mut made = placed_over("lines.png", &png, rect);
+    run(&mut made, "embroidery.setup", json!({"palette": "pec"}));
+    run(&mut made, "embroidery.digitizeImage", json!({"colors": MIN_COLORS, "overlap": OVERLAP_MM}));
+    let image_plan = made.embroidery_plan(&EmbroideryOptions::default()).unwrap();
+    let running = Some(vectorcraft_stitch::plan::Style::Running);
+    let vector_styles: Vec<_> = vector_plan.units.iter().map(|u| u.sewn()).collect();
+    let image_styles: Vec<_> = image_plan.units.iter().map(|u| u.sewn()).collect();
+    assert!(vector_styles.iter().all(|&s| s == running), "the vector path: {vector_styles:?}");
+    assert!(image_styles.iter().all(|&s| s == running), "the image path's lines aren't running lines: {image_styles:?}");
+    let on_line = share_near(&image, &stitch_segments(&vector), ON_LINE_MM);
+    let covered = share_near(&vector, &stitch_segments(&image), COVERED_MM);
+    let (vs, is) = (vector.sewn() as f64, image.sewn() as f64);
+    eprintln!(
+        "line art: needle points vector {vs}, image {is} ({:.2}); jumps vector {}, image {}; on the line {on_line:.3}, covered {covered:.3}",
+        is / vs,
+        jumps(&vector),
+        jumps(&image)
+    );
+    assert!(same, "the dry run's figures aren't Create's");
+    assert!(jumps(&image) <= jumps(&vector), "the image path jumps {} times, the vector path {}", jumps(&image), jumps(&vector));
+    let apart = drawings();
+    assert_eq!(apart, 7, "the line art's drawings");
+    assert!(moves(&image) < apart, "the image path moves {} times between {apart} drawings", moves(&image));
+    assert!(on_line >= ON_LINE_SHARE && covered >= ON_LINE_SHARE, "on the line {on_line:.3}, covered {covered:.3}");
+    assert!((LINE_STITCHES_RANGE.0..=LINE_STITCHES_RANGE.1).contains(&(is / vs)), "{is} needle points, the vector path's {vs}");
 }

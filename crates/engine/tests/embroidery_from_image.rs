@@ -14,17 +14,38 @@ use vectorcraft_engine::{EngineError, Session};
 use vectorcraft_testkit::invariants::check_native_roundtrip;
 use vectorcraft_trace::Raster;
 
+mod embroidery_common;
+
 const PT_PER_MM: f64 = 72.0 / 25.4;
 const WHITE: [u8; 4] = [255, 255, 255, 255];
 const ORANGE: [u8; 4] = [240, 130, 20, 255];
 const NAVY: [u8; 4] = [20, 40, 120, 255];
 const CLEAR: [u8; 4] = [0, 0, 0, 0];
+const BLACK: [u8; 4] = [0, 0, 0, 255];
 
 /// `r`, after failing the test if the command panicked: the engine's guard reports a panic as
 /// `EngineError::Internal`.
 fn no_panic(r: Result<Value, EngineError>) -> Result<Value, EngineError> {
     if let Err(EngineError::Internal { cmd, msg }) = &r {
         panic!("{cmd} panicked: {msg}");
+    }
+    r
+}
+
+/// Colour `c` as `#rrggbb`, as the command's choices name a colour.
+fn hex(c: [u8; 4]) -> String {
+    format!("#{:02x}{:02x}{:02x}", c[0], c[1], c[2])
+}
+
+/// The dry run of digitizing `s`'s picture with `params`, every colour of the dry run `r` set to
+/// Lines: answered or refused with why, never a panic.
+fn as_lines(s: &mut Session, params: &Value, r: &Value) -> Result<Value, String> {
+    let mut lines = params.clone();
+    lines["dryRun"] = json!(true);
+    lines["colorChoices"] = json!(r["colors"].as_array().unwrap().iter().map(|c| json!({"color": c["color"], "job": "lines"})).collect::<Vec<_>>());
+    let r = no_panic(s.execute("embroidery.digitizeImage", &lines)).map_err(|e| e.to_string());
+    if let Err(why) = &r {
+        assert!(why.len() > "embroidery.digitizeImage: ".len(), "a refusal says why: {why}");
     }
     r
 }
@@ -248,15 +269,74 @@ fn many_islands_slivers_and_holes_are_answered() {
     assert_eq!(r["areaCount"], json!(1), "one field, its holes transparent: {}", r["areaCount"]);
 }
 
+/// Line art at the largest working size (1,500 pixels a side at 10 a millimetre) is answered, its
+/// lines sewn along their middle, Create making what the dry run said: 75 hatch lines 0.6 mm wide
+/// and 150 mm long, and a mesh of such lines every 2 mm inside a transparent margin of 1 mm (one
+/// line with about 74 × 74 junctions, its holes transparent; with no margin, three of its corners would
+/// be navy, the background). Its colour set to Lines, each is answered with the same lines.
+#[test]
+fn line_art_at_the_largest_size_is_answered() {
+    let hatch = Raster::from_fn(1500, 1500, |_, y| if y % 20 < 6 { NAVY } else { CLEAR });
+    let inner = |v: u32| (10..1490).contains(&v);
+    let mesh = Raster::from_fn(1500, 1500, |x, y| if inner(x) && inner(y) && (x % 20 < 6 || y % 20 < 6) { NAVY } else { CLEAR });
+    for (name, picture, lines, junctions) in [("hatch.png", hatch, 75, 0), ("mesh.png", mesh, 1, 74 * 74)] {
+        let params = json!({"colors": 2, "width": 150});
+        let bytes = picture.encode_png();
+        let r = digitized(&mut placed(name, &bytes).unwrap(), params.clone()).unwrap();
+        let set_to_lines = as_lines(&mut placed(name, &bytes).unwrap(), &params, &r).unwrap();
+        for (r, how) in [(&r, "by the rules"), (&set_to_lines, "set to Lines")] {
+            let areas = r["areas"].as_array().unwrap();
+            let found: Vec<&Value> = areas.iter().filter(|a| !a["line"].is_null()).collect();
+            assert_eq!(found.len(), lines, "{name} {how}: {} areas", areas.len());
+            let at_junctions: u64 = found.iter().map(|a| a["line"]["junctions"].as_u64().unwrap()).sum();
+            assert!(at_junctions.abs_diff(junctions) <= junctions / 50, "{name} {how}: {at_junctions} junctions");
+        }
+    }
+}
+
 /// Noise makes more areas than a design is made of: refused by that cap, with what changes it.
-/// With the smallest area raised it is digitized, the colours asked at most.
+/// With the smallest area raised it is digitized, the colours asked at most; with every colour set
+/// to Lines too, each area's centre line looked for, it is answered or refused with why.
 #[test]
 fn noise_is_refused_with_advice() {
-    let mut s = placed("noise.png", &noise(400, 400).encode_png()).unwrap();
+    let bytes = noise(400, 400).encode_png();
+    let mut s = placed("noise.png", &bytes).unwrap();
     let why = digitized(&mut s, json!({"colors": 16, "minArea": 0, "smoothing": 0})).unwrap_err();
     assert!(why.contains("areas, more than 10000") && why.contains("raise `minArea`"), "{why}");
-    let r = digitized(&mut s, json!({"colors": 4, "minArea": 20})).unwrap();
+    let params = json!({"colors": 4, "minArea": 20});
+    let r = digitized(&mut s, params.clone()).unwrap();
     assert!(r["colorCount"].as_u64().unwrap() <= 4, "{}", r["colors"]);
+    let _ = as_lines(&mut placed("noise.png", &bytes).unwrap(), &params, &r);
+}
+
+/// The junk table's digitizing cases (`embroidery_common::junk`, which the command sweep runs on
+/// documents holding no picture) on pictures that digitize: black line art (four lines and a bar
+/// apart from them) and the logo. Each is answered or refused with why, never a panic, and the case
+/// setting black to Lines sews more of the line art along its middle than the rules do.
+#[test]
+fn the_junk_tables_digitizing_cases_on_pictures() {
+    let art = Raster::from_fn(300, 200, |x, y| {
+        let line = (20..280).contains(&x) && y < 120 && y % 30 < 6;
+        let bar = (40..260).contains(&x) && (160..180).contains(&y);
+        if line || bar { BLACK } else { WHITE }
+    });
+    let cases: Vec<Value> =
+        embroidery_common::junk::structured().into_iter().filter(|(c, _)| *c == "embroidery.digitizeImage").map(|(_, p)| p).collect();
+    let line_areas = |r: &Value| r["areas"].as_array().map_or(0, |a| a.iter().filter(|a| !a["line"].is_null()).count());
+    let by_rules = no_panic(placed("art.png", &art.encode_png()).unwrap().execute("embroidery.digitizeImage", &json!({"dryRun": true}))).unwrap();
+    let mut more_lines = false;
+    for (name, bytes) in [("art.png", art.encode_png()), ("logo.png", logo(200, 100).encode_png())] {
+        for p in &cases {
+            let mut s = placed(name, &bytes).unwrap();
+            match no_panic(s.execute("embroidery.digitizeImage", p)) {
+                Ok(r) => {
+                    more_lines |= name == "art.png" && p["colorChoices"][0]["color"] == json!(hex(BLACK)) && line_areas(&r) > line_areas(&by_rules)
+                }
+                Err(e) => assert!(e.to_string().len() > "embroidery.digitizeImage: ".len(), "{name} {p}: a refusal says why: {e}"),
+            }
+        }
+    }
+    assert!(more_lines, "no case sewed black as lines: {} line areas by the rules", line_areas(&by_rules));
 }
 
 /// Whether reply `r` warns that the picture doesn't look like flat art.

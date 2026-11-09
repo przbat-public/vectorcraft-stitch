@@ -291,6 +291,34 @@ pub struct Unit {
     pub walked: usize,
     /// The entry and exit points it was planned toward: its part's, when its object sets them.
     pub asked: Asked,
+    /// A fill whose rows the document lays across its shape (`fillAngle: "acrossShape"`): the
+    /// rows of its pieces as the planner measured them; `None` for a fill whose rows keep their
+    /// angle, and for everything else.
+    pub rows: Option<RowsAcross>,
+}
+
+/// A fill's rows laid across its shape, as the planner measured them ([`plan::rows_by_piece`]):
+/// its largest separate piece's rows (each piece is sewn across its own length) and how many
+/// pieces it has.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RowsAcross {
+    pub largest: plan::PieceRows,
+    pub pieces: usize,
+}
+
+impl RowsAcross {
+    /// The rows of the pieces `pieces` as one fill reports them: the largest's and their count;
+    /// `None` for no piece.
+    pub(crate) fn of(pieces: &[plan::PieceRows]) -> Option<Self> {
+        plan::PieceRows::largest(pieces).map(|largest| Self { largest, pieces: pieces.len() })
+    }
+
+    /// Several fills' rows together (an object's units: an expanded object's pieces, its fills):
+    /// the largest piece of them all and every piece counted; `None` for none.
+    pub(crate) fn together(all: impl IntoIterator<Item = RowsAcross>) -> Option<Self> {
+        all.into_iter()
+            .reduce(|a, b| Self { largest: if b.largest.area > a.largest.area { b.largest } else { a.largest }, pieces: a.pieces + b.pieces })
+    }
 }
 
 /// The entry and exit points a unit was planned toward (millimetres from the document's origin),

@@ -22,7 +22,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use vectorcraft_geom::{BezPath, FillRule, PathEl, Point};
-use vectorcraft_stitch::plan::{Params, Start, Style, Underlay};
+use vectorcraft_stitch::plan::{Cap, Params, Rows, Start, Style, Underlay};
 
 use super::unit::{Parted, UnitRequest, UnitStitches};
 
@@ -207,6 +207,7 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
         stitch_length,
         density,
         angle,
+        rows,
         pull,
         pull_percent,
         push,
@@ -221,6 +222,7 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
         auto_spacing,
         spacing_scale,
         narrow,
+        cap,
     } = *p;
     k.push(match style {
         Style::Running => 0,
@@ -262,6 +264,15 @@ fn params_words(k: &mut Vec<u64>, p: &Params) {
     for flag in [lock, auto_spacing] {
         k.push(u64::from(flag));
     }
+    k.push(match cap {
+        Cap::Butt => 0,
+        Cap::Round => 1,
+        Cap::Square => 2,
+    });
+    k.push(match rows {
+        Rows::Fixed => 0,
+        Rows::AcrossShape => 1,
+    });
 }
 
 /// One kept value: what it costs ([`Lru`]'s measure), when it was last used ([`Lru::tick`]), and

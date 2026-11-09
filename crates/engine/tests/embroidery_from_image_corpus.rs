@@ -36,9 +36,10 @@
 //! IoU, agreement and stitch margins were set so that upstream's plain Image Trace passes them,
 //! with no overlap, no region rules and no threads chosen together, so they bound regressions
 //! against that trace and can't see the overlap; the fabric between colours can't either (the
-//! planner's stitches, drawn a thread wide, already cover a seam from both sides: 0.9 mm² at most
-//! with no overlap). The reach does, and the fabric margin and the reach were measured on these
-//! designs on 2026-11-03, the JPEG and coarse margins taken from the plan's note.
+//! planner's stitches, drawn a thread wide, already cover a seam from both sides: 0.7 mm² at most
+//! with no overlap). The reach does; it was measured on these designs on 2026-11-03, the fabric
+//! margin on 2026-11-09 (once the planner kept the first needle point of a row turning square to
+//! the edge), and the JPEG and coarse margins were taken from the plan's note.
 //!
 //! A table of the measures is printed. Local runs skip an absent corpus;
 //! `EMBROIDERY_CORPUS_REQUIRED=1` requires it.
@@ -82,12 +83,28 @@ const THREADS_OFF: usize = 1;
 const MIN_COLORS: usize = 2;
 
 /// How much more fabric may show between the art's colours where the image path sews it, with the
-/// overlap, than where the vector path does (square millimetres): 1.5, over the most measured on
-/// 2026-11-03, 1.1 on the pool ball, where the overlap moves the end of a satin column the planner
-/// sews in each notch of the 8's waist so that it no longer reaches the corner (0.3 there with no
-/// overlap; the vector path leaves 0.1 at most): the planner's to fix, on its own (the project
-/// owner's choice, 2026-11-03).
-const FABRIC_MARGIN_MM2: f64 = 1.5;
+/// overlap, than where the vector path does (square millimetres): the most measured,
+/// [`FABRIC_MEASURED_MM2`], and [`FABRIC_ROOM_MM2`] more.
+///
+/// On 2026-11-03 the pool ball left 1.1 there, in the notches of the 8's waist (0.3 with no
+/// overlap). The cause, measured on 2026-11-09: where an edge lies square to a fill's rows, the turn
+/// from one row into the next is the rows' spacing, shorter than the shortest stitch, and it was
+/// left out with the next row's first needle point, leaving a thin triangle of fabric beside the
+/// edge; the overlap grows the white under the 8, so those triangles reached into the white's own
+/// art (not, as recorded first, a satin column's end: no narrow part ends there). Since the planner
+/// starts such a row a little further in, so that its turn is sewn (the project owner's choice,
+/// 2026-11-09), the pool ball leaves 0.1.
+const FABRIC_MARGIN_MM2: f64 = FABRIC_MEASURED_MM2 + FABRIC_ROOM_MM2;
+
+/// The most fabric the image path left between colours beyond the vector path's, with the overlap
+/// (square millimetres): the video game's in Janome's palette, 0.5, measured on 2026-11-09 (the
+/// smiling face and the video game in Brother's 0.4, the rest 0.1 at most).
+const FABRIC_MEASURED_MM2: f64 = 0.5;
+
+/// Room over [`FABRIC_MEASURED_MM2`] (square millimetres): for the art's anti-aliased edges and the
+/// thread's coverage, drawn on a grid of tenths of a millimetre, to fall a few pixels otherwise on
+/// another system. An estimate: thirty pixels.
+const FABRIC_ROOM_MM2: f64 = 0.3;
 
 /// How far, on average, the overlap must reach under the next colour along the edges colours share
 /// (millimetres), on a design of two colours or more: 0.25, under the 0.29 to 0.38 measured on

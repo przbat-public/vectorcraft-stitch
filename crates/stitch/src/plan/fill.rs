@@ -1072,6 +1072,9 @@ impl Region {
                 pts.reverse();
                 (first_inside, last_inside) = (last_inside, first_inside);
             }
+            if let Some(from) = out.last().and_then(|r| r.pts.last().copied()) {
+                lengthen_turn(&mut pts, from, p.min_stitch);
+            }
             let mut kept_inside = Some(last_inside);
             left_out = None;
             // Skip the last stitch of the row: the needle turns diagonally into the next row
@@ -1097,6 +1100,43 @@ impl Region {
             last.pts.push(q);
         }
         out
+    }
+}
+
+/// Row `pts` (its needle points in the order they are sewn) started further in, along its first
+/// stitch, until the turn into it from `from` (the last needle point of the row before) is
+/// `shortest` long (the shortest stitch) and a hair more ([`SAME_POINT`], so that rounding never
+/// leaves it just under), when the turn is shorter and the row's first stitch keeps at least that;
+/// otherwise unchanged.
+///
+/// Joining the runs leaves out a stitch shorter than the shortest one, and with the turn it would
+/// leave out the row's first needle point: the needle would go on along a slant to the row's second
+/// one, a stitch length in, and leave a thin triangle of bare fabric along the edge. Where the edge
+/// lies square to the rows the turn is just their spacing, under the shortest stitch for 40 wt
+/// thread (0.38 mm against 0.4), so this happened at every other row there: in the notches of the
+/// image path's pool ball, where the overlap grows a colour under its neighbour, and inside every
+/// fill. Starting the row in rather than out keeps the design's size and its longest stitch (the
+/// project owner's choice, 2026-11-09, „Zawrót 0,4 mm do środka, teraz (polecam)”); the row then
+/// reaches past the edge by its pull compensation less that much (0.125 mm at 40 wt). A row whose
+/// first stitch has no room for it is left to start as before.
+pub(super) fn lengthen_turn(pts: &mut [Point], from: Point, shortest: f64) {
+    let (Some(&first), Some(&second)) = (pts.first(), pts.get(1)) else { return };
+    let turn = first - from;
+    // Long enough already. (A turn back along the row would only get shorter.)
+    if turn.hypot() >= shortest {
+        return;
+    }
+    let Some(inward) = unit(second - first) else { return };
+    // How far in along the row the turn reaches its length, |turn + d·inward| = length: the root
+    // that is positive, the turn being shorter than that.
+    let length = shortest + SAME_POINT;
+    let along = turn.dot(inward);
+    let d = (along * along - turn.hypot2() + length * length).sqrt() - along;
+    // The row's first stitch keeps the shortest stitch. (A `d` that is not a number fails this.)
+    if d <= first.distance(second) - length
+        && let Some(q) = pts.first_mut()
+    {
+        *q = first + inward * d;
     }
 }
 

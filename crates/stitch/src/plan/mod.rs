@@ -54,6 +54,8 @@ mod tests_caps;
 mod tests_narrow;
 #[cfg(test)]
 mod tests_route;
+#[cfg(test)]
+mod tests_turns;
 mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};

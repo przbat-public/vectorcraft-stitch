@@ -992,13 +992,13 @@ fn a_document_a_failed_batch_closed_comes_back_with_its_stitch_view() {
     assert!(!s.embroidery_plans.uids().contains(&uid));
 }
 
-/// A plan cancelled from another thread, as the app cancels its planning worker, stops at the
-/// next unit: a stroke being planned when the cancel comes (a satin has no check of its own) is
-/// finished and kept, and the next plan is the fresh one. An export cancelled part way writes
-/// nothing.
+/// A plan cancelled from another thread, as the app cancels its planning worker, stops in the unit
+/// under way: a satin stroke being planned when the cancel comes stops before its line and is not
+/// kept, the fill before it is, and the next plan is the fresh one. An export cancelled part way
+/// writes nothing.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn a_plan_cancelled_from_another_thread_stops_at_the_next_unit() {
+fn a_plan_cancelled_from_another_thread_stops_in_the_unit_under_way() {
     use std::rc::Rc;
     use std::sync::mpsc;
 
@@ -1015,7 +1015,7 @@ fn a_plan_cancelled_from_another_thread_stops_at_the_next_unit() {
         let (service, doc, opts, token) = (service.clone(), doc.clone(), opts, token.clone());
         std::thread::spawn(move || {
             // As the second unit (the first object's stroke) is reported, the worker waits for the
-            // cancel, then plans it.
+            // cancel, then starts planning it.
             let sink: ProgressSink = Rc::new(move |done, _, _| {
                 if done == 2 {
                     let _ = reached.send(());
@@ -1029,7 +1029,7 @@ fn a_plan_cancelled_from_another_thread_stops_at_the_next_unit() {
     token.cancel();
     go.send(()).unwrap();
     assert_eq!(worker.join().unwrap(), Err(PlanError::Cancelled));
-    assert_eq!(service.kept(), 2, "the fill before, and the stroke under way when the cancel came");
+    assert_eq!(service.kept(), 1, "the fill before; the stroke under way when the cancel came stops");
     assert_eq!(*service.plan(Of::whole(&doc), &doc, &opts).unwrap(), digitize(&doc, &opts, None).unwrap());
 
     let (mut s, _) = five();
@@ -1302,4 +1302,64 @@ fn the_object_tabs_rows_across_are_infos() {
     same(&mut s);
     run(&mut s, "object.rotate", json!({"ids": [ids[0].0], "angle": 30}));
     same(&mut s);
+}
+
+/// The heavy fill [`a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`] adds to random art: a
+/// square 240 points a side with 12 × 12 square holes 9 points wide, 19 apart, wound against it.
+/// Its bands are narrow parts sewn as satin, the rest's rows break into many regions, and cutting
+/// the parts out takes long enough that a cancel lands inside it as often as elsewhere.
+fn holed_square(s: &mut Session) {
+    /// The square's side and corner, the holes a side, a hole's side and the step from one to the
+    /// next (points).
+    const SIDE: f64 = 240.0;
+    const AT: f64 = 20.0;
+    const HOLES: usize = 12;
+    const HOLE: f64 = 9.0;
+    const PITCH: f64 = 19.0;
+    /// How far in from the square's corner the first hole is (points).
+    const MARGIN: f64 = 8.0;
+    let mut d = format!("M {AT} {AT} L {} {AT} L {} {} L {AT} {} Z", AT + SIDE, AT + SIDE, AT + SIDE, AT + SIDE);
+    for i in 0..HOLES {
+        for j in 0..HOLES {
+            let (x, y) = (AT + MARGIN + PITCH * i as f64, AT + MARGIN + PITCH * j as f64);
+            d += &format!(" M {x} {y} L {x} {} L {} {} L {} {y} Z", y + HOLE, x + HOLE, y + HOLE, x + HOLE);
+        }
+    }
+    run(s, "paint.setFill", json!({"color": COLOURS[0]}));
+    run(s, "paint.setStroke", json!({"none": true}));
+    run(s, "path.create", json!({"d": d}));
+    run(s, "select.none", json!({}));
+}
+
+proptest! {
+    #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(8))]
+
+    /// A plan cancelled from another thread at any moment (a share of the time a whole plan takes),
+    /// inside a unit or between two, is followed by a plan equal to the one never cancelled: a unit
+    /// stopped partway is never kept, and whatever was kept plans as the fresh plan does.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan(arts in proptest::collection::vec(art(), 0..4), share in 0.0..1.0f64) {
+        use vectorcraft_doc::cancel::{self, CancelToken};
+
+        let (mut s, _) = build(&arts);
+        holed_square(&mut s);
+        let doc = s.doc().unwrap().doc.clone();
+        let opts = Options::default();
+        let started = std::time::Instant::now();
+        let fresh = digitize(&doc, &opts, None);
+        let whole = started.elapsed();
+        prop_assert!(fresh.is_ok());
+        let service = Arc::new(PlanService::default());
+        let token = CancelToken::new();
+        let worker = {
+            let (service, doc, token) = (service.clone(), doc.clone(), token.clone());
+            std::thread::spawn(move || cancel::scope(&token, None, || service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone())))
+        };
+        std::thread::sleep(whole.mul_f64(share));
+        token.cancel();
+        let cancelled = worker.join().unwrap();
+        prop_assert!(cancelled == Err(PlanError::Cancelled) || cancelled == fresh, "a cancelled plan made something else");
+        prop_assert_eq!(service.plan(Of::whole(&doc), &doc, &opts).map(|p| (*p).clone()), fresh);
+    }
 }

@@ -44,6 +44,8 @@
 //!   them, and its dry run in all;
 //! - routes (`routes`): running lines whose pieces meet end to end, a tree and a grid, and the
 //!   1,000-path document's fills with their rows across their shape, planned cold;
+//! - a cancel inside one large object (`cancel`): a fill of 2,304 holes, all in rows, cancelled at
+//!   five points of its plan, the longest wait;
 //! - stitch pictures of 10,000 to 2,000,000 stitches ([`stitch_picture`]: fill rows, satin columns
 //!   and running lines in twelve threads, built in code, no planner), drawn by the stitch preview's
 //!   renderer at fit and zoomed in, on the default threads and on one (as the web build draws).
@@ -70,6 +72,7 @@ use vectorcraft_render::lines::{LinePicture, LinePictureBuilder, LineRenderer, L
 
 use crate::perf::synthetic;
 
+mod cancel;
 mod digitizing;
 mod routes;
 
@@ -99,7 +102,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 101] = [
+pub const ROWS: [&str; 102] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -201,6 +204,7 @@ pub const ROWS: [&str; 101] = [
     routes::ROWS[2],
     routes::ROWS[3],
     routes::ROWS[4],
+    cancel::ROWS[0],
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
@@ -220,7 +224,7 @@ pub const ROWS: [&str; 101] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 101] = [
+const BUDGETS: [f64; 102] = [
     400.0,
     100.0,
     100.0,
@@ -323,6 +327,7 @@ const BUDGETS: [f64; 101] = [
     routes::BUDGETS[2],
     routes::BUDGETS[3],
     routes::BUDGETS[4],
+    cancel::BUDGETS[0],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -510,6 +515,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.push(tab_rows(&literal)?);
     ms.extend(digitizing::times()?);
     ms.extend(routes::times()?);
+    ms.extend(cancel::times()?);
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;

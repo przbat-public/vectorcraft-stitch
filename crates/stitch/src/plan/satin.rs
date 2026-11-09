@@ -72,7 +72,7 @@ const GOLDEN: f64 = 0.618_033_988_75;
 /// lies nearest first, a ring starting exactly there ([`ordered`]). `p`'s style is satin (the
 /// caller, [`super::try_stitches_aimed`], sews a satin only then). With the stitches, the connecting
 /// stitches sewn between its columns (millimetres, [`Runs::connectors`]).
-pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) {
+pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim, stopped: &dyn Fn() -> bool) -> (Vec<Stitch>, f64) {
     let p = p.sane();
     if p.width <= 0.0 {
         return (Vec::new(), 0.0);
@@ -97,6 +97,9 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim) -> (Vec<Stitch>, f64) 
     let directions = end_directions(path);
     let mut meet_work = 0usize;
     for Line { pts, closed, reversed, toward } in ordered_toward(all.clone(), aim, &finish, &p) {
+        if stopped() {
+            break;
+        }
         // Push compensation: an open column is sewn shorter at its ends, the underlay with it.
         let shortest = spacing * MIN_CROSSINGS;
         let push = if reversed { [p.push[1], p.push[0]] } else { p.push };

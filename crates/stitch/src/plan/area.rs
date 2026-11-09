@@ -292,6 +292,9 @@ impl Area<'_> {
 /// worked out once per area as travels first need them: a fill makes many travels in one shape.
 pub(super) struct Travels<'a> {
     pub(super) area: Area<'a>,
+    /// Whether to stop (a plan that is cancelled): asked between the parts of a fill sewn in this
+    /// area and within them ([`super::fill`]), so that a cancel stops it within one of them.
+    stop: &'a dyn Fn() -> bool,
     /// The graph's corners, once built; empty when the outlines have more than
     /// [`MAX_TRAVEL_NODES`] (then only straight travels are made).
     corners: Option<Vec<Point>>,
@@ -313,8 +316,25 @@ const SEES: u8 = 1;
 const BLOCKED: u8 = 2;
 
 impl<'a> Travels<'a> {
+    /// Travels inside `area`, for a plan that never stops (this crate's tests).
+    #[cfg(test)]
     pub(super) fn new(area: Area<'a>) -> Self {
-        Self { area, corners: None, sees: Vec::new(), ways: HashMap::new() }
+        Self::stopping(area, &never)
+    }
+
+    /// Travels inside `area`, for a plan that asks `stop` whether to stop.
+    pub(super) fn stopping(area: Area<'a>, stop: &'a dyn Fn() -> bool) -> Self {
+        Self { area, stop, corners: None, sees: Vec::new(), ways: HashMap::new() }
+    }
+
+    /// Whether the plan should stop.
+    pub(super) fn stopped(&self) -> bool {
+        (self.stop)()
+    }
+
+    /// What the plan asks whether to stop, for the work done beside the travels.
+    pub(super) fn stop(&self) -> &'a dyn Fn() -> bool {
+        self.stop
     }
 
     /// The graph's corners, built the first time: how many there are.
@@ -463,6 +483,12 @@ impl<'a> Travels<'a> {
         route.reverse();
         Some(route)
     }
+}
+
+/// A plan that never stops ([`Travels::new`]).
+#[cfg(test)]
+fn never() -> bool {
+    false
 }
 
 /// The edges of `outlines`, each from a point to the next (the last back to the first).

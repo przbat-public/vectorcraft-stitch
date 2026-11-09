@@ -168,6 +168,19 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
 /// `s` millimetres along it (a satin's crossings come closer round a bend). Each point comes with
 /// how far along the line it lies.
 pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64) -> Vec<(Point, f64)> {
+    resample_by_until(pts, closed, step, &|| false)
+}
+
+/// How many points resampling a line ([`resample_by_until`]) makes, and how many crossings a satin
+/// line works out ([`super::satin`]), between two asks whether to stop: one satin line may have
+/// millions (a shape may have up to [`MAX_STITCHES`]), and one of 550,000 stitches took 40 ms to
+/// resample and 24 ms to cross in release, 2026-11-09, so that 4,096 of either take about a third
+/// of a millisecond.
+pub(super) const STOP_SAMPLES: usize = 4096;
+
+/// [`resample_by`], asking `stopped` whether to stop every [`STOP_SAMPLES`] points it makes: once it
+/// says so, the points made so far, for the caller to drop.
+pub(super) fn resample_by_until(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64, stopped: &dyn Fn() -> bool) -> Vec<(Point, f64)> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return Vec::new() };
     let step = |s: f64| step(s).max(MIN_STEP);
     let mut out: Vec<(Point, f64)> = vec![(first, 0.0)];
@@ -191,7 +204,7 @@ pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64
             out.push((a + (b - a) * f, next));
             fixed = false;
             next += step(next);
-            if out.len() >= MAX_STITCHES {
+            if out.len() >= MAX_STITCHES || (out.len().is_multiple_of(STOP_SAMPLES) && stopped()) {
                 return out;
             }
         }

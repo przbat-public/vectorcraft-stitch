@@ -6,8 +6,8 @@ use vectorcraft_geom::{BezPath, Point, Vec2};
 
 use super::area::TRAVEL_STITCH;
 use super::geometry::{
-    CORNER, EndDirections, Line, NO_LENGTH, SubPath, end_directions, length, nearest_on, resample, resample_by, subpaths, tangent, trimmed, turn,
-    unit,
+    CORNER, EndDirections, Line, NO_LENGTH, STOP_SAMPLES, SubPath, end_directions, length, nearest_on, resample, resample_by, resample_by_until,
+    subpaths, tangent, trimmed, turn, unit,
 };
 use super::narrow::Column;
 use super::runs::{COST_HIDDEN, Runs, Travel};
@@ -184,7 +184,7 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim, stopped: &dyn Fn() -> 
         // left and right when `pts` runs against it.
         let centre = Centre::new(&pts, closed);
         let (plus, minus) = if reversed { (half + left, half + right) } else { (half + right, half + left) };
-        let mut samples = resample_by(&pts, closed, &|s| pitch / centre.stretch(s, plus, minus));
+        let mut samples = resample_by_until(&pts, closed, &|s| pitch / centre.stretch(s, plus, minus), stopped);
         if samples.len() < 2 {
             continue;
         }
@@ -195,9 +195,11 @@ pub(super) fn satin(path: &BezPath, p: &Params, aim: Aim, stopped: &dyn Fn() -> 
         // Whether the column is sewn against the way it is drawn, so its rails swap sides.
         let against = reversed != back;
         let points: Vec<Point> = samples.iter().map(|&(q, _)| q).collect();
+        // Asked every few thousand crossings: one line may have millions.
         let crossings: Vec<(Point, Vec2)> = samples
             .iter()
             .enumerate()
+            .take_while(|&(i, _)| i == 0 || !i.is_multiple_of(STOP_SAMPLES) || !stopped())
             .map(|(i, &(q, s))| {
                 // The way the needle goes along the column: the centre line's, turning smoothly;
                 // at a sharp corner from the crossing before it to the next, across the corner.

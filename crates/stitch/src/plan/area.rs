@@ -16,8 +16,18 @@ pub(super) const TRAVEL_STITCH: f64 = 2.0;
 const TRAVEL_MARGIN: f64 = 0.5;
 /// How closely a travel's graph follows the outlines (millimetres), and the most corners it may
 /// have: enough for any real outline, a bound on the work a travel costs.
-const TRAVEL_SIMPLIFY: f64 = 0.3;
-const MAX_TRAVEL_NODES: usize = 400;
+pub(super) const TRAVEL_SIMPLIFY: f64 = 0.3;
+pub(super) const MAX_TRAVEL_NODES: usize = 400;
+/// How many corners a travel's search ([`Travels::way`]) settles, or its graph looks at as it is
+/// built, between two asks whether to stop. Each settled corner
+/// tests whether it sees every corner not settled yet, up to [`MAX_TRAVEL_NODES`] of them (a comb
+/// of 200 teeth, 240 × 30 mm, has 400, and one travel through them took up to 0.11 s in release
+/// before the search asked, the PR's review, 2026-11-09); each corner looked at tests whether a
+/// point beside it is inside the area, a ray across every tooth of a comb (one of 1,000 teeth
+/// looked at its 4,000 corners for 0.10 s in release before finding more than
+/// [`MAX_TRAVEL_NODES`]). 16 of either took at most 7 ms on those combs in release once they
+/// asked; a search settling fewer, or a graph of fewer corners, never asks.
+pub(super) const STOP_SETTLED: usize = 16;
 
 /// A filled shape: its closed outlines (holes included) and the rule that decides what they
 /// enclose; with the outlines' [`Grid`], whether a point is inside and whether a segment stays
@@ -293,8 +303,11 @@ impl Area<'_> {
 pub(super) struct Travels<'a> {
     pub(super) area: Area<'a>,
     /// Whether to stop (a plan that is cancelled): asked between the parts of a fill sewn in this
-    /// area and within them ([`super::fill`]), so that a cancel stops it within one of them.
+    /// area and within them ([`super::fill`]), so that a cancel stops it within one of them, and
+    /// within a travel's search ([`Travels::way`]).
     stop: &'a dyn Fn() -> bool,
+    /// Whether the last search stopped because the plan did: its "no way" is not kept.
+    gave_up: bool,
     /// The graph's corners, once built; empty when the outlines have more than
     /// [`MAX_TRAVEL_NODES`] (then only straight travels are made).
     corners: Option<Vec<Point>>,
@@ -324,7 +337,7 @@ impl<'a> Travels<'a> {
 
     /// Travels inside `area`, for a plan that asks `stop` whether to stop.
     pub(super) fn stopping(area: Area<'a>, stop: &'a dyn Fn() -> bool) -> Self {
-        Self { area, stop, corners: None, sees: Vec::new(), ways: HashMap::new() }
+        Self { area, stop, gave_up: false, corners: None, sees: Vec::new(), ways: HashMap::new() }
     }
 
     /// Whether the plan should stop.
@@ -337,22 +350,36 @@ impl<'a> Travels<'a> {
         self.stop
     }
 
-    /// The graph's corners, built the first time: how many there are.
-    fn corners(&mut self) -> usize {
+    /// The graph's corners, built the first time: how many there are; `None` when the plan stops
+    /// while they are looked for (asked every [`STOP_SETTLED`] corners looked at), the graph then
+    /// not built. The outlines' corners are looked at only until more than
+    /// [`MAX_TRAVEL_NODES`] are found, past which the graph is dropped anyway.
+    fn corners(&mut self) -> Option<usize> {
         if self.corners.is_none() {
             let mut nodes: Vec<Point> = Vec::new();
-            for sub in self.area.outlines {
-                let corners = simplify(&sub.pts, TRAVEL_SIMPLIFY);
-                nodes.extend((0..corners.len()).filter(|&i| self.area.reflex(&corners, i)).filter_map(|i| self.area.corner_inside(&corners, i)));
-                if nodes.len() > MAX_TRAVEL_NODES {
-                    nodes.clear();
-                    break;
+            let mut looked = 0usize;
+            'outlines: for sub in self.area.outlines {
+                let corners = simplify(&sub.pts, TRAVEL_SIMPLIFY, self.stop)?;
+                for i in 0..corners.len() {
+                    looked += 1;
+                    if looked.is_multiple_of(STOP_SETTLED) && (self.stop)() {
+                        return None;
+                    }
+                    if self.area.reflex(&corners, i)
+                        && let Some(c) = self.area.corner_inside(&corners, i)
+                    {
+                        nodes.push(c);
+                        if nodes.len() > MAX_TRAVEL_NODES {
+                            nodes.clear();
+                            break 'outlines;
+                        }
+                    }
                 }
             }
             self.sees = vec![UNKNOWN; nodes.len() * nodes.len()];
             self.corners = Some(nodes);
         }
-        self.corners.as_ref().map_or(0, Vec::len)
+        Some(self.corners.as_ref().map_or(0, Vec::len))
     }
 
     fn corner(&self, i: usize) -> Option<Point> {
@@ -400,14 +427,16 @@ impl<'a> Travels<'a> {
 
     /// The shortest way from `a` to `b` that stays inside the area (straight when that does), as
     /// the points it turns at, both ends included; `None` when there is none (two separate
-    /// shapes).
+    /// shapes), or when the plan stops during the search, which asks every [`STOP_SETTLED`]
+    /// corners it settles.
     pub(super) fn way(&mut self, a: Point, b: Point) -> Option<Vec<Point>> {
         let key = [a.x.to_bits(), a.y.to_bits(), b.x.to_bits(), b.y.to_bits()];
         if let Some(way) = self.ways.get(&key) {
             return way.clone();
         }
+        self.gave_up = false;
         let way = self.find_way(a, b);
-        if self.ways.len() < MAX_KEPT_WAYS {
+        if !self.gave_up && self.ways.len() < MAX_KEPT_WAYS {
             self.ways.insert(key, way.clone());
         }
         way
@@ -421,7 +450,10 @@ impl<'a> Travels<'a> {
         if self.area.contains_segment(a, b) {
             return Some(vec![a, b]);
         }
-        let n = self.corners();
+        let Some(n) = self.corners() else {
+            self.gave_up = true;
+            return None;
+        };
         // Node 0 is `a`, node 1 is `b`, node 2 + i is corner i. What the ends see is tested once,
         // when the search first needs it ([`UNKNOWN`], [`SEES`] or [`BLOCKED`]; `a`'s view of each
         // corner, then each corner's view of `b`).
@@ -436,7 +468,12 @@ impl<'a> Travels<'a> {
         let mut prev: Vec<Option<usize>> = vec![None; total];
         let mut done = vec![false; total];
         *dist.first_mut()? = 0.0;
+        let mut settled = 0usize;
         loop {
+            if settled > 0 && settled.is_multiple_of(STOP_SETTLED) && (self.stop)() {
+                self.gave_up = true;
+                return None;
+            }
             // The nearest node not done yet.
             let u = (0..total)
                 .filter(|&i| !done.get(i).copied().unwrap_or(true))
@@ -446,6 +483,7 @@ impl<'a> Travels<'a> {
                 return None;
             }
             *done.get_mut(u)? = true;
+            settled += 1;
             if u == 1 {
                 break;
             }
@@ -857,16 +895,23 @@ impl Grid {
     }
 }
 
+/// How many points [`simplify`] looks at between two asks whether to stop: each split looks at every
+/// point between its two ends, so an outline whose splits fall near one end, a comb's, costs the
+/// square of its points (a comb of 3,000 teeth, one outline of 12,000 corners, took 0.13 s in
+/// release, 2026-11-09). A million points took 3.5 ms there once it asked.
+pub(super) const STOP_SCANNED: usize = 1_000_000;
+
 /// A closed polyline simplified to within `tolerance` (Douglas–Peucker), so that a travel's graph
-/// has the shape's corners, not every point a curve was flattened to.
-fn simplify(pts: &[Point], tolerance: f64) -> Vec<Point> {
+/// has the shape's corners, not every point a curve was flattened to; `None` when `stopped` says to
+/// stop, asked every [`STOP_SCANNED`] points looked at.
+pub(super) fn simplify(pts: &[Point], tolerance: f64, stopped: &dyn Fn() -> bool) -> Option<Vec<Point>> {
     let n = pts.len();
     if n <= 3 {
-        return pts.to_vec();
+        return Some(pts.to_vec());
     }
     let mut keep = vec![false; n];
     // Split the closed loop at its first point and the point farthest from it.
-    let Some(&start) = pts.first() else { return Vec::new() };
+    let Some(&start) = pts.first() else { return Some(Vec::new()) };
     let farthest = (1..n)
         .max_by(|&i, &j| pts.get(i).map_or(0.0, |p| p.distance(start)).total_cmp(&pts.get(j).map_or(0.0, |p| p.distance(start))))
         .unwrap_or(n / 2);
@@ -876,7 +921,16 @@ fn simplify(pts: &[Point], tolerance: f64) -> Vec<Point> {
         }
     }
     let mut stack: Vec<(usize, usize)> = vec![(0, farthest), (farthest, n)];
+    // The points looked at since the last ask.
+    let mut scanned = 0usize;
     while let Some((i, j)) = stack.pop() {
+        scanned = scanned.saturating_add(j.saturating_sub(i));
+        if scanned >= STOP_SCANNED {
+            scanned = 0;
+            if stopped() {
+                return None;
+            }
+        }
         let (Some(&p), Some(&q)) = (pts.get(i), pts.get(j % n)) else { continue };
         let pq = q - p;
         let len = pq.hypot();
@@ -895,7 +949,7 @@ fn simplify(pts: &[Point], tolerance: f64) -> Vec<Point> {
             stack.push((k, j));
         }
     }
-    pts.iter().zip(keep).filter_map(|(p, k)| k.then_some(*p)).collect()
+    Some(pts.iter().zip(keep).filter_map(|(p, k)| k.then_some(*p)).collect())
 }
 
 #[cfg(test)]

@@ -1914,11 +1914,14 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   square to the rows, leaves 0.115 mm² bare beside it (2.37 when a row lost its first needle point);
   the turn itself (lengthened, no room, already long enough, back along the row). A plan's stops
   (`plan/fill/tests_stop.rs`, `cmd/embroidery/unit.rs`): each place a fill, a satin and the cutting
-  out of narrow parts asks whether to stop, counted (once an outline, every 256 rows, once a piece,
-  an order, a region and a walk's step, once a part, once a part the order of more than six picks,
-  once a line, once a column's band and before the cut and the union), nothing planned when asked to
-  stop from the start, and a plan stopped partway no plan. The stitch view's test of the art's
-  passes renders every frame on its own thread. Each step switched off fails a test.
+  out of narrow parts asks whether to stop, counted (once an outline and every 128 corners of its
+  inset, every 256 rows or a million matches of their spans, once a piece, an order, a region and a
+  walk's step, once a part, once a part the order of more than six picks, every 16 corners a
+  travel's graph looks at or its search settles, every million points a simplification looks at,
+  once a line and every 4,096 points it resamples or crossings it works out, once a column's band
+  and before the cut and the union), nothing planned when asked to stop from the start, and a plan
+  stopped partway no plan. The stitch view's test of the art's passes renders every frame on its own
+  thread. Each step switched off fails a test.
 
 **Real designs** (`crates/engine/tests/embroidery_corpus.rs`): `cargo xtask corpus --embroidery`
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)
@@ -2433,21 +2436,27 @@ flowchart LR
 - **Cancelling.** A plan checks `vectorcraft_doc::cancel` before each unit, and every unit stops
   within one of its steps: a fill's narrow parts between the columns they are cut out by, between
   the path operations that cut them out, and within the search for them
-  (`plan::narrow_columns_until`); a fill before each outline's edge run, every 256 rows a layer
-  finds, before each piece of regions, each order of them tried, each region sewn and each step of a
-  walk round them, before each part of a fill sewn in parts and, past six parts, before each part
-  their order picks; a satin before each of its lines; a running line between its drawings and in
+  (`plan::narrow_columns_until`); a fill before each outline's edge run and every 128 corners of its
+  inset, every 256 rows a layer finds or a million matches of their spans, before each piece of
+  regions, each order of them tried, each region sewn and each step of a walk round them, before
+  each part of a fill sewn in parts and, past six parts, before each part their order picks, and
+  within a travel every 16 corners its graph looks at or its search settles and every million points
+  its outline's simplification looks at; a satin before each of its lines and, within one, every
+  4,096 points it resamples or crossings it works out; a running line between its drawings and in
   its routes' steps. So a cancel stops a plan within a tenth of a second (the project owner's
   choice, 2026-11-09, „0,1 s (polecam)”: the limit within which a response feels instant, Jakob
   Nielsen, [Response Times: The 3 Important
-  Limits](https://www.nngroup.com/articles/response-times-3-important-limits/)), but inside one of
-  upstream's path operations, which check for none: a cancel waits for the one under way (uniting
-  the 20 rings' narrow parts takes 0.39 s in a test build, and the 4,512 narrow parts of a fill of
-  2,304 holes, its bands, 0.39 s in release). A cancelled plan returns `PlanError::Cancelled` (the
-  commands' `EngineError::Cancelled`) and leaves no plan; the units it finished stay kept, a unit
-  stopped partway never is (a plan cancelled anywhere, then planned again, is the plan never
-  cancelled: `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`). Each painted fill, stroke
-  and literal run is a step of the plan's progress (`cancel::progress`).
+  Limits](https://www.nngroup.com/articles/response-times-3-important-limits/); asks added inside
+  the steps that ran past it, the owner's „Dodać pytania teraz (polecam)”: the longest stretch
+  between two asks on the PR's review's hardest shapes, combs of 200 to 3,000 teeth and a satin line
+  of 550,000 stitches, is 11.5 ms in release), but inside one of upstream's path operations, which
+  check for none: a cancel waits for the one under way (uniting the 20 rings' narrow parts takes
+  0.39 s in a test build, and the 4,512 narrow parts of a fill of 2,304 holes, its bands, 0.39 s in
+  release). A cancelled plan returns `PlanError::Cancelled` (the commands' `EngineError::Cancelled`)
+  and leaves no plan; the units it finished stay kept, a unit stopped partway never is (a plan
+  cancelled anywhere, then planned again, is the plan never cancelled:
+  `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`). Each painted fill, stroke and literal
+  run is a step of the plan's progress (`cancel::progress`).
 - **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's planning
   thread plans off the interface thread while commands plan on theirs; commands and the web build
   plan synchronously.
@@ -2968,14 +2977,21 @@ still wait for upstream's path operation under way, 0.35 s at most (uniting thei
 with its bands' 4,512 narrow parts sewn as satin, a cancel waited up to 1.02 s, 0.82 s of it in the
 parts' order (the nearest part next, each step weighed against every part left) until it asked too,
 and since then up to 0.38 s, all of it in upstream's union of the columns (0.39 s), the cut (0.12 s)
-and the second union (0.14 s), under 15 ms anywhere else; sewn all in rows, up to 15 ms. The perf
-row (`preview: cancel, worst, 2,304 holes, rows`: the worst of five cancels across a plan of it in
-rows, so that it times the planner's own steps) stops within 2 ms (0.8 to 2.0 ms in four runs),
-against the tenth of a second. The other embroidery rows didn't move (release, before and after
-alternating, four runs each, 2026-11-09: the 20 rings in one fill cold 531 to 581 ms before and 531
-to 549 after, 200 bars 207 to 218 and 210 to 214, the routes' tree 31.8 to 35.2 and 31.7 to 34.9,
-their grid 24.7 to 26.7 both; the 1,000-path document planned cold 78 to 79 ms before and 79 to 85
-after, 78 and 82 with the fill's turns alone: 2 ms at most, within the runs' noise).
+and the second union (0.14 s), under 15 ms anywhere else; sewn all in rows, up to 15 ms. The PR's
+review then timed the longest stretch between two asks on shapes these left out, in release: a comb
+of 200 teeth 0.6 mm wide, 240 × 30 mm (a hoop's size), waited up to 0.11 s in one travel's search
+through its 400 corners; one of 1,000 teeth 0.11 s and one of 3,000 (3.6 m wide) 0.72 s, in its edge
+run's inset, its travels' graph (built on every corner of an outline before finding too many, now
+stopped at the first past the bound) and the simplification of its outline, and its rows; a satin
+line of 550,000 stitches 64 ms. With the asks inside those steps: 5.5 to 10.5 ms, 4.9, 11.5 and 6.0
+ms; the 3,000-tooth comb plans in 1.38 s where it took 1.87. The perf row (`preview: cancel, worst,
+2,304 holes, rows`: the worst of five cancels across a plan of it in rows, so that it times the
+planner's own steps) stops within 2 ms (0.8 to 2.0 ms in four runs), against the tenth of a second.
+The other embroidery rows didn't move (release, before and after alternating, four runs each,
+2026-11-09: the 20 rings in one fill cold 531 to 581 ms before and 531 to 549 after, 200 bars 207 to
+218 and 210 to 214, the routes' tree 31.8 to 35.2 and 31.7 to 34.9, their grid 24.7 to 26.7 both;
+the 1,000-path document planned cold 78 to 79 ms before and 79 to 85 after, 78 and 82 with the
+fill's turns alone: 2 ms at most, within the runs' noise).
 
 ### Editing a large design
 

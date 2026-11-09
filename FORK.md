@@ -252,10 +252,14 @@ Singer's XXX, Barudan's U01 and SEW; see Adding a machine format below); real th
 colours in PES (the plan now carries each block's thread); more real designs (the corpus has
 nineteen, all from one project: eleven PES, one also JEF, with their artwork, and eight VP3, seven
 also PES; add real DST and EXP files, lettering and larger designs, and test on a machine); a
-planner fix: a fill row's remainder spread over its last stitches so that no fill stitch is
-shorter than the needle's blade (0.75 mm for a 75/11; the rows end in stitches of 0.4 to 0.75 mm
-today, which `embroidery.check`'s `stitchBelowNeedle` flags in 41 of the 44 blocks of the real
-designs' artwork), after which that check becomes a warning again.
+planner fix: a fill row's remainder spread over its last stitches so that no fill stitch is shorter
+than the needle's blade (0.75 mm for a 75/11; the rows end in stitches of 0.4 to 0.75 mm today,
+which `embroidery.check`'s `stitchBelowNeedle` flags as information, 1,541 times in 61 objects of
+the real designs' artwork since a row turning square to an edge turns in a 0.4 mm stitch, 1,091
+before), after which that check becomes a warning again. The turns stay under the blade whatever the
+remainders: once the check is a warning, a fill with an edge square to its rows warns at each turn,
+so the PR that spreads the remainder decides how the rule treats a turn, and asks the project owner
+then (the owner's choice, 2026-11-09, „Zapisać teraz, rozstrzygnąć później (polecam)”).
 
 **Later**, on the steps above: embroidery lettering; satins from rails, angle lines, and turning
 (variable-angle) satin and fill; quality options (triple running stitch, corners, more underlay

@@ -734,12 +734,12 @@ person's Ink/Stitch files opened as stitches; `crates/engine/tests/embroidery_pl
 each design's hits and the objects hit, rule by rule, with the default palette's format, JEF):
 hits, then the objects hit and the designs, added up over the eleven.
 
-| Rule | VectorCraft's plans (44 blocks, 25,662 needle points) | The person's files (42 blocks, 55,717 needle points) |
+| Rule | VectorCraft's plans (44 blocks, 26,106 needle points) | The person's files (42 blocks, 55,717 needle points) |
 |---|---|---|
 | `fillStitchShort`, `satinStitchShort`, `runStitchShort` | none: the default settings (4 mm fill, 2.5 mm running stitches, no satin column under 1 mm) pass | none: opened stitches have no settings |
-| `stitchBelowNeedle` | 1,090 (61 objects, 11 designs): rows' remainders from 0.4 to 0.75 mm | 11,577 (92 objects, 11 designs) |
+| `stitchBelowNeedle` | 1,541 (61 objects, 11 designs): rows' remainders from 0.4 to 0.75 mm, and since 2026-11-09 the turns at edges square to the rows, 0.4 mm (1,091 with the turns left out) | 11,577 (92 objects, 11 designs) |
 | `stitchTiny` | none: the planner leaves out stitches under 0.4 mm | 5,375 (74 objects, 11 designs) |
-| `layers` | 1,250 squares (32 objects, 7 designs) | 741 (27 objects, 5 designs) |
+| `layers` | 1,253 squares (32 objects, 7 designs) | 741 (27 objects, 5 designs) |
 | `threadMismatch` | 9 blocks (11 objects, 6 designs) | none: a file's own threads |
 | `shortStitchesInARow` | none | 66 rows (39 objects, 8 designs) |
 | the rest | none | none |

@@ -208,8 +208,10 @@ pub const ROWS: [&str; 103] = [
     cancel::ROWS[1],
 ];
 
-/// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates. The stitch preview's
-/// rows (from the drawing's on) are about 2.5 times what they measured on 2026-10-24 (release,
+/// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates but one: the cancel
+/// inside one large object's tenth of a second is the project owner's choice (`cancel`, whose second
+/// row adds it to what upstream's path operations took). The stitch preview's rows (from the
+/// drawing's on) are about 2.5 times what they measured on 2026-10-24 (release,
 /// 12-core Apple Silicon, load about 2, median of five, twice), so that a regression of that size
 /// shows; the cancel's is 5 ms, above the noise of a thread's wake-up. The planning rows keep the
 /// budgets they were given with the planning service. The settings rows: an object's setting

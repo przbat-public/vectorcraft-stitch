@@ -58,6 +58,8 @@ mod tests_route;
 mod tests_turns;
 mod toward;
 
+use std::cell::Cell;
+
 use vectorcraft_geom::{BezPath, FillRule, Point};
 
 pub use axis::{
@@ -724,7 +726,8 @@ pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) 
 }
 
 /// [`try_stitches_aimed`], asking `stopped` whether to stop (a plan that is cancelled): `None` once
-/// it says so. A running line asks between its drawings and in its routes' steps; a satin before
+/// it says so, the question latched ([`Latched`]: once it says so it is not asked again). A
+/// running line asks between its drawings and in its routes' steps; a satin before
 /// each of its lines and, within one, every few thousand points it resamples and crossings it works
 /// out; a fill between its parts and within them: between its underlay's layers and its rows,
 /// before each outline's edge run and every few hundred corners of its inset, each piece of
@@ -743,12 +746,37 @@ pub fn try_stitches_aimed_until(
     aim: Aim,
     stopped: &dyn Fn() -> bool,
 ) -> crate::Result<Option<Vec<Stitch>>> {
+    let latched = Latched::new(stopped);
+    let stopped = &|| latched.ask();
     let p = p.sane();
     placed(path)?;
     let subs = subpaths(path);
     within_limit(estimate(&subs, &p) + aimed_extra(&subs, &p, &aim))?;
     let stitches = stitches_aimed_until(path, rule, &p, aim, stopped);
     Ok((!stopped()).then_some(stitches))
+}
+
+/// What a plan asks whether to stop, latched: once it says so it is taken as said for good, so that
+/// a question that changes its mind can't make a plan cut short pass for a whole one
+/// ([`try_stitches_aimed_until`], [`try_fill_with_columns_measured_until`]). The engine's cancel
+/// latches already.
+struct Latched<'a> {
+    stopped: &'a dyn Fn() -> bool,
+    said: Cell<bool>,
+}
+
+impl<'a> Latched<'a> {
+    fn new(stopped: &'a dyn Fn() -> bool) -> Self {
+        Self { stopped, said: Cell::new(false) }
+    }
+
+    /// Whether to stop: once said, said for good, and the question not asked again.
+    fn ask(&self) -> bool {
+        if !self.said.get() && (self.stopped)() {
+            self.said.set(true);
+        }
+        self.said.get()
+    }
 }
 
 /// How many more points than [`estimate`] counts `subs` may plan into in style `p` when sewn
@@ -833,7 +861,7 @@ pub fn try_fill_with_columns_measured(
 }
 
 /// [`try_fill_with_columns_measured`], asking `stopped` whether to stop as
-/// [`try_stitches_aimed_until`] asks a fill: `None` once it says so.
+/// [`try_stitches_aimed_until`] asks a fill: `None` once it says so, the question latched.
 #[allow(clippy::too_many_arguments)]
 pub fn try_fill_with_columns_measured_until(
     shape: &BezPath,
@@ -849,6 +877,8 @@ pub fn try_fill_with_columns_measured_until(
     /// More than a column's points per millimetre of its middle beyond its crossings: its
     /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
     const UNDERLAYS: f64 = 3.0;
+    let latched = Latched::new(stopped);
+    let stopped = &|| latched.ask();
     let (f, s) = (Params { style: Style::Fill, ..*fill }.sane(), Params { style: Style::Satin, ..*satin }.sane());
     placed(shape)?;
     placed(rest)?;

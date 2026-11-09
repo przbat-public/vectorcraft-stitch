@@ -2459,10 +2459,11 @@ flowchart LR
   check for none: a cancel waits for the one under way (uniting the 20 rings' narrow parts takes
   0.39 s in a test build, and the 4,512 narrow parts of a fill of 2,304 holes, its bands, 0.39 s in
   release). A cancelled plan returns `PlanError::Cancelled` (the commands' `EngineError::Cancelled`)
-  and leaves no plan; the units it finished stay kept, a unit stopped partway never is (a plan
-  cancelled anywhere, then planned again, is the plan never cancelled:
-  `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`). Each painted fill, stroke and literal
-  run is a step of the plan's progress (`cancel::progress`).
+  and leaves no plan; the units it finished stay kept, a unit stopped partway never is (the planner
+  latches the question, so that once it says to stop it is not asked again and a plan cut short
+  can't pass for a whole one) (a plan cancelled anywhere, then planned again, is the plan never
+  cancelled: `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`). Each painted fill, stroke
+  and literal run is a step of the plan's progress (`cancel::progress`).
 - **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's planning
   thread plans off the interface thread while commands plan on theirs; commands and the web build
   plan synchronously.

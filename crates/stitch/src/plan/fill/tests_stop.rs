@@ -497,6 +497,42 @@ fn a_satin_asks_before_each_line() {
     assert!(stopped.is_empty(), "lines sewn though stopped");
 }
 
+/// A plan told to stop once is stopped for good: a question that says to stop at one ask and to go
+/// on at the next still gives no plan, from a fill, a satin of five lines and a fill of parts.
+#[test]
+fn a_plan_told_to_stop_once_stays_stopped() {
+    /// The one ask that says to stop.
+    const ONLY_AT: usize = 3;
+    let fill = Params::for_style(Style::Fill);
+    let satin_params = Params { width: 3.0, ..Params::for_style(Style::Satin) };
+    let (shape, lines) = (holed(5), lines());
+    let once = || {
+        let asked = Cell::new(0usize);
+        move || {
+            asked.set(asked.get() + 1);
+            asked.get() == ONLY_AT
+        }
+    };
+    for (path, p) in [(&shape, &fill), (&lines, &satin_params)] {
+        let plan = try_stitches_aimed_until(path, FillRule::EvenOdd, p, Aim::from_needle(None), &once()).unwrap();
+        assert!(plan.is_none(), "{:?} planned though told to stop once", p.style);
+    }
+    let columns = super::super::narrow::columns(&shape, FillRule::EvenOdd, fill.narrow);
+    let parts = try_fill_with_columns_measured_until(
+        &shape,
+        FillRule::EvenOdd,
+        &shape,
+        &columns,
+        &fill,
+        &satin_params,
+        Aim::from_needle(None),
+        None,
+        &once(),
+    )
+    .unwrap();
+    assert!(parts.is_none(), "a fill of parts planned though told to stop once");
+}
+
 /// A plan stopped partway is no plan: a fill, a satin of five lines and a fill of parts asked to
 /// stop at once, or after a few asks, give nothing, and never asked to, their stitches.
 #[test]

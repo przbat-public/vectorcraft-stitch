@@ -1066,7 +1066,12 @@ the fabric.
   leaving a thin triangle of bare fabric beside the edge at every other row (the project owner's
   choice, 2026-11-09, „Zawrót 0,4 mm do środka, teraz (polecam)”: starting in keeps every design's
   size and no longest stitch grows, starting out grew two designs by 0.1 to 0.2 mm and a longest
-  stitch from 4.67 to 4.95 mm). The rows are centred
+  stitch from 4.67 to 4.95 mm). A 0.4 mm turn can round to 0.30 mm, or 0.28, on a machine file's 0.1
+  mm grid at some row angles: about 1 turn in 200 averaged over the angles, up to about 3 % at 30°,
+  60°, 120° and 150°, none at 0°, 45°, 90° or 135° (the default); a machine that deletes stitches of
+  0.3 mm or less drops it there, and that row's slant comes back (the project owner's choice,
+  2026-11-09, „Zostawić 0,4 mm i opisać (polecam)”: a 0.45 mm turn, which never rounds that short,
+  would start rows 0.24 mm in and move every pin again). The rows are centred
   across the shape's extent, as many as the spacing fits (rounded): the margin is the same at both
   sides, a quarter to three quarters of a spacing, so no row lies on a tangent and the thread's
   width covers to the edge on both sides alike. Holes are left unstitched: the shape's fill
@@ -1951,7 +1956,8 @@ locally, never committed. The test checks that:
   and the fox use for an orange, becomes the nearest thread that is), its name, and starts where
   it started, to a tenth of a millimetre;
 - each artwork, digitized at the size of the person's design, comes out the same size, with no
-  stitch longer than 10 mm, at most two shorter than 0.3 mm, no more trims and jumps than its ceilings (one above
+  stitch longer than 10 mm, at most two of 0.3 mm or less (counted as the Check tab's `stitchTiny`
+  counts them, since 2026-11-09; none today), no more trims and jumps than its ceilings (one above
   the counts below) and 30–80 % of the person's stitch count.
 - each artwork is sewn where it is painted: every needle point lies within 1 mm of the painted art,
   and every place more than 2 mm inside it within half a row spacing and 0.06 mm of a needle-down

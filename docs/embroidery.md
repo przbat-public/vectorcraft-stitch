@@ -2992,12 +2992,15 @@ stopped at the first past the bound) and the simplification of its outline, and 
 line of 550,000 stitches 64 ms. With the asks inside those steps: 5.5 to 10.5 ms, 4.9, 11.5 and 6.0
 ms; the 3,000-tooth comb plans in 1.38 s where it took 1.87. The perf row (`preview: cancel, worst,
 2,304 holes, rows`: the worst of five cancels across a plan of it in rows, so that it times the
-planner's own steps) stops within 2 ms (0.8 to 2.0 ms in four runs), against the tenth of a second.
-The other embroidery rows didn't move (release, before and after alternating, four runs each,
-2026-11-09: the 20 rings in one fill cold 531 to 581 ms before and 531 to 549 after, 200 bars 207 to
-218 and 210 to 214, the routes' tree 31.8 to 35.2 and 31.7 to 34.9, their grid 24.7 to 26.7 both;
-the 1,000-path document planned cold 78 to 79 ms before and 79 to 85 after, 78 and 82 with the
-fill's turns alone: 2 ms at most, within the runs' noise).
+planner's own steps) stops within 2 ms (0.8 to 2.0 ms in four runs), against the tenth of a second;
+a second row plans it with its narrow parts as satin (`preview: cancel, worst, 2,304 holes, satin`),
+where a cancel waits for upstream's path operations too: 213 and 229 ms in two runs, against 750
+(the 650 those took, and the tenth of a second, an estimate). The other embroidery rows didn't move
+(release, before and after alternating, four runs each, 2026-11-09: the 20 rings in one fill cold
+531 to 581 ms before and 531 to 549 after, 200 bars 207 to 218 and 210 to 214, the routes' tree 31.8
+to 35.2 and 31.7 to 34.9, their grid 24.7 to 26.7 both; the 1,000-path document planned cold 78 to
+79 ms before and 79 to 85 after, 78 and 82 with the fill's turns alone: 2 ms at most, within the
+runs' noise).
 
 ### Editing a large design
 
@@ -3820,7 +3823,7 @@ Public documentation, cited per claim in the crate:
 - `apps/vectorcraft-cli/src/perf_embroidery.rs` — the embroidery rows of `vectorcraft-cli perf`
   and `bench`, `perf_embroidery/digitizing.rs` their rows for digitizing from an image,
   `perf_embroidery/routes.rs` those for routes and rows across the shape,
-  `perf_embroidery/cancel.rs` the one for a cancel inside one large object;
+  `perf_embroidery/cancel.rs` the two for a cancel inside one large object;
   `apps/vectorcraft/src/stitch_profile.rs` — VectorCraft Stitch's own settings folder.
 - `crates/engine/src/cmd/embroidery/from_image/` — digitizing from an image
   (`embroidery.digitizeImage`): `mod.rs` (the stages), `settings.rs` (the settings' table: each

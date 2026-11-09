@@ -1862,16 +1862,17 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   notches of the 8's waist. There the white's rows turn square to the edge, and the turn, the rows'
   spacing, was left out as shorter than the shortest stitch, with the next row's first needle point;
   the overlap grows the white under the 8, so the thin triangles that left reached into the white's
-  own art (not, as recorded first, a satin column's end: no narrow part ends there). Since such a
-  row starts a little further in (2026-11-09), the pool ball leaves 0.1, and the bare fabric inside
-  the art falls by three quarters over the eleven designs (39.6 to 9.6 mm² on the vector path, 62.8
-  to 12.8 on the image path) and on each by 23 % at least; the margin is the most measured since,
-  0.5 (the video game in Janome's palette), and 0.3 of room. In Janome's palette the figures are
-  the same but where colours merge into one thread: the joystick's and the zebra's four colours
-  are sewn in three threads, and the joystick sews 0.73 times the vector path's needle points. The
-  bullseye's 0.68: its art stacks whole discs, which the vector path sews one over another, the
-  image path as abutting rings. Measured by colour instead of thread, the video game's agreement is
-  0.885: its main grey's thread lies nearer another of the art's colours.
+  own art (not a satin column's end, as recorded on 2026-11-03: no narrow part ends there; the real
+  designs' coverage test had named this cause on 2026-10-23, for the wedges it allowed). Since such
+  a row starts a little further in (2026-11-09), the pool ball leaves 0.1, and the bare fabric
+  inside the art falls by three quarters over the eleven designs (39.6 to 9.6 mm² on the vector
+  path, 62.8 to 12.8 on the image path) and on each by 23 % at least; the margin is the most
+  measured since, 0.5 (the video game in Janome's palette), and 0.3 of room. In Janome's palette the
+  figures are the same but where colours merge into one thread: the joystick's and the zebra's four
+  colours are sewn in three threads, and the joystick sews 0.73 times the vector path's needle
+  points. The bullseye's 0.68: its art stacks whole discs, which the vector path sews one over
+  another, the image path as abutting rings. Measured by colour instead of thread, the video game's
+  agreement is 0.885: its main grey's thread lies nearer another of the art's colours.
 - Digitizing from an image, its second part (2026-11-07): centre lines (`from_image/tests_lines.rs`,
   and `centre.rs`'s own: Yokoi's number, each half of Guo and Hall's pass, a plus and a ring thinned
   to their middles, a bump on a line's edge pruned): a T, an X and a ring sewn with no jump, every
@@ -1949,6 +1950,12 @@ locally, never committed. The test checks that:
 - each artwork, digitized at the size of the person's design, comes out the same size, with no
   stitch longer than 10 mm, at most two shorter than 0.3 mm, no more trims and jumps than its ceilings (one above
   the counts below) and 30–80 % of the person's stitch count.
+- each artwork is sewn where it is painted: every needle point lies within 1 mm of the painted art,
+  and every place more than 2 mm inside it within half a row spacing and 0.06 mm of a needle-down
+  stitch (0.02 measured on every design on 2026-11-09, and 0.04 of room). From 2026-10-23 it
+  allowed 0.16 mm for three bare wedges where rows turned square to an edge; since such a row keeps
+  its first needle point the wedges are gone, and with the turns left out the smiling face and the
+  watermelon need 0.12, which fails it.
 
 Now, with VectorCraft's defaults, as `artwork_digitizes_soundly_next_to_a_persons_design` prints
 it (the person's design in brackets; its count includes the cuts before colour changes, which

@@ -478,14 +478,30 @@ const PT_PER_MM: f64 = 72.0 / 25.4;
 /// How far past the painted art a needle point may lie (millimetres): pull compensation and a
 /// satin's reach take stitches a fraction of a millimetre past the edge.
 const OFF_ART: f64 = 1.0;
-/// How far inside the painted art a place must lie to be checked for stitches, and how near a
-/// needle-down stitch it must then be (millimetres): 2 mm from the art's edges, and half a row
-/// spacing and 0.16 mm. The planner's coverage test allows 0.1 mm past half a spacing; on the real
-/// designs three places lie 0.30 to 0.34 mm from a stitch, where a row starts a stitch in (its turn
-/// along an edge is shorter than the shortest stitch and left out), the bare wedges reported to the
-/// project owner.
+/// How far inside the painted art a place must lie to be checked for stitches (millimetres): 2 mm
+/// from the art's edges.
 const DEEP: f64 = 2.0;
-const REACH: f64 = 0.38 / 2.0 + 0.16;
+/// How near a needle-down stitch each such place must then lie (millimetres): half a row spacing,
+/// what the designs were measured to need past it ([`REACH_MEASURED`]) and room
+/// ([`REACH_ROOM`]).
+///
+/// On 2026-10-23 three places lay 0.30 to 0.34 mm from a stitch, where a row started a stitch in:
+/// its turn along an edge square to the rows, the rows' spacing, was shorter than the shortest
+/// stitch and left out with the row's first needle point, the bare wedges reported to the project
+/// owner, and this allowed 0.16 mm past half a spacing for them. Since such a row starts a little
+/// further in, so that its turn is sewn (2026-11-09), what is left is [`REACH_MEASURED`], and the
+/// wedges fail it.
+const REACH: f64 = ROW_SPACING / 2.0 + REACH_MEASURED + REACH_ROOM;
+/// A fill's row spacing for 40 wt thread (millimetres), the planner's default.
+const ROW_SPACING: f64 = 0.38;
+/// The most reach past half a row spacing any design needs for every deep place to lie near a
+/// stitch (millimetres): 0.02 on each, measured at 0.02 mm steps by the PR's review on 2026-11-09,
+/// where the smiling face and the watermelon needed 0.12 with the rows' turns left out.
+const REACH_MEASURED: f64 = 0.02;
+/// Room over [`REACH_MEASURED`] (millimetres), for the art's anti-aliased edges to fall a little
+/// otherwise on another system: an estimate, small enough that the wedges' 0.12 fails the 0.06 in
+/// all.
+const REACH_ROOM: f64 = 0.04;
 /// The margin round the plan's box the artwork is drawn with (millimetres).
 const MARGIN: f64 = 5.0;
 

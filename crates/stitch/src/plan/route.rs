@@ -794,8 +794,12 @@ fn ends_and_join(
 /// The most nodes a drawing may have for every one of them to be tried as a route's free end
 /// ([`free_end_again`]; the project owner's choice, 2026-11-09, „Każdy węzeł w małych rysunkach
 /// (polecam)”): a letter's or a logo's line has a few dozen. Each try shortens the drawing's cycles
-/// once, a bound on the work: on the random drawings `tests_route.rs` searches (up to 8 nodes), the
-/// routes that sew more twice than the least possible fall from 268 of 39,956 to 76.
+/// once, a bound on the work: a route with one end given shortens them up to 67 times where it did
+/// up to twice (those two, the route coming back and a try for each of 64 nodes), each walking at
+/// most [`MAX_CYCLE_WORK`] edges; on a drawing of 64 nodes and 4,064 pieces every try took 23 ms
+/// in all in a test build (the PR's review, 2026-11-09). On the random drawings `tests_route.rs`
+/// searches (up to 8 nodes), the routes that sew more twice than the least possible fall from 268
+/// of 39,956 to 76.
 pub(super) const EVERY_END_NODES: usize = 64;
 
 /// A route with one end given, `fixed` (the start when `from_fixed`, else the end), its free end

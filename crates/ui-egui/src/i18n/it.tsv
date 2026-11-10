@@ -5378,6 +5378,7 @@ lighting	Light	Luce
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	un’intestazione DST conta al massimo {MAX_RECORDS} record, e il disegno ne richiede {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	un blocco di punti PEC contiene al massimo {MAX_BLOCK} byte (la sua lunghezza è di 24 bit), e il disegno ne richiede {len}
 @msg	a VP3 string is too long	una stringa VP3 è troppo lunga
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	una forma ha più dei {MAX_SHAPE_POINTS} vertici che una forma può avere una volta convertite le sue curve in segmenti: semplificala o dividila in forme più piccole
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	una forma si trova a più di {MAX_COORD_MM} mm dall’origine o ha una coordinata che non è un numero: non può essere ricamata
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	una forma richiederebbe circa {n} punti, più dei {MAX_STITCHES} che una forma può avere: usa un punto più lungo, una spaziatura maggiore o un disegno più piccolo
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	non è un file PES o PEC: non inizia con #PES o #PEC

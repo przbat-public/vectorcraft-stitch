@@ -75,10 +75,12 @@ pub(super) const UNDERLAY_TURN: f64 = 90.0;
 /// is sewn as a running line. The needle is at `from` before it starts: the fill starts as near it
 /// as it can (its edge run at the corner nearest, its first region the one nearest), as Ink/Stitch
 /// starts fills. `stopped` is asked whether to stop (a plan that is cancelled) before each outline's
-/// edge run ([`edge_runs`]), every [`STOP_ROWS`] rows a layer finds ([`Layer::regions`]), and before
-/// each piece of regions, each order of them tried and each region sewn ([`sew`]); a fill of parts
-/// before each part too, and past a few parts before each part their order picks ([`sew_parts`]).
-/// Once it says so, what is returned is cut short, for the caller to drop.
+/// edge run and every few hundred corners of its inset ([`edge_runs`], [`inset_outline`]), every
+/// [`STOP_ROWS`] rows a layer finds or a million matches of their spans ([`Layer::regions`]), before
+/// each piece of regions, each order of them tried and each region sewn ([`sew`]), and every few
+/// corners a travel's search settles ([`Travels::way`]); a fill of parts before each part too, and
+/// past a few parts before each part their order picks ([`sew_parts`]). Once it says so, what is
+/// returned is cut short, for the caller to drop.
 pub(super) fn fill(path: &BezPath, rule: FillRule, p: &Params, aim: Aim, stopped: &dyn Fn() -> bool) -> Vec<Stitch> {
     let p = p.sane();
     fill_runs(path, rule, &p, aim, stopped).join()
@@ -216,7 +218,7 @@ fn sew_area(
         if tatami != Tatami::Never {
             tatami_underlay(rows, travels, p, tatami == Tatami::Always, runs, finished);
         }
-    } else if let Some((_, _, _, at)) = entry.and_then(|e| entered_outline(rows, p.density * EDGE_RUN_INSET, e)) {
+    } else if let Some((_, _, _, at)) = entry.and_then(|e| entered_outline(rows, p.density * EDGE_RUN_INSET, e, travels.stop())) {
         // No underlay: the needle goes in at the entry and travels to the first row.
         runs.lead_from(at, None);
     }
@@ -699,7 +701,7 @@ fn inside(shape: Area<'_>, route: &[Point]) -> f64 {
 /// nearest the entry, and the others follow in their order.
 fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, entry: Option<Point>, runs: &mut Runs, finished: &dyn Fn(&[Point]) -> f64) {
     let inset_by = p.density * EDGE_RUN_INSET;
-    let entered = entry.and_then(|e| entered_outline(rows, inset_by, e));
+    let entered = entry.and_then(|e| entered_outline(rows, inset_by, e, travels.stop()));
     let order: Vec<usize> = match &entered {
         Some((k, ..)) => std::iter::once(*k).chain((0..rows.outlines.len()).filter(|i| i != k)).collect(),
         None => (0..rows.outlines.len()).collect(),
@@ -715,7 +717,7 @@ fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, entry: Optio
             _ => {
                 // The corner nearest the needle (an outline is closed).
                 let start = runs.here_inside().map(|h| sub.nearest(h).0);
-                let inset = inset_outline(sub, rows, inset_by);
+                let inset = inset_outline(sub, rows, inset_by, travels.stop());
                 inset.iter().cycle().skip(start.unwrap_or(0)).take(inset.len()).copied().collect()
             }
         };
@@ -729,16 +731,16 @@ fn edge_runs(rows: Area<'_>, travels: &mut Travels<'_>, p: &Params, entry: Optio
     }
 }
 
-/// The outline of `shape` whose inset (`d` millimetres inside it, [`inset_outline`]) passes nearest
-/// `entry`, and where: its index, the inset outline's points, the segment of them the nearest
-/// point lies on (from point `i` to the next) and that point.
-fn entered_outline(shape: Area<'_>, d: f64, entry: Point) -> Option<(usize, Vec<Point>, usize, Point)> {
+/// The outline of `shape` whose inset (`d` millimetres inside it, [`inset_outline`], asking
+/// `stopped` as it does) passes nearest `entry`, and where: its index, the inset outline's points,
+/// the segment of them the nearest point lies on (from point `i` to the next) and that point.
+fn entered_outline(shape: Area<'_>, d: f64, entry: Point, stopped: &dyn Fn() -> bool) -> Option<(usize, Vec<Point>, usize, Point)> {
     shape
         .outlines
         .iter()
         .enumerate()
         .filter_map(|(k, sub)| {
-            let inset = inset_outline(sub, shape, d);
+            let inset = inset_outline(sub, shape, d, stopped);
             let (i, at, dist) = nearest_on(&inset, true, entry)?;
             Some((dist, (k, inset, i, at)))
         })
@@ -763,18 +765,30 @@ fn around(pts: &[Point], i: usize, at: Point) -> Vec<Point> {
     out
 }
 
+/// How many corners an outline's inset ([`inset_outline`]) moves, and then checks, between two
+/// asks whether to stop: each corner's test runs a ray across the shape, so an outline's inset
+/// grows with the square of its corners (a comb of 3,000 teeth, one outline of 12,000 corners,
+/// took 0.69 s in release before it asked, the PR's review, 2026-11-09). 128 corners of that comb
+/// took 4 ms on average, 11 at most, once it asked.
+const STOP_CORNERS: usize = 128;
+
 /// The corners of closed outline `sub` of `shape`, each moved `d` millimetres into the shape along
 /// its corner's bisector (by up to [`EDGE_RUN_MITER`] times `d` at a sharp corner), as far as the
 /// shape allows: a corner that would leave the shape, or whose way from the corner before would,
-/// stays where it is.
-fn inset_outline(sub: &SubPath, shape: Area<'_>, d: f64) -> Vec<Point> {
+/// stays where it is. `stopped` is asked every [`STOP_CORNERS`] corners of each of the two
+/// passes; once it says so, what is returned is cut short, for the caller to drop.
+fn inset_outline(sub: &SubPath, shape: Area<'_>, d: f64, stopped: &dyn Fn() -> bool) -> Vec<Point> {
     let pts = &sub.pts;
     let n = pts.len();
     if n < 3 || !(d > 0.0 && d.is_finite()) {
         return pts.clone();
     }
+    let ask = |i: usize| i > 0 && i.is_multiple_of(STOP_CORNERS) && stopped();
     let mut out: Vec<Point> = Vec::with_capacity(n);
     for (i, &v) in pts.iter().enumerate() {
+        if ask(i) {
+            return out;
+        }
         let (Some(&prev), Some(&next)) = (pts.get((i + n - 1) % n), pts.get((i + 1) % n)) else {
             out.push(v);
             continue;
@@ -791,6 +805,9 @@ fn inset_outline(sub: &SubPath, shape: Area<'_>, d: f64) -> Vec<Point> {
     }
     // A corner whose way from the corner before leaves the shape stays on the outline.
     for i in 0..n {
+        if ask(i) {
+            return out;
+        }
         let prev = out.get((i + n - 1) % n).copied();
         if let (Some(a), Some(b)) = (prev, out.get(i).copied())
             && !shape.contains_segment(a, b)
@@ -841,6 +858,14 @@ fn tatami_underlay(shape: Area<'_>, travels: &mut Travels<'_>, p: &Params, alway
 /// build (2026-11-09), far within the tenth of a second a cancel may take.
 const STOP_ROWS: usize = 256;
 
+/// How many matches of a layer's spans with those of the row before ([`Layer::regions`]) are made
+/// between two asks whether to stop, besides every [`STOP_ROWS`] rows: a row across a comb has a
+/// span for each tooth, each matched against every span of the row before, so a comb of 3,000
+/// teeth (3.6 m wide) finds its 74 top rows in about 0.45 s in release, which asked only before
+/// the first (2026-11-09). There it now asks before each row: one row's 18 million matches took 6
+/// to 8 ms.
+const STOP_PAIRS: usize = 1_000_000;
+
 /// One layer of rows: their direction, the distance between them, and how far they stay inside
 /// the edge.
 struct Layer {
@@ -857,8 +882,9 @@ impl Layer {
     /// they meet. Rows sit half a spacing inside the extent: no row lies on a tangent, and the
     /// thread's own width covers to the edge.
     ///
-    /// `stopped` is asked every [`STOP_ROWS`] rows; once it says so the rows found so far are the
-    /// layer's, for the plan to drop.
+    /// `stopped` is asked every [`STOP_ROWS`] rows, and as soon as [`STOP_PAIRS`] matches of spans
+    /// have been made since the last ask; once it says so the rows found so far are the layer's,
+    /// for the plan to drop.
     ///
     /// Each row reaches past the edge at its ends by `p`'s pull compensation
     /// ([`Params::compensation`] of its length: the fabric draws a row in along its length), at
@@ -882,14 +908,20 @@ impl Layer {
         // below.
         let mut all: Vec<Scan> = Vec::with_capacity(rows);
         let mut sweep = shape.sweep(self.axes);
+        // The spans matched since the last ask.
+        let mut matched = 0usize;
         for row in 0..rows {
-            if row.is_multiple_of(STOP_ROWS) && stopped() {
-                break;
+            if row.is_multiple_of(STOP_ROWS) || matched >= STOP_PAIRS {
+                matched = 0;
+                if stopped() {
+                    break;
+                }
             }
             let t = first + self.spacing * row as f64;
             let spans: Vec<(f64, f64)> = sweep.spans(t).into_iter().map(|(a, b)| (a + self.inset, b - self.inset)).filter(|(a, b)| b > a).collect();
             let reaches: Vec<(f64, f64)> = (0..spans.len()).map(|j| reach(&spans, j, p)).collect();
             all.push(Scan { t, spans: spans.clone(), reaches: reaches.clone() });
+            matched = matched.saturating_add(spans.len().saturating_mul(open.len() + spans.len()));
             let mut next: Vec<(usize, (f64, f64))> = Vec::with_capacity(spans.len());
             for (j, &span) in spans.iter().enumerate() {
                 let touching: Vec<usize> = open.iter().filter(|(_, prev)| overlap(*prev, span)).map(|(r, _)| *r).collect();

@@ -723,6 +723,46 @@ fn art_out_of_range_is_left_out_with_a_warning() {
     assert!(plan.warnings.iter().any(|w| w.contains("far outside the document's range")), "{:?}", plan.warnings);
 }
 
+/// A shape of more points than one may have once its curves are flattened is refused, as one of more
+/// stitches than one may have is: the plan says so, with the planner's message; at the limit it is
+/// planned.
+#[test]
+fn a_shape_of_more_points_than_one_may_have_is_refused() {
+    use vectorcraft_color::{Color, Paint};
+    use vectorcraft_doc::{Appearance, Document, Node};
+    use vectorcraft_geom::{BezPath, PathData};
+    use vectorcraft_stitch::plan::MAX_SHAPE_POINTS;
+
+    use super::unit::PlanError;
+
+    /// A stair's rise, points: about a traced pixel edge's at 10 pixels a millimetre.
+    const STAIR: f64 = 0.25;
+    // A thin stroke, sewn as a running line, along a staircase of `points` points.
+    let doc_of = |points: usize| {
+        let mut doc = Document::new(300.0, 300.0);
+        let layer = doc.layers.first().map(|l| l.id);
+        let mut stairs = BezPath::new();
+        let (mut x, mut y) = (0.0, 0.0);
+        stairs.move_to((x, y));
+        for k in 1..points {
+            if k % 2 == 1 {
+                x += STAIR;
+            } else {
+                y += STAIR;
+            }
+            stairs.line_to((x, y));
+        }
+        let thin = Appearance::basic(Paint::None, Paint::solid(Color::rgb8(200, 30, 30)), 1.0);
+        let id = doc.alloc_id();
+        doc.insert(layer, usize::MAX, Node::path(id, PathData::from_bezpath(&stairs), thin)).unwrap();
+        doc
+    };
+    let refused = digitize(&doc_of(MAX_SHAPE_POINTS + 1), &Options::default(), None);
+    assert!(matches!(&refused, Err(PlanError::TooLarge(why)) if why.contains("points one shape may have")), "{:?}", refused.err());
+    let planned = digitize(&doc_of(MAX_SHAPE_POINTS), &Options::default(), None).unwrap();
+    assert_eq!(planned.units.len(), 1, "at the limit, planned");
+}
+
 /// The read commands plan what the export writes: with `selectedOnly`, the selected objects alone,
 /// as `document.export {selectedOnly}` writes them; while an opacity mask is edited, without its
 /// editing layer, which no export writes.

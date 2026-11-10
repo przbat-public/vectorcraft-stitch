@@ -5689,6 +5689,7 @@ swatch	Bright Violet	Felviolet
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	een DST-header telt hoogstens {MAX_RECORDS} records, en het ontwerp heeft er {_1} nodig
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	een PEC-steekblok bevat hoogstens {MAX_BLOCK} bytes (de lengte is 24 bits), en het ontwerp heeft er {len} nodig
 @msg	a VP3 string is too long	een VP3-tekenreeks is te lang
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	een vorm heeft meer dan de {MAX_SHAPE_POINTS} punten die één vorm mag hebben zodra zijn krommen in lijnstukken zijn omgezet: vereenvoudig hem of verdeel hem in kleinere vormen
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	een vorm ligt meer dan {MAX_COORD_MM} mm van de oorsprong of heeft een coördinaat die geen getal is: hij kan niet worden geborduurd
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	een vorm zou ongeveer {n} steken nodig hebben, meer dan de {MAX_STITCHES} die één vorm mag hebben: gebruik een langere steek, meer tussenruimte of een kleiner ontwerp
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	geen PES- of PEC-bestand: het begint niet met #PES of #PEC

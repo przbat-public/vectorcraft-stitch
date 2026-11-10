@@ -101,8 +101,8 @@ pub(crate) struct UnitStitches {
 
 /// The stitches `req` asks for: the shape planned in its style from where the needle is, a fill's
 /// narrow parts sewn as satin columns that follow the shape, a stroke inside clip groups cut to
-/// them; an error when the shape would need too many stitches, or when the plan is cancelled
-/// (while its narrow parts are looked for or cut out, or its stitches planned).
+/// them; an error when the shape would need too many stitches or has too many points, or when the
+/// plan is cancelled (while its narrow parts are looked for or cut out, or its stitches planned).
 ///
 /// A fill's narrow parts and its rest are `parts` when given (kept between plans: neither depends
 /// on where it starts or ends), else found here ([`parted`]).
@@ -172,8 +172,11 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result
 /// A fill's narrow parts sewn as satin ([`plan::narrow_columns`], by the widest narrow part
 /// `narrow`) and, when it has any, the rest with them cut out and the area the needle travels in
 /// ([`rest_of`]): the same wherever the fill starts or ends, so kept between plans by what they
-/// are found from. An error when the plan is cancelled while they are looked for or cut out.
+/// are found from. An error when the plan is cancelled while they are looked for or cut out, and
+/// when the shape has more points than one may have ([`plan::MAX_SHAPE_POINTS`]): refused before
+/// they are looked for, whose search prepares as much as the plan does before it first asks.
 pub(crate) fn parted(shape: &BezPath, rule: FillRule, narrow: f64) -> Result<Parted, PlanError> {
+    plan::within_points(shape)?;
     let found = plan::narrow_columns_until(shape, rule, narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?;
     let cut = if found.is_empty() { None } else { Some(rest_of(shape, rule, &found, &cancel::is_cancelled)?) };
     Ok(Parted { found, cut })
@@ -565,6 +568,28 @@ mod tests {
             assert_eq!(rest_of(&t, FillRule::NonZero, &found, &at_k), Err(PlanError::Cancelled), "stopped at ask {k}");
             assert_eq!(asked.get(), k, "asked on after ask {k}");
         }
+    }
+
+    /// A fill of more points than one shape may have is refused before its narrow parts are looked
+    /// for, whose search prepares as much as the plan does before it first asks: even in a plan
+    /// cancelled from the start, the refusal is the points', not the cancel's.
+    #[test]
+    fn a_fill_of_too_many_points_is_refused_before_its_narrow_parts_are_looked_for() {
+        use vectorcraft_doc::cancel::CancelToken;
+        /// A narrow part's widest, millimetres: the parts' default.
+        const NARROW: f64 = 7.0;
+        let n = plan::MAX_SHAPE_POINTS + 1;
+        let mut ring = BezPath::new();
+        for k in 0..n {
+            let a = std::f64::consts::TAU * k as f64 / n as f64;
+            let q = (50.0 + 40.0 * a.cos(), 50.0 + 40.0 * a.sin());
+            if k == 0 { ring.move_to(q) } else { ring.line_to(q) }
+        }
+        ring.close_path();
+        let token = CancelToken::new();
+        token.cancel();
+        let refused = cancel::scope(&token, None, || parted(&ring, FillRule::NonZero, NARROW));
+        assert!(matches!(&refused, Err(PlanError::TooLarge(why)) if why.contains("points one shape may have")), "{refused:?}");
     }
 
     /// A satin ring has no ends to push in: its reach is half its width and its pull compensation,

@@ -5617,6 +5617,7 @@ mark-style	Japanese	Japońskie
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	nagłówek DST liczy najwyżej {MAX_RECORDS} rekordów, a wzór wymaga {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	blok ściegów PEC mieści najwyżej {MAX_BLOCK} bajtów (jego długość ma 24 bity), a wzór wymaga {len}
 @msg	a VP3 string is too long	ciąg znaków VP3 jest za długi
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	kształt ma więcej niż {MAX_SHAPE_POINTS} punktów, ile może mieć jeden kształt, po zamianie jego krzywych na odcinki: uprość go lub podziel na mniejsze kształty
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	kształt leży dalej niż {MAX_COORD_MM} mm od początku układu lub ma współrzędną, która nie jest liczbą: nie można go wyhaftować
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	kształt wymagałby około {n} ściegów, więcej niż {MAX_STITCHES}, ile może mieć jeden kształt: użyj dłuższego ściegu, większego odstępu lub mniejszego wzoru
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	to nie jest plik PES ani PEC: nie zaczyna się od #PES ani #PEC

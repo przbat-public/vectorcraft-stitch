@@ -101,6 +101,41 @@ pub(super) fn subpaths(path: &BezPath) -> Vec<SubPath> {
     out
 }
 
+/// How many points [`subpaths`] flattens `path` into (each subpath's first point and every one after
+/// it), counted element by element and only until there are more than `at_most`: a few curves can
+/// flatten into millions, and counting them all would take as long as flattening them. One curve
+/// within [`MAX_COORD_MM`] flattens into a few thousand points at most (6,425 for a cubic across the
+/// whole range, 2026-11-10), so the count stops at most that far past `at_most`.
+pub(super) fn flattened_points(path: &BezPath, at_most: usize) -> usize {
+    let mut count = 0usize;
+    // Where the pen is, as the flattening keeps it: a curve after a close, before any move or line,
+    // has no start and adds no point.
+    let mut pen: Option<Point> = None;
+    for &el in path.elements() {
+        if count > at_most {
+            break;
+        }
+        match el {
+            PathEl::MoveTo(p) | PathEl::LineTo(p) => {
+                count += 1;
+                pen = Some(p);
+            }
+            PathEl::QuadTo(_, p) | PathEl::CurveTo(_, _, p) => {
+                if let Some(start) = pen {
+                    kurbo::flatten([PathEl::MoveTo(start), el], FLATTEN, |e| {
+                        if matches!(e, PathEl::LineTo(_)) {
+                            count += 1;
+                        }
+                    });
+                }
+                pen = Some(p);
+            }
+            PathEl::ClosePath => pen = None,
+        }
+    }
+    count
+}
+
 /// A subpath's two ends as its path draws them ([`end_directions`]): its first and last points, and
 /// the unit directions out of its first point (backward) and out of its last (forward), each `None`
 /// where the curve has no length there.
@@ -168,6 +203,22 @@ pub(super) fn resample(pts: &[Point], step: f64, closed: bool) -> Vec<Point> {
 /// `s` millimetres along it (a satin's crossings come closer round a bend). Each point comes with
 /// how far along the line it lies.
 pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64) -> Vec<(Point, f64)> {
+    resample_by_until(pts, closed, step, &|| false)
+}
+
+/// How much resampling a line ([`resample_by_until`]) does, each piece of the line it passes and
+/// each point it makes, and how many crossings a satin line works out ([`super::satin`]), between
+/// two asks whether to stop: one satin line may have millions (a shape may have up to
+/// [`MAX_STITCHES`]), and one of 550,000 stitches took 40 ms to resample and 24 ms to cross in
+/// release, 2026-11-09, so that 4,096 of either take about a third of a millisecond.
+pub(super) const STOP_SAMPLES: usize = 4096;
+
+/// [`resample_by`], asking `stopped` whether to stop every [`STOP_SAMPLES`] steps of its work: each
+/// piece of the line it passes and each point it makes, a corner's too. A count of the points it has
+/// would skip its asks where a line's sharp corners lie closer than a step (each corner's point made
+/// with no step between them, as along a traced pixel edge) or fall just where it would ask. Once it
+/// says so, the points made so far, for the caller to drop.
+pub(super) fn resample_by_until(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64, stopped: &dyn Fn() -> bool) -> Vec<(Point, f64)> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return Vec::new() };
     let step = |s: f64| step(s).max(MIN_STEP);
     let mut out: Vec<(Point, f64)> = vec![(first, 0.0)];
@@ -180,7 +231,17 @@ pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64
     let at = |i: usize| pts.get(if i >= n { i - n } else { i }).copied();
     // The step on from the last point.
     let step_on = |out: &[(Point, f64)]| step(out.last().map_or(0.0, |&(_, s)| s));
+    // Its work so far, one a piece passed or a point made, and whether to stop now that it has done
+    // one more: asked at each multiple of `STOP_SAMPLES`.
+    let mut work = 0usize;
+    let mut stop_after_one_more = || {
+        work += 1;
+        work.is_multiple_of(STOP_SAMPLES) && stopped()
+    };
     for i in 0..segs {
+        if stop_after_one_more() {
+            return out;
+        }
         let (Some(a), Some(b)) = (at(i), at(i + 1)) else { continue };
         let seg = a.distance(b);
         if seg <= NO_LENGTH {
@@ -191,7 +252,7 @@ pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64
             out.push((a + (b - a) * f, next));
             fixed = false;
             next += step(next);
-            if out.len() >= MAX_STITCHES {
+            if out.len() >= MAX_STITCHES || stop_after_one_more() {
                 return out;
             }
         }
@@ -208,6 +269,9 @@ pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64
         {
             fixed = true;
             next = travelled + step(travelled);
+            if stop_after_one_more() {
+                return out;
+            }
         }
     }
     let last_step = step_on(&out);

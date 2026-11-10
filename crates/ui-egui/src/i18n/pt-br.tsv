@@ -5679,6 +5679,7 @@ mark-style	Japanese	Japonesas
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	um cabeçalho DST conta no máximo {MAX_RECORDS} registros, e o desenho precisa de {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	um bloco de pontos PEC comporta no máximo {MAX_BLOCK} bytes (seu comprimento tem 24 bits), e o desenho precisa de {len}
 @msg	a VP3 string is too long	uma cadeia VP3 é longa demais
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	uma forma tem mais do que os {MAX_SHAPE_POINTS} vértices que uma forma pode ter depois que suas curvas são convertidas em segmentos: simplifique-a ou divida-a em formas menores
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	uma forma está a mais de {MAX_COORD_MM} mm da origem ou tem uma coordenada que não é um número: não pode ser bordada
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	uma forma precisaria de cerca de {n} pontos, mais do que os {MAX_STITCHES} que uma forma pode ter: use um ponto mais longo, espaçamento maior ou um desenho menor
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	não é um arquivo PES ou PEC: não começa com #PES ou #PEC

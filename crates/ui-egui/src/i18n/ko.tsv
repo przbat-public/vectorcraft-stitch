@@ -5339,6 +5339,7 @@ lighting	Light	광원
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 헤더는 최대 {MAX_RECORDS}개의 레코드를 세는데, 디자인에는 {_1}개가 필요합니다
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC 땀 블록에는 최대 {MAX_BLOCK}바이트가 들어가는데(길이가 24비트), 디자인에는 {len}바이트가 필요합니다
 @msg	a VP3 string is too long	VP3 문자열이 너무 깁니다
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	도형의 곡선을 선분으로 바꾸면 한 도형에 허용되는 {MAX_SHAPE_POINTS}개 점을 넘습니다: 도형을 단순화하거나 더 작은 도형으로 나누세요
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	도형이 원점에서 {MAX_COORD_MM}mm보다 멀리 있거나 숫자가 아닌 좌표가 있습니다: 자수할 수 없습니다
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	도형에 약 {n}땀이 필요하며, 한 도형에 허용되는 {MAX_STITCHES}땀을 넘습니다: 땀을 길게, 간격을 넓게, 또는 디자인을 작게 하세요
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES 또는 PEC 파일이 아닙니다: #PES 또는 #PEC로 시작하지 않습니다

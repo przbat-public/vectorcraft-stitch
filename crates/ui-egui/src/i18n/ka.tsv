@@ -5645,6 +5645,7 @@ imageTrace	Outline	კონტური
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST სათაური ითვლის არაუმეტეს {MAX_RECORDS} ჩანაწერს, დიზაინს კი {_1} სჭირდება
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC ნაკერების ბლოკში ეტევა არაუმეტეს {MAX_BLOCK} ბაიტი (მისი სიგრძე 24-ბიტიანია), დიზაინს კი {len} სჭირდება
 @msg	a VP3 string is too long	VP3 სტრიქონი ზედმეტად გრძელია
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	ფიგურას აქვს უფრო მეტი წერტილი, ვიდრე ერთ ფიგურას დაშვებული {MAX_SHAPE_POINTS}, როცა მისი მრუდები მონაკვეთებად გარდაიქმნება: გაამარტივეთ ის ან დაყავით უფრო პატარა ფიგურებად
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	ფიგურა სათავიდან {MAX_COORD_MM} მმ-ზე მეტით არის დაშორებული ან აქვს კოორდინატი, რომელიც რიცხვი არ არის: მისი ამოქარგვა შეუძლებელია
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	ფიგურას დასჭირდება დაახლოებით {n} ნაკერი, მეტი, ვიდრე ერთ ფიგურას დაშვებული {MAX_STITCHES}: გამოიყენეთ უფრო გრძელი ნაკერი, უფრო დიდი დაშორება ან უფრო პატარა დიზაინი
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ეს არ არის PES ან PEC ფაილი: არ იწყება #PES-ით ან #PEC-ით

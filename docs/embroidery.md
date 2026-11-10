@@ -1,6 +1,6 @@
 # Embroidery
 
-> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-11-09 · **Change:** the small planner PR: a fill's row turning square to the edge keeps its first needle point (the pool ball's notches, and bare fabric inside every fill), a cancel stops the planner within a tenth of a second inside one object, a route with one end given chooses its free end again once its cycles are shortened; previously: digitizing from an image, the engine's second part, its review round: a line's extra width allowed only where its lines meet, the colours beside it reaching its true middle and never more than 2 mm, a dot set to Lines sewn as its shape, a line ending on another's middle joining its route, a centre line found in time however its junctions chain and stopped by a cancel at every step; routes sewing twice only about the least, starting where the needle is, ends meeting within a thread's width wherever they lie; satin caps on the curve's own end, round under push and pull, held up by the underlay, none where pieces of one satin meet, a dot drawn as a small satin dot; rows across each separate piece of a fill, measured on the area the plan sews, told in tenths, kept between the Object tab's reads; a test for every named step, the fuzz suites reaching the new inputs, measured again (Using it › Digitizing from an image; How a shape becomes stitches › Running, Satin, Tatami fill; Validation; Architecture › Digitizing from an image); previously: digitizing from an image, the engine's second part: a thin line sewn along its centre line as one running line through its junctions, the colours beside it reaching its middle, and the job Lines; the planner's routes through every running line whose pieces meet end to end, each piece once and back along a few; every satin stroke's round or square cap; a fill's rows across its shape, or at a number of degrees, as the document's `fillAngle` (Using it › Digitizing from an image, Document settings; How a shape becomes stitches › Running, Satin, Tatami fill; What is not stitched; Validation; Architecture › Digitizing from an image; Files); previously: VectorCraft merged in (upstream v0.21.0 and the 1,203 commits after it): SVG circles import as the exact four-anchor ellipse, and the one real design it moved is pinned again (the project owner's choice); Copy and Cut of needle points take their run whole again and Cut deletes them as stitches, the selected guides with them (the project owner's choices); the stitch view in upstream's new document windows and with Outline kept by each view; every embroidery word in Hindi too (AI-drafted), its numbers with Indian grouping; previously: digitizing from an image, its review round: the threads' assignment written anew from Jonker and Volgenant's augmentation phase, the design on the nearest ordinary layer above the picture's, the overlap made whatever the number of edges, only bands a thread wide joining a neighbour, islands holding something sewn over, lines long from 2 mm along them, a missing linked file refused, turned pictures measured on the page, one anchor limit everywhere, a cancel reaching every stage, warnings by id, the real designs' test seeing the overlap, measured again (Using it › Digitizing from an image; What is not stitched; Validation; Architecture › Digitizing from an image); earlier: digitizing from an image, the engine's first part: `embroidery.digitizeImage` traces a placed image in its own colours at up to 10 pixels a millimetre, matches the colours to threads all together, keeps areas of at least 1 mm² (long thin lines below it), sews islands under 4 mm on top and details last, grows the colour sewn first 0.4 mm under the next along their edge, and Create makes the objects in the image's place, the image on a hidden template layer, its dry run answering Create's figures exactly; measured on the real designs' artwork against the vector path and the person's design (Using it › Digitizing from an image; What is not stitched; Validation; Architecture › Digitizing from an image; Files); earlier: VectorCraft merged in (upstream v0.20.0, to 2026-11-01): a stroke an effect reshapes is sewn along its reshaped path, as Expand Appearance now leaves it a stroke (the project owner's choice); the Embroidery panel opens through upstream's new dock layout; no form of upstream's rewritten Join reverses a run of stitches; every embroidery word in Bosnian and Catalan too (AI-drafted), their numbers as CLDR 48 writes them; the golden corpus computed with one maths library on every system, so that it records the same bytes on macOS, Linux and FreeBSD (What is not stitched; Validation; Architecture › Drawing stitches, Manual stitches and needle points); earlier: the canvas's bounds' review round: containers measured by upstream's own arms through `Node::visual_by`, one cache per open document let go when it closes, the Navigator's region from it, a change of the symbols measuring only what reads them, the selection's ids looked up one by one, the one-point drag on 2 million budgeted, tests that reach the cache's own branches, measured again (Architecture › Editing a large design, Manual stitches and needle points; Files); earlier: the canvas's bounds measured only where an edit changed the document, so that dragging one point of a design of 2 million no longer re-measures every stitch each frame, brought up to date with manual stitches' second part; earlier: manual stitches, second part, its review round: the Lasso tool keeping the edit look, a drag below 250 % from what isn't selected drawing a marquee, stitch editing's files, tests and limits, the Stitches tab's words, measured again; earlier: a fill's lifts and cuts counted as they are sewn, at any shortest stitch, and a lead's tie stitch at least the shortest stitch (What is not stitched; Validation); earlier: manual stitches, second part, brought in step with the first part's review round and measured again; earlier: manual stitches, second part: editing needle points on the canvas with the Embroidery Tool in isolation, and the Embroidery panel's Stitches tab (Using it › Editing stitches on the canvas, The Stitches tab; Architecture › Manual stitches and needle points); earlier: manual stitches' review round: a run's cuts and stops kept by their needle points through upstream's path commands, a group sewn whole converted with its members' marks or passed over, Restore asking about foreign art and keeping it, range-checked and cleaned, the Global Edit wait, a clip group carrying a file's run's cuts and stops, the export's note on stops, the Object tab's states, focus and words, compatibility notes, new perf rows, everything measured again (Using it › Manual stitches, Editing stitches, Exporting what you read, Saved by upstream VectorCraft, What is not stitched; The formats › Stops; Validation; Architecture › Manual stitches and needle points; Files); earlier: manual stitches, first part: Convert to Manual Stitches and Restore Object, stops, editing stitches by command and Direct Selection, the scale warning (Using it › Stopping the machine after an object, Manual stitches, Editing stitches, Checks; What is not stitched; The formats › Stops; Changing the sewing order); earlier: the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
+> **Last reviewed:** 2026-10-24 · **Last updated:** 2026-11-10 · **Change:** the small planner PR's review round, checked: a shape of more than 250,000 points once its curves are flattened refused before it is planned, with its own message (the limits; Cancelling, under Planning service), and a satin line's resampling asking by its own work, a corner's point too; previously: the small planner PR with its review round: a fill's row turning square to the edge keeps its first needle point (the pool ball's notches, and bare fabric inside every fill; the real designs' coverage test now fails without it), a cancel stops the planner within a tenth of a second inside one object, inside a fill's long steps and a satin line too, a route with one end given chooses its free end again once its cycles are shortened; the turns' rounding and the needle-blade rule's hits recorded; previously: digitizing from an image, the engine's second part, its review round: a line's extra width allowed only where its lines meet, the colours beside it reaching its true middle and never more than 2 mm, a dot set to Lines sewn as its shape, a line ending on another's middle joining its route, a centre line found in time however its junctions chain and stopped by a cancel at every step; routes sewing twice only about the least, starting where the needle is, ends meeting within a thread's width wherever they lie; satin caps on the curve's own end, round under push and pull, held up by the underlay, none where pieces of one satin meet, a dot drawn as a small satin dot; rows across each separate piece of a fill, measured on the area the plan sews, told in tenths, kept between the Object tab's reads; a test for every named step, the fuzz suites reaching the new inputs, measured again (Using it › Digitizing from an image; How a shape becomes stitches › Running, Satin, Tatami fill; Validation; Architecture › Digitizing from an image); previously: digitizing from an image, the engine's second part: a thin line sewn along its centre line as one running line through its junctions, the colours beside it reaching its middle, and the job Lines; the planner's routes through every running line whose pieces meet end to end, each piece once and back along a few; every satin stroke's round or square cap; a fill's rows across its shape, or at a number of degrees, as the document's `fillAngle` (Using it › Digitizing from an image, Document settings; How a shape becomes stitches › Running, Satin, Tatami fill; What is not stitched; Validation; Architecture › Digitizing from an image; Files); previously: VectorCraft merged in (upstream v0.21.0 and the 1,203 commits after it): SVG circles import as the exact four-anchor ellipse, and the one real design it moved is pinned again (the project owner's choice); Copy and Cut of needle points take their run whole again and Cut deletes them as stitches, the selected guides with them (the project owner's choices); the stitch view in upstream's new document windows and with Outline kept by each view; every embroidery word in Hindi too (AI-drafted), its numbers with Indian grouping; previously: digitizing from an image, its review round: the threads' assignment written anew from Jonker and Volgenant's augmentation phase, the design on the nearest ordinary layer above the picture's, the overlap made whatever the number of edges, only bands a thread wide joining a neighbour, islands holding something sewn over, lines long from 2 mm along them, a missing linked file refused, turned pictures measured on the page, one anchor limit everywhere, a cancel reaching every stage, warnings by id, the real designs' test seeing the overlap, measured again (Using it › Digitizing from an image; What is not stitched; Validation; Architecture › Digitizing from an image); earlier: digitizing from an image, the engine's first part: `embroidery.digitizeImage` traces a placed image in its own colours at up to 10 pixels a millimetre, matches the colours to threads all together, keeps areas of at least 1 mm² (long thin lines below it), sews islands under 4 mm on top and details last, grows the colour sewn first 0.4 mm under the next along their edge, and Create makes the objects in the image's place, the image on a hidden template layer, its dry run answering Create's figures exactly; measured on the real designs' artwork against the vector path and the person's design (Using it › Digitizing from an image; What is not stitched; Validation; Architecture › Digitizing from an image; Files); earlier: VectorCraft merged in (upstream v0.20.0, to 2026-11-01): a stroke an effect reshapes is sewn along its reshaped path, as Expand Appearance now leaves it a stroke (the project owner's choice); the Embroidery panel opens through upstream's new dock layout; no form of upstream's rewritten Join reverses a run of stitches; every embroidery word in Bosnian and Catalan too (AI-drafted), their numbers as CLDR 48 writes them; the golden corpus computed with one maths library on every system, so that it records the same bytes on macOS, Linux and FreeBSD (What is not stitched; Validation; Architecture › Drawing stitches, Manual stitches and needle points); earlier: the canvas's bounds' review round: containers measured by upstream's own arms through `Node::visual_by`, one cache per open document let go when it closes, the Navigator's region from it, a change of the symbols measuring only what reads them, the selection's ids looked up one by one, the one-point drag on 2 million budgeted, tests that reach the cache's own branches, measured again (Architecture › Editing a large design, Manual stitches and needle points; Files); earlier: the canvas's bounds measured only where an edit changed the document, so that dragging one point of a design of 2 million no longer re-measures every stitch each frame, brought up to date with manual stitches' second part; earlier: manual stitches, second part, its review round: the Lasso tool keeping the edit look, a drag below 250 % from what isn't selected drawing a marquee, stitch editing's files, tests and limits, the Stitches tab's words, measured again; earlier: a fill's lifts and cuts counted as they are sewn, at any shortest stitch, and a lead's tie stitch at least the shortest stitch (What is not stitched; Validation); earlier: manual stitches, second part, brought in step with the first part's review round and measured again; earlier: manual stitches, second part: editing needle points on the canvas with the Embroidery Tool in isolation, and the Embroidery panel's Stitches tab (Using it › Editing stitches on the canvas, The Stitches tab; Architecture › Manual stitches and needle points); earlier: manual stitches' review round: a run's cuts and stops kept by their needle points through upstream's path commands, a group sewn whole converted with its members' marks or passed over, Restore asking about foreign art and keeping it, range-checked and cleaned, the Global Edit wait, a clip group carrying a file's run's cuts and stops, the export's note on stops, the Object tab's states, focus and words, compatibility notes, new perf rows, everything measured again (Using it › Manual stitches, Editing stitches, Exporting what you read, Saved by upstream VectorCraft, What is not stitched; The formats › Stops; Validation; Architecture › Manual stitches and needle points; Files); earlier: manual stitches, first part: Convert to Manual Stitches and Restore Object, stops, editing stitches by command and Direct Selection, the scale warning (Using it › Stopping the machine after an object, Manual stitches, Editing stitches, Checks; What is not stitched; The formats › Stops; Changing the sewing order); earlier: the embroidery tool's review round: the planner's guard strict and counting the move in, Nearest Connection off the interface thread with progress and Escape, the tool's drawing readable on any fabric, its cursor where a click selects nothing, the words table, measured again (Using it › Seeing the stitches and the sewing order; Architecture › Planning for the stitch preview, One embroidery tool; Validation); earlier: the embroidery tool: entry and exit points on the canvas, dragged, typed or reset, and a tatami fill's angle arrow; the planner meeting an entry exactly and sewing toward the exit; Nearest Connection; picking by stitches; the Object tab's entry and exit rows and Set on Canvas (Using it › Seeing the stitches and the sewing order; How a shape becomes stitches; Architecture › One embroidery tool, Planning for the stitch preview; Validation; Files); earlier: the settings interface's review round: Document Setup's Embroidery tab named and checked by `embroidery.setup`'s paths, Copy and Paste of settings, Trim After on what is sewn alone, the Object tab's reads, the keyboard's focus, measured again (Using it › Document Setup › Embroidery, Settings on objects; Architecture › Planning for the stitch preview); earlier: Document Setup's Embroidery tab: the document's fabric, thread, machine and sewing order, objects with their own values applied on OK (Using it › Document Setup › Embroidery); earlier: the Embroidery panel's Object tab: the selected objects' settings by part, where each value comes from, set as commands (Using it › Seeing the stitches and the sewing order, Settings on objects, Cutting the thread after an object; Architecture › Planning for the stitch preview; Files); earlier: the settings PR's review round: settings kept by objects nested in an expanded group and by every piece cut from an object, unset rows turning with each object's own box, `embroidery.info` saying what the walk sews and why not, typed replies, the earlier name `stitchAngle` keeping its clockwise meaning, silk's values marked estimates and each fabric value's class named, a fabric's spacing bounded for every thread (Architecture › Settings and transforms, new; Architecture › Planning service, measured again; Using it › Saved by upstream VectorCraft; Validation; References › Fabric presets); earlier: an expanded object's strokes sewn along their path; embroidery settings on objects and in the document: the data, where each value comes from, the commands, the fabric presets (Using it › Settings on objects, Document settings; Architecture › Settings and where their values come from; Files); earlier: VectorCraft merged in: the status bar's counters in its new fixed slots, Turkish; earlier: the stitch preview's review round: the Sewing order on the plan it shows, a drop at its rows' own place refused, memory bounded across documents, the fork's own settings folder; Using it › Seeing the stitches and the sewing order, and Files, brought up to date. Earlier changes: [Revision history](#revision-history)
 
 VectorCraft turns artwork into machine embroidery and opens embroidery designs as art. The work
 lives in the `vectorcraft-stitch` crate (`crates/stitch`): stitch planning from geometry, the
@@ -734,12 +734,12 @@ person's Ink/Stitch files opened as stitches; `crates/engine/tests/embroidery_pl
 each design's hits and the objects hit, rule by rule, with the default palette's format, JEF):
 hits, then the objects hit and the designs, added up over the eleven.
 
-| Rule | VectorCraft's plans (44 blocks, 25,662 needle points) | The person's files (42 blocks, 55,717 needle points) |
+| Rule | VectorCraft's plans (44 blocks, 26,106 needle points) | The person's files (42 blocks, 55,717 needle points) |
 |---|---|---|
 | `fillStitchShort`, `satinStitchShort`, `runStitchShort` | none: the default settings (4 mm fill, 2.5 mm running stitches, no satin column under 1 mm) pass | none: opened stitches have no settings |
-| `stitchBelowNeedle` | 1,090 (61 objects, 11 designs): rows' remainders from 0.4 to 0.75 mm | 11,577 (92 objects, 11 designs) |
+| `stitchBelowNeedle` | 1,541 (61 objects, 11 designs): rows' remainders from 0.4 to 0.75 mm, and since 2026-11-09 the turns at edges square to the rows, 0.4 mm (1,091 with the turns left out) | 11,577 (92 objects, 11 designs) |
 | `stitchTiny` | none: the planner leaves out stitches under 0.4 mm | 5,375 (74 objects, 11 designs) |
-| `layers` | 1,250 squares (32 objects, 7 designs) | 741 (27 objects, 5 designs) |
+| `layers` | 1,253 squares (32 objects, 7 designs) | 741 (27 objects, 5 designs) |
 | `threadMismatch` | 9 blocks (11 objects, 6 designs) | none: a file's own threads |
 | `shortStitchesInARow` | none | 66 rows (39 objects, 8 designs) |
 | the rest | none | none |
@@ -1066,7 +1066,12 @@ the fabric.
   leaving a thin triangle of bare fabric beside the edge at every other row (the project owner's
   choice, 2026-11-09, „Zawrót 0,4 mm do środka, teraz (polecam)”: starting in keeps every design's
   size and no longest stitch grows, starting out grew two designs by 0.1 to 0.2 mm and a longest
-  stitch from 4.67 to 4.95 mm). The rows are centred
+  stitch from 4.67 to 4.95 mm). A 0.4 mm turn can round to 0.30 mm, or 0.28, on a machine file's 0.1
+  mm grid at some row angles: about 1 turn in 200 averaged over the angles, up to about 3 % at 30°,
+  60°, 120° and 150°, none at 0°, 45°, 90° or 135° (the default); a machine that deletes stitches of
+  0.3 mm or less drops it there, and that row's slant comes back (the project owner's choice,
+  2026-11-09, „Zostawić 0,4 mm i opisać (polecam)”: a 0.45 mm turn, which never rounds that short,
+  would start rows 0.24 mm in and move every pin again). The rows are centred
   across the shape's extent, as many as the spacing fits (rounded): the margin is the same at both
   sides, a quarter to three quarters of a spacing, so no row lies on a tangent and the thread's
   width covers to the edge on both sides alike. Holes are left unstitched: the shape's fill
@@ -1233,7 +1238,14 @@ under the clipped art and its stroke over it, unclipped, as they paint.
 
 A shape that would need more than 4 million stitches, or a design of more than 2 million, is refused
 with a message rather than planned (a tiny stitch length or spacing over large art); real designs
-run to a few hundred thousand.
+run to a few hundred thousand. So is a shape of more than 250,000 points once its curves are
+flattened, or a fill its narrow parts cut into more (`plan::MAX_SHAPE_POINTS`, the project owner's
+choice, 2026-11-10, „Limit punktów kształtu (polecam)”): part of a plan's preparation grows with
+the points before it first asks whether to stop, and past the limit a cancel would wait for it
+(Cancelling, under Planning service). Only a path drawn or traced with hundreds of thousands of
+points comes near it, from a file, a paste, MCP or the control channel: the real designs' largest
+shape has a few hundred points, the hardest pictures digitized give 46,085, the perf documents
+65,532. The message says to simplify the shape or split it.
 
 ## The formats
 
@@ -1597,7 +1609,9 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   their ends, fills and satins tie in and off, satin underlay follows the width with no trim
   between it and the top, satin spacing follows the width unless given, wide satins and their
   zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, a tight satin curve gets short stitches on its inner side (and a straight column none), an absurd
-  plan is refused before it is made, the DST record round-trips every delta from -121 to 121,
+  plan is refused before it is made, so is a shape of more points than one may have in every style
+  and as a fill sewn in parts (its points counted as its flattening makes them, curve by curve and
+  only just past the limit) while one at the limit is planned, the DST record round-trips every delta from -121 to 121,
   only a run of three jumps reads as a DST trim, a PEC stitch block with a 16-byte header whose first jump looks like the origin words reads the same as with 20 bytes (in step, only the leading jump is lost; out of step, its length sends the reader back to the right start), a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, a PES whose PEC section is said to
@@ -1709,6 +1723,9 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   holds out of range (control points at 1e15 and beyond, past what any command makes) is never
   flattened to measure points against it (`embroidery::outline` gives it no outline): planning it,
   snapping a point to it and reading it neither run out of memory nor panic.
+  A shape of more than 250,000 points is refused with the planner's message, a fill's before its
+  narrow parts are looked for even in a plan cancelled from the start, and a stroke along a staircase
+  of exactly that many is planned (`cmd/embroidery/tests.rs`, `cmd/embroidery/unit.rs`).
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
@@ -1862,16 +1879,17 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   notches of the 8's waist. There the white's rows turn square to the edge, and the turn, the rows'
   spacing, was left out as shorter than the shortest stitch, with the next row's first needle point;
   the overlap grows the white under the 8, so the thin triangles that left reached into the white's
-  own art (not, as recorded first, a satin column's end: no narrow part ends there). Since such a
-  row starts a little further in (2026-11-09), the pool ball leaves 0.1, and the bare fabric inside
-  the art falls by three quarters over the eleven designs (39.6 to 9.6 mm² on the vector path, 62.8
-  to 12.8 on the image path) and on each by 23 % at least; the margin is the most measured since,
-  0.5 (the video game in Janome's palette), and 0.3 of room. In Janome's palette the figures are
-  the same but where colours merge into one thread: the joystick's and the zebra's four colours
-  are sewn in three threads, and the joystick sews 0.73 times the vector path's needle points. The
-  bullseye's 0.68: its art stacks whole discs, which the vector path sews one over another, the
-  image path as abutting rings. Measured by colour instead of thread, the video game's agreement is
-  0.885: its main grey's thread lies nearer another of the art's colours.
+  own art (not a satin column's end, as recorded on 2026-11-03: no narrow part ends there; the real
+  designs' coverage test had named this cause on 2026-10-23, for the wedges it allowed). Since such
+  a row starts a little further in (2026-11-09), the pool ball leaves 0.1, and the bare fabric
+  inside the art falls by three quarters over the eleven designs (39.6 to 9.6 mm² on the vector
+  path, 62.8 to 12.8 on the image path) and on each by 23 % at least; the margin is the most
+  measured since, 0.5 (the video game in Janome's palette), and 0.3 of room. In Janome's palette the
+  figures are the same but where colours merge into one thread: the joystick's and the zebra's four
+  colours are sewn in three threads, and the joystick sews 0.73 times the vector path's needle
+  points. The bullseye's 0.68: its art stacks whole discs, which the vector path sews one over
+  another, the image path as abutting rings. Measured by colour instead of thread, the video game's
+  agreement is 0.885: its main grey's thread lies nearer another of the art's colours.
 - Digitizing from an image, its second part (2026-11-07): centre lines (`from_image/tests_lines.rs`,
   and `centre.rs`'s own: Yokoi's number, each half of Guo and Hall's pass, a plus and a ring thinned
   to their middles, a bump on a line's edge pruned): a T, an X and a ring sewn with no jump, every
@@ -1913,9 +1931,14 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   square to the rows, leaves 0.115 mm² bare beside it (2.37 when a row lost its first needle point);
   the turn itself (lengthened, no room, already long enough, back along the row). A plan's stops
   (`plan/fill/tests_stop.rs`, `cmd/embroidery/unit.rs`): each place a fill, a satin and the cutting
-  out of narrow parts asks whether to stop, counted (once an outline, every 256 rows, once a piece,
-  an order, a region and a walk's step, once a part, once a part the order of more than six picks,
-  once a line, once a column's band and before the cut and the union), nothing planned when asked to
+  out of narrow parts asks whether to stop, counted (once an outline and every 128 corners of its
+  inset, every 256 rows or a million matches of their spans, once a piece, an order, a region and a
+  walk's step, once a part, once a part the order of more than six picks, every 16 corners a
+  travel's graph looks at or its search settles, every million points a simplification looks at,
+  once a line and every 4,096 steps of its resampling, each piece passed and each point made, a
+  corner's too (along a staircase whose corners lie closer together than a step and a meander whose
+  corners fall where a count of its points would ask, as often as a straight line), or crossings it
+  works out, once a column's band and before the cut and the union), nothing planned when asked to
   stop from the start, and a plan stopped partway no plan. The stitch view's test of the art's
   passes renders every frame on its own thread. Each step switched off fails a test.
 
@@ -1947,8 +1970,15 @@ locally, never committed. The test checks that:
   and the fox use for an orange, becomes the nearest thread that is), its name, and starts where
   it started, to a tenth of a millimetre;
 - each artwork, digitized at the size of the person's design, comes out the same size, with no
-  stitch longer than 10 mm, at most two shorter than 0.3 mm, no more trims and jumps than its ceilings (one above
+  stitch longer than 10 mm, at most two of 0.3 mm or less (counted as the Check tab's `stitchTiny`
+  counts them, since 2026-11-09; none today), no more trims and jumps than its ceilings (one above
   the counts below) and 30–80 % of the person's stitch count.
+- each artwork is sewn where it is painted: every needle point lies within 1 mm of the painted art,
+  and every place more than 2 mm inside it within half a row spacing and 0.06 mm of a needle-down
+  stitch (0.02 measured on every design on 2026-11-09, and 0.04 of room). From 2026-10-23 it
+  allowed 0.16 mm for three bare wedges where rows turned square to an edge; since such a row keeps
+  its first needle point the wedges are gone, and with the turns left out the smiling face and the
+  watermelon need 0.12, which fails it.
 
 Now, with VectorCraft's defaults, as `artwork_digitizes_soundly_next_to_a_persons_design` prints
 it (the person's design in brackets; its count includes the cuts before colour changes, which
@@ -2426,21 +2456,35 @@ flowchart LR
 - **Cancelling.** A plan checks `vectorcraft_doc::cancel` before each unit, and every unit stops
   within one of its steps: a fill's narrow parts between the columns they are cut out by, between
   the path operations that cut them out, and within the search for them
-  (`plan::narrow_columns_until`); a fill before each outline's edge run, every 256 rows a layer
-  finds, before each piece of regions, each order of them tried, each region sewn and each step of a
-  walk round them, before each part of a fill sewn in parts and, past six parts, before each part
-  their order picks; a satin before each of its lines; a running line between its drawings and in
-  its routes' steps. So a cancel stops a plan within a tenth of a second (the project owner's
-  choice, 2026-11-09, „0,1 s (polecam)”: the limit within which a response feels instant, Jakob
-  Nielsen, [Response Times: The 3 Important
-  Limits](https://www.nngroup.com/articles/response-times-3-important-limits/)), but inside one of
-  upstream's path operations, which check for none: a cancel waits for the one under way (uniting
-  the 20 rings' narrow parts takes 0.39 s in a test build, and the 4,512 narrow parts of a fill of
-  2,304 holes, its bands, 0.39 s in release). A cancelled plan returns `PlanError::Cancelled` (the
-  commands' `EngineError::Cancelled`) and leaves no plan; the units it finished stay kept, a unit
-  stopped partway never is (a plan cancelled anywhere, then planned again, is the plan never
-  cancelled: `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`). Each painted fill, stroke
-  and literal run is a step of the plan's progress (`cancel::progress`).
+  (`plan::narrow_columns_until`); a fill before each outline's edge run and every 128 corners of its
+  inset, every 256 rows a layer finds or a million matches of their spans, before each piece of
+  regions, each order of them tried, each region sewn and each step of a walk round them, before
+  each part of a fill sewn in parts and, past six parts, before each part their order picks, and
+  within a travel every 16 corners its graph looks at or its search settles and every million points
+  its outline's simplification looks at; a satin before each of its lines and, within one, every
+  4,096 steps of its resampling (each piece of the line passed and each point made, a corner's too:
+  a line whose corners lie closer together than a step, as a traced pixel edge's do, asks at least
+  as often as a straight one of as many points) or crossings it works out; a running line between
+  its drawings and in its routes' steps. What a unit prepares before its first ask grows with its
+  shape's points (flattening it and its estimate, a satin's order of lines and a line's underlay and
+  centre line, a fill's outlines and their grid, the narrow parts' rings), so a shape of more than
+  250,000 points is refused before any of it is prepared (`plan::MAX_SHAPE_POINTS`, the project
+  owner's „Limit punktów kształtu (polecam)”: the longest preparation, a fill with no underlay of a
+  traced dot grid, takes about 100 ns a point in release, so about 25 ms at the limit). So a cancel
+  stops a plan within a tenth of a second (the project owner's choice, 2026-11-09, „0,1 s
+  (polecam)”: the limit within which a response feels instant, Jakob Nielsen, [Response Times: The 3
+  Important Limits](https://www.nngroup.com/articles/response-times-3-important-limits/); asks added
+  inside the steps that ran past it, the owner's „Dodać pytania teraz (polecam)”: the longest
+  stretch between two asks on the PR's review's hardest shapes, combs of 200 to 3,000 teeth and a
+  satin line of 550,000 stitches, is 11.5 ms in release), but inside one of upstream's path
+  operations, which check for none: a cancel waits for the one under way (uniting the 20 rings'
+  narrow parts takes 0.39 s in a test build, and the 4,512 narrow parts of a fill of 2,304 holes,
+  its bands, 0.39 s in release). A cancelled plan returns `PlanError::Cancelled` (the commands'
+  `EngineError::Cancelled`) and leaves no plan; the units it finished stay kept, a unit stopped
+  partway never is (the planner latches the question, so that once it says to stop it is not asked
+  again and a plan cut short can't pass for a whole one) (a plan cancelled anywhere, then planned
+  again, is the plan never cancelled: `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`).
+  Each painted fill, stroke and literal run is a step of the plan's progress (`cancel::progress`).
 - **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's planning
   thread plans off the interface thread while commands plan on theirs; commands and the web build
   plan synchronously.
@@ -2961,14 +3005,24 @@ still wait for upstream's path operation under way, 0.35 s at most (uniting thei
 with its bands' 4,512 narrow parts sewn as satin, a cancel waited up to 1.02 s, 0.82 s of it in the
 parts' order (the nearest part next, each step weighed against every part left) until it asked too,
 and since then up to 0.38 s, all of it in upstream's union of the columns (0.39 s), the cut (0.12 s)
-and the second union (0.14 s), under 15 ms anywhere else; sewn all in rows, up to 15 ms. The perf
-row (`preview: cancel, worst, 2,304 holes, rows`: the worst of five cancels across a plan of it in
-rows, so that it times the planner's own steps) stops within 2 ms (0.8 to 2.0 ms in four runs),
-against the tenth of a second. The other embroidery rows didn't move (release, before and after
-alternating, four runs each, 2026-11-09: the 20 rings in one fill cold 531 to 581 ms before and 531
-to 549 after, 200 bars 207 to 218 and 210 to 214, the routes' tree 31.8 to 35.2 and 31.7 to 34.9,
-their grid 24.7 to 26.7 both; the 1,000-path document planned cold 78 to 79 ms before and 79 to 85
-after, 78 and 82 with the fill's turns alone: 2 ms at most, within the runs' noise).
+and the second union (0.14 s), under 15 ms anywhere else; sewn all in rows, up to 15 ms. The PR's
+review then timed the longest stretch between two asks on shapes these left out, in release: a comb
+of 200 teeth 0.6 mm wide, 240 × 30 mm (a hoop's size), waited up to 0.11 s in one travel's search
+through its 400 corners; one of 1,000 teeth 0.11 s and one of 3,000 (3.6 m wide) 0.72 s, in its edge
+run's inset, its travels' graph (built on every corner of an outline before finding too many, now
+stopped at the first past the bound) and the simplification of its outline, and its rows; a satin
+line of 550,000 stitches 64 ms. With the asks inside those steps: 5.5 to 10.5 ms, 4.9, 11.5 and 6.0
+ms; the 3,000-tooth comb plans in 1.38 s where it took 1.87. The perf row (`preview: cancel, worst,
+2,304 holes, rows`: the worst of five cancels across a plan of it in rows, so that it times the
+planner's own steps) stops within 2 ms (0.8 to 2.0 ms in four runs), against the tenth of a second;
+a second row plans it with its narrow parts as satin (`preview: cancel, worst, 2,304 holes, satin`),
+where a cancel waits for upstream's path operations too: 213 and 229 ms in two runs, against 750
+(the 650 those took, and the tenth of a second, an estimate). The other embroidery rows didn't move
+(release, before and after alternating, four runs each, 2026-11-09: the 20 rings in one fill cold
+531 to 581 ms before and 531 to 549 after, 200 bars 207 to 218 and 210 to 214, the routes' tree 31.8
+to 35.2 and 31.7 to 34.9, their grid 24.7 to 26.7 both; the 1,000-path document planned cold 78 to
+79 ms before and 79 to 85 after, 78 and 82 with the fill's turns alone: 2 ms at most, within the
+runs' noise).
 
 ### Editing a large design
 
@@ -3791,7 +3845,7 @@ Public documentation, cited per claim in the crate:
 - `apps/vectorcraft-cli/src/perf_embroidery.rs` — the embroidery rows of `vectorcraft-cli perf`
   and `bench`, `perf_embroidery/digitizing.rs` their rows for digitizing from an image,
   `perf_embroidery/routes.rs` those for routes and rows across the shape,
-  `perf_embroidery/cancel.rs` the one for a cancel inside one large object;
+  `perf_embroidery/cancel.rs` the two for a cancel inside one large object;
   `apps/vectorcraft/src/stitch_profile.rs` — VectorCraft Stitch's own settings folder.
 - `crates/engine/src/cmd/embroidery/from_image/` — digitizing from an image
   (`embroidery.digitizeImage`): `mod.rs` (the stages), `settings.rs` (the settings' table: each
@@ -3837,6 +3891,8 @@ header fields are at the top of its module.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | The small planner PR's review round, checked (the project owner's decision after the check, 2026-11-10, „Limit punktów kształtu (polecam)”): a shape of more than 250,000 points once its curves are flattened, or a fill its narrow parts cut into more, is refused before any of it is planned, with its own message (in every catalogue, AI-drafted, not yet reviewed), as one of too many stitches is (the longest preparation before a plan's first ask, a fill with no underlay of a traced dot grid, about 100 ns a point in release, so about 25 ms at the limit; the largest shape planned anywhere 65,532 points); resampling a line asks whether to stop by its own work, each piece passed and each point made, a corner's too, so that a line whose corners lie closer together than a step asks at least as often as a straight one of as many points (a staircase of 0.1 mm stairs never asked before). |
+| 2026-11-09 | minor | The small planner PR's review round (the project owner's three decisions after the review, 2026-11-09): a cancel asks inside a fill's long steps and a satin line, so that the longest stretch between two asks on the review's hardest shapes is 11.5 ms in release (a travel's search and graph, an outline's simplification, an edge run's inset, a layer's span matches, a satin line's resampling and crossings), and a second cancel perf row times the fill with its narrow parts as satin; the planner latches the question; the real designs' coverage test allows 0.06 mm past half a spacing (0.16 before), so that it fails without the turns' fix, and its soundness test counts stitches of 0.3 mm or less; the turn's rounding, the needle-blade rule's 1,541 hits and the work bound of trying every node recorded. |
 | 2026-11-09 | minor | The small planner PR (the project owner's four decisions, 2026-11-09): a fill's row turning square to the edge starts a little further in so that its turn is sewn, not left out with the row's first needle point (the pool ball's notches 1.13 → 0.12 mm², the cause recorded before was not it; the bare fabric inside the real designs' art three quarters less; the pinned exports with fills recorded again); a cancel stops the planner within a tenth of a second inside one object (a fill of 9,216 holes 9.7 s → 3 ms, a test build), but inside upstream's path operations; a route with one end given chooses its free end again once its cycles are shortened (no random one-end route sews more than coming back; 268 → 76 above the least); the image corpus's fabric margin 1.5 → 0.8 mm². |
 | 2026-11-08 | minor | Digitizing from an image, the engine's second part, its review round (the project owner's eleven decisions, 2026-11-07): a line's extra width only where its lines meet; each colour beside a line reaching its true middle, measured in each place, at most 2 mm; an area with no centre line sewn as its shape and counted (`notLines`); areas of one thread joined only when their jobs agree; a centre line's junction chains joined once, thinning looking again only beside what it took away, every step stopped by a cancel, the wide stretches looked for through the junctions only past the width (the mesh's centre lines 920 → 501 ms); routes pairing their odd nodes along the shortest ways and swapping their cycles, starting nearest the needle, ends meeting within a thread's width at a point no wider, a line ending on another's middle joining its route, specks left out, many drawings in proportional time; satin caps along the curve's own end, pull and push keeping a round cap round, the underlay in the caps, ends within 0.4 mm meeting with no cap, a dot as a small satin dot; rows across each separate piece, on the area the plan sews, measured from its middle, told in tenths from 0 to 180, a file's angle past a turn reduced, the Object tab keeping them; the pinned exports on one maths library; a test failing without each named step; the fuzz suites, random documents and pictures reaching the rows and Lines; the clock-dependent interface tests on their own thread; records corrected. |
 | 2026-11-07 | minor | Digitizing from an image, the engine's second part: centre lines (Guo and Hall's thinning, Yokoi's connectivity number, spurs pruned, ends carried to the ink, Visvalingam and Whyatt's smoothing at 8 square pixels), a line narrower than 1 mm along its middle and up to √2 times that where its lines meet, the colours beside a line reaching half a pixel past its middle, a stroke a millimetre wide set to a running line, the job Lines; the planner's routes (Edmonds and Johnson's T-join on a spanning tree, its cycles swapped where that sews less twice, Hierholzer's walk) for every running line whose pieces meet; satin caps (round and square, none where an open column's ends meet); the document's `fillAngle` (a number of degrees, or rows across each fill's long axis from its second moments, from 1.5 times as long as wide), reported by `embroidery.info` as the rule `rowsAcrossShape`; line art against its vector path, hostile lines, two listing scenes, three pinned documents, perf rows. |

@@ -5760,6 +5760,7 @@ theme	Appearance	Apparence
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	un en-tête DST compte au plus {MAX_RECORDS} enregistrements, et le motif en demande {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	un bloc de points PEC contient au plus {MAX_BLOCK} octets (sa longueur tient sur 24 bits), et le motif en demande {len}
 @msg	a VP3 string is too long	une chaîne VP3 est trop longue
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	une forme a plus que les {MAX_SHAPE_POINTS} sommets qu’une forme peut avoir une fois ses courbes converties en segments : simplifiez-la ou divisez-la en formes plus petites
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	une forme se trouve à plus de {MAX_COORD_MM} mm de l’origine ou a une coordonnée qui n’est pas un nombre : elle ne peut pas être brodée
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	une forme demanderait environ {n} points, plus que les {MAX_STITCHES} qu’une forme peut avoir : utilisez un point plus long, un espacement plus large ou un motif plus petit
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ce n’est pas un fichier PES ou PEC : il ne commence pas par #PES ou #PEC

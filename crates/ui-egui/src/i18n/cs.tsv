@@ -5765,6 +5765,7 @@ mark-style	Japanese	Japonské
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	hlavička DST počítá nejvýše {MAX_RECORDS} záznamů a návrh jich potřebuje {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	blok stehů PEC pojme nejvýše {MAX_BLOCK} bajtů (jeho délka má 24 bitů) a návrh potřebuje {len}
 @msg	a VP3 string is too long	řetězec VP3 je příliš dlouhý
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	tvar má víc než {MAX_SHAPE_POINTS} bodů, které smí mít jeden tvar, jakmile se jeho křivky převedou na úsečky: zjednodušte jej nebo jej rozdělte na menší tvary
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	tvar leží dál než {MAX_COORD_MM} mm od počátku nebo má souřadnici, která není číslo: nelze jej vyšít
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	tvar by potřeboval asi {n} stehů, víc než {MAX_STITCHES}, které smí mít jeden tvar: použijte delší steh, větší rozestup nebo menší návrh
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	není to soubor PES ani PEC: nezačíná #PES ani #PEC

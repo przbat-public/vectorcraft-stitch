@@ -573,6 +573,110 @@ fn an_absurd_plan_is_refused_up_front() {
     assert!(matches!(try_stitches(&line((0.0, 0.0), (1e6, 0.0)), FillRule::NonZero, &run), Err(Error::TooLarge(_))));
 }
 
+/// A staircase of `points` points, stairs `rise` millimetres right and then up: an open line whose
+/// every point is a corner, as a traced pixel edge's are.
+fn staircase(points: usize, rise: f64) -> BezPath {
+    let mut path = BezPath::new();
+    let (mut x, mut y) = (0.0, 0.0);
+    path.move_to((x, y));
+    for k in 1..points {
+        if k % 2 == 1 {
+            x += rise;
+        } else {
+            y += rise;
+        }
+        path.line_to((x, y));
+    }
+    path
+}
+
+/// Whether `e` refuses a shape of more points than one may have.
+fn of_too_many_points(e: Error) -> bool {
+    matches!(&e, Error::TooLarge(why) if why.contains("points one shape may have"))
+}
+
+/// A shape of more points than one may have once its curves are flattened is refused before any of
+/// it is planned, in every style, and so is a fill sewn in parts whose shape, rest or shape its rows
+/// are measured on has as many; at the limit a shape plans.
+#[test]
+fn a_shape_of_more_points_than_one_may_have_is_refused() {
+    /// A stair's rise, millimetres: a traced pixel edge's at 10 pixels a millimetre.
+    const RISE: f64 = 0.1;
+    let over = staircase(MAX_SHAPE_POINTS + 1, RISE);
+    let run = Params::for_style(Style::Running);
+    let at_limit = try_stitches(&staircase(MAX_SHAPE_POINTS, RISE), FillRule::NonZero, &run);
+    assert!(at_limit.is_ok_and(|s| !s.is_empty()), "at the limit, planned");
+    for style in [Style::Running, Style::Satin, Style::Fill] {
+        let p = Params { width: 3.0, ..Params::for_style(style) };
+        assert!(try_stitches(&over, FillRule::NonZero, &p).is_err_and(of_too_many_points), "{style:?}: a point over the limit");
+    }
+    // A fill sewn in parts: its shape, what is left to fill and what its rows are measured on.
+    let mut closed = over.clone();
+    closed.close_path();
+    let small = rect(0.0, 0.0, 10.0, 10.0);
+    let (fill, satin) = (Params::for_style(Style::Fill), Params::for_style(Style::Satin));
+    let parts = |shape: &BezPath, rest: &BezPath, measured: Option<&BezPath>| {
+        let measured = measured.map(|m| (m, FillRule::NonZero));
+        try_fill_with_columns_measured(shape, FillRule::NonZero, rest, &[], &fill, &satin, Aim::from_needle(None), measured)
+    };
+    assert!(parts(&small, &small, Some(&small)).is_ok_and(|s| !s.is_empty()), "a small one, planned");
+    assert!(parts(&closed, &small, None).is_err_and(of_too_many_points), "its shape");
+    assert!(parts(&small, &small, Some(&closed)).is_err_and(of_too_many_points), "the shape its rows are measured on");
+    assert!(parts(&closed, &small, Some(&small)).is_err_and(of_too_many_points), "its shape cut round its narrow parts");
+    assert!(parts(&small, &closed, Some(&small)).is_err_and(of_too_many_points), "what is left to fill");
+}
+
+/// A shape's points are counted as its flattening makes them, curve by curve: lines, quadratic and
+/// cubic curves, a closed subpath and an open one, and a curve after a close, which has no start and
+/// so no points.
+#[test]
+fn a_shapes_points_are_counted_as_its_flattening_makes_them() {
+    let mut path = BezPath::new();
+    path.move_to((0.0, 0.0));
+    path.line_to((10.0, 0.0));
+    path.quad_to((20.0, 10.0), (10.0, 20.0));
+    path.curve_to((0.0, 30.0), (-10.0, 10.0), (0.0, 0.0));
+    path.close_path();
+    // After a close, before any move: no start, so no points.
+    path.curve_to((5.0, 5.0), (6.0, -5.0), (12.0, 3.0));
+    path.line_to((40.0, 40.0));
+    path.quad_to((60.0, 0.0), (80.0, 40.0));
+    path.move_to((200.0, 200.0));
+    path.curve_to((300.0, 400.0), (100.0, 400.0), (250.0, 200.0));
+    let made: usize = subpaths(&path).iter().map(|s| s.pts.len()).sum();
+    assert!(made > 100, "{made} points: the curves flattened into many");
+    assert_eq!(geometry::flattened_points(&path, usize::MAX), made);
+}
+
+/// Counting a shape's points stops once past the most it is asked about, so that a few curves
+/// flattening into millions are refused without all of them flattened: a thousand curves bowed a
+/// kilometre each way (within the planner's range) flatten into millions of points, and counted up
+/// to ten, the count stops after the first.
+#[test]
+fn counting_a_shapes_points_stops_past_the_most_asked_about() {
+    /// A curve's width and bow, millimetres: a kilometre, within the planner's range.
+    const SIZE: f64 = 1.0e6;
+    const CURVES: usize = 1_000;
+    const ASKED: usize = 10;
+    let bows = |n: usize| {
+        let mut path = BezPath::new();
+        path.move_to((0.0, 0.0));
+        for k in 0..n {
+            let (from, to) = if k % 2 == 0 { (0.0, SIZE) } else { (SIZE, 0.0) };
+            let third = (to - from) / 3.0;
+            path.curve_to((from + third, SIZE), (from + 2.0 * third, -SIZE), (to, 0.0));
+        }
+        path
+    };
+    let first = geometry::flattened_points(&bows(1), usize::MAX);
+    assert!(first > ASKED, "{first} points in the first curve");
+    let many = bows(CURVES);
+    assert!(geometry::flattened_points(&many, usize::MAX) > MAX_SHAPE_POINTS);
+    assert_eq!(geometry::flattened_points(&many, ASKED), first, "counted up to the first curve, past ten");
+    let run = Params::for_style(Style::Running);
+    assert!(try_stitches(&many, FillRule::NonZero, &run).is_err_and(of_too_many_points), "refused for its points, not its stitches");
+}
+
 /// The estimate counts what a shape really costs, so that it refuses before planning: a comb of
 /// thousands of teeth whose every row crosses every tooth, a satin wide enough that each crossing
 /// is split, and a fill of more rows than a layer may have, each refused (quickly, from the edges

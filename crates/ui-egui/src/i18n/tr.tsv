@@ -5871,6 +5871,7 @@ axis	Y Axis	Y ekseni
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	bir DST başlığı en fazla {MAX_RECORDS} kayıt sayar, tasarım ise {_1} kayıt gerektirir
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	bir PEC dikiş bloğu en fazla {MAX_BLOCK} bayt tutar (uzunluğu 24 bittir), tasarım ise {len} bayt gerektirir
 @msg	a VP3 string is too long	bir VP3 dizesi çok uzun
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	bir şeklin eğrileri doğru parçalarına dönüştürüldüğünde bir şeklin alabileceği {MAX_SHAPE_POINTS} noktadan fazla noktası var: şekli basitleştirin veya daha küçük şekillere bölün
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	bir şekil başlangıç noktasından {MAX_COORD_MM} mm'den daha uzakta ya da sayı olmayan bir koordinatı var: dikilemez
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	bir şekil yaklaşık {n} dikiş gerektirir, bu bir şeklin alabileceği {MAX_STITCHES} dikişten fazla: daha uzun bir dikiş, daha geniş bir aralık veya daha küçük bir tasarım kullanın
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES veya PEC dosyası değil: #PES ya da #PEC ile başlamıyor

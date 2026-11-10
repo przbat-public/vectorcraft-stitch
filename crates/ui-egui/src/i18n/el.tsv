@@ -5716,6 +5716,7 @@ effect	Points	Σημεία
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	μια κεφαλίδα DST μετρά το πολύ {MAX_RECORDS} εγγραφές και το σχέδιο χρειάζεται {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	ένα μπλοκ βελονιών PEC χωράει το πολύ {MAX_BLOCK} byte (το μήκος του είναι 24 bit) και το σχέδιο χρειάζεται {len}
 @msg	a VP3 string is too long	μια συμβολοσειρά VP3 είναι πολύ μεγάλη
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	ένα σχήμα έχει περισσότερα από τα {MAX_SHAPE_POINTS} σημεία που επιτρέπονται σε ένα σχήμα, όταν οι καμπύλες του μετατραπούν σε ευθύγραμμα τμήματα: απλοποιήστε το ή χωρίστε το σε μικρότερα σχήματα
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	ένα σχήμα βρίσκεται πάνω από {MAX_COORD_MM} mm από την αρχή ή έχει συντεταγμένη που δεν είναι αριθμός: δεν μπορεί να κεντηθεί
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	ένα σχήμα θα χρειαζόταν περίπου {n} βελονιές, περισσότερες από τις {MAX_STITCHES} που επιτρέπονται σε ένα σχήμα: χρησιμοποιήστε μακρύτερη βελονιά, μεγαλύτερη απόσταση ή μικρότερο σχέδιο
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	δεν είναι αρχείο PES ή PEC: δεν ξεκινά με #PES ή #PEC

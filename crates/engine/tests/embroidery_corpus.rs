@@ -64,6 +64,13 @@ const LONGEST_STITCH: f64 = 10.0;
 /// half of it each way when written, so a stitch planned at [`LONGEST_STITCH`] may come out up to
 /// a grid's diagonal longer.
 const GRID: f64 = 0.1;
+/// The longest stitch a machine deletes (millimetres): Brother's machines delete stitches of
+/// 0.3 mm or less as they come, and the Check tab's `stitchTiny` flags them
+/// (`cmd/embroidery/check.rs`).
+const TINY: f64 = 0.3;
+/// How far a stitch's length on the file's grid may fall off the tenth of a millimetre it is when
+/// it is compared (millimetres): a hair for the float, and what is shorter is no stitch.
+const LENGTH_HAIR: f64 = 1e-9;
 
 /// The trims and the jumps of all the designs together, as last measured: the counts the
 /// documentation reports. Each design's ceiling leaves it one more, so a regression of a trim or a
@@ -444,7 +451,7 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
         let b = ours.bounds().unwrap();
         let lengths = stitch_lengths(&ours);
         let longest = lengths.iter().copied().fold(0.0, f64::max);
-        let short = lengths.iter().filter(|l| **l > 1e-9 && **l < 0.3).count();
+        let short = lengths.iter().filter(|l| **l > LENGTH_HAIR && **l <= TINY + LENGTH_HAIR).count();
         let trims = ours.points().filter(|p| p.command == Command::Trim).count();
         let person_trims = person.points().filter(|p| p.command == Command::Trim).count();
         let (jumps, person_jumps) = (jumps(&ours), jumps(&person));
@@ -459,7 +466,7 @@ fn artwork_digitizes_soundly_next_to_a_persons_design() {
         );
         assert!((b.width() - target.width()).abs() < 1.5 && (b.height() - target.height()).abs() < 1.5, "{art}: {b:?} vs {target:?}");
         assert!(longest <= LONGEST_STITCH + GRID * std::f64::consts::SQRT_2, "{art}: a {longest:.2} mm stitch");
-        assert!(short <= 2, "{art}: {short} stitches shorter than 0.3 mm");
+        assert!(short <= 2, "{art}: {short} stitches of 0.3 mm or less");
         assert!(trims <= max_trims, "{art}: {trims} trims, more than {max_trims} (the person's design has {person_trims})");
         assert!(jumps <= max_jumps, "{art}: {jumps} jumps, more than {max_jumps} (the person's design has {person_jumps})");
         assert!((0.3..0.8).contains(&share), "{art}: {} stitches, {:.0}% of the person's {}", ours.sewn(), share * 100.0, person.sewn());
@@ -478,14 +485,30 @@ const PT_PER_MM: f64 = 72.0 / 25.4;
 /// How far past the painted art a needle point may lie (millimetres): pull compensation and a
 /// satin's reach take stitches a fraction of a millimetre past the edge.
 const OFF_ART: f64 = 1.0;
-/// How far inside the painted art a place must lie to be checked for stitches, and how near a
-/// needle-down stitch it must then be (millimetres): 2 mm from the art's edges, and half a row
-/// spacing and 0.16 mm. The planner's coverage test allows 0.1 mm past half a spacing; on the real
-/// designs three places lie 0.30 to 0.34 mm from a stitch, where a row starts a stitch in (its turn
-/// along an edge is shorter than the shortest stitch and left out), the bare wedges reported to the
-/// project owner.
+/// How far inside the painted art a place must lie to be checked for stitches (millimetres): 2 mm
+/// from the art's edges.
 const DEEP: f64 = 2.0;
-const REACH: f64 = 0.38 / 2.0 + 0.16;
+/// How near a needle-down stitch each such place must then lie (millimetres): half a row spacing,
+/// what the designs were measured to need past it ([`REACH_MEASURED`]) and room
+/// ([`REACH_ROOM`]).
+///
+/// On 2026-10-23 three places lay 0.30 to 0.34 mm from a stitch, where a row started a stitch in:
+/// its turn along an edge square to the rows, the rows' spacing, was shorter than the shortest
+/// stitch and left out with the row's first needle point, the bare wedges reported to the project
+/// owner, and this allowed 0.16 mm past half a spacing for them. Since such a row starts a little
+/// further in, so that its turn is sewn (2026-11-09), what is left is [`REACH_MEASURED`], and the
+/// wedges fail it.
+const REACH: f64 = ROW_SPACING / 2.0 + REACH_MEASURED + REACH_ROOM;
+/// A fill's row spacing for 40 wt thread (millimetres), the planner's default.
+const ROW_SPACING: f64 = 0.38;
+/// The most reach past half a row spacing any design needs for every deep place to lie near a
+/// stitch (millimetres): 0.02 on each, measured at 0.02 mm steps by the PR's review on 2026-11-09,
+/// where the smiling face and the watermelon needed 0.12 with the rows' turns left out.
+const REACH_MEASURED: f64 = 0.02;
+/// Room over [`REACH_MEASURED`] (millimetres), for the art's anti-aliased edges to fall a little
+/// otherwise on another system: an estimate, small enough that the wedges' 0.12 fails the 0.06 in
+/// all.
+const REACH_ROOM: f64 = 0.04;
 /// The margin round the plan's box the artwork is drawn with (millimetres).
 const MARGIN: f64 = 5.0;
 

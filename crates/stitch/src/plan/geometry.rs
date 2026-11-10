@@ -101,6 +101,41 @@ pub(super) fn subpaths(path: &BezPath) -> Vec<SubPath> {
     out
 }
 
+/// How many points [`subpaths`] flattens `path` into (each subpath's first point and every one after
+/// it), counted element by element and only until there are more than `at_most`: a few curves can
+/// flatten into millions, and counting them all would take as long as flattening them. One curve
+/// within [`MAX_COORD_MM`] flattens into a few thousand points at most (6,425 for a cubic across the
+/// whole range, 2026-11-10), so the count stops at most that far past `at_most`.
+pub(super) fn flattened_points(path: &BezPath, at_most: usize) -> usize {
+    let mut count = 0usize;
+    // Where the pen is, as the flattening keeps it: a curve after a close, before any move or line,
+    // has no start and adds no point.
+    let mut pen: Option<Point> = None;
+    for &el in path.elements() {
+        if count > at_most {
+            break;
+        }
+        match el {
+            PathEl::MoveTo(p) | PathEl::LineTo(p) => {
+                count += 1;
+                pen = Some(p);
+            }
+            PathEl::QuadTo(_, p) | PathEl::CurveTo(_, _, p) => {
+                if let Some(start) = pen {
+                    kurbo::flatten([PathEl::MoveTo(start), el], FLATTEN, |e| {
+                        if matches!(e, PathEl::LineTo(_)) {
+                            count += 1;
+                        }
+                    });
+                }
+                pen = Some(p);
+            }
+            PathEl::ClosePath => pen = None,
+        }
+    }
+    count
+}
+
 /// A subpath's two ends as its path draws them ([`end_directions`]): its first and last points, and
 /// the unit directions out of its first point (backward) and out of its last (forward), each `None`
 /// where the curve has no length there.

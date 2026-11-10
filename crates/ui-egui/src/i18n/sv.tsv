@@ -5787,6 +5787,7 @@ swatch	Yellow Green	Gulgrön
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	ett DST-huvud räknar högst {MAX_RECORDS} poster, och mönstret behöver {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	ett PEC-stygnblock rymmer högst {MAX_BLOCK} byte (dess längd är 24 bitar), och mönstret behöver {len}
 @msg	a VP3 string is too long	en VP3-sträng är för lång
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	en form har fler än de {MAX_SHAPE_POINTS} punkter en form får ha när dess kurvor har gjorts om till sträckor: förenkla den eller dela upp den i mindre former
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en form ligger mer än {MAX_COORD_MM} mm från origo eller har en koordinat som inte är ett tal: den kan inte broderas
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en form skulle behöva omkring {n} stygn, fler än de {MAX_STITCHES} en form får ha: använd ett längre stygn, större avstånd eller ett mindre mönster
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	inte en PES- eller PEC-fil: den börjar inte med #PES eller #PEC

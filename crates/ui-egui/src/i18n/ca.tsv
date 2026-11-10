@@ -6380,6 +6380,7 @@ breakText	Glyphs	Glifs
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	una capçalera DST compta com a màxim {MAX_RECORDS} registres, i el disseny en necessita {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	un bloc de puntades PEC admet com a màxim {MAX_BLOCK} bytes (la seva longitud és de 24 bits), i el disseny en necessita {len}
 @msg	a VP3 string is too long	una cadena VP3 és massa llarga
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	una forma té més dels {MAX_SHAPE_POINTS} punts que pot tenir una forma un cop les seves corbes es converteixen en segments: simplifica-la o divideix-la en formes més petites
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	una forma és a més de {MAX_COORD_MM} mm de l’origen o té una coordenada que no és un nombre: no es pot brodar
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	una forma necessitaria unes {n} puntades, més de les {MAX_STITCHES} que pot tenir una forma: fes servir una puntada més llarga, més espaiat o un disseny més petit
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	no és un fitxer PES ni PEC: no comença amb #PES ni #PEC

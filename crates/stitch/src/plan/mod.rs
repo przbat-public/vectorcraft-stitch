@@ -705,7 +705,8 @@ pub fn sewn_style(p: &Params) -> Style {
 /// The stitches of `path` in style `p`: one block, in needle order; refused with
 /// [`Error::TooLarge`] when the shape would need more than [`MAX_STITCHES`] (a huge shape, or a
 /// tiny stitch length or spacing), estimated from the geometry before any stitch is planned, so an
-/// absurd request costs no memory, and when it lies out of range ([`in_range`]).
+/// absurd request costs no memory, when it lies out of range ([`in_range`]), and when it has more
+/// points than [`MAX_SHAPE_POINTS`] once its curves are flattened.
 ///
 /// `rule` decides what a fill covers when its subpaths overlap (a hole wound against its shape
 /// is a hole under the non-zero rule; under the even-odd rule any two crossings change side).
@@ -738,7 +739,9 @@ pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) 
 /// (polecam)”, the limit within which a response feels instant: Jakob Nielsen, *Response Times: The
 /// 3 Important Limits*, <https://www.nngroup.com/articles/response-times-3-important-limits/>): the
 /// longest stretch between two asks measured in release on the PR's review's hardest shapes, combs
-/// of 200 to 3,000 teeth and a satin line of 550,000 stitches, was 11.5 ms (2026-11-09).
+/// of 200 to 3,000 teeth and a satin line of 550,000 stitches, was 11.5 ms (2026-11-09). Part of
+/// the preparation before the first ask grows with the shape's points, so a shape of more than
+/// [`MAX_SHAPE_POINTS`] is refused before any of it is prepared.
 pub fn try_stitches_aimed_until(
     path: &BezPath,
     rule: FillRule,
@@ -750,6 +753,7 @@ pub fn try_stitches_aimed_until(
     let stopped = &|| latched.ask();
     let p = p.sane();
     placed(path)?;
+    within_points(path)?;
     let subs = subpaths(path);
     within_limit(estimate(&subs, &p) + aimed_extra(&subs, &p, &aim))?;
     let stitches = stitches_aimed_until(path, rule, &p, aim, stopped);
@@ -816,7 +820,9 @@ fn aimed_extra(subs: &[SubPath], p: &Params, aim: &Aim) -> f64 {
 /// inside the whole `shape`; `fill` and `satin` are the two kinds of parts' parameters. Refused
 /// with [`Error::TooLarge`] when it would need more than [`MAX_STITCHES`] stitches (the whole
 /// `shape` filled, plus each column's crossings and underlay, estimated before any stitch is
-/// planned), and when a shape lies out of range ([`in_range`]).
+/// planned), when a shape lies out of range ([`in_range`]), and when one has more points than
+/// [`MAX_SHAPE_POINTS`] once its curves are flattened (`shape`, `rest`, and the shape the rows are
+/// measured on).
 pub fn try_fill_with_columns(
     shape: &BezPath,
     rule: FillRule,
@@ -885,6 +891,14 @@ pub fn try_fill_with_columns_measured_until(
     if let Some((m, _)) = measured {
         placed(m)?;
     }
+    // The shape it is measured on, given, is the object's own; `shape` and `rest` are then what its
+    // narrow parts cut it into, which may have a few times its points (the 20 rings' 2,778 cut into
+    // 6,151). One message for each: the shape is what the person can simplify.
+    if let Some((m, _)) = measured {
+        within_points(m)?;
+    }
+    within_points(shape)?;
+    within_points(rest)?;
     let closest = s.density.min(satin_spacing(f64::INFINITY) * thread_scale(s.thread_weight) * s.spacing_scale);
     let column = |c: &Column| {
         // Its widest crossing, with the most pull compensation at both sides, split as satin's are.
@@ -910,6 +924,33 @@ fn placed(path: &BezPath) -> crate::Result<()> {
     }
     Err(Error::TooLarge(format!(
         "a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched"
+    )))
+}
+
+/// The most points one shape may have once its curves are flattened ([`subpaths`]), and so may
+/// what a fill sewn in parts is cut into: past it a shape is refused before any of it is planned
+/// ([`within_points`]), as one needing more than [`MAX_STITCHES`] stitches is. Part of a plan's
+/// preparation grows with the points before it first asks whether to stop (the shape's flattening
+/// and estimate, the order of a satin's lines and a line's underlay and centre line, a fill's
+/// outlines and their grid, the narrow parts' rings). In release on 2026-11-10 the longest was a
+/// fill with no underlay of a traced dot grid, about 100 ns a point before its first ask (a satin
+/// line 49, the narrow parts' search 50, a running line 22), so that at this many points the longest
+/// wait is about 25 ms, a quarter of the tenth of a second a cancel may take; the rest is room for
+/// a slower machine and the web build (an estimate). The largest shape the real designs, the golden
+/// corpus, the documents the tests build, the perf documents and the hardest pictures digitized
+/// give has 65,532 points (the perf rows' running line of a tree of 32,766 pieces); the real
+/// designs' a few hundred.
+pub const MAX_SHAPE_POINTS: usize = 250_000;
+
+/// Refused with [`Error::TooLarge`] when `path` flattens into more than [`MAX_SHAPE_POINTS`] points,
+/// counted curve by curve and only that far: a shape whose plan could keep a cancel waiting before
+/// it first asks.
+pub fn within_points(path: &BezPath) -> crate::Result<()> {
+    if geometry::flattened_points(path, MAX_SHAPE_POINTS) <= MAX_SHAPE_POINTS {
+        return Ok(());
+    }
+    Err(Error::TooLarge(format!(
+        "a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes"
     )))
 }
 

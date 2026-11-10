@@ -5344,6 +5344,7 @@ effect	Soft	Weich
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	ein DST-Kopf zählt höchstens {MAX_RECORDS} Datensätze, und das Design braucht {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	ein PEC-Stichblock fasst höchstens {MAX_BLOCK} Bytes (seine Länge hat 24 Bit), und das Design braucht {len}
 @msg	a VP3 string is too long	eine VP3-Zeichenkette ist zu lang
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	eine Form hat mehr als die {MAX_SHAPE_POINTS} Punkte, die eine Form haben darf, sobald ihre Kurven in Strecken zerlegt sind: vereinfachen Sie sie oder teilen Sie sie in kleinere Formen auf
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	eine Form liegt mehr als {MAX_COORD_MM} mm vom Ursprung entfernt oder hat eine Koordinate, die keine Zahl ist: sie kann nicht gestickt werden
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	eine Form bräuchte etwa {n} Stiche, mehr als die {MAX_STITCHES}, die eine Form haben darf: verwenden Sie einen längeren Stich, größeren Abstand oder ein kleineres Design
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	keine PES- oder PEC-Datei: sie beginnt nicht mit #PES oder #PEC

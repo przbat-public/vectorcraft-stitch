@@ -5602,6 +5602,7 @@ lighting	Light	光源
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST 文件头最多计 {MAX_RECORDS} 条记录，而图案需要 {_1} 条
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC 针迹块最多容纳 {MAX_BLOCK} 字节（其长度为 24 位），而图案需要 {len} 字节
 @msg	a VP3 string is too long	VP3 字符串过长
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	某个形状的曲线转为线段后，点数超过单个形状允许的 {MAX_SHAPE_POINTS} 个：请简化该形状或将其拆分为更小的形状
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	某个形状距原点超过 {MAX_COORD_MM} mm，或有不是数字的坐标：无法刺绣
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	某个形状约需 {n} 针，超过单个形状允许的 {MAX_STITCHES} 针：请使用更长的针迹、更宽的间距或更小的图案
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	不是 PES 或 PEC 文件：不以 #PES 或 #PEC 开头

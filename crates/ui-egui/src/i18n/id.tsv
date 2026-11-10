@@ -5643,6 +5643,7 @@ swatch	Bright Violet	Violet cerah
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	header DST menghitung paling banyak {MAX_RECORDS} rekaman, dan desain memerlukan {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	blok jahitan PEC memuat paling banyak {MAX_BLOCK} byte (panjangnya 24 bit), dan desain memerlukan {len}
 @msg	a VP3 string is too long	string VP3 terlalu panjang
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	sebuah bentuk memiliki lebih dari {MAX_SHAPE_POINTS} titik yang boleh dimiliki satu bentuk setelah kurvanya diubah menjadi ruas garis: sederhanakan bentuk itu atau bagi menjadi bentuk yang lebih kecil
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	sebuah bentuk berada lebih dari {MAX_COORD_MM} mm dari titik asal atau memiliki koordinat yang bukan angka: tidak dapat dibordir
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	sebuah bentuk akan memerlukan sekitar {n} jahitan, lebih dari {MAX_STITCHES} yang boleh dimiliki satu bentuk: gunakan jahitan lebih panjang, jarak lebih lebar, atau desain lebih kecil
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	bukan file PES atau PEC: tidak diawali #PES atau #PEC

@@ -5421,6 +5421,7 @@ lighting	Light	ライト
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST ヘッダーが数えられるレコードは最大 {MAX_RECORDS} 個ですが、デザインには {_1} 個必要です
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC の針目ブロックに入るのは最大 {MAX_BLOCK} バイト (長さは 24 ビット) ですが、デザインには {len} バイト必要です
 @msg	a VP3 string is too long	VP3 の文字列が長すぎます
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	図形の曲線を線分に変換すると、1 つの図形に許される {MAX_SHAPE_POINTS} 点を超えます: 図形を単純化するか、小さな図形に分割してください
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	図形が原点から {MAX_COORD_MM} mm より離れているか、数値でない座標を持っています: 刺繍できません
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	図形に約 {n} 針が必要で、1 つの図形に許される {MAX_STITCHES} 針を超えます: 針目を長く、間隔を広く、またはデザインを小さくしてください
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES または PEC ファイルではありません: #PES または #PEC で始まっていません

@@ -5728,6 +5728,7 @@ mark-style	Japanese	Japanilainen
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST-otsake laskee enintään {MAX_RECORDS} tietuetta, ja malli tarvitsee {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC-pistolohkoon mahtuu enintään {MAX_BLOCK} tavua (sen pituus on 24 bittiä), ja malli tarvitsee {len}
 @msg	a VP3 string is too long	VP3-merkkijono on liian pitkä
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	muodossa on enemmän kuin muodolle sallitut {MAX_SHAPE_POINTS} pistettä, kun sen käyrät on muutettu janoiksi: yksinkertaista se tai jaa se pienemmiksi muodoiksi
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	muoto on yli {MAX_COORD_MM} mm:n päässä origosta tai sillä on koordinaatti, joka ei ole luku: sitä ei voi kirjoa
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	muoto tarvitsisi noin {n} pistoa, enemmän kuin muodolle sallitut {MAX_STITCHES}: käytä pidempää pistoa, suurempaa väliä tai pienempää mallia
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ei PES- eikä PEC-tiedosto: se ei ala #PES tai #PEC

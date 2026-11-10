@@ -5748,6 +5748,7 @@ imageTrace	Outline	Körvonal
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	a DST-fejléc legfeljebb {MAX_RECORDS} rekordot számol, a mintához pedig {_1} kell
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	egy PEC-öltésblokk legfeljebb {MAX_BLOCK} bájtos lehet (hossza 24 bites), a mintához pedig {len} kell
 @msg	a VP3 string is too long	egy VP3-karakterlánc túl hosszú
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	egy alakzatnak több pontja van, mint az egy alakzatnak megengedett {MAX_SHAPE_POINTS}, ha a görbéit szakaszokra bontjuk: egyszerűsítse, vagy ossza fel kisebb alakzatokra
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	egy alakzat több mint {MAX_COORD_MM} mm-re van az origótól, vagy olyan koordinátája van, amely nem szám: nem hímezhető
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	egy alakzathoz körülbelül {n} öltés kellene, több, mint az egy alakzatnak megengedett {MAX_STITCHES}: használjon hosszabb öltést, nagyobb sortávolságot vagy kisebb mintát
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	nem PES- vagy PEC-fájl: nem #PES vagy #PEC kezdetű

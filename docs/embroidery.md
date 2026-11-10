@@ -1238,7 +1238,14 @@ under the clipped art and its stroke over it, unclipped, as they paint.
 
 A shape that would need more than 4 million stitches, or a design of more than 2 million, is refused
 with a message rather than planned (a tiny stitch length or spacing over large art); real designs
-run to a few hundred thousand.
+run to a few hundred thousand. So is a shape of more than 250,000 points once its curves are
+flattened, or a fill its narrow parts cut into more (`plan::MAX_SHAPE_POINTS`, the project owner's
+choice, 2026-11-10, „Limit punktów kształtu (polecam)”): part of a plan's preparation grows with
+the points before it first asks whether to stop, and past the limit a cancel would wait for it
+(Cancelling, under Planning service). Only a path drawn or traced with hundreds of thousands of
+points comes near it, from a file, a paste, MCP or the control channel: the real designs' largest
+shape has a few hundred points, the hardest pictures digitized give 46,085, the perf documents
+65,532. The message says to simplify the shape or split it.
 
 ## The formats
 
@@ -1602,7 +1609,9 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   their ends, fills and satins tie in and off, satin underlay follows the width with no trim
   between it and the top, satin spacing follows the width unless given, wide satins and their
   zigzag underlay are split without a seam, satin crossings stay within the column, pull compensation widens it, a tight satin curve gets short stitches on its inner side (and a straight column none), an absurd
-  plan is refused before it is made, the DST record round-trips every delta from -121 to 121,
+  plan is refused before it is made, so is a shape of more points than one may have in every style
+  and as a fill sewn in parts (its points counted as its flattening makes them, curve by curve and
+  only just past the limit) while one at the limit is planned, the DST record round-trips every delta from -121 to 121,
   only a run of three jumps reads as a DST trim, a PEC stitch block with a 16-byte header whose first jump looks like the origin words reads the same as with 20 bytes (in step, only the leading jump is lost; out of step, its length sends the reader back to the right start), a DST colour change can carry a move, each format
   writes a design it reads back with the same blocks and size, a JEF's header extents are where
   its stitches go, an absurd JEF colour count is not believed, a PES whose PEC section is said to
@@ -1714,6 +1723,9 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   holds out of range (control points at 1e15 and beyond, past what any command makes) is never
   flattened to measure points against it (`embroidery::outline` gives it no outline): planning it,
   snapping a point to it and reading it neither run out of memory nor panic.
+  A shape of more than 250,000 points is refused with the planner's message, a fill's before its
+  narrow parts are looked for even in a plan cancelled from the start, and a stroke along a staircase
+  of exactly that many is planned (`cmd/embroidery/tests.rs`, `cmd/embroidery/unit.rs`).
 - `crates/engine/tests/import_fuzz.rs`: damaged designs and random records behind each format's
   header, opened and placed, never panic.
 - `crates/engine/tests/embroidery_output.rs`: the bytes every export writes, pinned by their sha256
@@ -2453,21 +2465,26 @@ flowchart LR
   4,096 steps of its resampling (each piece of the line passed and each point made, a corner's too:
   a line whose corners lie closer together than a step, as a traced pixel edge's do, asks at least
   as often as a straight one of as many points) or crossings it works out; a running line between
-  its drawings and in its routes' steps. So a cancel stops a plan within a tenth of a second (the
-  project owner's choice, 2026-11-09, „0,1 s (polecam)”: the limit within which a response feels
-  instant, Jakob Nielsen, [Response Times: The 3 Important
-  Limits](https://www.nngroup.com/articles/response-times-3-important-limits/); asks added inside
-  the steps that ran past it, the owner's „Dodać pytania teraz (polecam)”: the longest stretch
-  between two asks on the PR's review's hardest shapes, combs of 200 to 3,000 teeth and a satin line
-  of 550,000 stitches, is 11.5 ms in release), but inside one of upstream's path operations, which
-  check for none: a cancel waits for the one under way (uniting the 20 rings' narrow parts takes
-  0.39 s in a test build, and the 4,512 narrow parts of a fill of 2,304 holes, its bands, 0.39 s in
-  release). A cancelled plan returns `PlanError::Cancelled` (the commands' `EngineError::Cancelled`)
-  and leaves no plan; the units it finished stay kept, a unit stopped partway never is (the planner
-  latches the question, so that once it says to stop it is not asked again and a plan cut short
-  can't pass for a whole one) (a plan cancelled anywhere, then planned again, is the plan never
-  cancelled: `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`). Each painted fill, stroke
-  and literal run is a step of the plan's progress (`cancel::progress`).
+  its drawings and in its routes' steps. What a unit prepares before its first ask grows with its
+  shape's points (flattening it and its estimate, a satin's order of lines and a line's underlay and
+  centre line, a fill's outlines and their grid, the narrow parts' rings), so a shape of more than
+  250,000 points is refused before any of it is prepared (`plan::MAX_SHAPE_POINTS`, the project
+  owner's „Limit punktów kształtu (polecam)”: the longest preparation, a fill with no underlay of a
+  traced dot grid, takes about 100 ns a point in release, so about 25 ms at the limit). So a cancel
+  stops a plan within a tenth of a second (the project owner's choice, 2026-11-09, „0,1 s
+  (polecam)”: the limit within which a response feels instant, Jakob Nielsen, [Response Times: The 3
+  Important Limits](https://www.nngroup.com/articles/response-times-3-important-limits/); asks added
+  inside the steps that ran past it, the owner's „Dodać pytania teraz (polecam)”: the longest
+  stretch between two asks on the PR's review's hardest shapes, combs of 200 to 3,000 teeth and a
+  satin line of 550,000 stitches, is 11.5 ms in release), but inside one of upstream's path
+  operations, which check for none: a cancel waits for the one under way (uniting the 20 rings'
+  narrow parts takes 0.39 s in a test build, and the 4,512 narrow parts of a fill of 2,304 holes,
+  its bands, 0.39 s in release). A cancelled plan returns `PlanError::Cancelled` (the commands'
+  `EngineError::Cancelled`) and leaves no plan; the units it finished stay kept, a unit stopped
+  partway never is (the planner latches the question, so that once it says to stop it is not asked
+  again and a plan cut short can't pass for a whole one) (a plan cancelled anywhere, then planned
+  again, is the plan never cancelled: `a_plan_cancelled_anywhere_is_followed_by_the_fresh_plan`).
+  Each painted fill, stroke and literal run is a step of the plan's progress (`cancel::progress`).
 - **Threads.** The service is `Send` and `Sync` (checked when it compiles): the app's planning
   thread plans off the interface thread while commands plan on theirs; commands and the web build
   plan synchronously.

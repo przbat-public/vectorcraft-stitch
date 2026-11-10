@@ -5358,6 +5358,7 @@ lighting	Light	Світло
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заголовок DST лічить щонайбільше {MAX_RECORDS} записів, а дизайну потрібно {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	блок стібків PEC вміщує щонайбільше {MAX_BLOCK} байт (його довжина — 24 біти), а дизайну потрібно {len}
 @msg	a VP3 string is too long	рядок VP3 задовгий
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	у фігури більше {MAX_SHAPE_POINTS} точок, дозволених одній фігурі, коли її криві перетворено на відрізки: спростіть її або розділіть на менші фігури
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	фігура лежить далі ніж {MAX_COORD_MM} мм від початку координат або має координату, що не є числом: її не можна вишити
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	фігурі знадобилося б близько {n} стібків, більше за {MAX_STITCHES}, дозволених одній фігурі: використайте довший стібок, більший крок або менший дизайн
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	це не файл PES чи PEC: він не починається з #PES чи #PEC

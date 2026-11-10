@@ -5359,6 +5359,7 @@ theme	Appearance	Giao diện
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	phần đầu DST đếm tối đa {MAX_RECORDS} bản ghi, còn thiết kế cần {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	khối mũi thêu PEC chứa tối đa {MAX_BLOCK} byte (độ dài 24 bit), còn thiết kế cần {len}
 @msg	a VP3 string is too long	một chuỗi VP3 quá dài
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	một hình có nhiều hơn mức {MAX_SHAPE_POINTS} điểm cho phép của một hình khi các đường cong của nó được chuyển thành đoạn thẳng: hãy đơn giản hóa hình hoặc chia nó thành các hình nhỏ hơn
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	một hình nằm cách gốc tọa độ hơn {MAX_COORD_MM} mm hoặc có tọa độ không phải là số: không thể thêu
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	một hình sẽ cần khoảng {n} mũi thêu, nhiều hơn mức {MAX_STITCHES} cho phép của một hình: hãy dùng mũi dài hơn, khoảng cách rộng hơn hoặc thiết kế nhỏ hơn
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	không phải tệp PES hay PEC: tệp không bắt đầu bằng #PES hay #PEC

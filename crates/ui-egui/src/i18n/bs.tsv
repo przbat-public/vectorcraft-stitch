@@ -6277,6 +6277,7 @@ shape	Open	Otvoren
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST zaglavlje broji najviše {MAX_RECORDS} zapisa, a dizajnu treba {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC blok bodova sadrži najviše {MAX_BLOCK} bajtova (njegova dužina ima 24 bita), a dizajnu treba {len}
 @msg	a VP3 string is too long	VP3 niz je predug
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	oblik ima više od {MAX_SHAPE_POINTS} tačaka koliko jedan oblik smije imati kada se njegove krive pretvore u duži: pojednostavite ga ili ga podijelite na manje oblike
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	oblik leži više od {MAX_COORD_MM} mm od ishodišta ili ima koordinatu koja nije broj: ne može se vesti
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	oblik bi trebao oko {n} bodova, više od {MAX_STITCHES} koliko jedan oblik smije imati: koristite duži bod, veći razmak ili manji dizajn
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	nije PES ni PEC datoteka: ne počinje s #PES ni #PEC

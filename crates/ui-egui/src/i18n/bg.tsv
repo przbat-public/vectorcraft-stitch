@@ -5654,6 +5654,7 @@ theme	Appearance	Външен вид
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	заглавката на DST брои най-много {MAX_RECORDS} записа, а дизайнът изисква {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	блокът с бодове на PEC побира най-много {MAX_BLOCK} байта (дължината му е 24 бита), а дизайнът изисква {len}
 @msg	a VP3 string is too long	низ във VP3 е твърде дълъг
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	формата има повече от {MAX_SHAPE_POINTS} точки, колкото може да има една форма, след като кривите ѝ се превърнат в отсечки: опростете я или я разделете на по-малки форми
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	форма е на повече от {MAX_COORD_MM} mm от началото или има координата, която не е число: не може да се бродира
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	формата би изисквала около {n} бода, повече от {MAX_STITCHES}, колкото може да има една форма: използвайте по-дълъг бод, по-голямо разстояние или по-малък дизайн
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	не е PES или PEC файл: не започва с #PES или #PEC

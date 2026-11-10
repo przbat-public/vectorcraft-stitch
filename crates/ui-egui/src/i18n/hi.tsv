@@ -7948,6 +7948,7 @@ theme	Appearance	अपीयरेंस
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	DST हेडर अधिकतम {MAX_RECORDS} रिकॉर्ड गिनता है, और डिज़ाइन को {_1} चाहिए
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	PEC स्टिच ब्लॉक में अधिकतम {MAX_BLOCK} बाइट होते हैं (उसकी लंबाई 24 बिट है), और डिज़ाइन को {len} चाहिए
 @msg	a VP3 string is too long	एक VP3 स्ट्रिंग बहुत लंबी है
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	किसी आकृति के वक्रों को सीधे खंडों में बदलने पर उसमें एक आकृति की सीमा {MAX_SHAPE_POINTS} बिंदुओं से अधिक बिंदु हैं: उसे सरल करें या छोटी आकृतियों में बाँट दें
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	कोई आकृति मूल बिंदु से {MAX_COORD_MM} mm से अधिक दूर है, या उसका कोई निर्देशांक संख्या नहीं है: उसे सिला नहीं जा सकता
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	एक आकृति को लगभग {n} स्टिच चाहिए होंगे, जो एक आकृति की सीमा {MAX_STITCHES} से अधिक है: लंबा स्टिच, चौड़ी स्पेसिंग या छोटा डिज़ाइन इस्तेमाल करें
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES या PEC फ़ाइल नहीं: यह #PES या #PEC से शुरू नहीं होती

@@ -5643,6 +5643,7 @@ swatch	Bright Violet	Kraftig violet
 @msg	a DST header counts at most {MAX_RECORDS} records, and the design takes {_1}	en DST-header tæller højst {MAX_RECORDS} poster, og designet kræver {_1}
 @msg	a PEC stitch block holds at most {MAX_BLOCK} bytes (its length is 24 bits), and the design takes {len}	en PEC-stingblok rummer højst {MAX_BLOCK} byte (dens længde er 24 bit), og designet kræver {len}
 @msg	a VP3 string is too long	en VP3-streng er for lang
+@msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	en figur har flere end de {MAX_SHAPE_POINTS} punkter, en figur må have, når dens kurver er gjort til linjestykker: forenkl den, eller del den op i mindre figurer
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en figur ligger mere end {MAX_COORD_MM} mm fra origo eller har en koordinat, der ikke er et tal: den kan ikke broderes
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en figur ville kræve omkring {n} sting, flere end de {MAX_STITCHES}, en figur må have: brug et længere sting, større afstand eller et mindre design
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ikke en PES- eller PEC-fil: den begynder ikke med #PES eller #PEC

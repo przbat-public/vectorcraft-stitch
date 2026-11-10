@@ -179,7 +179,7 @@ stitches fast, is tried before anything is built on it.
    objects; the trim length comes from the machine: machines differ in whether, and past what
    length, they cut jumps themselves. Commands to set, reset, copy and inspect them and to store
    entry and exit points; objects made from others keep them. What moves to item 6: the panels.
-6. **The Object tab, and an Embroidery tab in Document Setup.** Done (in review): the Embroidery
+6. **The Object tab, and an Embroidery tab in Document Setup.** Done (PR #23, merged): the Embroidery
    panel's Object tab, first, with the selected objects' settings by part, read without a plan
    (a value set on them with a bar, strong text and ↺; an inherited one dim with its source;
    blank and counted where they differ; Auto's choices in words; entry and exit, Trim After,
@@ -187,7 +187,7 @@ stitches fast, is tried before anything is built on it.
    Embroidery with the fabric (a preset copied in, values changed from it marked), the thread and
    its palette, the machine and the joining, and the bar that applies the fabric to objects with
    their own values on OK. Every word in the 24 catalogues (AI-drafted, not yet reviewed).
-7. **The embroidery tool: entry and exit points.** Done (in review): one tool with kinds of
+7. **The embroidery tool: entry and exit points.** Done (PR #24, merged): one tool with kinds of
    handles (`docs/embroidery.md` › One embroidery tool: later angle lines, satin rails, needle
    points, the hoop), its two cursors in `crates/tools/src/cursors.toml`; each selected object's
    entry and exit dragged on the canvas in both views (snapped to where the stitches can start or
@@ -197,7 +197,7 @@ stitches fast, is tried before anything is built on it.
    Connection; the Object tab's rows and Set on Canvas. Every word in the 24 catalogues
    (AI-drafted, not yet reviewed).
 8. **Manual stitches.** Two PRs, one after the other (the project owner's choice).
-   The first, done (in review): Convert to Manual Stitches and Restore Object (the object kept on
+   The first, done (PR #25, merged): Convert to Manual Stitches and Restore Object (the object kept on
    its group, the export right after converting the same bytes, restoring at the size now and
    asking first only after edits); stops (Stop After on any object, a stop written as a change to
    the same thread, read back from PES, PEC, JEF and VP3); a run's needle points its anchors,
@@ -208,7 +208,7 @@ stitches fast, is tried before anything is built on it.
    order moving a converted object whole; the Object tab's words and buttons. Every word in the 24
    catalogues (AI-drafted, not yet reviewed; English and Polish in `docs/manual-stitches-words.md`
    for review).
-   The second, done (in review): editing needle points on the canvas with the Embroidery Tool in
+   The second, done (PR #27, merged): editing needle points on the canvas with the Embroidery Tool in
    isolation of a stitch object, in the stitch view (the rest faded, the stitches 1 pt wide, needle
    points as two-tone circles from 250 %): click, Shift-click, marquee, the Lasso tool, drag (past
    20,000 selected refreshed on a pause or the release), the arrows 0.1 mm and 1 mm, `[` `]`,
@@ -236,11 +236,12 @@ stitches fast, is tried before anything is built on it.
    satin caps follow and the lines are made with, `Node::path`, `Document::alloc_id` and
    `Appearance::basic` (Keeping up with upstream); the routes and the shape's axis are the fork's
    own, and the centre lines follow upstream's Create Strokes step for step, rewritten over the
-   region map. Then a small planner PR, done (PR #34, in review; the 2026-11-06 row): a fill's row
-   turning square to the edge starts a little further in so that its turn is sewn (the pool ball's
-   bare notches, and bare fabric inside every fill), a cancel stops the planner within a tenth of a
-   second inside one object too, and a route with one end given chooses its free end again once its
-   cycles are shortened (the 2026-11-09 rows). Then a large working window in four steps with a live
+   region map. Then a small planner PR, done (PR #34, merged, and its review round, PR #35; the
+   2026-11-06 row): a fill's row turning square to the edge starts a little further in so that its
+   turn is sewn (the pool ball's bare notches, and bare fabric inside every fill), a cancel stops
+   the planner within a tenth of a second inside one object too, and a route with one end given
+   chooses its free end again once its cycles are shortened (the 2026-11-09 rows). Then, after a
+   sync with upstream (the 2026-11-10 rows), a large working window in four steps with a live
    preview, with each area's stitch type and the object it became, and the step-4 settings
    (`satinBelow`, `straightLines`, the order by the thread list). Then an inspector for each area,
    whose overrides survive retracing (kept by the point clicked and its colour, not the area's
@@ -486,6 +487,9 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-11-09 | The Check tab's needle-blade rule (`stitchBelowNeedle`) stays information, and the 0.4 mm turns at edges square to a fill's rows, under the 0.75 mm blade, are recorded beside the rows' remainders; the PR that spreads a fill row's remainder, after which the rule becomes a warning, decides how the rule treats a turn and asks the project owner then | the project owner's choice after the PR's review („Zapisać teraz, rozstrzygnąć później (polecam)”): the rule's hits on the real designs went from 1,091 to 1,541 with the turns; a warning would fire at each turn of a fill with an edge square to its rows | deciding how the rule treats a turn now | `docs/embroidery.md` › What the rules find; this file's work item on a fill row's remainder |
 | 2026-11-09 | A fill's turn stays 0.4 mm and a hair, though on a machine file's 0.1 mm grid it can round to 0.30 mm, or 0.28, at some row angles; the docs say so, and the real designs' soundness test counts stitches of 0.3 mm or less, as the Check tab does | the project owner's choice after the PR's review („Zostawić 0,4 mm i opisać (polecam)”): about 1 turn in 200 averaged over the row angles, none at 0°, 45°, 90° or 135°; a machine deleting stitches of 0.3 mm or less drops it there; no real design has such a stitch today | a 0.45 mm turn, which never rounds that short (rows would start 0.24 mm in, every pin moved again) | `plan/fill.rs` (`lengthen_turn`); `tests/embroidery_corpus.rs` (`TINY`); `docs/embroidery.md` › the fill's rows |
 | 2026-11-10 | A shape of more than 250,000 points once its curves are flattened, or a fill its narrow parts cut into more, is refused before any of it is planned, with its own message (simplify the shape or split it), as a shape needing more than 4,000,000 stitches is | the project owner's choice after the review round was checked („Limit punktów kształtu (polecam)”): a satin line's preparation grew with its points and asked nowhere inside it (in release a satin round a circle drawn in 1,000,000 pieces waited 75.8 ms between two asks, one along a staircase of 3,000,000 points 331.3 ms), and the stitch limit doesn't bound points; measured for each style once resampling asks by its own work, the longest preparation before a plan's first ask, a fill with no underlay of a traced dot grid, takes about 100 ns a point in release, so about 25 ms at the limit, a quarter of the tenth of a second; the largest shape planned anywhere has 65,532 points (a perf document's running line), the real designs' a few hundred | asks inside each step that grows with points (the shape's flattening and estimate, the order of a satin's lines, a line's underlay and centre line, a fill's outlines and grid, the narrow parts' rings); the wait recorded beside upstream's path operations as an exception and fixed later | `plan/mod.rs` (`MAX_SHAPE_POINTS`, `within_points`), `plan/geometry.rs` (`flattened_points`), the engine's `cmd/embroidery/unit.rs` (`parted`); `plan/tests.rs`, `cmd/embroidery/tests.rs`; docs/embroidery.md (the limits, Cancelling, Validation) |
+| 2026-11-10 | The fork syncs with upstream (v0.23.0 and the 249 commits after it, 1,711 commits since the last sync) in a PR of its own before digitizing from an image's large working window, and the window follows it | the project owner's choice („Najpierw synchronizacja (polecam)”): upstream had changed Image Trace and the path operations again (11 and 19 commits), which digitizing reads with no hook, so they are met before the window is built on them | the window first | this file › Keeping up with upstream › Syncs so far |
+| 2026-11-10 | A path of stitches selected with more than its needle points (an art path's anchor too, or one of its stitches) stays one object when upstream's Delete or Cut of a direct selection would split it: its pieces are its runs, its stops and cuts stay on their needle points, as before the sync | the project owner's choice („Jak przed synchronizacją (polecam)”): upstream's Delete and Cut now split a path of one subpath into separate objects (#3380) after taking its subpaths, and the fork's hook that carries a run's marks onto its pieces read the emptied path, so the run split in two and lost every stop | separate objects, as upstream splits paths, each keeping the stops and cuts of its needle points | `path::replace_deleted_pieces`, `embroidery::is_path_of_stitches`; `a_delete_or_cut_past_needle_points_keeps_a_path_of_stitches_one_object_with_its_marks` |
+| 2026-11-10 | The golden corpus follows upstream's editing and was recorded again on the merged code: ten of its forty documents, 76 of its 320 lines | the project owner's choice („Nagrać na nowo (polecam)”): two deliberate changes of upstream's moved them, new art taking the selected object's fill, stroke and weight (#6252; documents 7, 12, 14, 20, 21, 35 and 36) and Simplify fitting its curves within its tolerance (documents 3, 6 and 24); with their five commits reverted, every line exported as recorded | freezing the old behaviour in the test (code of the fork's own to keep at every sync, and a corpus no longer checking the editing as it is) | `tests/embroidery_golden_corpus.txt`; `the_corpus_exports_as_recorded` |
 
 ## Clean-room for embroidery
 
@@ -564,9 +568,29 @@ grouping; ten more allows for the fork's 1.95 gate (below). Nothing digitizing r
 moved: Image Trace's parallel fitting keeps the paths' order, its noise removal and smoothing
 give the same results as before (upstream's own tests compare them with the old code), and the
 path operations' new limit is far past the trace's pixels.
+2026-11-10, before digitizing's large window: upstream `36ef34dfd..73dc05859` (v0.22.0, v0.23.0
+and the 249 commits after it), 1,711 commits, 26 conflicting files, all listed in the merge
+commit. Upstream added JavaScript scripts, which hold finished background work until they end
+(the fork's jobs that edit the document wait too, below), HEIC/HEIF and JPEG XL images, SVG
+filters kept in the document (`svg_filters`, after the fork's `embroidery`), a fade outside the
+artboards (after the stitch view's layer), selection marks kept between frames
+(`canvas/selection_marks.rs`), export
+and save options that refuse a key no format takes (the embroidery options' earlier names pass,
+below), a PDF in new native files (the test kit serializes without it), Tab moving one press a
+field (a field label's scrub is no Tab stop: the embroidery rows show their help on the field
+alone), a held Enter or Escape acting once, Delete and Cut that split a path of one subpath into
+separate objects (#3380: a path of stitches stays one object, below, the Decisions register), and
+new art that takes the selected object's paint (#6252). That and Simplify's new fitting moved the
+golden corpus, recorded again (the Decisions register); the causes were isolated by reverting
+upstream's five commits in a scratch checkout. Upstream fixed the Layers thumbnails race the
+fork reported (storytold/vectorcraft#6318, its head commit) and the link check (`d32371606`), so
+nothing was cherry-picked. Seven more allows for the fork's 1.95 gate (below). Nothing digitizing
+reads moved: Image Trace's new options keep their old behaviour by default, its logo fitter
+(which now keeps no piece over its tolerance, `2facf55c2`) moves none of the listing's areas, the
+mirrored values are unchanged, and the centre lines' module is untouched.
 
 **Upstream's CI lints with the stable clippy** (Rust 1.99.1, on 2026-10-24 and still on
-2026-11-06), newer than the fork's 1.95 gate (`rust-version = "1.95"`), and since that sync the
+2026-11-10), newer than the fork's 1.95 gate (`rust-version = "1.95"`), and since that sync the
 same CI runs on the fork's PRs (Practicalities). Code must pass both:
 - Upstream code can fail the fork's 1.95 gate, through a lint 1.95 doesn't know or one 1.95 flags
   and the newer clippy doesn't. Allow it in place, marked "VectorCraft Stitch", and list it with
@@ -596,9 +620,15 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   (taking either alone would associate the embroidery extensions with the app, or drop upstream's
   new ones), with both sides' reasons in its comment; the eight embroidery rows close `FORMATS`, and
   their extensions follow upstream's in `OPEN_EXTS` and `PLACE_EXTS`. In the param docs of
-  `document.serialize`, `document.export` and `export.selection` (`fileio/commands.rs`), take
-  upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again. The fork's
-  `pub(crate) mod embroidery` and `mod tests_embroidery` are declared in `fileio.rs`.
+  `document.serialize`, `document.export` and `document.exportSelection` (`fileio/commands.rs`),
+  take upstream's text and add `|dst|tap|t01|exp|pes|pec|jef|vp3` to its format list again. The
+  fork's `pub(crate) mod embroidery` and `mod tests_embroidery` are declared in `fileio.rs`.
+  Export for Screens never writes an embroidery format: a row naming one is refused beside
+  upstream's `UNWRITTEN_FORMATS` in `fileio/screens.rs`'s `Row::parse`, and `params.rs`'s
+  `screen_formats` leaves them out as well (upstream's `export_for_screens_passes_every_listed_key`
+  holds the two alike), each marked. Since the 2026-11-10 sync upstream's export refuses a key no
+  format takes: `params.rs`'s `check_export_options` also takes the embroidery options' earlier
+  names (`embroidery::earlier_option_names`, the vocabulary's table), marked.
 - **The generator string** (`crates/format/src/lib.rs`): the fork's files say `VectorCraft Stitch`
   and the version, so a file from the fork can be told from upstream's in a report; upstream's test
   of the bytes `save_to` writes (`save_to_writes_the_bytes_of_the_crates_file`) expects it, marked.
@@ -655,8 +685,12 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   - `ui-egui/src/lib.rs`: `pub mod embroidery`, and the app's `embroidery` field right after
     `pen_end` (off the struct's end, where upstream adds its own); in `ui-egui/src/app.rs`, the
     field's init, `embroidery::poll` after the background jobs (the stitch preview's plans taken in,
-    and Nearest Connection's search looked at), `canvas_controls` after the canvas area (the
-    canvas under the tabs or the active tile of Window › Arrange › Tile; skipped while the current
+    and Nearest Connection's search looked at; since the 2026-11-10 sync right after upstream's
+    `poll_finished_work` and, as its finished work, not while a script runs: Nearest Connection's
+    order, the conversions and digitizing's Create edit the document, so they wait, while the
+    stitch view's plans still arrive, taken in at each frame's end by `stitch_preview::schedule`),
+    `canvas_controls` after the canvas area (the canvas under the tabs or the active tile of
+    Window › Arrange › Tile; skipped while the current
     document floats, as upstream's isolation bar is), before upstream's isolation bar, which lies
     over the canvas's top: the switch and the notice move below it; in `doc_windows.rs`'s `body`,
     `canvas_controls` after a floating window's canvas; and `embroidery::end_frame` at the frame's
@@ -668,13 +702,17 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `hidden` set after upstream's `cache_key`, `&& art.render` on the render, and
     `stitch_layer::draw` after the art's pass, upstream's `fill_uncovered` and `reproject_frame`
     skipped in the stitch view (it draws the art's texture itself, a moved view's gaps left as
-    fabric), and `#[allow(clippy::cognitive_complexity)]` on `show`, which these conditions take
+    fabric), upstream's fade outside the artboards (the Artboard tool's, since the 2026-11-10 sync)
+    after the stitch view's layer, so stitches outside the artboards fade as art does, and
+    `#[allow(clippy::cognitive_complexity)]` on `show`, which these conditions take
     past the workspace's limit; in `frame_options`, `hide_templates` and `hidden` from the key; in `paint_paper`,
     `paint_fabric` right after the pasteboard, in place of all of upstream's paper branches (the
     Hide Artboards one too); `to_screen_path` and `node_outline` made `pub(crate)` in
     `canvas/outline.rs` and re-exported; the selection overlay's `frame_only` in
-    `canvas/overlays.rs`; in `canvas/view.rs`, upstream's own `fit_zoom(rect, target, rotation)`
-    (split out for the tiles at the 2026-11-06 sync) calls the fork's `fit_zoom_within(rect,
+    `canvas/overlays.rs` (since the 2026-11-10 sync, no objects handed to upstream's
+    `SelectionMarks::paint` while it is set, the key object's outline kept); in `canvas/view.rs`,
+    upstream's own `fit_zoom(rect, target, rotation)` (split out for the tiles at the 2026-11-06
+    sync) calls the fork's `fit_zoom_within(rect,
     target, rotation, margin)` with `FIT_MARGIN`, which View › Zoom to Box (`embroidery/zoom.rs`)
     calls with its own margin, re-exported;
   - `chrome/tabs.rs`: the tab title's mode (`view_tab_title`'s sixth parameter, `stitches`, after
@@ -693,7 +731,8 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     `embroidery.copySettings`, `embroidery.pasteSettings`, `embroidery.documentSetup`,
     `embroidery.showFinding`, `embroidery.showRecord`); in `run.rs`, the `view.zoomTo` arm (into
     `embroidery::zoom`) and `panels::embroidery::command` before the dock's commands; in
-    `invoke.rs`, at the top of `invoke`, `embroidery::menu::invoked` (a person's Convert to Manual
+    `invoke.rs`, at the top of `invoke` (after upstream's finish of a tool's edit and its dimmed
+    plug-in item), `embroidery::menu::invoked` (a person's Convert to Manual
     Stitches, Restore Object and Nearest Connection from the palette or a shortcut, run as the
     Embroidery panel runs them: off the interface thread, Restore asking after edits);
   - `control.rs`: `ui.set {stitchPreview}` (in upstream's `set_ui`), `ui.render {stitchPreview}`
@@ -710,7 +749,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     document's planning forgotten (in a batch, by `fileio/batch.rs` once the batch holds; its
     `roll_back` forgets a document the batch opened);
   - `doc/src/document.rs`: `Document::same_outside_layers` names the `embroidery` field (upstream's
-    list of every field, for redrawing only what an edit changed), and the constructor sets it;
+    list of every field, for redrawing only what an edit changed), and the constructor sets it; in
+    `doc/src/lib.rs` the field sits after `svg_scripts`, before upstream's `svg_filters` (2026-11-10),
+    in each list in the same order;
   - `xtask/src/main.rs`: the `embroidery-corpus` step before `test`, and `cmd_test`'s `envs`, which
     the gate's test step passes `EMBROIDERY_CORPUS_REQUIRED` through;
   - for the fork's Rust 1.95 gate: `#[allow(clippy::neg_cmp_op_on_partial_ord)]` on
@@ -723,7 +764,11 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     ui-egui's `placing::poll` and `confirm_swatch_paste`, `collapsible_match` on
     `tools/src/addons/enclosing_lasso.rs`'s `pointer` and `panels/layers/tests.rs`'s `collect`,
     and `drop_non_drop` on `cmd/addons/cleanup/text.rs`'s `replace_fonts` and `cmd/fonts.rs`'s
-    `replace`;
+    `replace`; since the 2026-11-10 sync also `nonminimal_bool` on `doc`'s `transform_scaled`
+    (`node/ops.rs`), `trace`'s `trace_logo` (`logo/pipeline.rs`), `text`'s `tab_glyph`
+    (`layout/flow.rs`), `effects`' `validate` (`solids/classic.rs`), and the engine's
+    `encode_and_write` (`fileio/screens.rs`) and `input_applied` (`tooling.rs`), and
+    `collapsible_match` on `js`'s `trace_object` (`heap.rs`);
   - `render/src/lib.rs`: `pub mod lines`, and `render/src/node_checks.rs`'s `MAX_DEVICE` made
     `pub(crate)` for it (the stitch view's lines keep within the device range the renderer does);
     `testkit/src/lib.rs`: `pub mod embroidery`;
@@ -748,7 +793,10 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     takes the label as upstream's `bounded_field` does, `widgets::take_previous_label`),
     `step_value` its read/show pair, a step function and stops (the field passes none, which steps
     as before), and `combo` lost its `searchable` flag and finds its button by
-    `widgets::combo_button_id` (`fields::combo_button` derives the same id).
+    `widgets::combo_button_id` (`fields::combo_button` derives the same id). At the 2026-11-10
+    sync `scrub::field`'s zone on a field's label stopped being a Tab stop (one press a field), so
+    the embroidery rows show their help on the field alone, and `step_value` takes the wheel by the
+    stream it began over the field (`number_wheel_turns`).
   - `ui-egui/src/dialogs/document_setup.rs`: the Embroidery tab (`embroidery/setup_tab.rs`): its
     name in `TABS`, its fields added in `open`, its body as the last arm of `body`'s `match`, and
     in `confirm` the `document.setup` call alone replaced by `setup_tab::run` (which runs it, with
@@ -830,7 +878,14 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     selected. `no_form_of_join_reverses_a_run` runs every form of `path.join` on runs; a sync that
     adds a branch to `join` puts it behind the hooks; in
     `cut_at_anchors`, on a path of several subpaths, the run as it was taken before its pieces are
-    put in place and `embroidery::runs_cut_in_place` after.
+    put in place and `embroidery::runs_cut_in_place` after;
+  - `engine/src/cmd/path.rs` (since the 2026-11-10 sync, when upstream's Delete and Cut of a direct
+    selection began to split a path of one subpath into separate objects, #3380, after taking its
+    subpaths): in `replace_deleted_pieces`, which both share, a path of stitches keeps its pieces as
+    its runs (`embroidery::is_path_of_stitches`, one condition), its marks on their needle points,
+    the project owner's choice (the Decisions register). It reaches them only with more than needle
+    points selected (an art path's anchor too, or one of its stitches); a test holds both.
+    `copy_cut_targets` takes upstream's lent selection (`picked`, #6123) before the hook's condition.
 - **The canvas's bounds measured only where an edit changed the document** (the fork's own code is
   `doc/src/visual_bounds.rs`, its tests `doc/src/visual_bounds/tests.rs` (declared from it), and
   `ui-egui/src/embroidery/bounds.rs`, one cache per open document; `docs/embroidery.md` › Editing
@@ -842,7 +897,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     member, so it runs upstream's own arms in their order. At each sync, diff upstream's whole
     `Node::visual` (every arm and their order) and carry it into `visual_by`, with `member(c)`
     wherever an arm unions its members' visual bounds (unchanged upstream at the 2026-11-02 sync,
-    as were `children` and `editing_children`);
+    as were `children` and `editing_children`; at the 2026-11-10 sync the Layer | Group arm became
+    upstream's `visual_of_members` over the members' bounds, handed `member` itself, and the rest
+    stayed, `children` and `editing_children` too);
   - `doc/src/lib.rs`: `pub mod visual_bounds`;
   - `ui-egui/src/app/view.rs`: `content_bounds` and `selection_bounds` measuring through
     `app.embroidery.bounds` (one line each) instead of `Document::art_bounds` and `bounds_of`;
@@ -880,7 +937,14 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     (‹ and the object's name) and the ways it ends (Escape, ‹, a double-click outside). The chip
     sits under the bar (`embroidery/editing.rs`); a sync that changes the bar's place or how
     isolation ends changes stitch editing with it
-    (`a_double_click_starts_editing_and_escape_deselects_then_leaves`).
+    (`a_double_click_starts_editing_and_escape_deselects_then_leaves`). Since the 2026-11-10 sync an
+    Escape held down acts once, and an Escape a tool spent changing the document ends nothing else:
+    the tool claims the first Escape while needle points are selected (deselecting them), and the
+    next one, pressed anew, leaves isolation.
+  - New art takes the selected object's fill, stroke and weight since the 2026-11-10 sync (#6252:
+    a `select.*` command or `layer.target` that changes the selection loads the fill and stroke
+    for new art): no hook, but what the golden corpus's random editing draws after a selection
+    changed with it, and so did its hashes (recorded again).
   - The Contextual Task Bar: the hook hands upstream's `task_bar` the selected needle points' box
     in place of `selection_bounds()`, and upstream places the bar under whatever box it is given
     (centred on it, below its lowest corner on screen, kept within the canvas): a sync that places
@@ -965,6 +1029,11 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   `with_app_id`, metainfo, MIME, Flatpak, FreeBSD); the DMG's Finder layout
   (`packaging/macos/dmg/DS_Store`, from `dmg/generate.py`), which still places `VectorCraft.app`
   on a volume named VectorCraft, so regenerate it before the fork ships a DMG.
+- **The ArtCraft marks left out of what the fork shows** (Decisions register, 2026-10-22), to keep
+  when resolving: `ui-egui/src/community.rs` has the GitHub link alone (`links`, and since the
+  2026-11-10 sync upstream's centred `links_centered` for Home) and no Discord button; upstream's
+  Home centring test (`tests/home.rs`, `home_welcome_and_community_are_centred`) names the fork's
+  words, marked.
 - **The fork's text in upstream's docs**, to put back on upstream's own text when resolving: the
   pointer to this file under the title of `AGENTS.md`'s own instructions, outside its craft-contrib
   house-rules blocks, which the House rules check compares with craft-contrib (`CLAUDE.md` is

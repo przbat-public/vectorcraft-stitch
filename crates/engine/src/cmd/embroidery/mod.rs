@@ -162,6 +162,16 @@ pub(crate) fn needle_points_selected_alone(st: &crate::DocState) -> bool {
     hooks::needle_points_alone(st)
 }
 
+/// Whether `n` is a path of stitches (an opened design's run, or a converted object's), for the
+/// marked hook in `path::replace_deleted_pieces`: upstream's Delete and Cut of a direct selection
+/// split a path of one subpath into separate objects (#3380, since its v0.23), after taking its
+/// subpaths, so a run's stops and cuts would have nothing to follow onto the pieces. A path of
+/// stitches keeps its pieces as its own runs instead, as before (the project owner's choice,
+/// 2026-11-10), and its marks stay on their needle points.
+pub(crate) fn is_path_of_stitches(n: &vectorcraft_doc::Node) -> bool {
+    needles::is_stitches(n)
+}
+
 /// The earlier names of the embroidery export's options (`stitchStyle` for `stitch`, `density` for
 /// `spacing`…, the vocabulary's table), which `document.export` takes as well: upstream's check of
 /// an export's keys (since its v0.23) takes them beside the formats' options (the marked hook in

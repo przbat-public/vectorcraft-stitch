@@ -1328,7 +1328,8 @@ pub(super) fn deletion_source(d: &Document, id: NodeId) -> Result<Arc<Node>> {
 pub(super) fn replace_deleted_pieces(d: &mut Document, beside: &mut Beside, original: Arc<Node>, subpaths: Vec<SubPath>) -> Result<Vec<NodeId>> {
     let id = original.id;
     let single = original.path_data().is_some_and(|p| p.subpaths.len() == 1);
-    if single && compound_or_self(d, id) == id {
+    // VectorCraft Stitch: a path of stitches keeps its pieces as its runs, its marks on their needle points.
+    if single && compound_or_self(d, id) == id && !super::embroidery::is_path_of_stitches(&original) {
         // Pin only actual splits: each new object's smaller bounds would otherwise refit its gradients.
         if subpaths.len() > 1
             && original.appearance.has_unplaced_gradient()

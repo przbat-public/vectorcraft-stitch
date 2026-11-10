@@ -162,6 +162,14 @@ pub(crate) fn needle_points_selected_alone(st: &crate::DocState) -> bool {
     hooks::needle_points_alone(st)
 }
 
+/// The earlier names of the embroidery export's options (`stitchStyle` for `stitch`, `density` for
+/// `spacing`…, the vocabulary's table), which `document.export` takes as well: upstream's check of
+/// an export's keys (since its v0.23) takes them beside the formats' options (the marked hook in
+/// `params::check_export_options`).
+pub(crate) fn earlier_option_names() -> impl Iterator<Item = &'static str> {
+    vocabulary::options().filter_map(|s| s.earlier)
+}
+
 /// Whether a run of two needle points so far apart is one needle point ([`needles::one_needle_point`]),
 /// for the importer.
 pub(crate) fn one_needle_point(distance_mm: f64, alone: bool, double_point: bool) -> bool {

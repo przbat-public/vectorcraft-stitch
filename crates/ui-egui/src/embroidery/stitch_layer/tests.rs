@@ -251,6 +251,7 @@ fn a_document_switch_is_drawn_on_the_layers_thread() {
 #[test]
 fn the_art_shows_as_the_view_says() {
     let mut app = app();
+    app.canvas.worker_started = true; // every frame on this thread, however long it takes
     let ctx = egui::Context::default();
     app.run("view.stitchPreview", json!({"on": true})).unwrap();
     until_stitches(&mut app, &ctx, 0.0);

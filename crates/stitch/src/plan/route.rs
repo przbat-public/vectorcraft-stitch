@@ -41,6 +41,13 @@
 //!   even number of times; swapped where more than half of the cycle's length is sewn twice (the
 //!   condition Kwan Mei-Ko's least route meets on every cycle: 1962, *Graphic programming using odd
 //!   or even points*, Chinese Mathematics 1), again until none is, within [`MAX_CYCLE_WORK`].
+//! - **A free end chosen again** ([`free_end_again`]): with one end given, the free end found on
+//!   the join before its cycles were shortened could sew more twice than coming back to the end
+//!   given (2 of 39,956 random routes, 4.4 mm more). So the routes ending at every node of a drawing
+//!   of up to [`EVERY_END_NODES`] nodes, the end given among them (coming back), or in a larger one
+//!   at the end the shortened join's heaviest path from the end given gives (the end given itself
+//!   when no path gains), are each shortened on their cycles too, and the route sewing least twice
+//!   is kept: never more than coming back.
 //! - **The Euler path** ([`euler`]): Hierholzer's (1873, *Ueber die Möglichkeit, einen Linienzug ohne
 //!   Wiederholung und ohne Unterbrechung zu umfahren*, Mathematische Annalen 6) walk from the start,
 //!   each edge as many times as it is sewn, the closed tours it finds spliced in where they leave the
@@ -725,7 +732,18 @@ fn join_len(part: &Part<'_>, join: &[bool]) -> f64 {
 /// all paired and the ends on the spanning tree's heaviest path ([`ends`]); or the ends left out of
 /// the pairing, both free the two of the longest pair, one asked for paired with what the pairing
 /// leaves over. Each shortened on its cycles; the one that sews less twice, the tree's on a tie.
-fn ends_and_join(part: &Part<'_>, t: &Tree, start: Option<usize>, end: Option<usize>, stopped: &dyn Fn() -> bool) -> (usize, usize, Vec<bool>) {
+///
+/// With one end given, the free end is then chosen again among routes whose cycles are shortened,
+/// a route kept only where it sews less twice ([`free_end_again`]): the end was chosen on the join
+/// before its cycles were shortened, and could sew more twice than coming back to the end given.
+fn ends_and_join(
+    part: &Part<'_>,
+    t: &Tree,
+    start: Option<usize>,
+    end: Option<usize>,
+    every_up_to: usize,
+    stopped: &dyn Fn() -> bool,
+) -> (usize, usize, Vec<bool>) {
     let odd = odd_nodes(part);
     let (mut pairs, _) = paired(part, t, &odd, stopped);
     let all = join_of(&pairs, part.ends.len());
@@ -760,13 +778,70 @@ fn ends_and_join(part: &Part<'_>, t: &Tree, start: Option<usize>, end: Option<us
             }
         }
     };
-    match left_out {
+    let chosen = match left_out {
         Some((a, b, mut join)) => {
             shorten_cycles(part, t, &mut join, stopped);
             if join_len(part, &join) < join_len(part, &by_tree) { (a, b, join) } else { (s, e, by_tree) }
         }
         None => (s, e, by_tree),
+    };
+    match (start, end) {
+        (Some(fixed), None) | (None, Some(fixed)) => free_end_again(part, t, all, fixed, start.is_some(), chosen, every_up_to, stopped),
+        _ => chosen,
     }
+}
+
+/// The most nodes a drawing may have for every one of them to be tried as a route's free end
+/// ([`free_end_again`]; the project owner's choice, 2026-11-09, „Każdy węzeł w małych rysunkach
+/// (polecam)”): a letter's or a logo's line has a few dozen. Each try shortens the drawing's cycles
+/// once, a bound on the work: on the random drawings `tests_route.rs` searches (up to 8 nodes), the
+/// routes that sew more twice than the least possible fall from 268 of 39,956 to 76.
+pub(super) const EVERY_END_NODES: usize = 64;
+
+/// A route with one end given, `fixed` (the start when `from_fixed`, else the end), its free end
+/// chosen again among routes whose cycles are shortened: the odd nodes' join `all` shortened (the
+/// route coming back to `fixed`), with the tree's path from `fixed` to each end tried taken out of
+/// it and the result shortened again. The ends tried are every node of a part of at most
+/// `every_up_to` nodes, `fixed` among them; in a larger part the end of the heaviest path from
+/// `fixed` on the shortened join ([`ends`]), which is `fixed` itself (the route coming back) when no
+/// path from it takes anything off, and else sews less twice than coming back before it is even
+/// shortened. So the route kept never sews more twice than coming back. `chosen` (its ends and its
+/// join) is kept unless one sews less twice. Once `stopped` says so, each try's shortening ends at
+/// once ([`shorten_cycles`]).
+#[allow(clippy::too_many_arguments)]
+fn free_end_again(
+    part: &Part<'_>,
+    t: &Tree,
+    all: Vec<bool>,
+    fixed: usize,
+    from_fixed: bool,
+    chosen: (usize, usize, Vec<bool>),
+    every_up_to: usize,
+    stopped: &dyn Fn() -> bool,
+) -> (usize, usize, Vec<bool>) {
+    let mut back = all;
+    shorten_cycles(part, t, &mut back, stopped);
+    let tried: Vec<usize> = if part.nodes.len() <= every_up_to {
+        (0..part.nodes.len()).collect()
+    } else {
+        let (start, end) = if from_fixed { (Some(fixed), None) } else { (None, Some(fixed)) };
+        let (s, e) = ends(part, t, &back, start, end);
+        vec![if from_fixed { e } else { s }]
+    };
+    let mut best = chosen;
+    for other in tried {
+        let mut join = back.clone();
+        for k in tree_path(t, fixed, other) {
+            if let Some(j) = join.get_mut(k) {
+                *j = !*j;
+            }
+        }
+        shorten_cycles(part, t, &mut join, stopped);
+        if join_len(part, &join) < join_len(part, &best.2) {
+            best = if from_fixed { (fixed, other, join) } else { (other, fixed, join) };
+        }
+    }
+    best
 }
 
 /// The route's two ends on the tree, `start` and `end` given or free: where taking the path between
@@ -885,6 +960,19 @@ fn euler(part: &Part<'_>, start: usize, times: &[u8]) -> Option<Vec<(usize, usiz
 /// there is no such route (a part with no edge), and then its pieces are sewn as before; and once
 /// `stopped`, asked between the pairing's rounds and the cycles' passes, says to stop.
 pub(super) fn route(graph: &Graph, edges: &[usize], start: Option<usize>, end: Option<usize>, stopped: &dyn Fn() -> bool) -> Option<Route> {
+    route_trying(graph, edges, start, end, EVERY_END_NODES, stopped)
+}
+
+/// [`route`], with one end given every node of a part of at most `every_up_to` tried as its free end
+/// ([`free_end_again`]).
+pub(super) fn route_trying(
+    graph: &Graph,
+    edges: &[usize],
+    start: Option<usize>,
+    end: Option<usize>,
+    every_up_to: usize,
+    stopped: &dyn Fn() -> bool,
+) -> Option<Route> {
     let part = Part::of(graph, edges)?;
     let local = |n: usize| part.nodes.iter().position(|&m| m == n);
     let (s0, e0) = (start.map(local), end.map(local));
@@ -894,7 +982,7 @@ pub(super) fn route(graph: &Graph, edges: &[usize], start: Option<usize>, end: O
     let (s0, e0) = (s0.flatten(), e0.flatten());
     let root = s0.or(e0).unwrap_or(0);
     let t = tree(&part, root);
-    let (s, e, join) = ends_and_join(&part, &t, s0, e0, stopped);
+    let (s, e, join) = ends_and_join(&part, &t, s0, e0, every_up_to, stopped);
     if stopped() {
         return None;
     }

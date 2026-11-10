@@ -684,6 +684,102 @@ fn each_way_to_a_routes_ends_is_taken_where_it_sews_least() {
     }
 }
 
+/// A route with one end given chooses its free end again once its cycles are shortened, keeping the
+/// one that sews least twice: three of the random drawings that [`a_drawing_with_cycles_is_sewn_whole`]'s
+/// generator makes, found among 39,956 one-end routes (seeds `0x5eed_1000` to `0x5eed_101d`, 200
+/// cases each), each routed from one of its nodes as its start and as its end, sew the least (found
+/// by trying every set). The first, from node 6, ended where the join before its cycles were
+/// shortened said: 40.33 mm twice, where coming back sews 35.92 and the least is 35.34. The second
+/// needs every node tried as its end (75.54 mm otherwise, the least 43.93). The third, routed as a
+/// drawing too large for that (no node tried), needs the end found again on the shortened join
+/// (61.65 mm otherwise, the least 40.13), and the second routed so sews its 75.54: the bound on the
+/// nodes tried counts the drawing's own. The fourth, one of 19,508 one-end routes through drawings
+/// of the same generator with more pieces (seeds `0x5eed_3000` to `0x5eed_303b`, 6 to 23 nodes, 2
+/// to 11 pieces more than a tree), routed with no node tried, comes back: no path from its node
+/// takes anything off the shortened join, so the end found again is that node, where the end chosen
+/// first sewed 77.68 mm and coming back sews the least, 56.79.
+#[test]
+fn a_route_with_one_end_given_ends_where_it_sews_least() {
+    use super::route::{EVERY_END_NODES, route_trying};
+    type Drawing = (&'static [(f64, f64)], &'static [(usize, usize)]);
+    const FIRST: Drawing = (
+        &[
+            (32.765798858383725, 17.89252032027513),
+            (18.879035130471877, 27.71472094522423),
+            (25.61067897081141, 11.07640150103796),
+            (14.171792927379752, 15.091209164374586),
+            (27.981048925267853, 26.29262212917453),
+            (33.06965619757109, 14.471158834224443),
+            (14.943246422972951, 11.757263026011469),
+        ],
+        &[(0, 1), (2, 0), (2, 3), (3, 4), (3, 5), (6, 5), (0, 5), (4, 6)],
+    );
+    const SECOND: Drawing = (
+        &[
+            (0.11880661442037255, 14.532072582727608),
+            (38.95253263585614, 9.615708120065293),
+            (1.7213641195006213, 19.638461163333716),
+            (1.2158979490418043, 26.175033290996083),
+            (37.84664551774942, 4.366155358006498),
+            (37.52369130676308, 27.972502667116828),
+            (31.893988671137016, 30.98144059411303),
+        ],
+        &[(1, 0), (2, 0), (3, 1), (1, 4), (5, 4), (2, 6), (3, 0), (1, 2)],
+    );
+    const THIRD: Drawing = (
+        &[
+            (31.836269680358637, 18.322837506591583),
+            (33.79167613824205, 1.2421329486505606),
+            (26.747900703175382, 31.88911057769929),
+            (6.222718581464894, 7.53493953337077),
+            (11.00309398321016, 22.21803557971349),
+            (3.828934963426547, 35.184245713487805),
+            (26.1695535004168, 24.587360245215738),
+            (7.499472950702866, 32.382435139460284),
+        ],
+        &[(1, 0), (2, 0), (3, 1), (0, 4), (5, 4), (0, 6), (7, 1), (3, 4), (4, 7)],
+    );
+    const FOURTH: Drawing = (
+        &[
+            (12.109442529498384, 4.3517102365103355),
+            (33.62685007624623, 4.658497982736232),
+            (19.898640081920696, 26.06584568005811),
+            (28.912344556159155, 38.044169130764296),
+            (0.6225056790265215, 35.388251889222964),
+            (8.933353287890608, 6.002599834549827),
+        ],
+        &[(1, 0), (2, 0), (3, 1), (0, 4), (0, 5), (1, 5), (4, 5), (3, 0), (3, 5)],
+    );
+    // Each drawing, the node given, the most nodes for every one to be tried, and what the route
+    // sews twice (millimetres; `None`: the least).
+    let routes: [(Drawing, usize, usize, Option<f64>); 7] = [
+        (FIRST, 6, EVERY_END_NODES, None),
+        (FIRST, 6, 0, None),
+        (SECOND, 3, EVERY_END_NODES, None),
+        (SECOND, 3, 7, None),
+        (SECOND, 3, 6, Some(75.535_291)),
+        (THIRD, 0, 0, None),
+        (FOURTH, 4, 0, None),
+    ];
+    for (k, &((points, edges), from, every, sews)) in routes.iter().enumerate() {
+        let nodes: Vec<Point> = points.iter().map(|&(x, y)| Point::new(x, y)).collect();
+        let path = path_of(&nodes, edges);
+        let subs = subpaths(&path);
+        let graph = Graph::of(&subs).expect("pieces that meet");
+        let parts = graph.components();
+        let at = graph.nodes.iter().position(|q| q.distance(nodes[from]) < 1e-9).expect("the given node");
+        let want = sews.unwrap_or_else(|| least_twice_from(&nodes, edges, Some(from)));
+        let twice = |r: &super::route::Route| -> f64 { r.steps.iter().filter(|s| s.again).map(|s| graph.edges[s.edge].len).sum() };
+        let back = twice(&route(&graph, &parts[0], Some(at), Some(at), &|| false).expect("a route back"));
+        for (start, end) in [(Some(at), None), (None, Some(at))] {
+            let r = route_trying(&graph, &parts[0], start, end, every, &|| false).expect("a route");
+            assert!((twice(&r) - want).abs() < 1e-5, "route {k}, {start:?} {end:?}: {} mm twice, {want} wanted", twice(&r));
+            assert!(twice(&r) <= back + 1e-9, "route {k}: more twice than coming back");
+            assert!(start.is_none_or(|s| r.start == s) && end.is_none_or(|e| r.end == e), "route {k}: the end given moved");
+        }
+    }
+}
+
 /// A drawing shorter than the shortest stitch is left out, as each of its pieces would be: a 0.1 mm V
 /// 20 mm past a line adds no jump and no needle point, where it was sewn as a lone needle point
 /// with a jump to it.

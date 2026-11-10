@@ -102,7 +102,7 @@ pub(crate) struct UnitStitches {
 /// The stitches `req` asks for: the shape planned in its style from where the needle is, a fill's
 /// narrow parts sewn as satin columns that follow the shape, a stroke inside clip groups cut to
 /// them; an error when the shape would need too many stitches, or when the plan is cancelled
-/// while its narrow parts are looked for or cut out.
+/// (while its narrow parts are looked for or cut out, or its stitches planned).
 ///
 /// A fill's narrow parts and its rest are `parts` when given (kept between plans: neither depends
 /// on where it starts or ends), else found here ([`parted`]).
@@ -127,10 +127,20 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result
     let (planned, columns) = match (columns, parts.and_then(|p| p.cut.as_ref())) {
         (Some(satin), Some((rest, whole))) => {
             // The rows across the shape are measured on the shape itself, as `embroidery.info` does.
-            let planned = plan::try_fill_with_columns_measured(whole, FillRule::NonZero, rest, found, &params, &satin, aim, Some((shape, rule)));
-            (planned.map_err(PlanError::from), Some(satin))
+            let planned = plan::try_fill_with_columns_measured_until(
+                whole,
+                FillRule::NonZero,
+                rest,
+                found,
+                &params,
+                &satin,
+                aim,
+                Some((shape, rule)),
+                &cancel::is_cancelled,
+            );
+            (planned.map_err(PlanError::from).and_then(|s| s.ok_or(PlanError::Cancelled)), Some(satin))
         }
-        // A running line's drawings and routes stop at a cancel.
+        // Every style stops at a cancel, within one of its steps.
         _ => (
             plan::try_stitches_aimed_until(shape, rule, &params, aim, &cancel::is_cancelled)
                 .map_err(PlanError::from)
@@ -165,7 +175,7 @@ pub(crate) fn plan_unit(req: &UnitRequest<'_>, parts: Option<&Parted>) -> Result
 /// are found from. An error when the plan is cancelled while they are looked for or cut out.
 pub(crate) fn parted(shape: &BezPath, rule: FillRule, narrow: f64) -> Result<Parted, PlanError> {
     let found = plan::narrow_columns_until(shape, rule, narrow, &cancel::is_cancelled).ok_or(PlanError::Cancelled)?;
-    let cut = if found.is_empty() { None } else { Some(rest_of(shape, rule, &found)?) };
+    let cut = if found.is_empty() { None } else { Some(rest_of(shape, rule, &found, &cancel::is_cancelled)?) };
     Ok(Parted { found, cut })
 }
 
@@ -250,14 +260,19 @@ fn ends_reach(shape: &BezPath, params: &Params, satin: Option<&Params>, found: &
 /// column's outline grown by [`COLUMN_GROWTH`] and cut out; and the rest and the grown columns
 /// together, the area the needle travels in. (The rest's edges along the outline come from the
 /// path operations, a hair off the outline as the planner flattens it: travelling in the rest
-/// and the columns as the same operations give them, every row's end lies on or inside it.) An
-/// error when the plan is cancelled between two columns.
-fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(BezPath, BezPath), PlanError> {
+/// and the columns as the same operations give them, every row's end lies on or inside it.)
+///
+/// `stopped` is asked whether to stop (a plan that is cancelled) before each column's band and
+/// before the cut and the union that follow the columns' union: an error once it says so. The path
+/// operations are upstream's and check for none, so a cancel waits for the one under way (uniting
+/// the 20 rings' columns took 385 ms of the 442 the three took in a test build, 2026-11-09).
+fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column], stopped: &dyn Fn() -> bool) -> Result<(BezPath, BezPath), PlanError> {
+    let check = || if stopped() { Err(PlanError::Cancelled) } else { Ok(()) };
     // Every column's outline and the band along it, united in one sweep (uniting them one at a
     // time would sweep everything united so far again for each column).
     let mut parts: Vec<PathData> = Vec::with_capacity(2 * columns.len());
     for c in columns {
-        cancel::check().map_err(|_| PlanError::Cancelled)?;
+        check()?;
         let outline = PathData::from_bezpath(&c.outline());
         parts.push(outline_stroke(&outline, 2.0 * COLUMN_GROWTH, Cap::Round, Join::Round, ROUND_JOINS));
         parts.push(outline);
@@ -265,7 +280,9 @@ fn rest_of(area: &BezPath, rule: FillRule, columns: &[plan::Column]) -> Result<(
     let cut = (!parts.is_empty()).then(|| unite_all(&parts.iter().map(|p| (p, FillRule::NonZero)).collect::<Vec<_>>()));
     match cut {
         Some(cut) => {
+            check()?;
             let rest = boolean(&PathData::from_bezpath(area), rule, &cut, FillRule::NonZero, BoolOp::Difference);
+            check()?;
             let whole = boolean(&rest, FillRule::NonZero, &cut, FillRule::NonZero, BoolOp::Union);
             Ok((rest.to_bezpath(), whole.to_bezpath()))
         }
@@ -521,6 +538,33 @@ mod tests {
         assert!((in_arm - arm).abs() < 0.2, "in an arm, {in_arm} mm, about {arm}");
         assert_eq!(reach((15.0, 1.5))[1], 0.0, "in the square of rows");
         assert_eq!(ends_reach(&t, &fill, Some(&satin), &found, &stitches(&[(5.0, 1.5), (25.0, 1.5)]), [true, false])[1], 0.0, "no exit asked");
+    }
+
+    /// Cutting a fill's narrow parts out asks whether to stop before each column's band and before
+    /// the cut and the union after the columns' union: stopped at any of those asks, it stops there.
+    #[test]
+    fn cutting_narrow_parts_out_asks_before_each_path_operation() {
+        use std::cell::Cell;
+        let t = polygon(&[(0.0, 0.0), (30.0, 0.0), (30.0, 3.0), (16.5, 3.0), (16.5, 23.0), (13.5, 23.0), (13.5, 3.0), (0.0, 3.0)], true);
+        let found = plan::narrow_columns(&t, FillRule::NonZero, 7.0);
+        assert!(found.len() >= 2, "{} narrow parts", found.len());
+        let asks = Cell::new(0usize);
+        let ask = || {
+            asks.set(asks.get() + 1);
+            false
+        };
+        assert!(rest_of(&t, FillRule::NonZero, &found, &ask).is_ok());
+        let every = found.len() + 2;
+        assert_eq!(asks.get(), every, "a column's band each, the cut and the union");
+        for k in 1..=every {
+            let asked = Cell::new(0usize);
+            let at_k = || {
+                asked.set(asked.get() + 1);
+                asked.get() >= k
+            };
+            assert_eq!(rest_of(&t, FillRule::NonZero, &found, &at_k), Err(PlanError::Cancelled), "stopped at ask {k}");
+            assert_eq!(asked.get(), k, "asked on after ask {k}");
+        }
     }
 
     /// A satin ring has no ends to push in: its reach is half its width and its pull compensation,

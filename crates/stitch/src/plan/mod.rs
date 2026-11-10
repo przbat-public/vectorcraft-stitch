@@ -54,6 +54,8 @@ mod tests_caps;
 mod tests_narrow;
 #[cfg(test)]
 mod tests_route;
+#[cfg(test)]
+mod tests_turns;
 mod toward;
 
 use vectorcraft_geom::{BezPath, FillRule, Point};
@@ -623,18 +625,17 @@ pub(crate) fn stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Ai
     stitches_aimed_until(path, rule, p, aim, &|| false)
 }
 
-/// [`try_stitches_aimed_until`] without its checks: what the planners build, a running line asking
-/// `stopped` between its drawings and in its routes' steps whether to stop (a plan that is
-/// cancelled), what it then returns cut short, for the caller to drop. Unchecked, a shape far out
-/// of range or a tiny stitch length builds without bound, so only the checked entry points are
-/// public.
+/// [`try_stitches_aimed_until`] without its checks: what the planners build, asking `stopped`
+/// whether to stop (a plan that is cancelled), what they then return cut short, for the caller to
+/// drop. Unchecked, a shape far out of range or a tiny stitch length builds without bound, so only
+/// the checked entry points are public.
 fn stitches_aimed_until(path: &BezPath, rule: FillRule, p: &Params, aim: Aim, stopped: &dyn Fn() -> bool) -> Vec<Stitch> {
     let p = p.sane();
     match sewn_style(&p) {
         Style::Running => toward::nearer(aim, &p, |aim| running::running_until(path, &p, aim, stopped)),
-        Style::Satin => toward::nearer(aim, &p, |aim| satin::satin(path, &p, aim)),
+        Style::Satin => toward::nearer(aim, &p, |aim| satin::satin(path, &p, aim, stopped)),
         // Weighs its rows toward the exit itself, by their moves before they are joined.
-        Style::Fill => fill::fill(path, rule, &p, aim),
+        Style::Fill => fill::fill(path, rule, &p, aim, stopped),
     }
 }
 
@@ -722,9 +723,14 @@ pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) 
     Ok(try_stitches_aimed_until(path, rule, p, aim, &|| false)?.unwrap_or_default())
 }
 
-/// [`try_stitches_aimed`], a running line asking `stopped` whether to stop as its drawings and
-/// routes are planned (a plan that is cancelled): `None` once it says so. A satin or a fill, which
-/// has no check of its own, is planned whole.
+/// [`try_stitches_aimed`], asking `stopped` whether to stop (a plan that is cancelled): `None` once
+/// it says so. A running line asks between its drawings and in its routes' steps, a satin before
+/// each of its lines, a fill between its parts and within them (between its underlay's layers and
+/// its rows, before each outline's edge run, each piece of regions, each order of them tried and
+/// each region, and every few hundred rows found): each a small part of the tenth of a second a
+/// cancel may take (the project owner's choice, 2026-11-09, „0,1 s (polecam)”, the limit within
+/// which a response feels instant: Jakob Nielsen, *Response Times: The 3 Important Limits*,
+/// <https://www.nngroup.com/articles/response-times-3-important-limits/>).
 pub fn try_stitches_aimed_until(
     path: &BezPath,
     rule: FillRule,
@@ -737,7 +743,7 @@ pub fn try_stitches_aimed_until(
     let subs = subpaths(path);
     within_limit(estimate(&subs, &p) + aimed_extra(&subs, &p, &aim))?;
     let stitches = stitches_aimed_until(path, rule, &p, aim, stopped);
-    Ok((sewn_style(&p) != Style::Running || !stopped()).then_some(stitches))
+    Ok((!stopped()).then_some(stitches))
 }
 
 /// How many more points than [`estimate`] counts `subs` may plan into in style `p` when sewn
@@ -818,6 +824,23 @@ pub fn try_fill_with_columns_measured(
     aim: Aim,
     measured: Option<(&BezPath, FillRule)>,
 ) -> crate::Result<Vec<Stitch>> {
+    Ok(try_fill_with_columns_measured_until(shape, rule, rest, columns, fill, satin, aim, measured, &|| false)?.unwrap_or_default())
+}
+
+/// [`try_fill_with_columns_measured`], asking `stopped` whether to stop as
+/// [`try_stitches_aimed_until`] asks a fill: `None` once it says so.
+#[allow(clippy::too_many_arguments)]
+pub fn try_fill_with_columns_measured_until(
+    shape: &BezPath,
+    rule: FillRule,
+    rest: &BezPath,
+    columns: &[Column],
+    fill: &Params,
+    satin: &Params,
+    aim: Aim,
+    measured: Option<(&BezPath, FillRule)>,
+    stopped: &dyn Fn() -> bool,
+) -> crate::Result<Option<Vec<Stitch>>> {
     /// More than a column's points per millimetre of its middle beyond its crossings: its
     /// underlay's (up to three runs at [`UNDERLAY_STITCH`]) and its splits.
     const UNDERLAYS: f64 = 3.0;
@@ -840,7 +863,8 @@ pub fn try_fill_with_columns_measured(
         if aim.finite_exit().is_some() { columns.iter().map(|c| c.length() / area::TRAVEL_STITCH + satin::PASS_ENDS).sum::<f64>() } else { 0.0 };
     let subs = subpaths(shape);
     within_limit(estimate(&subs, &f) + aimed_extra(&subs, &f, &aim) + columns.iter().map(column).sum::<f64>() + passes)?;
-    Ok(fill::fill_with_columns_measured(shape, rule, rest, columns, &f, &s, aim, measured))
+    let stitches = fill::fill_with_columns_measured(shape, rule, rest, columns, &f, &s, aim, measured, stopped);
+    Ok((!stopped()).then_some(stitches))
 }
 
 /// Refused with [`Error::TooLarge`] when `path` lies beyond [`MAX_COORD_MM`] or has a coordinate

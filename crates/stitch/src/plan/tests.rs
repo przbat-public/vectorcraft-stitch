@@ -1002,7 +1002,7 @@ fn the_moves_counted_are_the_moves_sewn() {
     for (name, shape, lifts) in &shapes {
         for underlay in [Underlay::None, Underlay::Auto] {
             let p = Params { underlay, ..Params::for_style(Style::Fill) }.sane();
-            let runs = fill::fill_runs(shape, FillRule::NonZero, &p, Aim::from_needle(None));
+            let runs = fill::fill_runs(shape, FillRule::NonZero, &p, Aim::from_needle(None), &|| false);
             let moves = runs.moves;
             let out = runs.join();
             let count = |c: Command| out.iter().filter(|s| s.command == c).count();
@@ -1147,7 +1147,7 @@ fn the_moves_counted_are_the_moves_sewn_from_any_start_toward_any_exit() {
                 let p = Params { underlay, min_stitch, ..Params::for_style(Style::Fill) }.sane();
                 for &start in &starts {
                     for exit in [None, Some(Point::new(b.x1, b.y1))] {
-                        let runs = fill::fill_runs(&shape, FillRule::NonZero, &p, Aim { start, exit });
+                        let runs = fill::fill_runs(&shape, FillRule::NonZero, &p, Aim { start, exit }, &|| false);
                         let moves = runs.moves;
                         let out = runs.join();
                         plans += 1;
@@ -1206,10 +1206,10 @@ fn an_exit_never_makes_a_fill_worse_as_sewn() {
                         Start::Needle(q) => Some(q),
                         _ => None,
                     };
-                    let (lifts, cuts, end) = judged(&fill::fill(shape, FillRule::NonZero, &p, Aim { start, exit: None }), from, &p);
+                    let (lifts, cuts, end) = judged(&fill::fill(shape, FillRule::NonZero, &p, Aim { start, exit: None }, &|| false), from, &p);
                     for &exit in &exits {
                         let (aimed_lifts, aimed_cuts, aimed_end) =
-                            judged(&fill::fill(shape, FillRule::NonZero, &p, Aim { start, exit: Some(exit) }), from, &p);
+                            judged(&fill::fill(shape, FillRule::NonZero, &p, Aim { start, exit: Some(exit) }, &|| false), from, &p);
                         plans += 1;
                         let farther = match (end, aimed_end) {
                             (Some(a), Some(b)) => b.distance(exit) > a.distance(exit) + crate::SAME_POINT,

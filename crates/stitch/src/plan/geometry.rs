@@ -171,14 +171,17 @@ pub(super) fn resample_by(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64
     resample_by_until(pts, closed, step, &|| false)
 }
 
-/// How many points resampling a line ([`resample_by_until`]) makes, and how many crossings a satin
-/// line works out ([`super::satin`]), between two asks whether to stop: one satin line may have
-/// millions (a shape may have up to [`MAX_STITCHES`]), and one of 550,000 stitches took 40 ms to
-/// resample and 24 ms to cross in release, 2026-11-09, so that 4,096 of either take about a third
-/// of a millisecond.
+/// How much resampling a line ([`resample_by_until`]) does, each piece of the line it passes and
+/// each point it makes, and how many crossings a satin line works out ([`super::satin`]), between
+/// two asks whether to stop: one satin line may have millions (a shape may have up to
+/// [`MAX_STITCHES`]), and one of 550,000 stitches took 40 ms to resample and 24 ms to cross in
+/// release, 2026-11-09, so that 4,096 of either take about a third of a millisecond.
 pub(super) const STOP_SAMPLES: usize = 4096;
 
-/// [`resample_by`], asking `stopped` whether to stop every [`STOP_SAMPLES`] points it makes: once it
+/// [`resample_by`], asking `stopped` whether to stop every [`STOP_SAMPLES`] steps of its work: each
+/// piece of the line it passes and each point it makes, a corner's too. A count of the points it has
+/// would skip its asks where a line's sharp corners lie closer than a step (each corner's point made
+/// with no step between them, as along a traced pixel edge) or fall just where it would ask. Once it
 /// says so, the points made so far, for the caller to drop.
 pub(super) fn resample_by_until(pts: &[Point], closed: bool, step: &dyn Fn(f64) -> f64, stopped: &dyn Fn() -> bool) -> Vec<(Point, f64)> {
     let (Some(&first), Some(&last)) = (pts.first(), pts.last()) else { return Vec::new() };
@@ -193,7 +196,17 @@ pub(super) fn resample_by_until(pts: &[Point], closed: bool, step: &dyn Fn(f64) 
     let at = |i: usize| pts.get(if i >= n { i - n } else { i }).copied();
     // The step on from the last point.
     let step_on = |out: &[(Point, f64)]| step(out.last().map_or(0.0, |&(_, s)| s));
+    // Its work so far, one a piece passed or a point made, and whether to stop now that it has done
+    // one more: asked at each multiple of `STOP_SAMPLES`.
+    let mut work = 0usize;
+    let mut stop_after_one_more = || {
+        work += 1;
+        work.is_multiple_of(STOP_SAMPLES) && stopped()
+    };
     for i in 0..segs {
+        if stop_after_one_more() {
+            return out;
+        }
         let (Some(a), Some(b)) = (at(i), at(i + 1)) else { continue };
         let seg = a.distance(b);
         if seg <= NO_LENGTH {
@@ -204,7 +217,7 @@ pub(super) fn resample_by_until(pts: &[Point], closed: bool, step: &dyn Fn(f64) 
             out.push((a + (b - a) * f, next));
             fixed = false;
             next += step(next);
-            if out.len() >= MAX_STITCHES || (out.len().is_multiple_of(STOP_SAMPLES) && stopped()) {
+            if out.len() >= MAX_STITCHES || stop_after_one_more() {
                 return out;
             }
         }
@@ -221,6 +234,9 @@ pub(super) fn resample_by_until(pts: &[Point], closed: bool, step: &dyn Fn(f64) 
         {
             fixed = true;
             next = travelled + step(travelled);
+            if stop_after_one_more() {
+                return out;
+            }
         }
     }
     let last_step = step_on(&out);

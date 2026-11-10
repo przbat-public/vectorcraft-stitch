@@ -726,15 +726,15 @@ pub fn try_stitches_aimed(path: &BezPath, rule: FillRule, p: &Params, aim: Aim) 
 }
 
 /// [`try_stitches_aimed`], asking `stopped` whether to stop (a plan that is cancelled): `None` once
-/// it says so, the question latched ([`Latched`]: once it says so it is not asked again). A
-/// running line asks between its drawings and in its routes' steps; a satin before
-/// each of its lines and, within one, every few thousand points it resamples and crossings it works
-/// out; a fill between its parts and within them: between its underlay's layers and its rows,
-/// before each outline's edge run and every few hundred corners of its inset, each piece of
-/// regions, each order of them tried and each region, every few hundred rows found or million
-/// matches of their spans, and within a travel every few corners its graph looks at or its search
-/// settles and every million points its outline's simplification looks at. Each is a small part of
-/// the tenth of a second a cancel may take (the project owner's choice, 2026-11-09, „0,1 s
+/// it says so, the question latched ([`Latched`]: once it says so it is not asked again). A running
+/// line asks between its drawings and in its routes' steps; a satin before each of its lines and,
+/// within one, every few thousand pieces it passes or points it makes as it resamples, and
+/// crossings it works out; a fill between its parts and within them: between its underlay's layers
+/// and its rows, before each outline's edge run and every few hundred corners of its inset, each
+/// piece of regions, each order of them tried and each region, every few hundred rows found or
+/// million matches of their spans, and within a travel every few corners its graph looks at or its
+/// search settles and every million points its outline's simplification looks at. Each is a small
+/// part of the tenth of a second a cancel may take (the project owner's choice, 2026-11-09, „0,1 s
 /// (polecam)”, the limit within which a response feels instant: Jakob Nielsen, *Response Times: The
 /// 3 Important Limits*, <https://www.nngroup.com/articles/response-times-3-important-limits/>): the
 /// longest stretch between two asks measured in release on the PR's review's hardest shapes, combs

@@ -1923,10 +1923,12 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   inset, every 256 rows or a million matches of their spans, once a piece, an order, a region and a
   walk's step, once a part, once a part the order of more than six picks, every 16 corners a
   travel's graph looks at or its search settles, every million points a simplification looks at,
-  once a line and every 4,096 points it resamples or crossings it works out, once a column's band
-  and before the cut and the union), nothing planned when asked to stop from the start, and a plan
-  stopped partway no plan. The stitch view's test of the art's passes renders every frame on its own
-  thread. Each step switched off fails a test.
+  once a line and every 4,096 steps of its resampling, each piece passed and each point made, a
+  corner's too (along a staircase whose corners lie closer together than a step and a meander whose
+  corners fall where a count of its points would ask, as often as a straight line), or crossings it
+  works out, once a column's band and before the cut and the union), nothing planned when asked to
+  stop from the start, and a plan stopped partway no plan. The stitch view's test of the art's
+  passes renders every frame on its own thread. Each step switched off fails a test.
 
 **Real designs** (`crates/engine/tests/embroidery_corpus.rs`): `cargo xtask corpus --embroidery`
 fetches eleven designs of the [Emoji Embroidery Project](https://edutechwiki.unige.ch/en/Emoji_Embroidery_Project)
@@ -2448,10 +2450,12 @@ flowchart LR
   each part of a fill sewn in parts and, past six parts, before each part their order picks, and
   within a travel every 16 corners its graph looks at or its search settles and every million points
   its outline's simplification looks at; a satin before each of its lines and, within one, every
-  4,096 points it resamples or crossings it works out; a running line between its drawings and in
-  its routes' steps. So a cancel stops a plan within a tenth of a second (the project owner's
-  choice, 2026-11-09, „0,1 s (polecam)”: the limit within which a response feels instant, Jakob
-  Nielsen, [Response Times: The 3 Important
+  4,096 steps of its resampling (each piece of the line passed and each point made, a corner's too:
+  a line whose corners lie closer together than a step, as a traced pixel edge's do, asks at least
+  as often as a straight one of as many points) or crossings it works out; a running line between
+  its drawings and in its routes' steps. So a cancel stops a plan within a tenth of a second (the
+  project owner's choice, 2026-11-09, „0,1 s (polecam)”: the limit within which a response feels
+  instant, Jakob Nielsen, [Response Times: The 3 Important
   Limits](https://www.nngroup.com/articles/response-times-3-important-limits/); asks added inside
   the steps that ran past it, the owner's „Dodać pytania teraz (polecam)”: the longest stretch
   between two asks on the PR's review's hardest shapes, combs of 200 to 3,000 teeth and a satin line

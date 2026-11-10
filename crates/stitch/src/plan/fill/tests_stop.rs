@@ -425,9 +425,9 @@ fn every_inset_asks_where_it_is_made() {
     assert_eq!(asked(Some(Point::ZERO)), asked(None) + 2 * ((SIDES - 1) / STOP_CORNERS), "the entry's inset asks");
 }
 
-/// Resampling a line asks every [`STOP_SAMPLES`] points it makes; told to stop, it returns what it
-/// made. A straight line a quarter of a millimetre's step long `STEPS` steps and a half: `STEPS`
-/// points made along it after its first, all exact in binary.
+/// Resampling a line asks every [`STOP_SAMPLES`] steps of its work; told to stop, it returns what it
+/// made. A straight line a quarter of a millimetre's step long `STEPS` steps and a half: one piece,
+/// and `STEPS` points made along it after its first, all exact in binary.
 #[test]
 fn resampling_asks_every_few_thousand_points() {
     const STEP: f64 = 0.25;
@@ -438,10 +438,96 @@ fn resampling_asks_every_few_thousand_points() {
     let asks = Asks::default();
     let points = resample_by_until(&line, false, &|_| STEP, &|| asks.ask());
     assert!(points.len() > STEPS, "{} points", points.len());
-    // Asked as the points made reach each multiple: the first, then those along it.
+    // Asked as its work reaches each multiple: the piece, then the points made along it.
     assert_eq!(asks.count(), (STEPS + 1) / STOP_SAMPLES);
     let cut = resample_by_until(&line, false, &|_| STEP, &|| true);
     assert_eq!(cut.len(), STOP_SAMPLES, "made up to the first ask, then stopped");
+}
+
+/// A staircase of `stairs` stairs `rise` millimetres right and then up, every corner a right angle
+/// (as a traced pixel edge's are).
+fn staircase(stairs: usize, rise: f64) -> Vec<Point> {
+    let mut at = Point::ZERO;
+    let mut pts = vec![at];
+    for _ in 0..stairs {
+        at = Point::new(at.x + rise, at.y);
+        pts.push(at);
+        at = Point::new(at.x, at.y + rise);
+        pts.push(at);
+    }
+    pts
+}
+
+/// A meander of `legs` legs, right, up, right, down and so on, every corner a right angle: the first
+/// leg `first` millimetres long, each other `leg`.
+fn meander(legs: usize, first: f64, leg: f64) -> Vec<Point> {
+    let mut at = Point::ZERO;
+    let mut pts = vec![at];
+    for k in 0..legs {
+        let len = if k == 0 { first } else { leg };
+        at = match k % 4 {
+            1 => Point::new(at.x, at.y + len),
+            3 => Point::new(at.x, at.y - len),
+            _ => Point::new(at.x + len, at.y),
+        };
+        pts.push(at);
+    }
+    pts
+}
+
+/// How often resampling the open line `line` with a step of `step` millimetres asks whether to stop,
+/// and how many points it makes.
+fn resampling_asks(line: &[Point], step: f64) -> (usize, usize) {
+    let asks = Asks::default();
+    let points = resample_by_until(line, false, &|_| step, &|| asks.ask());
+    (asks.count(), points.len())
+}
+
+/// How often resampling a straight line into `points` points asks, with a step of `step`
+/// millimetres: one piece, `points - 2` steps and a half long, its end a point of its own.
+fn straight_asks(points: usize, step: f64) -> usize {
+    /// The steps short of one a point the line is: half a step past its last point inside.
+    const SHORT: f64 = 1.5;
+    let length = step * (points as f64 - SHORT);
+    let (asks, made) = resampling_asks(&[Point::ZERO, Point::new(length, 0.0)], step);
+    assert_eq!(made, points, "the straight line's points");
+    asks
+}
+
+/// Resampling asks by its work, not by the points it has: each piece of the line it passes and each
+/// point it makes, a corner's too. A line whose sharp corners lie closer together than a step (as a
+/// traced pixel edge's do) gets a point at each corner and none between them, and one whose corners
+/// fall where a count of its points would ask gets its corners' points just there. Each asks at
+/// least as often as a straight line of as many points, and exactly at each multiple of
+/// [`STOP_SAMPLES`] steps of its work.
+#[test]
+fn resampling_asks_by_its_work_whatever_the_lines_corners() {
+    // Stairs of 0.1 mm and a step of 0.225 mm: longer than a stair, so that the step on from a
+    // corner reaches past the next one and no point falls between them, and short enough that each
+    // corner lies more than a stub of a step past the one before and gets a point of its own.
+    const RISE: f64 = 0.1;
+    const STEP: f64 = 0.225;
+    let stairs = staircase(STOP_SAMPLES, RISE);
+    let pieces = stairs.len() - 1;
+    let (asks, points) = resampling_asks(&stairs, STEP);
+    assert_eq!(points, stairs.len(), "a point at the start, at each corner and at the end");
+    assert!(asks >= straight_asks(points, STEP), "{asks} asks for {points} points along the stairs");
+    // Each piece passed, and each corner's point: every piece but the last ends at one.
+    assert_eq!(asks, (pieces + pieces - 1) / STOP_SAMPLES, "asked by its pieces and its corners' points");
+    // A step of a millimetre, the first leg a step and a half short of `STOP_SAMPLES` steps and each
+    // other half a step short: each leg's points stop half a step before its corner, whose own point
+    // is then the leg's 4,096th, just where a count of the points would ask.
+    const LEGS: usize = 4;
+    const MM: f64 = 1.0;
+    let whole = STOP_SAMPLES as f64;
+    let line = meander(LEGS, whole - 1.5, whole - 0.5);
+    let (asks, points) = resampling_asks(&line, MM);
+    assert_eq!(points, LEGS * STOP_SAMPLES, "4,096 points a leg");
+    assert!(asks >= straight_asks(points, MM), "{asks} asks for {points} points along the meander");
+    // A leg's piece, its points and its corner's point: 4,097 steps of its work a leg (one fewer on
+    // the first leg, whose first point is the start, and on the last, whose corner is the end), so
+    // once a leg.
+    assert_eq!(asks, LEGS, "asked once a leg");
 }
 
 /// A satin line asks within itself too, as it resamples its middle and as it works out its

@@ -482,7 +482,9 @@ pub fn manual(run: Run) -> Manual {
     let stopped = *runs_under(run, top).first().unwrap_or_else(|| panic!("no run pasted: {top}"));
     // The runs edited in the file, as a newer version or a file of another maker might hold them,
     // and opened again: the same ids.
-    let data = run("document.serialize", json!({"format": "vectorcraft"}))["dataBase64"].as_str().map(str::to_string);
+    // Serialized without the PDF a native file carries after its JSON by default (since upstream's
+    // v0.23), so that it reads as JSON.
+    let data = run("document.serialize", json!({"format": "vectorcraft", "pdfCompatible": false}))["dataBase64"].as_str().map(str::to_string);
     let bytes = data.and_then(|d| vectorcraft_format::base64_decode(&d)).unwrap_or_else(|| panic!("no document serialized"));
     let mut file: Value = serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("the document isn't JSON: {e}"));
     edit_node(&mut file, one_point, |n| {

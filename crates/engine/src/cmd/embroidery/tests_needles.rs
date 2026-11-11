@@ -1387,3 +1387,44 @@ fn no_form_of_join_reverses_a_run() {
     let joined = s.execute("path.join", &json!({"ids": [c, c], "subpaths": [0, 1]}));
     assert_eq!(needle_points(&s, c), in_order, "one path's runs, joined forwards or left as they were: {joined:?}");
 }
+
+/// Delete and Cut of a direct selection that takes in more than needle points (an art path's anchor
+/// besides a needle point, or one of the run's stitches) go through upstream's Delete and Cut,
+/// which since its v0.23 split a path of one subpath into separate objects (#3380): a path of
+/// stitches stays one object, as before, its pieces its runs, each stop on its needle point and
+/// the cut after it kept.
+#[test]
+fn a_delete_or_cut_past_needle_points_keeps_a_path_of_stitches_one_object_with_its_marks() {
+    let points = [(10.0, 10.0), (12.0, 10.0), (14.0, 10.0), (16.0, 10.0), (18.0, 10.0)];
+    // The stop as an edit writes it: by its place and by where it lies.
+    let stop = Mark::at(0, 3, vectorcraft_geom::Point::new(16.0 * PT_PER_MM, 10.0 * PT_PER_MM));
+    let marks = || StitchRun { stops: vec![stop], trim_after: true, ..StitchRun::default() };
+    // Each run's needle points' x in millimetres, a stop marked `*`.
+    let runs = |s: &Session, id: u64| -> Vec<String> {
+        let st = needles::read(&node(s, id)).unwrap();
+        let x = |n: &needles::Needle| format!("{:.0}{}", n.p.x / PT_PER_MM, if n.stop { "*" } else { "" });
+        st.runs.iter().map(|r| r.needles.iter().map(x).collect::<Vec<_>>().join(",")).collect()
+    };
+    let paths_of_stitches = |s: &Session| {
+        let mut n = 0;
+        s.doc().unwrap().doc.walk(|node: &Node| n += usize::from(needles::is_stitches(node)));
+        n
+    };
+    for cmd in ["edit.clear", "edit.cut"] {
+        // A needle point and an art path's anchor.
+        let mut s = blank();
+        let id = path_mm(&mut s, &points, marks());
+        let art = run(&mut s, "path.create", json!({"d": "M 100 100 L 120 100 L 140 100 L 160 100"}))["id"].as_u64().unwrap();
+        run(&mut s, "select.anchorsMany", json!({"items": [{"id": id, "anchors": [[0, 2]]}, {"id": art, "anchors": [[0, 1]]}]}));
+        run(&mut s, cmd, json!({}));
+        assert_eq!((runs(&s, id), paths_of_stitches(&s)), (vec!["10,12".to_string(), "16*,18".into()], 1), "{cmd}: one object, two runs");
+        assert!(stitches(&node(&s, id)).trim_after, "{cmd}: the cut after it kept");
+        // One of the run's stitches, the one from 12 to 14 millimetres.
+        let mut s = blank();
+        let id = path_mm(&mut s, &points, marks());
+        run(&mut s, "select.segments", json!({"id": id, "segments": [[0, 1]]}));
+        run(&mut s, cmd, json!({}));
+        assert_eq!((runs(&s, id), paths_of_stitches(&s)), (vec!["10,12".to_string(), "14,16*,18".into()], 1), "{cmd}: a stitch");
+        assert!(stitches(&node(&s, id)).trim_after, "{cmd}: the cut after it kept");
+    }
+}

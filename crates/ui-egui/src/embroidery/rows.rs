@@ -451,9 +451,9 @@ fn field(ui: &mut Ui, width: f32, row: &Row<'_>) -> Option<Edit> {
             // The id `number_field` gives its text box.
             let id = ui.scope_id().with((row.key, "number"));
             let edit = fields::number_field(ui, (row.key, "number"), *value, format, &Look { hint: *hint, ..look }, width, bounds);
+            // Tab stops on the field alone: upstream's scrub on its label is no Tab stop (since its
+            // v0.23, one press a field).
             keyboard_tip(ui, id, row.tip);
-            // Its label, which Tab stops on too (upstream's scrub senses clicks and drags on it).
-            keyboard_tip(ui, id.with("scrub-label"), row.tip);
             edit.map(Edit::Number)
         }
         // In a cell of its own width, its words cut short there (whole in the cell's tooltip): a

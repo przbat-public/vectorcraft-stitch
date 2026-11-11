@@ -117,8 +117,9 @@ fn ready(app: &mut VectorcraftApp, ctx: &egui::Context, width: f32) -> Drawn {
 }
 
 /// The dialog gives its first field the focus when it opens, and that field's help stays hidden
-/// (it would cover the next row before anything is typed); a Tab shows the help of what it moves
-/// to: the field's label (the scrub's, which Tab stops on), then the next row's field.
+/// (it would cover the next row before anything is typed); a Tab shows the help of the field it
+/// moves to: the next row's, then the one after (one press a field: upstream's scrub on a field's
+/// label is no Tab stop since its v0.23).
 #[test]
 fn the_first_fields_focus_shows_no_help_until_a_tab_moves_it() {
     let ctx = context();
@@ -126,7 +127,8 @@ fn the_first_fields_focus_shows_no_help_until_a_tab_moves_it() {
     open_tab(&mut app);
     let drawn = ready(&mut app, &ctx, WIDE);
     assert!(ctx.memory(|m| m.focused()).is_some(), "the dialog gives a field the focus");
-    let (pull, spacing) = (vocabulary::setup_tip("tatami.pull"), vocabulary::setup_tip("tatami.spacing"));
+    let (pull, spacing, length) =
+        (vocabulary::setup_tip("tatami.pull"), vocabulary::setup_tip("tatami.spacing"), vocabulary::setup_tip("tatami.length"));
     assert!(!drawn.has(pull), "no help shown for the focus the dialog gave");
     let tab = |app: &mut VectorcraftApp, tip: &str| {
         let key = Event::Key { key: egui::Key::Tab, physical_key: None, pressed: true, repeat: false, modifiers: egui::Modifiers::NONE };
@@ -136,8 +138,8 @@ fn the_first_fields_focus_shows_no_help_until_a_tab_moves_it() {
         }
         shown
     };
-    assert!(tab(&mut app, pull), "the help, on the field's label");
     assert!(tab(&mut app, spacing), "the next field's help");
+    assert!(tab(&mut app, length), "and the one after's");
 }
 
 fn dialog(app: &mut VectorcraftApp) -> &mut Dialog {

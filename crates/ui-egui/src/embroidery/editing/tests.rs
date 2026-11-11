@@ -72,6 +72,12 @@ fn key(k: Key) -> Event {
     Event::Key { key: k, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }
 }
 
+/// Key `k` let go: a press after it is a new press, not a repeat of a key held down (a held Enter
+/// or Escape acts once, since upstream's v0.23).
+fn let_go(k: Key) -> Event {
+    Event::Key { key: k, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE }
+}
+
 /// Where needle point `k` of the converted object's first run is on screen.
 fn needle_on_screen(app: &VectorcraftApp, object: u64, k: usize) -> Pos2 {
     let st = app.session.active().unwrap();
@@ -117,11 +123,11 @@ fn a_double_click_starts_editing_and_escape_deselects_then_leaves() {
     settle(&mut app, &ctx, &mut time);
     assert!(super::lines(&mut app).unwrap().1[0].contains("1 selected"), "{:?}", super::lines(&mut app));
     time += 0.05;
-    frame(&mut app, &ctx, time, vec![key(Key::Escape)]);
+    frame(&mut app, &ctx, time, vec![key(Key::Escape), let_go(Key::Escape)]);
     assert!(app.session.active().unwrap().selection.is_empty(), "Escape deselects first");
     assert_eq!(app.session.active().unwrap().isolation, Some(NodeId(object)), "still editing");
     time += 0.05;
-    frame(&mut app, &ctx, time, vec![key(Key::Escape)]);
+    frame(&mut app, &ctx, time, vec![key(Key::Escape), let_go(Key::Escape)]);
     assert_eq!(app.session.active().unwrap().isolation, None, "then Escape ends editing");
     assert!(super::lines(&mut app).is_none(), "no chip");
 }

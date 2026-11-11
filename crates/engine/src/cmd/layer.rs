@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Artboard, Document, LAYER_COLORS, LayerColor, Node, NodeId, NodeKind, Scaling};
+use vectorcraft_doc::{Artboard, ArtboardSide, Document, LAYER_COLORS, LayerColor, Node, NodeId, NodeKind, Scaling};
 use vectorcraft_geom::{Affine, Rect};
 
 use super::{
@@ -128,7 +128,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "New Artboard",
             ["Window", "Artboards"],
             None,
-            "{x?, y?, width?, height?, name?, color?: color (its background color, as artboard.setProps takes it, #rrggbbaa and #rgba refused; default: none), showCenterMark?: bool, showCrossHairs?: bool, showVideoSafeAreas?: bool (as artboard.setProps takes them; default false), videoRulerPixelAspectRatio?: number 0.1–10 (as artboard.setProps takes it; default 1)} (default place: right of the last)",
+            "{x?, y?, width?, height?, name?, color?: color (its background color, as artboard.setProps takes it, #rrggbbaa and #rgba refused; default: none), showCenterMark?: bool, showCrossHairs?: bool, showVideoSafeAreas?: bool (as artboard.setProps takes them; default false), videoRulerPixelAspectRatio?: number 0.1–10 (as artboard.setProps takes it; default 1), side?: \"left\"|\"right\"|\"top\"|\"bottom\" (the size of artboard `beside`, 20 pt from that side of it; refused with x, y, width or height), beside?: n (the artboard `side` places it by; default the last)} (default place: right of the last)",
             has_doc,
             artboard_new
         ),
@@ -164,7 +164,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Fit to Artwork Bounds",
             ["Object", "Artboards"],
             None,
-            "{index?: n | indices?: [n…] (0-based; the app passes the selected artboards: the Artboard tool's, else the active one; default: the first)} each artboard fits the art on it that shows (with its strokes and effects; hidden objects and layers, guides and template layers don't count), in one undo step: an object counts for every artboard its bounds overlap, and a group or clipping layer counts as one object; an artboard with no art, or a locked one, stays as it is, and the command fails when every artboard it names is locked or none has art",
+            "{index?: n | indices?: [n…] (0-based; the app passes the selected artboards: the Artboard tool's, else the active one; default: the first)} each artboard fits the art on it that shows (with its strokes and effects; hidden objects and layers, guides and template layers don't count), in one undo step (none when every artboard already fits): an object counts for every artboard its bounds overlap, and a group or clipping layer counts as one object; an artboard with no art, or a locked one, stays as it is, and the command fails when every artboard it names is locked or none has art",
             has_doc,
             artboard_fit_art
         ),
@@ -601,7 +601,7 @@ fn set_current(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn highlight(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "layer.highlight";
-    let mut ids = ids_param(p, "ids").ok_or_else(|| bad(C, "missing ids"))?;
+    let mut ids = ids_param(p, "ids", C)?.ok_or_else(|| bad(C, "missing ids"))?;
     ids.truncate(MAX_ROWS);
     let mode = str_param(p, "mode").unwrap_or("set");
     let st = s.doc_mut()?;
@@ -740,7 +740,7 @@ enum Place {
 /// Drag rows in the Layers panel.
 fn move_rows(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "layer.move";
-    let mut ids = ids_param(p, "ids").or_else(|| id_param(p, "id").map(|i| vec![i])).ok_or_else(|| bad(C, "missing ids"))?;
+    let mut ids = ids_param(p, "ids", C)?.or_else(|| id_param(p, "id").map(|i| vec![i])).ok_or_else(|| bad(C, "missing ids"))?;
     ids.truncate(MAX_ROWS);
     let target = id_param(p, "target").ok_or_else(|| bad(C, "missing target"))?;
     let place = match str_param(p, "place").unwrap_or("inside") {
@@ -869,6 +869,17 @@ fn artboard_str<'a>(p: &'a Value, key: &str, cmd: &str) -> Result<Option<&'a str
     }
 }
 
+/// An artboard command's `side` param: None when absent or null, else the side it names. Any other
+/// value is an error that names the four sides.
+pub(crate) fn artboard_side(p: &Value, cmd: &str) -> Result<Option<ArtboardSide>> {
+    let bad_side = || bad(cmd, "`side` must be \"left\", \"right\", \"top\" or \"bottom\"");
+    match p.get("side") {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(v)) => ArtboardSide::parse(v).map(Some).ok_or_else(bad_side),
+        Some(_) => Err(bad_side()),
+    }
+}
+
 /// An artboard command's `videoRulerPixelAspectRatio` param: None when absent, else a number within
 /// [`vectorcraft_doc::VIDEO_PIXEL_ASPECT_RANGE`].
 fn video_pixel_aspect(p: &Value, cmd: &str) -> Result<Option<f64>> {
@@ -886,10 +897,24 @@ fn artboard_new(s: &mut Session, p: &Value) -> Result<Value> {
     let d0 = &s.doc()?.doc;
     let last = d0.artboards.last().map(|a| a.rect).unwrap_or(Rect::new(0.0, 0.0, 612.0, 792.0));
     let def = Rect::new(last.x1 + 20.0, last.y0, last.x1 + 20.0 + last.width(), last.y1);
-    let r = rect_from(p, def);
     let color = artboard_color(p, "artboard.new")?.flatten();
     check_switches(p, &["showCenterMark", "showCrossHairs", "showVideoSafeAreas"], "artboard.new")?;
     check_numbers(p, &["x", "y", "width", "height"], "artboard.new")?;
+    let r = match artboard_side(p, "artboard.new")? {
+        Some(side) => {
+            if ["x", "y", "width", "height"].iter().any(|k| p.get(*k).is_some_and(|v| !v.is_null())) {
+                return Err(bad("artboard.new", "`side` places the artboard: leave out x, y, width and height"));
+            }
+            let beside = match p.get("beside") {
+                None | Some(Value::Null) => d0.artboards.len().saturating_sub(1),
+                Some(_) => super::appearance::index_param(p, "beside", "artboard.new")?,
+            };
+            let src = d0.artboards.get(beside).map(|a| a.rect).ok_or_else(|| EngineError::Other("no such artboard".into()))?;
+            src + side.offset(src)
+        }
+        None if p.get("beside").is_some_and(|v| !v.is_null()) => return Err(bad("artboard.new", "`beside` needs `side`")),
+        None => rect_from(p, def),
+    };
     let given = artboard_str(p, "name", "artboard.new")?.map(str::trim).filter(|n| !n.is_empty());
     let (show_center_mark, show_cross_hairs) = (bool_or(p, "showCenterMark", false), bool_or(p, "showCrossHairs", false));
     let show_video_safe_areas = bool_or(p, "showVideoSafeAreas", false);
@@ -955,7 +980,7 @@ fn any_empty_artboards(d: &Document) -> bool {
 
 fn has_empty_artboards(s: &Session) -> std::result::Result<(), String> {
     let st = s.active().ok_or("no document open")?;
-    if any_empty_artboards(&st.doc) { Ok(()) } else { Err("no empty artboards to delete".into()) }
+    if st.any_empty_artboards(any_empty_artboards) { Ok(()) } else { Err("no empty artboards to delete".into()) }
 }
 
 fn artboard_delete_empty(s: &mut Session, _: &Value) -> Result<Value> {
@@ -1100,6 +1125,7 @@ fn artboard_set(s: &mut Session, p: &Value) -> Result<Value> {
                 for id in &e.art {
                     if let Some(n) = d.node_mut(*id) {
                         n.transform(xf, sc);
+                        super::object::keep_pixel_aligned(n, sc);
                     }
                 }
             } else if !e.resized {
@@ -1141,15 +1167,22 @@ fn artboard_fit_art(s: &mut Session, p: &Value) -> Result<Value> {
         super::panelcmds::refuse_locked(d, &indices)?;
     }
     let mut fits = vec![];
+    // One renderer measures every artboard: each 3D solid is built once.
+    let mut renderer = vectorcraft_render::Renderer::new();
     for i in unlocked {
         let was = d.artboards.get(i).map(|a| a.rect).ok_or_else(|| EngineError::Other("no such artboard".into()))?;
-        if let Some(b) = vectorcraft_render::encode::art_bounds_on(d, was) {
+        if let Some(b) = renderer.art_bounds_on(d, was) {
             // At least 1 pt a side, as `rect_from` makes Artboard Options' sizes.
             fits.push((i, was, Rect::new(b.x0, b.y0, b.x0 + b.width().max(1.0), b.y0 + b.height().max(1.0))));
         }
     }
     if fits.is_empty() {
         return Err(EngineError::Other("no artwork".into()));
+    }
+    // An artboard that already fits its art changes nothing, and no undo step is recorded for it.
+    fits.retain(|(_, was, now)| [now.x0 - was.x0, now.y0 - was.y0, now.x1 - was.x1, now.y1 - was.y1].iter().any(|d| d.abs() > 1e-6));
+    if fits.is_empty() {
+        return ok();
     }
     s.edit("Artboard Options", |d, _| {
         for &(i, was, now) in &fits {

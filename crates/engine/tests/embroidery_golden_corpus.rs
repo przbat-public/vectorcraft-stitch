@@ -7,7 +7,13 @@
 //! (2026-11-02, the project owner's choice), whose random editing gained Make Compound Shape (a new
 //! corpus) and whose Expand Appearance leaves a stroke a stroke (#3089). Checked then: the old
 //! corpus, with the old outlining put back, exported every byte as recorded at the merge base; with
-//! the new Expand Appearance, five of its forty documents moved, nothing else.
+//! the new Expand Appearance, five of its forty documents moved, nothing else. They were recorded
+//! again at the sync with upstream v0.23.0 and the 249 commits after it (2026-11-10, the project
+//! owner's choice), where selecting an object gives new art its fill, stroke and weight (#6252,
+//! `de6cc6a9c` and `8206f2191`) and Simplify fits its curves within its tolerance (`199c4c346`,
+//! `4a7d73219`, `bc19dd64d`). Checked then: with those five commits reverted, every line exported
+//! as recorded; with them, ten documents moved (3, 6 and 24 by Simplify; 7, 12, 14, 20, 21, 35 and
+//! 36 by the paint new art takes), 76 of the 320 lines, nothing else.
 //!
 //! - As it is, every document exports as recorded: nothing added since changes a design that
 //!   doesn't use it.

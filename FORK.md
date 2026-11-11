@@ -250,7 +250,9 @@ stitches fast, is tried before anything is built on it.
    `straightLines`, the order by the thread list), outlines, Document Setup's row for a fill's rows,
    and Embroidery Settings… over the window. Then an inspector for each area,
    whose overrides survive retracing (kept by the point clicked and its colour, not the area's
-   number) and become the areas' embroidery settings.
+   number) and become the areas' embroidery settings. In the engine, at a time of its own: a hole
+   of the background's colour that a letter encloses kept whatever its size (the 2026-11-11 row;
+   a tagline's A's lost their 0.5 mm² counters to the 1 mm² smallest area and were sewn as Λ).
 
 **Alongside, at any time:** new machine formats (done: Husqvarna Viking and Pfaff VP3, read and
 written with each block's own colour, Brother PEC on its own, Happy TAP and Wilcom T01; next: HUS,
@@ -505,6 +507,9 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-11-11 | One menu item, Digitize Image… (Object › Image Trace, the command palette, the Embroidery panel's button for an image), opens the window with its defaults ready; an agent's `embroidery.digitizeImage` still digitizes at once | the project owner's choice: one way in for a person | a second item that digitizes at once | `embroidery/menu.rs`, the `menus/tree.rs` hook; `the_palette_item_and_the_menu_open_the_window_and_agents_still_digitize_at_once` |
 | 2026-11-11 | Outlines round colours come off by default, with a warning where they would double an edge (in the window's second part) | the project owner's choice | outlines on by default | the window's second part |
 | 2026-11-11 | Choices of the session that built the window's first part, for the owner's review: Merge sews the colours in the thread of the one with the most of the frame; Leave Out and Sew It are one checkbox; Crop to the Art keeps the colour the corners found as the one left out; an edit to the document under the window digitizes it again before Create; Escape while Create waits closes the window as Cancel does; Create's words put the counts in parentheses; nothing to sew also when no object would be sewn | built and tested so; each is a small change if the owner prefers another | — | `image_window/`; the PR's description lists each with its reason |
+| 2026-11-11 | The image window's gate gives a step of the number of colours 250 ms on a picture up to 1,000 pixels on its longer side and 500 ms past that (the 150 mm logo's step took 414 ms: the scheduler's 0.1 s wait and a run from the trace on) | the project owner's choice („Budżet wg wielkości (polecam)”): the trace the step runs again grows with the pixels, and the wait is the owner's rule for every live preview | one budget of 250 ms; a faster step in the window's second part; accepting 414 ms as measured | `image_window/tests_gate.rs` (`colours_step_budget_ms`); `the_colour_steps_budget_grows_past_a_thousand_pixels` |
+| 2026-11-11 | Digitizing will keep a hole of the background's colour that a letter or another line-shaped area encloses, whatever its size, instead of joining it to that area by the smallest area (for a later engine PR) | the project owner's choice („Dziurki zawsze zostają (polecam)”): a counter is the letter's shape, not noise; at the default 1 mm² the 0.5 mm² counters of a tagline's A's were joined and the A's sewn as Λ | a smaller smallest area for holes than for specks; leaving it to the smallest area's slider | a later engine PR |
+| 2026-11-11 | The background's colour where the design encloses it (the white inside a letter or a flower) stays sewn by default, a thread of its own, and the window says so beside the number of colours | the project owner's choice („Tak, szyć jak teraz (polecam)”): it then looks the same on any fabric, a dark one too | leaving the fabric to show there | `from_image/colours.rs` (`rows`), `image_window/colours_step.rs` (`inside_note`); `the_count_says_what_it_counts_when_the_design_encloses_the_backgrounds_colour` |
 
 ## Clean-room for embroidery
 

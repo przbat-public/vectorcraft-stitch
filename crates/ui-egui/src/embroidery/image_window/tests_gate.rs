@@ -8,7 +8,8 @@
 //! in the app and frames at the display's pace in a window of 1440 × 900 points at 2 pixels a point:
 //!
 //! - Digitize Image… opened to its first whole result (colour mode): within 500 ms;
-//! - a step of the number of colours (one fewer) to its result: within 250 ms;
+//! - a step of the number of colours (one fewer) to its result: within 250 ms, or 500 ms on a
+//!   picture whose longer side is past 1,000 pixels;
 //! - the smallest area's slider dragged along its range, a value a frame: the 95th percentile of the
 //!   frames within a 60 Hz frame;
 //! - logo mode to its result: within 1,000 ms;
@@ -27,9 +28,13 @@ use super::{STEP, VIEW, params_of, preview};
 use crate::embroidery::tests_gate::{FRAME_BUDGET_MS, corpus, percentile};
 use crate::{Services, VectorcraftApp};
 
-/// The budgets, milliseconds.
+/// The budgets, milliseconds. A step of the number of colours has more room on a picture whose
+/// longer side is past [`LARGE_PICTURE_PX`] pixels: the trace it runs again grows with the pixels
+/// (the project owner's choice, 2026-11-11).
 const OPEN_BUDGET_MS: f64 = 500.0;
 const COLOURS_STEP_BUDGET_MS: f64 = 250.0;
+const LARGE_COLOURS_STEP_BUDGET_MS: f64 = 500.0;
+const LARGE_PICTURE_PX: u32 = 1000;
 const LOGO_MODE_BUDGET_MS: f64 = 1000.0;
 /// The window, points, and its pixels a point: a laptop's display.
 const WINDOW: [f32; 2] = [1440.0, 900.0];
@@ -50,6 +55,18 @@ const GIVE_UP_SECS: u64 = 60;
 /// logarithmic).
 const MIN_AREA_FROM: f64 = 0.1;
 const MIN_AREA_TO: f64 = 50.0;
+
+/// The budget of a step of the number of colours on a picture whose longer side is `longest`
+/// pixels, milliseconds.
+fn colours_step_budget_ms(longest: u32) -> f64 {
+    if longest > LARGE_PICTURE_PX { LARGE_COLOURS_STEP_BUDGET_MS } else { COLOURS_STEP_BUDGET_MS }
+}
+
+/// The longer side of PNG `png`, pixels.
+fn longest_side(png: &[u8]) -> u32 {
+    let picture = image::load_from_memory(png).unwrap();
+    picture.width().max(picture.height())
+}
 
 /// The design at `path` drawn as a PNG at [`PX_PER_MM`] over its art and a margin → the PNG and
 /// its box, points.
@@ -178,9 +195,11 @@ fn set(app: &mut VectorcraftApp, key: &str, value: Value) {
     app.ui.dialog.as_mut().expect("the window is open").fields.insert(key.into(), value);
 }
 
-/// What the gate measured on one picture, milliseconds (the uploads in bytes).
+/// What the gate measured on one picture, milliseconds (the uploads in bytes), and the picture's
+/// longer side, pixels.
 struct Measured {
     name: String,
+    longest: u32,
     open: f64,
     colours: f64,
     slider_p95: f64,
@@ -233,7 +252,7 @@ fn measure(name: &str, png: &[u8], rect: [f64; 4]) -> Measured {
         set(&mut app, preview::SPLIT, json!(k as f64 / DRAG_FRAMES as f64));
         compare_bytes += pace.tick(&mut app, &ctx).1;
     }
-    Measured { name: name.to_string(), open, colours, slider_p95, logo, compare_bytes }
+    Measured { name: name.to_string(), longest: longest_side(png), open, colours, slider_p95, logo, compare_bytes }
 }
 
 #[test]
@@ -254,14 +273,20 @@ fn image_window_gate() {
         .collect();
     let (png, rect) = logo();
     pictures.push((format!("drawn logo, {LOGO_MM} mm"), png, rect));
-    println!("{:<44} {:>9} {:>11} {:>12} {:>9} {:>14}", "picture (10 px/mm)", "open ms", "colours ms", "slider p95", "logo ms", "compare bytes");
+    println!(
+        "{:<44} {:>7} {:>9} {:>11} {:>12} {:>9} {:>14}",
+        "picture (10 px/mm)", "px", "open ms", "colours ms", "slider p95", "logo ms", "compare bytes"
+    );
     let mut failed = Vec::new();
     for (name, png, rect) in &pictures {
         let m = measure(name, png, *rect);
-        println!("{:<44} {:>9.0} {:>11.0} {:>12.1} {:>9.0} {:>14}", m.name, m.open, m.colours, m.slider_p95, m.logo, m.compare_bytes);
+        println!(
+            "{:<44} {:>7} {:>9.0} {:>11.0} {:>12.1} {:>9.0} {:>14}",
+            m.name, m.longest, m.open, m.colours, m.slider_p95, m.logo, m.compare_bytes
+        );
         let over = [
             (m.open > OPEN_BUDGET_MS, "open"),
-            (m.colours > COLOURS_STEP_BUDGET_MS, "colours step"),
+            (m.colours > colours_step_budget_ms(m.longest), "colours step"),
             (m.slider_p95 > FRAME_BUDGET_MS, "slider frames"),
             (m.logo > LOGO_MODE_BUDGET_MS, "logo mode"),
             (m.compare_bytes > 0, "compare uploads"),
@@ -269,4 +294,22 @@ fn image_window_gate() {
         failed.extend(over.into_iter().filter(|(o, _)| *o).map(|(_, what)| format!("{}: {what}", m.name)));
     }
     assert!(failed.is_empty(), "over budget: {failed:?}");
+}
+
+/// A step of the number of colours has 250 ms on a picture up to 1,000 pixels on its longer side,
+/// and 500 ms past that.
+#[test]
+fn the_colour_steps_budget_grows_past_a_thousand_pixels() {
+    assert_eq!([600, 1000, 1001, 1500].map(colours_step_budget_ms), [250.0, 250.0, 500.0, 500.0]);
+}
+
+/// A picture's longer side is read from its PNG, whichever side it is.
+#[test]
+fn a_pictures_longer_side_is_read_from_its_png() {
+    let png = |w: u32, h: u32| {
+        let mut out = Vec::new();
+        image::DynamicImage::ImageRgba8(image::RgbaImage::new(w, h)).write_to(&mut std::io::Cursor::new(&mut out), image::ImageFormat::Png).unwrap();
+        out
+    };
+    assert_eq!((longest_side(&png(30, 70)), longest_side(&png(1500, 1200))), (70, 1500));
 }

@@ -4,9 +4,10 @@
 //!
 //! - **One of upstream's dialogs** (a row of the dialog registry that draws its own window): agents
 //!   reach it with `ui.inspect`, `ui.dialog.set` and `ui.dialog.confirm` (Create), Escape closes it
-//!   (a popup open in it first), and Document Setup can open over it. Its fields are small JSON:
-//!   the engine's settings ([`SETTING_FIELDS`]), the palette its threads are matched to, and what
-//!   it shows; `__state` says how its result stands.
+//!   (a popup open in it first), and another dialog opened (Document Setup) takes its place: there
+//!   is one dialog at a time, so the window closes, its settings remembered. Its fields are small
+//!   JSON: the engine's settings ([`SETTING_FIELDS`]), the palette its threads are matched to, and
+//!   what it shows; `__state` says how its result stands.
 //! - **Opened** by Digitize Image… (Object › Image Trace, the command palette, the Embroidery
 //!   panel's Object tab) on the image selected, or an Image Trace object, with its defaults ready:
 //!   Create is one click. A refusal (no image, a locked one, a missing linked file) is said in the

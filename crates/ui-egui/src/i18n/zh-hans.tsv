@@ -7303,7 +7303,7 @@ embroidery	unlike the image's color	与图像颜色不同
 embroidery	no closer thread in {palette}	{palette} 中没有更接近的线
 embroidery	{color} in {thread}	{color}：{thread}
 embroidery	Background · {share} of the frame · not sewn	背景 · 画面的 {share} · 不绣制
-embroidery	Back to Auto: {color}	恢复自动：{color}
+embroidery	Back to Auto: {thread}	恢复自动：{thread}
 embroidery	Back to Auto	恢复自动
 embroidery	Merge	合并
 embroidery	Sew these colors as one.	将这些颜色作为一种颜色绣制。

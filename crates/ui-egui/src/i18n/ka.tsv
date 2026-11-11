@@ -7524,7 +7524,7 @@ embroidery	unlike the image's color	განსხვავდება სუ�
 embroidery	no closer thread in {palette}	{palette}-ში უფრო ახლო ძაფი არ არის
 embroidery	{color} in {thread}	{color}: {thread}
 embroidery	Background · {share} of the frame · not sewn	ფონი · კადრის {share} · არ იქარგება
-embroidery	Back to Auto: {color}	ავტომატურზე დაბრუნება: {color}
+embroidery	Back to Auto: {thread}	ავტომატურზე დაბრუნება: {thread}
 embroidery	Back to Auto	ავტომატურზე დაბრუნება
 embroidery	Merge	შერწყმა
 embroidery	Sew these colors as one.	ეს ფერები ერთ ფერად დაიქარგება.

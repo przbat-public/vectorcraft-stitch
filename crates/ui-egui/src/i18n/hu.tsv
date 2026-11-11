@@ -7449,7 +7449,7 @@ embroidery	unlike the image's color	eltér a kép színétől
 embroidery	no closer thread in {palette}	nincs közelebbi szál: {palette}
 embroidery	{color} in {thread}	{color}: {thread}
 embroidery	Background · {share} of the frame · not sewn	Háttér · {share} a keretből · nincs kihímezve
-embroidery	Back to Auto: {color}	Vissza automatikusra: {color}
+embroidery	Back to Auto: {thread}	Vissza automatikusra: {thread}
 embroidery	Back to Auto	Vissza automatikusra
 embroidery	Merge	Összeolvasztás
 embroidery	Sew these colors as one.	Ezek a színek egyként lesznek kihímezve.

@@ -7418,7 +7418,7 @@ embroidery	unlike the image's color	resmin renginden farklı
 embroidery	no closer thread in {palette}	{palette} içinde daha yakın iplik yok
 embroidery	{color} in {thread}	{color}: {thread}
 embroidery	Background · {share} of the frame · not sewn	Arka plan · çerçevenin {share} kadarı · dikilmez
-embroidery	Back to Auto: {color}	Otomatiğe dön: {color}
+embroidery	Back to Auto: {thread}	Otomatiğe dön: {thread}
 embroidery	Back to Auto	Otomatiğe dön
 embroidery	Merge	Birleştir
 embroidery	Sew these colors as one.	Bu renkler tek renk olarak dikilir.

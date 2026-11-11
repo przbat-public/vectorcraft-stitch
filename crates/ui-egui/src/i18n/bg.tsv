@@ -7211,7 +7211,7 @@ embroidery	unlike the image's color	различна от цвета на изо
 embroidery	no closer thread in {palette}	няма по-близка нишка в {palette}
 embroidery	{color} in {thread}	{color} в {thread}
 embroidery	Background · {share} of the frame · not sewn	Фон · {share} от кадъра · не се шие
-embroidery	Back to Auto: {color}	Обратно към автоматично: {color}
+embroidery	Back to Auto: {thread}	Обратно към автоматично: {thread}
 embroidery	Back to Auto	Обратно към автоматично
 embroidery	Merge	Сливане
 embroidery	Sew these colors as one.	Тези цветове се шият като един.

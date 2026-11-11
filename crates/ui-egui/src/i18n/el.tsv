@@ -7417,7 +7417,7 @@ embroidery	unlike the image's color	διαφέρει από το χρώμα τη
 embroidery	no closer thread in {palette}	καμία πιο κοντινή κλωστή στο {palette}
 embroidery	{color} in {thread}	{color} σε {thread}
 embroidery	Background · {share} of the frame · not sewn	Φόντο · {share} του πλαισίου · δεν κεντιέται
-embroidery	Back to Auto: {color}	Επιστροφή στο αυτόματο: {color}
+embroidery	Back to Auto: {thread}	Επιστροφή στο αυτόματο: {thread}
 embroidery	Back to Auto	Επιστροφή στο αυτόματο
 embroidery	Merge	Συγχώνευση
 embroidery	Sew these colors as one.	Αυτά τα χρώματα κεντιούνται ως ένα.

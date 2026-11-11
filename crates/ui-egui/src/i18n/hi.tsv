@@ -8844,7 +8844,7 @@ embroidery	unlike the image's color	चित्र के रंग से अ�
 embroidery	no closer thread in {palette}	{palette} में इससे निकट कोई धागा नहीं
 embroidery	{color} in {thread}	{color}, {thread} में
 embroidery	Background · {share} of the frame · not sewn	पृष्ठभूमि · फ़्रेम का {share} · नहीं सिला जाता
-embroidery	Back to Auto: {color}	स्वचालित पर वापस: {color}
+embroidery	Back to Auto: {thread}	स्वचालित पर वापस: {thread}
 embroidery	Back to Auto	स्वचालित पर वापस
 embroidery	Merge	मर्ज करें
 embroidery	Sew these colors as one.	ये रंग एक की तरह सिले जाते हैं।

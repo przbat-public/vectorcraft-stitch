@@ -271,6 +271,17 @@ fn a_changed_rows_restore_is_pressed_by_a_click() {
     assert!(restored, "↺ pressed");
 }
 
+/// A changed row's ↺ is named for screen readers by the row's thread, as the row writes it, not by
+/// the colour's code.
+#[test]
+fn a_changed_rows_restore_is_named_by_its_thread() {
+    let rows = rows_of(&reply());
+    let changed = rows.iter().find(|r| r.changed && !r.background).expect("a changed row").clone();
+    let (_, nodes) = drawn(std::slice::from_ref(&changed));
+    let named: Vec<&str> = nodes.iter().filter(|n| n.role() == Role::Button).filter_map(|n| n.label()).collect();
+    assert_eq!(named, ["Back to Auto: Prussian Blue  PEC 1"]);
+}
+
 /// A row too long for its room is cut short with "…" on screen, its thread's name before the badge;
 /// screen readers still hear it whole.
 #[test]

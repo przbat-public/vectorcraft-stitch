@@ -7465,7 +7465,7 @@ embroidery	unlike the image's color	neodpovídá barvě obrázku
 embroidery	no closer thread in {palette}	v {palette} není bližší nit
 embroidery	{color} in {thread}	{color} nití {thread}
 embroidery	Background · {share} of the frame · not sewn	Pozadí · {share} rámečku · nešije se
-embroidery	Back to Auto: {color}	Zpět na automaticky: {color}
+embroidery	Back to Auto: {thread}	Zpět na automaticky: {thread}
 embroidery	Back to Auto	Zpět na automaticky
 embroidery	Merge	Sloučit
 embroidery	Sew these colors as one.	Tyto barvy se šijí jako jedna.

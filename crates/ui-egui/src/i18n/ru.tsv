@@ -7553,7 +7553,7 @@ embroidery	unlike the image's color	не похожа на цвет изобра
 embroidery	no closer thread in {palette}	в {palette} нет более близкой нити
 embroidery	{color} in {thread}	{color} нитью {thread}
 embroidery	Background · {share} of the frame · not sewn	Фон · {share} кадра · не вышивается
-embroidery	Back to Auto: {color}	Вернуть авто: {color}
+embroidery	Back to Auto: {thread}	Вернуть авто: {thread}
 embroidery	Back to Auto	Вернуть авто
 embroidery	Merge	Объединить
 embroidery	Sew these colors as one.	Эти цвета вышиваются как один.

@@ -7407,7 +7407,7 @@ embroidery	unlike the image's color	distinto del color de la imagen
 embroidery	no closer thread in {palette}	ningún hilo más cercano en {palette}
 embroidery	{color} in {thread}	{color} en {thread}
 embroidery	Background · {share} of the frame · not sewn	Fondo · {share} del encuadre · no se borda
-embroidery	Back to Auto: {color}	Volver a Auto: {color}
+embroidery	Back to Auto: {thread}	Volver a Auto: {thread}
 embroidery	Back to Auto	Volver a Auto
 embroidery	Merge	Combinar
 embroidery	Sew these colors as one.	Estos colores se bordan como uno solo.

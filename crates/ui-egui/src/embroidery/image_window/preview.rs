@@ -244,10 +244,13 @@ fn design_box(outputs: &DigitizeOutputs) -> Option<vectorcraft_geom::Rect> {
     (r > l && b > t).then(|| vectorcraft_geom::Rect::new(l, t, r, b))
 }
 
-/// The view of the design in `pane`, zoomed as `zoom` says ("fit" or a percent), moved by `pan`.
+/// The view of the design in `pane`, zoomed as `zoom` says ("fit" or a percent, taken within the
+/// zooms the window offers: an agent's `ui.dialog.set` may give any), moved by `pan`.
 pub(crate) fn view_of(design: vectorcraft_geom::Rect, pane: Rect, zoom: &Value, pan: Vec2) -> ViewXf {
     let fit = (f64::from(pane.width() - 2.0 * FIT_MARGIN) / design.width()).min(f64::from(pane.height() - 2.0 * FIT_MARGIN) / design.height());
-    let scale = zoom.as_f64().filter(|z| z.is_finite() && *z > 0.0).map_or(fit, |percent| percent / PERCENT).max(f64::MIN_POSITIVE);
+    let (least, most) = (ZOOMS.first().copied().unwrap_or(PERCENT), ZOOMS.last().copied().unwrap_or(PERCENT));
+    let percent = zoom.as_f64().filter(|z| z.is_finite() && *z > 0.0).map(|z| z.clamp(least, most));
+    let scale = percent.map_or(fit, |percent| percent / PERCENT).max(f64::MIN_POSITIVE);
     let middle = design.center();
     let offset = pane.center().to_vec2() + pan - vec2((middle.x * scale) as f32, (middle.y * scale) as f32);
     ViewXf { scale, offset }
@@ -707,7 +710,8 @@ mod tests {
     }
 
     /// Fit shows the whole design in the middle of the pane, inside its margin; a zoom in percent
-    /// is the canvas's (100 %: a point a point).
+    /// is the canvas's (100 %: a point a point), one past those the window offers taken at the
+    /// nearest.
     #[test]
     fn fit_shows_the_whole_design_and_percent_is_the_canvass() {
         let design = vectorcraft_geom::Rect::new(10.0, 20.0, 110.0, 100.0);
@@ -718,6 +722,9 @@ mod tests {
         assert!(((a + (b - a) / 2.0) - pane.center()).length() < 0.01, "centred");
         let full = view_of(design, pane, &json!(100.0), Vec2::ZERO);
         assert!((full.scale - 1.0).abs() < 1e-12);
+        // An agent's zoom past the ones offered is taken at the nearest: 50 to 400 %.
+        assert!((view_of(design, pane, &json!(1e9), Vec2::ZERO).scale - 4.0).abs() < 1e-12, "at most 400 %");
+        assert!((view_of(design, pane, &json!(1e-9), Vec2::ZERO).scale - 0.5).abs() < 1e-12, "at least 50 %");
         // The screen is in f32: back from it, a point comes within f32's rounding.
         assert!((xf.to_doc(xf.to_screen(Point::new(42.0, 7.0))) - Point::new(42.0, 7.0)).hypot() < 1e-3);
     }

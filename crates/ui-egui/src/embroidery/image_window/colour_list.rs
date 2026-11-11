@@ -555,7 +555,10 @@ const RESTORE_ROOM: f32 = 22.0;
 /// button's bottom, and the next row would start over this one.
 fn restore_button(ui: &mut Ui, rect: Rect, row: &Row) -> bool {
     let at = Rect::from_center_size(pos2(rect.right() - RESTORE_ROOM / 2.0, rect.center().y), vec2(RESTORE_ROOM, RESTORE_ROOM));
-    let name = fill(crate::et!("Back to Auto: {color}"), &[("color", &row.color)]);
+    // Named for screen readers by the row's thread, as the row writes it; by its colour's code
+    // where it has none.
+    let thread = row.thread.as_ref().map_or_else(|| row.color.clone(), thread_name);
+    let name = fill(crate::et!("Back to Auto: {thread}"), &[("thread", &thread)]);
     ui.place(at, |ui: &mut Ui| rows::restore(ui, &name, crate::et!("Back to Auto"))).clicked()
 }
 

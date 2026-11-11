@@ -7224,7 +7224,7 @@ embroidery	unlike the image's color	ulig billedets farve
 embroidery	no closer thread in {palette}	ingen tættere tråd i {palette}
 embroidery	{color} in {thread}	{color} i {thread}
 embroidery	Background · {share} of the frame · not sewn	Baggrund · {share} af rammen · sys ikke
-embroidery	Back to Auto: {color}	Tilbage til Auto: {color}
+embroidery	Back to Auto: {thread}	Tilbage til Auto: {thread}
 embroidery	Back to Auto	Tilbage til Auto
 embroidery	Merge	Flet
 embroidery	Sew these colors as one.	Disse farver sys som én.

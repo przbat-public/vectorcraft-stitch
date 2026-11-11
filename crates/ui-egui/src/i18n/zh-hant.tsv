@@ -7099,7 +7099,7 @@ embroidery	unlike the image's color	與影像顏色不同
 embroidery	no closer thread in {palette}	{palette} 中沒有更接近的線
 embroidery	{color} in {thread}	{color}：{thread}
 embroidery	Background · {share} of the frame · not sewn	背景 · 畫面的 {share} · 不繡製
-embroidery	Back to Auto: {color}	恢復自動：{color}
+embroidery	Back to Auto: {thread}	恢復自動：{thread}
 embroidery	Back to Auto	恢復自動
 embroidery	Merge	合併
 embroidery	Sew these colors as one.	將這些顏色作為一種顏色繡製。

@@ -7500,7 +7500,7 @@ embroidery	unlike the image's color	erilainen kuin kuvan väri
 embroidery	no closer thread in {palette}	ei lähempää lankaa: {palette}
 embroidery	{color} in {thread}	{color}: {thread}
 embroidery	Background · {share} of the frame · not sewn	Tausta · {share} rajauksesta · ei kirjota
-embroidery	Back to Auto: {color}	Takaisin automaattiseen: {color}
+embroidery	Back to Auto: {thread}	Takaisin automaattiseen: {thread}
 embroidery	Back to Auto	Takaisin automaattiseen
 embroidery	Merge	Yhdistä
 embroidery	Sew these colors as one.	Nämä värit kirjotaan yhtenä.

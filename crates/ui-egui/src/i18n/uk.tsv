@@ -7065,7 +7065,7 @@ embroidery	unlike the image's color	не схожа на колір зображ
 embroidery	no closer thread in {palette}	у {palette} немає ближчої нитки
 embroidery	{color} in {thread}	{color} ниткою {thread}
 embroidery	Background · {share} of the frame · not sewn	Тло · {share} кадру · не вишивається
-embroidery	Back to Auto: {color}	Повернути авто: {color}
+embroidery	Back to Auto: {thread}	Повернути авто: {thread}
 embroidery	Back to Auto	Повернути авто
 embroidery	Merge	Об’єднати
 embroidery	Sew these colors as one.	Ці кольори вишиваються як один.

@@ -7260,7 +7260,7 @@ embroidery	unlike the image's color	ne liči na boju slike
 embroidery	no closer thread in {palette}	nema bližeg konca u {palette}
 embroidery	{color} in {thread}	{color} u {thread}
 embroidery	Background · {share} of the frame · not sewn	Pozadina · {share} kadra · ne šije se
-embroidery	Back to Auto: {color}	Vrati na automatski: {color}
+embroidery	Back to Auto: {thread}	Vrati na automatski: {thread}
 embroidery	Back to Auto	Vrati na automatski
 embroidery	Merge	Spoji
 embroidery	Sew these colors as one.	Ove boje se šiju kao jedna.

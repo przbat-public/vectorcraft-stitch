@@ -7046,7 +7046,7 @@ embroidery	unlike the image's color	그림의 색과 다름
 embroidery	no closer thread in {palette}	{palette}에 더 가까운 실이 없음
 embroidery	{color} in {thread}	{color}: {thread}
 embroidery	Background · {share} of the frame · not sewn	배경 · 프레임의 {share} · 수놓지 않음
-embroidery	Back to Auto: {color}	자동으로 되돌리기: {color}
+embroidery	Back to Auto: {thread}	자동으로 되돌리기: {thread}
 embroidery	Back to Auto	자동으로 되돌리기
 embroidery	Merge	병합
 embroidery	Sew these colors as one.	이 색들을 하나로 수놓습니다.

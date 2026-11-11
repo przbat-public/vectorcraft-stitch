@@ -7320,12 +7320,12 @@ embroidery	unlike the image's color	niepodobna do koloru obrazu
 embroidery	no closer thread in {palette}	brak bliższej nici w palecie {palette}
 embroidery	{color} in {thread}	{color} nicią {thread}
 embroidery	Background · {share} of the frame · not sewn	Tło · {share} kadru · nieszyte
-embroidery	Back to Auto: {color}	Przywróć Auto: {color}
+embroidery	Back to Auto: {thread}	Przywróć Auto: {thread}
 embroidery	Back to Auto	Przywróć Auto
 embroidery	Merge	Scal
-embroidery	Sew these colors as one.	Te kolory są szyte jako jeden.
+embroidery	Sew these colors as one.	Szyj te kolory jako jeden.
 embroidery	Sew	Szyj
-embroidery	Sew these colors again, as Auto chooses.	Te kolory znów są szyte, tak jak wybierze Auto.
+embroidery	Sew these colors again, as Auto chooses.	Szyj te kolory znowu, tak jak wybierze Auto.
 embroidery	Don't Sew	Nie szyj
 embroidery	Leave these colors out: their areas aren't sewn.	Pomiń te kolory: ich obszary nie będą szyte.
 embroidery	Choose Thread…	Wybierz nić…

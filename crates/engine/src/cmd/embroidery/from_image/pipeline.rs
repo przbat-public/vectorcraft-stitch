@@ -1,7 +1,9 @@
 //! Digitizing's stages kept between runs, for a window that runs them again at every change
 //! ([`Pipeline`]): each stage's output is kept with the key it was made from (the numbers of the
 //! outputs it read and exactly the settings it takes), so a run makes only the stages whose key
-//! changed and finds the others kept. After the shapes come two stages of the window's own: the
+//! changed and finds the others kept. A request says by the same keys which stage a run of another
+//! would make first ([`WindowRequest::first_stage_changed`]), so that a window knows what a change
+//! makes again before it runs it. After the shapes come two stages of the window's own: the
 //! objects Create would make, on a copy of the document, and their stitches, planned by a planning
 //! service of the pipeline's own ([`super::super::DetachedService`]), which keeps the units of the
 //! areas a change left as they were.
@@ -151,72 +153,106 @@ impl PartialEq for ImageKey {
     }
 }
 
-/// What the trace reads: the working copy, and the mode, colours, smoothing, corners and the noise
-/// the smallest area makes (a thread's footprint at most, so a smallest area above it traces the
-/// same).
+/// What the trace reads of a request: the mode, the colours, the smoothing, the corners, and the
+/// noise the smallest area makes, kept as that area itself up to a thread's footprint (a smallest
+/// area above it traces the same).
 #[derive(PartialEq)]
-struct TraceKey {
-    image: u64,
+struct TraceSettings {
     mode: Mode,
     colors: u32,
     smoothing: f64,
     corners: f64,
-    noise: u32,
+    noise_mm2: f64,
 }
 
-/// What the region map reads: the working copy and its background, the trace, and the background
-/// setting and the mode (for its warnings).
+/// What the trace reads: the working copy, and the request's [`TraceSettings`].
 #[derive(PartialEq)]
-struct RegionsKey {
+struct TraceKey {
     image: u64,
-    trace: u64,
+    settings: TraceSettings,
+}
+
+/// What the region map reads of a request: the background setting and the mode (for its
+/// warnings).
+#[derive(PartialEq)]
+struct RegionsSettings {
     background: BackgroundSetting,
     mode: Mode,
 }
 
-/// What the colours read: the working copy, the trace, the region map, the colour choices, the
-/// smallest area, the mode and the palette.
+/// What the region map reads: the working copy and its background, the trace, and the request's
+/// [`RegionsSettings`].
 #[derive(PartialEq)]
-struct ColoursKey {
+struct RegionsKey {
     image: u64,
     trace: u64,
-    regions: u64,
+    settings: RegionsSettings,
+}
+
+/// What the colours read of a request: the colour choices, the smallest area, the mode and the
+/// palette.
+#[derive(PartialEq)]
+struct ColoursSettings {
     choices: Vec<ColourChoice>,
     min_area: f64,
     mode: Mode,
     palette: Palette,
 }
 
-/// What the centre lines and the order read: the working copy and the colours.
+/// What the colours read: the working copy, the trace, the region map, and the request's
+/// [`ColoursSettings`].
+#[derive(PartialEq)]
+struct ColoursKey {
+    image: u64,
+    trace: u64,
+    regions: u64,
+    settings: ColoursSettings,
+}
+
+/// What the centre lines and the order read: the working copy and the colours (nothing of the
+/// request itself).
 #[derive(PartialEq)]
 struct LinesKey {
     image: u64,
     colours: u64,
 }
 
-/// What the shapes read: the working copy, the trace, the colours, the lines and the overlap.
+/// What the shapes read of a request: the overlap.
+#[derive(PartialEq)]
+struct ShapesSettings {
+    overlap: f64,
+}
+
+/// What the shapes read: the working copy, the trace, the colours, the lines and the request's
+/// [`ShapesSettings`].
 #[derive(PartialEq)]
 struct ShapesKey {
     image: u64,
     trace: u64,
     colours: u64,
     lines: u64,
-    overlap: f64,
+    settings: ShapesSettings,
 }
 
-/// What the objects read: every stage before them, the document they are made on (the same
-/// snapshot, held) with the image's place in it, and the palette.
-struct ObjectsKey {
-    stages: [u64; 6],
+/// What the objects read of a request: the document they are made on (the same snapshot, held)
+/// with the image's place in it, and the palette.
+struct ObjectsSettings {
     document: Arc<Document>,
     target: NodeId,
     palette: Palette,
 }
 
-impl PartialEq for ObjectsKey {
+impl PartialEq for ObjectsSettings {
     fn eq(&self, o: &Self) -> bool {
-        self.stages == o.stages && Arc::ptr_eq(&self.document, &o.document) && self.target == o.target && self.palette == o.palette
+        Arc::ptr_eq(&self.document, &o.document) && self.target == o.target && self.palette == o.palette
     }
+}
+
+/// What the objects read: every stage before them, and the request's [`ObjectsSettings`].
+#[derive(PartialEq)]
+struct ObjectsKey {
+    stages: [u64; 6],
+    settings: ObjectsSettings,
 }
 
 /// The objects stage's output: the document with the objects Create would make, and what it made
@@ -269,6 +305,56 @@ impl WindowRequest {
     /// The settings as the command's reply echoes them, defaults filled in.
     pub fn settings(&self) -> Value {
         self.settings.echo()
+    }
+
+    /// The first stage a run of `new` makes after a run of this request: the first stage that
+    /// reads something different of the two, by the keys the pipeline keeps its stages by (the
+    /// stages after it read its output, so they are made again too); `None` when every stage reads
+    /// the same of both, nothing made again.
+    pub fn first_stage_changed(&self, new: &Self) -> Option<StageId> {
+        StageId::ALL.into_iter().find(|&stage| !self.reads_alike(new, stage))
+    }
+
+    /// Whether `stage` reads the same of this request as of `o` (the outputs before it aside).
+    fn reads_alike(&self, o: &Self, stage: StageId) -> bool {
+        match stage {
+            StageId::Image => self.image_key() == o.image_key(),
+            StageId::Trace => self.trace_settings() == o.trace_settings(),
+            StageId::Regions => self.regions_settings() == o.regions_settings(),
+            StageId::Colours => self.colours_settings() == o.colours_settings(),
+            // The lines read only the outputs before them, the plan only the objects.
+            StageId::Lines | StageId::Plan => true,
+            StageId::Shapes => self.shapes_settings() == o.shapes_settings(),
+            StageId::Objects => self.objects_settings() == o.objects_settings(),
+        }
+    }
+
+    /// What the image stage reads of it: the whole of the image stage's key.
+    fn image_key(&self) -> ImageKey {
+        let s = &self.settings;
+        ImageKey { bytes: self.bytes.clone(), image: self.image.clone(), size: s.size, crop: s.crop, background: s.background }
+    }
+
+    fn trace_settings(&self) -> TraceSettings {
+        let s = &self.settings;
+        TraceSettings { mode: s.mode, colors: s.colors, smoothing: s.smoothing, corners: s.corners, noise_mm2: s.min_area.min(trace::TRACE_AREA_MM2) }
+    }
+
+    fn regions_settings(&self) -> RegionsSettings {
+        RegionsSettings { background: self.settings.background, mode: self.settings.mode }
+    }
+
+    fn colours_settings(&self) -> ColoursSettings {
+        let s = &self.settings;
+        ColoursSettings { choices: s.choices.clone(), min_area: s.min_area, mode: s.mode, palette: self.palette }
+    }
+
+    fn shapes_settings(&self) -> ShapesSettings {
+        ShapesSettings { overlap: self.settings.overlap }
+    }
+
+    fn objects_settings(&self) -> ObjectsSettings {
+        ObjectsSettings { document: self.original.clone(), target: self.target, palette: self.palette }
     }
 }
 
@@ -698,28 +784,18 @@ impl Pipeline {
     ) -> Result<Outputs> {
         let s = &req.settings;
         let mut out = Outputs { palette: Some(req.palette), ..Outputs::default() };
-        let key = ImageKey { bytes: req.bytes.clone(), image: req.image.clone(), size: s.size, crop: s.crop, background: s.background };
-        let (image, made) = stage(&mut self.image, &mut self.next, key, || stages::image_stage(&req.image, &req.bytes, s))?;
+        let (image, made) = stage(&mut self.image, &mut self.next, req.image_key(), || stages::image_stage(&req.image, &req.bytes, s))?;
         out.image = Some(image.clone());
         done(StageId::Image, &out, made);
-        let noise = trace::area_px(s.min_area.min(trace::TRACE_AREA_MM2), image.value.working.px_per_mm);
-        let key = TraceKey { image: image.number, mode: s.mode, colors: s.colors, smoothing: s.smoothing, corners: s.corners, noise };
+        let key = TraceKey { image: image.number, settings: req.trace_settings() };
         let (traced, made) = stage(&mut self.trace, &mut self.next, key, || stages::trace_stage(&image.value, s, steps))?;
         out.trace = Some(traced.clone());
         done(StageId::Trace, &out, made);
-        let key = RegionsKey { image: image.number, trace: traced.number, background: s.background, mode: s.mode };
+        let key = RegionsKey { image: image.number, trace: traced.number, settings: req.regions_settings() };
         let (regions, made) = stage(&mut self.regions, &mut self.next, key, || stages::regions_stage(&image.value, &traced.value, s))?;
         out.regions = Some(regions.clone());
         done(StageId::Regions, &out, made);
-        let key = ColoursKey {
-            image: image.number,
-            trace: traced.number,
-            regions: regions.number,
-            choices: s.choices.clone(),
-            min_area: s.min_area,
-            mode: s.mode,
-            palette: req.palette,
-        };
+        let key = ColoursKey { image: image.number, trace: traced.number, regions: regions.number, settings: req.colours_settings() };
         let (colours, made) =
             stage(&mut self.colours, &mut self.next, key, || stages::colours_stage(&image.value, &traced.value, &regions.value, s, req.palette))?;
         out.colours = Some(colours.clone());
@@ -728,13 +804,14 @@ impl Pipeline {
         let (lines, made) = stage(&mut self.lines, &mut self.next, key, || stages::lines_stage(&image.value, &colours.value))?;
         out.lines = Some(lines.clone());
         done(StageId::Lines, &out, made);
-        let key = ShapesKey { image: image.number, trace: traced.number, colours: colours.number, lines: lines.number, overlap: s.overlap };
+        let key =
+            ShapesKey { image: image.number, trace: traced.number, colours: colours.number, lines: lines.number, settings: req.shapes_settings() };
         let (shapes, made) =
             stage(&mut self.shapes, &mut self.next, key, || stages::shapes_stage(&image.value, &traced.value, &colours.value, &lines.value, s))?;
         out.shapes = Some(shapes.clone());
         done(StageId::Shapes, &out, made);
         let numbers = [image.number, traced.number, regions.number, colours.number, lines.number, shapes.number];
-        let key = ObjectsKey { stages: numbers, document: req.original.clone(), target: req.target, palette: req.palette };
+        let key = ObjectsKey { stages: numbers, settings: req.objects_settings() };
         let d = out.digitized().ok_or_else(|| EngineError::Internal { cmd: super::settings::C.into(), msg: "a stage is missing".into() })?;
         let (objects, made) = stage(&mut self.objects, &mut self.next, key, || objects_of(req, &d))?;
         out.objects = Some(objects.clone());

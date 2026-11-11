@@ -78,23 +78,59 @@ fn setup() -> (Session, NodeId, Schedule) {
     (s, id, Schedule::default())
 }
 
-/// What a setting change recomputes from: the image's settings from the image, the trace's from
-/// the trace, the rest (a colour's choice, the smallest area, the palette) from the colours.
+/// A change to `params` from settings run and shown: the first stage the scheduler expects it to
+/// make again (as it waits or runs), and the first stage its run made.
+fn expected_and_made(sch: &mut Schedule, s: &Session, id: NodeId, held: &mut Held, params: &Value, now: &mut f64) -> [Option<DigitizeStage>; 2] {
+    *now += 1.0;
+    sch.frame(s, id, params, *now, held);
+    let expected = sch.pending_from();
+    // Light or heavy, it has run once the settings have rested.
+    *now += QUIET_SECS + PAST;
+    sch.frame(s, id, params, *now, held);
+    held.finish();
+    *now += PAST;
+    sch.frame(s, id, params, *now, held);
+    [expected, sch.updated.as_ref().and_then(|(_, stages)| stages.first().copied())]
+}
+
+/// What a change recomputes is known before it runs, as the engine keeps its stages: the first
+/// stage the scheduler expects is the first its run makes, for each of the window's settings (a
+/// smallest area under a thread's footprint, 0.16 mm², is the trace's noise too) and for an edit
+/// to the document under the window.
 #[test]
-fn first_changed_names_the_first_stage_a_setting_reads() {
-    let base = json!({"colors": 6, "minArea": 1.0, "palette": "jef"});
+fn a_change_is_expected_from_the_first_stage_its_run_makes() {
+    let (mut s, id, mut sch) = setup();
+    let mut held = Held::new(&s);
+    let base = json!({"colors": 3, "minArea": 1.0, "palette": "jef"});
     let with = |k: &str, v: Value| {
         let mut p = base.clone();
         p[k] = v;
         p
     };
-    assert_eq!(first_changed(&base, &base), None);
-    assert_eq!(first_changed(&base, &with("width", json!(30))), Some(DigitizeStage::Image));
-    assert_eq!(first_changed(&base, &with("background", json!("none"))), Some(DigitizeStage::Image));
-    assert_eq!(first_changed(&base, &with("colors", json!(5))), Some(DigitizeStage::Trace));
-    assert_eq!(first_changed(&base, &with("mode", json!("logo"))), Some(DigitizeStage::Trace));
-    assert_eq!(first_changed(&base, &with("minArea", json!(2.0))), Some(DigitizeStage::Colours));
-    assert_eq!(first_changed(&base, &with("palette", json!("pec"))), Some(DigitizeStage::Colours));
+    let mut now = 0.0;
+    sch.frame(&s, id, &base, now, &mut held);
+    held.finish();
+    now += PAST;
+    sch.frame(&s, id, &base, now, &mut held);
+    let changes = [
+        with("width", json!(30.0)),
+        with("background", json!("none")),
+        with("colors", json!(4)),
+        with("mode", json!("logo")),
+        with("minArea", json!(0.05)),
+        with("minArea", json!(2.0)),
+        with("palette", json!("pec")),
+        with("colorChoices", json!([{"color": "#f08214", "job": "fill"}])),
+    ];
+    for changed in &changes {
+        let [expected, made] = expected_and_made(&mut sch, &s, id, &mut held, changed, &mut now);
+        assert!(made.is_some(), "{changed}: a stage made");
+        assert_eq!(expected, made, "{changed}");
+        expected_and_made(&mut sch, &s, id, &mut held, &base, &mut now);
+    }
+    s.execute("shape.rectangle", &json!({"x": 250, "y": 250, "width": 20, "height": 20})).unwrap();
+    let edited = expected_and_made(&mut sch, &s, id, &mut held, &base, &mut now);
+    assert_eq!(edited, [Some(DigitizeStage::Objects); 2], "an edit to the document under the window");
 }
 
 /// The first run starts at once, whatever it costs; its stages are taken in as they come, and the

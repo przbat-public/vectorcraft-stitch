@@ -1,9 +1,13 @@
 //! When the image window digitizes again, by the stitch preview's rules (the project owner's
 //! choice, 2026-11-11):
 //!
-//! - **What a change recomputes** is known from the settings it changed ([`first_changed`]): the
-//!   image's size, crop or background from the image on; the mode or the colours asked from the
-//!   trace on; a colour's choice, the smallest area or the palette from the colours on.
+//! - **What a change recomputes** the engine says before it runs, by the keys it keeps its stages
+//!   by (`DigitizeRequest::first_stage_changed`): from the first stage that reads something
+//!   different of the request run last, the stages before it found kept. So the image's size,
+//!   crop or background recompute from the image on; the mode, the colours asked, or a smallest
+//!   area under a thread's footprint from the trace on; a colour's choice, a larger smallest area
+//!   or the palette from the colours on; an edit to the document under the window from the
+//!   objects on.
 //! - **Light and heavy.** A change whose stages took at most [`LIVE_PLAN_MS`] when they were last
 //!   made (where there is no thread, at most [`INLINE_PLAN_MS`]) is run at once, also while a
 //!   slider moves, the run under way let finish; any other once the settings have stayed unchanged
@@ -25,10 +29,6 @@ use vectorcraft_engine::doc::NodeId;
 
 use super::worker::{Checked, Done, Driver, Job, Outcome, Painted};
 pub(crate) use crate::embroidery::stitch_preview::{INLINE_PLAN_MS, LIVE_PLAN_MS, PROGRESS_REPAINT_SECS, QUIET_SECS, STALE_NOTICE_SECS};
-
-/// The settings each stage reads first: a change of one of them recomputes from that stage on.
-const IMAGE_KEYS: [&str; 5] = ["width", "height", "fit", "crop", "background"];
-const TRACE_KEYS: [&str; 2] = ["mode", "colors"];
 
 /// Where the window's jobs run: its thread or in line ([`Driver`]), or the tests' own.
 pub(crate) trait Runner {
@@ -70,20 +70,11 @@ impl Runner for Driver {
     }
 }
 
-/// The first stage a change from settings `old` to `new` reads (the stages before it are kept);
-/// `None` when they are the same.
-pub(crate) fn first_changed(old: &Value, new: &Value) -> Option<DigitizeStage> {
-    let differs = |k: &str| old.get(k) != new.get(k);
-    if old == new {
-        return None;
-    }
-    if IMAGE_KEYS.iter().any(|k| differs(k)) {
-        return Some(DigitizeStage::Image);
-    }
-    if TRACE_KEYS.iter().any(|k| differs(k)) {
-        return Some(DigitizeStage::Trace);
-    }
-    Some(DigitizeStage::Colours)
+/// The request settings `params` (with the window's palette in them) make for image `image`, as the
+/// window asks the engine for a run.
+fn request_of(session: &Session, image: NodeId, params: &Value) -> vectorcraft_engine::Result<DigitizeRequest> {
+    let palette = params.get(super::PALETTE).and_then(Value::as_str);
+    session.digitize_window_request(image, &super::settings_of(params), palette)
 }
 
 /// How a result shown stands.
@@ -98,18 +89,19 @@ pub(crate) enum Freshness {
     Failed(String),
 }
 
-/// A change not run yet: its settings, the first stage it changes, and since when it waits.
+/// A change not run yet: its settings, the first stage it makes again (`None`: none, every stage
+/// found kept), and since when it waits.
 struct Waiting {
     params: Value,
-    from: DigitizeStage,
+    from: Option<DigitizeStage>,
     since: f64,
 }
 
 /// The run under way: which, of what settings and request, and its progress.
 struct Running {
     ticket: u64,
-    /// The first stage the change it runs reads.
-    from: DigitizeStage,
+    /// The first stage the change it runs makes again.
+    from: Option<DigitizeStage>,
     request: Arc<DigitizeRequest>,
     progress: Arc<Progress>,
 }
@@ -133,6 +125,9 @@ pub(crate) struct Schedule {
     next_ticket: u64,
     /// The settings run last (or running): a change is measured against them.
     asked: Option<Value>,
+    /// The request run last (or running), refused ones passed by: what the stages kept are of, so
+    /// what a change makes again is measured against it.
+    asked_request: Option<Arc<DigitizeRequest>>,
     waiting: Option<Waiting>,
     running: Option<Running>,
     /// Each stage's time when it was last made (milliseconds), by its place in
@@ -157,9 +152,19 @@ fn place(stage: DigitizeStage) -> usize {
 
 impl Schedule {
     /// The time the stages from `from` on took when they were last made, `None` when one was never
-    /// timed (it counts as heavy).
-    fn predicted(&self, from: DigitizeStage) -> Option<f64> {
+    /// timed (it counts as heavy); nothing when no stage is made again.
+    fn predicted(&self, from: Option<DigitizeStage>) -> Option<f64> {
+        let Some(from) = from else { return Some(0.0) };
         self.stage_ms.get(place(from)..)?.iter().copied().sum()
+    }
+
+    /// The first stage a run of settings `params` makes again, as the engine says it by its keys:
+    /// the first that reads something different of the request run last (`None`: none, every
+    /// stage found kept). Every stage before a first run, or when the settings are refused (the run
+    /// then says why).
+    fn expected_from(&self, session: &Session, image: NodeId, params: &Value) -> Option<DigitizeStage> {
+        let (Some(last), Ok(new)) = (&self.asked_request, request_of(session, image, params)) else { return Some(DigitizeStage::Image) };
+        last.first_stage_changed(&new)
     }
 
     /// Whether settings `params` are what the result shown, or the run under way, is of.
@@ -176,12 +181,9 @@ impl Schedule {
             (Some(of), Ok(st)) => !Arc::ptr_eq(of, &st.doc) && self.waiting.is_none(),
             _ => false,
         };
-        let change = match base {
-            None => Some(DigitizeStage::Image),
-            Some(old) => first_changed(old, params).or(edited.then_some(DigitizeStage::Image)),
-        };
-        if let Some(from) = change {
-            let from = self.waiting.as_ref().map_or(from, |w| if place(w.from) < place(from) { w.from } else { from });
+        if base.is_none_or(|old| old != params) || edited {
+            // Measured against the request run last, which the stages kept are of.
+            let from = self.expected_from(session, image, params);
             self.waiting = Some(Waiting { params: params.clone(), from, since: now });
             self.changed_at.get_or_insert(now);
         }
@@ -208,19 +210,18 @@ impl Schedule {
     /// cancelled.
     fn submit(&mut self, session: &Session, image: NodeId, runner: &mut dyn Runner) {
         let Some(w) = self.waiting.take() else { return };
-        let palette = w.params.get(super::PALETTE).and_then(Value::as_str).map(str::to_string);
-        let settings = super::settings_of(&w.params);
         self.asked = Some(w.params.clone());
         self.made_of = session.doc().ok().map(|st| st.doc.clone());
         if let Some(r) = self.running.take() {
             r.progress.cancel();
         }
-        match session.digitize_window_request(image, &settings, palette.as_deref()) {
+        match request_of(session, image, &w.params) {
             Ok(request) => {
                 self.next_ticket += 1;
                 let request = Arc::new(request);
                 let progress = Progress::new();
                 runner.submit(Job::new(self.next_ticket, request.clone(), progress.clone()));
+                self.asked_request = Some(request.clone());
                 self.running = Some(Running { ticket: self.next_ticket, from: w.from, request, progress });
                 self.made.clear();
                 self.failure = None;
@@ -277,10 +278,11 @@ impl Schedule {
         }
     }
 
-    /// The first stage a change waiting or under way reads: the steps from its on are recomputed.
+    /// The first stage a change waiting or under way makes again: the steps from its on are
+    /// recomputed.
     pub(crate) fn pending_from(&self) -> Option<DigitizeStage> {
-        let waiting = self.waiting.as_ref().map(|w| w.from);
-        let running = self.running.as_ref().map(|r| r.from);
+        let waiting = self.waiting.as_ref().and_then(|w| w.from);
+        let running = self.running.as_ref().and_then(|r| r.from);
         [waiting, running].into_iter().flatten().min_by_key(|&s| place(s))
     }
 

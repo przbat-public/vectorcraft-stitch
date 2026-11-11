@@ -137,15 +137,18 @@ fn a_pipeline_run_is_the_commands_dry_run() {
 /// A change runs again its own stage and the stages after it, and keeps those before it: the size
 /// from the image, the colours and the smoothing from the trace (the smallest area too, below the
 /// trace's own noise of a thread's footprint, 0.16 mm²), a colour's choice and the smallest area
-/// above it from the colours, the overlap from the shapes, the window's palette from the colours;
-/// nothing changed, nothing runs again.
+/// above it from the colours, the overlap from the shapes, the window's palette from the colours,
+/// an edit to the document from the objects; nothing changed, nothing runs again. The request says
+/// so before the run: the first stage it reads differently of the request run before.
 #[test]
 fn a_change_reruns_its_stage_and_those_after() {
-    let (s, image) = placed(&picture());
+    let (mut s, image) = placed(&picture());
     let mut pipe = s.digitize_pipeline();
     let base = json!({"colors": 3, "minArea": 1.0, "overlap": 0.4});
+    let request = |s: &Session, params: &Value, palette: Option<&str>| s.digitize_window_request(image, params, palette).unwrap();
     assert_eq!(made(&s, &mut pipe, image, &base, None), StageId::ALL.to_vec(), "the first run makes every stage");
     assert_eq!(made(&s, &mut pipe, image, &base, None), Vec::<StageId>::new(), "nothing changed");
+    assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &base, None)), None, "nothing changed");
     let cases = [
         (json!({"width": 25.0}), StageId::Image),
         (json!({"background": "none"}), StageId::Image),
@@ -158,10 +161,18 @@ fn a_change_reruns_its_stage_and_those_after() {
     ];
     for (change, first) in cases {
         made(&s, &mut pipe, image, &base, None);
-        assert_eq!(made(&s, &mut pipe, image, &with(&base, &change), None), from(first), "{change}");
+        let changed = with(&base, &change);
+        assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &changed, None)), Some(first), "{change}: said before");
+        assert_eq!(made(&s, &mut pipe, image, &changed, None), from(first), "{change}");
     }
     made(&s, &mut pipe, image, &base, None);
+    assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &base, Some("pec"))), Some(StageId::Colours));
     assert_eq!(made(&s, &mut pipe, image, &base, Some("pec")), from(StageId::Colours), "the window's palette");
+    made(&s, &mut pipe, image, &base, None);
+    let before = request(&s, &base, None);
+    s.execute("shape.rectangle", &json!({"x": 200, "y": 200, "width": 20, "height": 20})).unwrap();
+    assert_eq!(before.first_stage_changed(&request(&s, &base, None)), Some(StageId::Objects));
+    assert_eq!(made(&s, &mut pipe, image, &base, None), from(StageId::Objects), "an edit to the document");
 }
 
 /// A run cancelled after its colours keeps the stages it finished: the next run makes only those

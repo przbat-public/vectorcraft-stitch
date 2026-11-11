@@ -935,3 +935,55 @@ fn a_create_waiting_for_a_refused_change_makes_nothing_and_says_why() {
     assert!(app.ui.status.starts_with("Can't digitize it: "), "{}", app.ui.status);
     assert!(status_said(&mut app, &ctx, &mut time).starts_with("Can't digitize it: "));
 }
+
+/// The width typed in the next two tests (millimetres), and the share of the picture's width its
+/// art takes: the orange square is 160 of its 200 pixels across.
+const TYPED_WIDTH_MM: f64 = 100.0;
+const ART_SHARE: f64 = 0.8;
+
+/// How near a design's width must come to the one asked (millimetres): well under a pixel of the
+/// picture at that size.
+const NEAR_MM: f64 = 0.1;
+
+/// The text typed into the field screen readers call `name`, over what it held, with no Enter.
+fn type_only(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, text: &str) {
+    click(app, ctx, time, name, egui::accesskit::Role::TextInput);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![key(Key::A, Modifiers::COMMAND), Event::Text(text.into())]);
+}
+
+/// Cmd/Ctrl+Enter while a width is typed and not yet committed commits it, as Enter would, and
+/// creates the design at that width once its result is ready, not at the width before.
+#[test]
+fn command_enter_creates_with_the_value_being_typed() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(1));
+    type_only(&mut app, &ctx, &mut time, "Width", &TYPED_WIDTH_MM.to_string());
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    let bounds = app.session.execute("document.exportSelection", &json!({"format": "svg"})).unwrap()["bounds"].clone();
+    let width_mm = vectorcraft_engine::cmd::embroidery::pt_to_mm(bounds[2].as_f64().unwrap_or(0.0));
+    assert!((width_mm - ART_SHARE * TYPED_WIDTH_MM).abs() < NEAR_MM, "made {width_mm:.2} mm wide (bounds {bounds})");
+}
+
+/// Cmd/Ctrl+Enter while a value the field refuses is typed says why, as Enter would, and makes
+/// nothing: the window stays open, its width as it was.
+#[test]
+fn command_enter_with_a_value_refused_makes_nothing() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(1));
+    let steps = undo_steps(&app);
+    type_only(&mut app, &ctx, &mut time, "Width", "0");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    // Time for a Create waiting to make something, were there one.
+    let deadline = time + 1.0;
+    while time < deadline && open_dialog(&app).is_some() {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert_eq!(app.ui.status, "A size is more than 0 mm.");
+    assert!(open_dialog(&app).is_some_and(|d| d.fields.get("width").is_none()), "still open, its width as it was");
+    assert_eq!(undo_steps(&app), steps, "nothing made");
+}

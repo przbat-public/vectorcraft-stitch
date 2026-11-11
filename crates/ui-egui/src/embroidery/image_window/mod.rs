@@ -19,7 +19,8 @@
 //!   Start Over goes back to the defaults. Create forgets them.
 //! - **Create** applies the run shown when it is of the settings as they are (at once), else when
 //!   it is (the window says so); then the window closes, what was made selected. Enter only commits
-//!   the field typed in; Cmd/Ctrl+Enter is Create.
+//!   the field typed in; Cmd/Ctrl+Enter is Create, the field being typed in committed first as
+//!   Enter would, a value it refuses making nothing (the project owner's choice, 2026-11-11).
 
 pub(crate) mod colour_list;
 mod colours_step;
@@ -104,6 +105,9 @@ pub(crate) struct Live {
     pub(crate) create_waiting: bool,
     /// The window closed by Create: nothing to remember.
     created: bool,
+    /// A value typed was refused in this frame (the status bar says why): a Create asked for in it
+    /// makes nothing.
+    refused: bool,
 }
 
 /// What a reply was built of: the numbers of its shapes and of its plan.
@@ -238,14 +242,25 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             fields: d.fields.clone(),
             create_waiting: false,
             created: false,
+            refused: false,
         };
         app.embroidery.image_window.live = Some(live);
     }
     let params = params_of(&d.fields);
     if let Some(live) = app.embroidery.image_window.live.as_mut() {
         live.schedule.frame(&app.session, image, &params, now, live.runner.as_mut());
+        live.refused = false;
     }
     let create_now = ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::Enter));
+    if create_now {
+        // The field being typed in commits first, as Enter would: a field ends its editing when it
+        // loses the focus, in this frame's drawing (upstream's `recessed_text`).
+        ctx.memory_mut(|m| {
+            if let Some(id) = m.focused() {
+                m.surrender_focus(id);
+            }
+        });
+    }
     let asked = frame::draw(app, ctx, &mut d, now);
     match asked {
         Some(frame::Asked::Cancel) => return crate::dialogs::cancel(app),
@@ -256,10 +271,12 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
                 d = reset;
             }
         }
-        Some(frame::Asked::Create) => ask_create(app, now),
-        None if create_now => ask_create(app, now),
+        Some(frame::Asked::Create) => ask_create(app, &d.fields, now),
+        None if create_now => ask_create(app, &d.fields, now),
         None => {}
     }
+    // The settings as this frame drew them: a field may have committed a value in it.
+    let params = params_of(&d.fields);
     // A Create waiting is settled once the run of the settings as they are has been: made, or
     // refused with the reason (settings the engine refuses make nothing, never the result of the
     // ones before).
@@ -271,7 +288,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
         live.create_waiting = false;
         match live_bar::create_refused(live, now) {
             Some(why) => app.status(why),
-            None => match create(app) {
+            None => match create(app, &params) {
                 Ok(_) => return,
                 Err(e) => app.status(e),
             },
@@ -288,29 +305,44 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
     }
 }
 
-/// Create asked for (the button, Cmd/Ctrl+Enter): at once when the result shown is of the settings
-/// as they are, else once it is.
-fn ask_create(app: &mut VectorcraftApp, now: f64) {
-    let refused = app.embroidery.image_window.live.as_mut().and_then(|l| live_bar::create_refused(l, now));
-    if let Some(why) = refused {
+/// Create asked for (the button, Cmd/Ctrl+Enter) with the window's fields as this frame drew them:
+/// nothing when a value typed in it was refused (said already); once their run is done when they
+/// haven't run yet or are running (a field committed by this Create, a change waiting); else at
+/// once, or refused with the reason.
+fn ask_create(app: &mut VectorcraftApp, fields: &Map<String, Value>, now: f64) {
+    let Some(live) = app.embroidery.image_window.live.as_mut() else { return };
+    if live.refused {
+        return;
+    }
+    let params = params_of(fields);
+    if live.schedule.busy() || !live.schedule.asked_for(&params) {
+        live.create_waiting = true;
+        return;
+    }
+    if let Some(why) = live_bar::create_refused(live, now) {
         return app.status(why);
     }
-    let ready = app.embroidery.image_window.live.as_ref().is_some_and(|l| l.schedule.current(&params_of(&l.fields)).is_some());
-    if ready {
-        if let Err(e) = create(app) {
-            app.status(e);
-        }
-    } else if let Some(live) = app.embroidery.image_window.live.as_mut() {
+    if live.schedule.current(&params).is_none() {
         live.create_waiting = true;
+    } else if let Err(e) = create(app, &params) {
+        app.status(e);
     }
 }
 
-/// Create: the run shown applied as one undo step, the window closed, what was made selected and
-/// said in the status bar.
-fn create(app: &mut VectorcraftApp) -> DialogResult {
+/// A value typed refused: said in the status bar as `words`, and a Create asked for in the same
+/// frame (Cmd/Ctrl+Enter committing the field) makes nothing.
+pub(crate) fn refuse(app: &mut VectorcraftApp, words: String) {
+    if let Some(live) = app.embroidery.image_window.live.as_mut() {
+        live.refused = true;
+    }
+    app.status(words);
+}
+
+/// Create of the run shown for settings `params`: applied as one undo step, the window closed,
+/// what was made selected and said in the status bar.
+fn create(app: &mut VectorcraftApp, params: &Value) -> DialogResult {
     let Some(live) = app.embroidery.image_window.live.as_ref() else { return Err("the image window isn't open".into()) };
-    let params = params_of(&live.fields);
-    let Some(shown) = live.schedule.current(&params).cloned() else { return Err(crate::et!("The preview isn't ready yet.").to_string()) };
+    let Some(shown) = live.schedule.current(params).cloned() else { return Err(crate::et!("The preview isn't ready yet.").to_string()) };
     let key = (live.uid, live.image);
     let reply = app.session.apply_digitize_window(&shown.request, &shown.outputs).map_err(|e| crate::i18n::msg(&e.to_string()))?;
     closed_by_create(app, key, &reply);
@@ -337,10 +369,10 @@ fn closed_by_create(app: &mut VectorcraftApp, key: (u64, NodeId), reply: &Value)
 /// a run made now on the interface thread, as an agent asks for it.
 pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
     let Some((uid, image)) = of(d) else { return Err("the image window names no image".into()) };
-    if app.embroidery.image_window.live.as_ref().is_some_and(|l| l.schedule.current(&params_of(&d.fields)).is_some()) {
-        return create(app);
-    }
     let params = params_of(&d.fields);
+    if app.embroidery.image_window.live.as_ref().is_some_and(|l| l.schedule.current(&params).is_some()) {
+        return create(app, &params);
+    }
     let palette = params.get(PALETTE).and_then(Value::as_str).map(str::to_string);
     let request =
         app.session.digitize_window_request(image, &settings_of(&params), palette.as_deref()).map_err(|e| crate::i18n::msg(&e.to_string()))?;

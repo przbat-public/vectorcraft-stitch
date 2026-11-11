@@ -240,12 +240,12 @@ fn size_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &V
         }
     });
     if let Some(words) = fields::take_unreadable(ui) {
-        app.status(words);
+        super::refuse(app, words);
     }
     if let Some((side, v)) = typed
         && let Err(words) = type_side(&mut d.fields, side, v, Some(size), top, lang)
     {
-        app.status(words);
+        super::refuse(app, words);
     }
     if rows::check(ui, crate::et!("Fit within the width and height"), Some(fit.is_some()), t.panel) {
         set_fit(&mut d.fields, fit.is_none(), size);
@@ -284,12 +284,12 @@ fn crop_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &V
         }
     });
     if let Some(words) = fields::take_unreadable(ui) {
-        app.status(words);
+        super::refuse(app, words);
     }
     if let Some((k, v)) = typed
         && let Err(words) = type_margin(&mut d.fields, k, v, px)
     {
-        app.status(words);
+        super::refuse(app, words);
     }
     let cropped = crop_of(&d.fields).is_some();
     ui.horizontal(|ui| {

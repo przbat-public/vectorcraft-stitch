@@ -172,7 +172,7 @@ fn take(app: &mut VectorcraftApp, d: &mut Dialog, key: &str, value: f64, range: 
         crate::et!("{value} is out of range: {low} to {high}."),
         &[("value", &format.show(value)), ("low", &format.show(range.0)), ("high", &format.show(range.1))],
     );
-    app.status(words);
+    super::refuse(app, words);
 }
 
 /// The number of colours: a slider and a field.
@@ -192,7 +192,7 @@ fn count_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &
         }
     });
     if let Some(words) = fields::take_unreadable(ui) {
-        app.status(words);
+        super::refuse(app, words);
     }
     if let Some(v) = taken {
         take(app, d, COLORS, v.round(), (lo, hi), &format);
@@ -288,7 +288,7 @@ fn min_area_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply
         ui.label(unit.trim());
     });
     if let Some(words) = fields::take_unreadable(ui) {
-        app.status(words);
+        super::refuse(app, words);
     }
     if let Some(v) = taken {
         take(app, d, MIN_AREA, v, (lo, hi), &format);

@@ -9,6 +9,7 @@
 
 use egui::{FontId, RichText, Sense, Stroke, Ui, pos2, vec2};
 use serde_json::{Value, json};
+use vectorcraft_engine::cmd::embroidery::DIGITIZE_WORKING_PX_PER_MM;
 
 use super::image_step::range_of;
 use crate::VectorcraftApp;
@@ -48,6 +49,20 @@ const COUNT_DECIMALS: usize = 0;
 
 /// Whether this is the web, where a slider's value is taken once it is let go.
 const WEB: bool = cfg!(target_arch = "wasm32");
+
+/// One working pixel's area at the resolution digitizing aims for (square millimetres: 0.01 at ten
+/// pixels a millimetre), where the smallest area's slider starts, as nothing smaller changes what
+/// is digitized (the project owner's choice, 2026-11-11); its field still takes nothing (0).
+const PIXEL_MM2: f64 = 1.0 / (DIGITIZE_WORKING_PX_PER_MM * DIGITIZE_WORKING_PX_PER_MM);
+
+/// How a slider's track maps to its values.
+#[derive(Clone, Copy)]
+enum Scale {
+    /// Whole numbers, evenly.
+    Whole,
+    /// Logarithmic, from nothing at its left end, then from `smallest` up.
+    Logarithmic { smallest: f64 },
+}
 
 /// Mode `id`'s name and what it does.
 fn mode_words(id: &str) -> (&'static str, &'static str) {
@@ -124,15 +139,16 @@ fn radio(ui: &mut Ui, words: &str, selected: bool, tip: &str) -> bool {
     resp.on_hover_text(tip).clicked()
 }
 
-/// A slider `name` (for screen readers) over `range` showing `value` → the value to take: while it
-/// moves, or on the web once it is let go (its place kept meanwhile).
-fn live_slider(ui: &mut Ui, salt: &str, name: &str, value: f64, range: std::ops::RangeInclusive<f64>, logarithmic: bool) -> Option<f64> {
+/// A slider `name` (for screen readers) over `range` on `scale` showing `value` → the value to
+/// take: while it moves, or on the web once it is let go (its place kept meanwhile).
+fn live_slider(ui: &mut Ui, salt: &str, name: &str, value: f64, range: std::ops::RangeInclusive<f64>, scale: Scale) -> Option<f64> {
     let id = ui.make_persistent_id(salt);
     let mut v = ui.data(|m| m.get_temp::<f64>(id)).unwrap_or(value);
-    let mut slider = egui::Slider::new(&mut v, range).show_value(false).logarithmic(logarithmic);
-    if !logarithmic {
-        slider = slider.step_by(1.0);
-    }
+    let slider = egui::Slider::new(&mut v, range).show_value(false);
+    let slider = match scale {
+        Scale::Whole => slider.step_by(1.0),
+        Scale::Logarithmic { smallest } => slider.logarithmic(true).smallest_positive(smallest),
+    };
     let resp = crate::widgets::slider(ui, slider);
     ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(name));
     if WEB && resp.dragged() {
@@ -167,7 +183,7 @@ fn count_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &
     heading(ui, name);
     let mut taken = None;
     ui.horizontal(|ui| {
-        taken = live_slider(ui, "digitize-colors-slider", name, asked, lo..=hi, false);
+        taken = live_slider(ui, "digitize-colors-slider", name, asked, lo..=hi, Scale::Whole);
         let look = Look { name: Some(name), ..Look::default() };
         if let Some(v) = fields::number_field(ui, "digitize-colors", Some(asked), &format, &look, FIELD_WIDTH, &(lo..=hi)) {
             taken = Some(v);
@@ -260,7 +276,7 @@ fn min_area_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply
     heading(ui, name);
     let mut taken = None;
     ui.horizontal(|ui| {
-        taken = live_slider(ui, "digitize-min-area-slider", name, value, lo..=hi, true);
+        taken = live_slider(ui, "digitize-min-area-slider", name, value, lo..=hi, Scale::Logarithmic { smallest: PIXEL_MM2 });
         let look = Look { name: Some(name), ..Look::default() };
         if let Some(v) = fields::number_field(ui, "digitize-min-area", Some(value), &format, &look, FIELD_WIDTH, &(lo..=hi)) {
             taken = Some(v);
@@ -312,6 +328,53 @@ mod tests {
         assert_eq!(with(Some(true)).as_deref(), Some(said));
         assert_eq!(with(None), None, "nothing inside: nothing to say");
         assert_eq!(with(Some(false)), None, "left out: no thread more");
+    }
+
+    /// The smallest area's slider starts at one working pixel's area, not at egui's millionth: a
+    /// press at the middle of its track takes the area halfway between a pixel's and the top on its
+    /// logarithmic scale, and its default, 1 mm², sits about the middle.
+    #[test]
+    fn the_smallest_areas_slider_starts_at_a_working_pixel() {
+        /// The engine's range of the smallest area and its default (square millimetres).
+        const RANGE: (f64, f64) = (0.0, 50.0);
+        const DEFAULT: f64 = 1.0;
+        /// How near the area taken lies to the one halfway: a share of it, for a press rounded to
+        /// the point.
+        const NEAR: f64 = 0.05;
+        /// How far from the track's middle the default may sit, a share of the track.
+        const ABOUT_THE_MIDDLE: f64 = 0.1;
+        // One working pixel's area at the engine's working resolution: where the slider starts.
+        let pixel = 1.0 / (DIGITIZE_WORKING_PX_PER_MM * DIGITIZE_WORKING_PX_PER_MM);
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        let name = "Smallest area";
+        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(400.0, 100.0));
+        let frame = |events: Vec<egui::Event>, taken: &mut Option<f64>| {
+            let raw = egui::RawInput { screen_rect: Some(screen), events, ..Default::default() };
+            let scale = Scale::Logarithmic { smallest: PIXEL_MM2 };
+            let mut out = ctx.run_ui(raw, |ui| {
+                if let Some(v) = live_slider(ui, "test-min-area", name, DEFAULT, RANGE.0..=RANGE.1, scale) {
+                    *taken = Some(v);
+                }
+            });
+            out.textures_delta.clear();
+            out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default()
+        };
+        let mut taken = None;
+        let nodes = frame(vec![], &mut taken);
+        let slider = nodes.iter().find(|(_, n)| n.role() == egui::accesskit::Role::Slider && n.label() == Some(name));
+        let b = slider.and_then(|(_, n)| n.bounds()).expect("the slider");
+        let middle = egui::pos2(((b.x0 + b.x1) / 2.0) as f32, ((b.y0 + b.y1) / 2.0) as f32);
+        let press =
+            |pressed| egui::Event::PointerButton { pos: middle, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::NONE };
+        // Pressed in one frame and let go in the next, as a slider takes a press.
+        frame(vec![egui::Event::PointerMoved(middle), press(true)], &mut taken);
+        frame(vec![press(false)], &mut taken);
+        let halfway = (pixel * RANGE.1).sqrt();
+        let v = taken.expect("the press took a value");
+        assert!((v - halfway).abs() < NEAR * halfway, "took {v} mm², halfway is {halfway} mm²");
+        let share = (DEFAULT.log10() - pixel.log10()) / (RANGE.1.log10() - pixel.log10());
+        assert!((share - 0.5).abs() < ABOUT_THE_MIDDLE, "the default at {share} of the track");
     }
 
     /// Colours the smallest area joined to others whole are counted by colour, not by row: the

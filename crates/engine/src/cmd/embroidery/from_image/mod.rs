@@ -59,6 +59,7 @@ mod working;
 
 pub(super) use command::digitize_image;
 pub use pipeline::{AreaFacts, Outputs, Pipeline, Place, StageId, WindowRequest};
+pub use working::WORKING_PX_PER_MM;
 
 #[cfg(test)]
 mod tests;

@@ -40,8 +40,8 @@ use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::Palette;
 
 use super::super::digitize::{printed, shows};
-use super::command::Digitized;
 use super::settings::{C, Job};
+use super::stages::Digitized;
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
 use crate::cmd::pathops::shape_node;
@@ -154,7 +154,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
     let NodeKind::Image(img) = &mut image.kind else {
         return Err(bad(C, "not an image: select an image, or an Image Trace object"));
     };
-    img.xf = d.working.scaled * img.xf;
+    img.xf = d.working().scaled * img.xf;
     // The image moved under the design stays on the canvas, as the design must: a small crop of a
     // large image made much larger would carry the rest of the image past it.
     let (w, h) = (f64::from(img.width), f64::from(img.height));
@@ -170,26 +170,26 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
     // The areas in sewing order, by colour block: a block's thread, whether it is sewn, its objects.
     let mut blocks: Vec<(Option<usize>, bool, Vec<Arc<Node>>)> = Vec::new();
     let mut objects = 0usize;
-    for &a in &d.order.sewn {
+    for &a in &d.order().sewn {
         vectorcraft_doc::cancel::check()?;
-        let (Some(area), Some(shape)) = (d.areas.areas.get(a), d.shapes.shapes.get(a)) else { continue };
-        let Some(row) = d.colours.rows.get(area.row) else { continue };
+        let (Some(area), Some(shape)) = (d.areas().areas.get(a), d.shapes().shapes.get(a)) else { continue };
+        let Some(row) = d.colours().rows.get(area.row) else { continue };
         if shape.subpaths.is_empty() {
             continue;
         }
         let thread = row.thread.as_ref().map(|m| m.thread.index);
         let [r, g, b] = thread.and_then(|i| palette.get(i)).map_or(row.color, |(rgb, _)| rgb);
-        let n = match d.lines.get(a).and_then(Option::as_ref) {
+        let n = match d.lines().get(a).and_then(Option::as_ref) {
             Some(line) => {
-                let width = line_width(line, d.working.px_per_mm);
-                let mut n = line_node(doc, line, d.working.to_doc, width, Color::rgb8(r, g, b));
+                let width = line_width(line, d.working().px_per_mm);
+                let mut n = line_node(doc, line, d.working().to_doc, width, Color::rgb8(r, g, b));
                 if let Some(e) = line_settings_for(row.job, width) {
                     n.extras_mut().embroidery = Some(Box::new(e));
                 }
                 n
             }
             None => {
-                let mut n = shape_node(doc, shape.transformed(d.working.to_doc), None);
+                let mut n = shape_node(doc, shape.transformed(d.working().to_doc), None);
                 n.appearance =
                     Appearance { items: vec![AppearanceItem::Fill(FillLayer::new(Paint::solid(Color::rgb8(r, g, b))))], ..Default::default() }.into();
                 if let Some(e) = settings_for(row.job) {

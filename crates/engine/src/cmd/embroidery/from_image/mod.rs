@@ -28,6 +28,7 @@
 //!   under a centre line to its middle);
 //! - [`create`]: the embroidery objects made of them, in place of the image, which moves to a
 //!   template layer;
+//! - [`stages`]: the stages above as functions of what each reads, run in turn by the command;
 //! - [`command`]: `embroidery.digitizeImage` and its answer, run as a job ([`DigitizeJob`]);
 //! - [`warnings`]: what the answer warns of, each by an id a window words, with its values.
 //!
@@ -46,6 +47,7 @@ mod overlap;
 mod regions;
 mod rules;
 mod settings;
+mod stages;
 mod trace;
 mod warnings;
 mod working;

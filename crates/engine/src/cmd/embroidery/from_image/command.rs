@@ -16,19 +16,15 @@ use vectorcraft_doc::{Document, ImageObject, NodeId, NodeKind};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_delta_e};
-use vectorcraft_trace as tr;
 
-use super::background::{self, Background};
-use super::centre::{self, CentreLine};
-use super::colours::{self, Colours};
+use super::background::Background;
+use super::colours::Colours;
 use super::create::{self, Made};
-use super::order::{self, Order};
-use super::overlap::{self, Shapes};
-use super::regions::Regions;
-use super::rules::{self, AreaKind, Areas};
-use super::settings::{BackgroundSetting, C, Job, Mode, Settings, table};
+use super::rules;
+use super::settings::{BackgroundSetting, C, Settings, table};
+use super::stages::{self, Digitized, clock, since};
+use super::trace;
 use super::warnings::Warning;
-use super::{flat, inside, trace, working};
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
 use crate::{EngineError, Result, Session};
@@ -40,14 +36,6 @@ pub const DIGITIZE_PROGRESS: &str = "digitizeImage";
 /// The stages a run goes through, as its progress counts them: the working copy, the trace, the
 /// colours and areas, the shapes, the objects and their stitches.
 pub const DIGITIZE_STAGES: u64 = 5;
-
-/// The stages done when each stage of [`DIGITIZE_STAGES`] begins: the working copy, the trace, the
-/// colours and areas, the shapes, and the objects with their stitches.
-const PREPARING: u64 = 0;
-const TRACING: u64 = 1;
-const COLOURING: u64 = 2;
-const SHAPING: u64 = 3;
-const MAKING: u64 = 4;
 
 /// The undo step Create makes, as the command is named: its label, which `cmd!` takes only as a
 /// literal (a test checks the two agree).
@@ -66,11 +54,7 @@ use super::super::stats::{LIST_LIMIT as AREAS_LISTED, MAX_LIST_LIMIT as MAX_AREA
 const HUNDREDTHS: f64 = 100.0;
 
 /// A share is given as a percentage.
-const PERCENT: f64 = 100.0;
-
-/// Milliseconds in a second, for the stages' timings.
-#[cfg(not(target_arch = "wasm32"))]
-const MS_PER_SEC: f64 = 1000.0;
+pub(super) const PERCENT: f64 = 100.0;
 
 /// `v` to two decimals, as the replies give millimetres and shares.
 pub(super) fn hundredths(v: f64) -> f64 {
@@ -138,219 +122,20 @@ fn editable(st: &crate::DocState, id: NodeId) -> Result<()> {
     Ok(())
 }
 
-/// The time since `started` (milliseconds); none on the web, which has no clock to read.
-#[cfg(not(target_arch = "wasm32"))]
-fn since(started: std::time::Instant) -> Option<f64> {
-    Some(hundredths(started.elapsed().as_secs_f64() * MS_PER_SEC))
-}
-
-/// Two stretches' times added (milliseconds, to hundredths); none on the web.
-fn added(a: Option<f64>, b: Option<f64>) -> Option<f64> {
-    Some(hundredths(a? + b?))
-}
-
-/// The clock a stage's time is read from; none on the web.
-#[cfg(not(target_arch = "wasm32"))]
-fn clock() -> std::time::Instant {
-    std::time::Instant::now()
-}
-
-#[cfg(target_arch = "wasm32")]
-fn clock() {}
-
-#[cfg(target_arch = "wasm32")]
-fn since(_: ()) -> Option<f64> {
-    None
-}
-
-/// What digitizing made of an image, stage by stage.
-pub(super) struct Digitized {
-    pub(super) working: working::Working,
-    pub(super) found: Background,
-    pub(super) traced: tr::TraceResult,
-    pub(super) background: Option<[u8; 3]>,
-    pub(super) colours: Colours,
-    pub(super) areas: Areas,
-    pub(super) order: Order,
-    /// Each area's centre line, where it is sewn along its middle ([`centre`]), by its index.
-    pub(super) lines: Vec<Option<CentreLine>>,
-    pub(super) shapes: Shapes,
-    pub(super) warnings: Vec<Warning>,
-    /// The time of each stage it went through (milliseconds), none on the web.
-    pub(super) timings: [Option<f64>; 4],
-}
-
 /// Digitize `image`, whose file is `bytes`, with `settings` in `palette`'s threads: the working
 /// copy, its background, the trace, the colours and their threads, the areas after the rules, and
-/// the order they are sewn in. A cancel stops it within each stage; `steps` is asked as the trace
-/// goes, from the threads that trace, and stops it when it answers `false`.
+/// the order they are sewn in, each stage in turn ([`stages`]). A cancel stops it within each
+/// stage; `steps` is asked as the trace goes, from the threads that trace, and stops it when it
+/// answers `false`.
 pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, palette: Palette, steps: &trace::Steps<'_>) -> Result<Digitized> {
-    vectorcraft_doc::cancel::progress(PREPARING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
-    let started = clock();
-    let w = working::prepare(image, bytes, settings)?;
-    let found = match settings.background {
-        BackgroundSetting::Corners => background::found(w.upright()),
-        BackgroundSetting::None => Background::None,
-        BackgroundSetting::Colour(c) => Background::Colour(c),
-    };
-    let image_ms = since(started);
-    vectorcraft_doc::cancel::check()?;
-    vectorcraft_doc::cancel::progress(TRACING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
-    let started = clock();
-    // A background colour takes one of the trace's colours: the design keeps the colours asked.
-    let colors = settings.colors + u32::from(matches!(found, Background::Colour(_)));
-    let mut warnings = w.warnings();
-    let traced = trace::in_mode(&w, settings, colors, trace::MAX_ANCHORS, steps, &mut warnings)?;
-    if traced.paths.len() > trace::MAX_TRACED_SHAPES {
-        return Err(bad(
-            C,
-            format!(
-                "the image traces as {} shapes, more than {}: lower `colors`, give a smaller size (`width`, `height` or `fit`), or crop the image",
-                traced.paths.len(),
-                trace::MAX_TRACED_SHAPES
-            ),
-        ));
-    }
-    let trace_ms = since(started);
-    vectorcraft_doc::cancel::check()?;
-    vectorcraft_doc::cancel::progress(COLOURING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
-    let started = clock();
-    let traced_background = colours::background_colour(&traced.palette, found);
-    if matches!(found, Background::Colour(_)) && traced_background.is_none() {
-        warnings.push(Warning::new("noBackgroundColor", json!({}), "no traced colour is the background's: every area is sewn"));
-    }
-    if settings.background == BackgroundSetting::Corners && found == Background::None {
-        warnings.push(Warning::new(
-            "cornersDisagree",
-            json!({}),
-            "the image's corners don't agree on a background: every area is sewn (give `background` to name one)",
-        ));
-    }
-    let regions = Regions::of(&traced, &w.raster, w.outside.clone())?;
-    if settings.mode != Mode::Logo {
-        let gradual = flat::gradual_share(&w.raster, &regions, &traced, settings.mode == Mode::Grayscale);
-        if gradual >= flat::GRADIENT_SHARE {
-            let percent = (gradual * PERCENT).round();
-            warnings.push(Warning::new(
-                "notFlatArt",
-                json!({"by": "gradual", "percent": percent}),
-                format!(
-                    "the image doesn't look like flat art (a photo or gradients?): {percent}% of the edges traced between its colours lie where it changes gradually, so its gradients are sewn as bands of flat colour"
-                ),
-            ));
-        }
-    }
-    let touches = |i: usize| regions.areas.get(i).is_some_and(|a| a.touches_edge);
-    let rows = colours::rows(&traced, &touches, traced_background, &settings.choices);
-    let row_of = rows.row_of(traced.paths.len());
-    let min_px = trace::area_px(settings.min_area, w.px_per_mm) as usize;
-    let areas = rules::applied(regions, &rows, &row_of, w.px_per_mm, min_px)?;
-    if areas.areas.len() > MAX_IMAGE_AREAS {
-        return Err(bad(
-            C,
-            format!(
-                "the image makes {} areas, more than {MAX_IMAGE_AREAS}: raise `minArea`, lower `colors`, give a smaller size (`width`, `height` or `fit`), or crop the image",
-                areas.areas.len()
-            ),
-        ));
-    }
-    let area_rows: Vec<(usize, usize)> = areas.areas.iter().map(|a| (a.row, a.pixels)).collect();
-    vectorcraft_doc::cancel::check()?;
-    let colours = colours::matched(rows, &area_rows, settings.mode, palette, &settings.choices)?;
-    // In greys mode a thread a person chose is sewn even when it isn't grey (the project owner's
-    // decision, 2026-11-03): the reply says so.
-    if settings.mode == Mode::Grayscale {
-        for row in colours.rows.iter().filter(|r| r.areas > 0) {
-            let chosen = row.choice.and_then(|i| settings.choices.get(i)).and_then(|c| c.thread);
-            let Some(t) = chosen.filter(|t| !palette.is_neutral(t.index())) else { continue };
-            let name = palette.get(t.index()).map_or("", |(_, n)| n);
-            let color = super::super::hex(row.color);
-            warnings.push(Warning::new(
-                "choiceNotGray",
-                json!({"color": color, "thread": {"palette": palette.id(), "index": t.index(), "name": name}}),
-                format!(
-                    "the thread chosen for {color}, {}, isn't grey: it is sewn as chosen",
-                    super::super::threadlib::swatch_name(palette, t.index(), name)
-                ),
-            ));
-        }
-    }
-    for row in colours.rows.iter().filter(|r| !r.background && r.areas == 0) {
-        let color = super::super::hex(row.color);
-        warnings.push(Warning::new(
-            "colorJoined",
-            json!({"color": color, "minArea": settings.min_area}),
-            format!("every area of {color} was smaller than {} mm², so it joined its neighbours", settings.min_area),
-        ));
-    }
-    let mut areas = rules::joined_by_thread(areas, &colours)?;
-    rules::lines_by_job(&mut areas, &colours);
-    let colours_ms = since(started);
-    // A line along its middle: a thin one of a colour sewn by the rules (or kept unsewn, to be sewn
-    // later), and every area of a colour sewn as Lines; not a colour sewn as Fill. Found before the
-    // order, which sews a line after the fills it touches: an area with no centre line to sew along
-    // is sewn as the shape it is, in its turn as a fill.
-    vectorcraft_doc::cancel::progress(SHAPING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
-    let started = clock();
-    // A line by the rules is held to its width away from where its lines meet.
-    let thin_px = rules::THIN_LINE_MM * w.px_per_mm + rules::MEASURE_SLACK_PX;
-    let wanted: Vec<centre::Wanted> = areas
-        .areas
-        .iter()
-        .map(|x| match colours.rows.get(x.row) {
-            Some(r) if x.kind == AreaKind::Line && !r.background => match r.job {
-                Job::Lines => centre::Wanted::AnyWidth,
-                Job::Auto | Job::None => centre::Wanted::NoWiderThan(thin_px),
-                Job::Fill => centre::Wanted::No,
-            },
-            _ => centre::Wanted::No,
-        })
-        .collect();
-    let lines = centre::lines(&areas.regions, &|a| wanted.get(a).copied().unwrap_or(centre::Wanted::No), w.px_per_mm)?;
-    let along: Vec<bool> = wanted.iter().map(|&x| x != centre::Wanted::No).collect();
-    for (row, count) in rules::fills_without_centre_lines(&mut areas, &colours, &along, &lines) {
-        let color = colours.rows.get(row).map(|r| super::super::hex(r.color)).unwrap_or_default();
-        warnings.push(Warning::new(
-            "notLines",
-            json!({"color": color, "count": count}),
-            format!("areas of {color} with no centre line to sew along (a dot, or a blob shorter than it is wide) are sewn as the shapes they are: {count}"),
-        ));
-    }
-    let lines_ms = since(started);
-    let started = clock();
-    inside::containers(&mut areas, &colours, w.px_per_mm)?;
-    let order = order::ordered(&areas.areas, &areas.regions, &colours)?;
-    inside::sewn_over(&mut areas, &colours, &order);
-    let colors_ms = added(colours_ms, since(started));
-    let started = clock();
-    let shapes =
-        overlap::shaped(&traced.paths, &areas, &colours, &order, settings.overlap * w.px_per_mm, &lines, overlap::LINE_REACH_MM * w.px_per_mm)?;
-    if shapes.failed > 0 {
-        warnings.push(Warning::new(
-            "shapesNotJoined",
-            json!({"count": shapes.failed}),
-            format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed),
-        ));
-    }
-    // The centre lines are timed with the shapes, which they are made into.
-    let shapes_ms = added(since(started), lines_ms);
-    vectorcraft_doc::cancel::progress(MAKING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
-    if traced.paths.is_empty() {
-        warnings.push(Warning::new("nothingTraced", json!({}), "nothing in the image was traced: it is empty or transparent"));
-    }
-    Ok(Digitized {
-        working: w,
-        found,
-        traced,
-        background: traced_background,
-        colours,
-        areas,
-        order,
-        lines,
-        shapes,
-        warnings,
-        timings: [image_ms, trace_ms, colors_ms, shapes_ms],
-    })
+    let image_out = Arc::new(stages::image_stage(image, bytes, settings)?);
+    let trace_out = Arc::new(stages::trace_stage(&image_out, settings, steps)?);
+    let regions_out = Arc::new(stages::regions_stage(&image_out, &trace_out, settings)?);
+    let colours_out = Arc::new(stages::colours_stage(&image_out, &trace_out, &regions_out, settings, palette)?);
+    let lines_out = Arc::new(stages::lines_stage(&image_out, &colours_out)?);
+    let shapes_out = Arc::new(stages::shapes_stage(&image_out, &trace_out, &colours_out, &lines_out, settings)?);
+    vectorcraft_doc::cancel::progress(stages::MAKING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
+    Ok(Digitized { image_out, trace_out, regions_out, colours_out, lines_out, shapes_out })
 }
 
 /// A thread as a reply gives it: its palette, number, name, colour, and its difference from the
@@ -436,10 +221,10 @@ pub(super) const MAX_OUTLINE_ELEMENTS: usize = 20_000;
 /// path elements it has.
 fn outline_of(d: &Digitized, a: usize) -> Option<(String, usize)> {
     use vectorcraft_geom::kurbo::{BezPath, PathEl};
-    let to_mm = vectorcraft_geom::Affine::scale(MM_PER_PT) * d.working.to_doc;
-    let path = match d.lines.get(a).and_then(Option::as_ref) {
+    let to_mm = vectorcraft_geom::Affine::scale(MM_PER_PT) * d.working().to_doc;
+    let path = match d.lines().get(a).and_then(Option::as_ref) {
         Some(line) => to_mm * line.path(),
-        None => d.shapes.shapes.get(a)?.transformed(to_mm).to_bezpath(),
+        None => d.shapes().shapes.get(a)?.transformed(to_mm).to_bezpath(),
     };
     let r = |p: Point| Point::new(hundredths(p.x), hundredths(p.y));
     let rounded: BezPath = path
@@ -460,12 +245,12 @@ fn outline_of(d: &Digitized, a: usize) -> Option<(String, usize)> {
 /// outlines when `outlines` asks: then at most [`MAX_OUTLINE_ELEMENTS`] path elements of them, the
 /// list ending at the area that would pass it (the first one listed whatever it has).
 fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outlines: bool) -> Vec<Value> {
-    let w = &d.working;
+    let w = d.working();
     let px = w.px_per_mm;
-    let number = |a: usize| d.order.placed.get(a).and_then(|p| p.index).map(|i| i + 1);
+    let number = |a: usize| d.order().placed.get(a).and_then(|p| p.index).map(|i| i + 1);
     let mm = |p: Point| [hundredths(p.x * MM_PER_PT), hundredths(p.y * MM_PER_PT)];
     let mut elements = 0usize;
-    d.order
+    d.order()
         .sewn
         .iter()
         .skip(offset)
@@ -478,11 +263,11 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
             first || elements <= MAX_OUTLINE_ELEMENTS
         })
         .filter_map(|(a, outline)| {
-            let area = d.areas.areas.get(a)?;
-            let stats = d.areas.regions.areas.get(a)?;
-            let placed = d.order.placed.get(a)?;
+            let area = d.areas().areas.get(a)?;
+            let stats = d.areas().regions.areas.get(a)?;
+            let placed = d.order().placed.get(a)?;
             let own = placed.index? + 1;
-            let row = d.colours.rows.get(area.row)?;
+            let row = d.colours().rows.get(area.row)?;
             let (x, y) = stats.deepest;
             let at = w.to_image * Point::new(f64::from(x) + 0.5, f64::from(y) + 0.5);
             let [x0, y0, x1, y1] = stats.bbox.map(f64::from);
@@ -491,7 +276,7 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
             let (r, b) = corners.iter().fold((f64::NEG_INFINITY, f64::NEG_INFINITY), |(r, b), p| (r.max(p.x), b.max(p.y)));
             let bounds: Vec<f64> = [mm(Point::new(l, t)), mm(Point::new(r, b))].concat();
             let touches: Vec<Value> = d
-                .areas
+                .areas()
                 .regions
                 .neighbours(a as u32)
                 .iter()
@@ -513,7 +298,7 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                     "height": hundredths((y1 - y0) / px),
                 },
                 "widest": hundredths(stats.widest_px / px),
-                "line": d.lines.get(a).and_then(Option::as_ref).map(|l| json!({
+                "line": d.lines().get(a).and_then(Option::as_ref).map(|l| json!({
                     "width": hundredths(l.width_px / px),
                     "length": hundredths(l.length_px / px),
                     "pieces": l.pieces.len(),
@@ -525,7 +310,7 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 "sewnOver": area.sewn_over,
                 "joined": area.paths.len().saturating_sub(1),
                 "touches": touches,
-                "grownUnder": d.shapes.grown_under.get(a).map_or(vec![], |g| g.iter().filter_map(|&b| number(b)).collect::<Vec<_>>()),
+                "grownUnder": d.shapes().grown_under.get(a).map_or(vec![], |g| g.iter().filter_map(|&b| number(b)).collect::<Vec<_>>()),
                 "outline": outline.map(|(svg, _)| svg),
                 "order": {
                     "taken": placed.taken.id(),
@@ -539,10 +324,10 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
 /// The region map as a reply gives it: each working pixel's area by its number in sewing order (0
 /// for none), two bytes little-endian a pixel, in base64.
 fn regions_json(d: &Digitized) -> Value {
-    let regions = &d.areas.regions;
+    let regions = &d.areas().regions;
     let mut bytes = Vec::with_capacity(regions.labels.len() * 2);
     for &l in &regions.labels {
-        let n = d.order.placed.get(l as usize).and_then(|p| p.index).and_then(|i| u16::try_from(i + 1).ok()).unwrap_or(0);
+        let n = d.order().placed.get(l as usize).and_then(|p| p.index).and_then(|i| u16::try_from(i + 1).ok()).unwrap_or(0);
         bytes.extend_from_slice(&n.to_le_bytes());
     }
     json!({"width": regions.w, "height": regions.h, "base64": vectorcraft_format::base64_encode(&bytes)})
@@ -564,12 +349,12 @@ fn point(o: &Map<String, Value>) -> Result<Option<Point>> {
 
 /// The number in sewing order of the area under `at` (the image's own pixels), if one lies there.
 fn area_at(d: &Digitized, at: Point) -> Option<usize> {
-    let p = d.working.to_image.inverse() * at;
+    let p = d.working().to_image.inverse() * at;
     if !(p.x >= 0.0 && p.y >= 0.0) {
         return None;
     }
-    let a = d.areas.regions.at(p.x.floor() as u32, p.y.floor() as u32)?;
-    d.order.placed.get(a as usize).and_then(|placed| placed.index).map(|i| i + 1)
+    let a = d.areas().regions.at(p.x.floor() as u32, p.y.floor() as u32)?;
+    d.order().placed.get(a as usize).and_then(|placed| placed.index).map(|i| i + 1)
 }
 
 /// What a reply lists besides the design: the stretch of areas, whether the region map and the
@@ -678,7 +463,7 @@ impl DigitizeJob {
         let d = digitized(image, bytes, settings, *palette, steps)?;
         let started = clock();
         let mut doc = Document::clone(original);
-        let mut warnings = d.warnings.clone();
+        let mut warnings = d.warnings();
         let made = match create::made(&mut doc, *target, &d, *palette)? {
             Some(m) => Some((doc, m)),
             None if *dry_run => {
@@ -728,14 +513,15 @@ struct ReplyOf<'a> {
 
 /// The command's reply for what `d` made (`created` null: [`apply`] fills it in).
 fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
+    let timings = d.timings();
     let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms] } = of;
-    let w = &d.working;
+    let w = d.working();
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
-    let unused: Vec<Value> = d.colours.unused.iter().map(|&(i, why)| json!({"choice": i, "reason": why})).collect();
+    let unused: Vec<Value> = d.colours().unused.iter().map(|&(i, why)| json!({"choice": i, "reason": why})).collect();
     let areas = areas_json(d, palette, listed.offset, listed.limit, listed.outlines);
-    let area_count = d.order.sewn.len();
-    let specks = d.areas.joined.saturating_sub(d.areas.bands);
+    let area_count = d.order().sewn.len();
+    let specks = d.areas().joined.saturating_sub(d.areas().bands);
     if specks > 0 {
         warnings.push(Warning::new(
             "specksJoined",
@@ -743,22 +529,22 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
             format!("{specks} areas smaller than {} mm² joined their neighbours", settings.min_area),
         ));
     }
-    if d.areas.bands > 0 {
+    if d.areas().bands > 0 {
         warnings.push(Warning::new(
             "bandsJoined",
-            json!({"count": d.areas.bands, "maxWidth": rules::SLIVER_MAX_MM}),
+            json!({"count": d.areas().bands, "maxWidth": rules::SLIVER_MAX_MM}),
             format!(
                 "{} bands at most {} mm wide, in a colour between their neighbours', joined the neighbour nearest their colour",
-                d.areas.bands,
+                d.areas().bands,
                 rules::SLIVER_MAX_MM
             ),
         ));
     }
-    if d.areas.dropped > 0 {
+    if d.areas().dropped > 0 {
         warnings.push(Warning::new(
             "specksLeftOut",
-            json!({"count": d.areas.dropped, "minArea": settings.min_area}),
-            format!("{} areas smaller than {} mm² had nothing to join and were left out", d.areas.dropped, settings.min_area),
+            json!({"count": d.areas().dropped, "minArea": settings.min_area}),
+            format!("{} areas smaller than {} mm² had nothing to join and were left out", d.areas().dropped, settings.min_area),
         ));
     }
     json!({
@@ -775,26 +561,26 @@ fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
             "size": [hundredths(w.size_mm.0), hundredths(w.size_mm.1)],
             "scale": w.scale,
             "bounds": w.bounds_mm().map(hundredths),
-            "background": background_json(d.found, settings.background, d.background),
+            "background": background_json(d.found(), settings.background, d.background()),
         },
-        "colorCount": thread_count(&d.colours),
-        "colors": colors_json(&d.colours, palette, px_per_mm2, frame_px),
+        "colorCount": thread_count(d.colours()),
+        "colors": colors_json(d.colours(), palette, px_per_mm2, frame_px),
         "unusedChoices": unused,
         "areaCount": area_count,
         "offset": listed.offset,
         "truncated": listed.offset.saturating_add(areas.len()) < area_count,
         "areas": areas,
         "areaAt": listed.at.and_then(|p| area_at(d, p)),
-        "traced": {"paths": d.traced.paths.len(), "colors": d.traced.palette.len()},
-        "doubledArea": hundredths(d.shapes.doubled_px / px_per_mm2),
-        "joined": d.areas.joined,
-        "leftOut": d.areas.dropped,
+        "traced": {"paths": d.traced().paths.len(), "colors": d.traced().palette.len()},
+        "doubledArea": hundredths(d.shapes().doubled_px / px_per_mm2),
+        "joined": d.areas().joined,
+        "leftOut": d.areas().dropped,
         "regions": if listed.regions { regions_json(d) } else { Value::Null },
         "stats": stats,
         "warnings": warnings.iter().map(Warning::json).collect::<Vec<_>>(),
         "settings": settings.echo(),
         "table": table(palette),
-        "timings": {"image": d.timings[0], "trace": d.timings[1], "areas": d.timings[2], "shapes": d.timings[3], "objects": objects_ms, "stitches": stitches_ms},
+        "timings": {"image": timings[0], "trace": timings[1], "areas": timings[2], "shapes": timings[3], "objects": objects_ms, "stitches": stitches_ms},
     })
 }
 

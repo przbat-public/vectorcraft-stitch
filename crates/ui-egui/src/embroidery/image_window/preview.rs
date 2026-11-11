@@ -21,7 +21,7 @@ use std::sync::Arc;
 
 use egui::{Color32, Pos2, Rect, Sense, Shape, Stroke, TextureHandle, Ui, Vec2, pos2, vec2};
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::embroidery::{AreaFacts, AreaPlace, DigitizeOutputs, DigitizeStage};
+use vectorcraft_engine::cmd::embroidery::{AreaFacts, AreaPlace, DigitizeOutputs, DigitizeStage, mm_to_pt};
 use vectorcraft_geom::{Affine, Point};
 use vectorcraft_render::lines::{LinePicture, LineRenderer, LineStyle, Widths, edge_against};
 
@@ -86,11 +86,35 @@ const OUTLINE_LIGHT: Color32 = Color32::from_rgb(245, 245, 245);
 const GRIP_RADIUS: f32 = 12.0;
 const SPLIT_LINE_WIDTH: f32 = 2.0;
 
+/// The focus ring round Compare's grip: its gap from the grip, the embroidery rows' own, and its
+/// width, bolder than theirs over a picture (points). An estimate.
+const FOCUS_GAP: f32 = crate::embroidery::rows::FOCUS_GAP;
+const FOCUS_RING_WIDTH: f32 = 2.0;
+
 /// How finely a hovered outline follows its curves on screen (points).
 const HOVER_FLATTEN_PT: f64 = 0.25;
 
-/// Millimetres in a point (1/72 inch).
-const MM_PER_PT: f64 = 25.4 / 72.0;
+/// The recomputing badge: its distance from the pane's top right corner and its padding round its
+/// words (points). Estimates from the mockups' badge.
+const BADGE_INSET: f32 = 8.0;
+const BADGE_PAD: Vec2 = vec2(4.0, 2.0);
+
+/// The scale bar's distance from the strip's left edge, and the gap before its length's words
+/// (points). Estimates.
+const SCALE_BAR_INSET: f32 = 4.0;
+const SCALE_LABEL_GAP: f32 = 6.0;
+
+/// The honesty line's words (points): a point under the strip's other words, as a note's.
+const HONESTY_WORDS: f32 = 11.0;
+
+/// The zoom's field: its width, room for "400 %" and its arrow, and its margin inside the strip's
+/// height (points). Estimates.
+const ZOOM_WIDTH: f32 = 110.0;
+const ZOOM_INSET: f32 = 2.0;
+
+/// A whole, in percent: the zoom's 100 % is a point a point, and Compare's split is told to screen
+/// readers in percent of the preview's width.
+const PERCENT: f64 = 100.0;
 
 /// The preview's state between frames: the textures of the result shown, the lines drawn, the pan,
 /// and the area under the pointer.
@@ -223,7 +247,7 @@ fn design_box(outputs: &DigitizeOutputs) -> Option<vectorcraft_geom::Rect> {
 /// The view of the design in `pane`, zoomed as `zoom` says ("fit" or a percent), moved by `pan`.
 pub(crate) fn view_of(design: vectorcraft_geom::Rect, pane: Rect, zoom: &Value, pan: Vec2) -> ViewXf {
     let fit = (f64::from(pane.width() - 2.0 * FIT_MARGIN) / design.width()).min(f64::from(pane.height() - 2.0 * FIT_MARGIN) / design.height());
-    let scale = zoom.as_f64().filter(|z| z.is_finite() && *z > 0.0).map_or(fit, |percent| percent / 100.0).max(f64::MIN_POSITIVE);
+    let scale = zoom.as_f64().filter(|z| z.is_finite() && *z > 0.0).map_or(fit, |percent| percent / PERCENT).max(f64::MIN_POSITIVE);
     let middle = design.center();
     let offset = pane.center().to_vec2() + pan - vec2((middle.x * scale) as f32, (middle.y * scale) as f32);
     ViewXf { scale, offset }
@@ -395,7 +419,7 @@ pub(crate) fn area_name(facts: &AreaFacts) -> String {
 /// ("Dark Fuchsia 2 · 470 mm² · top left"), or that it isn't sewn.
 pub(crate) fn area_line(facts: &AreaFacts) -> String {
     let lang = crate::i18n::current();
-    let size = fill(crate::et!("{value} mm²"), &[("value", &numbers::decimal(lang, facts.area_mm2, 1))]);
+    let size = fill(crate::et!("{value} mm²"), &[("value", &numbers::decimal(lang, facts.area_mm2, super::words::TENTHS))]);
     let name = area_name(facts);
     if !facts.sewn {
         return fill(crate::et!("{name} · not sewn"), &[("name", &name)]);
@@ -452,7 +476,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     let fabric32 = Color32::from_rgb(fabric[0], fabric[1], fabric[2]);
     let split = d.f64(SPLIT, FIRST_SPLIT).clamp(0.0, 1.0);
     let split_x = pane.left() + pane.width() * split as f32;
-    let step = d.fields.get(super::STEP).and_then(Value::as_u64).unwrap_or(2);
+    let step = d.fields.get(super::STEP).and_then(Value::as_u64).unwrap_or(super::FIRST_STEP);
     let draw = |preview: &mut Preview, painter: &egui::Painter, which: View| {
         let quad = working_quad(outputs, xf);
         match which {
@@ -521,9 +545,10 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     if let Freshness::Pending { notice: true, progress } = live.schedule.freshness(now) {
         let words = super::words::recomputing(progress);
         let galley = painter.layout_no_wrap(words, egui::FontId::proportional(WORDS), t.text);
-        let at = Rect::from_min_size(pos2(pane.right() - galley.size().x - 16.0, pane.top() + 8.0), galley.size() + vec2(8.0, 4.0));
+        let size = galley.size() + 2.0 * BADGE_PAD;
+        let at = Rect::from_min_size(pos2(pane.right() - BADGE_INSET - size.x, pane.top() + BADGE_INSET), size);
         painter.rect_filled(at, f32::from(t.radius), t.panel);
-        painter.galley(at.min + vec2(4.0, 2.0), galley, t.text);
+        painter.galley(at.min + BADGE_PAD, galley, t.text);
     }
     foot_row(ui, foot, d, xf, view == View::Stitches || (view == View::Compare && View::of_step(step) == View::Stitches));
 }
@@ -591,15 +616,15 @@ fn splitter(ui: &mut Ui, pane: Rect, split: f64) -> Option<f64> {
     painter.line_segment([pos2(x, pane.top()), pos2(x, pane.bottom())], Stroke::new(SPLIT_LINE_WIDTH, OUTLINE_LIGHT));
     painter.circle(grip.center(), GRIP_RADIUS, t.panel, Stroke::new(1.0, t.border));
     if resp.has_focus() {
-        painter.circle_stroke(grip.center(), GRIP_RADIUS + 2.0, Stroke::new(2.0, t.accent));
+        painter.circle_stroke(grip.center(), GRIP_RADIUS + FOCUS_GAP, Stroke::new(FOCUS_RING_WIDTH, t.accent));
     }
-    let value = (moved.unwrap_or(split) * 100.0).round();
+    let value = (moved.unwrap_or(split) * PERCENT).round();
     ui.ctx().accesskit_node_builder(id, |node| {
         node.set_role(egui::accesskit::Role::Splitter);
         node.set_label(crate::et!("Compare: the original on the left"));
         node.set_numeric_value(value);
         node.set_min_numeric_value(0.0);
-        node.set_max_numeric_value(100.0);
+        node.set_max_numeric_value(PERCENT);
     });
     moved
 }
@@ -610,22 +635,22 @@ fn foot_row(ui: &mut Ui, foot: Rect, d: &mut Dialog, xf: ViewXf, stitches: bool)
     let lang = crate::i18n::current();
     let painter = ui.painter_at(foot);
     // The scale bar, two-tone.
-    let pt_per_mm = xf.scale / MM_PER_PT;
+    let pt_per_mm = xf.scale * mm_to_pt(1.0);
     let mm = scale_length(pt_per_mm);
     let length = (mm * pt_per_mm) as f32;
     let y = foot.center().y;
-    let a = pos2(foot.left() + 4.0, y);
+    let a = pos2(foot.left() + SCALE_BAR_INSET, y);
     let b = pos2(a.x + length, y);
-    painter.line_segment([a, b], Stroke::new(3.0, OUTLINE_DARK));
-    painter.line_segment([a, b], Stroke::new(1.0, OUTLINE_LIGHT));
-    let label = fill(crate::et!("{value} mm"), &[("value", &numbers::decimal(lang, mm, 0))]);
-    painter.text(pos2(b.x + 6.0, y), egui::Align2::LEFT_CENTER, label, egui::FontId::proportional(WORDS), t.text_dim);
+    painter.line_segment([a, b], Stroke::new(OUTLINE_DARK_WIDTH, OUTLINE_DARK));
+    painter.line_segment([a, b], Stroke::new(OUTLINE_LIGHT_WIDTH, OUTLINE_LIGHT));
+    let label = fill(crate::et!("{value} mm"), &[("value", &numbers::decimal(lang, mm, super::words::WHOLE))]);
+    painter.text(pos2(b.x + SCALE_LABEL_GAP, y), egui::Align2::LEFT_CENTER, label, egui::FontId::proportional(WORDS), t.text_dim);
     if stitches {
         painter.text(
             foot.center(),
             egui::Align2::CENTER_CENTER,
             crate::et!("The preview shows the planned stitches. Sew a test piece before production."),
-            egui::FontId::proportional(WORDS - 1.0),
+            egui::FontId::proportional(HONESTY_WORDS),
             t.text_dim,
         );
     }
@@ -635,7 +660,7 @@ fn foot_row(ui: &mut Ui, foot: Rect, d: &mut Dialog, xf: ViewXf, stitches: bool)
         Some(p) => numbers::percent(lang, p.round() as u64),
         None => crate::et!("Fit").to_string(),
     };
-    let zoom_rect = Rect::from_min_max(pos2(foot.right() - 110.0, foot.top() + 2.0), pos2(foot.right(), foot.bottom() - 2.0));
+    let zoom_rect = Rect::from_min_max(pos2(foot.right() - ZOOM_WIDTH, foot.top() + ZOOM_INSET), pos2(foot.right(), foot.bottom() - ZOOM_INSET));
     ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_rect), |ui| {
         let look = crate::embroidery::fields::Look { name: Some(crate::et!("Zoom")), ..Default::default() };
         let chosen = crate::embroidery::fields::choice(ui, "digitize-zoom", &shown(&current), &look, zoom_rect.width(), |ui| {
@@ -661,7 +686,7 @@ mod tests {
     /// shortest.
     #[test]
     fn the_scale_bar_picks_a_round_length() {
-        let pt_per_mm = 1.0 / MM_PER_PT;
+        let pt_per_mm = mm_to_pt(1.0);
         assert_eq!(scale_length(pt_per_mm), 20.0, "100 %: 20 mm is 57 points, 50 mm 142");
         assert_eq!(scale_length(4.0 * pt_per_mm), 10.0, "400 %");
         assert_eq!(scale_length(0.1 * pt_per_mm), 50.0, "far out: the longest");

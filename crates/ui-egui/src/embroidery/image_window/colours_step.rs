@@ -41,6 +41,8 @@ const RADIO: f32 = 13.0;
 const RADIO_GAP: f32 = 5.0;
 const RADIO_ROW: f32 = 20.0;
 const GAP: f32 = 6.0;
+/// The chosen radio button's dot, a share of its circle's radius: half, as egui's own draws it.
+const RADIO_DOT: f32 = 0.5;
 
 /// The decimals a smallest area is typed to (hundredths of a square millimetre: the smallest the
 /// engine tells apart is about a pixel at the working resolution), and a count's (whole).
@@ -129,10 +131,10 @@ fn radio(ui: &mut Ui, words: &str, selected: bool, tip: &str) -> bool {
     ui.painter().circle_filled(centre, RADIO / 2.0, t.input);
     ui.painter().circle_stroke(centre, RADIO / 2.0, Stroke::new(1.0, if resp.hovered() { t.text } else { t.button_border }));
     if selected {
-        ui.painter().circle_filled(centre, RADIO / 4.0, t.accent_strong);
+        ui.painter().circle_filled(centre, RADIO / 2.0 * RADIO_DOT, t.accent_strong);
     }
     ui.painter().galley(pos2(rect.left() + RADIO + RADIO_GAP, rect.center().y - galley.size().y / 2.0), galley, t.text);
-    rows::focus_ring(ui, &resp, rect.expand(2.0), t.panel);
+    rows::focus_ring(ui, &resp, rect.expand(rows::FOCUS_GAP), t.panel);
     resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::RadioButton, true, selected, words));
     rows::keyboard_tip(ui, resp.id, tip);
     rows::described(ui, resp.id, tip);

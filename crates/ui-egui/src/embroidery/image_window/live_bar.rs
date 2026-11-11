@@ -117,7 +117,10 @@ pub(crate) fn figures_words(f: &Figures, lang: Lang) -> String {
     let changes = crate::etn!(f.thread_changes, "{count} thread change", "{count} thread changes");
     let mut parts = vec![stitches, threads, changes, counters::minutes_words(f.minutes)];
     if let Some((w, h)) = f.size {
-        parts.push(fill(crate::et!("{width} × {height} mm"), &[("width", &numbers::decimal(lang, w, 1)), ("height", &numbers::decimal(lang, h, 1))]));
+        parts.push(fill(
+            crate::et!("{width} × {height} mm"),
+            &[("width", &numbers::decimal(lang, w, words::TENTHS)), ("height", &numbers::decimal(lang, h, words::TENTHS))],
+        ));
     }
     parts.join(" · ")
 }
@@ -155,7 +158,7 @@ pub(crate) fn warning_words(w: &Value, lang: Lang) -> Option<Note> {
     let v = &w["values"];
     let count = v["count"].as_u64().unwrap_or(0);
     let color = v["color"].as_str().unwrap_or_default();
-    let area = |key: &str| numbers::decimal(lang, v[key].as_f64().unwrap_or(0.0), 2);
+    let area = |key: &str| numbers::decimal(lang, v[key].as_f64().unwrap_or(0.0), words::HUNDREDTHS);
     let id = w["id"].as_str()?;
     let note = |mark, words: String| Some(Note { mark, words, step: step_of(id) });
     match id {
@@ -213,7 +216,7 @@ pub(crate) fn warning_words(w: &Value, lang: Lang) -> Option<Note> {
             Mark::Warning,
             fill(
                 crate::et!("The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better."),
-                &[("value", &area("pxPerMm")), ("least", &numbers::decimal(lang, v["fewerThan"].as_f64().unwrap_or(0.0), 0))],
+                &[("value", &area("pxPerMm")), ("least", &numbers::decimal(lang, v["fewerThan"].as_f64().unwrap_or(0.0), words::WHOLE))],
             ),
         ),
         "decodedSmaller" => {
@@ -387,7 +390,7 @@ fn updated_words(ui: &mut Ui, ms: f64, stages: &[DigitizeStage], lang: Lang) {
     let steps: Vec<&str> = steps.iter().filter_map(|&s| names.get(usize::from(s).saturating_sub(1)).copied()).collect();
     let words = fill(
         crate::et!("Updated in {value} ms after the last change ({steps})"),
-        &[("value", &numbers::decimal(lang, ms, 0)), ("steps", &steps.join(" → "))],
+        &[("value", &numbers::decimal(lang, ms, words::WHOLE)), ("steps", &steps.join(" → "))],
     );
     ui.label(RichText::new(words).size(SMALL_TEXT).color(t.text_dim));
 }

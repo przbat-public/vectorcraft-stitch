@@ -361,18 +361,24 @@ pub(crate) fn picture_colours(reply: &Value) -> Vec<&str> {
 
 /// A swatch's side (points): at least the 24-point target WCAG 2.2 asks for.
 const SWATCH: f32 = 24.0;
+/// A swatch's corners, and the ring round the colour chosen: its gap from the swatch, its corners
+/// and its width (points). Estimates from the mockups' swatches.
+const SWATCH_RADIUS: f32 = 2.0;
+const CHOSEN_GAP: f32 = 2.0;
+const CHOSEN_RADIUS: f32 = 3.0;
+const CHOSEN_WIDTH: f32 = 2.0;
 
 /// A colour's swatch, a button named by its colour for screen readers, ringed when chosen.
 fn swatch(ui: &mut Ui, hex: &str, chosen: bool) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let colour = parse(hex).unwrap_or(t.text_dim);
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(SWATCH, SWATCH), egui::Sense::click());
-    ui.painter().rect_filled(rect, 2.0, colour);
-    ui.painter().rect_stroke(rect, 2.0, egui::Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
+    ui.painter().rect_filled(rect, SWATCH_RADIUS, colour);
+    ui.painter().rect_stroke(rect, SWATCH_RADIUS, egui::Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
     if chosen {
-        ui.painter().rect_stroke(rect.expand(2.0), 3.0, egui::Stroke::new(2.0, t.text), egui::StrokeKind::Outside);
+        ui.painter().rect_stroke(rect.expand(CHOSEN_GAP), CHOSEN_RADIUS, egui::Stroke::new(CHOSEN_WIDTH, t.text), egui::StrokeKind::Outside);
     }
-    rows::focus_ring(ui, &resp, rect.expand(2.0), t.panel);
+    rows::focus_ring(ui, &resp, rect.expand(rows::FOCUS_GAP), t.panel);
     let name = fill(crate::et!("Color {color}"), &[("color", hex)]);
     ui.ctx().accesskit_node_builder(resp.id, |node| {
         node.set_role(egui::accesskit::Role::Button);

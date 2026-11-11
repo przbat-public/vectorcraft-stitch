@@ -65,7 +65,7 @@ pub(crate) const STEP: &str = "step";
 pub(crate) const VIEW: &str = "view";
 
 /// The step and the view it opens at: the colours, compared with the original.
-const FIRST_STEP: u64 = 2;
+pub(crate) const FIRST_STEP: u64 = 2;
 const FIRST_VIEW: &str = "compare";
 
 /// The read-only field saying how the result stands, for agents (`ui.inspect`).

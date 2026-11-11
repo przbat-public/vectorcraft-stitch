@@ -10,7 +10,7 @@ use vectorcraft_engine::cmd::embroidery::DigitizeStage;
 
 use super::preview::{self, View};
 use super::schedule::Shown;
-use super::{STEP, VIEW, words};
+use super::{FIRST_STEP, STEP, VIEW, words};
 use crate::VectorcraftApp;
 use crate::embroidery::text::fill;
 use crate::embroidery::{marks, numbers};
@@ -30,6 +30,19 @@ const CARD_PAD: f32 = 6.0;
 /// The size of a card's name and of its other words (points).
 const NAME_TEXT: f32 = 13.0;
 const SMALL_TEXT: f32 = 11.5;
+
+/// A card's focus ring, its width (points): bolder than a row's, as a card is a large target. An
+/// estimate.
+const FOCUS_RING_WIDTH: f32 = 2.0;
+
+/// How far under a card's middle its summary begins (points), so that the name above has its
+/// line. An estimate from the mockups' strip.
+const SUMMARY_DROP: f32 = 2.0;
+
+/// The room above a step's open settings and after each step's section (points). Estimates from
+/// the mockups' column.
+const SETTINGS_GAP: f32 = 4.0;
+const SECTION_GAP: f32 = 6.0;
 
 /// The stages a step shows the result of, in order.
 fn stages_of(step: u64) -> &'static [DigitizeStage] {
@@ -61,7 +74,11 @@ pub(crate) fn summary(step: u64, shown: &Shown, reply: &Value) -> String {
                 if reply["image"]["background"]["from"] == "none" { crate::et!("every color sewn") } else { crate::et!("background left out") };
             fill(
                 crate::et!("{width} × {height} mm · {background}"),
-                &[("width", &numbers::decimal(lang, w, 1)), ("height", &numbers::decimal(lang, h, 1)), ("background", background)],
+                &[
+                    ("width", &numbers::decimal(lang, w, words::TENTHS)),
+                    ("height", &numbers::decimal(lang, h, words::TENTHS)),
+                    ("background", background),
+                ],
             )
         }
         2 => {
@@ -112,7 +129,7 @@ pub(crate) fn strip(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
     let rect = ui.max_rect();
-    let current = d.fields.get(STEP).and_then(Value::as_u64).unwrap_or(2);
+    let current = d.fields.get(STEP).and_then(Value::as_u64).unwrap_or(FIRST_STEP);
     let width = (rect.width() - CARD_GAP * (STEPS as f32 - 1.0)) / STEPS as f32;
     let Some(live) = app.embroidery.image_window.live.as_mut() else { return };
     let shown = live.schedule.shown.clone();
@@ -128,7 +145,7 @@ pub(crate) fn strip(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
         let fill_colour = if selected { t.row_selected } else { t.panel_darker };
         ui.painter().rect_filled(card, f32::from(t.radius), fill_colour);
         if resp.has_focus() {
-            ui.painter().rect_stroke(card, f32::from(t.radius), egui::Stroke::new(2.0, t.accent), egui::StrokeKind::Outside);
+            ui.painter().rect_stroke(card, f32::from(t.radius), egui::Stroke::new(FOCUS_RING_WIDTH, t.accent), egui::StrokeKind::Outside);
         }
         let thumb = Rect::from_min_size(card.min + vec2(CARD_PAD, (card.height() - THUMB) / 2.0), vec2(THUMB, THUMB));
         if let Some(shown) = &shown {
@@ -142,13 +159,12 @@ pub(crate) fn strip(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
             (Some(shown), Some(reply)) => summary(step, shown, reply),
             _ => String::new(),
         };
-        ui.painter().text(pos2(text_left, card.center().y + 2.0), Align2::LEFT_TOP, &said, FontId::proportional(SMALL_TEXT), t.text_dim);
+        ui.painter().text(pos2(text_left, card.center().y + SUMMARY_DROP), Align2::LEFT_TOP, &said, FontId::proportional(SMALL_TEXT), t.text_dim);
         let busy = pending.is_some_and(|p| step >= p);
         let time = match (busy, &shown) {
             (true, _) => crate::et!("Computing…").to_string(),
-            (false, Some(shown)) => {
-                time_ms(shown, step).map_or_else(String::new, |ms| fill(crate::et!("{value} ms"), &[("value", &numbers::decimal(lang, ms, 0))]))
-            }
+            (false, Some(shown)) => time_ms(shown, step)
+                .map_or_else(String::new, |ms| fill(crate::et!("{value} ms"), &[("value", &numbers::decimal(lang, ms, words::WHOLE))])),
             (false, None) => String::new(),
         };
         ui.painter().text(
@@ -210,7 +226,7 @@ const MARK_GAP: f32 = 3.0;
 /// whenever the column overflows, not only under the pointer.
 pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let t = Tokens::get(ui.ctx());
-    let current = d.fields.get(STEP).and_then(Value::as_u64).unwrap_or(2);
+    let current = d.fields.get(STEP).and_then(Value::as_u64).unwrap_or(FIRST_STEP);
     let (shown, reply) = match app.embroidery.image_window.live.as_mut() {
         Some(live) => (live.schedule.shown.clone(), live.reply().cloned()),
         None => (None, None),
@@ -232,14 +248,14 @@ pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
                 choose(d, step);
             }
             if open {
-                ui.add_space(4.0);
+                ui.add_space(SETTINGS_GAP);
                 match step {
                     1 => super::image_step::show(app, ui, d),
                     2 => super::colours_step::show(app, ui, d),
                     _ => defaults_note(ui, step, reply.as_ref()),
                 }
             }
-            ui.add_space(6.0);
+            ui.add_space(SECTION_GAP);
         }
     });
 }
@@ -252,9 +268,12 @@ fn defaults_note(ui: &mut Ui, step: u64, reply: Option<&Value>) {
     let s = &r["settings"];
     let lines: Vec<String> = match step {
         3 => vec![
-            fill(crate::et!("Smoothness: {value}"), &[("value", &numbers::decimal(lang, s["smoothing"].as_f64().unwrap_or(0.0), 0))]),
-            fill(crate::et!("Corners: {value}"), &[("value", &numbers::decimal(lang, s["corners"].as_f64().unwrap_or(0.0), 0))]),
-            fill(crate::et!("Colors overlap by {value} mm"), &[("value", &numbers::decimal(lang, s["overlap"].as_f64().unwrap_or(0.0), 1))]),
+            fill(crate::et!("Smoothness: {value}"), &[("value", &numbers::decimal(lang, s["smoothing"].as_f64().unwrap_or(0.0), words::WHOLE))]),
+            fill(crate::et!("Corners: {value}"), &[("value", &numbers::decimal(lang, s["corners"].as_f64().unwrap_or(0.0), words::WHOLE))]),
+            fill(
+                crate::et!("Colors overlap by {value} mm"),
+                &[("value", &numbers::decimal(lang, s["overlap"].as_f64().unwrap_or(0.0), words::TENTHS))],
+            ),
         ],
         _ => vec![crate::et!("The stitches follow the document's embroidery settings.").to_string()],
     };

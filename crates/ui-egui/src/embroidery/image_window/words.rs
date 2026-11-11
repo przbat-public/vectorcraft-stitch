@@ -9,6 +9,16 @@ use crate::embroidery::numbers;
 use crate::embroidery::text::fill;
 use crate::state::Dialog;
 
+/// The decimals the window writes its numbers to: sizes in millimetres and areas in square
+/// millimetres to a tenth, a smallest area and a resolution to hundredths, and whole the times, the
+/// scale bar's lengths and the trace's settings.
+pub(crate) const TENTHS: usize = 1;
+pub(crate) const HUNDREDTHS: usize = 2;
+pub(crate) const WHOLE: usize = 0;
+
+/// A whole, in percent: a run's progress is said in percent.
+const PERCENT: f64 = 100.0;
+
 /// The four steps' names, in order.
 pub(crate) fn step_names() -> [&'static str; 4] {
     [crate::et!("Image"), crate::et!("Colors"), crate::et!("Shapes"), crate::et!("Stitches")]
@@ -49,8 +59,8 @@ pub(crate) fn title_facts(app: &VectorcraftApp, d: &Dialog) -> Option<String> {
                 ("format", &format),
                 ("width", &w),
                 ("height", &h),
-                ("w", &numbers::decimal(lang, mw, 1)),
-                ("h", &numbers::decimal(lang, mh, 1)),
+                ("w", &numbers::decimal(lang, mw, TENTHS)),
+                ("h", &numbers::decimal(lang, mh, TENTHS)),
             ],
         ),
         None => fill(crate::et!("{name} · {format} {width} × {height} px"), &[("name", &name), ("format", &format), ("width", &w), ("height", &h)]),
@@ -61,7 +71,7 @@ pub(crate) fn title_facts(app: &VectorcraftApp, d: &Dialog) -> Option<String> {
 pub(crate) fn recomputing(progress: Option<f64>) -> String {
     match progress {
         Some(f) if f.is_finite() => {
-            let percent = (f.clamp(0.0, 1.0) * 100.0).round() as u64;
+            let percent = (f.clamp(0.0, 1.0) * PERCENT).round() as u64;
             fill(crate::et!("Recomputing… {percent}"), &[("percent", &numbers::percent(crate::i18n::current(), percent))])
         }
         _ => crate::et!("Recomputing…").to_string(),

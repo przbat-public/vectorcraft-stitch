@@ -30,6 +30,9 @@ use vectorcraft_engine::doc::NodeId;
 use super::worker::{Checked, Done, Driver, Job, Outcome, Painted};
 pub(crate) use crate::embroidery::stitch_preview::{INLINE_PLAN_MS, LIVE_PLAN_MS, PROGRESS_REPAINT_SECS, QUIET_SECS, STALE_NOTICE_SECS};
 
+/// Milliseconds in a second: the time a change took to show is said in milliseconds.
+const MS_PER_SEC: f64 = 1000.0;
+
 /// Where the window's jobs run: its thread or in line ([`Driver`]), or the tests' own.
 pub(crate) trait Runner {
     /// Send `job`, or queue it.
@@ -132,7 +135,7 @@ pub(crate) struct Schedule {
     running: Option<Running>,
     /// Each stage's time when it was last made (milliseconds), by its place in
     /// [`DigitizeStage::ALL`].
-    stage_ms: [Option<f64>; 8],
+    stage_ms: [Option<f64>; DigitizeStage::ALL.len()],
     /// When the result shown went out of date (the first change since it was fresh).
     changed_at: Option<f64>,
     failure: Option<String>,
@@ -252,7 +255,7 @@ impl Schedule {
                 if self.waiting.is_none() {
                     let made = std::mem::take(&mut self.made);
                     if let Some(t) = self.changed_at.take() {
-                        self.updated = Some(((now - t) * 1000.0, made));
+                        self.updated = Some(((now - t) * MS_PER_SEC, made));
                     }
                 }
             }

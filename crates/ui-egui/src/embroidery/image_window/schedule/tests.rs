@@ -70,7 +70,7 @@ const PAST: f64 = 0.001;
 
 /// Every stage timed at `ms` milliseconds.
 fn timed(s: &mut Schedule, ms: f64) {
-    s.stage_ms = [Some(ms); 8];
+    s.stage_ms = [Some(ms); DigitizeStage::ALL.len()];
 }
 
 fn setup() -> (Session, NodeId, Schedule) {

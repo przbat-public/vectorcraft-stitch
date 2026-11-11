@@ -58,6 +58,16 @@ const BADGE_PAD: egui::Vec2 = vec2(3.0, 1.0);
 const BADGE_RADIUS: f32 = 3.0;
 const LIST_MAX_HEIGHT: f32 = 260.0;
 const MARK_SIZE: f32 = 12.0;
+/// The colour square's corners (points).
+const SWATCH_RADIUS: f32 = 2.0;
+
+/// Where a row's two lines sit, their middles as shares of its height from its top: the colours
+/// and the thread's name, then the facts. Estimates from the mockups' list.
+const FIRST_LINE: f32 = 0.32;
+const SECOND_LINE: f32 = 0.72;
+
+/// How much of its colour a row left out keeps (its words and swatches dimmed): an estimate.
+const LEFT_OUT_ALPHA: f32 = 0.6;
 
 /// The size of a row's name and of its other words (points).
 const NAME_TEXT: f32 = 12.5;
@@ -343,7 +353,12 @@ fn share_words(lang: Lang, share: f64) -> String {
 
 /// A thread's name and number as the rows write them ("Dark Fuchsia  PEC 7").
 fn thread_name(t: &Thread) -> String {
-    format!("{}  {} {}", t.name, t.palette.to_uppercase(), t.index)
+    thread_words(&t.name, &t.palette, t.index)
+}
+
+/// The thread `name`, number `index` in `palette`, as the rows and Choose Thread…'s list write it.
+fn thread_words(name: &str, palette: &str, index: impl std::fmt::Display) -> String {
+    format!("{name}  {} {index}", palette.to_uppercase())
 }
 
 /// What a row says after its thread: its share and areas, and what is set or found about it.
@@ -454,13 +469,13 @@ fn draw_row(ui: &mut Ui, row: &Row, selected: bool, lang: Lang, focus: bool) -> 
     } else if resp.hovered() && !row.background {
         p.rect_filled(rect, f32::from(t.radius), t.hover);
     }
-    let ink = |c: Color32| if row.sewn || row.background { c } else { c.gamma_multiply(0.6) };
-    let top = rect.top() + ROW_HEIGHT * 0.32;
-    let bottom = rect.top() + ROW_HEIGHT * 0.72;
+    let ink = |c: Color32| if row.sewn || row.background { c } else { c.gamma_multiply(LEFT_OUT_ALPHA) };
+    let top = rect.top() + ROW_HEIGHT * FIRST_LINE;
+    let bottom = rect.top() + ROW_HEIGHT * SECOND_LINE;
     let square = Rect::from_center_size(pos2(rect.left() + PAD + SWATCH / 2.0, top), vec2(SWATCH, SWATCH));
     let image = super::image_step::parse(&row.color).unwrap_or(t.text_dim);
-    p.rect_filled(square, 2.0, image);
-    p.rect_stroke(square, 2.0, Stroke::new(1.0, t.border), StrokeKind::Inside);
+    p.rect_filled(square, SWATCH_RADIUS, image);
+    p.rect_stroke(square, SWATCH_RADIUS, Stroke::new(1.0, t.border), StrokeKind::Inside);
     let x = square.right() + GAP;
     let end = rect.right() - PAD - RESTORE_ROOM;
     let mut said = row_words(row, lang);
@@ -655,7 +670,7 @@ fn picker_row(ui: &mut Ui, thread: &NearThread, nearest: bool, palette: &str, la
     let centre = pos2(rect.left() + PAD + SWATCH / 2.0, mid);
     p.circle_filled(centre, SWATCH / 2.0, Color32::from_rgb(r, g, b));
     p.circle_stroke(centre, SWATCH / 2.0, Stroke::new(1.0, t.border));
-    let name = format!("{}  {} {}", thread.name, palette.to_uppercase(), thread.index);
+    let name = thread_words(thread.name, palette, thread.index);
     p.text(pos2(centre.x + SWATCH / 2.0 + GAP, mid), Align2::LEFT_CENTER, &name, FontId::proportional(NAME_TEXT), t.text_strong);
     let mut right = delta_e_words(lang, thread.delta_e);
     if nearest {

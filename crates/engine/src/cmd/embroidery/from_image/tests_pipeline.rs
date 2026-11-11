@@ -320,3 +320,18 @@ proptest! {
         prop_assert_eq!(kept.made().map(|(d, g)| (d.as_ref().clone(), g)), fresh.made().map(|(d, g)| (d.as_ref().clone(), g)));
     }
 }
+
+/// Crop to the Art crops to the box of every area that isn't the background, in the image's own
+/// pixels: the orange and green squares (the navy dot inside the orange).
+#[test]
+fn art_bounds_are_the_box_of_what_isnt_background() {
+    let (s, image) = placed(&picture());
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None).unwrap());
+    let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
+    assert_eq!(out.art_bounds(), Some([20, 20, 230, 180]));
+    assert_eq!(out.image_px(), Some((300, 200)));
+    // Cropped to a corner of white alone, nothing is art.
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3, "crop": [0, 0, 15, 15]}), None).unwrap());
+    let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {});
+    assert!(out.map_or(true, |o| o.art_bounds().is_none()));
+}

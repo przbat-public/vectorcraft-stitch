@@ -451,6 +451,38 @@ impl Outputs {
         Some(self.image.as_ref()?.value.working.px_per_mm)
     }
 
+    /// The art's bounds in the image's own pixels, `[x0, y0, x1, y1]` (x1 and y1 past the last),
+    /// once the colours are done: the box of every area that isn't the background, rounded out to
+    /// whole pixels and kept inside the image; what Crop to the Art crops to. `None` when every
+    /// area is the background.
+    pub fn art_bounds(&self) -> Option<[u32; 4]> {
+        let c = &self.colours.as_ref()?.value;
+        let w = &self.image.as_ref()?.value.working;
+        let mut b: Option<[u32; 4]> = None;
+        for (a, area) in c.areas.areas.iter().enumerate() {
+            if c.colours.rows.get(area.row).is_none_or(|r| r.background) {
+                continue;
+            }
+            let Some(s) = c.areas.regions.areas.get(a) else { continue };
+            b = Some(b.map_or(s.bbox, |[x0, y0, x1, y1]| [x0.min(s.bbox[0]), y0.min(s.bbox[1]), x1.max(s.bbox[2]), y1.max(s.bbox[3])]));
+        }
+        let [x0, y0, x1, y1] = b?.map(f64::from);
+        let corners = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)].map(|(x, y)| w.to_image * vectorcraft_geom::Point::new(x, y));
+        let (mut l, mut t, mut r, mut bt) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
+        for p in corners {
+            (l, t, r, bt) = (l.min(p.x), t.min(p.y), r.max(p.x), bt.max(p.y));
+        }
+        let (iw, ih) = (f64::from(w.image_px.0), f64::from(w.image_px.1));
+        let clamp = |v: f64, hi: f64| v.clamp(0.0, hi) as u32;
+        let out = [clamp(l.floor(), iw), clamp(t.floor(), ih), clamp(r.ceil(), iw), clamp(bt.ceil(), ih)];
+        (out[0] < out[2] && out[1] < out[3]).then_some(out)
+    }
+
+    /// The image's own size in pixels, once the image stage is done.
+    pub fn image_px(&self) -> Option<(u32, u32)> {
+        Some(self.image.as_ref()?.value.working.image_px)
+    }
+
     /// The working copy painted as the Colours view shows it, once the colours are done: each pixel
     /// its area's thread's own colour, the background and the colours not sewn clear; its width,
     /// height and pixels (RGBA, row by row).

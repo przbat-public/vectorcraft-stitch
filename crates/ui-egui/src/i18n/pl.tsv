@@ -7273,3 +7273,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Podgląd pokazuje zaplanowane ściegi. Przed produkcją wyszyj próbkę.
 embroidery	Fit	Dopasuj
 embroidery	Zoom	Powiększenie
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Rozmiar musi być większy niż {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} to za dużo: bok ma najwyżej {high}.
+embroidery	A margin is 0 pixels or more.	Margines ma 0 pikseli lub więcej.
+embroidery	The margins leave no picture: crop less.	Marginesy nie zostawiają obrazu: przytnij mniej.
+embroidery	Width	Szerokość
+embroidery	Height	Wysokość
+embroidery	Fit within the width and height	Zmieść w szerokości i wysokości
+embroidery	The design is {width} × {height}: as large as fits.	Wzór ma {width} × {height}: tak duży, jak się mieści.
+embroidery	Type the width or the height: the other follows the picture.	Wpisz szerokość albo wysokość: druga wynika z proporcji obrazu.
+embroidery	Left	Lewy
+embroidery	Top	Górny
+embroidery	Right	Prawy
+embroidery	Bottom	Dolny
+embroidery	Crop	Kadrowanie
+embroidery	Crop to the Art	Przytnij do grafiki
+embroidery	Whole Image	Cały obraz
+embroidery	Every color is sewn	Każdy kolor jest wyszywany
+embroidery	Found: the transparency round the art	Znalezione: przezroczystość wokół grafiki
+embroidery	Found in the corners	Znalezione w rogach
+embroidery	Chosen from the picture's colors	Wybrane z kolorów obrazu
+embroidery	Not found: the corners disagree	Nie znaleziono: rogi się różnią
+embroidery	Leave the background out	Pomiń tło
+embroidery	Or one of the picture's colors:	Albo jeden z kolorów obrazu:
+embroidery	Color {color}	Kolor {color}
+embroidery	every color sewn	każdy kolor wyszyty
+embroidery	background left out	bez tła
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Obliczanie…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Wygładzenie: {value}
+embroidery	Corners: {value}	Narożniki: {value}
+embroidery	Colors overlap by {value} mm	Kolory zachodzą na siebie o {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Ściegi wynikają z ustawień haftu dokumentu.
+@plural	{count} thread + background|{count} threads + background	{count} nić + tło|{count} nici + tło|{count} nici + tło
+@plural	{count} area|{count} areas	{count} obszar|{count} obszary|{count} obszarów

@@ -64,10 +64,11 @@ pub(crate) fn compact(width: f32) -> bool {
     width < COMPACT_BELOW
 }
 
-/// The regions of a window's inside `inner`: the title band, the preview, the settings column and
-/// the Live bar.
+/// The regions of a window's inside `inner`: the title band, the step strip, the preview, the
+/// settings column and the Live bar.
 pub(crate) struct Regions {
     pub(crate) title: Rect,
+    pub(crate) strip: Rect,
     pub(crate) preview: Rect,
     pub(crate) settings: Rect,
     pub(crate) bar: Rect,
@@ -77,10 +78,11 @@ pub(crate) fn regions(inner: Rect) -> Regions {
     let column = if compact(inner.width()) { COMPACT_SETTINGS_WIDTH } else { SETTINGS_WIDTH };
     let title = Rect::from_min_size(inner.min, vec2(inner.width(), TITLE_HEIGHT));
     let bar = Rect::from_min_max(egui::pos2(inner.left(), inner.bottom() - BAR_HEIGHT), inner.max);
-    let middle = Rect::from_min_max(egui::pos2(inner.left(), title.bottom() + GAP), egui::pos2(inner.right(), bar.top() - GAP));
+    let strip = Rect::from_min_size(egui::pos2(inner.left(), title.bottom() + GAP), vec2(inner.width(), super::steps::CARD_HEIGHT));
+    let middle = Rect::from_min_max(egui::pos2(inner.left(), strip.bottom() + GAP), egui::pos2(inner.right(), bar.top() - GAP));
     let settings = Rect::from_min_max(egui::pos2(middle.right() - column, middle.top()), middle.max);
     let preview = Rect::from_min_max(middle.min, egui::pos2(settings.left() - GAP, middle.bottom()));
-    Regions { title, preview, settings, bar }
+    Regions { title, strip, preview, settings, bar }
 }
 
 /// Draw the window for dialog `d` (its fields changed in place), the run state `live` shows, at
@@ -98,8 +100,9 @@ pub(crate) fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, d: &mut Dialog
                 asked = Some(Asked::Cancel);
             }
         });
+        ui.scope_builder(UiBuilder::new().max_rect(r.strip), |ui| super::steps::strip(app, ui, d));
         ui.scope_builder(UiBuilder::new().max_rect(r.preview), |ui| super::preview::show(app, ui, d, now));
-        ui.scope_builder(UiBuilder::new().max_rect(r.settings), |ui| settings_region(app, ui, d));
+        ui.scope_builder(UiBuilder::new().max_rect(r.settings), |ui| super::steps::accordion(app, ui, d));
         ui.scope_builder(UiBuilder::new().max_rect(r.bar), |ui| {
             if let Some(a) = live_bar(app, ui, now) {
                 asked = Some(a);
@@ -124,14 +127,6 @@ fn title_band(app: &VectorcraftApp, ui: &mut Ui, d: &Dialog) -> bool {
         });
     });
     close
-}
-
-/// The settings column: the four steps (drawn by the steps' sections).
-fn settings_region(_app: &VectorcraftApp, ui: &mut Ui, _d: &mut Dialog) {
-    let t = Tokens::get(ui.ctx());
-    for name in words::step_names() {
-        ui.label(RichText::new(name).color(t.text));
-    }
 }
 
 /// The Live bar: how the result stands, and Start Over, Cancel and Create Embroidery Objects →

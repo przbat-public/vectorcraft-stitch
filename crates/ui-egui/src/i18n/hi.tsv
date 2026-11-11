@@ -8797,3 +8797,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	प्रीव्यू नियोजित स्टिच दिखाता है। उत्पादन से पहले एक परीक्षण नमूना कढ़ाई करें।
 embroidery	Fit	फ़िट
 embroidery	Zoom	ज़ूम
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	आकार {low} से अधिक होना चाहिए।
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} बहुत बड़ा है: एक भुजा अधिकतम {high} हो सकती है।
+embroidery	A margin is 0 pixels or more.	हाशिया 0 पिक्सेल या अधिक होता है।
+embroidery	The margins leave no picture: crop less.	हाशिये चित्र में कुछ नहीं छोड़ते: कम क्रॉप करें।
+embroidery	Width	चौड़ाई
+embroidery	Height	ऊँचाई
+embroidery	Fit within the width and height	चौड़ाई और ऊँचाई के भीतर समाएँ
+embroidery	The design is {width} × {height}: as large as fits.	डिज़ाइन {width} × {height} है: जितना बड़ा समा सके।
+embroidery	Type the width or the height: the other follows the picture.	चौड़ाई या ऊँचाई लिखें: दूसरी चित्र के अनुपात से चलती है।
+embroidery	Left	बाएँ
+embroidery	Top	ऊपर
+embroidery	Right	दाएँ
+embroidery	Bottom	नीचे
+embroidery	Crop	क्रॉप
+embroidery	Crop to the Art	आर्ट तक क्रॉप करें
+embroidery	Whole Image	पूरी इमेज
+embroidery	Every color is sewn	हर रंग सिला जाता है
+embroidery	Found: the transparency round the art	मिला: आर्ट के चारों ओर की पारदर्शिता
+embroidery	Found in the corners	कोनों में मिला
+embroidery	Chosen from the picture's colors	चित्र के रंगों में से चुना गया
+embroidery	Not found: the corners disagree	नहीं मिला: कोने अलग-अलग हैं
+embroidery	Leave the background out	पृष्ठभूमि छोड़ दें
+embroidery	Or one of the picture's colors:	या चित्र के रंगों में से एक:
+embroidery	Color {color}	रंग {color}
+embroidery	every color sewn	हर रंग सिला गया
+embroidery	background left out	पृष्ठभूमि छोड़ी गई
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	गणना हो रही है…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	चरण {count} में से {number}: {name}। {summary}। {time}
+embroidery	Smoothness: {value}	चिकनाई: {value}
+embroidery	Corners: {value}	कोने: {value}
+embroidery	Colors overlap by {value} mm	रंग {value} mm तक एक-दूसरे पर चढ़ते हैं
+embroidery	The stitches follow the document's embroidery settings.	स्टिच दस्तावेज़ की कढ़ाई सेटिंग्स के अनुसार हैं।
+@plural	{count} thread + background|{count} threads + background	{count} धागा + पृष्ठभूमि|{count} धागे + पृष्ठभूमि
+@plural	{count} area|{count} areas	{count} क्षेत्र|{count} क्षेत्र

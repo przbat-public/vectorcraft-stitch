@@ -7477,3 +7477,41 @@ embroidery	{value} mm	{value} მმ
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	გადახედვა აჩვენებს დაგეგმილ ნაკერებს. წარმოებამდე ამოქარგეთ სატესტო ნიმუში.
 embroidery	Fit	მორგება
 embroidery	Zoom	მასშტაბი
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	ზომა {low}-ზე მეტი უნდა იყოს.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} ძალიან დიდია: გვერდი მაქსიმუმ {high} შეიძლება იყოს.
+embroidery	A margin is 0 pixels or more.	კიდე 0 პიქსელი ან მეტია.
+embroidery	The margins leave no picture: crop less.	კიდეები სურათს აღარ ტოვებს: ნაკლები ამოჭერით.
+embroidery	Width	სიგანე
+embroidery	Height	სიმაღლე
+embroidery	Fit within the width and height	სიგანესა და სიმაღლეში ჩატევა
+embroidery	The design is {width} × {height}: as large as fits.	დიზაინი არის {width} × {height}: რამდენადაც ეტევა.
+embroidery	Type the width or the height: the other follows the picture.	შეიყვანეთ სიგანე ან სიმაღლე: მეორე სურათს მიჰყვება.
+embroidery	Left	მარცხნივ
+embroidery	Top	ზემოთ
+embroidery	Right	მარჯვნივ
+embroidery	Bottom	ქვემოთ
+embroidery	Crop	ამოჭრა
+embroidery	Crop to the Art	ნახატამდე ამოჭრა
+embroidery	Whole Image	მთლიანი გამოსახულება
+embroidery	Every color is sewn	ყველა ფერი იქარგება
+embroidery	Found: the transparency round the art	ნაპოვნია: ნახატის ირგვლივ გამჭვირვალობა
+embroidery	Found in the corners	ნაპოვნია კუთხეებში
+embroidery	Chosen from the picture's colors	არჩეულია სურათის ფერებიდან
+embroidery	Not found: the corners disagree	ვერ მოიძებნა: კუთხეები განსხვავდება
+embroidery	Leave the background out	ფონის გამოტოვება
+embroidery	Or one of the picture's colors:	ან სურათის ერთ-ერთი ფერი:
+embroidery	Color {color}	ფერი {color}
+embroidery	every color sewn	ყველა ფერი იქარგება
+embroidery	background left out	ფონი გამოტოვებულია
+embroidery	{width} × {height} mm · {background}	{width} × {height} მმ · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	გამოთვლა…
+embroidery	{value} ms	{value} მწმ
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	ნაბიჯი {number} / {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	სიგლუვე: {value}
+embroidery	Corners: {value}	კუთხეები: {value}
+embroidery	Colors overlap by {value} mm	ფერები ერთმანეთს {value} მმ-ით ფარავს
+embroidery	The stitches follow the document's embroidery settings.	ნაკერები დოკუმენტის ნაქარგობის პარამეტრებს მიჰყვება.
+@plural	{count} thread + background|{count} threads + background	ძაფები: {count} + ფონი
+@plural	{count} area|{count} areas	არეები: {count}

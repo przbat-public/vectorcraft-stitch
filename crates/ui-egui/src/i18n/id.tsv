@@ -7177,3 +7177,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Pratinjau menampilkan jahitan yang direncanakan. Bordir contoh uji sebelum produksi.
 embroidery	Fit	Pas
 embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Ukuran harus lebih dari {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} terlalu besar: satu sisi paling panjang {high}.
+embroidery	A margin is 0 pixels or more.	Margin adalah 0 piksel atau lebih.
+embroidery	The margins leave no picture: crop less.	Margin tidak menyisakan gambar: pangkas lebih sedikit.
+embroidery	Width	Lebar
+embroidery	Height	Tinggi
+embroidery	Fit within the width and height	Muat dalam lebar dan tinggi
+embroidery	The design is {width} × {height}: as large as fits.	Desainnya {width} × {height}: sebesar yang muat.
+embroidery	Type the width or the height: the other follows the picture.	Ketik lebar atau tinggi: yang lain mengikuti gambar.
+embroidery	Left	Kiri
+embroidery	Top	Atas
+embroidery	Right	Kanan
+embroidery	Bottom	Bawah
+embroidery	Crop	Pangkas
+embroidery	Crop to the Art	Pangkas ke Gambar
+embroidery	Whole Image	Seluruh Gambar
+embroidery	Every color is sewn	Setiap warna dijahit
+embroidery	Found: the transparency round the art	Ditemukan: transparansi di sekitar gambar
+embroidery	Found in the corners	Ditemukan di sudut
+embroidery	Chosen from the picture's colors	Dipilih dari warna gambar
+embroidery	Not found: the corners disagree	Tidak ditemukan: sudut-sudutnya berbeda
+embroidery	Leave the background out	Abaikan latar
+embroidery	Or one of the picture's colors:	Atau salah satu warna gambar:
+embroidery	Color {color}	Warna {color}
+embroidery	every color sewn	setiap warna dijahit
+embroidery	background left out	latar diabaikan
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Menghitung…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Langkah {number} dari {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Kehalusan: {value}
+embroidery	Corners: {value}	Sudut: {value}
+embroidery	Colors overlap by {value} mm	Warna tumpang tindih {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Jahitan mengikuti pengaturan bordir dokumen.
+@plural	{count} thread + background|{count} threads + background	{count} benang + latar
+@plural	{count} area|{count} areas	{count} area

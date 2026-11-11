@@ -22,8 +22,10 @@
 //!   the field typed in; Cmd/Ctrl+Enter is Create.
 
 pub(crate) mod frame;
+mod image_step;
 pub(crate) mod preview;
 pub(crate) mod schedule;
+pub(crate) mod steps;
 mod words;
 pub(crate) mod worker;
 
@@ -83,6 +85,8 @@ pub(crate) struct Live {
     pub(crate) schedule: Schedule,
     /// The preview's textures, pan and the area under the pointer.
     pub(crate) preview: preview::Preview,
+    /// The command's reply for the result shown, built once a result.
+    reply: Option<(ReplyOf, Value)>,
     /// The fields as last drawn: what is remembered when it closes without Create.
     fields: Map<String, Value>,
     /// Create was asked for before the result was of the settings as they are: it applies once it
@@ -90,6 +94,24 @@ pub(crate) struct Live {
     pub(crate) create_waiting: bool,
     /// The window closed by Create: nothing to remember.
     created: bool,
+}
+
+/// What a reply was built of: the numbers of its shapes and of its plan.
+type ReplyOf = (Option<u64>, Option<u64>);
+
+impl Live {
+    /// The command's reply for the result shown (its areas listed none), once its shapes are done:
+    /// what the window's lists and figures read.
+    pub(crate) fn reply(&mut self) -> Option<&Value> {
+        use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+        let shown = self.schedule.shown.as_ref()?;
+        let key = (shown.outputs.number(DigitizeStage::Shapes), shown.outputs.number(DigitizeStage::Plan));
+        if self.reply.as_ref().is_none_or(|(k, _)| *k != key) {
+            let reply = shown.outputs.reply(&shown.request)?;
+            self.reply = Some((key, reply));
+        }
+        self.reply.as_ref().map(|(_, r)| r)
+    }
 }
 
 /// Whether `kind` names this window.
@@ -191,6 +213,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             runner,
             schedule: Schedule::default(),
             preview: preview::Preview::default(),
+            reply: None,
             fields: d.fields.clone(),
             create_waiting: false,
             created: false,

@@ -325,6 +325,27 @@ impl Preview {
     }
 }
 
+impl Preview {
+    /// Step `which`'s view in small, in `rect` of a step card: the picture as the view shows it,
+    /// fitted with its proportions (the colours stand in for the Shapes and Stitches views, whose
+    /// drawings are the preview's size).
+    pub(crate) fn thumbnail(&mut self, painter: &egui::Painter, ctx: &egui::Context, shown: &super::schedule::Shown, which: View, rect: Rect) {
+        let outputs = &shown.outputs;
+        let Some((w, h, _)) = outputs.working_rgba() else { return };
+        let aspect = (f64::from(w) / f64::from(h.max(1))) as f32;
+        let size = if aspect >= 1.0 { vec2(rect.width(), rect.width() / aspect) } else { vec2(rect.height() * aspect, rect.height()) };
+        let at = Rect::from_center_size(rect.center(), size);
+        let uv = Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0));
+        let tex = match which {
+            View::Original | View::Compare => self.original(ctx, outputs),
+            View::Colors | View::Shapes | View::Stitches => self.painted(ctx, outputs, shown.painted.as_ref()),
+        };
+        if let Some(tex) = tex {
+            painter.image(tex, at, uv, Color32::WHITE);
+        }
+    }
+}
+
 /// What a drawing of output `number` in `pane` at `ppp` pixels a point and `xf` is keyed by.
 fn lines_key(number: u64, pane: Rect, ppp: f32, xf: ViewXf) -> LinesKey {
     let px = |v: f32| (v * ppp).round().max(1.0) as u32;

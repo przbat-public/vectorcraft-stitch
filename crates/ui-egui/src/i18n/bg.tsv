@@ -7164,3 +7164,41 @@ embroidery	{value} mm	{value} мм
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Прегледът показва планираните бодове. Преди производство избродирайте проба.
 embroidery	Fit	Побиране
 embroidery	Zoom	Мащаб
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Размерът трябва да е повече от {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} е твърде голямо: страна е най-много {high}.
+embroidery	A margin is 0 pixels or more.	Полето е 0 пиксела или повече.
+embroidery	The margins leave no picture: crop less.	Полетата не оставят нищо от изображението: изрежете по-малко.
+embroidery	Width	Ширина
+embroidery	Height	Височина
+embroidery	Fit within the width and height	Вписване в ширината и височината
+embroidery	The design is {width} × {height}: as large as fits.	Дизайнът е {width} × {height}: колкото е възможно по-голям.
+embroidery	Type the width or the height: the other follows the picture.	Въведете ширината или височината: другото следва изображението.
+embroidery	Left	Ляво
+embroidery	Top	Горе
+embroidery	Right	Дясно
+embroidery	Bottom	Долу
+embroidery	Crop	Изрязване
+embroidery	Crop to the Art	Изрязване до графиката
+embroidery	Whole Image	Цялото изображение
+embroidery	Every color is sewn	Всеки цвят се шие
+embroidery	Found: the transparency round the art	Намерено: прозрачността около графиката
+embroidery	Found in the corners	Намерен в ъглите
+embroidery	Chosen from the picture's colors	Избран от цветовете на изображението
+embroidery	Not found: the corners disagree	Не е намерен: ъглите се различават
+embroidery	Leave the background out	Пропускане на фона
+embroidery	Or one of the picture's colors:	Или един от цветовете на изображението:
+embroidery	Color {color}	Цвят {color}
+embroidery	every color sewn	всеки цвят се шие
+embroidery	background left out	без фона
+embroidery	{width} × {height} mm · {background}	{width} × {height} мм · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Изчисляване…
+embroidery	{value} ms	{value} мс
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Стъпка {number} от {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Гладкост: {value}
+embroidery	Corners: {value}	Ъгли: {value}
+embroidery	Colors overlap by {value} mm	Цветовете се застъпват с {value} мм
+embroidery	The stitches follow the document's embroidery settings.	Бодовете следват настройките за бродерия на документа.
+@plural	{count} thread + background|{count} threads + background	{count} нишка + фон|{count} нишки + фон
+@plural	{count} area|{count} areas	{count} област|{count} области

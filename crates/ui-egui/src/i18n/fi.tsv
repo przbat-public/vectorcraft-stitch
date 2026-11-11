@@ -7453,3 +7453,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Esikatselu näyttää suunnitellut pistot. Kirjo koekappale ennen tuotantoa.
 embroidery	Fit	Sovita
 embroidery	Zoom	Zoomaus
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Koon on oltava suurempi kuin {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} on liian suuri: sivu on enintään {high}.
+embroidery	A margin is 0 pixels or more.	Reunus on vähintään 0 pikseliä.
+embroidery	The margins leave no picture: crop less.	Reunukset eivät jätä kuvaa: rajaa vähemmän.
+embroidery	Width	Leveys
+embroidery	Height	Korkeus
+embroidery	Fit within the width and height	Sovita leveyden ja korkeuden sisään
+embroidery	The design is {width} × {height}: as large as fits.	Kuvio on {width} × {height}: niin suuri kuin mahtuu.
+embroidery	Type the width or the height: the other follows the picture.	Kirjoita leveys tai korkeus: toinen seuraa kuvaa.
+embroidery	Left	Vasen
+embroidery	Top	Ylä
+embroidery	Right	Oikea
+embroidery	Bottom	Ala
+embroidery	Crop	Rajaus
+embroidery	Crop to the Art	Rajaa kuvioon
+embroidery	Whole Image	Koko kuva
+embroidery	Every color is sewn	Jokainen väri kirjotaan
+embroidery	Found: the transparency round the art	Löytyi: läpinäkyvyys kuvion ympärillä
+embroidery	Found in the corners	Löytyi kulmista
+embroidery	Chosen from the picture's colors	Valittu kuvan väreistä
+embroidery	Not found: the corners disagree	Ei löytynyt: kulmat eroavat
+embroidery	Leave the background out	Jätä tausta pois
+embroidery	Or one of the picture's colors:	Tai jokin kuvan väreistä:
+embroidery	Color {color}	Väri {color}
+embroidery	every color sewn	jokainen väri kirjotaan
+embroidery	background left out	tausta jätetty pois
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Lasketaan…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Vaihe {number}/{count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Pehmeys: {value}
+embroidery	Corners: {value}	Kulmat: {value}
+embroidery	Colors overlap by {value} mm	Värit limittyvät {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Pistot noudattavat asiakirjan kirjontaasetuksia.
+@plural	{count} thread + background|{count} threads + background	{count} lanka + tausta|{count} lankaa + tausta
+@plural	{count} area|{count} areas	{count} alue|{count} aluetta

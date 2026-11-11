@@ -7052,3 +7052,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	預覽顯示規劃的針跡。正式生產前請先繡一塊試樣。
 embroidery	Fit	符合
 embroidery	Zoom	縮放
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	尺寸必須大於 {low}。
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} 太大：每邊最多 {high}。
+embroidery	A margin is 0 pixels or more.	邊距為 0 像素或更多。
+embroidery	The margins leave no picture: crop less.	邊距沒有留下影像：請少裁切一些。
+embroidery	Width	寬度
+embroidery	Height	高度
+embroidery	Fit within the width and height	符合寬度和高度
+embroidery	The design is {width} × {height}: as large as fits.	設計為 {width} × {height}：在範圍內盡可能大。
+embroidery	Type the width or the height: the other follows the picture.	輸入寬度或高度：另一邊隨影像比例變化。
+embroidery	Left	左
+embroidery	Top	上
+embroidery	Right	右
+embroidery	Bottom	下
+embroidery	Crop	裁切
+embroidery	Crop to the Art	裁切至圖稿
+embroidery	Whole Image	整個影像
+embroidery	Every color is sewn	每種顏色都繡出
+embroidery	Found: the transparency round the art	已找到：圖稿周圍的透明區域
+embroidery	Found in the corners	在四角找到
+embroidery	Chosen from the picture's colors	從影像的顏色中選取
+embroidery	Not found: the corners disagree	未找到：四角顏色不一致
+embroidery	Leave the background out	略去背景
+embroidery	Or one of the picture's colors:	或影像中的某種顏色：
+embroidery	Color {color}	顏色 {color}
+embroidery	every color sewn	每種顏色都繡出
+embroidery	background left out	略去背景
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	正在計算…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	第 {number} 步，共 {count} 步：{name}。{summary}。{time}
+embroidery	Smoothness: {value}	平滑度：{value}
+embroidery	Corners: {value}	轉角：{value}
+embroidery	Colors overlap by {value} mm	顏色重疊 {value} mm
+embroidery	The stitches follow the document's embroidery settings.	針跡遵循文件的刺繡設定。
+@plural	{count} thread + background|{count} threads + background	{count} 種線 + 背景
+@plural	{count} area|{count} areas	{count} 個區域

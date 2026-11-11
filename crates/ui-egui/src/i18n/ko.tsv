@@ -6999,3 +6999,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	미리 보기는 계획된 스티치를 보여 줍니다. 생산 전에 시험 자수를 해 보세요.
 embroidery	Fit	맞춤
 embroidery	Zoom	확대/축소
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	크기는 {low}보다 커야 합니다.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height}은(는) 너무 큽니다. 한 변은 최대 {high}입니다.
+embroidery	A margin is 0 pixels or more.	여백은 0픽셀 이상입니다.
+embroidery	The margins leave no picture: crop less.	여백 때문에 그림이 남지 않습니다. 덜 자르세요.
+embroidery	Width	너비
+embroidery	Height	높이
+embroidery	Fit within the width and height	너비와 높이 안에 맞추기
+embroidery	The design is {width} × {height}: as large as fits.	디자인은 {width} × {height}입니다. 들어가는 만큼 크게 했습니다.
+embroidery	Type the width or the height: the other follows the picture.	너비나 높이를 입력하세요. 다른 쪽은 그림 비율을 따릅니다.
+embroidery	Left	왼쪽
+embroidery	Top	위쪽
+embroidery	Right	오른쪽
+embroidery	Bottom	아래쪽
+embroidery	Crop	자르기
+embroidery	Crop to the Art	그림에 맞게 자르기
+embroidery	Whole Image	전체 이미지
+embroidery	Every color is sewn	모든 색을 수놓습니다
+embroidery	Found: the transparency round the art	찾음: 그림 주위의 투명 영역
+embroidery	Found in the corners	모서리에서 찾음
+embroidery	Chosen from the picture's colors	그림의 색에서 선택함
+embroidery	Not found: the corners disagree	찾지 못함: 모서리 색이 서로 다릅니다
+embroidery	Leave the background out	배경 제외
+embroidery	Or one of the picture's colors:	또는 그림의 색 중 하나:
+embroidery	Color {color}	색 {color}
+embroidery	every color sewn	모든 색 수놓음
+embroidery	background left out	배경 제외
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	계산 중…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	{count}단계 중 {number}단계: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	매끄러움: {value}
+embroidery	Corners: {value}	모서리: {value}
+embroidery	Colors overlap by {value} mm	색이 {value} mm 겹칩니다
+embroidery	The stitches follow the document's embroidery settings.	스티치는 문서의 자수 설정을 따릅니다.
+@plural	{count} thread + background|{count} threads + background	실 {count}개 + 배경
+@plural	{count} area|{count} areas	영역 {count}개

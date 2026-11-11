@@ -7370,3 +7370,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Η προεπισκόπηση δείχνει τις σχεδιασμένες βελονιές. Κεντήστε ένα δοκιμαστικό πριν από την παραγωγή.
 embroidery	Fit	Προσαρμογή
 embroidery	Zoom	Ζουμ
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Το μέγεθος πρέπει να είναι μεγαλύτερο από {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	Το {width} × {height} είναι πολύ μεγάλο: μια πλευρά είναι το πολύ {high}.
+embroidery	A margin is 0 pixels or more.	Ένα περιθώριο είναι 0 εικονοστοιχεία ή περισσότερα.
+embroidery	The margins leave no picture: crop less.	Τα περιθώρια δεν αφήνουν εικόνα: περικόψτε λιγότερο.
+embroidery	Width	Πλάτος
+embroidery	Height	Ύψος
+embroidery	Fit within the width and height	Προσαρμογή μέσα στο πλάτος και το ύψος
+embroidery	The design is {width} × {height}: as large as fits.	Το σχέδιο είναι {width} × {height}: όσο μεγαλύτερο χωράει.
+embroidery	Type the width or the height: the other follows the picture.	Πληκτρολογήστε το πλάτος ή το ύψος: το άλλο ακολουθεί την εικόνα.
+embroidery	Left	Αριστερά
+embroidery	Top	Πάνω
+embroidery	Right	Δεξιά
+embroidery	Bottom	Κάτω
+embroidery	Crop	Περικοπή
+embroidery	Crop to the Art	Περικοπή στο σχέδιο
+embroidery	Whole Image	Ολόκληρη η εικόνα
+embroidery	Every color is sewn	Κεντιέται κάθε χρώμα
+embroidery	Found: the transparency round the art	Βρέθηκε: η διαφάνεια γύρω από το σχέδιο
+embroidery	Found in the corners	Βρέθηκε στις γωνίες
+embroidery	Chosen from the picture's colors	Επιλέχθηκε από τα χρώματα της εικόνας
+embroidery	Not found: the corners disagree	Δεν βρέθηκε: οι γωνίες διαφέρουν
+embroidery	Leave the background out	Παράλειψη του φόντου
+embroidery	Or one of the picture's colors:	Ή ένα από τα χρώματα της εικόνας:
+embroidery	Color {color}	Χρώμα {color}
+embroidery	every color sewn	κεντιέται κάθε χρώμα
+embroidery	background left out	χωρίς το φόντο
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Υπολογισμός…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Βήμα {number} από {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Ομαλότητα: {value}
+embroidery	Corners: {value}	Γωνίες: {value}
+embroidery	Colors overlap by {value} mm	Τα χρώματα επικαλύπτονται κατά {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Οι βελονιές ακολουθούν τις ρυθμίσεις κεντήματος του εγγράφου.
+@plural	{count} thread + background|{count} threads + background	{count} κλωστή + φόντο|{count} κλωστές + φόντο
+@plural	{count} area|{count} areas	{count} περιοχή|{count} περιοχές

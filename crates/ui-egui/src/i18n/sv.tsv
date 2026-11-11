@@ -8903,3 +8903,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Förhandsvisningen visar de planerade stygnen. Brodera ett provstycke före produktionen.
 embroidery	Fit	Anpassa
 embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	En storlek måste vara mer än {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} är för stort: en sida är högst {high}.
+embroidery	A margin is 0 pixels or more.	En marginal är 0 pixlar eller mer.
+embroidery	The margins leave no picture: crop less.	Marginalerna lämnar ingen bild kvar: beskär mindre.
+embroidery	Width	Bredd
+embroidery	Height	Höjd
+embroidery	Fit within the width and height	Anpassa inom bredden och höjden
+embroidery	The design is {width} × {height}: as large as fits.	Designen är {width} × {height}: så stor som får plats.
+embroidery	Type the width or the height: the other follows the picture.	Skriv bredden eller höjden: den andra följer bilden.
+embroidery	Left	Vänster
+embroidery	Top	Överkant
+embroidery	Right	Höger
+embroidery	Bottom	Nederkant
+embroidery	Crop	Beskärning
+embroidery	Crop to the Art	Beskär till motivet
+embroidery	Whole Image	Hela bilden
+embroidery	Every color is sewn	Varje färg broderas
+embroidery	Found: the transparency round the art	Hittad: genomskinligheten runt motivet
+embroidery	Found in the corners	Hittad i hörnen
+embroidery	Chosen from the picture's colors	Vald bland bildens färger
+embroidery	Not found: the corners disagree	Hittades inte: hörnen skiljer sig åt
+embroidery	Leave the background out	Utelämna bakgrunden
+embroidery	Or one of the picture's colors:	Eller en av bildens färger:
+embroidery	Color {color}	Färg {color}
+embroidery	every color sewn	varje färg broderad
+embroidery	background left out	bakgrund utelämnad
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Beräknar…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Steg {number} av {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Jämnhet: {value}
+embroidery	Corners: {value}	Hörn: {value}
+embroidery	Colors overlap by {value} mm	Färgerna överlappar med {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Stygnen följer dokumentets broderiinställningar.
+@plural	{count} thread + background|{count} threads + background	{count} tråd + bakgrund|{count} trådar + bakgrund
+@plural	{count} area|{count} areas	{count} område|{count} områden

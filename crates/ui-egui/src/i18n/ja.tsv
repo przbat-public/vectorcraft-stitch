@@ -7103,3 +7103,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	プレビューは計画したステッチを表示します。本番の前に試し縫いをしてください。
 embroidery	Fit	全体表示
 embroidery	Zoom	ズーム
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	サイズは {low} より大きくしてください。
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} は大きすぎます。1 辺は最大 {high} です。
+embroidery	A margin is 0 pixels or more.	余白は 0 ピクセル以上です。
+embroidery	The margins leave no picture: crop less.	余白で画像がなくなります。切り抜きを減らしてください。
+embroidery	Width	幅
+embroidery	Height	高さ
+embroidery	Fit within the width and height	幅と高さに収める
+embroidery	The design is {width} × {height}: as large as fits.	デザインは {width} × {height} です。収まる最大のサイズです。
+embroidery	Type the width or the height: the other follows the picture.	幅か高さを入力してください。もう一方は画像の比率に従います。
+embroidery	Left	左
+embroidery	Top	上
+embroidery	Right	右
+embroidery	Bottom	下
+embroidery	Crop	切り抜き
+embroidery	Crop to the Art	アートに合わせて切り抜く
+embroidery	Whole Image	画像全体
+embroidery	Every color is sewn	すべての色を縫います
+embroidery	Found: the transparency round the art	検出: アートの周りの透明部分
+embroidery	Found in the corners	四隅で検出
+embroidery	Chosen from the picture's colors	画像の色から選択
+embroidery	Not found: the corners disagree	検出できません: 四隅の色が異なります
+embroidery	Leave the background out	背景を除く
+embroidery	Or one of the picture's colors:	または画像の色から 1 つ:
+embroidery	Color {color}	色 {color}
+embroidery	every color sewn	すべての色を縫う
+embroidery	background left out	背景を除く
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	計算中…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	ステップ {number}/{count}: {name}。{summary}。{time}
+embroidery	Smoothness: {value}	滑らかさ: {value}
+embroidery	Corners: {value}	角: {value}
+embroidery	Colors overlap by {value} mm	色の重なり {value} mm
+embroidery	The stitches follow the document's embroidery settings.	ステッチはドキュメントの刺繍設定に従います。
+@plural	{count} thread + background|{count} threads + background	{count} 本の糸 + 背景
+@plural	{count} area|{count} areas	{count} 個の領域

@@ -7398,3 +7398,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	La previsualització mostra les puntades previstes. Brodeu una prova abans de produir.
 embroidery	Fit	Ajusta
 embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	La mida ha de ser més gran que {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} és massa gran: un costat fa com a màxim {high}.
+embroidery	A margin is 0 pixels or more.	Un marge és de 0 píxels o més.
+embroidery	The margins leave no picture: crop less.	Els marges no deixen imatge: retalleu menys.
+embroidery	Width	Amplada
+embroidery	Height	Alçada
+embroidery	Fit within the width and height	Encaixa dins l’amplada i l’alçada
+embroidery	The design is {width} × {height}: as large as fits.	El disseny fa {width} × {height}: tan gran com hi cap.
+embroidery	Type the width or the height: the other follows the picture.	Escriviu l’amplada o l’alçada: l’altra segueix la imatge.
+embroidery	Left	Esquerra
+embroidery	Top	Dalt
+embroidery	Right	Dreta
+embroidery	Bottom	Baix
+embroidery	Crop	Retall
+embroidery	Crop to the Art	Retalla fins al dibuix
+embroidery	Whole Image	Imatge sencera
+embroidery	Every color is sewn	Es cusen tots els colors
+embroidery	Found: the transparency round the art	Trobat: la transparència al voltant del dibuix
+embroidery	Found in the corners	Trobat a les cantonades
+embroidery	Chosen from the picture's colors	Triat entre els colors de la imatge
+embroidery	Not found: the corners disagree	No s’ha trobat: les cantonades no coincideixen
+embroidery	Leave the background out	Deixa fora el fons
+embroidery	Or one of the picture's colors:	O un dels colors de la imatge:
+embroidery	Color {color}	Color {color}
+embroidery	every color sewn	es cusen tots els colors
+embroidery	background left out	fons omès
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	S’està calculant…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Pas {number} de {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Suavitat: {value}
+embroidery	Corners: {value}	Cantonades: {value}
+embroidery	Colors overlap by {value} mm	Els colors se superposen {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Les puntades segueixen la configuració de brodat del document.
+@plural	{count} thread + background|{count} threads + background	{count} fil + fons|{count} fils + fons
+@plural	{count} area|{count} areas	{count} àrea|{count} àrees

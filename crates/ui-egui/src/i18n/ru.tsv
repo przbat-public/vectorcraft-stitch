@@ -7506,3 +7506,41 @@ embroidery	{value} mm	{value} мм
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Просмотр показывает запланированные стежки. Перед производством вышейте пробный образец.
 embroidery	Fit	По размеру
 embroidery	Zoom	Масштаб
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Размер должен быть больше {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} — слишком много: сторона не больше {high}.
+embroidery	A margin is 0 pixels or more.	Поле — 0 пикселей или больше.
+embroidery	The margins leave no picture: crop less.	Поля не оставляют изображения: обрежьте меньше.
+embroidery	Width	Ширина
+embroidery	Height	Высота
+embroidery	Fit within the width and height	Вписать в ширину и высоту
+embroidery	The design is {width} × {height}: as large as fits.	Дизайн — {width} × {height}: настолько большой, насколько помещается.
+embroidery	Type the width or the height: the other follows the picture.	Введите ширину или высоту: другая следует за изображением.
+embroidery	Left	Слева
+embroidery	Top	Сверху
+embroidery	Right	Справа
+embroidery	Bottom	Снизу
+embroidery	Crop	Обрезка
+embroidery	Crop to the Art	Обрезать по рисунку
+embroidery	Whole Image	Всё изображение
+embroidery	Every color is sewn	Вышиваются все цвета
+embroidery	Found: the transparency round the art	Найдено: прозрачность вокруг рисунка
+embroidery	Found in the corners	Найден в углах
+embroidery	Chosen from the picture's colors	Выбран из цветов изображения
+embroidery	Not found: the corners disagree	Не найден: углы различаются
+embroidery	Leave the background out	Не вышивать фон
+embroidery	Or one of the picture's colors:	Или один из цветов изображения:
+embroidery	Color {color}	Цвет {color}
+embroidery	every color sewn	вышиваются все цвета
+embroidery	background left out	без фона
+embroidery	{width} × {height} mm · {background}	{width} × {height} мм · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Вычисление…
+embroidery	{value} ms	{value} мс
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Шаг {number} из {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Сглаживание: {value}
+embroidery	Corners: {value}	Углы: {value}
+embroidery	Colors overlap by {value} mm	Цвета перекрываются на {value} мм
+embroidery	The stitches follow the document's embroidery settings.	Стежки следуют настройкам вышивки документа.
+@plural	{count} thread + background|{count} threads + background	{count} нить + фон|{count} нити + фон|{count} нитей + фон
+@plural	{count} area|{count} areas	{count} область|{count} области|{count} областей

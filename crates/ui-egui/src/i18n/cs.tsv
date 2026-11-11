@@ -7418,3 +7418,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Náhled ukazuje plánované stehy. Před výrobou vyšijte zkušební kus.
 embroidery	Fit	Přizpůsobit
 embroidery	Zoom	Lupa
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Velikost musí být větší než {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} je příliš velké: strana má nejvýš {high}.
+embroidery	A margin is 0 pixels or more.	Okraj má 0 pixelů nebo víc.
+embroidery	The margins leave no picture: crop less.	Okraje z obrázku nic nenechají: ořízněte méně.
+embroidery	Width	Šířka
+embroidery	Height	Výška
+embroidery	Fit within the width and height	Vejít se do šířky a výšky
+embroidery	The design is {width} × {height}: as large as fits.	Návrh má {width} × {height}: tak velký, jak se vejde.
+embroidery	Type the width or the height: the other follows the picture.	Zadejte šířku nebo výšku: druhý rozměr se řídí obrázkem.
+embroidery	Left	Vlevo
+embroidery	Top	Nahoře
+embroidery	Right	Vpravo
+embroidery	Bottom	Dole
+embroidery	Crop	Oříznutí
+embroidery	Crop to the Art	Oříznout na kresbu
+embroidery	Whole Image	Celý obrázek
+embroidery	Every color is sewn	Šije se každá barva
+embroidery	Found: the transparency round the art	Nalezeno: průhlednost kolem kresby
+embroidery	Found in the corners	Nalezeno v rozích
+embroidery	Chosen from the picture's colors	Vybráno z barev obrázku
+embroidery	Not found: the corners disagree	Nenalezeno: rohy se neshodují
+embroidery	Leave the background out	Vynechat pozadí
+embroidery	Or one of the picture's colors:	Nebo jedna z barev obrázku:
+embroidery	Color {color}	Barva {color}
+embroidery	every color sewn	šije se každá barva
+embroidery	background left out	pozadí vynecháno
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Počítání…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Hladkost: {value}
+embroidery	Corners: {value}	Rohy: {value}
+embroidery	Colors overlap by {value} mm	Barvy se překrývají o {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Stehy se řídí nastavením výšivky dokumentu.
+@plural	{count} thread + background|{count} threads + background	{count} nit + pozadí|{count} nitě + pozadí|{count} nití + pozadí
+@plural	{count} area|{count} areas	{count} oblast|{count} oblasti|{count} oblastí

@@ -108,6 +108,8 @@ struct Waiting {
 /// The run under way: which, of what settings and request, and its progress.
 struct Running {
     ticket: u64,
+    /// The first stage the change it runs reads.
+    from: DigitizeStage,
     request: Arc<DigitizeRequest>,
     progress: Arc<Progress>,
 }
@@ -209,7 +211,7 @@ impl Schedule {
                 let request = Arc::new(request);
                 let progress = Progress::new();
                 runner.submit(Job::new(self.next_ticket, request.clone(), progress.clone()));
-                self.running = Some(Running { ticket: self.next_ticket, request, progress });
+                self.running = Some(Running { ticket: self.next_ticket, from: w.from, request, progress });
                 self.made.clear();
                 self.failure = None;
             }
@@ -261,6 +263,13 @@ impl Schedule {
             },
             (None, false) => Freshness::Fresh,
         }
+    }
+
+    /// The first stage a change waiting or under way reads: the steps from its on are recomputed.
+    pub(crate) fn pending_from(&self) -> Option<DigitizeStage> {
+        let waiting = self.waiting.as_ref().map(|w| w.from);
+        let running = self.running.as_ref().map(|r| r.from);
+        [waiting, running].into_iter().flatten().min_by_key(|&s| place(s))
     }
 
     /// Whether it is waiting for a run or running one (the window is drawn again meanwhile).

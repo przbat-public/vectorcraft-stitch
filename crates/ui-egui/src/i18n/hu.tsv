@@ -7402,3 +7402,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Az előnézet a tervezett öltéseket mutatja. Gyártás előtt hímezzen próbadarabot.
 embroidery	Fit	Illesztés
 embroidery	Zoom	Nagyítás
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	A méretnek nagyobbnak kell lennie, mint {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} túl nagy: egy oldal legfeljebb {high} lehet.
+embroidery	A margin is 0 pixels or more.	A margó legalább 0 képpont.
+embroidery	The margins leave no picture: crop less.	A margók nem hagynak képet: vágjon kevesebbet.
+embroidery	Width	Szélesség
+embroidery	Height	Magasság
+embroidery	Fit within the width and height	Illesztés a szélességbe és a magasságba
+embroidery	The design is {width} × {height}: as large as fits.	A minta {width} × {height}: akkora, amekkora elfér.
+embroidery	Type the width or the height: the other follows the picture.	Írja be a szélességet vagy a magasságot: a másik a képet követi.
+embroidery	Left	Bal
+embroidery	Top	Felső
+embroidery	Right	Jobb
+embroidery	Bottom	Alsó
+embroidery	Crop	Körülvágás
+embroidery	Crop to the Art	Körülvágás a rajzra
+embroidery	Whole Image	Teljes kép
+embroidery	Every color is sewn	Minden szín ki lesz hímezve
+embroidery	Found: the transparency round the art	Megtalálva: a rajz körüli átlátszóság
+embroidery	Found in the corners	A sarkokban találva
+embroidery	Chosen from the picture's colors	A kép színei közül választva
+embroidery	Not found: the corners disagree	Nem található: a sarkok eltérnek
+embroidery	Leave the background out	A háttér kihagyása
+embroidery	Or one of the picture's colors:	Vagy a kép egyik színe:
+embroidery	Color {color}	Szín: {color}
+embroidery	every color sewn	minden szín kihímezve
+embroidery	background left out	háttér kihagyva
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Számítás…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	{number}. lépés ({count} közül): {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Simaság: {value}
+embroidery	Corners: {value}	Sarkok: {value}
+embroidery	Colors overlap by {value} mm	A színek {value} mm-rel fedik egymást
+embroidery	The stitches follow the document's embroidery settings.	Az öltések a dokumentum hímzésbeállításait követik.
+@plural	{count} thread + background|{count} threads + background	{count} szál + háttér
+@plural	{count} area|{count} areas	{count} terület

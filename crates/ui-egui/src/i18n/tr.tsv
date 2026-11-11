@@ -7371,3 +7371,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Önizleme planlanan dikişleri gösterir. Üretimden önce bir deneme parçası dikin.
 embroidery	Fit	Sığdır
 embroidery	Zoom	Yakınlaştırma
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Boyut {low} değerinden büyük olmalıdır.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} çok büyük: bir kenar en fazla {high} olabilir.
+embroidery	A margin is 0 pixels or more.	Kenar boşluğu 0 piksel veya daha fazladır.
+embroidery	The margins leave no picture: crop less.	Kenar boşlukları resimden bir şey bırakmıyor: daha az kırpın.
+embroidery	Width	Genişlik
+embroidery	Height	Yükseklik
+embroidery	Fit within the width and height	Genişlik ve yüksekliğe sığdır
+embroidery	The design is {width} × {height}: as large as fits.	Tasarım {width} × {height}: sığabildiği kadar büyük.
+embroidery	Type the width or the height: the other follows the picture.	Genişliği veya yüksekliği yazın: diğeri resme uyar.
+embroidery	Left	Sol
+embroidery	Top	Üst
+embroidery	Right	Sağ
+embroidery	Bottom	Alt
+embroidery	Crop	Kırpma
+embroidery	Crop to the Art	Çizime Göre Kırp
+embroidery	Whole Image	Resmin Tamamı
+embroidery	Every color is sewn	Her renk dikilir
+embroidery	Found: the transparency round the art	Bulundu: çizimin çevresindeki saydamlık
+embroidery	Found in the corners	Köşelerde bulundu
+embroidery	Chosen from the picture's colors	Resmin renklerinden seçildi
+embroidery	Not found: the corners disagree	Bulunamadı: köşeler farklı
+embroidery	Leave the background out	Arka planı dışarıda bırak
+embroidery	Or one of the picture's colors:	Ya da resmin renklerinden biri:
+embroidery	Color {color}	Renk {color}
+embroidery	every color sewn	her renk dikilir
+embroidery	background left out	arka plan dışarıda
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Hesaplanıyor…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Adım {number}/{count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Pürüzsüzlük: {value}
+embroidery	Corners: {value}	Köşeler: {value}
+embroidery	Colors overlap by {value} mm	Renkler {value} mm örtüşür
+embroidery	The stitches follow the document's embroidery settings.	Dikişler belgenin nakış ayarlarını izler.
+@plural	{count} thread + background|{count} threads + background	{count} iplik + arka plan
+@plural	{count} area|{count} areas	{count} alan

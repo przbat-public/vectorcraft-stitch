@@ -7490,3 +7490,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	A pré-visualização mostra os pontos planejados. Borde uma amostra antes da produção.
 embroidery	Fit	Ajustar
 embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	O tamanho deve ser maior que {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} é grande demais: um lado tem no máximo {high}.
+embroidery	A margin is 0 pixels or more.	Uma margem tem 0 pixels ou mais.
+embroidery	The margins leave no picture: crop less.	As margens não deixam imagem: recorte menos.
+embroidery	Width	Largura
+embroidery	Height	Altura
+embroidery	Fit within the width and height	Caber na largura e na altura
+embroidery	The design is {width} × {height}: as large as fits.	O desenho tem {width} × {height}: o maior que cabe.
+embroidery	Type the width or the height: the other follows the picture.	Digite a largura ou a altura: a outra segue a imagem.
+embroidery	Left	Esquerda
+embroidery	Top	Topo
+embroidery	Right	Direita
+embroidery	Bottom	Base
+embroidery	Crop	Recorte
+embroidery	Crop to the Art	Recortar até a arte
+embroidery	Whole Image	Imagem inteira
+embroidery	Every color is sewn	Todas as cores são bordadas
+embroidery	Found: the transparency round the art	Encontrado: a transparência em volta da arte
+embroidery	Found in the corners	Encontrado nos cantos
+embroidery	Chosen from the picture's colors	Escolhido entre as cores da imagem
+embroidery	Not found: the corners disagree	Não encontrado: os cantos não coincidem
+embroidery	Leave the background out	Deixar o fundo de fora
+embroidery	Or one of the picture's colors:	Ou uma das cores da imagem:
+embroidery	Color {color}	Cor {color}
+embroidery	every color sewn	todas as cores bordadas
+embroidery	background left out	fundo deixado de fora
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Calculando…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Etapa {number} de {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Suavidade: {value}
+embroidery	Corners: {value}	Cantos: {value}
+embroidery	Colors overlap by {value} mm	As cores se sobrepõem {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Os pontos seguem as configurações de bordado do documento.
+@plural	{count} thread + background|{count} threads + background	{count} linha + fundo|{count} linhas + fundo
+@plural	{count} area|{count} areas	{count} área|{count} áreas

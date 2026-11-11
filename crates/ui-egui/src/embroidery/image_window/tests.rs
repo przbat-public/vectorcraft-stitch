@@ -200,10 +200,10 @@ fn it_draws_whole_at_its_smallest_and_compact_sizes() {
     for width in [frame::MIN_SIZE.x, frame::COMPACT_BELOW + 100.0] {
         let inner = Rect::from_min_size(pos2(0.0, 0.0), vec2(width, frame::MIN_SIZE.y));
         let r = frame::regions(inner);
-        for a in [r.title, r.preview, r.settings, r.bar] {
+        for a in [r.title, r.strip, r.preview, r.settings, r.bar] {
             assert!(inner.contains_rect(a) && a.width() > 0.0 && a.height() > 0.0, "{a:?} in {inner:?}");
         }
-        assert!(!r.preview.intersects(r.settings) && !r.title.intersects(r.preview) && !r.preview.intersects(r.bar));
+        assert!(!r.preview.intersects(r.settings) && !r.strip.intersects(r.preview) && !r.title.intersects(r.strip) && !r.preview.intersects(r.bar));
         let column = if frame::compact(width) { frame::COMPACT_SETTINGS_WIDTH } else { frame::SETTINGS_WIDTH };
         assert!((r.settings.width() - column).abs() < 0.5);
     }
@@ -308,4 +308,191 @@ fn hovering_names_the_area_under_the_pointer() {
     assert!(facts.sewn && facts.own_number == Some(1), "{facts:?}");
     let line = preview::area_line(&facts);
     assert!(line.starts_with(&format!("{} 1 · ", facts.thread_name.clone().unwrap_or_default())) && line.contains("mm²"), "{line}");
+}
+
+/// One frame with screen readers on (the context's) → its nodes.
+fn nodes(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Vec<(egui::accesskit::NodeId, egui::accesskit::Node)> {
+    *time += 0.05;
+    let raw = egui::RawInput { time: Some(*time), screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(1440.0, 900.0))), ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::dialogs::show(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default()
+}
+
+/// The node screen readers call `name`, of `role`: named itself, or by a label beside it.
+fn node<'a>(
+    nodes: &'a [(egui::accesskit::NodeId, egui::accesskit::Node)],
+    name: &str,
+    role: egui::accesskit::Role,
+) -> Option<&'a egui::accesskit::Node> {
+    let labels: Vec<egui::accesskit::NodeId> =
+        nodes.iter().filter(|(_, n)| n.role() == egui::accesskit::Role::Label && n.value() == Some(name)).map(|(id, _)| *id).collect();
+    nodes.iter().map(|(_, n)| n).find(|n| n.role() == role && (n.label() == Some(name) || n.labelled_by().iter().any(|l| labels.contains(l))))
+}
+
+/// The centre of the control screen readers call `name`, of `role`.
+fn centre_of(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) -> egui::Pos2 {
+    let nodes = nodes(app, ctx, time);
+    let b = node(&nodes, name, role).and_then(|n| n.bounds()).unwrap_or_else(|| panic!("no {role:?} {name}"));
+    pos2(((b.x0 + b.x1) / 2.0) as f32, ((b.y0 + b.y1) / 2.0) as f32)
+}
+
+/// A click of the control screen readers call `name`, of `role`.
+fn click(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) {
+    let at = centre_of(app, ctx, time, name, role);
+    let button = |pressed| Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    *time += 0.05;
+    frame(app, ctx, *time, vec![Event::PointerMoved(at), button(true), button(false)]);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![]);
+}
+
+/// `text` typed into the field screen readers call `name`, over what it held, then Enter.
+fn type_into(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, text: &str) {
+    click(app, ctx, time, name, egui::accesskit::Role::TextInput);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![key(Key::A, Modifiers::COMMAND), Event::Text(text.into())]);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![key(Key::Enter, Modifiers::NONE)]);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![]);
+}
+
+/// The window open on the test picture, its first result shown, screen readers on.
+fn opened() -> (VectorcraftApp, egui::Context, f64) {
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    ctx.enable_accesskit();
+    let mut app = app();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    let mut time = 0.0;
+    until(&mut app, &ctx, &mut time, ready);
+    (app, ctx, time)
+}
+
+/// The reply of the result shown.
+fn reply(app: &mut VectorcraftApp) -> Value {
+    app.embroidery.image_window.live.as_mut().and_then(|l| l.reply().cloned()).expect("a result")
+}
+
+/// A step's card opens its section and shows its view; with Compare on, Compare stays, showing the
+/// original against the step chosen.
+#[test]
+fn a_card_opens_its_section_and_view() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    assert!(node(&nodes_now, "Crop to the Art", Role::Button).is_none(), "the Image step's section is closed");
+    set(&mut app, VIEW, json!("colors"));
+    click(&mut app, &ctx, &mut time, "Shapes", Role::Tab);
+    let d = open_dialog(&app).expect("open");
+    assert_eq!((d.fields[STEP].clone(), d.str(VIEW)), (json!(3), "shapes".to_string()));
+    set(&mut app, VIEW, json!("compare"));
+    click(&mut app, &ctx, &mut time, "Image", Role::Tab);
+    let d = open_dialog(&app).expect("open");
+    assert_eq!((d.fields[STEP].clone(), d.str(VIEW)), (json!(1), "compare".to_string()));
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    assert!(node(&nodes_now, "Crop to the Art", Role::Button).is_some(), "the Image step's section is open");
+    assert!(node(&nodes_now, "Image", Role::Tab).is_some_and(|n| n.is_selected() == Some(true)));
+}
+
+/// Each card says its step, what it made and how long it took, in words.
+#[test]
+fn summaries_are_said_in_words() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let said = |name: &str| node(&nodes_now, name, Role::Tab).and_then(|n| n.description()).map(str::to_string).unwrap_or_default();
+    let image = said("Image");
+    assert!(image.starts_with("Step 1 of 4: Image. ") && image.contains(" mm · background left out. ") && image.ends_with(" ms"), "{image}");
+    let colours = said("Colors");
+    assert!(colours.starts_with("Step 2 of 4: Colors. 2 threads + background. "), "{colours}");
+    let shapes = said("Shapes");
+    assert!(shapes.starts_with("Step 3 of 4: Shapes. ") && shapes.contains(" areas. "), "{shapes}");
+    let stitches = said("Stitches");
+    assert!(stitches.starts_with("Step 4 of 4: Stitches. ") && stitches.contains(" stitches. "), "{stitches}");
+}
+
+/// The width typed sets the size, the height following the picture (2 : 1), and the height typed
+/// sets it the other way; Enter in a field commits the field and creates nothing.
+#[test]
+fn width_and_height_stay_linked() {
+    let (mut app, ctx, mut time) = opened();
+    let steps = undo_steps(&app);
+    set(&mut app, STEP, json!(1));
+    type_into(&mut app, &ctx, &mut time, "Width", "100");
+    let d = open_dialog(&app).expect("still open: Enter in a field creates nothing");
+    assert_eq!((d.fields.get("width"), d.fields.get("height")), (Some(&json!(100.0)), None));
+    until(&mut app, &ctx, &mut time, ready);
+    let size = live(&app).schedule.shown.as_ref().and_then(|s| s.outputs.size_mm()).expect("a size");
+    assert!((size.0 - 100.0).abs() < 0.01 && (size.1 - 50.0).abs() < 0.01, "{size:?}");
+    type_into(&mut app, &ctx, &mut time, "Height", "40");
+    until(&mut app, &ctx, &mut time, ready);
+    let size = live(&app).schedule.shown.as_ref().and_then(|s| s.outputs.size_mm()).expect("a size");
+    assert!((size.0 - 80.0).abs() < 0.01 && (size.1 - 40.0).abs() < 0.01, "{size:?}");
+    assert_eq!(undo_steps(&app), steps, "nothing made");
+}
+
+/// A size of nothing, or one past the engine's top, is refused: the status bar says why and the
+/// fields keep what they held.
+#[test]
+fn a_value_out_of_range_is_refused_and_kept() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(1));
+    let before = open_dialog(&app).map(|d| d.fields.clone()).expect("open");
+    type_into(&mut app, &ctx, &mut time, "Width", "0");
+    assert_eq!(app.ui.status, "A size is more than 0 mm.");
+    type_into(&mut app, &ctx, &mut time, "Height", "5000");
+    assert!(app.ui.status.ends_with(" is too large: a side is at most 1000 mm."), "{}", app.ui.status);
+    let after = open_dialog(&app).map(|d| d.fields.clone()).expect("open");
+    for key in SETTING_FIELDS {
+        assert_eq!(after.get(key), before.get(key), "{key}");
+    }
+}
+
+/// Crop to the Art crops to the box of what isn't the background (the orange square), the white
+/// it found in the corners still left out; Whole Image takes the crop off.
+#[test]
+fn crop_to_the_art_crops_to_what_isnt_background() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(1));
+    let art = live(&app).schedule.shown.as_ref().and_then(|s| s.outputs.art_bounds());
+    assert_eq!(art, Some([20, 10, 180, 90]));
+    click(&mut app, &ctx, &mut time, "Crop to the Art", Role::Button);
+    let d = open_dialog(&app).expect("open");
+    assert_eq!((d.fields.get("crop"), d.fields.get("background")), (Some(&json!([20, 10, 180, 90])), Some(&json!("#ffffff"))));
+    until(&mut app, &ctx, &mut time, ready);
+    let r = reply(&mut app);
+    assert_eq!((r["image"]["crop"].clone(), r["colorCount"].clone()), (json!([20, 10, 180, 90]), json!(2)), "{}", r["image"]);
+    click(&mut app, &ctx, &mut time, "Whole Image", Role::Button);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("crop").cloned()), None);
+}
+
+/// The background is left out, or sewn (every colour, the white too), or one of the picture's
+/// colours chosen as it.
+#[test]
+fn the_background_can_be_left_out_or_sewn() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(1));
+    click(&mut app, &ctx, &mut time, "Leave the background out", Role::CheckBox);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("background").cloned()), Some(json!("none")));
+    until(&mut app, &ctx, &mut time, ready);
+    let r = reply(&mut app);
+    assert_eq!((r["image"]["background"]["from"].clone(), r["colorCount"].clone()), (json!("none"), json!(3)));
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let image = node(&nodes_now, "Image", Role::Tab).and_then(|n| n.description()).unwrap_or_default().to_string();
+    assert!(image.contains(" mm · every color sewn. "), "{image}");
+    click(&mut app, &ctx, &mut time, "Leave the background out", Role::CheckBox);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("background").cloned()), None);
+    until(&mut app, &ctx, &mut time, ready);
+    let r = reply(&mut app);
+    let sewn =
+        r["colors"].as_array().and_then(|a| a.iter().find(|c| c["background"] == json!(false))).map(|c| c["color"].clone()).expect("a colour sewn");
+    click(&mut app, &ctx, &mut time, &format!("Color {}", sewn.as_str().unwrap_or_default()), Role::Button);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("background").cloned()), Some(sewn));
 }

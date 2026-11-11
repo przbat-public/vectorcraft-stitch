@@ -7019,3 +7019,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Bản xem trước cho thấy các mũi thêu đã lên kế hoạch. Hãy thêu thử một mẫu trước khi sản xuất.
 embroidery	Fit	Vừa khung
 embroidery	Zoom	Thu phóng
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Kích thước phải lớn hơn {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} quá lớn: mỗi cạnh tối đa {high}.
+embroidery	A margin is 0 pixels or more.	Lề từ 0 điểm ảnh trở lên.
+embroidery	The margins leave no picture: crop less.	Các lề không còn chừa lại hình: hãy cắt ít hơn.
+embroidery	Width	Chiều rộng
+embroidery	Height	Chiều cao
+embroidery	Fit within the width and height	Vừa trong chiều rộng và chiều cao
+embroidery	The design is {width} × {height}: as large as fits.	Mẫu là {width} × {height}: lớn nhất có thể vừa.
+embroidery	Type the width or the height: the other follows the picture.	Nhập chiều rộng hoặc chiều cao: chiều còn lại theo hình.
+embroidery	Left	Trái
+embroidery	Top	Trên
+embroidery	Right	Phải
+embroidery	Bottom	Dưới
+embroidery	Crop	Cắt xén
+embroidery	Crop to the Art	Cắt theo hình vẽ
+embroidery	Whole Image	Toàn bộ hình
+embroidery	Every color is sewn	Mọi màu đều được thêu
+embroidery	Found: the transparency round the art	Đã tìm thấy: phần trong suốt quanh hình vẽ
+embroidery	Found in the corners	Tìm thấy ở các góc
+embroidery	Chosen from the picture's colors	Đã chọn từ các màu của hình
+embroidery	Not found: the corners disagree	Không tìm thấy: các góc khác nhau
+embroidery	Leave the background out	Bỏ nền
+embroidery	Or one of the picture's colors:	Hoặc một trong các màu của hình:
+embroidery	Color {color}	Màu {color}
+embroidery	every color sewn	mọi màu đều thêu
+embroidery	background left out	bỏ nền
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Đang tính…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Bước {number}/{count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Độ mượt: {value}
+embroidery	Corners: {value}	Góc: {value}
+embroidery	Colors overlap by {value} mm	Các màu chồng lên nhau {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Các mũi thêu theo thiết lập thêu của tài liệu.
+@plural	{count} thread + background|{count} threads + background	{count} chỉ + nền
+@plural	{count} area|{count} areas	{count} vùng

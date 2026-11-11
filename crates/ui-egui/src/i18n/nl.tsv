@@ -7228,3 +7228,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	De voorvertoning toont de geplande steken. Borduur een proefstuk vóór de productie.
 embroidery	Fit	Passend
 embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Een grootte moet meer dan {low} zijn.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} is te groot: een zijde is hoogstens {high}.
+embroidery	A margin is 0 pixels or more.	Een marge is 0 pixels of meer.
+embroidery	The margins leave no picture: crop less.	De marges laten geen afbeelding over: snijd minder bij.
+embroidery	Width	Breedte
+embroidery	Height	Hoogte
+embroidery	Fit within the width and height	Passen binnen de breedte en hoogte
+embroidery	The design is {width} × {height}: as large as fits.	Het ontwerp is {width} × {height}: zo groot als past.
+embroidery	Type the width or the height: the other follows the picture.	Typ de breedte of de hoogte: de andere volgt de afbeelding.
+embroidery	Left	Links
+embroidery	Top	Boven
+embroidery	Right	Rechts
+embroidery	Bottom	Onder
+embroidery	Crop	Bijsnijden
+embroidery	Crop to the Art	Bijsnijden tot de tekening
+embroidery	Whole Image	Hele afbeelding
+embroidery	Every color is sewn	Elke kleur wordt geborduurd
+embroidery	Found: the transparency round the art	Gevonden: de transparantie rond de tekening
+embroidery	Found in the corners	Gevonden in de hoeken
+embroidery	Chosen from the picture's colors	Gekozen uit de kleuren van de afbeelding
+embroidery	Not found: the corners disagree	Niet gevonden: de hoeken verschillen
+embroidery	Leave the background out	Achtergrond weglaten
+embroidery	Or one of the picture's colors:	Of een van de kleuren van de afbeelding:
+embroidery	Color {color}	Kleur {color}
+embroidery	every color sewn	elke kleur geborduurd
+embroidery	background left out	achtergrond weggelaten
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Berekenen…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Stap {number} van {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Gladheid: {value}
+embroidery	Corners: {value}	Hoeken: {value}
+embroidery	Colors overlap by {value} mm	Kleuren overlappen {value} mm
+embroidery	The stitches follow the document's embroidery settings.	De steken volgen de borduurinstellingen van het document.
+@plural	{count} thread + background|{count} threads + background	{count} draad + achtergrond|{count} draden + achtergrond
+@plural	{count} area|{count} areas	{count} vlak|{count} vlakken

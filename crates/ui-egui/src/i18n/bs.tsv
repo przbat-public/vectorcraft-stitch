@@ -7213,3 +7213,41 @@ embroidery	{value} mm	{value} mm
 embroidery	The preview shows the planned stitches. Sew a test piece before production.	Pregled prikazuje planirane bodove. Prije proizvodnje izvezite probni komad.
 embroidery	Fit	Uklopi
 embroidery	Zoom	Zum
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Veličina mora biti veća od {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} je preveliko: stranica je najviše {high}.
+embroidery	A margin is 0 pixels or more.	Margina je 0 piksela ili više.
+embroidery	The margins leave no picture: crop less.	Margine ne ostavljaju ništa od slike: odrežite manje.
+embroidery	Width	Širina
+embroidery	Height	Visina
+embroidery	Fit within the width and height	Uklopi u širinu i visinu
+embroidery	The design is {width} × {height}: as large as fits.	Dizajn je {width} × {height}: najveći koji stane.
+embroidery	Type the width or the height: the other follows the picture.	Upišite širinu ili visinu: drugo prati sliku.
+embroidery	Left	Lijevo
+embroidery	Top	Gore
+embroidery	Right	Desno
+embroidery	Bottom	Dolje
+embroidery	Crop	Izrezivanje
+embroidery	Crop to the Art	Izreži do crteža
+embroidery	Whole Image	Cijela slika
+embroidery	Every color is sewn	Šije se svaka boja
+embroidery	Found: the transparency round the art	Pronađeno: prozirnost oko crteža
+embroidery	Found in the corners	Pronađena u uglovima
+embroidery	Chosen from the picture's colors	Odabrana među bojama slike
+embroidery	Not found: the corners disagree	Nije pronađena: uglovi se razlikuju
+embroidery	Leave the background out	Izostavi pozadinu
+embroidery	Or one of the picture's colors:	Ili jedna od boja slike:
+embroidery	Color {color}	Boja {color}
+embroidery	every color sewn	šije se svaka boja
+embroidery	background left out	pozadina izostavljena
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Računanje…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Korak {number} od {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Glatkoća: {value}
+embroidery	Corners: {value}	Uglovi: {value}
+embroidery	Colors overlap by {value} mm	Boje se preklapaju za {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Bodovi slijede postavke veza dokumenta.
+@plural	{count} thread + background|{count} threads + background	{count} konac + pozadina|{count} konca + pozadina|{count} konaca + pozadina
+@plural	{count} area|{count} areas	{count} područje|{count} područja|{count} područja

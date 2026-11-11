@@ -5,9 +5,9 @@
 //! Its answer gives what a window shows: the working copy the image was measured at, the colours
 //! found with their threads, the areas to sew in their order, the design's figures as
 //! `embroidery.stats` gives them, the warnings, the settings used with their defaults, and how long
-//! each stage took. It runs as a job ([`DigitizeJob`]), as Nearest Connection does: prepared on the
-//! document, run on any thread, applied to the document it was prepared on, so that a window's
-//! preview and the command make the same objects.
+//! each stage took. It is prepared on the document, run and applied in one go ([`DigitizeJob`]);
+//! the image window runs the same stages through a pipeline that keeps them between runs
+//! (`super::pipeline`), and its Create makes the objects the command makes (`super::window`).
 
 use std::sync::Arc;
 
@@ -31,11 +31,11 @@ use crate::{EngineError, Result, Session};
 
 /// What digitizing reports to a progress sink as it goes ([`vectorcraft_doc::cancel::progress`]):
 /// the stages done of [`DIGITIZE_STAGES`]; the stitches' plan reports its own progress as a plan's.
-pub const DIGITIZE_PROGRESS: &str = "digitizeImage";
+pub(super) const DIGITIZE_PROGRESS: &str = "digitizeImage";
 
 /// The stages a run goes through, as its progress counts them: the working copy, the trace, the
 /// colours and areas, the shapes, the objects and their stitches.
-pub const DIGITIZE_STAGES: u64 = 5;
+pub(super) const DIGITIZE_STAGES: u64 = 5;
 
 /// The undo step Create makes, as the command is named: its label, which `cmd!` takes only as a
 /// literal (a test checks the two agree).
@@ -368,10 +368,10 @@ pub(super) struct Listed {
     pub(super) at: Option<Point>,
 }
 
-/// Digitizing asked for, ready to run on any thread ([`DigitizeJob::run`]): the document as it was
-/// (its uid and snapshot), the image (`target`, an image or an Image Trace object) and its file,
-/// the settings in the document's palette, what the reply lists, and whether it only answers.
-pub struct DigitizeJob {
+/// Digitizing asked for ([`DigitizeJob::run`]): the document as it was (its uid and snapshot), the
+/// image (`target`, an image or an Image Trace object) and its file, the settings in the document's
+/// palette, what the reply lists, and whether it only answers.
+struct DigitizeJob {
     uid: u64,
     original: Arc<Document>,
     target: NodeId,
@@ -383,28 +383,15 @@ pub struct DigitizeJob {
     dry_run: bool,
 }
 
-/// What a run made ([`DigitizeJob::run`]), to apply to the document it was made of
-/// ([`Session::apply_digitize_image`]): the document with the objects made and what was made
-/// (`None`: nothing to make, which only a dry run answers), and the reply.
-pub struct DigitizeFound {
+/// What a run made ([`DigitizeJob::run`]), to apply to the document it was made of ([`apply`]):
+/// the document with the objects made and what was made (`None`: nothing to make, which only a dry
+/// run answers), and the reply.
+struct DigitizeFound {
     uid: u64,
     original: Arc<Document>,
     made: Option<(Document, Made)>,
     reply: Value,
     dry_run: bool,
-}
-
-impl DigitizeFound {
-    /// The document with the objects made, as Create would leave it (the new group selected), for
-    /// a preview: `None` when there is nothing to make.
-    pub fn document(&self) -> Option<(&Document, NodeId)> {
-        self.made.as_ref().map(|(d, m)| (d, m.group))
-    }
-
-    /// The reply the command gives.
-    pub fn reply(&self) -> &Value {
-        &self.reply
-    }
 }
 
 /// `embroidery.stats`, whose reply the dry run gives, planning the selection alone
@@ -460,12 +447,12 @@ pub(super) fn image_of(s: &Session, o: &Map<String, Value>) -> Result<(NodeId, I
 
 impl DigitizeJob {
     /// Digitizing, on the document as it was: the image digitized, its objects made on a copy and
-    /// planned for their figures. Any thread runs it. Inside a [`vectorcraft_doc::cancel::scope`],
-    /// a cancel stops it within each stage (an error then, nothing made), and the stages' progress
-    /// goes to the scope's sink ([`DIGITIZE_PROGRESS`]); `steps` is asked as the trace goes, from
-    /// the threads that trace it, which a scope's cancel doesn't reach, as Image Trace's own run
-    /// asks it, and stops the run when it answers `false`.
-    pub fn run(&self, steps: &(dyn Fn(u64, u64) -> bool + Sync)) -> Result<DigitizeFound> {
+    /// planned for their figures. Inside a [`vectorcraft_doc::cancel::scope`], a cancel stops it
+    /// within each stage (an error then, nothing made), and the stages' progress goes to the
+    /// scope's sink ([`DIGITIZE_PROGRESS`]); `steps` is asked as the trace goes, from the threads
+    /// that trace it, which a scope's cancel doesn't reach, as Image Trace's own run asks it, and
+    /// stops the run when it answers `false`.
+    fn run(&self, steps: &(dyn Fn(u64, u64) -> bool + Sync)) -> Result<DigitizeFound> {
         let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run } = self;
         let d = digitized(image, bytes, settings, *palette, steps)?;
         let started = clock();
@@ -636,25 +623,4 @@ pub(in crate::cmd::embroidery) fn digitize_image(s: &mut Session, p: &Value) -> 
     // On this thread, where a cancel reaches every stage but the trace's colour layers.
     let found = job.run(&|_, _| true)?;
     apply(s, found)
-}
-
-impl Session {
-    /// Digitizing on the active document as `embroidery.digitizeImage {params}` takes them, ready
-    /// to run off the interface thread ([`DigitizeJob::run`]); what it makes is applied with
-    /// [`Session::apply_digitize_image`]. The command runs the three in one go.
-    pub fn digitize_image_job(&self, p: &Value) -> Result<DigitizeJob> {
-        prepare(self, p)
-    }
-
-    /// Whether what a run made is of the active document as it is now: the one it was made of,
-    /// unchanged since.
-    pub fn digitize_image_current(&self, found: &DigitizeFound) -> bool {
-        self.doc().is_ok_and(|st| st.uid == found.uid && Arc::ptr_eq(&st.doc, &found.original))
-    }
-
-    /// What a run made applied, as the command applies it (one undo step "Digitize Image"), and the
-    /// command's reply: refused when the document changed meanwhile.
-    pub fn apply_digitize_image(&mut self, found: DigitizeFound) -> Result<Value> {
-        apply(self, found)
-    }
 }

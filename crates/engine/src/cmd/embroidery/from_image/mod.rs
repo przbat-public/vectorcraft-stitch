@@ -29,7 +29,7 @@
 //! - [`create`]: the embroidery objects made of them, in place of the image, which moves to a
 //!   template layer;
 //! - [`stages`]: the stages above as functions of what each reads, run in turn by the command;
-//! - [`command`]: `embroidery.digitizeImage` and its answer, run as a job ([`DigitizeJob`]);
+//! - [`command`]: `embroidery.digitizeImage` and its answer, prepared, run and applied in one go;
 //! - [`pipeline`]: the stages kept between runs, for a window that runs them again at every change,
 //!   with the objects Create would make and their stitches;
 //! - [`window`]: what a window asks of the engine: its request, its pipeline, Create of a run;
@@ -58,7 +58,6 @@ mod window;
 mod working;
 
 pub(super) use command::digitize_image;
-pub use command::{DIGITIZE_PROGRESS, DIGITIZE_STAGES, DigitizeFound, DigitizeJob};
 pub use pipeline::{AreaFacts, Outputs, Pipeline, Place, StageId, WindowRequest};
 
 #[cfg(test)]

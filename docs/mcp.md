@@ -8635,9 +8635,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `timings` each stage's milliseconds (`{image, trace,
   areas, shapes, objects, stitches}`, null on the web). `outline` (with `outlines: true`) is an area's shape as sewn,
   an SVG path in millimetres from the document's origin, to hundredths; a line's is its centre line, open, with no
-  area. An interface runs it off its thread through
-  the job it is made of (`Session::digitize_image_job`, `DigitizeJob::run`, `Session::apply_digitize_image`), which a
-  document changed meanwhile refuses.
+  area. The image window runs its stages off its thread
+  through a pipeline that keeps them between runs (`Session::digitize_pipeline`), and its Create
+  (`Session::apply_digitize_window`) is refused when the document changed meanwhile.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

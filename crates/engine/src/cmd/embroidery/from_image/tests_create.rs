@@ -1,5 +1,5 @@
 //! Digitizing from an image: Create, the embroidery objects made in place of the image, and the
-//! job the command runs as.
+//! command's progress and cancel.
 
 use std::sync::Arc;
 
@@ -277,78 +277,57 @@ fn an_image_trace_object_is_replaced() {
     assert_eq!(d.layer_of(image).map(|l| json!(l.0)), Some(r["created"]["layer"].clone()));
 }
 
-/// The job: prepared on the document, run, and applied to that document only. A document changed
-/// meanwhile refuses it, and nothing is made; an image that is all background makes nothing, which
-/// a dry run says and Create refuses.
+/// An image that is all background makes nothing, which a dry run says and Create refuses.
 #[test]
-fn the_job_applies_to_the_document_it_was_made_of() {
-    let (mut s, image) = placed_at(&picture(), (0.0, 0.0));
-    let job = s.digitize_image_job(&json!({"colors": 3})).unwrap();
-    let found = job.run(&|_, _| true).unwrap();
-    let (preview, group) = found.document().unwrap();
-    assert!(preview.node(group).is_some() && preview.node(image).is_some());
-    assert!(s.digitize_image_current(&found));
-    s.execute("shape.rectangle", &json!({"x": 200, "y": 200, "width": 20, "height": 20})).unwrap();
-    assert!(!s.digitize_image_current(&found));
-    let before = doc(&s);
-    let e = s.apply_digitize_image(found).unwrap_err().to_string();
-    assert!(e.contains("changed"), "{e}");
-    assert!(Arc::ptr_eq(&before, &doc(&s)), "nothing made");
-    // All background: nothing to make.
+fn an_image_all_background_makes_nothing() {
     let (mut s, _) = placed_at(&tr::Raster::from_fn(100, 100, |_, _| WHITE), (0.0, 0.0));
     let r = s.execute("embroidery.digitizeImage", &json!({"dryRun": true})).unwrap();
     assert_eq!(r["stats"], Value::Null);
     assert!(r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "nothingToMake" && w["values"] == json!({})), "{}", r["warnings"]);
+    let before = doc(&s);
     let e = s.execute("embroidery.digitizeImage", &json!({})).unwrap_err().to_string();
     assert!(e.contains("nothing to sew"), "{e}");
+    assert!(Arc::ptr_eq(&before, &doc(&s)), "nothing made");
 }
 
-/// Off the interface thread: the job, and what it made, go to another thread; there it reports its
-/// five stages to the sink of the scope it runs in, from the first to the last, and a cancel stops
-/// it, nothing made: a scope cancelled before it starts, a cancel in the middle of it (from the
-/// sink, when its third stage begins), and a poll answering `false` as the trace asks it from the
-/// threads that trace.
+/// The command reports its five stages to the sink of the scope it runs in, from the first to the
+/// last, and a cancel stops it, nothing made: a scope cancelled before it starts, and a cancel in
+/// the middle of it (from the sink, when its third stage begins).
 #[test]
-fn the_job_runs_on_another_thread_and_stops_when_cancelled() {
+fn the_command_reports_its_stages_and_stops_when_cancelled() {
     use std::cell::RefCell;
     use std::rc::Rc;
     use vectorcraft_doc::cancel::{self, CancelToken};
-    fn sendable<T: Send>(_: &T) {}
-    let (s, _) = placed_at(&picture(), (0.0, 0.0));
-    let job = s.digitize_image_job(&json!({"colors": 3})).unwrap();
-    sendable(&job);
-    let (stages, found, job) = std::thread::spawn(move || {
-        let seen: Rc<RefCell<Vec<(u64, u64)>>> = Rc::default();
-        let into = seen.clone();
-        let sink: cancel::ProgressSink = Rc::new(move |done, total, what| {
-            if what == super::DIGITIZE_PROGRESS {
-                into.borrow_mut().push((done, total));
-            }
-        });
-        let found = cancel::scope(&CancelToken::new(), Some(sink), || job.run(&|_, _| true));
-        let stages = seen.borrow().clone();
-        (stages, found, job)
-    })
-    .join()
-    .unwrap();
-    let found = found.unwrap();
-    sendable(&found);
-    assert!(stages.iter().all(|&(_, total)| total == super::DIGITIZE_STAGES), "{stages:?}");
+    let (mut s, _) = placed_at(&picture(), (0.0, 0.0));
+    let params = json!({"colors": 3});
+    let seen: Rc<RefCell<Vec<(u64, u64)>>> = Rc::default();
+    let into = seen.clone();
+    let sink: cancel::ProgressSink = Rc::new(move |done, total, what| {
+        if what == super::command::DIGITIZE_PROGRESS {
+            into.borrow_mut().push((done, total));
+        }
+    });
+    cancel::scope(&CancelToken::new(), Some(sink), || s.execute("embroidery.digitizeImage", &json!({"colors": 3, "dryRun": true}))).unwrap();
+    let stages = seen.borrow().clone();
+    assert!(stages.iter().all(|&(_, total)| total == super::command::DIGITIZE_STAGES), "{stages:?}");
     let done: Vec<u64> = stages.iter().map(|&(d, _)| d).collect();
-    assert_eq!(done, (0..=super::DIGITIZE_STAGES).collect::<Vec<_>>(), "each stage once, in order");
-    // Cancelled before it starts, in its middle, and through the trace's poll.
+    assert_eq!(done, (0..=super::command::DIGITIZE_STAGES).collect::<Vec<_>>(), "each stage once, in order");
+    // Cancelled before it starts, and in its middle: nothing made.
+    let before = doc(&s);
     let cancelled = CancelToken::new();
     cancelled.cancel();
-    assert!(matches!(cancel::scope(&cancelled, None, || job.run(&|_, _| true)), Err(crate::EngineError::Cancelled)));
+    let r = cancel::scope(&cancelled, None, || s.execute("embroidery.digitizeImage", &params));
+    assert!(matches!(r, Err(crate::EngineError::Cancelled)), "{r:?}");
     let token = CancelToken::new();
     let midway = token.clone();
     let sink: cancel::ProgressSink = Rc::new(move |done, _, what| {
-        if what == super::DIGITIZE_PROGRESS && done == 2 {
+        if what == super::command::DIGITIZE_PROGRESS && done == 2 {
             midway.cancel();
         }
     });
-    assert!(matches!(cancel::scope(&token, Some(sink), || job.run(&|_, _| true)), Err(crate::EngineError::Cancelled)));
-    assert!(matches!(job.run(&|_, _| false), Err(crate::EngineError::Cancelled)));
+    let r = cancel::scope(&token, Some(sink), || s.execute("embroidery.digitizeImage", &params));
+    assert!(matches!(r, Err(crate::EngineError::Cancelled)), "{r:?}");
+    assert!(Arc::ptr_eq(&before, &doc(&s)), "nothing made");
 }
 
 /// The reply, pinned by shape as the read commands' are (`tests_contract`): every key and the type

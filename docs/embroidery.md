@@ -3534,10 +3534,11 @@ millimetres again. The stages, each a module, each reported to a progress sink
    design; one undo step. Nearest Connection is not run.
 
 A dry run makes the objects on a copy of the document and plans them with the code
-`embroidery.stats {selectedOnly: true}` runs, so its figures are Create's. The command runs as a
-job, as Nearest Connection does (`Session::digitize_image_job`, `DigitizeJob::run` on any thread,
-`Session::apply_digitize_image` only on the document it was made of), so that a window's preview
-and the command make the same objects. The reply's areas are numbered in sewing order for that
+`embroidery.stats {selectedOnly: true}` runs, so its figures are Create's. The command prepares,
+digitizes and applies in one go. The image window runs the same stages off its thread through a
+pipeline that keeps them between runs (`Session::digitize_pipeline`), and its Create
+(`Session::apply_digitize_window`) puts a run in place only on the document it was made of, so
+that the window's preview and the command make the same objects. The reply's areas are numbered in sewing order for that
 reply alone; an area's key is its deepest point and its colour, which the inspector's overrides
 will be kept by.
 

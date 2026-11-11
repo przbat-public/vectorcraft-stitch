@@ -39,8 +39,8 @@ mod needle_edits;
 pub mod needle_index;
 pub(crate) mod needles;
 pub use from_image::{
-    AreaFacts, DIGITIZE_PROGRESS, DIGITIZE_STAGES, DigitizeFound, DigitizeJob, Outputs as DigitizeOutputs, Pipeline as DigitizePipeline,
-    Place as AreaPlace, StageId as DigitizeStage, WindowRequest as DigitizeRequest,
+    AreaFacts, Outputs as DigitizeOutputs, Pipeline as DigitizePipeline, Place as AreaPlace, StageId as DigitizeStage,
+    WindowRequest as DigitizeRequest,
 };
 pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};

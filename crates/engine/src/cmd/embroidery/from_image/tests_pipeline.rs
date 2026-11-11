@@ -185,6 +185,19 @@ fn a_cancelled_run_keeps_the_stages_it_finished() {
     assert_eq!(made(&s, &mut pipe, image, &params, None), from(StageId::Lines));
 }
 
+/// A poll answering no, as the trace asks it from the threads that trace, stops the run in its
+/// trace: the run is cancelled, and the working copy it made stays kept.
+#[test]
+fn a_poll_answering_no_stops_the_run_in_its_trace() {
+    let (s, image) = placed(&picture());
+    let mut pipe = s.digitize_pipeline();
+    let params = json!({"colors": 3});
+    let req = Arc::new(s.digitize_window_request(image, &params, None).unwrap());
+    let stopped = pipe.run(&req, &|_, _| false, &mut |_, _, _| {});
+    assert!(matches!(stopped, Err(EngineError::Cancelled)), "{:?}", stopped.err());
+    assert_eq!(made(&s, &mut pipe, image, &params, None), from(StageId::Trace));
+}
+
 /// Create from a run puts the run's objects in place as the command's Create does, and answers as
 /// it answers (its areas listed none): the same document, the same objects, one undo step, and a
 /// reply saying what was made, no dry run.

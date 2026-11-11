@@ -722,6 +722,23 @@ fn create_is_disabled_with_its_reason_when_nothing_is_sewn() {
     assert_eq!(undo_steps(&app), steps);
 }
 
+/// A crop of the background alone has nothing to sew: the bar says why and what to do, without
+/// saying that every colour was left out (none was), and Cmd/Ctrl+Enter says the same of Create
+/// and makes nothing.
+#[test]
+fn nothing_to_sew_says_its_cause() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, "crop", json!([0, 0, 15, 15]));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(status_said(&mut app, &ctx, &mut time), "Nothing to sew: every area is the background. Sew the background, or crop less.");
+    let steps = undo_steps(&app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert_eq!(app.ui.status, "Nothing to create: every area is the background. Sew the background, or crop less.");
+    assert!(open_dialog(&app).is_some(), "still open");
+    assert_eq!(undo_steps(&app), steps, "nothing made");
+}
+
 /// Create applies the run shown as one undo step, selects what it made, and says what it made, in
 /// how many threads, and the template layer the image moved to.
 #[test]

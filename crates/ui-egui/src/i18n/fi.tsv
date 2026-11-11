@@ -7549,3 +7549,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 # VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
 embroidery	the background's color inside the design	taustan väri kuvion sisällä
 @plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} väri taustan lisäksi sekä taustan väri kirjottuna siellä, missä kuvio ympäröi sen.|{count} väriä taustan lisäksi sekä taustan väri kirjottuna siellä, missä kuvio ympäröi sen.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Ei mitään kirjottavaa: jokainen alue on taustaa. Kirjo tausta tai rajaa vähemmän.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Ei mitään luotavaa: jokainen alue on taustaa. Kirjo tausta tai rajaa vähemmän.

@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-11 · **Change:** what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-11 · **Change:** nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -32,6 +32,7 @@ The tables below list the window's own words in the order the code draws them; w
 - ΔE is written to one decimal on every row, and to two where one would round onto 10 (9.96 stays "9.96", not "10.0").
 - A digitizing warning the window doesn't know yet is left out rather than shown in the engine's English prose.
 - The number of colors counts the colours besides the background; the background's colour where the design encloses it (the white inside a letter) is sewn too, a row of its own, so the threads can be one more. When it is, a note under the number says both ("6 colors besides the background, and the background's color sewn where the design encloses it."), and its row says "the background's color inside the design".
+- Nothing to sew is said by its cause: every color left out ("Nothing to sew: every color is left out."), or every area the background, which says what to do ("Nothing to sew: every area is the background. Sew the background, or crop less."); Create's refusal and the note say the same.
 
 ## The window: its title, its run, and what it remembers
 
@@ -177,10 +178,12 @@ The tables below list the window's own words in the order the code draws them; w
 | English | Polish |
 |---|---|
 | Nothing to sew: every color is left out. | Nie ma czego szyć: każdy kolor jest pominięty. |
+| Nothing to sew: every area is the background. Sew the background, or crop less. | Nie ma czego szyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej. |
 | Can't digitize it: {reason} | Nie można zdigitalizować: {reason} |
 | {count} thread change\|{count} thread changes | {count} zmiana nici\|{count} zmiany nici\|{count} zmian nici |
 | {width} × {height} mm | {width} × {height} mm |
 | Nothing to create: every color is left out. | Nie ma czego utworzyć: każdy kolor jest pominięty. |
+| Nothing to create: every area is the background. Sew the background, or crop less. | Nie ma czego utworzyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej. |
 | {count} speck smaller than {value} mm² joined the color around it\|{count} specks smaller than {value} mm² joined the colors around them | {count} plamka mniejsza niż {value} mm² dołączyła do koloru wokół niej\|{count} plamki mniejsze niż {value} mm² dołączyły do kolorów wokół nich\|{count} plamek mniejszych niż {value} mm² dołączyło do kolorów wokół nich |
 | {count} speck smaller than {value} mm² had nothing to join and was left out\|{count} specks smaller than {value} mm² had nothing to join and were left out | {count} plamka mniejsza niż {value} mm² nie miała do czego dołączyć i została pominięta\|{count} plamki mniejsze niż {value} mm² nie miały do czego dołączyć i zostały pominięte\|{count} plamek mniejszych niż {value} mm² nie miało do czego dołączyć i zostało pominiętych |
 | {count} band at most {value} mm wide joined the neighbor nearest its color\|{count} bands at most {value} mm wide joined the neighbors nearest their colors | {count} pas o szerokości najwyżej {value} mm dołączył do sąsiada o najbliższym kolorze\|{count} pasy o szerokości najwyżej {value} mm dołączyły do sąsiadów o najbliższych kolorach\|{count} pasów o szerokości najwyżej {value} mm dołączyło do sąsiadów o najbliższych kolorach |
@@ -210,3 +213,4 @@ The tables below list the window's own words in the order the code draws them; w
 |---|---|---|
 | 2026-11-11 | new | The first part of the image window: its words in English and Polish, for review. |
 | 2026-11-11 | update | What the number of colors counts, beside the threads: the note under it and the row of the background's colour inside the design. |
+| 2026-11-11 | update | Nothing to sew said by its cause: every area the background has words of its own, saying what to do, in the bar, the note and Create's refusal. |

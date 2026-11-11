@@ -8893,3 +8893,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 # VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
 embroidery	the background's color inside the design	डिज़ाइन के भीतर पृष्ठभूमि का रंग
 @plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	पृष्ठभूमि के अलावा {count} रंग, और पृष्ठभूमि का रंग, जो वहाँ सिला जाता है जहाँ डिज़ाइन उसे घेरता है।|पृष्ठभूमि के अलावा {count} रंग, और पृष्ठभूमि का रंग, जो वहाँ सिला जाता है जहाँ डिज़ाइन उसे घेरता है।
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	सिलने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	बनाने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।

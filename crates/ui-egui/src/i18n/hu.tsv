@@ -7498,3 +7498,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 # VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
 embroidery	the background's color inside the design	a háttér színe a mintán belül
 @plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} szín a háttéren kívül, és a háttér színe, kihímezve ott, ahol a minta körülveszi.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nincs mit kihímezni: minden terület háttér. Hímezze ki a hátteret is, vagy vágjon körül kevesebbet.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nincs mit létrehozni: minden terület háttér. Hímezze ki a hátteret is, vagy vágjon körül kevesebbet.

@@ -7273,3 +7273,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 # VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
 embroidery	the background's color inside the design	warna latar di dalam desain
 @plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} warna selain latar, dan warna latar yang dijahit di tempat desain mengelilinginya.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Tidak ada yang dijahit: setiap area adalah latar. Jahit latarnya, atau pangkas lebih sedikit.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Tidak ada yang dibuat: setiap area adalah latar. Jahit latarnya, atau pangkas lebih sedikit.

@@ -7095,3 +7095,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 # VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
 embroidery	the background's color inside the design	디자인 안의 배경색
 @plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	배경 외의 색 {count}개와, 디자인이 둘러싼 곳에 수놓는 배경색.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	수놓을 것이 없습니다. 모든 영역이 배경입니다. 배경도 수놓거나 덜 자르세요.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	만들 것이 없습니다. 모든 영역이 배경입니다. 배경도 수놓거나 덜 자르세요.

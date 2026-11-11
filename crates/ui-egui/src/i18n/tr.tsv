@@ -7467,3 +7467,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 # VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
 embroidery	the background's color inside the design	tasarımın içindeki arka plan rengi
 @plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	Arka plan dışında {count} renk ve tasarımın çevrelediği yerlerde dikilen arka plan rengi.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Dikilecek bir şey yok: her alan arka plan. Arka planı da dikin ya da daha az kırpın.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Oluşturulacak bir şey yok: her alan arka plan. Arka planı da dikin ya da daha az kırpın.

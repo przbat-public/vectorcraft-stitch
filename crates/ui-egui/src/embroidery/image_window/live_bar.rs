@@ -63,20 +63,47 @@ fn step_of(id: &str) -> u8 {
     }
 }
 
-/// What the bar says of the result shown, settled: the figures, nothing to sew, or why it can't be
-/// digitized (what screen readers are told).
+/// What the bar says of the result shown, settled: the figures, nothing to sew and why, or why it
+/// can't be digitized (what screen readers are told).
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Said {
     Figures(Figures),
-    Nothing,
+    Nothing(Nothing),
     Failed(String),
+}
+
+/// Why nothing would be sewn.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Nothing {
+    /// Every area is the background, left out: Create would make no object.
+    Background,
+    /// Every colour is left out: Create would make their objects, none of them sewn.
+    LeftOut,
+}
+
+impl Nothing {
+    /// The bar's words, and the note's: what isn't sewn, and for the background what to do.
+    pub(crate) fn words(self) -> &'static str {
+        match self {
+            Nothing::Background => crate::et!("Nothing to sew: every area is the background. Sew the background, or crop less."),
+            Nothing::LeftOut => crate::et!("Nothing to sew: every color is left out."),
+        }
+    }
+
+    /// Create's refusal, in the status bar and on its disabled button.
+    pub(crate) fn refusal(self) -> &'static str {
+        match self {
+            Nothing::Background => crate::et!("Nothing to create: every area is the background. Sew the background, or crop less."),
+            Nothing::LeftOut => crate::et!("Nothing to create: every color is left out."),
+        }
+    }
 }
 
 impl Said {
     pub(crate) fn words(&self, lang: Lang) -> String {
         match self {
             Said::Figures(f) => figures_words(f, lang),
-            Said::Nothing => crate::et!("Nothing to sew: every color is left out.").to_string(),
+            Said::Nothing(why) => why.words().to_string(),
             Said::Failed(reason) => fill(crate::et!("Can't digitize it: {reason}"), &[("reason", reason)]),
         }
     }
@@ -96,19 +123,19 @@ pub(crate) fn figures_words(f: &Figures, lang: Lang) -> String {
 }
 
 /// What the result shown says, settled, from `live`: the figures once planned; nothing to sew when
-/// Create would make nothing or nothing sewn (every colour left out still makes their objects,
-/// not sewn); `None` while nothing is shown.
+/// Create would make nothing (every area the background) or nothing sewn (every colour left out
+/// still makes their objects, not sewn); `None` while nothing is shown.
 pub(crate) fn said(live: &mut Live, now: f64) -> Option<Said> {
     if let Freshness::Failed(reason) = live.schedule.freshness(now) {
         return Some(Said::Failed(reason));
     }
     let shown = live.schedule.shown.as_ref().filter(|s| s.whole)?;
     if shown.outputs.made().is_none() {
-        return Some(Said::Nothing);
+        return Some(Said::Nothing(Nothing::Background));
     }
     let stats = live.reply()?["stats"].clone();
     match Figures::of(&stats)? {
-        f if f.stitches == 0 => Some(Said::Nothing),
+        f if f.stitches == 0 => Some(Said::Nothing(Nothing::LeftOut)),
         f => Some(Said::Figures(f)),
     }
 }
@@ -116,7 +143,7 @@ pub(crate) fn said(live: &mut Live, now: f64) -> Option<Said> {
 /// Why Create can't make anything now (`None`: it can, at once or once the result is ready).
 pub(crate) fn create_refused(live: &mut Live, now: f64) -> Option<String> {
     match said(live, now)? {
-        Said::Nothing => Some(crate::et!("Nothing to create: every color is left out.").to_string()),
+        Said::Nothing(why) => Some(why.refusal().to_string()),
         Said::Failed(reason) => Some(fill(crate::et!("Can't digitize it: {reason}"), &[("reason", &reason)])),
         Said::Figures(_) => None,
     }
@@ -225,7 +252,8 @@ pub(crate) fn warning_words(w: &Value, lang: Lang) -> Option<Note> {
             ),
         ),
         "nothingTraced" => note(Mark::Warning, crate::et!("Nothing in the image was traced: it is empty or transparent.").to_string()),
-        "nothingToMake" => note(Mark::Warning, crate::et!("Nothing to sew: every color is left out.").to_string()),
+        // Said only when every area is the background.
+        "nothingToMake" => note(Mark::Warning, Nothing::Background.words().to_string()),
         _ => None,
     }
 }
@@ -323,7 +351,7 @@ fn status_words(ui: &mut Ui, pending: &Freshness, said: Option<&Said>, last: Opt
     }
     let stale = !matches!(pending, Freshness::Fresh);
     match said {
-        Some(Said::Nothing) => parts.push((Said::Nothing.words(lang), t.text)),
+        Some(Said::Nothing(why)) => parts.push((why.words().to_string(), t.text)),
         _ => {
             if let Some(f) = last {
                 let colour = if stale { t.text.gamma_multiply(STALE_ALPHA) } else { t.text_strong };

@@ -7352,3 +7352,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 # VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
 embroidery	the background's color inside the design	设计内部的背景色
 @plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	背景之外的 {count} 种颜色，以及在设计包围处绣制的背景色。
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	没有可绣制的内容：所有区域都是背景。请也绣制背景，或少裁剪一些。
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	没有可创建的内容：所有区域都是背景。请也绣制背景，或少裁剪一些。

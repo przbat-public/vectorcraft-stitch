@@ -7092,3 +7092,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	폭 {value} mm 이하의 띠 {count}개가 색이 가장 가까운 이웃에 합쳐졌습니다
 @plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color}의 영역 {count}개에는 따라 수놓을 중심선이 없어 모양대로 수놓습니다
 @plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	영역 {count}개를 이웃과 합칠 수 없어 트레이스한 대로 수놓습니다
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	디자인 안의 배경색
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	배경 외의 색 {count}개와, 디자인이 둘러싼 곳에 수놓는 배경색.

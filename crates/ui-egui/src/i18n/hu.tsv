@@ -7495,3 +7495,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} legfeljebb {value} mm széles sáv a színéhez legközelebbi szomszédhoz csatlakozott
 @plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} {count} területének nincs követhető középvonala: alakzatként lesz kihímezve
 @plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} területet nem sikerült a szomszédaihoz kapcsolni: követett formájában lesz kihímezve
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	a háttér színe a mintán belül
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} szín a háttéren kívül, és a háttér színe, kihímezve ott, ahol a minta körülveszi.

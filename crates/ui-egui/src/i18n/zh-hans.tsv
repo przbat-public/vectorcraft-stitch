@@ -7349,3 +7349,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} 条宽度不超过 {value} mm 的色带已并入颜色最接近的相邻区域
 @plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} 的 {count} 个区域没有可沿其绣制的中心线：按其形状绣制
 @plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} 个区域无法与相邻区域合并：按描摹结果绣制
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	设计内部的背景色
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	背景之外的 {count} 种颜色，以及在设计包围处绣制的背景色。

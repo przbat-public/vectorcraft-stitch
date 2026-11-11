@@ -205,7 +205,9 @@ fn notes_mark(ui: &Ui, card: Rect, notes: &[super::live_bar::Note], step: u64, l
 const MARK: f32 = 12.0;
 const MARK_GAP: f32 = 3.0;
 
-/// The settings column's accordion: each step's header, the current one open with its settings.
+/// The settings column's accordion: each step's header, the current one open with its settings. It
+/// scrolls as a panel's body does (`widgets::panel_scroll`): its bar in a column of its own, shown
+/// whenever the column overflows, not only under the pointer.
 pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let t = Tokens::get(ui.ctx());
     let current = d.fields.get(STEP).and_then(Value::as_u64).unwrap_or(2);
@@ -213,7 +215,7 @@ pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
         Some(live) => (live.schedule.shown.clone(), live.reply().cloned()),
         None => (None, None),
     };
-    egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+    crate::widgets::panel_scroll(ui, egui::ScrollArea::vertical().auto_shrink([false, false]), |ui| {
         for step in 1..=STEPS {
             let open = step == current;
             let lang = crate::i18n::current();

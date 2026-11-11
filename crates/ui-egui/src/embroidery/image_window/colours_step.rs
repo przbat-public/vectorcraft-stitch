@@ -179,12 +179,44 @@ fn count_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &
     if let Some(v) = taken {
         take(app, d, COLORS, v.round(), (lo, hi), &format);
     }
-    let traced = reply["traced"]["colors"].as_u64().unwrap_or(0);
-    let listed = reply["colors"].as_array().map_or(0, |a| a.len() as u64);
-    let joined = traced.saturating_sub(listed);
+    if let Some(words) = inside_note(reply) {
+        note(ui, &words);
+    }
+    let joined = joined_colours(reply);
     if joined > 0 {
         note(ui, &crate::etn!(joined, "{count} color was too small and joined others", "{count} colors were too small and joined others"));
     }
+}
+
+/// The traced colours of `reply` that the smallest area joined to others whole, so that no row is
+/// left of them.
+pub(crate) fn joined_colours(reply: &Value) -> u64 {
+    let traced = reply["traced"]["colors"].as_u64().unwrap_or(0);
+    traced.saturating_sub(distinct(super::colour_list::rows_of(reply).iter().map(|r| r.color.as_str())))
+}
+
+/// What the number of colours counts, said when `reply` sews the background's colour where the
+/// design encloses it: the colours besides the background, and that colour too.
+pub(crate) fn inside_note(reply: &Value) -> Option<String> {
+    let rows = super::colour_list::rows_of(reply);
+    if !rows.iter().any(|r| r.inside && r.sewn) {
+        return None;
+    }
+    // Counted first: the catalogue's check reads a plural's words as the call's first strings.
+    let besides = distinct(rows.iter().filter(|r| !r.background && !r.inside).map(|r| r.color.as_str()));
+    Some(crate::etn!(
+        besides,
+        "{count} color besides the background, and the background's color sewn where the design encloses it.",
+        "{count} colors besides the background, and the background's color sewn where the design encloses it."
+    ))
+}
+
+/// How many colours `colours` are, each counted once ("#FFFFFF" and "#ffffff" are one).
+fn distinct<'a>(colours: impl Iterator<Item = &'a str>) -> u64 {
+    let mut seen: Vec<String> = colours.map(str::to_ascii_lowercase).collect();
+    seen.sort_unstable();
+    seen.dedup();
+    seen.len() as u64
 }
 
 /// The threads the colours are matched to: the palette, said when Create makes it the document's.
@@ -247,5 +279,47 @@ fn min_area_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply
     let specks = reply["warnings"].as_array().and_then(|w| w.iter().find(|w| w["id"] == SPECKS_JOINED)).and_then(|w| w["values"]["count"].as_u64());
     if let Some(n) = specks {
         note(ui, &crate::etn!(n, "{count} speck joined", "{count} specks joined"));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+
+    use super::*;
+
+    /// A reply asking `asked` colours, `traced` of them traced, with rows `(colour, background,
+    /// sewn)`.
+    fn reply(asked: u64, traced: u64, rows: &[(&str, bool, bool)]) -> Value {
+        let colors: Vec<Value> =
+            rows.iter().map(|&(c, background, sewn)| json!({"color": c, "background": background, "sewn": sewn, "areaCount": 1})).collect();
+        json!({"settings": {"colors": asked}, "traced": {"colors": traced}, "colors": colors})
+    }
+
+    /// The background's colour sewn where the design encloses it: the count says what it counts,
+    /// the colours besides the background, and that colour sewn too (a thread more); not when
+    /// nothing is inside, nor when the colour inside is left out.
+    #[test]
+    fn the_count_says_the_backgrounds_colour_inside_is_sewn_too() {
+        let with = |inside: Option<bool>| {
+            let mut rows = vec![("#ffffff", true, false), ("#ff0000", false, true), ("#00ff00", false, true), ("#0000ff", false, false)];
+            if let Some(sewn) = inside {
+                rows.push(("#FFFFFF", false, sewn));
+            }
+            inside_note(&reply(6, 4, &rows))
+        };
+        let said = "3 colors besides the background, and the background's color sewn where the design encloses it.";
+        assert_eq!(with(Some(true)).as_deref(), Some(said));
+        assert_eq!(with(None), None, "nothing inside: nothing to say");
+        assert_eq!(with(Some(false)), None, "left out: no thread more");
+    }
+
+    /// Colours the smallest area joined to others whole are counted by colour, not by row: the
+    /// background's colour inside the design is a second row of one colour.
+    #[test]
+    fn colours_joined_are_counted_by_colour() {
+        let rows = [("#ffffff", true, false), ("#ff0000", false, true), ("#FFFFFF", false, true)];
+        assert_eq!(joined_colours(&reply(6, 3, &rows)), 1, "three traced, two among the rows");
+        assert_eq!(joined_colours(&reply(6, 2, &rows)), 0);
     }
 }

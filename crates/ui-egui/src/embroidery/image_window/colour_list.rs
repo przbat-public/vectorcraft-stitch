@@ -17,6 +17,7 @@
 
 use std::collections::BTreeSet;
 
+use egui::scroll_area::ScrollBarVisibility;
 use egui::{Align2, Color32, FontId, Modifiers, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::{Map, Value, json};
 use vectorcraft_engine::cmd::embroidery::NearThread;
@@ -62,8 +63,9 @@ const MARK_SIZE: f32 = 12.0;
 const NAME_TEXT: f32 = 12.5;
 const SMALL_TEXT: f32 = 11.5;
 
-/// The picker's width and its list's most height (points).
+/// The picker's width, a thread's row in its list, and its list's most height (points).
 const PICKER_WIDTH: f32 = 280.0;
+const PICKER_ROW_HEIGHT: f32 = ROW_HEIGHT * 0.7;
 const PICKER_LIST_HEIGHT: f32 = 300.0;
 
 /// ΔE shown to one decimal, two where one would round onto the line the reply flags past (10), so
@@ -77,6 +79,10 @@ pub(crate) struct Row {
     /// The image's colour, "#rrggbb": what a choice names.
     pub(crate) color: String,
     pub(crate) background: bool,
+    /// The background's colour where the design encloses it: a row of its own, apart from the
+    /// background's (the engine keeps an area of that colour touching the image's edge as the
+    /// background, and sews one it doesn't).
+    pub(crate) inside: bool,
     pub(crate) sewn: bool,
     pub(crate) thread: Option<Thread>,
     /// Why it has its thread ("nearest", "chosen", "merged"…).
@@ -107,7 +113,8 @@ impl Row {
     }
 }
 
-/// The list's rows in `reply` (`colors`), the background's first.
+/// The list's rows in `reply` (`colors`), the background's first, the background's colour where
+/// the design encloses it marked.
 pub(crate) fn rows_of(reply: &Value) -> Vec<Row> {
     let mut rows: Vec<Row> = reply["colors"]
         .as_array()
@@ -116,6 +123,7 @@ pub(crate) fn rows_of(reply: &Value) -> Vec<Row> {
                 .map(|c| Row {
                     color: c["color"].as_str().unwrap_or_default().to_string(),
                     background: c["background"].as_bool().unwrap_or(false),
+                    inside: false,
                     sewn: c["sewn"].as_bool().unwrap_or(false),
                     thread: c[THREAD].is_object().then(|| Thread {
                         palette: c[THREAD]["palette"].as_str().unwrap_or_default().to_string(),
@@ -134,6 +142,10 @@ pub(crate) fn rows_of(reply: &Value) -> Vec<Row> {
                 .collect()
         })
         .unwrap_or_default();
+    let background: Vec<String> = rows.iter().filter(|r| r.background).map(|r| r.color.to_ascii_lowercase()).collect();
+    for r in rows.iter_mut().filter(|r| !r.background) {
+        r.inside = background.contains(&r.color.to_ascii_lowercase());
+    }
     rows.sort_by_key(|r| !r.background);
     rows
 }
@@ -344,6 +356,9 @@ fn row_facts(row: &Row, lang: Lang) -> Vec<String> {
     if row.merged {
         facts.push(crate::et!("merged").to_string());
     }
+    if row.inside {
+        facts.push(crate::et!("the background's color inside the design").to_string());
+    }
     facts
 }
 
@@ -381,7 +396,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply:
     let state = &mut live.colours;
     state.selected.retain(|c| rows.iter().any(|r| &r.color == c && !r.background));
     let mut reset_one = None;
-    egui::ScrollArea::vertical().id_salt("digitize-colour-list").max_height(LIST_MAX_HEIGHT).auto_shrink([false, true]).show(ui, |ui| {
+    scrolled(ui, "digitize-colour-list", rows.len(), ROW_HEIGHT, LIST_MAX_HEIGHT, |ui| {
         for (k, row) in rows.iter().enumerate() {
             let selected = state.selected.contains(&row.color);
             let drawn = draw_row(ui, row, selected, lang, state.focus.as_deref() == Some(row.color.as_str()));
@@ -398,6 +413,21 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply:
         reset(&mut d.fields, &color);
     }
     actions(ui, state, &rows, d);
+}
+
+/// A scrolling list `id` of `rows` rows `row_height` points high (spaced as `ui` spaces them), at most
+/// `max_height` points before it scrolls. Its bar is the Layers panel's: in a column of its own, so
+/// it never covers what sits at the rows' right end (a badge, ↺, a ΔE), and shown whenever the rows
+/// overflow, not only under the pointer, so that the list says it scrolls; decided before the rows
+/// are laid out, so they never shift when it appears.
+fn scrolled<R>(ui: &mut Ui, id: &str, rows: usize, row_height: f32, max_height: f32, add: impl FnOnce(&mut Ui) -> R) -> R {
+    ui.scope(|ui| {
+        ui.spacing_mut().scroll = crate::widgets::list_scroll_style();
+        let height = rows as f32 * row_height + rows.saturating_sub(1) as f32 * ui.spacing().item_spacing.y;
+        let bar = if height > max_height { ScrollBarVisibility::AlwaysVisible } else { ScrollBarVisibility::AlwaysHidden };
+        egui::ScrollArea::vertical().id_salt(id).max_height(max_height).auto_shrink([false, true]).scroll_bar_visibility(bar).show(ui, add).inner
+    })
+    .inner
 }
 
 /// What drawing a row gave: its response, whether its ↺ was pressed, and whether it took the
@@ -505,11 +535,13 @@ fn one_line(p: &egui::Painter, sections: &[(&str, Color32)], size: f32, at: egui
 /// The room a row keeps at its right end for ↺ (points).
 const RESTORE_ROOM: f32 = 22.0;
 
-/// ↺ at the right end of a changed row → whether it was pressed.
+/// ↺ at the right end of a changed row → whether it was pressed. Placed over the row, leaving the
+/// list's rows where they are (`Ui::place`): a scope there would move the list's cursor up to the
+/// button's bottom, and the next row would start over this one.
 fn restore_button(ui: &mut Ui, rect: Rect, row: &Row) -> bool {
     let at = Rect::from_center_size(pos2(rect.right() - RESTORE_ROOM / 2.0, rect.center().y), vec2(RESTORE_ROOM, RESTORE_ROOM));
     let name = fill(crate::et!("Back to Auto: {color}"), &[("color", &row.color)]);
-    ui.scope_builder(egui::UiBuilder::new().max_rect(at), |ui| rows::restore(ui, &name, crate::et!("Back to Auto"))).inner.clicked()
+    ui.place(at, |ui: &mut Ui| rows::restore(ui, &name, crate::et!("Back to Auto"))).clicked()
 }
 
 /// A row's clicks and keys: selection, and the keyboard's focus moved with it.
@@ -594,8 +626,9 @@ fn picker(ui: &mut Ui, state: &mut State, button: &egui::Response, palette: &str
             if opening {
                 field.request_focus();
             }
-            egui::ScrollArea::vertical().max_height(PICKER_LIST_HEIGHT).show(ui, |ui| {
-                for (k, thread) in picker_rows(palette, &color, &search).iter().enumerate() {
+            let threads = picker_rows(palette, &color, &search);
+            scrolled(ui, "digitize-thread-choice", threads.len(), PICKER_ROW_HEIGHT, PICKER_LIST_HEIGHT, |ui| {
+                for (k, thread) in threads.iter().enumerate() {
                     let nearest = k == 0 && search.trim().is_empty();
                     if picker_row(ui, thread, nearest, palette, lang, &t).clicked() {
                         picked = Some((color.clone(), thread.index));
@@ -609,7 +642,8 @@ fn picker(ui: &mut Ui, state: &mut State, button: &egui::Response, palette: &str
 
 /// A thread in Choose Thread…'s list: its colour, name and number, ΔE, and "nearest" on the first.
 fn picker_row(ui: &mut Ui, thread: &NearThread, nearest: bool, palette: &str, lang: Lang, t: &Tokens) -> egui::Response {
-    let (rect, resp) = ui.allocate_exact_size(vec2(PICKER_WIDTH, ROW_HEIGHT * 0.7), Sense::click());
+    // As wide as the list leaves it beside its bar.
+    let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), PICKER_ROW_HEIGHT), Sense::click());
     let p = ui.painter_at(rect);
     if resp.hovered() || resp.has_focus() {
         p.rect_filled(rect, f32::from(t.radius), t.hover);

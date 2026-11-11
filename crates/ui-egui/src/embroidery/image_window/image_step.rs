@@ -332,7 +332,7 @@ fn background_section(ui: &mut Ui, d: &mut Dialog, reply: &Value) {
             d.fields.insert(BACKGROUND.into(), json!(NONE));
         }
     }
-    let colours: Vec<&str> = reply["colors"].as_array().map(|a| a.iter().filter_map(|c| c["color"].as_str()).collect()).unwrap_or_default();
+    let colours = picture_colours(reply);
     if colours.is_empty() {
         return;
     }
@@ -345,6 +345,18 @@ fn background_section(ui: &mut Ui, d: &mut Dialog, reply: &Value) {
             }
         }
     });
+}
+
+/// The picture's colours in `reply`'s colour list, to choose the background from: each once, in the
+/// list's order (the background's colour where the design encloses it is a row of its own).
+pub(crate) fn picture_colours(reply: &Value) -> Vec<&str> {
+    let mut colours: Vec<&str> = Vec::new();
+    for c in reply["colors"].as_array().into_iter().flatten().filter_map(|c| c["color"].as_str()) {
+        if !colours.iter().any(|k| k.eq_ignore_ascii_case(c)) {
+            colours.push(c);
+        }
+    }
+    colours
 }
 
 /// A swatch's side (points): at least the 24-point target WCAG 2.2 asks for.
@@ -447,6 +459,14 @@ mod tests {
         type_margin(&mut f, 0, 0.0, (200, 100)).unwrap();
         type_margin(&mut f, 3, 0.0, (200, 100)).unwrap();
         assert_eq!(f.get(CROP), None, "the whole image");
+    }
+
+    /// The picture's colours are offered for the background once each: the background's colour
+    /// where the design encloses it is a row of its own, not a colour more.
+    #[test]
+    fn the_pictures_colours_are_offered_once_each() {
+        let reply = json!({"colors": [{"color": "#ffffff"}, {"color": "#ff0000"}, {"color": "#FFFFFF"}, {"color": null}]});
+        assert_eq!(picture_colours(&reply), ["#ffffff", "#ff0000"]);
     }
 
     /// Cropping to the art keeps the colour the corners found as the one left out (the crop's own

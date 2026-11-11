@@ -58,6 +58,21 @@ pub(crate) fn size(content: Rect) -> Vec2 {
     wanted.min(content.size() - Vec2::splat(f32::from(MARGIN)))
 }
 
+/// The room the window keeps above the app's bottom bars, points: as the app's menus keep above
+/// them (`widgets::menu_room`'s gap).
+pub(crate) const ABOVE_BARS: f32 = 12.0;
+
+/// The window's size in content area `content` and how far above the area's centre its centre
+/// sits, so that it ends [`ABOVE_BARS`] over `floor` (the top of the app's bottom bars, the hint
+/// line and the status bar, which it would otherwise cut through), its top where it would be; never
+/// shorter than [`MIN_SIZE`] allows.
+pub(crate) fn placed(content: Rect, floor: f32) -> (Vec2, f32) {
+    let s = size(content);
+    let bottom = content.center().y + s.y / 2.0;
+    let over = (bottom + ABOVE_BARS - floor).clamp(0.0, (s.y - MIN_SIZE.y).max(0.0));
+    (vec2(s.x, s.y - over), over / 2.0)
+}
+
 /// Whether a window `width` points wide is drawn compact.
 pub(crate) fn compact(width: f32) -> bool {
     width < COMPACT_BELOW
@@ -87,11 +102,11 @@ pub(crate) fn regions(inner: Rect) -> Regions {
 /// Draw the window for dialog `d` (its fields changed in place), the run state `live` shows, at
 /// `now` (seconds) → what was asked.
 pub(crate) fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, d: &mut Dialog, now: f64) -> Option<Asked> {
-    let size = size(ctx.content_rect());
+    let (size, lift) = placed(ctx.content_rect(), crate::widgets::menu_floor(ctx));
     let title = crate::et!("Digitize Image");
     let id = egui::Id::unique("embroidery-digitize-image");
     let mut asked = None;
-    crate::dialogs::modal::show_at(ctx, title, id, Vec2::ZERO, MARGIN, |ui| {
+    crate::dialogs::modal::show_at(ctx, title, id, vec2(0.0, -lift), MARGIN, |ui| {
         let (inner, _) = ui.allocate_exact_size(size - Vec2::splat(2.0 * f32::from(MARGIN)), Sense::hover());
         let r = regions(inner);
         ui.scope_builder(UiBuilder::new().max_rect(r.title), |ui| {

@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-11 · **Change:** the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-11 · **Change:** what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -31,6 +31,7 @@ The tables below list the window's own words in the order the code draws them; w
 - Leave Out / Sew It became one checkbox, "Leave the background out" ("Pomiń tło"), as the fork's checkbox takes words already translated.
 - ΔE is written to one decimal on every row, and to two where one would round onto 10 (9.96 stays "9.96", not "10.0").
 - A digitizing warning the window doesn't know yet is left out rather than shown in the engine's English prose.
+- The number of colors counts the colours besides the background; the background's colour where the design encloses it (the white inside a letter) is sewn too, a row of its own, so the threads can be one more. When it is, a note under the number says both ("6 colors besides the background, and the background's color sewn where the design encloses it."), and its row says "the background's color inside the design".
 
 ## The window: its title, its run, and what it remembers
 
@@ -140,6 +141,7 @@ The tables below list the window's own words in the order the code draws them; w
 | Mode | Tryb |
 | {value} is out of range: {low} to {high}. | {value} jest poza zakresem: od {low} do {high}. |
 | Number of colors | Liczba kolorów |
+| {count} color besides the background, and the background's color sewn where the design encloses it.\|{count} colors besides the background, and the background's color sewn where the design encloses it. | {count} kolor oprócz tła i kolor tła szyty tam, gdzie otacza go wzór.\|{count} kolory oprócz tła i kolor tła szyty tam, gdzie otacza go wzór.\|{count} kolorów oprócz tła i kolor tła szyty tam, gdzie otacza go wzór. |
 | {count} color was too small and joined others\|{count} colors were too small and joined others | {count} kolor był za mały i dołączył do innych\|{count} kolory były za małe i dołączyły do innych\|{count} kolorów było za małych i dołączyło do innych |
 | Match to threads | Dopasuj do nici |
 | Create sets the document's thread palette to {palette}. | Utworzenie ustawi paletę nici dokumentu na {palette}. |
@@ -152,6 +154,7 @@ The tables below list the window's own words in the order the code draws them; w
 | {share} of the frame | {share} kadru |
 | not sewn | nieszyte |
 | merged | scalony |
+| the background's color inside the design | kolor tła wewnątrz wzoru |
 | unlike the image's color | niepodobna do koloru obrazu |
 | no closer thread in {palette} | brak bliższej nici w palecie {palette} |
 | {color} in {thread} | {color} nicią {thread} |
@@ -206,3 +209,4 @@ The tables below list the window's own words in the order the code draws them; w
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-11 | new | The first part of the image window: its words in English and Polish, for review. |
+| 2026-11-11 | update | What the number of colors counts, beside the threads: the note under it and the row of the background's colour inside the design. |

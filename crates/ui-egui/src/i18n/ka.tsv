@@ -7570,3 +7570,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	მაქსიმუმ {value} მმ სიგანის ზოლები ფერით უახლოეს მეზობლებს შეუერთდა: {count}
 @plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color}-ის არეები, რომლებსაც დასაქარგი ცენტრალური ხაზი არ აქვს, მათი ფორმით დაიქარგება: {count}
 @plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	არეები, რომლებიც მეზობლებს ვერ შეუერთდა, დატრასირებულივით დაიქარგება: {count}
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	ფონის ფერი დიზაინის შიგნით
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} ფერი ფონის გარდა და ფონის ფერი, რომელიც იქარგება იქ, სადაც დიზაინი მას გარს აკრავს.

@@ -7464,3 +7464,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	En fazla {value} mm genişliğindeki {count} şerit, rengine en yakın komşuya katıldı
 @plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} renginin {count} alanında boyunca dikilecek orta çizgi yok: şekli olarak dikilir
 @plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} alan komşularına birleştirilemedi: izlendiği gibi dikilir
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	tasarımın içindeki arka plan rengi
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	Arka plan dışında {count} renk ve tasarımın çevrelediği yerlerde dikilen arka plan rengi.

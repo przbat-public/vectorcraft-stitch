@@ -7112,3 +7112,6 @@ embroidery	Created {objects} ({threads}). The image is on the hidden template la
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} dải rộng tối đa {value} mm đã nhập vào vùng lân cận có màu gần nhất
 @plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} vùng của {color} không có đường giữa để thêu theo: được thêu theo hình dạng của nó
 @plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} vùng không thể nối với các vùng lân cận: được thêu như khi dò
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	màu nền bên trong mẫu
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} màu ngoài nền, và màu nền được thêu ở chỗ mẫu bao quanh nó.

@@ -13,15 +13,19 @@ use crate::Services;
 
 /// An app with a picture placed and selected: an orange square with a navy bar, on white.
 fn app() -> VectorcraftApp {
-    let mut app = VectorcraftApp::new(Session::new(), Services::default());
-    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
-    let picture = image::RgbaImage::from_fn(200, 100, |x, y| {
+    app_with(image::RgbaImage::from_fn(200, 100, |x, y| {
         image::Rgba(match ((20..180).contains(&x), (45..55).contains(&y), (10..90).contains(&y)) {
             (true, true, _) => [20, 40, 120, 255],
             (true, _, true) => [240, 130, 20, 255],
             _ => [255, 255, 255, 255],
         })
-    });
+    }))
+}
+
+/// An app with `picture` placed and selected.
+fn app_with(picture: image::RgbaImage) -> VectorcraftApp {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
     let mut png = Vec::new();
     image::DynamicImage::ImageRgba8(picture).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
     let data = vectorcraft_format::base64_encode(&png);
@@ -211,6 +215,47 @@ fn it_draws_whole_at_its_smallest_and_compact_sizes() {
     }
 }
 
+/// The settings column, longer than its room in the smallest window, shows its scroll bar before
+/// the pointer is over it, in a column of its own, as the app's panels do.
+#[test]
+fn the_settings_column_shows_its_bar_when_it_scrolls() {
+    fn flatten(s: egui::Shape, out: &mut Vec<egui::Shape>) {
+        match s {
+            egui::Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
+            other => out.push(other),
+        }
+    }
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(2));
+    let screen = Rect::from_min_size(pos2(0.0, 0.0), vec2(1000.0, 650.0));
+    let mut shapes = Vec::new();
+    // A few frames: the column learns its content's height, the window its size.
+    for _ in 0..3 {
+        time += 0.05;
+        let raw = egui::RawInput { time: Some(time), screen_rect: Some(screen), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            crate::dialogs::show(&mut app, ui.ctx());
+        });
+        out.textures_delta.clear();
+        shapes = Vec::new();
+        out.shapes.into_iter().for_each(|c| flatten(c.shape, &mut shapes));
+    }
+    let window = ctx.memory(|m| m.area_rect(egui::Id::unique("embroidery-digitize-image"))).expect("the window drawn");
+    assert_eq!(window.size().round(), (frame::MIN_SIZE + vec2(2.0, 2.0)).round(), "the smallest window, its stroke round it");
+    let settings = frame::regions(window.shrink(17.0)).settings;
+    // A narrow, tall, visible rectangle at the column's right edge is its bar.
+    let bars = shapes
+        .iter()
+        .filter(|s| {
+            matches!(s, egui::Shape::Rect(r) if r.fill.a() > 0 && r.rect.width() < 10.0 && r.rect.height() > 30.0
+            && (settings.right() - 16.0..=settings.right() + 2.0).contains(&r.rect.center().x)
+            && settings.y_range().contains(r.rect.center().y))
+        })
+        .count();
+    assert!(bars > 0, "the column's bar shown in {settings:?}");
+}
+
 /// `__state` says how the window's result stands, for agents.
 #[test]
 fn its_state_is_said_in_its_fields() {
@@ -365,10 +410,14 @@ fn type_into(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name
 
 /// The window open on the test picture, its first result shown, screen readers on.
 fn opened() -> (VectorcraftApp, egui::Context, f64) {
+    opened_with(app())
+}
+
+/// [`opened`] in `app`.
+fn opened_with(mut app: VectorcraftApp) -> (VectorcraftApp, egui::Context, f64) {
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx);
     ctx.enable_accesskit();
-    let mut app = app();
     crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
     let mut time = 0.0;
     until(&mut app, &ctx, &mut time, ready);
@@ -776,4 +825,55 @@ fn a_card_shows_its_steps_problems() {
         !drawn.iter().any(|(t, r)| shapes.contains(r.center()) && r.center().y < shapes.center().y && t.chars().all(|c| c.is_ascii_digit())),
         "nothing on step 3"
     );
+}
+
+/// The window ends above the app's bottom bars (the hint line and the status bar) instead of
+/// cutting through them, its top where it would be; on a small screen never shorter than its least
+/// size.
+#[test]
+fn the_window_ends_above_the_hint_line() {
+    use super::frame::{ABOVE_BARS, MIN_SIZE, placed, size};
+    // Whole app frames, the hint line and the status bar drawn under the window.
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    let mut app = app();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    let screen = Rect::from_min_size(pos2(0.0, 0.0), vec2(1440.0, 900.0));
+    for k in 0..3 {
+        let raw = egui::RawInput { time: Some(f64::from(k) * 0.05), screen_rect: Some(screen), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            app.ui(ui);
+        });
+        out.textures_delta.clear();
+    }
+    let window = ctx.memory(|m| m.area_rect(egui::Id::unique("embroidery-digitize-image"))).expect("the window drawn");
+    let floor = crate::widgets::menu_floor(&ctx);
+    assert!(floor < screen.bottom() - 40.0, "the hint line and the status bar drawn: {floor}");
+    // The window's frame adds its stroke round the size placed.
+    let stroke = 1.0;
+    assert!(window.bottom() <= floor - ABOVE_BARS + stroke, "{window:?} over the bars at {floor}");
+    assert!((window.top() - (screen.center().y - size(screen).y / 2.0)).abs() <= stroke, "the top kept: {window:?}");
+    let small = Rect::from_min_size(pos2(0.0, 0.0), vec2(1000.0, 640.0));
+    assert!(placed(small, small.bottom() - 52.0).0.y >= MIN_SIZE.y.min(size(small).y), "never shorter than its least");
+}
+
+/// In a design that encloses the background's colour (an orange ring on white, white inside it),
+/// the Colors step says what its count counts: the colours besides the background, and that colour
+/// sewn inside too, a thread more; its row says so as well.
+#[test]
+fn the_count_says_what_it_counts_when_the_design_encloses_the_backgrounds_colour() {
+    let ring = image::RgbaImage::from_fn(200, 100, |x, y| {
+        let outer = (20..180).contains(&x) && (10..90).contains(&y);
+        let inner = (60..140).contains(&x) && (30..70).contains(&y);
+        image::Rgba(if outer && !inner { [240, 130, 20, 255] } else { [255, 255, 255, 255] })
+    });
+    let (mut app, ctx, mut time) = opened_with(app_with(ring));
+    set(&mut app, STEP, json!(2));
+    let r = reply(&mut app);
+    assert_eq!((r["settings"]["colors"].as_u64(), r["colorCount"].as_u64()), (Some(6), Some(2)), "{}", r["colors"]);
+    let texts = frame_texts(&mut app, &ctx, &mut time);
+    let said = "1 color besides the background, and the background's color sewn where the design encloses it.";
+    assert!(texts.iter().any(|t| t == said), "{texts:?}");
+    assert!(texts.iter().any(|t| t.ends_with(" · the background's color inside the design")), "{texts:?}");
 }

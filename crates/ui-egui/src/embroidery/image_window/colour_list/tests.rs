@@ -125,6 +125,152 @@ fn a_mismatch_is_drawn_with_its_shape_and_read_from_the_reply() {
     assert!(!row_words(&chosen, en()).contains("no closer thread"));
 }
 
+/// The background's colour where the design encloses it is a row of its own, sewn: it says so on
+/// screen and to screen readers; the background's row and the other colours don't.
+#[test]
+fn the_backgrounds_colour_inside_the_design_says_so() {
+    let mut r = reply();
+    let white = json!({"palette": "pec", "index": 9, "name": "White", "color": "#ffffff", "deltaE": 0.0, "mismatch": false});
+    let inside = json!({"color": "#FFFFFF", "background": false, "sewn": true, "thread": white, "reason": "own", "choice": null, "mergedInto": null, "share": 0.1, "areaCount": 3});
+    r["colors"].as_array_mut().expect("rows").push(inside);
+    let rows = rows_of(&r);
+    let marked: Vec<&str> = rows.iter().filter(|r| r.inside).map(|r| r.color.as_str()).collect();
+    assert_eq!(marked, ["#FFFFFF"], "only the background's colour that isn't the background");
+    let last = rows.last().expect("the row inside");
+    let heard = row_words(last, en());
+    assert!(heard.ends_with("0% of the frame, 3 areas, the background's color inside the design"), "{heard}");
+    assert!(!row_words(&rows[1], en()).contains("inside the design"));
+    let (shapes, _) = drawn(&rows);
+    let seen = texts(shapes.last().expect("its shapes"));
+    assert!(seen.iter().any(|t| t.ends_with(" · the background's color inside the design")), "{seen:?}");
+}
+
+/// A list longer than its room shows its scroll bar before the pointer is over it, in a column of
+/// its own, as the Layers panel's list does; a list that fits shows none.
+#[test]
+fn a_list_that_scrolls_shows_its_bar() {
+    fn flatten(s: Shape, out: &mut Vec<Shape>) {
+        match s {
+            Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
+            other => out.push(other),
+        }
+    }
+    let bars = |rows: usize| {
+        let ctx = context();
+        let mut seen = 0;
+        // Two frames: the second knows the rows' height.
+        for _ in 0..2 {
+            let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(420.0, 600.0))), ..Default::default() };
+            let mut out = ctx.run_ui(raw, |ui| {
+                scrolled(ui, "rows", rows, ROW_HEIGHT, LIST_MAX_HEIGHT, |ui| {
+                    for _ in 0..rows {
+                        ui.allocate_exact_size(vec2(ui.available_width(), ROW_HEIGHT), egui::Sense::hover());
+                    }
+                });
+            });
+            out.textures_delta.clear();
+            let mut all = Vec::new();
+            out.shapes.into_iter().for_each(|c| flatten(c.shape, &mut all));
+            // The rows paint nothing: a narrow, tall, visible rectangle is the bar's.
+            seen = all.iter().filter(|s| matches!(s, Shape::Rect(r) if r.fill.a() > 0 && r.rect.width() < 10.0 && r.rect.height() > 30.0)).count();
+        }
+        seen
+    };
+    assert_eq!(bars(3), 0, "the rows fit: no bar");
+    assert!(bars(10) > 0, "past its room: the bar shown");
+}
+
+/// Choose Thread…'s list, longer than its room, shows its scroll bar before the pointer is over it,
+/// as a menu's list does: its rows end before the bar, and the bar within the picker's width, under
+/// the search field.
+#[test]
+fn the_thread_choice_shows_its_bar() {
+    fn flatten(s: Shape, out: &mut Vec<Shape>) {
+        match s {
+            Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
+            other => out.push(other),
+        }
+    }
+    let ctx = context();
+    let mut state = State { picker: Some(Picker { color: "#556b2f".into(), search: String::new(), opening: false }), ..State::default() };
+    let mut bars = Vec::new();
+    let mut rows_right = Vec::new();
+    let mut field_right = None;
+    // Two frames: the second knows the rows' height.
+    for _ in 0..2 {
+        let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(600.0, 700.0))), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            let button = ui.button("Choose Thread…");
+            picker(ui, &mut state, &button, "jef");
+        });
+        out.textures_delta.clear();
+        let nodes: Vec<Node> = out.platform_output.accesskit_update.take().map(|u| u.nodes.into_iter().map(|(_, n)| n).collect()).unwrap_or_default();
+        rows_right = nodes
+            .iter()
+            .filter(|n| n.role() == Role::Button && n.label().is_some_and(|l| l.contains("  JEF ")))
+            .filter_map(|n| n.bounds().map(|b| b.x1))
+            .collect();
+        field_right = nodes.iter().find(|n| n.role() == Role::TextInput).and_then(|n| n.bounds().map(|b| b.x1 as f32));
+        let mut all = Vec::new();
+        out.shapes.into_iter().for_each(|c| flatten(c.shape, &mut all));
+        bars = all
+            .into_iter()
+            .filter_map(|s| match s {
+                Shape::Rect(r) if r.fill.a() > 0 && r.rect.width() < 10.0 && r.rect.height() > 30.0 => Some(r.rect),
+                _ => None,
+            })
+            .collect();
+    }
+    assert!(!bars.is_empty(), "the bar shown");
+    let bar_left = bars.iter().map(|r| r.left()).fold(f32::INFINITY, f32::min);
+    assert!(!rows_right.is_empty() && rows_right.iter().all(|&x| x as f32 <= bar_left), "rows {rows_right:?} end before the bar at {bar_left}");
+    let bar_right = bars.iter().map(|r| r.right()).fold(f32::NEG_INFINITY, f32::max);
+    let field_right = field_right.expect("the search field");
+    assert!(bar_right <= field_right + 0.5, "the bar ends at {bar_right}, within the field's {field_right}");
+}
+
+/// A changed row's ↺ is placed over the row: the next row starts as far below it as after any other
+/// row, not pulled up under the button.
+#[test]
+fn a_changed_row_keeps_the_next_row_in_its_place() {
+    let rows = rows_of(&reply());
+    let changed = rows.iter().find(|r| r.changed && !r.background).expect("a changed row").clone();
+    let plain = rows.iter().find(|r| !r.changed && !r.background).expect("a plain row").clone();
+    let ctx = context();
+    let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(420.0, 400.0))), ..Default::default() };
+    let (mut rects, mut spacing) = (Vec::new(), 0.0);
+    let mut out = ctx.run_ui(raw, |ui| {
+        spacing = ui.spacing().item_spacing.y;
+        for row in [&plain, &changed, &plain] {
+            rects.push(draw_row(ui, row, false, en(), false).resp.rect);
+        }
+    });
+    out.textures_delta.clear();
+    let gaps: Vec<f32> = rects.windows(2).map(|w| w[1].top() - w[0].bottom()).collect();
+    assert_eq!(gaps, [spacing, spacing], "{rects:?}");
+}
+
+/// A click on a changed row's ↺ presses it.
+#[test]
+fn a_changed_rows_restore_is_pressed_by_a_click() {
+    let rows = rows_of(&reply());
+    let changed = rows.iter().find(|r| r.changed && !r.background).expect("a changed row").clone();
+    let ctx = context();
+    let screen = Rect::from_min_size(Pos2::ZERO, vec2(420.0, 400.0));
+    // ↺ sits at the row's right end, mid-height (the row fills the screen's width from its top).
+    let at = egui::pos2(screen.right() - RESTORE_ROOM / 2.0, ROW_HEIGHT / 2.0);
+    let button = |pressed: bool| egui::Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    let mut restored = false;
+    for events in [vec![egui::Event::PointerMoved(at)], vec![button(true)], vec![button(false)], vec![]] {
+        let raw = egui::RawInput { screen_rect: Some(screen), events, ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            restored |= draw_row(ui, &changed, false, en(), false).restore;
+        });
+        out.textures_delta.clear();
+    }
+    assert!(restored, "↺ pressed");
+}
+
 /// A row too long for its room is cut short with "…" on screen, its thread's name before the badge;
 /// screen readers still hear it whole.
 #[test]

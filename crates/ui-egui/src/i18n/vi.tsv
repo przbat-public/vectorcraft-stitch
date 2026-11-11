@@ -6977,3 +6977,22 @@ breakText	Glyphs	Glyph
 	Ignore All	Bỏ qua tất cả
 	Add to Dictionary	Thêm vào từ điển
 	No Suggestions	Không có gợi ý
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Số hóa hình ảnh…
+embroidery	Digitize Image…	Số hóa hình ảnh…
+embroidery	Digitize Image	Số hóa hình ảnh
+embroidery	Digitize Image: live preview	Số hóa hình ảnh: xem trước trực tiếp
+embroidery	Select one image to digitize it.	Chọn một hình ảnh để số hóa.
+embroidery	The preview isn't ready yet.	Bản xem trước chưa sẵn sàng.
+embroidery	Cancel	Hủy
+embroidery	Digitizing…	Đang số hóa…
+embroidery	Create Embroidery Objects	Tạo đối tượng thêu
+embroidery	Start Over	Bắt đầu lại
+embroidery	Create waits for the preview to be ready.	Việc tạo sẽ chờ bản xem trước sẵn sàng.
+embroidery	Can't digitize it: {reason}	Không thể số hóa: {reason}
+embroidery	Shapes	Hình dạng
+embroidery	Recomputing…	Đang tính lại…
+embroidery	Recomputing… {percent}	Đang tính lại… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · thêu {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Đã tạo {count} đối tượng; Hoàn tác sẽ gỡ bỏ chúng.

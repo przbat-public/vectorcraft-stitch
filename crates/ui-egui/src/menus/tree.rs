@@ -323,6 +323,9 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                         cp("Make and Expand", "imageTrace.makeAndExpand", json!({"preset": "Default"})),
                         c("Release", "imageTrace.release"),
                         c("Expand", "imageTrace.expand"),
+                        // VectorCraft Stitch: Digitize Image…, the image made into embroidery.
+                        Sep,
+                        c("Digitize Image…", "embroidery.digitizeImage"),
                     ],
                 ),
                 sub(

@@ -8755,3 +8755,22 @@ embroidery	Record #{value} is left out by the filter chosen.	रिकॉर्�
 	Ignore All	सभी को अनदेखा करें
 	Add to Dictionary	शब्दकोश में जोड़ें
 	No Suggestions	कोई सुझाव नहीं
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	इमेज डिजिटाइज़ करें…
+embroidery	Digitize Image…	इमेज डिजिटाइज़ करें…
+embroidery	Digitize Image	इमेज डिजिटाइज़ेशन
+embroidery	Digitize Image: live preview	इमेज डिजिटाइज़ेशन: लाइव प्रीव्यू
+embroidery	Select one image to digitize it.	डिजिटाइज़ करने के लिए एक इमेज चुनें।
+embroidery	The preview isn't ready yet.	प्रीव्यू अभी तैयार नहीं है।
+embroidery	Cancel	रद्द करें
+embroidery	Digitizing…	डिजिटाइज़ हो रहा है…
+embroidery	Create Embroidery Objects	कढ़ाई ऑब्जेक्ट बनाएँ
+embroidery	Start Over	फिर से शुरू करें
+embroidery	Create waits for the preview to be ready.	बनाना प्रीव्यू तैयार होने की प्रतीक्षा करता है।
+embroidery	Can't digitize it: {reason}	डिजिटाइज़ नहीं हो सकता: {reason}
+embroidery	Shapes	शेप्स
+embroidery	Recomputing…	फिर से गणना हो रही है…
+embroidery	Recomputing… {percent}	फिर से गणना हो रही है… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · कढ़ाई {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} ऑब्जेक्ट बनाया गया; पूर्ववत करें उसे हटाता है।|{count} ऑब्जेक्ट बनाए गए; पूर्ववत करें उन्हें हटाता है।

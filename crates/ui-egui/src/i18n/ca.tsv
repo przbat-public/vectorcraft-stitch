@@ -7356,3 +7356,22 @@ embroidery	Record #{value} is left out by the filter chosen.	El filtre triat dei
 	Ignore All	Ignora-ho tot
 	Add to Dictionary	Afegeix al diccionari
 	No Suggestions	No hi ha suggeriments
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalitza la imatge…
+embroidery	Digitize Image…	Digitalitza la imatge…
+embroidery	Digitize Image	Digitalització de la imatge
+embroidery	Digitize Image: live preview	Digitalització de la imatge: previsualització en directe
+embroidery	Select one image to digitize it.	Seleccioneu una imatge per digitalitzar-la.
+embroidery	The preview isn't ready yet.	La previsualització encara no és a punt.
+embroidery	Cancel	Cancel·la
+embroidery	Digitizing…	S’està digitalitzant…
+embroidery	Create Embroidery Objects	Crea objectes de brodat
+embroidery	Start Over	Torna a començar
+embroidery	Create waits for the preview to be ready.	La creació espera que la previsualització sigui a punt.
+embroidery	Can't digitize it: {reason}	No es pot digitalitzar: {reason}
+embroidery	Shapes	Formes
+embroidery	Recomputing…	S’està recalculant…
+embroidery	Recomputing… {percent}	S’està recalculant… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · brodat {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	S’ha creat {count} objecte; Desfés el suprimeix.|S’han creat {count} objectes; Desfés els suprimeix.

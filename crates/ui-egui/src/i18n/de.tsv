@@ -6962,3 +6962,22 @@ breakText	Glyphs	Glyphen
 	Ignore All	Alle ignorieren
 	Add to Dictionary	Zum Wörterbuch hinzufügen
 	No Suggestions	Keine Vorschläge
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Bild digitalisieren…
+embroidery	Digitize Image…	Bild digitalisieren…
+embroidery	Digitize Image	Bild digitalisieren
+embroidery	Digitize Image: live preview	Bild digitalisieren: Live-Vorschau
+embroidery	Select one image to digitize it.	Wählen Sie ein Bild aus, um es zu digitalisieren.
+embroidery	The preview isn't ready yet.	Die Vorschau ist noch nicht fertig.
+embroidery	Cancel	Abbrechen
+embroidery	Digitizing…	Wird digitalisiert…
+embroidery	Create Embroidery Objects	Stickobjekte erstellen
+embroidery	Start Over	Neu beginnen
+embroidery	Create waits for the preview to be ready.	Das Erstellen wartet, bis die Vorschau fertig ist.
+embroidery	Can't digitize it: {reason}	Kann nicht digitalisiert werden: {reason}
+embroidery	Shapes	Formen
+embroidery	Recomputing…	Wird neu berechnet…
+embroidery	Recomputing… {percent}	Wird neu berechnet… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · Stickerei {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} Objekt erstellt; „Rückgängig“ entfernt es.|{count} Objekte erstellt; „Rückgängig“ entfernt sie.

@@ -7376,3 +7376,22 @@ breakText	Glyphs	Glyfy
 	Ignore All	Ignorovat vše
 	Add to Dictionary	Přidat do slovníku
 	No Suggestions	Žádné návrhy
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalizovat obrázek…
+embroidery	Digitize Image…	Digitalizovat obrázek…
+embroidery	Digitize Image	Digitalizace obrázku
+embroidery	Digitize Image: live preview	Digitalizace obrázku: živý náhled
+embroidery	Select one image to digitize it.	Vyberte jeden obrázek, který chcete digitalizovat.
+embroidery	The preview isn't ready yet.	Náhled ještě není připravený.
+embroidery	Cancel	Zrušit
+embroidery	Digitizing…	Probíhá digitalizace…
+embroidery	Create Embroidery Objects	Vytvořit objekty výšivky
+embroidery	Start Over	Začít znovu
+embroidery	Create waits for the preview to be ready.	Vytvoření počká, až bude náhled připravený.
+embroidery	Can't digitize it: {reason}	Nelze digitalizovat: {reason}
+embroidery	Shapes	Tvary
+embroidery	Recomputing…	Přepočítávání…
+embroidery	Recomputing… {percent}	Přepočítávání… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · výšivka {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Vytvořen {count} objekt; odstraníte ho příkazem Zpět.|Vytvořeny {count} objekty; odstraníte je příkazem Zpět.|Vytvořeno {count} objektů; odstraníte je příkazem Zpět.

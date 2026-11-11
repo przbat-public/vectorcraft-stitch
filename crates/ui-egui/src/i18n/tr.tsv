@@ -7329,3 +7329,22 @@ breakText	Glyphs	Glifler
 	Ignore All	Tümünü Yoksay
 	Add to Dictionary	Sözlüğe Ekle
 	No Suggestions	Öneri Yok
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Görüntüyü Dijitalleştir…
+embroidery	Digitize Image…	Görüntüyü Dijitalleştir…
+embroidery	Digitize Image	Görüntü Dijitalleştirme
+embroidery	Digitize Image: live preview	Görüntü Dijitalleştirme: canlı önizleme
+embroidery	Select one image to digitize it.	Dijitalleştirmek için bir görüntü seçin.
+embroidery	The preview isn't ready yet.	Önizleme henüz hazır değil.
+embroidery	Cancel	İptal
+embroidery	Digitizing…	Dijitalleştiriliyor…
+embroidery	Create Embroidery Objects	Nakış Nesneleri Oluştur
+embroidery	Start Over	Baştan Başla
+embroidery	Create waits for the preview to be ready.	Oluşturma, önizleme hazır olana kadar bekler.
+embroidery	Can't digitize it: {reason}	Dijitalleştirilemiyor: {reason}
+embroidery	Shapes	Şekiller
+embroidery	Recomputing…	Yeniden hesaplanıyor…
+embroidery	Recomputing… {percent}	Yeniden hesaplanıyor… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · nakış {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} nesne oluşturuldu; Geri Al onları kaldırır.

@@ -7135,3 +7135,22 @@ breakText	Glyphs	Glif
 # Align to Pixel Grid
 	Align to Pixel Grid	Sejajarkan ke grid piksel
 @msg	side is left or right, not `{s}`	side adalah left atau right, bukan `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalkan gambar…
+embroidery	Digitize Image…	Digitalkan gambar…
+embroidery	Digitize Image	Digitalisasi gambar
+embroidery	Digitize Image: live preview	Digitalisasi gambar: pratinjau langsung
+embroidery	Select one image to digitize it.	Pilih satu gambar untuk mendigitalkannya.
+embroidery	The preview isn't ready yet.	Pratinjau belum siap.
+embroidery	Cancel	Batal
+embroidery	Digitizing…	Mendigitalkan…
+embroidery	Create Embroidery Objects	Buat objek bordir
+embroidery	Start Over	Mulai ulang
+embroidery	Create waits for the preview to be ready.	Pembuatan menunggu pratinjau siap.
+embroidery	Can't digitize it: {reason}	Tidak dapat didigitalkan: {reason}
+embroidery	Shapes	Bentuk
+embroidery	Recomputing…	Menghitung ulang…
+embroidery	Recomputing… {percent}	Menghitung ulang… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · bordir {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} objek dibuat; Urungkan menghapusnya.

@@ -7186,3 +7186,22 @@ breakText	Glyphs	Glyphs
 # Align to Pixel Grid
 	Align to Pixel Grid	Uitlijnen op pixelraster
 @msg	side is left or right, not `{s}`	side is left of right, niet `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Afbeelding digitaliseren…
+embroidery	Digitize Image…	Afbeelding digitaliseren…
+embroidery	Digitize Image	Afbeelding digitaliseren
+embroidery	Digitize Image: live preview	Afbeelding digitaliseren: live voorvertoning
+embroidery	Select one image to digitize it.	Selecteer één afbeelding om die te digitaliseren.
+embroidery	The preview isn't ready yet.	De voorvertoning is nog niet klaar.
+embroidery	Cancel	Annuleren
+embroidery	Digitizing…	Bezig met digitaliseren…
+embroidery	Create Embroidery Objects	Borduurobjecten maken
+embroidery	Start Over	Opnieuw beginnen
+embroidery	Create waits for the preview to be ready.	Het maken wacht tot de voorvertoning klaar is.
+embroidery	Can't digitize it: {reason}	Kan niet worden gedigitaliseerd: {reason}
+embroidery	Shapes	Vormen
+embroidery	Recomputing…	Opnieuw berekenen…
+embroidery	Recomputing… {percent}	Opnieuw berekenen… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · borduurwerk {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} object gemaakt; Ongedaan maken verwijdert het.|{count} objecten gemaakt; Ongedaan maken verwijdert ze.

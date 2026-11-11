@@ -7318,3 +7318,22 @@ breakText	Glyphs	Glifos
 	Ignore All	Omitir todo
 	Add to Dictionary	Añadir al diccionario
 	No Suggestions	No hay sugerencias
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalizar imagen…
+embroidery	Digitize Image…	Digitalizar imagen…
+embroidery	Digitize Image	Digitalización de la imagen
+embroidery	Digitize Image: live preview	Digitalización de la imagen: vista previa en directo
+embroidery	Select one image to digitize it.	Selecciona una imagen para digitalizarla.
+embroidery	The preview isn't ready yet.	La vista previa aún no está lista.
+embroidery	Cancel	Cancelar
+embroidery	Digitizing…	Digitalizando…
+embroidery	Create Embroidery Objects	Crear objetos de bordado
+embroidery	Start Over	Empezar de nuevo
+embroidery	Create waits for the preview to be ready.	La creación espera a que la vista previa esté lista.
+embroidery	Can't digitize it: {reason}	No se puede digitalizar: {reason}
+embroidery	Shapes	Formas
+embroidery	Recomputing…	Recalculando…
+embroidery	Recomputing… {percent}	Recalculando… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · bordado {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Se creó {count} objeto; se quita con Deshacer.|Se crearon {count} objetos; se quitan con Deshacer.

@@ -7360,3 +7360,22 @@ breakText	Glyphs	Glifák
 	Ignore All	Az összes kihagyása
 	Add to Dictionary	Hozzáadás a szótárhoz
 	No Suggestions	Nincs javaslat
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Kép digitalizálása…
+embroidery	Digitize Image…	Kép digitalizálása…
+embroidery	Digitize Image	Kép digitalizálása
+embroidery	Digitize Image: live preview	Kép digitalizálása: élő előnézet
+embroidery	Select one image to digitize it.	Jelöljön ki egy képet a digitalizáláshoz.
+embroidery	The preview isn't ready yet.	Az előnézet még nem készült el.
+embroidery	Cancel	Mégse
+embroidery	Digitizing…	Digitalizálás…
+embroidery	Create Embroidery Objects	Hímzésobjektumok létrehozása
+embroidery	Start Over	Újrakezdés
+embroidery	Create waits for the preview to be ready.	A létrehozás megvárja, amíg az előnézet elkészül.
+embroidery	Can't digitize it: {reason}	Nem digitalizálható: {reason}
+embroidery	Shapes	Alakzatok
+embroidery	Recomputing…	Újraszámítás…
+embroidery	Recomputing… {percent}	Újraszámítás… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · hímzés {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} objektum létrejött; a Visszavonás eltávolítja.

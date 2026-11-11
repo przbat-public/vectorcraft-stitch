@@ -7435,3 +7435,22 @@ font-script	Japanese	იაპონური
 	Ignore All	ყველას იგნორირება
 	Add to Dictionary	ლექსიკონში დამატება
 	No Suggestions	შემოთავაზებები არ არის
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	სურათის დიგიტალიზაცია…
+embroidery	Digitize Image…	სურათის დიგიტალიზაცია…
+embroidery	Digitize Image	სურათის დიგიტალიზაცია
+embroidery	Digitize Image: live preview	სურათის დიგიტალიზაცია: ცოცხალი გადახედვა
+embroidery	Select one image to digitize it.	მონიშნეთ ერთი სურათი მის დასაგიტალიზებლად.
+embroidery	The preview isn't ready yet.	გადახედვა ჯერ მზად არ არის.
+embroidery	Cancel	გაუქმება
+embroidery	Digitizing…	მიმდინარეობს დიგიტალიზაცია…
+embroidery	Create Embroidery Objects	ნაქარგობის ობიექტების შექმნა
+embroidery	Start Over	თავიდან დაწყება
+embroidery	Create waits for the preview to be ready.	შექმნა ელოდება გადახედვის მომზადებას.
+embroidery	Can't digitize it: {reason}	დიგიტალიზაცია შეუძლებელია: {reason}
+embroidery	Shapes	ფიგურები
+embroidery	Recomputing…	ხელახალი გამოთვლა…
+embroidery	Recomputing… {percent}	ხელახალი გამოთვლა… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · ნაქარგობა {w} × {h} მმ
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	შეიქმნა {count} ობიექტი; დაბრუნება მათ წაშლის.

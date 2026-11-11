@@ -7231,3 +7231,22 @@ breakText	Glyphs	Glify
 	Ignore All	Ignoruj wszystko
 	Add to Dictionary	Dodaj do słownika
 	No Suggestions	Brak sugestii
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalizuj obraz…
+embroidery	Digitize Image…	Digitalizuj obraz…
+embroidery	Digitize Image	Digitalizacja obrazu
+embroidery	Digitize Image: live preview	Digitalizacja obrazu: podgląd na żywo
+embroidery	Select one image to digitize it.	Zaznacz jeden obraz, aby go zdigitalizować.
+embroidery	The preview isn't ready yet.	Podgląd nie jest jeszcze gotowy.
+embroidery	Cancel	Anuluj
+embroidery	Digitizing…	Digitalizowanie…
+embroidery	Create Embroidery Objects	Utwórz obiekty haftu
+embroidery	Start Over	Zacznij od nowa
+embroidery	Create waits for the preview to be ready.	Utworzenie czeka, aż podgląd będzie gotowy.
+embroidery	Can't digitize it: {reason}	Nie można zdigitalizować: {reason}
+embroidery	Shapes	Kształty
+embroidery	Recomputing…	Przeliczanie…
+embroidery	Recomputing… {percent}	Przeliczanie… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · haft {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Utworzono {count} obiekt: polecenie Cofnij go usunie.|Utworzono {count} obiekty: polecenie Cofnij je usunie.|Utworzono {count} obiektów: polecenie Cofnij je usunie.

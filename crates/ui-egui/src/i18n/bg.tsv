@@ -7122,3 +7122,22 @@ breakText	Glyphs	Глифи
 # Align to Pixel Grid
 	Align to Pixel Grid	Подравняване към пикселната мрежа
 @msg	side is left or right, not `{s}`	side е left или right, а не `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Дигитализиране на изображение…
+embroidery	Digitize Image…	Дигитализиране на изображение…
+embroidery	Digitize Image	Дигитализиране на изображение
+embroidery	Digitize Image: live preview	Дигитализиране на изображение: преглед на живо
+embroidery	Select one image to digitize it.	Изберете едно изображение, за да го дигитализирате.
+embroidery	The preview isn't ready yet.	Прегледът още не е готов.
+embroidery	Cancel	Отказ
+embroidery	Digitizing…	Дигитализиране…
+embroidery	Create Embroidery Objects	Създай обекти за бродерия
+embroidery	Start Over	Започни отначало
+embroidery	Create waits for the preview to be ready.	Създаването изчаква прегледа да е готов.
+embroidery	Can't digitize it: {reason}	Не може да се дигитализира: {reason}
+embroidery	Shapes	Фигури
+embroidery	Recomputing…	Преизчисляване…
+embroidery	Recomputing… {percent}	Преизчисляване… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · бродерия {w} × {h} мм
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Създаден е {count} обект; „Отмени“ го премахва.|Създадени са {count} обекта; „Отмени“ ги премахва.

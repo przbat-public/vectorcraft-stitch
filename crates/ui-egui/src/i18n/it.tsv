@@ -6996,3 +6996,22 @@ breakText	Glyphs	Glifi
 	Ignore All	Ignora tutto
 	Add to Dictionary	Aggiungi al dizionario
 	No Suggestions	Nessun suggerimento
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalizza immagine…
+embroidery	Digitize Image…	Digitalizza immagine…
+embroidery	Digitize Image	Digitalizzazione dell’immagine
+embroidery	Digitize Image: live preview	Digitalizzazione dell’immagine: anteprima dal vivo
+embroidery	Select one image to digitize it.	Seleziona un’immagine per digitalizzarla.
+embroidery	The preview isn't ready yet.	L’anteprima non è ancora pronta.
+embroidery	Cancel	Annulla
+embroidery	Digitizing…	Digitalizzazione…
+embroidery	Create Embroidery Objects	Crea oggetti di ricamo
+embroidery	Start Over	Ricomincia
+embroidery	Create waits for the preview to be ready.	La creazione attende che l’anteprima sia pronta.
+embroidery	Can't digitize it: {reason}	Impossibile digitalizzare: {reason}
+embroidery	Shapes	Forme
+embroidery	Recomputing…	Ricalcolo…
+embroidery	Recomputing… {percent}	Ricalcolo… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · ricamo {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Creato {count} oggetto; Annulla lo rimuove.|Creati {count} oggetti; Annulla li rimuove.

@@ -256,7 +256,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     if ids.is_empty() {
         state_words(ui, crate::et!("Select an object to set how it is sewn."));
     } else if info.object_count == 0 {
-        takes_none(ui, &info);
+        if let Some(image) = takes_none(ui, &info) {
+            crate::embroidery::image_window::open(app, Some(vectorcraft_engine::doc::NodeId(image)));
+        }
         let restore = super::command_label(app, RESTORE);
         manual(ui, &info, &ids, lang, &mut commands, &mut app.embroidery.object.focus_next, &restore);
         edit = edit.or(edit_stitches(ui, stitches));
@@ -445,9 +447,12 @@ fn state_words(ui: &mut Ui, words: &str) {
 }
 
 /// Why the selected objects take no settings: each reason once (manual stitches said by
-/// [`manual`] instead, when the selection holds converted objects).
-fn takes_none(ui: &mut Ui, info: &ObjectSettings) {
+/// [`manual`] instead, when the selection holds converted objects); with one image selected,
+/// Digitize Image… under its words → the image whose button was pressed (VectorCraft Stitch's own
+/// way from a picture to embroidery, its window).
+fn takes_none(ui: &mut Ui, info: &ObjectSettings) -> Option<u64> {
     let mut said: Vec<&str> = Vec::new();
+    let mut digitize = None;
     for s in info.skipped.iter().filter(|s| info.manual.is_none() || s.reason != "manual") {
         let words = vocabulary::takes_none(&s.reason);
         if !said.contains(&words) {
@@ -455,6 +460,13 @@ fn takes_none(ui: &mut Ui, info: &ObjectSettings) {
             state_words(ui, words);
         }
     }
+    if let [one] = info.skipped.as_slice()
+        && one.reason == "image"
+        && crate::widgets::secondary_button(ui, crate::et!("Digitize Image…")).clicked()
+    {
+        digitize = Some(one.id);
+    }
+    digitize
 }
 
 /// The part switch: the selection's fill and stroke as the panel's [`super::segments`], a part

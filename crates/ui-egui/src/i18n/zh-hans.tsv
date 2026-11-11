@@ -7214,3 +7214,22 @@ breakText	Glyphs	字形
 	Align to Pixel Grid	对齐像素网格
 @msg	only paths and compound paths can be aligned to the pixel grid	只有路径和复合路径可以对齐像素网格
 @msg	side is left or right, not `{s}`	side 应为 left 或 right，而不是 `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	数字化图像…
+embroidery	Digitize Image…	数字化图像…
+embroidery	Digitize Image	图像数字化
+embroidery	Digitize Image: live preview	图像数字化：实时预览
+embroidery	Select one image to digitize it.	请选择一张图像以将其数字化。
+embroidery	The preview isn't ready yet.	预览尚未就绪。
+embroidery	Cancel	取消
+embroidery	Digitizing…	正在数字化…
+embroidery	Create Embroidery Objects	创建刺绣对象
+embroidery	Start Over	重新开始
+embroidery	Create waits for the preview to be ready.	创建将等待预览就绪。
+embroidery	Can't digitize it: {reason}	无法数字化：{reason}
+embroidery	Shapes	形状
+embroidery	Recomputing…	正在重新计算…
+embroidery	Recomputing… {percent}	正在重新计算… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺绣 {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	已创建 {count} 个对象；撤销可将其移除。

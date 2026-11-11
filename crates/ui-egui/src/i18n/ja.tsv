@@ -7061,3 +7061,22 @@ breakText	Glyphs	字形
 	Ignore All	すべて無視
 	Add to Dictionary	辞書に追加
 	No Suggestions	候補なし
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	画像をデジタイズ…
+embroidery	Digitize Image…	画像をデジタイズ…
+embroidery	Digitize Image	画像のデジタイズ
+embroidery	Digitize Image: live preview	画像のデジタイズ：ライブプレビュー
+embroidery	Select one image to digitize it.	デジタイズする画像を 1 つ選択してください。
+embroidery	The preview isn't ready yet.	プレビューはまだ準備できていません。
+embroidery	Cancel	キャンセル
+embroidery	Digitizing…	デジタイズ中…
+embroidery	Create Embroidery Objects	刺繍オブジェクトを作成
+embroidery	Start Over	最初からやり直す
+embroidery	Create waits for the preview to be ready.	作成はプレビューの準備ができるまで待ちます。
+embroidery	Can't digitize it: {reason}	デジタイズできません：{reason}
+embroidery	Shapes	シェイプ
+embroidery	Recomputing…	再計算中…
+embroidery	Recomputing… {percent}	再計算中… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺繍 {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} 個のオブジェクトを作成しました。取り消しで削除できます。

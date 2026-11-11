@@ -7010,3 +7010,22 @@ breakText	Glyphs	字符
 	Align to Pixel Grid	對齊像素格點
 @msg	only paths and compound paths can be aligned to the pixel grid	只有路徑和複合路徑可以對齊像素格點
 @msg	side is left or right, not `{s}`	side 應為 left 或 right，而不是 `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	數位化影像…
+embroidery	Digitize Image…	數位化影像…
+embroidery	Digitize Image	影像數位化
+embroidery	Digitize Image: live preview	影像數位化：即時預覽
+embroidery	Select one image to digitize it.	請選取一張影像以將其數位化。
+embroidery	The preview isn't ready yet.	預覽尚未就緒。
+embroidery	Cancel	取消
+embroidery	Digitizing…	正在數位化…
+embroidery	Create Embroidery Objects	建立刺繡物件
+embroidery	Start Over	重新開始
+embroidery	Create waits for the preview to be ready.	建立將等待預覽就緒。
+embroidery	Can't digitize it: {reason}	無法數位化：{reason}
+embroidery	Shapes	形狀
+embroidery	Recomputing…	正在重新計算…
+embroidery	Recomputing… {percent}	正在重新計算… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺繡 {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	已建立 {count} 個物件；復原可將其移除。

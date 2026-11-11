@@ -7411,3 +7411,22 @@ breakText	Glyphs	Merkit
 	Ignore All	Ohita kaikki
 	Add to Dictionary	Lisää sanastoon
 	No Suggestions	Ei ehdotuksia
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitoi kuva…
+embroidery	Digitize Image…	Digitoi kuva…
+embroidery	Digitize Image	Kuvan digitointi
+embroidery	Digitize Image: live preview	Kuvan digitointi: reaaliaikainen esikatselu
+embroidery	Select one image to digitize it.	Valitse yksi kuva digitoitavaksi.
+embroidery	The preview isn't ready yet.	Esikatselu ei ole vielä valmis.
+embroidery	Cancel	Peruuta
+embroidery	Digitizing…	Digitoidaan…
+embroidery	Create Embroidery Objects	Luo kirjontaobjektit
+embroidery	Start Over	Aloita alusta
+embroidery	Create waits for the preview to be ready.	Luonti odottaa, että esikatselu on valmis.
+embroidery	Can't digitize it: {reason}	Ei voi digitoida: {reason}
+embroidery	Shapes	Muodot
+embroidery	Recomputing…	Lasketaan uudelleen…
+embroidery	Recomputing… {percent}	Lasketaan uudelleen… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · kirjonta {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Luotiin {count} objekti; Kumoa poistaa sen.|Luotiin {count} objektia; Kumoa poistaa ne.

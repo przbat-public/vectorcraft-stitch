@@ -7464,3 +7464,22 @@ shape	Open	Открытый
 	Ignore All	Пропустить все
 	Add to Dictionary	Добавить в словарь
 	No Suggestions	Нет вариантов
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Оцифровать изображение…
+embroidery	Digitize Image…	Оцифровать изображение…
+embroidery	Digitize Image	Оцифровка изображения
+embroidery	Digitize Image: live preview	Оцифровка изображения: просмотр в реальном времени
+embroidery	Select one image to digitize it.	Выделите одно изображение, чтобы оцифровать его.
+embroidery	The preview isn't ready yet.	Просмотр ещё не готов.
+embroidery	Cancel	Отмена
+embroidery	Digitizing…	Оцифровка…
+embroidery	Create Embroidery Objects	Создать объекты вышивки
+embroidery	Start Over	Начать заново
+embroidery	Create waits for the preview to be ready.	Создание дождётся готовности просмотра.
+embroidery	Can't digitize it: {reason}	Не удаётся оцифровать: {reason}
+embroidery	Shapes	Фигуры
+embroidery	Recomputing…	Пересчёт…
+embroidery	Recomputing… {percent}	Пересчёт… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · вышивка {w} × {h} мм
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Создан {count} объект; «Отменить» его удалит.|Создано {count} объекта; «Отменить» их удалит.|Создано {count} объектов; «Отменить» их удалит.

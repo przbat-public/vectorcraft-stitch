@@ -453,6 +453,8 @@ registry! {
     EmbroideryPoint: [crate::embroidery::point_dialog::KIND] => crate::embroidery::point_dialog::SPEC,
     // VectorCraft Stitch: Restore Object's question when the stitches were edited since converting.
     EmbroideryRestore: [crate::embroidery::restore_dialog::KIND] => crate::embroidery::restore_dialog::SPEC,
+    // VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live.
+    EmbroideryImage: [crate::embroidery::image_window::KIND] => DialogSpec::window(crate::embroidery::image_window::show, crate::embroidery::image_window::confirm),
 }
 
 /// The button labels the shared dialog frame can show (OK, discard, the fixed Cancel/Close and

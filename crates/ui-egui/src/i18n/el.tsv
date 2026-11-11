@@ -7328,3 +7328,22 @@ breakText	Glyphs	Γλύφοι
 	Ignore All	Παράβλεψη όλων
 	Add to Dictionary	Προσθήκη στο λεξικό
 	No Suggestions	Καμία πρόταση
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Ψηφιοποίηση εικόνας…
+embroidery	Digitize Image…	Ψηφιοποίηση εικόνας…
+embroidery	Digitize Image	Ψηφιοποίηση εικόνας
+embroidery	Digitize Image: live preview	Ψηφιοποίηση εικόνας: ζωντανή προεπισκόπηση
+embroidery	Select one image to digitize it.	Επιλέξτε μία εικόνα για να την ψηφιοποιήσετε.
+embroidery	The preview isn't ready yet.	Η προεπισκόπηση δεν είναι ακόμη έτοιμη.
+embroidery	Cancel	Ακύρωση
+embroidery	Digitizing…	Ψηφιοποίηση…
+embroidery	Create Embroidery Objects	Δημιουργία αντικειμένων κεντήματος
+embroidery	Start Over	Από την αρχή
+embroidery	Create waits for the preview to be ready.	Η δημιουργία περιμένει να ετοιμαστεί η προεπισκόπηση.
+embroidery	Can't digitize it: {reason}	Δεν είναι δυνατή η ψηφιοποίηση: {reason}
+embroidery	Shapes	Σχήματα
+embroidery	Recomputing…	Επανυπολογισμός…
+embroidery	Recomputing… {percent}	Επανυπολογισμός… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · κέντημα {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Δημιουργήθηκε {count} αντικείμενο· η Αναίρεση το αφαιρεί.|Δημιουργήθηκαν {count} αντικείμενα· η Αναίρεση τα αφαιρεί.

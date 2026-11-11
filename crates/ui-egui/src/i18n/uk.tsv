@@ -6976,3 +6976,22 @@ breakText	Glyphs	Гліфи
 	Ignore All	Пропустити все
 	Add to Dictionary	Додати до словника
 	No Suggestions	Немає варіантів
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Оцифрувати зображення…
+embroidery	Digitize Image…	Оцифрувати зображення…
+embroidery	Digitize Image	Оцифрування зображення
+embroidery	Digitize Image: live preview	Оцифрування зображення: перегляд наживо
+embroidery	Select one image to digitize it.	Виділіть одне зображення, щоб оцифрувати його.
+embroidery	The preview isn't ready yet.	Перегляд ще не готовий.
+embroidery	Cancel	Скасувати
+embroidery	Digitizing…	Оцифрування…
+embroidery	Create Embroidery Objects	Створити об’єкти вишивки
+embroidery	Start Over	Почати знову
+embroidery	Create waits for the preview to be ready.	Створення дочекається готовності перегляду.
+embroidery	Can't digitize it: {reason}	Не вдається оцифрувати: {reason}
+embroidery	Shapes	Фігури
+embroidery	Recomputing…	Перерахунок…
+embroidery	Recomputing… {percent}	Перерахунок… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · вишивка {w} × {h} мм
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Створено {count} об’єкт; «Скасувати» його прибере.|Створено {count} об’єкти; «Скасувати» їх прибере.|Створено {count} об’єктів; «Скасувати» їх прибере.

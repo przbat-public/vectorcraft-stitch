@@ -7135,3 +7135,22 @@ breakText	Glyphs	Glyffer
 # Align to Pixel Grid
 	Align to Pixel Grid	Juster efter pixelgitter
 @msg	side is left or right, not `{s}`	side er left eller right, ikke `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitaliser billede…
+embroidery	Digitize Image…	Digitaliser billede…
+embroidery	Digitize Image	Digitalisering af billede
+embroidery	Digitize Image: live preview	Digitalisering af billede: live-visning
+embroidery	Select one image to digitize it.	Markér ét billede for at digitalisere det.
+embroidery	The preview isn't ready yet.	Visningen er ikke klar endnu.
+embroidery	Cancel	Annullér
+embroidery	Digitizing…	Digitaliserer…
+embroidery	Create Embroidery Objects	Opret broderiobjekter
+embroidery	Start Over	Start forfra
+embroidery	Create waits for the preview to be ready.	Opretningen venter, til visningen er klar.
+embroidery	Can't digitize it: {reason}	Kan ikke digitaliseres: {reason}
+embroidery	Shapes	Former
+embroidery	Recomputing…	Genberegner…
+embroidery	Recomputing… {percent}	Genberegner… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · broderi {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Oprettede {count} objekt; Fortryd fjerner det.|Oprettede {count} objekter; Fortryd fjerner dem.

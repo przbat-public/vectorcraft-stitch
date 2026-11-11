@@ -8861,3 +8861,22 @@ digits	Hindi	Hindi
 	Ignore All	Ignorera alla
 	Add to Dictionary	Lägg till i ordlistan
 	No Suggestions	Inga förslag
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalisera bild…
+embroidery	Digitize Image…	Digitalisera bild…
+embroidery	Digitize Image	Digitalisering av bild
+embroidery	Digitize Image: live preview	Digitalisering av bild: direktförhandsvisning
+embroidery	Select one image to digitize it.	Markera en bild för att digitalisera den.
+embroidery	The preview isn't ready yet.	Förhandsvisningen är inte klar än.
+embroidery	Cancel	Avbryt
+embroidery	Digitizing…	Digitaliserar…
+embroidery	Create Embroidery Objects	Skapa broderiobjekt
+embroidery	Start Over	Börja om
+embroidery	Create waits for the preview to be ready.	Skapandet väntar tills förhandsvisningen är klar.
+embroidery	Can't digitize it: {reason}	Kan inte digitaliseras: {reason}
+embroidery	Shapes	Former
+embroidery	Recomputing…	Räknar om…
+embroidery	Recomputing… {percent}	Räknar om… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · broderi {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Skapade {count} objekt; Ångra tar bort det.|Skapade {count} objekt; Ångra tar bort dem.

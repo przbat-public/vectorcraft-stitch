@@ -546,15 +546,17 @@ fn restore_button(ui: &mut Ui, rect: Rect, row: &Row) -> bool {
 
 /// A row's clicks and keys: selection, and the keyboard's focus moved with it.
 fn row_input(ui: &Ui, state: &mut State, rows: &[Row], k: usize, resp: &egui::Response) {
-    if resp.clicked() {
+    // Space on the row in focus is its toggle alone: egui counts it as the row's click too, which
+    // would first select the row alone. Enter stays a click.
+    let space = resp.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Space));
+    if resp.clicked() && !space {
         let modifiers = ui.input(|i| i.modifiers);
         click(state, rows, k, modifiers);
     }
     if !resp.has_focus() {
         return;
     }
-    let (up, down, space, shift) =
-        ui.input(|i| (i.key_pressed(egui::Key::ArrowUp), i.key_pressed(egui::Key::ArrowDown), i.key_pressed(egui::Key::Space), i.modifiers.shift));
+    let (up, down, shift) = ui.input(|i| (i.key_pressed(egui::Key::ArrowUp), i.key_pressed(egui::Key::ArrowDown), i.modifiers.shift));
     if space {
         toggle(state, rows, k);
     }

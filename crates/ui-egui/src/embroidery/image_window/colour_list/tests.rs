@@ -325,6 +325,42 @@ fn rows_are_selected_by_click_shift_command_and_arrows() {
     assert_eq!(colours(&s), ["#11aa22", "#f08214"]);
 }
 
+/// Space on the row with the keyboard's focus adds it to the selection, and takes it away again;
+/// Enter on it selects it alone, as a click does. Through real frames, as egui counts Space and
+/// Enter on a focused widget as its click too.
+#[test]
+fn space_on_the_focused_row_adds_it_to_the_selection_or_takes_it_away() {
+    let rows = rows_of(&reply());
+    let ctx = context();
+    let screen = Rect::from_min_size(Pos2::ZERO, vec2(420.0, 400.0));
+    let mut state = State::default();
+    click(&mut state, &rows, 1, Modifiers::NONE);
+    state.focus = Some(rows[2].color.clone());
+    let frame = |state: &mut State, events: Vec<egui::Event>| {
+        let raw = egui::RawInput { screen_rect: Some(screen), events, ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            for (k, row) in rows.iter().enumerate() {
+                let drawn = draw_row(ui, row, state.selected.contains(&row.color), en(), state.focus.as_deref() == Some(row.color.as_str()));
+                if drawn.focused_now {
+                    state.focus = None;
+                }
+                row_input(ui, state, &rows, k, &drawn.resp);
+            }
+        });
+        out.textures_delta.clear();
+    };
+    let press = |key| egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
+    let selected = |state: &State| state.selected.iter().cloned().collect::<Vec<_>>();
+    frame(&mut state, vec![]);
+    frame(&mut state, vec![]);
+    frame(&mut state, vec![press(egui::Key::Space)]);
+    assert_eq!(selected(&state), [rows[1].color.clone(), rows[2].color.clone()], "Space added the focused row");
+    frame(&mut state, vec![press(egui::Key::Space)]);
+    assert_eq!(selected(&state), [rows[1].color.clone()], "and took it away");
+    frame(&mut state, vec![press(egui::Key::Enter)]);
+    assert_eq!(selected(&state), [rows[2].color.clone()], "Enter selects it alone, as a click does");
+}
+
 /// Merge takes two or more, Choose Thread… one, Don't Sew one or more: each says why it can't.
 /// Merged colours are sewn as the one with the most of the frame.
 #[test]

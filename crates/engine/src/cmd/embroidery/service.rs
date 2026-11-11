@@ -367,6 +367,10 @@ pub(crate) struct PlanService {
     /// The plans remembered, with those of the other documents' services, and which are its own.
     memos: Arc<Memos>,
     owner: u64,
+    /// Of a planning service for a document that isn't open ([`DetachedService`]), which
+    /// [`Services::forget`] never reaches: its plans forgotten when it goes (held for its drop
+    /// alone, never read).
+    _forgets: Option<ForgetsOnDrop>,
     #[cfg(not(target_arch = "wasm32"))]
     flights: Flights,
     /// How many times it walked a document (the tests count plans made).
@@ -676,7 +680,70 @@ struct KeptNeedles {
     index: Option<Arc<super::needle_index::NeedleIndex>>,
 }
 
+/// Where the owners of the planning services of documents that aren't open start: open documents
+/// are numbered from 1 up (`DocState::uid`), one a document opened or made, so the two never meet.
+/// Half of the numbers: more documents than a session could open in a lifetime lie below it.
+pub(crate) const DETACHED_OWNERS_FROM: u64 = 1 << 63;
+
+/// The next owner a planning service for a document that isn't open takes.
+static NEXT_DETACHED: AtomicU64 = AtomicU64::new(DETACHED_OWNERS_FROM);
+
+/// A planning service for a document that isn't open (the image window's design, made on a copy
+/// of the document, which no document's service plans): its units' stitches kept between plans, as
+/// an open document's are, and its plans remembered within the one bound every document's share.
+/// Its plans are forgotten when its last handle goes, the service or a planner of it. It is never
+/// one of [`Services`]' documents.
+pub struct DetachedService {
+    service: Arc<PlanService>,
+}
+
+impl DetachedService {
+    /// The owner its plans are remembered under, past every open document's number.
+    pub fn owner(&self) -> u64 {
+        self.service.owner
+    }
+
+    /// The service, which [`super::Planner`]s of it share.
+    pub(crate) fn shared(&self) -> Arc<PlanService> {
+        self.service.clone()
+    }
+
+    /// The service itself, for the tests that count what it walked and kept.
+    #[cfg(test)]
+    pub(crate) fn service(&self) -> &PlanService {
+        &self.service
+    }
+}
+
+/// An owner's plans forgotten when it goes, held by a planning service for a document that isn't
+/// open.
+struct ForgetsOnDrop {
+    memos: Arc<Memos>,
+    owner: u64,
+}
+
+impl Drop for ForgetsOnDrop {
+    fn drop(&mut self) {
+        self.memos.forget(self.owner);
+    }
+}
+
+/// The detached service is handed to other threads (the image window's).
+const _: () = {
+    const fn sent<T: Send + Sync>() {}
+    sent::<DetachedService>();
+};
+
 impl Services {
+    /// A planning service for a document that isn't open, remembering its plans with the open
+    /// documents' under an owner of its own.
+    pub(crate) fn detached(&self) -> DetachedService {
+        let owner = NEXT_DETACHED.fetch_add(1, Ordering::Relaxed);
+        let forgets = Some(ForgetsOnDrop { memos: self.memos.clone(), owner });
+        let service = PlanService { _forgets: forgets, ..PlanService::sharing(self.memos.clone(), owner) };
+        DetachedService { service: Arc::new(service) }
+    }
+
     /// Document `uid`'s service, made when it is first asked for.
     pub(crate) fn of(&mut self, uid: u64) -> Arc<PlanService> {
         let memos = &self.memos;

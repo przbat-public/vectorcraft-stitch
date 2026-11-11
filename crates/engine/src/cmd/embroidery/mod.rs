@@ -137,8 +137,8 @@ use super::{CommandSpec, EngineError, NodeId, Result, Session, always, bad, cmd,
 pub use self::check::{MAX_LIMIT, POINT_MISS_MM};
 pub use self::stats::MAX_LIST_LIMIT;
 pub use options::Options;
-pub use service::Planned;
 pub(crate) use service::Services;
+pub use service::{DetachedService, Planned};
 pub(crate) use unit::PlanError;
 pub use vectorcraft_stitch::format::Format;
 pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
@@ -312,7 +312,29 @@ const _: () = {
     sent::<Planner>();
 };
 
+impl service::DetachedService {
+    /// A planner of `snapshot` cut to the objects `selection` names (all of it when empty), as
+    /// `selectedOnly` cuts a document for the read commands, whose plans this service makes and
+    /// remembers. The planner holds the cut document as its snapshot.
+    pub fn planner(&self, snapshot: Arc<Document>, selection: Vec<NodeId>) -> Result<Planner> {
+        let doc = if selection.is_empty() && matches!(snapshot.without_edit_modes(), std::borrow::Cow::Borrowed(_)) {
+            snapshot
+        } else {
+            let mut st = crate::DocState::new((*snapshot).clone(), None);
+            st.selection.set(selection.iter().copied());
+            to_plan(&st, !selection.is_empty())?
+        };
+        Ok(Planner { uid: self.owner(), service: self.shared(), snapshot: doc.clone(), doc })
+    }
+}
+
 impl Session {
+    /// A planning service for a document that isn't open ([`service::DetachedService`]): what a
+    /// window that makes a design on a copy of the document plans it with.
+    pub fn detached_planning(&self) -> service::DetachedService {
+        self.embroidery_plans.detached()
+    }
+
     /// The active document's planner: its planning service and its current snapshot, planned as
     /// the read commands plan the whole document.
     pub fn embroidery_planner(&mut self) -> Result<Planner> {

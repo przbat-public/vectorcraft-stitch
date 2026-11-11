@@ -134,11 +134,12 @@ fn a_pipeline_run_is_the_commands_dry_run() {
     }
 }
 
-/// A change runs again its own stage and the stages after it, and keeps those before it: the size
-/// from the image, the colours and the smoothing from the trace (the smallest area too, below the
-/// trace's own noise of a thread's footprint, 0.16 mm²), a colour's choice and the smallest area
-/// above it from the colours, the overlap from the shapes, the window's palette from the colours,
-/// an edit to the document from the objects; nothing changed, nothing runs again. The request says
+/// A change runs again its own stage and the stages after it, and keeps those before it: the size,
+/// the box it fits, the crop and the background from the image, the mode, the colours and the
+/// smoothing from the trace (the smallest area too, below the trace's own noise of a thread's
+/// footprint, 0.16 mm²), a colour's choice and the smallest area above it from the colours, the
+/// overlap from the shapes, the window's palette from the colours, an edit to the document from the
+/// objects; nothing changed, nothing runs again. The request says
 /// so before the run: the first stage it reads differently of the request run before.
 #[test]
 fn a_change_reruns_its_stage_and_those_after() {
@@ -151,7 +152,11 @@ fn a_change_reruns_its_stage_and_those_after() {
     assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &base, None)), None, "nothing changed");
     let cases = [
         (json!({"width": 25.0}), StageId::Image),
+        (json!({"fit": [25.0, 15.0]}), StageId::Image),
+        (json!({"crop": [10, 10, 290, 190]}), StageId::Image),
         (json!({"background": "none"}), StageId::Image),
+        (json!({"background": hex(WHITE)}), StageId::Image),
+        (json!({"mode": "logo"}), StageId::Trace),
         (json!({"colors": 4}), StageId::Trace),
         (json!({"smoothing": 30}), StageId::Trace),
         (json!({"minArea": 0.1}), StageId::Trace),
@@ -173,6 +178,20 @@ fn a_change_reruns_its_stage_and_those_after() {
     s.execute("shape.rectangle", &json!({"x": 200, "y": 200, "width": 20, "height": 20})).unwrap();
     assert_eq!(before.first_stage_changed(&request(&s, &base, None)), Some(StageId::Objects));
     assert_eq!(made(&s, &mut pipe, image, &base, None), from(StageId::Objects), "an edit to the document");
+}
+
+/// Each stage keeps its two newest outputs: a value changed and changed back is found kept, and a
+/// third value lets the oldest go, so that what the window keeps stays bounded.
+#[test]
+fn each_stage_keeps_its_two_newest_outputs() {
+    let (s, image) = placed(&picture());
+    let mut pipe = s.digitize_pipeline();
+    let wide = |width: f64| json!({"colors": 3, "width": width});
+    made(&s, &mut pipe, image, &wide(20.0), None);
+    made(&s, &mut pipe, image, &wide(25.0), None);
+    assert_eq!(made(&s, &mut pipe, image, &wide(20.0), None), Vec::<StageId>::new(), "changed back: found kept");
+    made(&s, &mut pipe, image, &wide(30.0), None);
+    assert_eq!(made(&s, &mut pipe, image, &wide(25.0), None), from(StageId::Image), "the oldest let go");
 }
 
 /// A run cancelled after its colours keeps the stages it finished: the next run makes only those
@@ -307,12 +326,16 @@ fn the_painted_raster_uses_the_threads_colours() {
 
 /// A setting's values a random change picks from.
 fn change() -> impl Strategy<Value = Value> {
-    (0..4usize, 0..3usize).prop_map(|(key, k)| {
+    (0..8usize, 0..3usize).prop_map(|(key, k)| {
         let pick = |values: [Value; 3]| values.into_iter().nth(k).unwrap_or(Value::Null);
         match key {
             0 => json!({"colors": pick([json!(2), json!(3), json!(4)])}),
             1 => json!({"minArea": pick([json!(0.1), json!(1.0), json!(3.0)])}),
             2 => json!({"overlap": pick([json!(0.0), json!(0.4), json!(0.8)])}),
+            3 => json!({"crop": pick([Value::Null, json!([10, 10, 290, 190]), json!([0, 0, 150, 200])])}),
+            4 => json!({"width": pick([Value::Null, json!(20.0), json!(30.0)])}),
+            5 => json!({"mode": pick([json!("color"), json!("logo"), json!("grayscale")])}),
+            6 => json!({"background": pick([Value::Null, json!("none"), json!(hex(WHITE))])}),
             _ => json!({"colorChoices": pick([
                 json!([]),
                 json!([{"color": hex(ORANGE), "job": "fill"}]),
@@ -326,8 +349,9 @@ proptest! {
     #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(8))]
 
     /// Kept or fresh, the outputs are the same: after random changes run one by one through one
-    /// pipeline, its last run answers and makes what a fresh pipeline's run of the same settings
-    /// does.
+    /// pipeline (the colours, the smallest area, the overlap, the choices, the crop, the size, the
+    /// mode and the background), its last run answers and makes what a fresh pipeline's run of
+    /// the same settings does.
     #[test]
     fn kept_or_fresh_the_outputs_are_the_same(changes in proptest::collection::vec(change(), 1..5)) {
         let (s, image) = placed(&picture());

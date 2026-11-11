@@ -510,12 +510,16 @@ fn a_value_out_of_range_is_refused_and_kept() {
 }
 
 /// Crop to the Art crops to the box of what isn't the background (the orange square), the white
-/// it found in the corners still left out; Whole Image takes the crop off.
+/// it found in the corners still left out, and that box is what is digitized; Whole Image takes the
+/// crop off, the whole picture digitized again (only the crop changes then).
 #[test]
 fn crop_to_the_art_crops_to_what_isnt_background() {
     use egui::accesskit::Role;
     let (mut app, ctx, mut time) = opened();
     set(&mut app, STEP, json!(1));
+    let worked = |app: &mut VectorcraftApp| reply(app)["image"]["worked"].clone();
+    let whole = worked(&mut app);
+    assert_eq!(whole, reply(&mut app)["image"]["pixels"], "worked pixel for pixel at this size");
     let art = live(&app).schedule.shown.as_ref().and_then(|s| s.outputs.art_bounds());
     assert_eq!(art, Some([20, 10, 180, 90]));
     click(&mut app, &ctx, &mut time, "Crop to the Art", Role::Button);
@@ -524,8 +528,11 @@ fn crop_to_the_art_crops_to_what_isnt_background() {
     until(&mut app, &ctx, &mut time, ready);
     let r = reply(&mut app);
     assert_eq!((r["image"]["crop"].clone(), r["colorCount"].clone()), (json!([20, 10, 180, 90]), json!(2)), "{}", r["image"]);
+    assert_eq!(worked(&mut app), json!([160, 80]), "the art's box digitized");
     click(&mut app, &ctx, &mut time, "Whole Image", Role::Button);
     assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("crop").cloned()), None);
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(worked(&mut app), whole, "the whole picture digitized again");
 }
 
 /// The background is left out, or sewn (every colour, the white too), or one of the picture's
@@ -961,6 +968,21 @@ fn command_enter_creates_with_the_value_being_typed() {
     type_only(&mut app, &ctx, &mut time, "Width", &TYPED_WIDTH_MM.to_string());
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    let bounds = app.session.execute("document.exportSelection", &json!({"format": "svg"})).unwrap()["bounds"].clone();
+    let width_mm = vectorcraft_engine::cmd::embroidery::pt_to_mm(bounds[2].as_f64().unwrap_or(0.0));
+    assert!((width_mm - ART_SHARE * TYPED_WIDTH_MM).abs() < NEAR_MM, "made {width_mm:.2} mm wide (bounds {bounds})");
+}
+
+/// A click on Create while a width is typed and not yet committed: the press ends the field's
+/// editing, which commits the width in the click's own frame, and Create waits for its run, as
+/// Cmd/Ctrl+Enter does.
+#[test]
+fn create_clicked_while_a_width_is_typed_takes_it() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(1));
+    type_only(&mut app, &ctx, &mut time, "Width", &TYPED_WIDTH_MM.to_string());
+    click(&mut app, &ctx, &mut time, "Create Embroidery Objects", egui::accesskit::Role::Button);
     until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
     let bounds = app.session.execute("document.exportSelection", &json!({"format": "svg"})).unwrap()["bounds"].clone();
     let width_mm = vectorcraft_engine::cmd::embroidery::pt_to_mm(bounds[2].as_f64().unwrap_or(0.0));

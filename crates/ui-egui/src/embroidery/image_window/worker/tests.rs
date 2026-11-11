@@ -1,5 +1,6 @@
 //! The image window's thread: the newest job runs and a replaced one is answered as cancelled, a
-//! panic is a failure and the thread goes on, and in line a job runs at the next poll.
+//! panic is a failure and the thread goes on, dropping it cancels the run under way, and in line a
+//! job runs at the next poll.
 
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -55,14 +56,19 @@ fn the_newest_job_runs_and_a_replaced_one_is_answered_cancelled() {
     let (s, id) = picture_session();
     let ctx = egui::Context::default();
     let mut worker = Worker::start(&ctx, s.digitize_pipeline()).map_err(|_| "no thread").unwrap();
-    // The first job holds the thread until the test lets it go, so the next two queue.
+    // The first job holds the thread until the test lets it go, so the next two queue: they are
+    // sent once it has started, as a job sent before would replace it.
     let (hold_tx, hold_rx) = channel::<()>();
-    let hold = std::sync::Mutex::new(hold_rx);
+    let (started_tx, started_rx) = channel::<()>();
+    let hold = std::sync::Mutex::new((hold_rx, started_tx));
     let mut first = job(&s, id, 1, 3);
     first.hook = Some(Box::new(move |_| {
-        let _ = hold.lock().unwrap().recv();
+        let (hold, started) = &*hold.lock().unwrap();
+        let _ = started.send(());
+        let _ = hold.recv();
     }));
     assert!(worker.submit(first).is_none());
+    started_rx.recv_timeout(Duration::from_secs(60)).unwrap();
     assert!(worker.submit(job(&s, id, 2, 3)).is_none());
     assert!(worker.submit(job(&s, id, 3, 4)).is_none());
     hold_tx.send(()).unwrap();
@@ -105,4 +111,28 @@ fn in_line_a_job_runs_at_the_next_poll() {
     assert!(steps.iter().any(|d| d.ticket == 1 && matches!(d.outcome, Outcome::Cancelled)));
     assert!(steps.last().is_some_and(|d| d.ticket == 2 && matches!(d.outcome, Outcome::Finished(_))));
     assert!(driver.poll().is_empty(), "nothing more");
+}
+
+/// Closing the window drops its thread, which cancels the run under way at once.
+#[test]
+fn dropping_the_worker_cancels_the_run_under_way() {
+    let (s, id) = picture_session();
+    let ctx = egui::Context::default();
+    let mut worker = Worker::start(&ctx, s.digitize_pipeline()).map_err(|_| "no thread").unwrap();
+    let (started_tx, started_rx) = channel::<()>();
+    let started = std::sync::Mutex::new(started_tx);
+    let mut long = job(&s, id, 1, 3);
+    let progress = long.progress.clone();
+    // The run waits for its cancel, at most a deadline generous for a busy machine.
+    long.hook = Some(Box::new(move |job| {
+        let _ = started.lock().unwrap().send(());
+        let deadline = Instant::now() + Duration::from_secs(60);
+        while !job.progress.cancelled() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(1));
+        }
+    }));
+    assert!(worker.submit(long).is_none());
+    started_rx.recv_timeout(Duration::from_secs(60)).unwrap();
+    drop(worker);
+    assert!(progress.cancelled(), "the run under way is cancelled when the window goes");
 }

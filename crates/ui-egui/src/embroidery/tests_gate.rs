@@ -64,7 +64,7 @@ mod sha256;
 
 /// The corpus's folder, every file checked against its manifest, as the engine's corpus tests check
 /// it.
-fn corpus() -> std::path::PathBuf {
+pub(super) fn corpus() -> std::path::PathBuf {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/embroidery");
     for line in include_str!("../../../../xtask/embroidery-corpus.sha256").lines().filter(|l| !l.trim().is_empty()) {
         let (digest, name) = line.split_once("  ").expect("malformed embroidery corpus manifest");

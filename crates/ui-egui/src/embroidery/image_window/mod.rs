@@ -369,3 +369,5 @@ pub(crate) fn busy(app: &VectorcraftApp) -> bool {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_gate;

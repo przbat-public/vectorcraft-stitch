@@ -601,3 +601,133 @@ fn the_owners_polish_words_for_stitch_editing() {
         assert_eq!(crate::i18n::tr_ctx(pl, crate::embroidery::text::CONTEXT, english), polish, "{english}");
     }
 }
+
+/// An app in `lang` with a picture placed and selected (an orange square with a navy bar, on
+/// white) and its image window open.
+fn app_with_image_window() -> VectorcraftApp {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
+    let picture = image::RgbaImage::from_fn(200, 100, |x, y| {
+        image::Rgba(match ((20..180).contains(&x), (45..55).contains(&y), (10..90).contains(&y)) {
+            (true, true, _) => [20, 40, 120, 255],
+            (true, _, true) => [240, 130, 20, 255],
+            _ => [255, 255, 255, 255],
+        })
+    });
+    let mut png = Vec::new();
+    image::DynamicImage::ImageRgba8(picture).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    app.run("file.place", json!({"name": "logo.png", "dataBase64": vectorcraft_format::base64_encode(&png)})).unwrap();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    app
+}
+
+/// What the image window drew: its texts with their boxes, its screen-reader tree, the window's
+/// box, and the names it draws as they are.
+type WindowDrawn = (Vec<(String, Rect)>, Vec<Node>, Rect, Vec<String>);
+
+/// The image window in `lang` on a screen `screen` points large, step `step` open, once its result
+/// is in → its texts with their boxes, its screen-reader tree, the window's box, and the names it
+/// draws as they are (the picture's, the threads').
+fn image_window(lang: Lang, screen: egui::Vec2, step: u64) -> WindowDrawn {
+    use crate::embroidery::image_window::STEP;
+    crate::i18n::set_current(lang);
+    let ctx = egui::Context::default();
+    theme::install_fonts(&ctx);
+    ctx.enable_accesskit();
+    let mut app = app_with_image_window();
+    // The app sets the interface's language from its preference each frame.
+    app.session.prefs.interface_language = lang.code().to_string();
+    if let Some(d) = app.ui.dialog.as_mut() {
+        d.fields.insert(STEP.into(), json!(step));
+    }
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
+    let (mut texts, mut nodes, mut time) = (vec![], vec![], 0.0);
+    let settled = |app: &VectorcraftApp| {
+        app.embroidery.image_window.live.as_ref().is_some_and(|l| l.schedule.shown.as_ref().is_some_and(|s| s.whole) && !l.schedule.busy())
+    };
+    let mut extra = 3;
+    while extra > 0 {
+        assert!(std::time::Instant::now() < deadline, "{}: never ready", lang.code());
+        if settled(&app) {
+            extra -= 1;
+        }
+        time += 0.05;
+        let raw = egui::RawInput { time: Some(time), screen_rect: Some(Rect::from_min_size(Pos2::ZERO, screen)), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            crate::dialogs::show(&mut app, ui.ctx());
+        });
+        out.textures_delta.clear();
+        texts.clear();
+        // What shows of each text: its box within its clip (the settings column scrolls).
+        let mut pending: Vec<(Shape, Rect)> = out.shapes.into_iter().map(|c| (c.shape, c.clip_rect)).collect();
+        while let Some((s, clip)) = pending.pop() {
+            match s {
+                Shape::Vec(v) => pending.extend(v.into_iter().map(|s| (s, clip))),
+                Shape::Text(t) => {
+                    let shown = t.visual_bounding_rect().intersect(clip);
+                    if shown.is_positive() {
+                        texts.push((t.galley.text().to_string(), shown));
+                    }
+                }
+                _ => {}
+            }
+        }
+        nodes = out.platform_output.accesskit_update.map(|u| u.nodes.into_iter().map(|(_, n)| n).collect()).unwrap_or_default();
+    }
+    let mut names: Vec<String> = vec!["logo.png".into(), "PNG".into(), "JEF".into(), "PES".into(), "ΔE".into()];
+    if let Some(live) = app.embroidery.image_window.live.as_mut()
+        && let Some(reply) = live.reply()
+    {
+        for c in reply["colors"].as_array().into_iter().flatten() {
+            names.extend(c["thread"]["name"].as_str().map(str::to_string));
+            names.extend(c["color"].as_str().map(str::to_string));
+        }
+    }
+    let window = Rect::from_center_size(
+        Rect::from_min_size(Pos2::ZERO, screen).center(),
+        crate::embroidery::image_window::frame::size(Rect::from_min_size(Pos2::ZERO, screen)),
+    );
+    crate::i18n::set_current(Lang::EN);
+    (texts, nodes, window, names)
+}
+
+/// In every complete language, the image window, at its smallest (960 × 600 points: its compact
+/// column) and on a laptop's display, with the Image and the Colors steps open, draws no English the
+/// language's catalogue doesn't give, keeps its words inside it, and names every control for
+/// screen readers.
+#[test]
+fn the_image_window_in_every_language() {
+    /// The screens: the window's smallest, and a laptop's display.
+    const SCREENS: [[f32; 2]; 2] = [[960.0, 600.0], [1440.0, 900.0]];
+    const STEPS: [u64; 2] = [1, 2];
+    let controls = [Role::Button, Role::CheckBox, Role::RadioButton, Role::TextInput, Role::ComboBox, Role::Slider, Role::Tab, Role::ListBoxOption];
+    let mut english = vec![];
+    for [w, h] in SCREENS {
+        for step in STEPS {
+            english.extend(image_window(Lang::EN, vec2(w, h), step).0.into_iter().map(|(t, _)| numbers_blanked(&t)));
+        }
+    }
+    for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
+        let lang = Lang::from_code(info.code).unwrap();
+        for [w, h] in SCREENS {
+            for step in STEPS {
+                let (texts, nodes, window, names) = image_window(lang, vec2(w, h), step);
+                for (text, rect) in &texts {
+                    if english.contains(&numbers_blanked(text)) {
+                        assert!(may_be_english(info.source, text, &names), "{} at {w}, step {step}: {text:?} is drawn in English", info.code);
+                    }
+                    assert!(
+                        window.expand(0.5).contains_rect(*rect),
+                        "{} at {w}, step {step}: {text:?} {rect:?} leaves the window {window:?}",
+                        info.code
+                    );
+                }
+                for n in nodes.iter().filter(|n| controls.contains(&n.role())) {
+                    let named = n.label().is_some_and(|l| !l.trim().is_empty()) || !n.labelled_by().is_empty();
+                    assert!(named, "{} at {w}, step {step}: a {:?} has no name", info.code, n.role());
+                }
+            }
+        }
+    }
+}

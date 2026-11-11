@@ -601,7 +601,7 @@ fn badge(ui: &mut Ui, words: &str, room: f32, tip: &str) {
 }
 
 /// ↺, a button screen readers call `name`, its tooltip `tip`; outlined while it has the keyboard.
-fn restore(ui: &mut Ui, name: &str, tip: &str) -> egui::Response {
+pub(crate) fn restore(ui: &mut Ui, name: &str, tip: &str) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let (rect, resp) = ui.allocate_exact_size(vec2(RESTORE, RESTORE), Sense::click());
     if resp.hovered() {

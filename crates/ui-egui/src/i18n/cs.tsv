@@ -7456,3 +7456,39 @@ embroidery	Colors overlap by {value} mm	Barvy se překrývají o {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Stehy se řídí nastavením výšivky dokumentu.
 @plural	{count} thread + background|{count} threads + background	{count} nit + pozadí|{count} nitě + pozadí|{count} nití + pozadí
 @plural	{count} area|{count} areas	{count} oblast|{count} oblasti|{count} oblastí
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Vyberte dvě nebo více barev, které chcete sloučit.
+embroidery	Select one or more colors first.	Nejprve vyberte jednu nebo více barev.
+embroidery	Select one color to choose its thread.	Vyberte jednu barvu a zvolte její nit.
+embroidery	{share} of the frame	{share} rámečku
+embroidery	merged	sloučeno
+embroidery	unlike the image's color	neodpovídá barvě obrázku
+embroidery	no closer thread in {palette}	v {palette} není bližší nit
+embroidery	{color} in {thread}	{color} nití {thread}
+embroidery	Background · {share} of the frame · not sewn	Pozadí · {share} rámečku · nešije se
+embroidery	Back to Auto: {color}	Zpět na automaticky: {color}
+embroidery	Back to Auto	Zpět na automaticky
+embroidery	Merge	Sloučit
+embroidery	Sew these colors as one.	Tyto barvy se šijí jako jedna.
+embroidery	Sew	Šít
+embroidery	Sew these colors again, as Auto chooses.	Tyto barvy se znovu šijí, jak zvolí automatika.
+embroidery	Don't Sew	Nešít
+embroidery	Leave these colors out: their areas aren't sewn.	Vynechte tyto barvy: jejich oblasti se nešijí.
+embroidery	Choose Thread…	Zvolit nit…
+embroidery	Choose the thread this color is sewn in.	Zvolte nit, kterou se tato barva šije.
+embroidery	Name or number	Název nebo číslo
+embroidery	{value} · nearest	{value} · nejbližší
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Plochá grafika: přesně její vlastní barvy, i vzácné, ale odlišné, nejvýš zadaný počet barev.
+embroidery	Grays	Šedé
+embroidery	Shades of gray, as many as the number of colors.	Odstíny šedi, tolik, kolik je počet barev.
+embroidery	The colors that best represent the picture, at most the number of colors.	Barvy, které obrázek nejlépe vystihují, nejvýš zadaný počet barev.
+embroidery	Mode	Režim
+embroidery	{value} is out of range: {low} to {high}.	{value} je mimo rozsah: {low} až {high}.
+embroidery	Number of colors	Počet barev
+embroidery	Match to threads	Přiřadit k nitím
+embroidery	Create sets the document's thread palette to {palette}.	Vytvoření nastaví paletu nití dokumentu na {palette}.
+embroidery	Smallest area	Nejmenší oblast
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Menší skvrnky, třeba šum JPEG, se připojí k barvě kolem sebe.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} barva byla příliš malá a připojila se k jiným|{count} barvy byly příliš malé a připojily se k jiným|{count} barev bylo příliš malých a připojilo se k jiným
+@plural	{count} speck joined|{count} specks joined	{count} skvrnka se připojila|{count} skvrnky se připojily|{count} skvrnek se připojilo

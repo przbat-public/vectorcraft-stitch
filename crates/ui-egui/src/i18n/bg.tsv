@@ -7202,3 +7202,39 @@ embroidery	Colors overlap by {value} mm	Цветовете се застъпва
 embroidery	The stitches follow the document's embroidery settings.	Бодовете следват настройките за бродерия на документа.
 @plural	{count} thread + background|{count} threads + background	{count} нишка + фон|{count} нишки + фон
 @plural	{count} area|{count} areas	{count} област|{count} области
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Изберете два или повече цвята, за да ги слеете.
+embroidery	Select one or more colors first.	Първо изберете един или повече цвята.
+embroidery	Select one color to choose its thread.	Изберете един цвят, за да изберете нишката му.
+embroidery	{share} of the frame	{share} от кадъра
+embroidery	merged	слят
+embroidery	unlike the image's color	различна от цвета на изображението
+embroidery	no closer thread in {palette}	няма по-близка нишка в {palette}
+embroidery	{color} in {thread}	{color} в {thread}
+embroidery	Background · {share} of the frame · not sewn	Фон · {share} от кадъра · не се шие
+embroidery	Back to Auto: {color}	Обратно към автоматично: {color}
+embroidery	Back to Auto	Обратно към автоматично
+embroidery	Merge	Сливане
+embroidery	Sew these colors as one.	Тези цветове се шият като един.
+embroidery	Sew	Ший
+embroidery	Sew these colors again, as Auto chooses.	Тези цветове отново се шият, както избира автоматиката.
+embroidery	Don't Sew	Не ший
+embroidery	Leave these colors out: their areas aren't sewn.	Пропуснете тези цветове: областите им не се шият.
+embroidery	Choose Thread…	Избор на нишка…
+embroidery	Choose the thread this color is sewn in.	Изберете нишката, с която се шие този цвят.
+embroidery	Name or number	Име или номер
+embroidery	{value} · nearest	{value} · най-близка
+embroidery	Logo	Лого
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Плоска графика: точно собствените ѝ цветове, редките, но отличими, запазени, най-много броя цветове.
+embroidery	Grays	Сиви
+embroidery	Shades of gray, as many as the number of colors.	Нюанси на сивото, колкото е броят цветове.
+embroidery	The colors that best represent the picture, at most the number of colors.	Цветовете, които най-добре представят изображението, най-много броя цветове.
+embroidery	Mode	Режим
+embroidery	{value} is out of range: {low} to {high}.	{value} е извън обхвата: от {low} до {high}.
+embroidery	Number of colors	Брой цветове
+embroidery	Match to threads	Съпоставяне с нишки
+embroidery	Create sets the document's thread palette to {palette}.	Създаването задава палитрата с нишки на документа на {palette}.
+embroidery	Smallest area	Най-малка област
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	По-малките петънца, като шума на JPEG, се сливат с цвета около тях.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} цвят беше твърде малък и се сля с други|{count} цвята бяха твърде малки и се сляха с други
+@plural	{count} speck joined|{count} specks joined	{count} петънце се сля|{count} петънца се сляха

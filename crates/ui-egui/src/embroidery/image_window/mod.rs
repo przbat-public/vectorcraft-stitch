@@ -21,6 +21,8 @@
 //!   it is (the window says so); then the window closes, what was made selected. Enter only commits
 //!   the field typed in; Cmd/Ctrl+Enter is Create.
 
+pub(crate) mod colour_list;
+mod colours_step;
 pub(crate) mod frame;
 mod image_step;
 pub(crate) mod preview;
@@ -85,6 +87,8 @@ pub(crate) struct Live {
     pub(crate) schedule: Schedule,
     /// The preview's textures, pan and the area under the pointer.
     pub(crate) preview: preview::Preview,
+    /// The colour list's selection and its thread choice.
+    pub(crate) colours: colour_list::State,
     /// The command's reply for the result shown, built once a result.
     reply: Option<(ReplyOf, Value)>,
     /// The fields as last drawn: what is remembered when it closes without Create.
@@ -213,6 +217,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             runner,
             schedule: Schedule::default(),
             preview: preview::Preview::default(),
+            colours: colour_list::State::default(),
             reply: None,
             fields: d.fields.clone(),
             create_waiting: false,

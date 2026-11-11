@@ -40,6 +40,10 @@ const MARGIN_WIDTH: f32 = 60.0;
 const NOTE_TEXT: f32 = 11.5;
 const GAP: f32 = 6.0;
 
+/// The margins in the order the step shows them (indices of left, top, right, bottom): left and
+/// right, then top and bottom.
+const MARGIN_ORDER: [usize; 4] = [0, 2, 1, 3];
+
 /// The decimals a size is typed to (tenths of a millimetre, the formats' step), a margin (whole
 /// pixels), and a size's top said in words (whole millimetres).
 const MM_DECIMALS: usize = 1;
@@ -264,13 +268,18 @@ fn crop_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &V
     let limits = [px.0, px.1, px.0, px.1];
     heading(ui, crate::et!("Crop"));
     let mut typed = None;
-    ui.horizontal_wrapped(|ui| {
-        for (k, ((name, margin), limit)) in names.iter().zip(m).zip(limits).enumerate() {
+    // Two rows: left and right, then top and bottom.
+    egui::Grid::new("digitize-crop-margins").num_columns(4).spacing([GAP, GAP]).show(ui, |ui| {
+        for (n, k) in MARGIN_ORDER.into_iter().enumerate() {
+            let (Some(name), Some(&margin), Some(&limit)) = (names.get(k), m.get(k), limits.get(k)) else { continue };
             crate::widgets::field_label(ui, *name);
             let bounds = 0.0..=f64::from(limit);
-            if let Some(v) = fields::number_field(ui, ("digitize-crop", k), Some(f64::from(margin)), &format, &Look::default(), MARGIN_WIDTH, &bounds)
-            {
+            let shown = Some(f64::from(margin));
+            if let Some(v) = fields::number_field(ui, ("digitize-crop", k), shown, &format, &Look::default(), MARGIN_WIDTH, &bounds) {
                 typed = Some((k, v));
+            }
+            if n % 2 == 1 {
+                ui.end_row();
             }
         }
     });

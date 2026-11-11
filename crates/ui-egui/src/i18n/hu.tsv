@@ -7440,3 +7440,39 @@ embroidery	Colors overlap by {value} mm	A színek {value} mm-rel fedik egymást
 embroidery	The stitches follow the document's embroidery settings.	Az öltések a dokumentum hímzésbeállításait követik.
 @plural	{count} thread + background|{count} threads + background	{count} szál + háttér
 @plural	{count} area|{count} areas	{count} terület
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Jelöljön ki legalább két színt az összeolvasztáshoz.
+embroidery	Select one or more colors first.	Előbb jelöljön ki egy vagy több színt.
+embroidery	Select one color to choose its thread.	Jelöljön ki egy színt a szála kiválasztásához.
+embroidery	{share} of the frame	{share} a keretből
+embroidery	merged	összeolvasztva
+embroidery	unlike the image's color	eltér a kép színétől
+embroidery	no closer thread in {palette}	nincs közelebbi szál: {palette}
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	Háttér · {share} a keretből · nincs kihímezve
+embroidery	Back to Auto: {color}	Vissza automatikusra: {color}
+embroidery	Back to Auto	Vissza automatikusra
+embroidery	Merge	Összeolvasztás
+embroidery	Sew these colors as one.	Ezek a színek egyként lesznek kihímezve.
+embroidery	Sew	Hímezze
+embroidery	Sew these colors again, as Auto chooses.	Ezek a színek újra ki lesznek hímezve, ahogy az automatika választja.
+embroidery	Don't Sew	Ne hímezze
+embroidery	Leave these colors out: their areas aren't sewn.	Hagyja ki ezeket a színeket: a területeik nem lesznek kihímezve.
+embroidery	Choose Thread…	Szál kiválasztása…
+embroidery	Choose the thread this color is sewn in.	Válassza ki a szálat, amellyel ez a szín ki lesz hímezve.
+embroidery	Name or number	Név vagy szám
+embroidery	{value} · nearest	{value} · legközelebbi
+embroidery	Logo	Logó
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Sík grafika: pontosan a saját színei, a ritka, de jól elkülönülők is, legfeljebb a színek száma.
+embroidery	Grays	Szürkék
+embroidery	Shades of gray, as many as the number of colors.	Szürke árnyalatok, annyi, amennyi a színek száma.
+embroidery	The colors that best represent the picture, at most the number of colors.	A képet legjobban visszaadó színek, legfeljebb a színek száma.
+embroidery	Mode	Mód
+embroidery	{value} is out of range: {low} to {high}.	{value} a tartományon kívül esik: {low}–{high}.
+embroidery	Number of colors	Színek száma
+embroidery	Match to threads	Szálakhoz igazítás
+embroidery	Create sets the document's thread palette to {palette}.	A létrehozás a dokumentum szálpalettáját erre állítja: {palette}.
+embroidery	Smallest area	Legkisebb terület
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	A kisebb foltok, például a JPEG-zaj, a körülöttük lévő színhez csatlakoznak.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} szín túl kicsi volt, és másokhoz csatlakozott
+@plural	{count} speck joined|{count} specks joined	{count} folt csatlakozott

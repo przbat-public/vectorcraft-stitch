@@ -8941,3 +8941,39 @@ embroidery	Colors overlap by {value} mm	Färgerna överlappar med {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Stygnen följer dokumentets broderiinställningar.
 @plural	{count} thread + background|{count} threads + background	{count} tråd + bakgrund|{count} trådar + bakgrund
 @plural	{count} area|{count} areas	{count} område|{count} områden
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Markera två eller fler färger för att sammanfoga dem.
+embroidery	Select one or more colors first.	Markera först en eller flera färger.
+embroidery	Select one color to choose its thread.	Markera en färg för att välja dess tråd.
+embroidery	{share} of the frame	{share} av ramen
+embroidery	merged	sammanfogad
+embroidery	unlike the image's color	olik bildens färg
+embroidery	no closer thread in {palette}	ingen närmare tråd i {palette}
+embroidery	{color} in {thread}	{color} i {thread}
+embroidery	Background · {share} of the frame · not sewn	Bakgrund · {share} av ramen · broderas inte
+embroidery	Back to Auto: {color}	Tillbaka till Auto: {color}
+embroidery	Back to Auto	Tillbaka till Auto
+embroidery	Merge	Sammanfoga
+embroidery	Sew these colors as one.	De här färgerna broderas som en.
+embroidery	Sew	Brodera
+embroidery	Sew these colors again, as Auto chooses.	De här färgerna broderas igen, som Auto väljer.
+embroidery	Don't Sew	Brodera inte
+embroidery	Leave these colors out: their areas aren't sewn.	Utelämna de här färgerna: deras områden broderas inte.
+embroidery	Choose Thread…	Välj tråd…
+embroidery	Choose the thread this color is sewn in.	Välj tråden som den här färgen broderas med.
+embroidery	Name or number	Namn eller nummer
+embroidery	{value} · nearest	{value} · närmast
+embroidery	Logo	Logotyp
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Platt grafik: exakt dess egna färger, sällsynta men tydliga behålls, högst antalet färger.
+embroidery	Grays	Gråtoner
+embroidery	Shades of gray, as many as the number of colors.	Gråtoner, lika många som antalet färger.
+embroidery	The colors that best represent the picture, at most the number of colors.	De färger som bäst återger bilden, högst antalet färger.
+embroidery	Mode	Läge
+embroidery	{value} is out of range: {low} to {high}.	{value} ligger utanför intervallet: {low} till {high}.
+embroidery	Number of colors	Antal färger
+embroidery	Match to threads	Matcha mot trådar
+embroidery	Create sets the document's thread palette to {palette}.	Skapa ställer in dokumentets trådpalett på {palette}.
+embroidery	Smallest area	Minsta område
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Mindre fläckar, som JPEG-brus, går upp i färgen runt dem.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} färg var för liten och gick upp i andra|{count} färger var för små och gick upp i andra
+@plural	{count} speck joined|{count} specks joined	{count} fläck sammanfogad|{count} fläckar sammanfogade

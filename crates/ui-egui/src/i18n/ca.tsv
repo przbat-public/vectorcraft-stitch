@@ -7436,3 +7436,39 @@ embroidery	Colors overlap by {value} mm	Els colors se superposen {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Les puntades segueixen la configuració de brodat del document.
 @plural	{count} thread + background|{count} threads + background	{count} fil + fons|{count} fils + fons
 @plural	{count} area|{count} areas	{count} àrea|{count} àrees
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Seleccioneu dos o més colors per fusionar-los.
+embroidery	Select one or more colors first.	Primer seleccioneu un o més colors.
+embroidery	Select one color to choose its thread.	Seleccioneu un color per triar-ne el fil.
+embroidery	{share} of the frame	{share} del marc
+embroidery	merged	fusionat
+embroidery	unlike the image's color	diferent del color de la imatge
+embroidery	no closer thread in {palette}	cap fil més proper a {palette}
+embroidery	{color} in {thread}	{color} en {thread}
+embroidery	Background · {share} of the frame · not sewn	Fons · {share} del marc · no es cus
+embroidery	Back to Auto: {color}	Torna a automàtic: {color}
+embroidery	Back to Auto	Torna a automàtic
+embroidery	Merge	Fusiona
+embroidery	Sew these colors as one.	Aquests colors es cusen com un de sol.
+embroidery	Sew	Cus
+embroidery	Sew these colors again, as Auto chooses.	Aquests colors es tornen a cosir, com tria l’automàtic.
+embroidery	Don't Sew	No cusis
+embroidery	Leave these colors out: their areas aren't sewn.	Deixeu fora aquests colors: les seves àrees no es cusen.
+embroidery	Choose Thread…	Tria el fil…
+embroidery	Choose the thread this color is sewn in.	Trieu el fil amb què es cus aquest color.
+embroidery	Name or number	Nom o número
+embroidery	{value} · nearest	{value} · el més proper
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Art pla: exactament els seus colors, també els rars però diferents, com a màxim el nombre de colors.
+embroidery	Grays	Grisos
+embroidery	Shades of gray, as many as the number of colors.	Tons de gris, tants com el nombre de colors.
+embroidery	The colors that best represent the picture, at most the number of colors.	Els colors que millor representen la imatge, com a màxim el nombre de colors.
+embroidery	Mode	Mode
+embroidery	{value} is out of range: {low} to {high}.	{value} és fora de l’interval: de {low} a {high}.
+embroidery	Number of colors	Nombre de colors
+embroidery	Match to threads	Fes coincidir amb els fils
+embroidery	Create sets the document's thread palette to {palette}.	En crear-los, la paleta de fils del document passa a ser {palette}.
+embroidery	Smallest area	Àrea més petita
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Les taques més petites, com el soroll del JPEG, s’uneixen al color del voltant.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} color era massa petit i s’ha unit a d’altres|{count} colors eren massa petits i s’han unit a d’altres
+@plural	{count} speck joined|{count} specks joined	{count} taca s’ha unit|{count} taques s’han unit

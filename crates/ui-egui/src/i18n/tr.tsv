@@ -7409,3 +7409,39 @@ embroidery	Colors overlap by {value} mm	Renkler {value} mm örtüşür
 embroidery	The stitches follow the document's embroidery settings.	Dikişler belgenin nakış ayarlarını izler.
 @plural	{count} thread + background|{count} threads + background	{count} iplik + arka plan
 @plural	{count} area|{count} areas	{count} alan
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Birleştirmek için iki veya daha fazla renk seçin.
+embroidery	Select one or more colors first.	Önce bir veya daha fazla renk seçin.
+embroidery	Select one color to choose its thread.	İpliğini seçmek için tek bir renk seçin.
+embroidery	{share} of the frame	çerçevenin {share} kadarı
+embroidery	merged	birleştirildi
+embroidery	unlike the image's color	resmin renginden farklı
+embroidery	no closer thread in {palette}	{palette} içinde daha yakın iplik yok
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	Arka plan · çerçevenin {share} kadarı · dikilmez
+embroidery	Back to Auto: {color}	Otomatiğe dön: {color}
+embroidery	Back to Auto	Otomatiğe dön
+embroidery	Merge	Birleştir
+embroidery	Sew these colors as one.	Bu renkler tek renk olarak dikilir.
+embroidery	Sew	Dik
+embroidery	Sew these colors again, as Auto chooses.	Bu renkler, Otomatik'in seçtiği gibi yeniden dikilir.
+embroidery	Don't Sew	Dikme
+embroidery	Leave these colors out: their areas aren't sewn.	Bu renkleri dışarıda bırakın: alanları dikilmez.
+embroidery	Choose Thread…	İplik Seç…
+embroidery	Choose the thread this color is sewn in.	Bu rengin dikileceği ipliği seçin.
+embroidery	Name or number	Ad veya numara
+embroidery	{value} · nearest	{value} · en yakın
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Düz çizim: tam olarak kendi renkleri, seyrek ama belirgin olanlar korunur, en fazla renk sayısı kadar.
+embroidery	Grays	Griler
+embroidery	Shades of gray, as many as the number of colors.	Gri tonları, renk sayısı kadar.
+embroidery	The colors that best represent the picture, at most the number of colors.	Resmi en iyi yansıtan renkler, en fazla renk sayısı kadar.
+embroidery	Mode	Mod
+embroidery	{value} is out of range: {low} to {high}.	{value} aralık dışında: {low} ile {high} arası.
+embroidery	Number of colors	Renk sayısı
+embroidery	Match to threads	İpliklerle eşleştir
+embroidery	Create sets the document's thread palette to {palette}.	Oluştur, belgenin iplik paletini {palette} olarak ayarlar.
+embroidery	Smallest area	En küçük alan
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	JPEG gürültüsü gibi daha küçük benekler, çevrelerindeki renge katılır.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} renk çok küçüktü ve diğerlerine katıldı
+@plural	{count} speck joined|{count} specks joined	{count} benek katıldı

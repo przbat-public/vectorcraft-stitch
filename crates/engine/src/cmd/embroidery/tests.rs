@@ -979,3 +979,18 @@ fn only_what_would_print_is_sewn() {
     let plan = cancel::scope(&CancelToken::new(), Some(sink), || digitize(&doc, &Options::default(), None)).unwrap();
     assert_eq!((plan.units.len(), steps.borrow().clone()), (1, vec![(1, 1)]));
 }
+
+/// Choose Thread… lists every thread of the palette nearest the colour first, its difference as
+/// shown; none for a palette this version doesn't know. The palettes come with their threads.
+#[test]
+fn threads_nearest_lists_a_palettes_threads_nearest_first() {
+    let jef = super::threads_nearest("jef", [200, 30, 40]);
+    assert_eq!(jef.len(), 78);
+    assert!(jef.windows(2).all(|w| w[0].delta_e <= w[1].delta_e), "nearest first");
+    assert!(jef.iter().all(|t| t.mismatch == (t.delta_e > vectorcraft_stitch::thread::MISMATCH_DELTA_E)));
+    let pec = super::threads_nearest("pec", [255, 255, 255]);
+    assert_eq!(pec.len(), 61, "Brother's threads, not PEC's appliqué entries");
+    assert!(pec.first().is_some_and(|t| t.name == "White"), "{:?}", pec.first());
+    assert!(super::threads_nearest("dmc", [0, 0, 0]).is_empty());
+    assert_eq!(super::thread_palettes(), vec![("pec", 61), ("jef", 78)]);
+}

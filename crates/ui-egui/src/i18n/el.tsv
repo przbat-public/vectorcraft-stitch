@@ -7408,3 +7408,39 @@ embroidery	Colors overlap by {value} mm	Τα χρώματα επικαλύπτο
 embroidery	The stitches follow the document's embroidery settings.	Οι βελονιές ακολουθούν τις ρυθμίσεις κεντήματος του εγγράφου.
 @plural	{count} thread + background|{count} threads + background	{count} κλωστή + φόντο|{count} κλωστές + φόντο
 @plural	{count} area|{count} areas	{count} περιοχή|{count} περιοχές
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Επιλέξτε δύο ή περισσότερα χρώματα για να τα συγχωνεύσετε.
+embroidery	Select one or more colors first.	Επιλέξτε πρώτα ένα ή περισσότερα χρώματα.
+embroidery	Select one color to choose its thread.	Επιλέξτε ένα χρώμα για να διαλέξετε την κλωστή του.
+embroidery	{share} of the frame	{share} του πλαισίου
+embroidery	merged	συγχωνευμένο
+embroidery	unlike the image's color	διαφέρει από το χρώμα της εικόνας
+embroidery	no closer thread in {palette}	καμία πιο κοντινή κλωστή στο {palette}
+embroidery	{color} in {thread}	{color} σε {thread}
+embroidery	Background · {share} of the frame · not sewn	Φόντο · {share} του πλαισίου · δεν κεντιέται
+embroidery	Back to Auto: {color}	Επιστροφή στο αυτόματο: {color}
+embroidery	Back to Auto	Επιστροφή στο αυτόματο
+embroidery	Merge	Συγχώνευση
+embroidery	Sew these colors as one.	Αυτά τα χρώματα κεντιούνται ως ένα.
+embroidery	Sew	Κέντημα
+embroidery	Sew these colors again, as Auto chooses.	Αυτά τα χρώματα κεντιούνται ξανά, όπως επιλέγει το αυτόματο.
+embroidery	Don't Sew	Χωρίς κέντημα
+embroidery	Leave these colors out: their areas aren't sewn.	Παραλείψτε αυτά τα χρώματα: οι περιοχές τους δεν κεντιούνται.
+embroidery	Choose Thread…	Επιλογή κλωστής…
+embroidery	Choose the thread this color is sewn in.	Επιλέξτε την κλωστή με την οποία κεντιέται αυτό το χρώμα.
+embroidery	Name or number	Όνομα ή αριθμός
+embroidery	{value} · nearest	{value} · η πιο κοντινή
+embroidery	Logo	Λογότυπο
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Επίπεδο γραφικό: ακριβώς τα δικά του χρώματα, και τα σπάνια αλλά διακριτά, το πολύ όσα ο αριθμός χρωμάτων.
+embroidery	Grays	Γκρι
+embroidery	Shades of gray, as many as the number of colors.	Αποχρώσεις του γκρι, τόσες όσες ο αριθμός χρωμάτων.
+embroidery	The colors that best represent the picture, at most the number of colors.	Τα χρώματα που αποδίδουν καλύτερα την εικόνα, το πολύ όσα ο αριθμός χρωμάτων.
+embroidery	Mode	Λειτουργία
+embroidery	{value} is out of range: {low} to {high}.	Το {value} είναι εκτός εύρους: {low} έως {high}.
+embroidery	Number of colors	Αριθμός χρωμάτων
+embroidery	Match to threads	Αντιστοίχιση με κλωστές
+embroidery	Create sets the document's thread palette to {palette}.	Η δημιουργία ορίζει την παλέτα κλωστών του εγγράφου σε {palette}.
+embroidery	Smallest area	Μικρότερη περιοχή
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Μικρότερες κηλίδες, όπως ο θόρυβος JPEG, ενώνονται με το χρώμα γύρω τους.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} χρώμα ήταν πολύ μικρό και ενώθηκε με άλλα|{count} χρώματα ήταν πολύ μικρά και ενώθηκαν με άλλα
+@plural	{count} speck joined|{count} specks joined	{count} κηλίδα ενώθηκε|{count} κηλίδες ενώθηκαν

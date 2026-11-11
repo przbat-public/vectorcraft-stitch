@@ -7251,3 +7251,39 @@ embroidery	Colors overlap by {value} mm	Boje se preklapaju za {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Bodovi slijede postavke veza dokumenta.
 @plural	{count} thread + background|{count} threads + background	{count} konac + pozadina|{count} konca + pozadina|{count} konaca + pozadina
 @plural	{count} area|{count} areas	{count} područje|{count} područja|{count} područja
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Odaberite dvije ili više boja da ih spojite.
+embroidery	Select one or more colors first.	Prvo odaberite jednu ili više boja.
+embroidery	Select one color to choose its thread.	Odaberite jednu boju da biste odabrali njen konac.
+embroidery	{share} of the frame	{share} kadra
+embroidery	merged	spojena
+embroidery	unlike the image's color	ne liči na boju slike
+embroidery	no closer thread in {palette}	nema bližeg konca u {palette}
+embroidery	{color} in {thread}	{color} u {thread}
+embroidery	Background · {share} of the frame · not sewn	Pozadina · {share} kadra · ne šije se
+embroidery	Back to Auto: {color}	Vrati na automatski: {color}
+embroidery	Back to Auto	Vrati na automatski
+embroidery	Merge	Spoji
+embroidery	Sew these colors as one.	Ove boje se šiju kao jedna.
+embroidery	Sew	Šij
+embroidery	Sew these colors again, as Auto chooses.	Ove boje se ponovo šiju, kako odabere automatika.
+embroidery	Don't Sew	Ne šij
+embroidery	Leave these colors out: their areas aren't sewn.	Izostavite ove boje: njihova područja se ne šiju.
+embroidery	Choose Thread…	Odaberi konac…
+embroidery	Choose the thread this color is sewn in.	Odaberite konac kojim se šije ova boja.
+embroidery	Name or number	Naziv ili broj
+embroidery	{value} · nearest	{value} · najbliži
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Ravna grafika: tačno njene boje, rijetke ali različite zadržane, najviše koliko je broj boja.
+embroidery	Grays	Sive
+embroidery	Shades of gray, as many as the number of colors.	Nijanse sive, onoliko koliko je broj boja.
+embroidery	The colors that best represent the picture, at most the number of colors.	Boje koje najbolje predstavljaju sliku, najviše koliko je broj boja.
+embroidery	Mode	Način
+embroidery	{value} is out of range: {low} to {high}.	{value} je izvan raspona: od {low} do {high}.
+embroidery	Number of colors	Broj boja
+embroidery	Match to threads	Uskladi s koncima
+embroidery	Create sets the document's thread palette to {palette}.	Kreiranje postavlja paletu konaca dokumenta na {palette}.
+embroidery	Smallest area	Najmanje područje
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Manje mrlje, poput JPEG šuma, pridružuju se boji oko sebe.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} boja je bila premala i pridružila se drugima|{count} boje su bile premale i pridružile se drugima|{count} boja je bilo premalo i pridružile su se drugima
+@plural	{count} speck joined|{count} specks joined	{count} mrlja se pridružila|{count} mrlje su se pridružile|{count} mrlja se pridružilo

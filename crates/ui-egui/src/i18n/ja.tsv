@@ -7141,3 +7141,39 @@ embroidery	Colors overlap by {value} mm	色の重なり {value} mm
 embroidery	The stitches follow the document's embroidery settings.	ステッチはドキュメントの刺繍設定に従います。
 @plural	{count} thread + background|{count} threads + background	{count} 本の糸 + 背景
 @plural	{count} area|{count} areas	{count} 個の領域
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	結合するには 2 色以上を選択してください。
+embroidery	Select one or more colors first.	先に 1 色以上を選択してください。
+embroidery	Select one color to choose its thread.	糸を選ぶには 1 色だけ選択してください。
+embroidery	{share} of the frame	フレームの {share}
+embroidery	merged	結合済み
+embroidery	unlike the image's color	画像の色と異なる
+embroidery	no closer thread in {palette}	{palette} にこれより近い糸はありません
+embroidery	{color} in {thread}	{color}：{thread}
+embroidery	Background · {share} of the frame · not sewn	背景 · フレームの {share} · 縫わない
+embroidery	Back to Auto: {color}	自動に戻す: {color}
+embroidery	Back to Auto	自動に戻す
+embroidery	Merge	結合
+embroidery	Sew these colors as one.	これらの色を 1 色として縫います。
+embroidery	Sew	縫う
+embroidery	Sew these colors again, as Auto chooses.	これらの色を、自動の選択どおりに再び縫います。
+embroidery	Don't Sew	縫わない
+embroidery	Leave these colors out: their areas aren't sewn.	これらの色を除きます。その領域は縫われません。
+embroidery	Choose Thread…	糸を選択…
+embroidery	Choose the thread this color is sewn in.	この色を縫う糸を選びます。
+embroidery	Name or number	名前または番号
+embroidery	{value} · nearest	{value} · 最も近い
+embroidery	Logo	ロゴ
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	フラットなアート: 画像そのものの色だけを使い、まれでもはっきり違う色は残します。最大で色の数まで。
+embroidery	Grays	グレー
+embroidery	Shades of gray, as many as the number of colors.	グレーの濃淡を色の数だけ使います。
+embroidery	The colors that best represent the picture, at most the number of colors.	画像を最もよく表す色を、最大で色の数まで。
+embroidery	Mode	モード
+embroidery	{value} is out of range: {low} to {high}.	{value} は範囲外です: {low}～{high}。
+embroidery	Number of colors	色の数
+embroidery	Match to threads	糸に合わせる
+embroidery	Create sets the document's thread palette to {palette}.	作成すると、ドキュメントの糸パレットが {palette} になります。
+embroidery	Smallest area	最小の領域
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	これより小さい点 (JPEG のノイズなど) は、周りの色に加わります。
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 色が小さすぎて、ほかの色に加わりました
+@plural	{count} speck joined|{count} specks joined	{count} 個の点を結合

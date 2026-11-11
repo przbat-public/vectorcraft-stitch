@@ -7451,3 +7451,39 @@ embroidery	Colors overlap by {value} mm	Les couleurs se chevauchent de {value} m
 embroidery	The stitches follow the document's embroidery settings.	Les points suivent les réglages de broderie du document.
 @plural	{count} thread + background|{count} threads + background	{count} fil + arrière-plan|{count} fils + arrière-plan
 @plural	{count} area|{count} areas	{count} zone|{count} zones
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Sélectionnez au moins deux couleurs pour les fusionner.
+embroidery	Select one or more colors first.	Sélectionnez d’abord une ou plusieurs couleurs.
+embroidery	Select one color to choose its thread.	Sélectionnez une seule couleur pour choisir son fil.
+embroidery	{share} of the frame	{share} du cadre
+embroidery	merged	fusionnée
+embroidery	unlike the image's color	différent de la couleur de l’image
+embroidery	no closer thread in {palette}	aucun fil plus proche dans {palette}
+embroidery	{color} in {thread}	{color} en {thread}
+embroidery	Background · {share} of the frame · not sewn	Arrière-plan · {share} du cadre · non brodé
+embroidery	Back to Auto: {color}	Revenir à Auto : {color}
+embroidery	Back to Auto	Revenir à Auto
+embroidery	Merge	Fusionner
+embroidery	Sew these colors as one.	Ces couleurs sont brodées comme une seule.
+embroidery	Sew	Broder
+embroidery	Sew these colors again, as Auto chooses.	Ces couleurs sont à nouveau brodées, comme Auto le choisit.
+embroidery	Don't Sew	Ne pas broder
+embroidery	Leave these colors out: their areas aren't sewn.	Laissez ces couleurs de côté : leurs zones ne sont pas brodées.
+embroidery	Choose Thread…	Choisir le fil…
+embroidery	Choose the thread this color is sewn in.	Choisissez le fil avec lequel cette couleur est brodée.
+embroidery	Name or number	Nom ou numéro
+embroidery	{value} · nearest	{value} · le plus proche
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Dessin à aplats : exactement ses couleurs, les rares mais distinctes gardées, au plus le nombre de couleurs.
+embroidery	Grays	Gris
+embroidery	Shades of gray, as many as the number of colors.	Nuances de gris, autant que le nombre de couleurs.
+embroidery	The colors that best represent the picture, at most the number of colors.	Les couleurs qui représentent le mieux l’image, au plus le nombre de couleurs.
+embroidery	Mode	Mode
+embroidery	{value} is out of range: {low} to {high}.	{value} est hors limites : de {low} à {high}.
+embroidery	Number of colors	Nombre de couleurs
+embroidery	Match to threads	Associer aux fils
+embroidery	Create sets the document's thread palette to {palette}.	Créer règle la palette de fils du document sur {palette}.
+embroidery	Smallest area	Plus petite zone
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Les taches plus petites, comme le bruit JPEG, rejoignent la couleur qui les entoure.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} couleur était trop petite et a rejoint les autres|{count} couleurs étaient trop petites et ont rejoint les autres
+@plural	{count} speck joined|{count} specks joined	{count} tache rattachée|{count} taches rattachées

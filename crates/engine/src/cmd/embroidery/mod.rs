@@ -767,16 +767,50 @@ fn edit_counted(s: &mut Session, label: &str, f: impl FnOnce(&mut Document) -> R
 /// export matches the art's colours to Brother's palette itself.
 pub(crate) const DEFAULT_PALETTE: Palette = Palette::Jef;
 
-/// The thread palette the document's colours are matched to: the one it sets
-/// (`embroidery.setup`), else [`DEFAULT_PALETTE`].
 /// The id of the thread palette document `d`'s colours are matched to (`pec` or `jef`): its own
 /// when it sets one this version knows, else the default.
 pub fn thread_palette_id(d: &Document) -> &'static str {
     thread_palette(d).id()
 }
 
+/// The thread palette the document's colours are matched to: the one it sets
+/// (`embroidery.setup`), else [`DEFAULT_PALETTE`].
 pub(crate) fn thread_palette(d: &Document) -> Palette {
     d.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(ThreadPalette::id).and_then(Palette::from_id).unwrap_or(DEFAULT_PALETTE)
+}
+
+/// A thread of a palette as Choose Thread… lists it ([`threads_nearest`]).
+#[derive(Clone, Debug, PartialEq)]
+pub struct NearThread {
+    /// Its number in the palette, from 1.
+    pub index: usize,
+    /// Its name and colour, as the palette gives them.
+    pub name: &'static str,
+    pub color: [u8; 3],
+    /// The CIEDE2000 difference from the colour it was ranked for, as shown (to hundredths).
+    pub delta_e: f64,
+    /// Whether it looks unlike that colour: past the line every list flags, read as shown.
+    pub mismatch: bool,
+}
+
+/// Every thread of palette `id` (`pec`, `jef`), nearest `color` first: what Choose Thread… lists.
+/// None for a palette this version doesn't know.
+pub fn threads_nearest(id: &str, color: [u8; 3]) -> Vec<NearThread> {
+    let Some(palette) = Palette::from_id(id) else { return Vec::new() };
+    palette
+        .ranked(color)
+        .into_iter()
+        .filter_map(|m| {
+            let (thread, name) = palette.get(m.index)?;
+            let (delta_e, mismatch) = (vectorcraft_stitch::thread::shown_delta_e(m.delta_e), vectorcraft_stitch::thread::mismatched(m.delta_e));
+            Some(NearThread { index: m.index, name, color: thread, delta_e, mismatch })
+        })
+        .collect()
+}
+
+/// The thread palettes a document can take, by id, each with how many threads it has.
+pub fn thread_palettes() -> Vec<(&'static str, usize)> {
+    Palette::ALL.into_iter().map(|p| (p.id(), (1..=p.threads().len()).filter(|&i| p.is_thread(i)).count())).collect()
 }
 
 /// A thread record the document keeps on an opened run ([`vectorcraft_doc::embroidery::StitchRun::thread`])

@@ -210,6 +210,7 @@ pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
                 ui.add_space(4.0);
                 match step {
                     1 => super::image_step::show(app, ui, d),
+                    2 => super::colours_step::show(app, ui, d),
                     _ => defaults_note(ui, step, reply.as_ref()),
                 }
             }
@@ -225,7 +226,6 @@ fn defaults_note(ui: &mut Ui, step: u64, reply: Option<&Value>) {
     let Some(r) = reply else { return };
     let s = &r["settings"];
     let lines: Vec<String> = match step {
-        2 => vec![],
         3 => vec![
             fill(crate::et!("Smoothness: {value}"), &[("value", &numbers::decimal(lang, s["smoothing"].as_f64().unwrap_or(0.0), 0))]),
             fill(crate::et!("Corners: {value}"), &[("value", &numbers::decimal(lang, s["corners"].as_f64().unwrap_or(0.0), 0))]),

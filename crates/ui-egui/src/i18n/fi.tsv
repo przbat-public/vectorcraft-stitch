@@ -7491,3 +7491,39 @@ embroidery	Colors overlap by {value} mm	Värit limittyvät {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Pistot noudattavat asiakirjan kirjontaasetuksia.
 @plural	{count} thread + background|{count} threads + background	{count} lanka + tausta|{count} lankaa + tausta
 @plural	{count} area|{count} areas	{count} alue|{count} aluetta
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Valitse vähintään kaksi väriä yhdistääksesi ne.
+embroidery	Select one or more colors first.	Valitse ensin yksi tai useampi väri.
+embroidery	Select one color to choose its thread.	Valitse yksi väri valitaksesi sen langan.
+embroidery	{share} of the frame	{share} rajauksesta
+embroidery	merged	yhdistetty
+embroidery	unlike the image's color	erilainen kuin kuvan väri
+embroidery	no closer thread in {palette}	ei lähempää lankaa: {palette}
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	Tausta · {share} rajauksesta · ei kirjota
+embroidery	Back to Auto: {color}	Takaisin automaattiseen: {color}
+embroidery	Back to Auto	Takaisin automaattiseen
+embroidery	Merge	Yhdistä
+embroidery	Sew these colors as one.	Nämä värit kirjotaan yhtenä.
+embroidery	Sew	Kirjo
+embroidery	Sew these colors again, as Auto chooses.	Nämä värit kirjotaan taas, kuten automaatti valitsee.
+embroidery	Don't Sew	Älä kirjo
+embroidery	Leave these colors out: their areas aren't sewn.	Jätä nämä värit pois: niiden alueita ei kirjota.
+embroidery	Choose Thread…	Valitse lanka…
+embroidery	Choose the thread this color is sewn in.	Valitse lanka, jolla tämä väri kirjotaan.
+embroidery	Name or number	Nimi tai numero
+embroidery	{value} · nearest	{value} · lähin
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Tasainen grafiikka: täsmälleen sen omat värit, harvinaiset mutta erottuvat mukana, enintään värien määrä.
+embroidery	Grays	Harmaat
+embroidery	Shades of gray, as many as the number of colors.	Harmaan sävyjä, yhtä monta kuin värien määrä.
+embroidery	The colors that best represent the picture, at most the number of colors.	Värit, jotka kuvaavat kuvaa parhaiten, enintään värien määrä.
+embroidery	Mode	Tila
+embroidery	{value} is out of range: {low} to {high}.	{value} on alueen ulkopuolella: {low}–{high}.
+embroidery	Number of colors	Värien määrä
+embroidery	Match to threads	Sovita lankoihin
+embroidery	Create sets the document's thread palette to {palette}.	Luonti vaihtaa asiakirjan lankapaletiksi {palette}.
+embroidery	Smallest area	Pienin alue
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Pienemmät täplät, kuten JPEG-kohina, liittyvät ympäröivään väriin.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} väri oli liian pieni ja liittyi muihin|{count} väriä oli liian pieniä ja liittyi muihin
+@plural	{count} speck joined|{count} specks joined	{count} täplä liitetty|{count} täplää liitetty

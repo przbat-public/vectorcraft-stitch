@@ -7294,3 +7294,39 @@ embroidery	Colors overlap by {value} mm	颜色重叠 {value} mm
 embroidery	The stitches follow the document's embroidery settings.	针迹遵循文档的刺绣设置。
 @plural	{count} thread + background|{count} threads + background	{count} 种线 + 背景
 @plural	{count} area|{count} areas	{count} 个区域
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	选择两种或更多颜色以合并。
+embroidery	Select one or more colors first.	请先选择一种或多种颜色。
+embroidery	Select one color to choose its thread.	选择一种颜色以选择其线。
+embroidery	{share} of the frame	画面的 {share}
+embroidery	merged	已合并
+embroidery	unlike the image's color	与图像颜色不同
+embroidery	no closer thread in {palette}	{palette} 中没有更接近的线
+embroidery	{color} in {thread}	{color}：{thread}
+embroidery	Background · {share} of the frame · not sewn	背景 · 画面的 {share} · 不绣制
+embroidery	Back to Auto: {color}	恢复自动：{color}
+embroidery	Back to Auto	恢复自动
+embroidery	Merge	合并
+embroidery	Sew these colors as one.	将这些颜色作为一种颜色绣制。
+embroidery	Sew	绣制
+embroidery	Sew these colors again, as Auto chooses.	按自动选择重新绣制这些颜色。
+embroidery	Don't Sew	不绣制
+embroidery	Leave these colors out: their areas aren't sewn.	略去这些颜色：它们的区域不绣制。
+embroidery	Choose Thread…	选择线…
+embroidery	Choose the thread this color is sewn in.	选择绣制此颜色所用的线。
+embroidery	Name or number	名称或编号
+embroidery	{value} · nearest	{value} · 最接近
+embroidery	Logo	标志
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	平面图稿：完全使用其自身颜色，保留少见但明显的颜色，最多为颜色数。
+embroidery	Grays	灰度
+embroidery	Shades of gray, as many as the number of colors.	灰色色调，数量与颜色数相同。
+embroidery	The colors that best represent the picture, at most the number of colors.	最能表现图像的颜色，最多为颜色数。
+embroidery	Mode	模式
+embroidery	{value} is out of range: {low} to {high}.	{value} 超出范围：{low} 到 {high}。
+embroidery	Number of colors	颜色数
+embroidery	Match to threads	匹配到线
+embroidery	Create sets the document's thread palette to {palette}.	创建时会将文档的线色板设为 {palette}。
+embroidery	Smallest area	最小区域
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	更小的斑点（如 JPEG 噪点）会并入周围的颜色。
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 种颜色太小，已并入其他颜色
+@plural	{count} speck joined|{count} specks joined	已并入 {count} 个斑点

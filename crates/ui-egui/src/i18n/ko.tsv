@@ -7037,3 +7037,39 @@ embroidery	Colors overlap by {value} mm	색이 {value} mm 겹칩니다
 embroidery	The stitches follow the document's embroidery settings.	스티치는 문서의 자수 설정을 따릅니다.
 @plural	{count} thread + background|{count} threads + background	실 {count}개 + 배경
 @plural	{count} area|{count} areas	영역 {count}개
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	병합하려면 두 가지 이상의 색을 선택하세요.
+embroidery	Select one or more colors first.	먼저 색을 하나 이상 선택하세요.
+embroidery	Select one color to choose its thread.	실을 고르려면 색을 하나만 선택하세요.
+embroidery	{share} of the frame	프레임의 {share}
+embroidery	merged	병합됨
+embroidery	unlike the image's color	그림의 색과 다름
+embroidery	no closer thread in {palette}	{palette}에 더 가까운 실이 없음
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	배경 · 프레임의 {share} · 수놓지 않음
+embroidery	Back to Auto: {color}	자동으로 되돌리기: {color}
+embroidery	Back to Auto	자동으로 되돌리기
+embroidery	Merge	병합
+embroidery	Sew these colors as one.	이 색들을 하나로 수놓습니다.
+embroidery	Sew	수놓기
+embroidery	Sew these colors again, as Auto chooses.	이 색들을 자동이 고르는 대로 다시 수놓습니다.
+embroidery	Don't Sew	수놓지 않기
+embroidery	Leave these colors out: their areas aren't sewn.	이 색들을 제외합니다. 해당 영역은 수놓지 않습니다.
+embroidery	Choose Thread…	실 선택…
+embroidery	Choose the thread this color is sewn in.	이 색을 수놓을 실을 고릅니다.
+embroidery	Name or number	이름 또는 번호
+embroidery	{value} · nearest	{value} · 가장 가까움
+embroidery	Logo	로고
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	단색 그림: 그림 고유의 색 그대로, 드물지만 뚜렷한 색도 남기며, 최대 색 수까지.
+embroidery	Grays	회색조
+embroidery	Shades of gray, as many as the number of colors.	회색 음영을 색 수만큼 사용합니다.
+embroidery	The colors that best represent the picture, at most the number of colors.	그림을 가장 잘 나타내는 색을 최대 색 수까지.
+embroidery	Mode	모드
+embroidery	{value} is out of range: {low} to {high}.	{value}은(는) 범위를 벗어났습니다: {low}~{high}.
+embroidery	Number of colors	색 수
+embroidery	Match to threads	실에 맞추기
+embroidery	Create sets the document's thread palette to {palette}.	만들기를 하면 문서의 실 팔레트가 {palette}(으)로 바뀝니다.
+embroidery	Smallest area	최소 영역
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	이보다 작은 점(JPEG 노이즈 등)은 주변 색에 합쳐집니다.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	너무 작은 색 {count}개가 다른 색에 합쳐졌습니다
+@plural	{count} speck joined|{count} specks joined	점 {count}개 합쳐짐

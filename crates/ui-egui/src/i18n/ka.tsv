@@ -7515,3 +7515,39 @@ embroidery	Colors overlap by {value} mm	ფერები ერთმანე
 embroidery	The stitches follow the document's embroidery settings.	ნაკერები დოკუმენტის ნაქარგობის პარამეტრებს მიჰყვება.
 @plural	{count} thread + background|{count} threads + background	ძაფები: {count} + ფონი
 @plural	{count} area|{count} areas	არეები: {count}
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	შესარწყმელად აირჩიეთ ორი ან მეტი ფერი.
+embroidery	Select one or more colors first.	ჯერ აირჩიეთ ერთი ან მეტი ფერი.
+embroidery	Select one color to choose its thread.	ძაფის ასარჩევად აირჩიეთ ერთი ფერი.
+embroidery	{share} of the frame	კადრის {share}
+embroidery	merged	შერწყმული
+embroidery	unlike the image's color	განსხვავდება სურათის ფერისგან
+embroidery	no closer thread in {palette}	{palette}-ში უფრო ახლო ძაფი არ არის
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	ფონი · კადრის {share} · არ იქარგება
+embroidery	Back to Auto: {color}	ავტომატურზე დაბრუნება: {color}
+embroidery	Back to Auto	ავტომატურზე დაბრუნება
+embroidery	Merge	შერწყმა
+embroidery	Sew these colors as one.	ეს ფერები ერთ ფერად დაიქარგება.
+embroidery	Sew	დაქარგვა
+embroidery	Sew these colors again, as Auto chooses.	ეს ფერები კვლავ დაიქარგება, როგორც ავტომატური აირჩევს.
+embroidery	Don't Sew	არ დაქარგო
+embroidery	Leave these colors out: their areas aren't sewn.	გამოტოვეთ ეს ფერები: მათი არეები არ დაიქარგება.
+embroidery	Choose Thread…	ძაფის არჩევა…
+embroidery	Choose the thread this color is sewn in.	აირჩიეთ ძაფი, რომლითაც ეს ფერი დაიქარგება.
+embroidery	Name or number	სახელი ან ნომერი
+embroidery	{value} · nearest	{value} · უახლოესი
+embroidery	Logo	ლოგო
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	ბრტყელი გრაფიკა: ზუსტად მისი ფერები, იშვიათი, მაგრამ გამორჩეულიც, მაქსიმუმ ფერების რაოდენობა.
+embroidery	Grays	ნაცრისფრები
+embroidery	Shades of gray, as many as the number of colors.	ნაცრისფრის ელფერები, იმდენი, რამდენიც ფერების რაოდენობაა.
+embroidery	The colors that best represent the picture, at most the number of colors.	ფერები, რომლებიც სურათს საუკეთესოდ გადმოსცემს, მაქსიმუმ ფერების რაოდენობა.
+embroidery	Mode	რეჟიმი
+embroidery	{value} is out of range: {low} to {high}.	{value} დიაპაზონის გარეთაა: {low}–{high}.
+embroidery	Number of colors	ფერების რაოდენობა
+embroidery	Match to threads	ძაფებთან შესაბამისობა
+embroidery	Create sets the document's thread palette to {palette}.	შექმნა დოკუმენტის ძაფების პალიტრას {palette}-ზე დააყენებს.
+embroidery	Smallest area	უმცირესი არე
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	უფრო პატარა ლაქები, მაგალითად JPEG-ის ხმაური, გარშემო ფერს უერთდება.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	ზედმეტად პატარა ფერები სხვებს შეუერთდა: {count}
+@plural	{count} speck joined|{count} specks joined	შეერთებული ლაქები: {count}

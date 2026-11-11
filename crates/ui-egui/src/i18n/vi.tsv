@@ -7057,3 +7057,39 @@ embroidery	Colors overlap by {value} mm	Các màu chồng lên nhau {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Các mũi thêu theo thiết lập thêu của tài liệu.
 @plural	{count} thread + background|{count} threads + background	{count} chỉ + nền
 @plural	{count} area|{count} areas	{count} vùng
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Chọn từ hai màu trở lên để hợp nhất.
+embroidery	Select one or more colors first.	Hãy chọn một hoặc nhiều màu trước.
+embroidery	Select one color to choose its thread.	Chọn một màu để chọn chỉ cho màu đó.
+embroidery	{share} of the frame	{share} khung
+embroidery	merged	đã hợp nhất
+embroidery	unlike the image's color	khác màu của hình
+embroidery	no closer thread in {palette}	không có chỉ nào gần hơn trong {palette}
+embroidery	{color} in {thread}	{color} bằng {thread}
+embroidery	Background · {share} of the frame · not sewn	Nền · {share} khung · không thêu
+embroidery	Back to Auto: {color}	Trở về Tự động: {color}
+embroidery	Back to Auto	Trở về Tự động
+embroidery	Merge	Hợp nhất
+embroidery	Sew these colors as one.	Các màu này được thêu như một màu.
+embroidery	Sew	Thêu
+embroidery	Sew these colors again, as Auto chooses.	Các màu này được thêu lại, theo lựa chọn Tự động.
+embroidery	Don't Sew	Không thêu
+embroidery	Leave these colors out: their areas aren't sewn.	Bỏ các màu này: các vùng của chúng không được thêu.
+embroidery	Choose Thread…	Chọn chỉ…
+embroidery	Choose the thread this color is sewn in.	Chọn chỉ để thêu màu này.
+embroidery	Name or number	Tên hoặc số
+embroidery	{value} · nearest	{value} · gần nhất
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Hình phẳng: đúng các màu của chính nó, giữ cả màu hiếm nhưng khác biệt, tối đa bằng số màu.
+embroidery	Grays	Xám
+embroidery	Shades of gray, as many as the number of colors.	Các sắc xám, bằng số màu.
+embroidery	The colors that best represent the picture, at most the number of colors.	Các màu thể hiện hình tốt nhất, tối đa bằng số màu.
+embroidery	Mode	Chế độ
+embroidery	{value} is out of range: {low} to {high}.	{value} nằm ngoài phạm vi: từ {low} đến {high}.
+embroidery	Number of colors	Số màu
+embroidery	Match to threads	Khớp với chỉ
+embroidery	Create sets the document's thread palette to {palette}.	Tạo sẽ đặt bảng chỉ của tài liệu thành {palette}.
+embroidery	Smallest area	Vùng nhỏ nhất
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Các đốm nhỏ hơn, như nhiễu JPEG, nhập vào màu xung quanh.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} màu quá nhỏ và đã nhập vào các màu khác
+@plural	{count} speck joined|{count} specks joined	Đã nhập {count} đốm

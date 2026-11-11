@@ -496,3 +496,78 @@ fn the_background_can_be_left_out_or_sewn() {
     click(&mut app, &ctx, &mut time, &format!("Color {}", sewn.as_str().unwrap_or_default()), Role::Button);
     assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("background").cloned()), Some(sewn));
 }
+
+/// A click of the control screen readers call `name`, whatever its role.
+fn click_named(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str) {
+    let nodes_now = nodes(app, ctx, time);
+    let role = nodes_now.iter().find(|(_, n)| n.label() == Some(name)).map(|(_, n)| n.role()).unwrap_or_else(|| panic!("no {name}"));
+    click(app, ctx, time, name, role);
+}
+
+/// A thread chosen for a colour in its list is a colour choice of the engine's, and the window
+/// recomputes from the colours on, the trace kept.
+#[test]
+fn a_choice_becomes_a_color_choice_and_recomputes_from_the_colours() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(2));
+    let number = |app: &VectorcraftApp, stage| live(app).schedule.shown.as_ref().and_then(|s| s.outputs.number(stage));
+    let (trace, colours) = (number(&app, DigitizeStage::Trace), number(&app, DigitizeStage::Colours));
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let label = |role: Role, test: &dyn Fn(&str) -> bool| -> Vec<String> {
+        nodes_now.iter().filter(|(_, n)| n.role() == role).filter_map(|(_, n)| n.label()).filter(|l| test(l)).map(str::to_string).collect()
+    };
+    let orange = label(Role::ListBoxOption, &|l| l.starts_with("#f08214 in "));
+    assert_eq!(orange.len(), 1, "the orange's row");
+    click(&mut app, &ctx, &mut time, &orange[0], Role::ListBoxOption);
+    click(&mut app, &ctx, &mut time, "Choose Thread…", Role::Button);
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    // The document's palette, a new document's: Janome's.
+    let mut listed: Vec<&egui::accesskit::Node> =
+        nodes_now.iter().map(|(_, n)| n).filter(|n| n.role() == Role::Button && n.label().is_some_and(|l| l.contains("  JEF "))).collect();
+    listed.sort_by(|a, b| a.bounds().map_or(0.0, |r| r.y0).total_cmp(&b.bounds().map_or(0.0, |r| r.y0)));
+    let threads: Vec<String> = listed.iter().filter_map(|n| n.label()).map(str::to_string).collect();
+    assert!(threads.first().is_some_and(|l| l.ends_with(" · nearest")), "nearest first: {threads:?}");
+    assert_eq!(threads.iter().filter(|l| l.ends_with(" · nearest")).count(), 1, "{threads:?}");
+    // The second, in view under the nearest.
+    let other = threads.get(1).expect("another thread").clone();
+    let index: u64 = other.split("  JEF ").nth(1).and_then(|r| r.split(',').next()).and_then(|n| n.parse().ok()).expect("a number");
+    click(&mut app, &ctx, &mut time, &other, Role::Button);
+    let choices = open_dialog(&app).map(|d| d.fields["colorChoices"].clone()).expect("open");
+    assert_eq!(choices, json!([{"color": "#f08214", "thread": {"palette": "jef", "index": index}}]));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(number(&app, DigitizeStage::Trace), trace, "the trace kept");
+    assert_ne!(number(&app, DigitizeStage::Colours), colours, "the colours made again");
+    let r = reply(&mut app);
+    let row = r["colors"].as_array().and_then(|a| a.iter().find(|c| c["color"] == "#f08214")).cloned().expect("the orange");
+    assert_eq!((row["reason"].clone(), row["thread"]["index"].clone()), (json!("chosen"), json!(index)));
+}
+
+/// Choosing another palette than the document's (a new document's, Janome's) says that Create makes
+/// it the document's and leaves out the threads chosen in the other; Create sets it, in the same
+/// undo step.
+#[test]
+fn the_palette_change_is_said_and_applied_on_create() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(2));
+    set(&mut app, "colorChoices", json!([{"color": "#f08214", "thread": {"palette": "jef", "index": 30}}]));
+    until(&mut app, &ctx, &mut time, ready);
+    let said = |nodes: &[(egui::accesskit::NodeId, egui::accesskit::Node)]| {
+        nodes.iter().any(|(_, n)| n.value() == Some("Create sets the document's thread palette to Brother (PES)."))
+    };
+    assert!(!said(&nodes(&mut app, &ctx, &mut time)), "the document's own: nothing to say");
+    click_named(&mut app, &ctx, &mut time, "Match to threads");
+    click_named(&mut app, &ctx, &mut time, "Brother (PES) · 61 threads");
+    let d = open_dialog(&app).expect("open");
+    assert_eq!((d.str(PALETTE), d.fields.get("colorChoices")), ("pec".to_string(), None));
+    assert!(said(&nodes(&mut app, &ctx, &mut time)));
+    until(&mut app, &ctx, &mut time, ready);
+    let steps = undo_steps(&app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    assert_eq!(undo_steps(&app), steps + 1, "one undo step");
+    let doc = &app.session.doc().expect("a document").doc;
+    assert_eq!(vectorcraft_engine::cmd::embroidery::thread_palette_id(doc), "pec");
+}

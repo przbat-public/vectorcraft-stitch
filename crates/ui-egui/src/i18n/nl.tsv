@@ -7266,3 +7266,39 @@ embroidery	Colors overlap by {value} mm	Kleuren overlappen {value} mm
 embroidery	The stitches follow the document's embroidery settings.	De steken volgen de borduurinstellingen van het document.
 @plural	{count} thread + background|{count} threads + background	{count} draad + achtergrond|{count} draden + achtergrond
 @plural	{count} area|{count} areas	{count} vlak|{count} vlakken
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Selecteer twee of meer kleuren om ze samen te voegen.
+embroidery	Select one or more colors first.	Selecteer eerst een of meer kleuren.
+embroidery	Select one color to choose its thread.	Selecteer één kleur om de draad ervan te kiezen.
+embroidery	{share} of the frame	{share} van het kader
+embroidery	merged	samengevoegd
+embroidery	unlike the image's color	anders dan de kleur van de afbeelding
+embroidery	no closer thread in {palette}	geen nauwere draad in {palette}
+embroidery	{color} in {thread}	{color} in {thread}
+embroidery	Background · {share} of the frame · not sewn	Achtergrond · {share} van het kader · niet geborduurd
+embroidery	Back to Auto: {color}	Terug naar automatisch: {color}
+embroidery	Back to Auto	Terug naar automatisch
+embroidery	Merge	Samenvoegen
+embroidery	Sew these colors as one.	Deze kleuren worden als één geborduurd.
+embroidery	Sew	Borduren
+embroidery	Sew these colors again, as Auto chooses.	Deze kleuren worden weer geborduurd, zoals Automatisch kiest.
+embroidery	Don't Sew	Niet borduren
+embroidery	Leave these colors out: their areas aren't sewn.	Laat deze kleuren weg: hun vlakken worden niet geborduurd.
+embroidery	Choose Thread…	Draad kiezen…
+embroidery	Choose the thread this color is sewn in.	Kies de draad waarmee deze kleur wordt geborduurd.
+embroidery	Name or number	Naam of nummer
+embroidery	{value} · nearest	{value} · dichtstbij
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Vlakke afbeelding: precies de eigen kleuren, zeldzame maar duidelijke behouden, hoogstens het aantal kleuren.
+embroidery	Grays	Grijzen
+embroidery	Shades of gray, as many as the number of colors.	Grijstinten, zoveel als het aantal kleuren.
+embroidery	The colors that best represent the picture, at most the number of colors.	De kleuren die de afbeelding het best weergeven, hoogstens het aantal kleuren.
+embroidery	Mode	Modus
+embroidery	{value} is out of range: {low} to {high}.	{value} valt buiten het bereik: {low} tot {high}.
+embroidery	Number of colors	Aantal kleuren
+embroidery	Match to threads	Afstemmen op draden
+embroidery	Create sets the document's thread palette to {palette}.	Maken stelt het draadpalet van het document in op {palette}.
+embroidery	Smallest area	Kleinste vlak
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Kleinere spikkels, zoals JPEG-ruis, gaan op in de kleur eromheen.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} kleur was te klein en ging op in andere|{count} kleuren waren te klein en gingen op in andere
+@plural	{count} speck joined|{count} specks joined	{count} spikkel opgegaan|{count} spikkels opgegaan

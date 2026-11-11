@@ -7056,3 +7056,39 @@ embroidery	Colors overlap by {value} mm	Кольори перекривають�
 embroidery	The stitches follow the document's embroidery settings.	Стібки відповідають налаштуванням вишивки документа.
 @plural	{count} thread + background|{count} threads + background	{count} нитка + тло|{count} нитки + тло|{count} ниток + тло
 @plural	{count} area|{count} areas	{count} область|{count} області|{count} областей
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Виберіть два кольори або більше, щоб об’єднати їх.
+embroidery	Select one or more colors first.	Спершу виберіть один колір або більше.
+embroidery	Select one color to choose its thread.	Виберіть один колір, щоб підібрати йому нитку.
+embroidery	{share} of the frame	{share} кадру
+embroidery	merged	об’єднано
+embroidery	unlike the image's color	не схожа на колір зображення
+embroidery	no closer thread in {palette}	у {palette} немає ближчої нитки
+embroidery	{color} in {thread}	{color} ниткою {thread}
+embroidery	Background · {share} of the frame · not sewn	Тло · {share} кадру · не вишивається
+embroidery	Back to Auto: {color}	Повернути авто: {color}
+embroidery	Back to Auto	Повернути авто
+embroidery	Merge	Об’єднати
+embroidery	Sew these colors as one.	Ці кольори вишиваються як один.
+embroidery	Sew	Вишивати
+embroidery	Sew these colors again, as Auto chooses.	Ці кольори знову вишиваються, як вибере авто.
+embroidery	Don't Sew	Не вишивати
+embroidery	Leave these colors out: their areas aren't sewn.	Пропустити ці кольори: їхні області не вишиваються.
+embroidery	Choose Thread…	Вибрати нитку…
+embroidery	Choose the thread this color is sewn in.	Виберіть нитку, якою вишивається цей колір.
+embroidery	Name or number	Назва або номер
+embroidery	{value} · nearest	{value} · найближча
+embroidery	Logo	Логотип
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Пласка графіка: рівно її власні кольори, рідкісні, але помітні зберігаються, не більше за кількість кольорів.
+embroidery	Grays	Відтінки сірого
+embroidery	Shades of gray, as many as the number of colors.	Відтінки сірого, стільки, скільки задано кольорів.
+embroidery	The colors that best represent the picture, at most the number of colors.	Кольори, що найкраще передають зображення, не більше за кількість кольорів.
+embroidery	Mode	Режим
+embroidery	{value} is out of range: {low} to {high}.	{value} поза діапазоном: від {low} до {high}.
+embroidery	Number of colors	Кількість кольорів
+embroidery	Match to threads	Підібрати нитки
+embroidery	Create sets the document's thread palette to {palette}.	Створення змінить палітру ниток документа на {palette}.
+embroidery	Smallest area	Найменша область
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Дрібніші цятки, як-от шум JPEG, приєднуються до кольору навколо.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} колір був замалим і приєднався до інших|{count} кольори були замалими й приєдналися до інших|{count} кольорів були замалими й приєдналися до інших
+@plural	{count} speck joined|{count} specks joined	{count} цятку приєднано|{count} цятки приєднано|{count} цяток приєднано

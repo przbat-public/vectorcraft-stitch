@@ -185,8 +185,9 @@ fn a_cancelled_run_keeps_the_stages_it_finished() {
     assert_eq!(made(&s, &mut pipe, image, &params, None), from(StageId::Lines));
 }
 
-/// Create from a run puts the run's objects in place as the command's Create does: the same
-/// document, the same objects, one undo step.
+/// Create from a run puts the run's objects in place as the command's Create does, and answers as
+/// it answers (its areas listed none): the same document, the same objects, one undo step, and a
+/// reply saying what was made, no dry run.
 #[test]
 fn create_from_a_run_is_the_commands_create() {
     let params = json!({"colors": 3});
@@ -196,8 +197,9 @@ fn create_from_a_run_is_the_commands_create() {
     let out = window.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     let steps = window.doc().unwrap().history.undo.len();
     let from_window = window.apply_digitize_window(&req, &out).unwrap();
-    let from_command = command.execute("embroidery.digitizeImage", &params).unwrap();
-    assert_eq!(from_window["created"], from_command["created"]);
+    let from_command = command.execute("embroidery.digitizeImage", &with(&params, &json!({"limit": 0}))).unwrap();
+    assert_eq!(from_window["dryRun"], json!(false), "made, so no dry run");
+    assert_eq!(steady(from_window), steady(from_command));
     assert_eq!(*doc(&window), *doc(&command));
     assert_eq!(window.doc().unwrap().history.undo.len(), steps + 1);
 }

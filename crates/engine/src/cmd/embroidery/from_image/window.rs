@@ -42,8 +42,9 @@ impl Session {
 
     /// What `outputs` made of `req` put in place as Create puts it, as one undo step "Digitize
     /// Image" (the new group selected, the window's palette made the document's in the same step):
-    /// the command's reply with what was made (`created`). Refused when the document isn't the one
-    /// the run was made of any more, nothing applied; or when there is nothing to make.
+    /// the reply the command's Create gives (its areas listed none), with what was made
+    /// (`created`). Refused when the document isn't the one the run was made of any more, nothing
+    /// applied; or when there is nothing to make.
     pub fn apply_digitize_window(&mut self, req: &WindowRequest, outputs: &Outputs) -> Result<Value> {
         let mut reply = outputs.reply(req).ok_or_else(|| bad(C, "the image isn't digitized yet: wait for it"))?;
         let (of, doc, made) = outputs.made_for_create().ok_or_else(|| bad(C, NOTHING_TO_MAKE))?;
@@ -52,6 +53,8 @@ impl Session {
         }
         let doc = Arc::try_unwrap(doc).unwrap_or_else(|shared| (*shared).clone());
         put_in_place(self, req.uid, &req.original, doc, made)?;
+        // The run's reply is its dry run's; the objects are made now, so it is no dry run any more.
+        reply["dryRun"] = Value::Bool(false);
         reply["created"] = created_json(made);
         Ok(reply)
     }

@@ -7483,3 +7483,26 @@ embroidery	Recomputing… {percent}	Пересчёт… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · вышивка {w} × {h} мм
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Создан {count} объект; «Отменить» его удалит.|Создано {count} объекта; «Отменить» их удалит.|Создано {count} объектов; «Отменить» их удалит.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Оригинал
+embroidery	Compare	Сравнение
+embroidery	top left	вверху слева
+embroidery	top	вверху
+embroidery	top right	вверху справа
+embroidery	left	слева
+embroidery	middle	в центре
+embroidery	right	справа
+embroidery	bottom left	внизу слева
+embroidery	bottom	внизу
+embroidery	bottom right	внизу справа
+embroidery	Background	Фон
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Не вышивается
+embroidery	{value} mm²	{value} мм²
+embroidery	{name} · not sewn	{name} · не вышивается
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Сравнение: слева оригинал
+embroidery	{value} mm	{value} мм
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Просмотр показывает запланированные стежки. Перед производством вышейте пробный образец.
+embroidery	Fit	По размеру
+embroidery	Zoom	Масштаб

@@ -7337,3 +7337,26 @@ embroidery	Recomputing… {percent}	Recalculando… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · bordado {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Se creó {count} objeto; se quita con Deshacer.|Se crearon {count} objetos; se quitan con Deshacer.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Original
+embroidery	Compare	Comparar
+embroidery	top left	arriba a la izquierda
+embroidery	top	arriba
+embroidery	top right	arriba a la derecha
+embroidery	left	a la izquierda
+embroidery	middle	en el centro
+embroidery	right	a la derecha
+embroidery	bottom left	abajo a la izquierda
+embroidery	bottom	abajo
+embroidery	bottom right	abajo a la derecha
+embroidery	Background	Fondo
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	No se borda
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · no se borda
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Comparación: el original a la izquierda
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	La vista previa muestra las puntadas previstas. Borda una prueba antes de producir.
+embroidery	Fit	Ajustar
+embroidery	Zoom	Zoom

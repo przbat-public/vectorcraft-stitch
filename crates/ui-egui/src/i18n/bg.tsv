@@ -7141,3 +7141,26 @@ embroidery	Recomputing… {percent}	Преизчисляване… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · бродерия {w} × {h} мм
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Създаден е {count} обект; „Отмени“ го премахва.|Създадени са {count} обекта; „Отмени“ ги премахва.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Оригинал
+embroidery	Compare	Сравнение
+embroidery	top left	горе вляво
+embroidery	top	горе
+embroidery	top right	горе вдясно
+embroidery	left	вляво
+embroidery	middle	в средата
+embroidery	right	вдясно
+embroidery	bottom left	долу вляво
+embroidery	bottom	долу
+embroidery	bottom right	долу вдясно
+embroidery	Background	Фон
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Не се бродира
+embroidery	{value} mm²	{value} мм²
+embroidery	{name} · not sewn	{name} · не се бродира
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Сравнение: оригиналът вляво
+embroidery	{value} mm	{value} мм
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Прегледът показва планираните бодове. Преди производство избродирайте проба.
+embroidery	Fit	Побиране
+embroidery	Zoom	Мащаб

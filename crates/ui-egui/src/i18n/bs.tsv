@@ -7190,3 +7190,26 @@ embroidery	Recomputing… {percent}	Ponovno računanje… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · vez {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Napravljen je {count} objekt; Poništi ga uklanja.|Napravljena su {count} objekta; Poništi ih uklanja.|Napravljeno je {count} objekata; Poništi ih uklanja.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Original
+embroidery	Compare	Usporedi
+embroidery	top left	gore lijevo
+embroidery	top	gore
+embroidery	top right	gore desno
+embroidery	left	lijevo
+embroidery	middle	u sredini
+embroidery	right	desno
+embroidery	bottom left	dolje lijevo
+embroidery	bottom	dolje
+embroidery	bottom right	dolje desno
+embroidery	Background	Pozadina
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Ne veze se
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · ne veze se
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Usporedba: original lijevo
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Pregled prikazuje planirane bodove. Prije proizvodnje izvezite probni komad.
+embroidery	Fit	Uklopi
+embroidery	Zoom	Zum

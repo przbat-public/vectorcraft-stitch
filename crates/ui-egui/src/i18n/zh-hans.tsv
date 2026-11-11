@@ -7233,3 +7233,26 @@ embroidery	Recomputing… {percent}	正在重新计算… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺绣 {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	已创建 {count} 个对象；撤销可将其移除。
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	原图
+embroidery	Compare	对比
+embroidery	top left	左上
+embroidery	top	上
+embroidery	top right	右上
+embroidery	left	左
+embroidery	middle	中间
+embroidery	right	右
+embroidery	bottom left	左下
+embroidery	bottom	下
+embroidery	bottom right	右下
+embroidery	Background	背景
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	不缝制
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · 不缝制
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	对比：左侧为原图
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	预览显示规划的针迹。正式生产前请先绣一块试样。
+embroidery	Fit	适合
+embroidery	Zoom	缩放

@@ -7348,3 +7348,26 @@ embroidery	Recomputing… {percent}	Yeniden hesaplanıyor… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · nakış {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} nesne oluşturuldu; Geri Al onları kaldırır.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Özgün
+embroidery	Compare	Karşılaştır
+embroidery	top left	sol üst
+embroidery	top	üst
+embroidery	top right	sağ üst
+embroidery	left	sol
+embroidery	middle	orta
+embroidery	right	sağ
+embroidery	bottom left	sol alt
+embroidery	bottom	alt
+embroidery	bottom right	sağ alt
+embroidery	Background	Arka plan
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Dikilmez
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · dikilmez
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Karşılaştırma: solda özgün görüntü
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Önizleme planlanan dikişleri gösterir. Üretimden önce bir deneme parçası dikin.
+embroidery	Fit	Sığdır
+embroidery	Zoom	Yakınlaştırma

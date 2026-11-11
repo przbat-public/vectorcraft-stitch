@@ -7395,3 +7395,26 @@ embroidery	Recomputing… {percent}	Přepočítávání… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · výšivka {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Vytvořen {count} objekt; odstraníte ho příkazem Zpět.|Vytvořeny {count} objekty; odstraníte je příkazem Zpět.|Vytvořeno {count} objektů; odstraníte je příkazem Zpět.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Originál
+embroidery	Compare	Porovnat
+embroidery	top left	vlevo nahoře
+embroidery	top	nahoře
+embroidery	top right	vpravo nahoře
+embroidery	left	vlevo
+embroidery	middle	uprostřed
+embroidery	right	vpravo
+embroidery	bottom left	vlevo dole
+embroidery	bottom	dole
+embroidery	bottom right	vpravo dole
+embroidery	Background	Pozadí
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Nevyšívá se
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · nevyšívá se
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Porovnání: originál vlevo
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Náhled ukazuje plánované stehy. Před výrobou vyšijte zkušební kus.
+embroidery	Fit	Přizpůsobit
+embroidery	Zoom	Lupa

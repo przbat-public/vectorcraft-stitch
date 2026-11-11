@@ -7250,3 +7250,26 @@ embroidery	Recomputing… {percent}	Przeliczanie… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · haft {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Utworzono {count} obiekt: polecenie Cofnij go usunie.|Utworzono {count} obiekty: polecenie Cofnij je usunie.|Utworzono {count} obiektów: polecenie Cofnij je usunie.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Oryginał
+embroidery	Compare	Porównaj
+embroidery	top left	u góry po lewej
+embroidery	top	u góry
+embroidery	top right	u góry po prawej
+embroidery	left	po lewej
+embroidery	middle	pośrodku
+embroidery	right	po prawej
+embroidery	bottom left	u dołu po lewej
+embroidery	bottom	u dołu
+embroidery	bottom right	u dołu po prawej
+embroidery	Background	Tło
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Nieszyte
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · nieszyte
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Porównanie: oryginał po lewej
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Podgląd pokazuje zaplanowane ściegi. Przed produkcją wyszyj próbkę.
+embroidery	Fit	Dopasuj
+embroidery	Zoom	Powiększenie

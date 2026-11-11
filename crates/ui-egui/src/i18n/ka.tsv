@@ -7454,3 +7454,26 @@ embroidery	Recomputing… {percent}	ხელახალი გამოთვ�
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · ნაქარგობა {w} × {h} მმ
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	შეიქმნა {count} ობიექტი; დაბრუნება მათ წაშლის.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	ორიგინალი
+embroidery	Compare	შედარება
+embroidery	top left	ზემოთ მარცხნივ
+embroidery	top	ზემოთ
+embroidery	top right	ზემოთ მარჯვნივ
+embroidery	left	მარცხნივ
+embroidery	middle	შუაში
+embroidery	right	მარჯვნივ
+embroidery	bottom left	ქვემოთ მარცხნივ
+embroidery	bottom	ქვემოთ
+embroidery	bottom right	ქვემოთ მარჯვნივ
+embroidery	Background	ფონი
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	არ იქარგება
+embroidery	{value} mm²	{value} მმ²
+embroidery	{name} · not sewn	{name} · არ იქარგება
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	შედარება: ორიგინალი მარცხნივ
+embroidery	{value} mm	{value} მმ
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	გადახედვა აჩვენებს დაგეგმილ ნაკერებს. წარმოებამდე ამოქარგეთ სატესტო ნიმუში.
+embroidery	Fit	მორგება
+embroidery	Zoom	მასშტაბი

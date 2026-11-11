@@ -7375,3 +7375,26 @@ embroidery	Recomputing… {percent}	S’està recalculant… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · brodat {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	S’ha creat {count} objecte; Desfés el suprimeix.|S’han creat {count} objectes; Desfés els suprimeix.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Original
+embroidery	Compare	Compara
+embroidery	top left	a dalt a l’esquerra
+embroidery	top	a dalt
+embroidery	top right	a dalt a la dreta
+embroidery	left	a l’esquerra
+embroidery	middle	al mig
+embroidery	right	a la dreta
+embroidery	bottom left	a baix a l’esquerra
+embroidery	bottom	a baix
+embroidery	bottom right	a baix a la dreta
+embroidery	Background	Fons
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	No es brodeja
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · no es brodeja
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Comparació: l’original a l’esquerra
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	La previsualització mostra les puntades previstes. Brodeu una prova abans de produir.
+embroidery	Fit	Ajusta
+embroidery	Zoom	Zoom

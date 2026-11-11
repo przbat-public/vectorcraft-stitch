@@ -20,10 +20,20 @@ use vectorcraft_engine::EngineError;
 use vectorcraft_engine::cmd::embroidery::{DigitizeOutputs, DigitizePipeline, DigitizeRequest, DigitizeStage};
 use vectorcraft_engine::cmd::fileio::progress::{self, Progress};
 
+/// The Colours view's raster, painted on the thread as the colours are done: of which colours
+/// output (its number), and its size and pixels (RGBA, row by row).
+pub(crate) struct Painted {
+    pub(crate) number: u64,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) rgba: Vec<u8>,
+}
+
 /// What a job's step hands over.
 pub(crate) enum Outcome {
-    /// A stage done: the outputs so far, and whether it was made now (rather than found kept).
-    Stage { stage: DigitizeStage, outputs: DigitizeOutputs, made: bool },
+    /// A stage done: the outputs so far, whether it was made now (rather than found kept), and,
+    /// for colours made now, the Colours view's raster.
+    Stage { stage: DigitizeStage, outputs: DigitizeOutputs, made: bool, painted: Option<Arc<Painted>> },
     /// Every stage done.
     Finished(DigitizeOutputs),
     /// Refused or failed, with the reason in words (the engine's, or a bug's).
@@ -75,8 +85,8 @@ fn internal(msg: &str) -> String {
     format!("internal error: {msg} (please report this bug)")
 }
 
-/// Run `job` on `pipeline`: each stage handed to `send` as it is done (the stitch scene built so
-/// the interface finds it ready), then the outputs.
+/// Run `job` on `pipeline`: each stage handed to `send` as it is done (the Colours view painted
+/// for colours made now, the stitch scene built so the interface finds it ready), then the outputs.
 /// Everything runs inside the job's progress scope with panics caught; a cancel shows as
 /// [`Outcome::Cancelled`]. The thread and the interface thread both run it.
 pub(crate) fn run(pipeline: &mut DigitizePipeline, job: &Job, send: &mut dyn FnMut(Done)) {
@@ -89,11 +99,12 @@ pub(crate) fn run(pipeline: &mut DigitizePipeline, job: &Job, send: &mut dyn FnM
             let progress = &job.progress;
             let asked = |_, _| !progress.cancelled();
             pipeline.run(&job.request, &asked, &mut |stage, outputs, made| {
+                let painted = if stage == DigitizeStage::Colours && made { painted(outputs) } else { None };
                 if stage == DigitizeStage::Plan {
                     // Built here, so the interface thread finds it ready.
                     drop(outputs.planned().map(|p| p.scene()));
                 }
-                send(job.done(Outcome::Stage { stage, outputs: outputs.clone(), made }, false));
+                send(job.done(Outcome::Stage { stage, outputs: outputs.clone(), made, painted }, false));
             })
         })
     });
@@ -104,6 +115,13 @@ pub(crate) fn run(pipeline: &mut DigitizePipeline, job: &Job, send: &mut dyn FnM
         Err(msg) => Outcome::Failed(internal(&msg)),
     };
     send(job.done(outcome, true));
+}
+
+/// The Colours view's raster of `outputs`' colours.
+pub(crate) fn painted(outputs: &DigitizeOutputs) -> Option<Arc<Painted>> {
+    let number = outputs.number(DigitizeStage::Colours)?;
+    let (width, height, rgba) = outputs.painted_rgba()?;
+    Some(Arc::new(Painted { number, width, height, rgba }))
 }
 
 /// The window's thread. Dropping it cancels the jobs it hasn't answered in full and ends the

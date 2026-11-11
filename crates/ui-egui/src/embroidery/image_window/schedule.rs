@@ -23,7 +23,7 @@ use vectorcraft_engine::cmd::embroidery::{DigitizeOutputs, DigitizePipeline, Dig
 use vectorcraft_engine::cmd::fileio::progress::Progress;
 use vectorcraft_engine::doc::NodeId;
 
-use super::worker::{Done, Driver, Job, Outcome};
+use super::worker::{Done, Driver, Job, Outcome, Painted};
 pub(crate) use crate::embroidery::stitch_preview::{INLINE_PLAN_MS, LIVE_PLAN_MS, PROGRESS_REPAINT_SECS, QUIET_SECS, STALE_NOTICE_SECS};
 
 /// The settings each stage reads first: a change of one of them recomputes from that stage on.
@@ -119,6 +119,8 @@ pub(crate) struct Shown {
     pub(crate) outputs: DigitizeOutputs,
     /// Whether every stage is done.
     pub(crate) whole: bool,
+    /// The Colours view's raster painted on the thread, the latest.
+    pub(crate) painted: Option<Arc<Painted>>,
 }
 
 /// When the window digitizes again, and what it shows meanwhile.
@@ -220,15 +222,17 @@ impl Schedule {
         let Some(r) = self.running.as_ref().filter(|r| r.ticket == done.ticket) else { return };
         let request = r.request.clone();
         match done.outcome {
-            Outcome::Stage { stage, outputs, made } => {
+            Outcome::Stage { stage, outputs, made, painted } => {
                 if made {
                     self.stage_ms[place(stage)] = outputs.ms(stage).or(Some(0.0));
                     self.made.push(stage);
                 }
-                self.shown = Some(Shown { request, outputs, whole: false });
+                let painted = painted.or_else(|| self.shown.as_ref().and_then(|s| s.painted.clone()));
+                self.shown = Some(Shown { request, outputs, whole: false, painted });
             }
             Outcome::Finished(outputs) => {
-                self.shown = Some(Shown { request, outputs, whole: true });
+                let painted = self.shown.as_ref().and_then(|s| s.painted.clone());
+                self.shown = Some(Shown { request, outputs, whole: true, painted });
                 self.running = None;
                 if self.waiting.is_none() {
                     let made = std::mem::take(&mut self.made);

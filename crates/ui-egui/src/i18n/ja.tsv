@@ -7080,3 +7080,26 @@ embroidery	Recomputing… {percent}	再計算中… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺繍 {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} 個のオブジェクトを作成しました。取り消しで削除できます。
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	元画像
+embroidery	Compare	比較
+embroidery	top left	左上
+embroidery	top	上
+embroidery	top right	右上
+embroidery	left	左
+embroidery	middle	中央
+embroidery	right	右
+embroidery	bottom left	左下
+embroidery	bottom	下
+embroidery	bottom right	右下
+embroidery	Background	背景
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	縫わない
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · 縫わない
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	比較：左が元画像
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	プレビューは計画したステッチを表示します。本番の前に試し縫いをしてください。
+embroidery	Fit	全体表示
+embroidery	Zoom	ズーム

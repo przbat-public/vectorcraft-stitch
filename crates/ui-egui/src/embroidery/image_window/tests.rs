@@ -221,3 +221,91 @@ fn its_state_is_said_in_its_fields() {
     let state: Value = open_dialog(&app).map(|d| d.fields["__state"].clone()).unwrap_or_default();
     assert_eq!(state["state"], "fresh", "{state}");
 }
+
+/// The window's live state.
+fn live(app: &VectorcraftApp) -> &Live {
+    app.embroidery.image_window.live.as_ref().expect("the window is live")
+}
+
+/// Set field `key` of the open window.
+fn set(app: &mut VectorcraftApp, key: &str, value: Value) {
+    app.ui.dialog.as_mut().expect("the window is open").fields.insert(key.into(), value);
+}
+
+/// Switching the preview's view recomputes nothing: the result shown stays the run's.
+#[test]
+fn switching_views_reruns_nothing() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    let mut time = 0.0;
+    until(&mut app, &ctx, &mut time, ready);
+    let plan = live(&app).schedule.shown.as_ref().and_then(|s| s.outputs.number(vectorcraft_engine::cmd::embroidery::DigitizeStage::Plan));
+    for view in preview::VIEWS.iter().chain(preview::VIEWS.iter()) {
+        set(&mut app, VIEW, json!(view));
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+        assert!(!live(&app).schedule.busy(), "{view}: nothing run");
+    }
+    let now = live(&app).schedule.shown.as_ref().and_then(|s| s.outputs.number(vectorcraft_engine::cmd::embroidery::DigitizeStage::Plan));
+    assert_eq!(now, plan);
+}
+
+/// Each view uploads its texture once a result: going round the views again uploads nothing, and
+/// dragging Compare's split uploads nothing.
+#[test]
+fn views_upload_once_and_a_compare_drag_uploads_nothing() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    let mut time = 0.0;
+    until(&mut app, &ctx, &mut time, ready);
+    for view in preview::VIEWS {
+        set(&mut app, VIEW, json!(view));
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    let uploads = live(&app).preview.uploads;
+    assert!(uploads >= 4, "the original, the colours, the shapes and the stitches: {uploads}");
+    for view in preview::VIEWS {
+        set(&mut app, VIEW, json!(view));
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert_eq!(live(&app).preview.uploads, uploads, "kept");
+    set(&mut app, VIEW, json!("compare"));
+    set(&mut app, STEP, json!(4));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    let before = live(&app).preview.uploads;
+    for k in 0..30 {
+        set(&mut app, preview::SPLIT, json!(f64::from(k) / 30.0));
+        time += 1.0 / 60.0;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert_eq!(live(&app).preview.uploads, before, "the split only clips");
+}
+
+/// The area under the pointer is named in the window: its thread and number, its size and place.
+#[test]
+fn hovering_names_the_area_under_the_pointer() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    let mut time = 0.0;
+    until(&mut app, &ctx, &mut time, ready);
+    set(&mut app, VIEW, json!("colors"));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    let (_, xf) = live(&app).preview.last_view.expect("drawn");
+    let outputs = live(&app).schedule.shown.as_ref().map(|s| s.outputs.clone()).expect("shown");
+    // The orange band above the navy bar, in the working copy's pixels.
+    let doc = outputs.working_to_doc().expect("an image") * vectorcraft_geom::Point::new(100.0, 25.0);
+    let at = xf.to_screen(doc);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at)]);
+    let facts = live(&app).preview.hovered.clone().expect("an area under the pointer");
+    assert!(facts.sewn && facts.own_number == Some(1), "{facts:?}");
+    let line = preview::area_line(&facts);
+    assert!(line.starts_with(&format!("{} 1 · ", facts.thread_name.clone().unwrap_or_default())) && line.contains("mm²"), "{line}");
+}

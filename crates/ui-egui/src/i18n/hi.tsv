@@ -8774,3 +8774,26 @@ embroidery	Recomputing… {percent}	फिर से गणना हो रह�
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · कढ़ाई {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} ऑब्जेक्ट बनाया गया; पूर्ववत करें उसे हटाता है।|{count} ऑब्जेक्ट बनाए गए; पूर्ववत करें उन्हें हटाता है।
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	मूल
+embroidery	Compare	तुलना
+embroidery	top left	ऊपर बाएँ
+embroidery	top	ऊपर
+embroidery	top right	ऊपर दाएँ
+embroidery	left	बाएँ
+embroidery	middle	बीच में
+embroidery	right	दाएँ
+embroidery	bottom left	नीचे बाएँ
+embroidery	bottom	नीचे
+embroidery	bottom right	नीचे दाएँ
+embroidery	Background	पृष्ठभूमि
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	कढ़ाई नहीं होगी
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · कढ़ाई नहीं होगी
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	तुलना: मूल बाईं ओर
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	प्रीव्यू नियोजित स्टिच दिखाता है। उत्पादन से पहले एक परीक्षण नमूना कढ़ाई करें।
+embroidery	Fit	फ़िट
+embroidery	Zoom	ज़ूम

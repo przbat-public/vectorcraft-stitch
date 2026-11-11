@@ -7430,3 +7430,26 @@ embroidery	Recomputing… {percent}	Lasketaan uudelleen… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · kirjonta {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Luotiin {count} objekti; Kumoa poistaa sen.|Luotiin {count} objektia; Kumoa poistaa ne.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Alkuperäinen
+embroidery	Compare	Vertaa
+embroidery	top left	ylhäällä vasemmalla
+embroidery	top	ylhäällä
+embroidery	top right	ylhäällä oikealla
+embroidery	left	vasemmalla
+embroidery	middle	keskellä
+embroidery	right	oikealla
+embroidery	bottom left	alhaalla vasemmalla
+embroidery	bottom	alhaalla
+embroidery	bottom right	alhaalla oikealla
+embroidery	Background	Tausta
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Ei kirjota
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · ei kirjota
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Vertailu: alkuperäinen vasemmalla
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Esikatselu näyttää suunnitellut pistot. Kirjo koekappale ennen tuotantoa.
+embroidery	Fit	Sovita
+embroidery	Zoom	Zoomaus

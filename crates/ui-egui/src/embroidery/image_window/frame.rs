@@ -98,7 +98,7 @@ pub(crate) fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, d: &mut Dialog
                 asked = Some(Asked::Cancel);
             }
         });
-        ui.scope_builder(UiBuilder::new().max_rect(r.preview), |ui| preview_region(app, ui, d));
+        ui.scope_builder(UiBuilder::new().max_rect(r.preview), |ui| super::preview::show(app, ui, d, now));
         ui.scope_builder(UiBuilder::new().max_rect(r.settings), |ui| settings_region(app, ui, d));
         ui.scope_builder(UiBuilder::new().max_rect(r.bar), |ui| {
             if let Some(a) = live_bar(app, ui, now) {
@@ -124,17 +124,6 @@ fn title_band(app: &VectorcraftApp, ui: &mut Ui, d: &Dialog) -> bool {
         });
     });
     close
-}
-
-/// The preview's region: what the window shows of the image (drawn by the preview's views).
-fn preview_region(app: &VectorcraftApp, ui: &mut Ui, _d: &mut Dialog) {
-    let t = Tokens::get(ui.ctx());
-    let rect = ui.max_rect();
-    ui.painter().rect_filled(rect, f32::from(t.radius), t.panel_darker);
-    let Some(live) = app.embroidery.image_window.live.as_ref() else { return };
-    if live.schedule.shown.is_none() {
-        ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, crate::et!("Digitizing…"), egui::FontId::proportional(SMALL_TEXT), t.text_dim);
-    }
 }
 
 /// The settings column: the four steps (drawn by the steps' sections).

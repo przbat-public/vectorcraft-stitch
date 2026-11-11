@@ -6996,3 +6996,26 @@ embroidery	Recomputing… {percent}	Đang tính lại… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · thêu {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Đã tạo {count} đối tượng; Hoàn tác sẽ gỡ bỏ chúng.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Bản gốc
+embroidery	Compare	So sánh
+embroidery	top left	trên bên trái
+embroidery	top	trên
+embroidery	top right	trên bên phải
+embroidery	left	bên trái
+embroidery	middle	ở giữa
+embroidery	right	bên phải
+embroidery	bottom left	dưới bên trái
+embroidery	bottom	dưới
+embroidery	bottom right	dưới bên phải
+embroidery	Background	Nền
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Không thêu
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · không thêu
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	So sánh: bản gốc bên trái
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Bản xem trước cho thấy các mũi thêu đã lên kế hoạch. Hãy thêu thử một mẫu trước khi sản xuất.
+embroidery	Fit	Vừa khung
+embroidery	Zoom	Thu phóng

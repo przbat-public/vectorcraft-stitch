@@ -7154,3 +7154,26 @@ embroidery	Recomputing… {percent}	Menghitung ulang… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · bordir {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} objek dibuat; Urungkan menghapusnya.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Asli
+embroidery	Compare	Bandingkan
+embroidery	top left	kiri atas
+embroidery	top	atas
+embroidery	top right	kanan atas
+embroidery	left	kiri
+embroidery	middle	tengah
+embroidery	right	kanan
+embroidery	bottom left	kiri bawah
+embroidery	bottom	bawah
+embroidery	bottom right	kanan bawah
+embroidery	Background	Latar
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Tidak dibordir
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · tidak dibordir
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Perbandingan: aslinya di kiri
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Pratinjau menampilkan jahitan yang direncanakan. Bordir contoh uji sebelum produksi.
+embroidery	Fit	Pas
+embroidery	Zoom	Zoom

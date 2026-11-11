@@ -6976,3 +6976,26 @@ embroidery	Recomputing… {percent}	다시 계산 중… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 자수 {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	개체 {count}개를 만들었습니다. 실행 취소로 제거할 수 있습니다.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	원본
+embroidery	Compare	비교
+embroidery	top left	왼쪽 위
+embroidery	top	위
+embroidery	top right	오른쪽 위
+embroidery	left	왼쪽
+embroidery	middle	가운데
+embroidery	right	오른쪽
+embroidery	bottom left	왼쪽 아래
+embroidery	bottom	아래
+embroidery	bottom right	오른쪽 아래
+embroidery	Background	배경
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	수놓지 않음
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · 수놓지 않음
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	비교: 왼쪽이 원본
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	미리 보기는 계획된 스티치를 보여 줍니다. 생산 전에 시험 자수를 해 보세요.
+embroidery	Fit	맞춤
+embroidery	Zoom	확대/축소

@@ -8880,3 +8880,26 @@ embroidery	Recomputing… {percent}	Räknar om… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · broderi {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Skapade {count} objekt; Ångra tar bort det.|Skapade {count} objekt; Ångra tar bort dem.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Original
+embroidery	Compare	Jämför
+embroidery	top left	uppe till vänster
+embroidery	top	uppe
+embroidery	top right	uppe till höger
+embroidery	left	till vänster
+embroidery	middle	i mitten
+embroidery	right	till höger
+embroidery	bottom left	nere till vänster
+embroidery	bottom	nere
+embroidery	bottom right	nere till höger
+embroidery	Background	Bakgrund
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Broderas inte
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · broderas inte
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Jämförelse: originalet till vänster
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Förhandsvisningen visar de planerade stygnen. Brodera ett provstycke före produktionen.
+embroidery	Fit	Anpassa
+embroidery	Zoom	Zoom

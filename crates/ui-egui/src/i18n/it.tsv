@@ -7015,3 +7015,26 @@ embroidery	Recomputing… {percent}	Ricalcolo… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · ricamo {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Creato {count} oggetto; Annulla lo rimuove.|Creati {count} oggetti; Annulla li rimuove.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Originale
+embroidery	Compare	Confronta
+embroidery	top left	in alto a sinistra
+embroidery	top	in alto
+embroidery	top right	in alto a destra
+embroidery	left	a sinistra
+embroidery	middle	al centro
+embroidery	right	a destra
+embroidery	bottom left	in basso a sinistra
+embroidery	bottom	in basso
+embroidery	bottom right	in basso a destra
+embroidery	Background	Sfondo
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Non ricamato
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · non ricamato
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Confronto: l’originale a sinistra
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	L’anteprima mostra i punti pianificati. Ricama una prova prima della produzione.
+embroidery	Fit	Adatta
+embroidery	Zoom	Zoom

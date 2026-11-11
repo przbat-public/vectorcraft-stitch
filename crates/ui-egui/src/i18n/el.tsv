@@ -7347,3 +7347,26 @@ embroidery	Recomputing… {percent}	Επανυπολογισμός… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · κέντημα {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Δημιουργήθηκε {count} αντικείμενο· η Αναίρεση το αφαιρεί.|Δημιουργήθηκαν {count} αντικείμενα· η Αναίρεση τα αφαιρεί.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Πρωτότυπο
+embroidery	Compare	Σύγκριση
+embroidery	top left	πάνω αριστερά
+embroidery	top	πάνω
+embroidery	top right	πάνω δεξιά
+embroidery	left	αριστερά
+embroidery	middle	στη μέση
+embroidery	right	δεξιά
+embroidery	bottom left	κάτω αριστερά
+embroidery	bottom	κάτω
+embroidery	bottom right	κάτω δεξιά
+embroidery	Background	Φόντο
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Δεν κεντιέται
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · δεν κεντιέται
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Σύγκριση: το πρωτότυπο αριστερά
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Η προεπισκόπηση δείχνει τις σχεδιασμένες βελονιές. Κεντήστε ένα δοκιμαστικό πριν από την παραγωγή.
+embroidery	Fit	Προσαρμογή
+embroidery	Zoom	Ζουμ

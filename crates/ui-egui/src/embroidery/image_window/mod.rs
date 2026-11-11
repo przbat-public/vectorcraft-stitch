@@ -22,6 +22,7 @@
 //!   the field typed in; Cmd/Ctrl+Enter is Create.
 
 pub(crate) mod frame;
+pub(crate) mod preview;
 pub(crate) mod schedule;
 mod words;
 pub(crate) mod worker;
@@ -80,6 +81,8 @@ pub(crate) struct Live {
     image: NodeId,
     pub(crate) runner: Box<dyn Runner>,
     pub(crate) schedule: Schedule,
+    /// The preview's textures, pan and the area under the pointer.
+    pub(crate) preview: preview::Preview,
     /// The fields as last drawn: what is remembered when it closes without Create.
     fields: Map<String, Value>,
     /// Create was asked for before the result was of the settings as they are: it applies once it
@@ -182,7 +185,16 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let now = ctx.input(|i| i.time);
     if app.embroidery.image_window.live.as_ref().is_none_or(|l| (l.uid, l.image) != (uid, image)) {
         let runner: Box<dyn Runner> = Box::new(Driver::new(ctx, app.session.digitize_pipeline()));
-        let live = Live { uid, image, runner, schedule: Schedule::default(), fields: d.fields.clone(), create_waiting: false, created: false };
+        let live = Live {
+            uid,
+            image,
+            runner,
+            schedule: Schedule::default(),
+            preview: preview::Preview::default(),
+            fields: d.fields.clone(),
+            create_waiting: false,
+            created: false,
+        };
         app.embroidery.image_window.live = Some(live);
     }
     let params = params_of(&d.fields);

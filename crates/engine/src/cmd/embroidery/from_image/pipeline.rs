@@ -16,6 +16,7 @@ use std::sync::Arc;
 use serde_json::{Value, json};
 use vectorcraft_doc::embroidery::ThreadPalette;
 use vectorcraft_doc::{Document, ImageObject, NodeId};
+use vectorcraft_render::lines::{LinePicture, LinePictureBuilder};
 use vectorcraft_stitch::thread::Palette;
 
 use super::super::{DetachedService, Options, Planned, Planner};
@@ -34,6 +35,10 @@ use crate::{EngineError, Result};
 pub(super) const KEPT_PER_STAGE: usize = 2;
 #[cfg(target_arch = "wasm32")]
 pub(super) const KEPT_PER_STAGE: usize = 1;
+
+/// How closely the Shapes view's lines follow the shapes' curves (document points): a twentieth of
+/// a millimetre, under a pixel at any zoom the window offers (400 %). An estimate.
+const OUTLINE_FLATTEN_PT: f64 = 0.05 / vectorcraft_stitch::MM_PER_PT;
 
 /// A stage of digitizing, as a window shows them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -516,6 +521,67 @@ impl Outputs {
             background: row.background,
             place: Place::of(share(cx, x0, x1), share(cy, y0, y1)),
         })
+    }
+
+    /// The Shapes view's lines, once the shapes are done: each area's shape as it is sewn (its
+    /// outline and holes, the overlap in it; a line's centre line) in document points, in the slot
+    /// of its colour, and each slot's colour (its thread's, else the image's).
+    pub fn outlines(&self) -> Option<(LinePicture, Vec<[u8; 3]>)> {
+        let d = self.digitized()?;
+        let palette = self.palette?;
+        let to_doc = d.working().to_doc;
+        let colors: Vec<[u8; 3]> =
+            d.colours().rows.iter().map(|r| r.thread.as_ref().and_then(|m| palette.get(m.thread.index)).map_or(r.color, |(rgb, _)| rgb)).collect();
+        let origin = to_doc * vectorcraft_geom::Point::ZERO;
+        let mut b = LinePictureBuilder::new(origin, 1.0);
+        let mut number = 0u32;
+        for &a in &d.order().sewn {
+            let Some(area) = d.areas().areas.get(a) else { continue };
+            let path = match d.lines().get(a).and_then(Option::as_ref) {
+                Some(line) => to_doc * line.path(),
+                None => match d.shapes().shapes.get(a) {
+                    Some(shape) => shape.transformed(to_doc).to_bezpath(),
+                    None => continue,
+                },
+            };
+            let slot = u32::try_from(area.row).unwrap_or(u32::MAX);
+            let tag = u32::try_from(a).unwrap_or(u32::MAX);
+            let mut start = None;
+            vectorcraft_geom::kurbo::flatten(&path, OUTLINE_FLATTEN_PT, |el| match el {
+                vectorcraft_geom::kurbo::PathEl::MoveTo(p) => {
+                    b.begin_line(slot, tag, 0.0);
+                    number = number.wrapping_add(1);
+                    b.point(p, number);
+                    start = Some(p);
+                }
+                vectorcraft_geom::kurbo::PathEl::LineTo(p) => {
+                    number = number.wrapping_add(1);
+                    b.point(p, number);
+                }
+                vectorcraft_geom::kurbo::PathEl::ClosePath => {
+                    if let Some(p) = start {
+                        number = number.wrapping_add(1);
+                        b.point(p, number);
+                    }
+                    b.end_line();
+                }
+                _ => {}
+            });
+            b.end_line();
+        }
+        Some((b.build(), colors))
+    }
+
+    /// The shape, in document points, of the area under working pixel `(x, y)` as it is sewn (a
+    /// line's centre line), once the shapes are done.
+    pub fn outline_at(&self, x: u32, y: u32) -> Option<vectorcraft_geom::BezPath> {
+        let d = self.digitized()?;
+        let a = d.areas().regions.at(x, y)? as usize;
+        let to_doc = d.working().to_doc;
+        match d.lines().get(a).and_then(Option::as_ref) {
+            Some(line) => Some(to_doc * line.path()),
+            None => d.shapes().shapes.get(a).map(|s| s.transformed(to_doc).to_bezpath()).filter(|p| !p.elements().is_empty()),
+        }
     }
 
     /// The document with the objects Create would make, and their group, once the objects are done

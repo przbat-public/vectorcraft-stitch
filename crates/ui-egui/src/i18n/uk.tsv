@@ -6995,3 +6995,26 @@ embroidery	Recomputing… {percent}	Перерахунок… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · вишивка {w} × {h} мм
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
 @plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Створено {count} об’єкт; «Скасувати» його прибере.|Створено {count} об’єкти; «Скасувати» їх прибере.|Створено {count} об’єктів; «Скасувати» їх прибере.
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Оригінал
+embroidery	Compare	Порівняння
+embroidery	top left	угорі ліворуч
+embroidery	top	угорі
+embroidery	top right	угорі праворуч
+embroidery	left	ліворуч
+embroidery	middle	посередині
+embroidery	right	праворуч
+embroidery	bottom left	унизу ліворуч
+embroidery	bottom	унизу
+embroidery	bottom right	унизу праворуч
+embroidery	Background	Тло
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Не вишивається
+embroidery	{value} mm²	{value} мм²
+embroidery	{name} · not sewn	{name} · не вишивається
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Порівняння: ліворуч оригінал
+embroidery	{value} mm	{value} мм
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Перегляд показує заплановані стібки. Перед виробництвом вишийте пробний зразок.
+embroidery	Fit	За розміром
+embroidery	Zoom	Масштаб

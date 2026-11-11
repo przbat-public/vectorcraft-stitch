@@ -260,3 +260,57 @@ fn a_refused_change_is_never_current() {
     assert!(sch.shown.is_some(), "the last good result still shown");
     assert!(sch.current(&params(500)).is_none(), "a result of other settings is no result of the refused ones");
 }
+
+/// The progress said while a run recomputes only goes forward: each stage handed over is a share
+/// of it, whatever the stages last reported, and the stitches' plan fills the last share with the
+/// planner's own units. Here the engine's reports are those of a run under way: its stages' count
+/// (three of five once the shapes begin), then the planner's units from nothing.
+#[test]
+fn the_progress_said_only_goes_forward() {
+    use vectorcraft_engine::cmd::fileio::progress;
+    use vectorcraft_engine::doc::cancel;
+    let (s, id, mut sch) = setup();
+    let mut held = Held::new(&s);
+    sch.frame(&s, id, &params(3), 0.0, &mut held);
+    held.finish();
+    sch.frame(&s, id, &params(3), 0.01, &mut held);
+    timed(&mut sch, 1.0);
+    sch.frame(&s, id, &params(4), 1.0, &mut held);
+    let job = held.held.as_ref().map(|j| j.progress.clone()).expect("a run held");
+    let steps = held.finish_first(0);
+    let mut said = Vec::new();
+    let mut now = 1.0;
+    for step in steps {
+        // What the engine has reported when this step comes: the shapes' share of five, or, once
+        // the objects are handed over and the plan is under way, the planner's first unit of a
+        // hundred.
+        let planning = matches!(&step.outcome, worker::Outcome::Stage { stage: DigitizeStage::Objects, .. });
+        let (done, total) = if planning { (1, 100) } else { (3, 5) };
+        progress::scope(&job, || cancel::progress(done, total, "a run under way"));
+        held.done.push_back(step);
+        now += PAST;
+        sch.frame(&s, id, &params(4), now, &mut held);
+        if let Freshness::Pending { progress: Some(p), .. } = sch.freshness(now) {
+            said.push(p);
+        }
+    }
+    assert!(said.len() > 1, "{said:?}");
+    assert!(said.windows(2).all(|w| w[1] >= w[0]), "it went back: {said:?}");
+}
+
+/// When the objects are handed over, the run's progress holds nothing of the stages before them,
+/// so that the stitches' plan fills its share from nothing.
+#[test]
+fn the_plan_reports_its_progress_from_nothing() {
+    let (s, id) = picture_session();
+    let mut pipeline = s.digitize_pipeline();
+    let request = Arc::new(s.digitize_window_request(id, &json!({"colors": 3}), None).unwrap());
+    let job = Job::new(1, request, Progress::new());
+    let mut at_objects = None;
+    worker::run(&mut pipeline, &job, &mut |d| {
+        if matches!(d.outcome, worker::Outcome::Stage { stage: DigitizeStage::Objects, .. }) {
+            at_objects = Some(job.progress.counts());
+        }
+    });
+    assert_eq!(at_objects, Some((0, 0)), "the stages' count went");
+}

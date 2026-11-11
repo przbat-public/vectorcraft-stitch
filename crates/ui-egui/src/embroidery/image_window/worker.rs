@@ -86,6 +86,9 @@ impl Job {
     }
 }
 
+/// What the window reports to its run's progress as the stitches' plan begins: nothing done yet.
+const PLAN_BEGINS: &str = "image window: the stitches' plan begins";
+
 /// The text of a panic caught while digitizing, as the background jobs give it.
 fn internal(msg: &str) -> String {
     format!("internal error: {msg} (please report this bug)")
@@ -105,6 +108,11 @@ pub(crate) fn run(pipeline: &mut DigitizePipeline, job: &Job, send: &mut dyn FnM
             let progress = &job.progress;
             let asked = |_, _| !progress.cancelled();
             pipeline.run(&job.request, &asked, &mut |stage, outputs, made| {
+                if stage == DigitizeStage::Objects {
+                    // The stitches' plan, next, reports in units of its own: what the progress held of
+                    // the stages before goes, so that the plan fills its share from nothing.
+                    vectorcraft_engine::doc::cancel::progress(0, 0, PLAN_BEGINS);
+                }
                 let painted = if stage == DigitizeStage::Colours && made { painted(outputs) } else { None };
                 let checked = if stage == DigitizeStage::Plan && made { checked(outputs) } else { None };
                 if stage == DigitizeStage::Plan {

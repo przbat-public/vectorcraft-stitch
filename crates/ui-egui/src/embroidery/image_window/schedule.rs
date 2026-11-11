@@ -14,8 +14,9 @@
 //!   for [`QUIET_SECS`], a newer change cancelling the run under way. A stage never timed counts as
 //!   heavy; the first run starts at once.
 //! - **The last result stays shown** while a newer one is made: after [`STALE_NOTICE_SECS`] the
-//!   window says it is recomputing, with its progress. A run that fails keeps the last good result
-//!   with the reason.
+//!   window says it is recomputing, with its progress, which only goes forward: each stage handed
+//!   over is a share of it, and the stitches' plan, the last, fills its share with the planner's
+//!   own units. A run that fails keeps the last good result with the reason.
 //! - **A replaced or cancelled run's stages are never taken in**: a step is taken only from the run
 //!   under way.
 
@@ -100,13 +101,27 @@ struct Waiting {
     since: f64,
 }
 
-/// The run under way: which, of what settings and request, and its progress.
+/// The run under way: which, of what settings and request, its progress, and how many of its
+/// stages it has handed over.
 struct Running {
     ticket: u64,
     /// The first stage the change it runs makes again.
     from: Option<DigitizeStage>,
     request: Arc<DigitizeRequest>,
     progress: Arc<Progress>,
+    handed: usize,
+}
+
+impl Running {
+    /// How far it has got, 0 to 1: each stage an equal share once handed over, and the stitches'
+    /// plan, the last, filled by the planner's own units as it reports them (the window's thread
+    /// clears what the stages reported before it begins, `worker::run`).
+    fn fraction(&self) -> f64 {
+        let stages = DigitizeStage::ALL.len();
+        let planning = self.handed + 1 == stages;
+        let within = if planning { self.progress.fraction().unwrap_or(0.0).clamp(0.0, 1.0) } else { 0.0 };
+        (self.handed.min(stages) as f64 + within) / stages as f64
+    }
 }
 
 /// What a run handed over that the window shows: the outputs so far, of which request.
@@ -225,7 +240,7 @@ impl Schedule {
                 let progress = Progress::new();
                 runner.submit(Job::new(self.next_ticket, request.clone(), progress.clone()));
                 self.asked_request = Some(request.clone());
-                self.running = Some(Running { ticket: self.next_ticket, from: w.from, request, progress });
+                self.running = Some(Running { ticket: self.next_ticket, from: w.from, request, progress, handed: 0 });
                 self.made.clear();
                 self.failure = None;
             }
@@ -239,6 +254,9 @@ impl Schedule {
         let request = r.request.clone();
         match done.outcome {
             Outcome::Stage { stage, outputs, made, painted, checked } => {
+                if let Some(r) = self.running.as_mut() {
+                    r.handed += 1;
+                }
                 if made {
                     self.stage_ms[place(stage)] = outputs.ms(stage).or(Some(0.0));
                     self.made.push(stage);
@@ -275,7 +293,7 @@ impl Schedule {
             (Some(reason), false) => Freshness::Failed(reason.clone()),
             (_, true) => Freshness::Pending {
                 notice: self.changed_at.is_some_and(|t| now - t >= STALE_NOTICE_SECS),
-                progress: self.running.as_ref().and_then(|r| r.progress.fraction()),
+                progress: self.running.as_ref().map(Running::fraction),
             },
             (None, false) => Freshness::Fresh,
         }

@@ -7394,7 +7394,6 @@ embroidery	Recomputing…	Přepočítávání…
 embroidery	Recomputing… {percent}	Přepočítávání… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · výšivka {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Vytvořen {count} objekt; odstraníte ho příkazem Zpět.|Vytvořeny {count} objekty; odstraníte je příkazem Zpět.|Vytvořeno {count} objektů; odstraníte je příkazem Zpět.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Originál
 embroidery	Compare	Porovnat
@@ -7492,3 +7491,23 @@ embroidery	Smallest area	Nejmenší oblast
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Menší skvrnky, třeba šum JPEG, se připojí k barvě kolem sebe.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} barva byla příliš malá a připojila se k jiným|{count} barvy byly příliš malé a připojily se k jiným|{count} barev bylo příliš malých a připojilo se k jiným
 @plural	{count} speck joined|{count} specks joined	{count} skvrnka se připojila|{count} skvrnky se připojily|{count} skvrnek se připojilo
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Není co šít: všechny barvy jsou vynechané.
+embroidery	Nothing to create: every color is left out.	Není co vytvořit: všechny barvy jsou vynechané.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Každá oblast barvy {color} byla menší než {value} mm²: připojila se k sousedům.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Nit zvolená pro {color}, {thread}, není šedá: šije se tak, jak byla zvolena.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Při této velikosti má obrázek {value} pixelů na milimetr, méně než {least}: větší kopie se digitalizuje lépe.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Obrázek byl načten v rozměru {width} × {height} pixelů, menší než jeho {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Rohy obrázku se neshodují na pozadí: šije se každá barva.
+embroidery	No color traced is the background's: every area is sewn.	Žádná trasovaná barva není barvou pozadí: šije se každá oblast.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Obrázek nevypadá jako plochá grafika (fotka, nebo přechody?): jeho přechody se šijí jako pruhy plné barvy.
+embroidery	Nothing in the image was traced: it is empty or transparent.	V obrázku se nic netrasovalo: je prázdný nebo průhledný.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Jen objekty obrázku, s látkou, nití a strojem dokumentu.
+embroidery	Updated in {value} ms after the last change ({steps})	Aktualizováno za {value} ms po poslední změně ({steps})
+embroidery	Notes	Poznámky
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Vytvořeno: {objects} ({threads}). Obrázek je na skryté vrstvě šablony „{layer}“. Odstraníte je příkazem Zpět.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} skvrnka menší než {value} mm² se připojila k barvě kolem sebe|{count} skvrnky menší než {value} mm² se připojily k barvám kolem sebe|{count} skvrnek menších než {value} mm² se připojilo k barvám kolem sebe
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} skvrnka menší než {value} mm² se neměla k čemu připojit a byla vynechána|{count} skvrnky menší než {value} mm² se neměly k čemu připojit a byly vynechány|{count} skvrnek menších než {value} mm² se nemělo k čemu připojit a bylo vynecháno
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} pruh široký nejvýš {value} mm se připojil k sousedovi nejbližšímu své barvě|{count} pruhy široké nejvýš {value} mm se připojily k sousedům nejbližším svým barvám|{count} pruhů širokých nejvýš {value} mm se připojilo k sousedům nejbližším svým barvám
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} oblast barvy {color} nemá středovou linii, podél které by se šila: šije se jako svůj tvar|{count} oblasti barvy {color} nemají středovou linii, podél které by se šily: šijí se jako své tvary|{count} oblastí barvy {color} nemá středovou linii, podél které by se šily: šijí se jako své tvary
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} oblast se nepodařilo spojit se sousedy: šije se tak, jak byla trasována|{count} oblasti se nepodařilo spojit se sousedy: šijí se tak, jak byly trasovány|{count} oblastí se nepodařilo spojit se sousedy: šijí se tak, jak byly trasovány

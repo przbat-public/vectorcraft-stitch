@@ -5,8 +5,7 @@
 
 use egui::{Align, Layout, Rect, RichText, Sense, Ui, UiBuilder, Vec2, vec2};
 
-use super::schedule::Freshness;
-use super::{Live, words};
+use super::words;
 use crate::VectorcraftApp;
 use crate::state::Dialog;
 use crate::theme::Tokens;
@@ -104,7 +103,7 @@ pub(crate) fn draw(app: &mut VectorcraftApp, ctx: &egui::Context, d: &mut Dialog
         ui.scope_builder(UiBuilder::new().max_rect(r.preview), |ui| super::preview::show(app, ui, d, now));
         ui.scope_builder(UiBuilder::new().max_rect(r.settings), |ui| super::steps::accordion(app, ui, d));
         ui.scope_builder(UiBuilder::new().max_rect(r.bar), |ui| {
-            if let Some(a) = live_bar(app, ui, now) {
+            if let Some(a) = super::live_bar::show(app, ui, now) {
                 asked = Some(a);
             }
         });
@@ -127,43 +126,4 @@ fn title_band(app: &VectorcraftApp, ui: &mut Ui, d: &Dialog) -> bool {
         });
     });
     close
-}
-
-/// The Live bar: how the result stands, and Start Over, Cancel and Create Embroidery Objects →
-/// what was asked.
-fn live_bar(app: &VectorcraftApp, ui: &mut Ui, now: f64) -> Option<Asked> {
-    let t = Tokens::get(ui.ctx());
-    let live = app.embroidery.image_window.live.as_ref();
-    let mut asked = None;
-    ui.horizontal(|ui| {
-        if let Some(live) = live {
-            ui.label(RichText::new(state_words(live, now)).size(SMALL_TEXT).color(t.text_dim));
-        }
-        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            let ready = live.is_some_and(|l| l.schedule.shown.as_ref().is_some_and(|s| s.outputs.made().is_some()));
-            if widgets::primary_button_enabled(ui, crate::et!("Create Embroidery Objects"), ready).clicked() {
-                asked = Some(Asked::Create);
-            }
-            if widgets::secondary_button(ui, crate::et!("Cancel")).clicked() {
-                asked = Some(Asked::Cancel);
-            }
-            if widgets::secondary_button(ui, crate::et!("Start Over")).clicked() {
-                asked = Some(Asked::StartOver);
-            }
-        });
-    });
-    asked
-}
-
-/// How the result stands, in words.
-fn state_words(live: &Live, now: f64) -> String {
-    if live.create_waiting {
-        return crate::et!("Create waits for the preview to be ready.").to_string();
-    }
-    match live.schedule.freshness(now) {
-        Freshness::Fresh => String::new(),
-        Freshness::Pending { notice: false, .. } => String::new(),
-        Freshness::Pending { notice: true, progress } => words::recomputing(progress),
-        Freshness::Failed(reason) => crate::embroidery::text::fill(crate::et!("Can't digitize it: {reason}"), &[("reason", &reason)]),
-    }
 }

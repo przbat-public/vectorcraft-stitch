@@ -6995,7 +6995,6 @@ embroidery	Recomputing…	Đang tính lại…
 embroidery	Recomputing… {percent}	Đang tính lại… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · thêu {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Đã tạo {count} đối tượng; Hoàn tác sẽ gỡ bỏ chúng.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Bản gốc
 embroidery	Compare	So sánh
@@ -7093,3 +7092,23 @@ embroidery	Smallest area	Vùng nhỏ nhất
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Các đốm nhỏ hơn, như nhiễu JPEG, nhập vào màu xung quanh.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} màu quá nhỏ và đã nhập vào các màu khác
 @plural	{count} speck joined|{count} specks joined	Đã nhập {count} đốm
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Không có gì để thêu: mọi màu đều bị bỏ.
+embroidery	Nothing to create: every color is left out.	Không có gì để tạo: mọi màu đều bị bỏ.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Mọi vùng của {color} đều nhỏ hơn {value} mm²: màu này đã nhập vào các màu lân cận.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Chỉ đã chọn cho {color}, {thread}, không phải màu xám: chỉ được thêu như đã chọn.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Ở kích thước này hình có {value} điểm ảnh mỗi milimét, ít hơn {least}: một bản lớn hơn sẽ số hóa tốt hơn.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Hình được đọc ở {width} × {height} điểm ảnh, nhỏ hơn kích thước {fullWidth} × {fullHeight} của nó.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Các góc của hình không thống nhất về nền: mọi màu đều được thêu.
+embroidery	No color traced is the background's: every area is sewn.	Không có màu được dò nào là màu nền: mọi vùng đều được thêu.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Hình không giống hình phẳng (ảnh chụp, hay chuyển màu?): các vùng chuyển màu được thêu thành dải màu phẳng.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Không dò được gì trong hình: hình trống hoặc trong suốt.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Chỉ các đối tượng của hình, với vải, chỉ và máy của tài liệu.
+embroidery	Updated in {value} ms after the last change ({steps})	Đã cập nhật trong {value} ms sau thay đổi cuối ({steps})
+embroidery	Notes	Ghi chú
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Đã tạo {objects} ({threads}). Hình nằm trên lớp mẫu ẩn “{layer}”. Hoàn tác sẽ gỡ bỏ chúng.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} đốm nhỏ hơn {value} mm² đã nhập vào màu xung quanh
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} đốm nhỏ hơn {value} mm² không có gì để nhập vào nên đã bị bỏ
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} dải rộng tối đa {value} mm đã nhập vào vùng lân cận có màu gần nhất
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} vùng của {color} không có đường giữa để thêu theo: được thêu theo hình dạng của nó
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} vùng không thể nối với các vùng lân cận: được thêu như khi dò

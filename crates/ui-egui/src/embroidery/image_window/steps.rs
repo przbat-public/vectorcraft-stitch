@@ -12,8 +12,8 @@ use super::preview::{self, View};
 use super::schedule::Shown;
 use super::{STEP, VIEW, words};
 use crate::VectorcraftApp;
-use crate::embroidery::numbers;
 use crate::embroidery::text::fill;
+use crate::embroidery::{marks, numbers};
 use crate::state::Dialog;
 use crate::theme::Tokens;
 
@@ -118,6 +118,7 @@ pub(crate) fn strip(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let shown = live.schedule.shown.clone();
     let reply = live.reply().cloned();
     let pending = live.schedule.pending_from().map(DigitizeStage::step).map(u64::from);
+    let notes = super::live_bar::current_notes(live, lang);
     for step in 1..=STEPS {
         let left = rect.left() + (step - 1) as f32 * (width + CARD_GAP);
         let card = Rect::from_min_size(pos2(left, rect.top()), vec2(width, CARD_HEIGHT.min(rect.height())));
@@ -157,6 +158,7 @@ pub(crate) fn strip(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
             FontId::proportional(SMALL_TEXT),
             t.text_dim,
         );
+        notes_mark(ui, card, &notes, step, lang);
         let description = fill(
             crate::et!("Step {number} of {count}: {name}. {summary}. {time}"),
             &[
@@ -181,6 +183,27 @@ pub(crate) fn strip(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
         }
     }
 }
+
+/// Step `step`'s problems among `notes` at its card's top right: the worst one's mark and how many
+/// there are (the Live bar lists them).
+fn notes_mark(ui: &Ui, card: Rect, notes: &[super::live_bar::Note], step: u64, lang: crate::i18n::Lang) {
+    let t = Tokens::get(ui.ctx());
+    let mine: Vec<&super::live_bar::Note> =
+        notes.iter().filter(|n| u64::from(n.step) == step && matches!(n.mark, marks::Mark::Error | marks::Mark::Warning)).collect();
+    let Some(worst) = mine.iter().map(|n| n.mark).min_by_key(|m| m.rank()) else { return };
+    let count = ui.painter().text(
+        pos2(card.right() - CARD_PAD, card.top() + CARD_PAD),
+        Align2::RIGHT_TOP,
+        numbers::count(lang, mine.len() as u64),
+        FontId::proportional(SMALL_TEXT),
+        marks::text_colour(&t, worst),
+    );
+    marks::paint(ui.painter(), pos2(count.left() - MARK_GAP - MARK / 2.0, count.center().y), MARK, worst, &t);
+}
+
+/// A card's notes mark and the room before its count (points).
+const MARK: f32 = 12.0;
+const MARK_GAP: f32 = 3.0;
 
 /// The settings column's accordion: each step's header, the current one open with its settings.
 pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {

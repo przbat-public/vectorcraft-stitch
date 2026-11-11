@@ -6975,7 +6975,6 @@ embroidery	Recomputing…	다시 계산 중…
 embroidery	Recomputing… {percent}	다시 계산 중… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 자수 {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	개체 {count}개를 만들었습니다. 실행 취소로 제거할 수 있습니다.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	원본
 embroidery	Compare	비교
@@ -7073,3 +7072,23 @@ embroidery	Smallest area	최소 영역
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	이보다 작은 점(JPEG 노이즈 등)은 주변 색에 합쳐집니다.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	너무 작은 색 {count}개가 다른 색에 합쳐졌습니다
 @plural	{count} speck joined|{count} specks joined	점 {count}개 합쳐짐
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	수놓을 것이 없습니다. 모든 색이 제외되었습니다.
+embroidery	Nothing to create: every color is left out.	만들 것이 없습니다. 모든 색이 제외되었습니다.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color}의 모든 영역이 {value} mm²보다 작아서 이웃 색에 합쳐졌습니다.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color}에 고른 실 {thread}은(는) 회색이 아닙니다. 고른 대로 수놓습니다.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	이 크기에서 그림은 밀리미터당 {value}픽셀로 {least}보다 적습니다. 더 큰 사본이 더 잘 디지타이징됩니다.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	그림을 원래 크기 {fullWidth} × {fullHeight}보다 작은 {width} × {height}픽셀로 읽었습니다.
+embroidery	The image's corners don't agree on a background: every color is sewn.	그림의 모서리들이 배경에 대해 일치하지 않습니다. 모든 색을 수놓습니다.
+embroidery	No color traced is the background's: every area is sewn.	트레이스한 색 중 배경 색이 없습니다. 모든 영역을 수놓습니다.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	그림이 단색 그림처럼 보이지 않습니다(사진이나 그라데이션?). 그라데이션은 단색 띠로 수놓습니다.
+embroidery	Nothing in the image was traced: it is empty or transparent.	그림에서 트레이스된 것이 없습니다. 비어 있거나 투명합니다.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	문서의 원단, 실, 기계로 수놓은 그림의 개체만입니다.
+embroidery	Updated in {value} ms after the last change ({steps})	마지막 변경 후 {value} ms 만에 업데이트됨 ({steps})
+embroidery	Notes	메모
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	{objects}를 만들었습니다({threads}). 그림은 숨겨진 템플릿 레이어 “{layer}”에 있습니다. 실행 취소로 제거할 수 있습니다.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm²보다 작은 점 {count}개가 주변 색에 합쳐졌습니다
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm²보다 작은 점 {count}개는 합칠 곳이 없어 제외되었습니다
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	폭 {value} mm 이하의 띠 {count}개가 색이 가장 가까운 이웃에 합쳐졌습니다
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color}의 영역 {count}개에는 따라 수놓을 중심선이 없어 모양대로 수놓습니다
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	영역 {count}개를 이웃과 합칠 수 없어 트레이스한 대로 수놓습니다

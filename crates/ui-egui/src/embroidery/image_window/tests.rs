@@ -59,9 +59,11 @@ fn until(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, done: im
     }
 }
 
-/// Whether the window's result is of its settings as they are, every stage done.
+/// Whether the window's result is of its settings as they are (the open dialog's: a test may have
+/// set one since the last frame), every stage done.
 fn ready(app: &VectorcraftApp) -> bool {
-    app.embroidery.image_window.live.as_ref().is_some_and(|l| l.schedule.current(&params_of(&l.fields)).is_some())
+    let (Some(l), Some(d)) = (app.embroidery.image_window.live.as_ref(), open_dialog(app)) else { return false };
+    l.schedule.current(&params_of(&d.fields)).is_some()
 }
 
 fn open_dialog(app: &VectorcraftApp) -> Option<&Dialog> {
@@ -570,4 +572,208 @@ fn the_palette_change_is_said_and_applied_on_create() {
     assert_eq!(undo_steps(&app), steps + 1, "one undo step");
     let doc = &app.session.doc().expect("a document").doc;
     assert_eq!(vectorcraft_engine::cmd::embroidery::thread_palette_id(doc), "pec");
+}
+
+/// What the Live bar's status tells screen readers.
+fn status_said(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> String {
+    let nodes_now = nodes(app, ctx, time);
+    nodes_now.iter().find(|(_, n)| n.role() == egui::accesskit::Role::Status).and_then(|(_, n)| n.label()).unwrap_or_default().to_string()
+}
+
+/// One frame → the texts it drew.
+fn frame_texts(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Vec<String> {
+    fn texts(s: &egui::Shape, out: &mut Vec<String>) {
+        match s {
+            egui::Shape::Text(t) => out.push(t.galley.text().to_string()),
+            egui::Shape::Vec(v) => v.iter().for_each(|s| texts(s, out)),
+            _ => {}
+        }
+    }
+    *time += 0.05;
+    let raw = egui::RawInput { time: Some(*time), screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(1440.0, 900.0))), ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::dialogs::show(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    let mut all = Vec::new();
+    out.shapes.iter().for_each(|c| texts(&c.shape, &mut all));
+    all
+}
+
+/// The figures are told to screen readers once a run settles: while a change is recomputed they
+/// are told nothing new, then the new figures.
+#[test]
+fn the_figures_are_announced_once_a_recompute_settles() {
+    let (mut app, ctx, mut time) = opened();
+    let before = status_said(&mut app, &ctx, &mut time);
+    assert!(before.contains(" stitches · ") && before.contains(" threads · ") && before.ends_with(" mm"), "{before}");
+    set(&mut app, "width", json!(120.0));
+    let deadline = Instant::now() + Duration::from_secs(120);
+    let mut recomputing = 0;
+    while !ready(&app) {
+        assert!(Instant::now() < deadline, "never ready");
+        let said = status_said(&mut app, &ctx, &mut time);
+        if live(&app).schedule.busy() {
+            recomputing += 1;
+            assert_eq!(said, before, "nothing new while it recomputes");
+        }
+    }
+    assert!(recomputing > 0, "a recompute was seen");
+    let after = status_said(&mut app, &ctx, &mut time);
+    assert!(after != before && after.contains(" stitches · ") && after.ends_with(" mm"), "{after}");
+}
+
+/// Settings that can't be digitized say why, the last figures kept on screen; screen readers are
+/// told why.
+#[test]
+fn stale_and_failed_states_keep_the_last_figures() {
+    let (mut app, ctx, mut time) = opened();
+    let figures = status_said(&mut app, &ctx, &mut time);
+    set(&mut app, "width", json!(5000.0));
+    until(&mut app, &ctx, &mut time, |app| matches!(live(app).schedule.freshness(0.0), super::schedule::Freshness::Failed(_)));
+    let said = status_said(&mut app, &ctx, &mut time);
+    assert!(said.starts_with("Can't digitize it: "), "{said}");
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    assert!(drawn.iter().any(|t| t.contains("Can't digitize it: ") && t.contains(&figures)), "the last figures kept: {drawn:?}");
+    // Put right: while it recomputes, screen readers aren't told the old figures again; then the
+    // new ones.
+    set(&mut app, "width", json!(80.0));
+    let deadline = Instant::now() + Duration::from_secs(120);
+    let mut recomputing = 0;
+    while !ready(&app) {
+        assert!(Instant::now() < deadline, "never ready");
+        let now = status_said(&mut app, &ctx, &mut time);
+        if live(&app).schedule.busy() {
+            recomputing += 1;
+            assert_eq!(now, said, "still the reason while it recomputes");
+        }
+    }
+    assert!(recomputing > 0, "a recompute was seen");
+    let settled = status_said(&mut app, &ctx, &mut time);
+    assert!(settled.contains(" stitches · ") && settled != figures, "{settled}");
+}
+
+/// With every colour left out nothing would be made: Create is disabled with its reason, and
+/// Cmd/Ctrl+Enter says it and makes nothing.
+#[test]
+fn create_is_disabled_with_its_reason_when_nothing_is_sewn() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, "colorChoices", json!([{"color": "#f08214", "job": "none"}, {"color": "#142878", "job": "none"}]));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(status_said(&mut app, &ctx, &mut time), "Nothing to sew: every color is left out.");
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    assert!(node(&nodes_now, "Create Embroidery Objects", Role::Button).is_some_and(|n| n.is_disabled()), "disabled");
+    let steps = undo_steps(&app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert_eq!(app.ui.status, "Nothing to create: every color is left out.");
+    assert!(open_dialog(&app).is_some(), "still open");
+    assert_eq!(undo_steps(&app), steps);
+}
+
+/// Create applies the run shown as one undo step, selects what it made, and says what it made, in
+/// how many threads, and the template layer the image moved to.
+#[test]
+fn create_applies_the_run_shown_in_one_undo_step() {
+    let (mut app, ctx, mut time) = opened();
+    let steps = undo_steps(&app);
+    let threads = reply(&mut app)["stats"]["threadCount"].as_u64().expect("figures");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert!(open_dialog(&app).is_none(), "closed");
+    assert_eq!(undo_steps(&app), steps + 1);
+    let status = app.ui.status.clone();
+    assert!(
+        status.starts_with("Created ") && status.contains(&format!(" ({threads} threads). The image is on the hidden template layer “")),
+        "{status}"
+    );
+    assert!(status.ends_with("”. Undo removes them."), "{status}");
+    let st = app.session.doc().expect("a document");
+    assert_eq!(st.selection.len(), 1, "the design's group selected");
+}
+
+/// An edit to the document under the window makes it digitize again before Create: Create asked
+/// for right after waits for that run, and applies it; the run of the earlier document is refused.
+#[test]
+fn create_refuses_a_run_made_of_an_earlier_document() {
+    let (mut app, ctx, mut time) = opened();
+    let steps = undo_steps(&app);
+    let earlier = live(&app).schedule.shown.clone().expect("a result");
+    app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 20, "height": 20})).unwrap();
+    assert!(app.session.apply_digitize_window(&earlier.request, &earlier.outputs).is_err(), "made of the earlier document");
+    assert_eq!(undo_steps(&app), steps + 1, "nothing applied");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    assert_eq!(undo_steps(&app), steps + 2, "the rectangle, then Create");
+}
+
+/// Escape while Create waits for its run closes the window and makes nothing, the settings kept for
+/// the image.
+#[test]
+fn escape_stops_a_create_waiting_for_its_run() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    let steps = undo_steps(&app);
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    frame(&mut app, &ctx, 0.0, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert!(live(&app).create_waiting, "waiting for its run");
+    frame(&mut app, &ctx, 0.01, vec![key(Key::Escape, Modifiers::NONE)]);
+    assert!(open_dialog(&app).is_none(), "closed");
+    for k in 0..10 {
+        frame(&mut app, &ctx, 0.05 * f64::from(k + 1), vec![]);
+    }
+    assert_eq!(undo_steps(&app), steps, "nothing made");
+    assert_eq!(app.embroidery.image_window.remembered.len(), 1, "its settings kept");
+}
+
+/// One frame → the texts it drew, with where.
+fn frame_text_rects(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Vec<(String, Rect)> {
+    fn texts(s: &egui::Shape, out: &mut Vec<(String, Rect)>) {
+        match s {
+            egui::Shape::Text(t) => out.push((t.galley.text().to_string(), Rect::from_min_size(t.pos, t.galley.size()))),
+            egui::Shape::Vec(v) => v.iter().for_each(|s| texts(s, out)),
+            _ => {}
+        }
+    }
+    *time += 0.05;
+    let raw = egui::RawInput { time: Some(*time), screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(1440.0, 900.0))), ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::dialogs::show(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    let mut all = Vec::new();
+    out.shapes.iter().for_each(|c| texts(&c.shape, &mut all));
+    all
+}
+
+/// A step's card shows its problems at its top right, how many there are beside the worst one's
+/// mark: the test picture is coarse at its size, which step 1 warns of; step 3 has none.
+#[test]
+fn a_card_shows_its_steps_problems() {
+    use crate::embroidery::marks::Mark;
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    let notes = super::live_bar::current_notes(app.embroidery.image_window.live.as_mut().expect("live"), crate::i18n::Lang::EN);
+    let problems = |step: u8| notes.iter().filter(|n| n.step == step && matches!(n.mark, Mark::Error | Mark::Warning)).count();
+    assert!(problems(1) >= 1, "{notes:?}");
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let card = |name: &str| {
+        let b = node(&nodes_now, name, Role::Tab).and_then(|n| n.bounds()).expect("a card");
+        Rect::from_min_max(pos2(b.x0 as f32, b.y0 as f32), pos2(b.x1 as f32, b.y1 as f32))
+    };
+    let (image, shapes) = (card("Image"), card("Shapes"));
+    let drawn = frame_text_rects(&mut app, &ctx, &mut time);
+    let top_right = |c: Rect, words: &str| {
+        drawn.iter().any(|(t, r)| t == words && c.contains(r.center()) && r.center().x > c.center().x && r.center().y < c.center().y)
+    };
+    assert!(top_right(image, &problems(1).to_string()), "step 1's count");
+    assert_eq!(problems(3), 0);
+    assert!(
+        !drawn.iter().any(|(t, r)| shapes.contains(r.center()) && r.center().y < shapes.center().y && t.chars().all(|c| c.is_ascii_digit())),
+        "nothing on step 3"
+    );
 }

@@ -6980,7 +6980,6 @@ embroidery	Recomputing…	Wird neu berechnet…
 embroidery	Recomputing… {percent}	Wird neu berechnet… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · Stickerei {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} Objekt erstellt; „Rückgängig“ entfernt es.|{count} Objekte erstellt; „Rückgängig“ entfernt sie.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Original
 embroidery	Compare	Vergleichen
@@ -7078,3 +7077,23 @@ embroidery	Smallest area	Kleinste Fläche
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Kleinere Sprenkel, etwa JPEG-Rauschen, gehen in der Farbe um sie herum auf.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} Farbe war zu klein und ging in anderen auf|{count} Farben waren zu klein und gingen in anderen auf
 @plural	{count} speck joined|{count} specks joined	{count} Sprenkel aufgegangen|{count} Sprenkel aufgegangen
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Nichts zu sticken: Jede Farbe ist weggelassen.
+embroidery	Nothing to create: every color is left out.	Nichts zu erstellen: Jede Farbe ist weggelassen.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Jede Fläche von {color} war kleiner als {value} mm²: Die Farbe ging in ihren Nachbarn auf.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Das für {color} gewählte Garn, {thread}, ist nicht grau: Es wird wie gewählt gestickt.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Bei dieser Größe hat das Bild {value} Pixel pro Millimeter, weniger als {least}: Eine größere Kopie wird besser digitalisiert.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Das Bild wurde mit {width} × {height} Pixeln gelesen, kleiner als seine {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Die Ecken des Bildes ergeben keinen gemeinsamen Hintergrund: Jede Farbe wird gestickt.
+embroidery	No color traced is the background's: every area is sewn.	Keine nachgezeichnete Farbe ist die des Hintergrunds: Jede Fläche wird gestickt.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Das Bild sieht nicht nach flacher Grafik aus (ein Foto oder Verläufe?): Seine Verläufe werden als Streifen flacher Farbe gestickt.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Im Bild wurde nichts nachgezeichnet: Es ist leer oder transparent.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Nur die Objekte des Bildes, mit Stoff, Garn und Maschine des Dokuments.
+embroidery	Updated in {value} ms after the last change ({steps})	In {value} ms nach der letzten Änderung aktualisiert ({steps})
+embroidery	Notes	Hinweise
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Erstellt: {objects} ({threads}). Das Bild liegt auf der ausgeblendeten Vorlagenebene „{layer}“. „Rückgängig“ entfernt sie.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} Sprenkel kleiner als {value} mm² ging in der Farbe um ihn herum auf|{count} Sprenkel kleiner als {value} mm² gingen in den Farben um sie herum auf
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} Sprenkel kleiner als {value} mm² hatte nichts zum Anschließen und wurde weggelassen|{count} Sprenkel kleiner als {value} mm² hatten nichts zum Anschließen und wurden weggelassen
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} Streifen, höchstens {value} mm breit, ging im Nachbarn auf, der seiner Farbe am nächsten ist|{count} Streifen, höchstens {value} mm breit, gingen in den Nachbarn auf, die ihren Farben am nächsten sind
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} Fläche von {color} hat keine Mittellinie zum Entlangsticken: Sie wird als ihre Form gestickt|{count} Flächen von {color} haben keine Mittellinie zum Entlangsticken: Sie werden als ihre Formen gestickt
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} Fläche ließ sich nicht mit ihren Nachbarn verbinden: Sie wird wie nachgezeichnet gestickt|{count} Flächen ließen sich nicht mit ihren Nachbarn verbinden: Sie werden wie nachgezeichnet gestickt

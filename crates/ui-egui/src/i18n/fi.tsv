@@ -7429,7 +7429,6 @@ embroidery	Recomputing…	Lasketaan uudelleen…
 embroidery	Recomputing… {percent}	Lasketaan uudelleen… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · kirjonta {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Luotiin {count} objekti; Kumoa poistaa sen.|Luotiin {count} objektia; Kumoa poistaa ne.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Alkuperäinen
 embroidery	Compare	Vertaa
@@ -7527,3 +7526,23 @@ embroidery	Smallest area	Pienin alue
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Pienemmät täplät, kuten JPEG-kohina, liittyvät ympäröivään väriin.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} väri oli liian pieni ja liittyi muihin|{count} väriä oli liian pieniä ja liittyi muihin
 @plural	{count} speck joined|{count} specks joined	{count} täplä liitetty|{count} täplää liitetty
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Ei mitään kirjottavaa: jokainen väri on jätetty pois.
+embroidery	Nothing to create: every color is left out.	Ei mitään luotavaa: jokainen väri on jätetty pois.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Jokainen värin {color} alue oli pienempi kuin {value} mm²: väri liittyi naapureihinsa.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Värille {color} valittu lanka, {thread}, ei ole harmaa: se kirjotaan valitun mukaisesti.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Tässä koossa kuvassa on {value} pikseliä millimetrillä, alle {least}: suurempi kopio digitoituu paremmin.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Kuva luettiin kokoon {width} × {height} pikseliä, pienempänä kuin sen {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Kuvan kulmat eivät sovi yhteen taustasta: jokainen väri kirjotaan.
+embroidery	No color traced is the background's: every area is sewn.	Mikään jäljitetty väri ei ole taustan: jokainen alue kirjotaan.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Kuva ei näytä tasaiselta grafiikalta (valokuva tai liukuvärejä?): sen liukuvärit kirjotaan tasavärisinä raitoina.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Kuvasta ei jäljitetty mitään: se on tyhjä tai läpinäkyvä.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Vain kuvan objektit, asiakirjan kankaalla, langalla ja koneella.
+embroidery	Updated in {value} ms after the last change ({steps})	Päivitetty {value} ms viimeisen muutoksen jälkeen ({steps})
+embroidery	Notes	Huomautukset
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Luotiin {objects} ({threads}). Kuva on piilotetulla mallitasolla ”{layer}”. Kumoa poistaa ne.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} alle {value} mm²:n täplä liittyi ympäröivään väriin|{count} alle {value} mm²:n täplää liittyi ympäröiviin väreihin
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} alle {value} mm²:n täplällä ei ollut mihin liittyä, ja se jätettiin pois|{count} alle {value} mm²:n täplällä ei ollut mihin liittyä, ja ne jätettiin pois
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} enintään {value} mm leveä raita liittyi väriltään lähimpään naapuriin|{count} enintään {value} mm leveää raitaa liittyi väriltään lähimpiin naapureihin
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} värin {color} alueella ei ole keskiviivaa kirjottavaksi: se kirjotaan muotonaan|{count} värin {color} alueella ei ole keskiviivaa kirjottavaksi: ne kirjotaan muotoinaan
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} alue ei voinut liittyä naapureihinsa: se kirjotaan jäljitettynä|{count} aluetta ei voinut liittyä naapureihinsa: ne kirjotaan jäljitettyinä

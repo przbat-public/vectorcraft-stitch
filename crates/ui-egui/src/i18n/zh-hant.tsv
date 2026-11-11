@@ -7028,7 +7028,6 @@ embroidery	Recomputing…	正在重新計算…
 embroidery	Recomputing… {percent}	正在重新計算… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺繡 {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	已建立 {count} 個物件；復原可將其移除。
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	原圖
 embroidery	Compare	對比
@@ -7126,3 +7125,23 @@ embroidery	Smallest area	最小區域
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	更小的斑點（如 JPEG 雜訊）會併入周圍的顏色。
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 種顏色太小，已併入其他顏色
 @plural	{count} speck joined|{count} specks joined	已併入 {count} 個斑點
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	沒有可繡製的內容：所有顏色都已略去。
+embroidery	Nothing to create: every color is left out.	沒有可建立的內容：所有顏色都已略去。
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} 的每個區域都小於 {value} mm²：它已併入相鄰顏色。
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	為 {color} 選擇的線 {thread} 不是灰色：將按所選繡製。
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	在此尺寸下，影像每毫米 {value} 像素，少於 {least}：更大的副本數位化效果更好。
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	影像以 {width} × {height} 像素讀取，小於其 {fullWidth} × {fullHeight}。
+embroidery	The image's corners don't agree on a background: every color is sewn.	影像的四角在背景上不一致：所有顏色都繡出。
+embroidery	No color traced is the background's: every area is sewn.	描摹出的顏色中沒有背景色：所有區域都繡出。
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	影像看起來不像平面圖稿（照片或漸層？）：其漸層將繡成純色色帶。
+embroidery	Nothing in the image was traced: it is empty or transparent.	影像中沒有描摹出任何內容：它是空的或透明的。
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	僅影像的物件，使用文件的布料、線和機器。
+embroidery	Updated in {value} ms after the last change ({steps})	上次變更後 {value} ms 內更新（{steps}）
+embroidery	Notes	注意事項
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	已建立 {objects}（{threads}）。影像位於隱藏的範本圖層「{layer}」上。復原可將其移除。
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} 個小於 {value} mm² 的斑點已併入周圍的顏色
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} 個小於 {value} mm² 的斑點無處可併入，已略去
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} 條寬度不超過 {value} mm 的色帶已併入顏色最接近的相鄰區域
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} 的 {count} 個區域沒有可沿其繡製的中心線：按其形狀繡製
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} 個區域無法與相鄰區域合併：按描摹結果繡製

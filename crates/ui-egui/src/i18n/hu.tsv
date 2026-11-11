@@ -7378,7 +7378,6 @@ embroidery	Recomputing…	Újraszámítás…
 embroidery	Recomputing… {percent}	Újraszámítás… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · hímzés {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} objektum létrejött; a Visszavonás eltávolítja.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Eredeti
 embroidery	Compare	Összehasonlítás
@@ -7476,3 +7475,23 @@ embroidery	Smallest area	Legkisebb terület
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	A kisebb foltok, például a JPEG-zaj, a körülöttük lévő színhez csatlakoznak.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} szín túl kicsi volt, és másokhoz csatlakozott
 @plural	{count} speck joined|{count} specks joined	{count} folt csatlakozott
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Nincs mit kihímezni: minden szín ki van hagyva.
+embroidery	Nothing to create: every color is left out.	Nincs mit létrehozni: minden szín ki van hagyva.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} minden területe kisebb volt {value} mm²-nél: a szomszédaihoz csatlakozott.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	A(z) {color} színhez választott szál, {thread}, nem szürke: a választás szerint lesz kihímezve.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Ebben a méretben a képnek milliméterenként {value} képpontja van, kevesebb mint {least}: egy nagyobb másolata jobban digitalizálható.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	A kép {width} × {height} képpontos méretben lett beolvasva, kisebben az eredeti {fullWidth} × {fullHeight} méreténél.
+embroidery	The image's corners don't agree on a background: every color is sewn.	A kép sarkai nem egyeznek a háttérben: minden szín ki lesz hímezve.
+embroidery	No color traced is the background's: every area is sewn.	Egyik követett szín sem a háttéré: minden terület ki lesz hímezve.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	A kép nem tűnik sík grafikának (fénykép vagy színátmenetek?): az átmenetei egyszínű sávokként lesznek kihímezve.
+embroidery	Nothing in the image was traced: it is empty or transparent.	A képből semmit sem sikerült követni: üres vagy átlátszó.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Csak a kép objektumai, a dokumentum anyagával, szálával és gépével.
+embroidery	Updated in {value} ms after the last change ({steps})	Frissítve {value} ms alatt az utolsó változtatás után ({steps})
+embroidery	Notes	Megjegyzések
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Létrejött: {objects} ({threads}). A kép a rejtett „{layer}” sablonrétegen van. A Visszavonás eltávolítja őket.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} {value} mm²-nél kisebb folt a körülötte lévő színhez csatlakozott
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} {value} mm²-nél kisebb foltnak nem volt mihez csatlakoznia, ezért kimaradt
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} legfeljebb {value} mm széles sáv a színéhez legközelebbi szomszédhoz csatlakozott
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} {count} területének nincs követhető középvonala: alakzatként lesz kihímezve
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} területet nem sikerült a szomszédaihoz kapcsolni: követett formájában lesz kihímezve

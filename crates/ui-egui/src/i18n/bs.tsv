@@ -7189,7 +7189,6 @@ embroidery	Recomputing…	Ponovno računanje…
 embroidery	Recomputing… {percent}	Ponovno računanje… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · vez {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Napravljen je {count} objekt; Poništi ga uklanja.|Napravljena su {count} objekta; Poništi ih uklanja.|Napravljeno je {count} objekata; Poništi ih uklanja.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Original
 embroidery	Compare	Usporedi
@@ -7287,3 +7286,23 @@ embroidery	Smallest area	Najmanje područje
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Manje mrlje, poput JPEG šuma, pridružuju se boji oko sebe.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} boja je bila premala i pridružila se drugima|{count} boje su bile premale i pridružile se drugima|{count} boja je bilo premalo i pridružile su se drugima
 @plural	{count} speck joined|{count} specks joined	{count} mrlja se pridružila|{count} mrlje su se pridružile|{count} mrlja se pridružilo
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Nema šta da se šije: sve boje su izostavljene.
+embroidery	Nothing to create: every color is left out.	Nema šta da se kreira: sve boje su izostavljene.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Svako područje boje {color} bilo je manje od {value} mm²: boja se pridružila susjedima.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Konac odabran za {color}, {thread}, nije siv: šije se kako je odabran.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Pri ovoj veličini slika ima {value} piksela po milimetru, manje od {least}: veća kopija se bolje digitalizuje.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Slika je pročitana u {width} × {height} piksela, manja od svojih {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Uglovi slike se ne slažu oko pozadine: šije se svaka boja.
+embroidery	No color traced is the background's: every area is sewn.	Nijedna praćena boja nije boja pozadine: šije se svako područje.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Slika ne izgleda kao ravna grafika (fotografija ili prelazi?): njeni prelazi se šiju kao trake ravne boje.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Ništa na slici nije praćeno: prazna je ili prozirna.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Samo objekti slike, s tkaninom, koncem i mašinom dokumenta.
+embroidery	Updated in {value} ms after the last change ({steps})	Ažurirano za {value} ms nakon posljednje promjene ({steps})
+embroidery	Notes	Napomene
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Napravljeno: {objects} ({threads}). Slika je na skrivenom sloju šablona „{layer}”. Poništi ih uklanja.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} mrlja manja od {value} mm² pridružila se boji oko sebe|{count} mrlje manje od {value} mm² pridružile su se bojama oko sebe|{count} mrlja manjih od {value} mm² pridružilo se bojama oko sebe
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} mrlja manja od {value} mm² nije se imala čemu pridružiti i izostavljena je|{count} mrlje manje od {value} mm² nisu se imale čemu pridružiti i izostavljene su|{count} mrlja manjih od {value} mm² nije se imalo čemu pridružiti i izostavljeno je
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} traka široka najviše {value} mm pridružila se susjedu najbližem svojoj boji|{count} trake široke najviše {value} mm pridružile su se susjedima najbližim svojim bojama|{count} traka širokih najviše {value} mm pridružilo se susjedima najbližim svojim bojama
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} područje boje {color} nema središnju liniju za šivanje: šije se kao svoj oblik|{count} područja boje {color} nemaju središnju liniju za šivanje: šiju se kao svoji oblici|{count} područja boje {color} nema središnju liniju za šivanje: šiju se kao svoji oblici
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} područje se nije moglo spojiti sa susjedima: šije se kako je praćeno|{count} područja se nisu mogla spojiti sa susjedima: šiju se kako su praćena|{count} područja se nije moglo spojiti sa susjedima: šiju se kako su praćena

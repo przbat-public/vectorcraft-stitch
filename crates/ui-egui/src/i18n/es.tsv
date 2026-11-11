@@ -7336,7 +7336,6 @@ embroidery	Recomputing…	Recalculando…
 embroidery	Recomputing… {percent}	Recalculando… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · bordado {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Se creó {count} objeto; se quita con Deshacer.|Se crearon {count} objetos; se quitan con Deshacer.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Original
 embroidery	Compare	Comparar
@@ -7434,3 +7433,23 @@ embroidery	Smallest area	Área mínima
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Las motas más pequeñas, como el ruido JPEG, se unen al color que las rodea.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} color era demasiado pequeño y se unió a otros|{count} colores eran demasiado pequeños y se unieron a otros
 @plural	{count} speck joined|{count} specks joined	{count} mota unida|{count} motas unidas
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	No hay nada que bordar: todos los colores están omitidos.
+embroidery	Nothing to create: every color is left out.	No hay nada que crear: todos los colores están omitidos.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Todas las áreas de {color} medían menos de {value} mm²: se unió a sus vecinos.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	El hilo elegido para {color}, {thread}, no es gris: se borda tal como se eligió.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	A este tamaño la imagen tiene {value} píxeles por milímetro, menos de {least}: una copia más grande se digitaliza mejor.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	La imagen se leyó a {width} × {height} píxeles, más pequeña que sus {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Las esquinas de la imagen no coinciden en un fondo: se borda cada color.
+embroidery	No color traced is the background's: every area is sewn.	Ningún color calcado es el del fondo: se borda cada área.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	La imagen no parece arte plano (¿una foto o degradados?): sus degradados se bordan como franjas de color plano.
+embroidery	Nothing in the image was traced: it is empty or transparent.	No se calcó nada de la imagen: está vacía o es transparente.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Solo los objetos de la imagen, con la tela, el hilo y la máquina del documento.
+embroidery	Updated in {value} ms after the last change ({steps})	Actualizado en {value} ms tras el último cambio ({steps})
+embroidery	Notes	Notas
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Se crearon {objects} ({threads}). La imagen está en la capa de plantilla oculta «{layer}». Se quitan con Deshacer.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} mota de menos de {value} mm² se unió al color que la rodea|{count} motas de menos de {value} mm² se unieron a los colores que las rodean
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} mota de menos de {value} mm² no tenía nada a lo que unirse y se omitió|{count} motas de menos de {value} mm² no tenían nada a lo que unirse y se omitieron
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} franja de {value} mm de ancho como máximo se unió al vecino más parecido a su color|{count} franjas de {value} mm de ancho como máximo se unieron a los vecinos más parecidos a sus colores
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} área de {color} no tiene línea central que seguir: se borda como su forma|{count} áreas de {color} no tienen línea central que seguir: se bordan como sus formas
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} área no pudo unirse a sus vecinas: se borda tal como se calcó|{count} áreas no pudieron unirse a sus vecinas: se bordan tal como se calcaron

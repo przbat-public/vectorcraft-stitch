@@ -25,6 +25,7 @@ pub(crate) mod colour_list;
 mod colours_step;
 pub(crate) mod frame;
 mod image_step;
+pub(crate) mod live_bar;
 pub(crate) mod preview;
 pub(crate) mod schedule;
 pub(crate) mod steps;
@@ -89,6 +90,11 @@ pub(crate) struct Live {
     pub(crate) preview: preview::Preview,
     /// The colour list's selection and its thread choice.
     pub(crate) colours: colour_list::State,
+    /// The figures last shown: kept, dimmed, while a newer result is on its way or the settings
+    /// can't be digitized.
+    figures: Option<crate::embroidery::counters::Figures>,
+    /// What screen readers were last told of the result, once it settled.
+    pub(crate) announced: String,
     /// The command's reply for the result shown, built once a result.
     reply: Option<(ReplyOf, Value)>,
     /// The fields as last drawn: what is remembered when it closes without Create.
@@ -104,6 +110,14 @@ pub(crate) struct Live {
 type ReplyOf = (Option<u64>, Option<u64>);
 
 impl Live {
+    /// The figures to show: `said`'s when it has some (kept for later), else the last shown.
+    pub(crate) fn last_figures(&mut self, said: Option<&live_bar::Said>) -> Option<crate::embroidery::counters::Figures> {
+        if let Some(live_bar::Said::Figures(f)) = said {
+            self.figures = Some(f.clone());
+        }
+        self.figures.clone()
+    }
+
     /// The command's reply for the result shown (its areas listed none), once its shapes are done:
     /// what the window's lists and figures read.
     pub(crate) fn reply(&mut self) -> Option<&Value> {
@@ -218,6 +232,8 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             schedule: Schedule::default(),
             preview: preview::Preview::default(),
             colours: colour_list::State::default(),
+            figures: None,
+            announced: String::new(),
             reply: None,
             fields: d.fields.clone(),
             create_waiting: false,
@@ -240,8 +256,8 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
                 d = reset;
             }
         }
-        Some(frame::Asked::Create) => ask_create(app),
-        None if create_now => ask_create(app),
+        Some(frame::Asked::Create) => ask_create(app, now),
+        None if create_now => ask_create(app, now),
         None => {}
     }
     if let Some(live) = app.embroidery.image_window.live.as_mut()
@@ -267,7 +283,11 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
 
 /// Create asked for (the button, Cmd/Ctrl+Enter): at once when the result shown is of the settings
 /// as they are, else once it is.
-fn ask_create(app: &mut VectorcraftApp) {
+fn ask_create(app: &mut VectorcraftApp, now: f64) {
+    let refused = app.embroidery.image_window.live.as_mut().and_then(|l| live_bar::create_refused(l, now));
+    if let Some(why) = refused {
+        return app.status(why);
+    }
     let ready = app.embroidery.image_window.live.as_ref().is_some_and(|l| l.schedule.current(&params_of(&l.fields)).is_some());
     if ready {
         if let Err(e) = create(app) {
@@ -300,7 +320,10 @@ fn closed_by_create(app: &mut VectorcraftApp, key: (u64, NodeId), reply: &Value)
     app.embroidery.image_window.live = None;
     app.ui.dialog = None;
     let made = reply["created"]["objects"].as_u64().unwrap_or(0);
-    app.status(crate::etn!(made, "Created {count} object: Undo removes it.", "Created {count} objects: Undo removes them."));
+    let threads = reply["stats"]["threadCount"].as_u64().unwrap_or(0);
+    let layer = reply["created"]["layer"].as_u64().map(NodeId);
+    let name = app.session.active().and_then(|st| layer.and_then(|l| st.doc.node(l))).and_then(|n| n.name.clone()).unwrap_or_default();
+    app.status(live_bar::created_words(made, threads, &name));
 }
 
 /// `ui.dialog.confirm`: Create, in one go: the run shown when it is of the fields as they are, else

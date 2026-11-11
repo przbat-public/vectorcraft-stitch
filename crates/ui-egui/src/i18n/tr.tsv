@@ -7347,7 +7347,6 @@ embroidery	Recomputing…	Yeniden hesaplanıyor…
 embroidery	Recomputing… {percent}	Yeniden hesaplanıyor… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · nakış {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} nesne oluşturuldu; Geri Al onları kaldırır.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Özgün
 embroidery	Compare	Karşılaştır
@@ -7445,3 +7444,23 @@ embroidery	Smallest area	En küçük alan
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	JPEG gürültüsü gibi daha küçük benekler, çevrelerindeki renge katılır.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} renk çok küçüktü ve diğerlerine katıldı
 @plural	{count} speck joined|{count} specks joined	{count} benek katıldı
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Dikilecek bir şey yok: her renk dışarıda bırakıldı.
+embroidery	Nothing to create: every color is left out.	Oluşturulacak bir şey yok: her renk dışarıda bırakıldı.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} renginin her alanı {value} mm² değerinden küçüktü: komşularına katıldı.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color} için seçilen iplik, {thread}, gri değil: seçildiği gibi dikilir.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Bu boyutta resimde milimetre başına {value} piksel var, {least} değerinden az: daha büyük bir kopyası daha iyi dijitalleşir.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Resim {width} × {height} piksel olarak okundu, kendi {fullWidth} × {fullHeight} boyutundan küçük.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Resmin köşeleri bir arka planda uyuşmuyor: her renk dikilir.
+embroidery	No color traced is the background's: every area is sewn.	İzlenen renklerin hiçbiri arka planın değil: her alan dikilir.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Resim düz çizime benzemiyor (fotoğraf mı, geçişler mi?): geçişleri düz renk şeritleri olarak dikilir.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Resimde hiçbir şey izlenmedi: boş ya da saydam.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Yalnızca resmin nesneleri, belgenin kumaşı, ipliği ve makinesiyle.
+embroidery	Updated in {value} ms after the last change ({steps})	Son değişiklikten {value} ms sonra güncellendi ({steps})
+embroidery	Notes	Notlar
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	{objects} oluşturuldu ({threads}). Resim gizli şablon katmanı “{layer}” üzerinde. Geri Al bunları kaldırır.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm² değerinden küçük {count} benek çevresindeki renge katıldı
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm² değerinden küçük {count} beneğin katılacağı bir şey yoktu ve dışarıda bırakıldı
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	En fazla {value} mm genişliğindeki {count} şerit, rengine en yakın komşuya katıldı
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} renginin {count} alanında boyunca dikilecek orta çizgi yok: şekli olarak dikilir
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} alan komşularına birleştirilemedi: izlendiği gibi dikilir

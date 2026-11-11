@@ -8879,7 +8879,6 @@ embroidery	Recomputing…	Räknar om…
 embroidery	Recomputing… {percent}	Räknar om… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · broderi {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Skapade {count} objekt; Ångra tar bort det.|Skapade {count} objekt; Ångra tar bort dem.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Original
 embroidery	Compare	Jämför
@@ -8977,3 +8976,23 @@ embroidery	Smallest area	Minsta område
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Mindre fläckar, som JPEG-brus, går upp i färgen runt dem.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} färg var för liten och gick upp i andra|{count} färger var för små och gick upp i andra
 @plural	{count} speck joined|{count} specks joined	{count} fläck sammanfogad|{count} fläckar sammanfogade
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Inget att brodera: varje färg är utelämnad.
+embroidery	Nothing to create: every color is left out.	Inget att skapa: varje färg är utelämnad.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Varje område av {color} var mindre än {value} mm²: färgen gick upp i sina grannar.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Tråden som valts för {color}, {thread}, är inte grå: den broderas som vald.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	I den här storleken har bilden {value} pixlar per millimeter, färre än {least}: en större kopia digitaliseras bättre.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Bilden lästes i {width} × {height} pixlar, mindre än sina {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Bildens hörn är inte överens om en bakgrund: varje färg broderas.
+embroidery	No color traced is the background's: every area is sewn.	Ingen spårad färg är bakgrundens: varje område broderas.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Bilden ser inte ut som platt grafik (ett foto eller toningar?): dess toningar broderas som band av platt färg.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Inget i bilden spårades: den är tom eller genomskinlig.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Bara bildens objekt, med dokumentets tyg, tråd och maskin.
+embroidery	Updated in {value} ms after the last change ({steps})	Uppdaterat på {value} ms efter senaste ändringen ({steps})
+embroidery	Notes	Anteckningar
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Skapade {objects} ({threads}). Bilden ligger på det dolda mallagret ”{layer}”. Ångra tar bort dem.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} fläck mindre än {value} mm² gick upp i färgen runt den|{count} fläckar mindre än {value} mm² gick upp i färgerna runt dem
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} fläck mindre än {value} mm² hade inget att gå upp i och utelämnades|{count} fläckar mindre än {value} mm² hade inget att gå upp i och utelämnades
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} band högst {value} mm brett gick upp i grannen närmast dess färg|{count} band högst {value} mm breda gick upp i grannarna närmast deras färger
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} område av {color} har ingen mittlinje att brodera längs: det broderas som sin form|{count} områden av {color} har ingen mittlinje att brodera längs: de broderas som sina former
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} område kunde inte fogas till sina grannar: det broderas som spårat|{count} områden kunde inte fogas till sina grannar: de broderas som spårade

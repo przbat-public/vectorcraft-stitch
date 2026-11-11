@@ -7204,7 +7204,6 @@ embroidery	Recomputing…	Opnieuw berekenen…
 embroidery	Recomputing… {percent}	Opnieuw berekenen… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · borduurwerk {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} object gemaakt; Ongedaan maken verwijdert het.|{count} objecten gemaakt; Ongedaan maken verwijdert ze.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Origineel
 embroidery	Compare	Vergelijken
@@ -7302,3 +7301,23 @@ embroidery	Smallest area	Kleinste vlak
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Kleinere spikkels, zoals JPEG-ruis, gaan op in de kleur eromheen.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} kleur was te klein en ging op in andere|{count} kleuren waren te klein en gingen op in andere
 @plural	{count} speck joined|{count} specks joined	{count} spikkel opgegaan|{count} spikkels opgegaan
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Niets te borduren: elke kleur is weggelaten.
+embroidery	Nothing to create: every color is left out.	Niets te maken: elke kleur is weggelaten.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Elk vlak van {color} was kleiner dan {value} mm²: het ging op in zijn buren.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	De draad gekozen voor {color}, {thread}, is niet grijs: hij wordt geborduurd zoals gekozen.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Op dit formaat heeft de afbeelding {value} pixels per millimeter, minder dan {least}: een grotere kopie digitaliseert beter.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	De afbeelding is gelezen op {width} × {height} pixels, kleiner dan haar {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	De hoeken van de afbeelding zijn het niet eens over een achtergrond: elke kleur wordt geborduurd.
+embroidery	No color traced is the background's: every area is sewn.	Geen overgetrokken kleur is die van de achtergrond: elk vlak wordt geborduurd.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	De afbeelding lijkt geen vlakke afbeelding (een foto of verlopen?): de verlopen worden als banden effen kleur geborduurd.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Er is niets in de afbeelding overgetrokken: ze is leeg of transparant.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Alleen de objecten van de afbeelding, met de stof, draad en machine van het document.
+embroidery	Updated in {value} ms after the last change ({steps})	Bijgewerkt in {value} ms na de laatste wijziging ({steps})
+embroidery	Notes	Opmerkingen
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Gemaakt: {objects} ({threads}). De afbeelding staat op de verborgen sjabloonlaag ‘{layer}’. Ongedaan maken verwijdert ze.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} spikkel kleiner dan {value} mm² ging op in de kleur eromheen|{count} spikkels kleiner dan {value} mm² gingen op in de kleuren eromheen
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} spikkel kleiner dan {value} mm² kon nergens in opgaan en is weggelaten|{count} spikkels kleiner dan {value} mm² konden nergens in opgaan en zijn weggelaten
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} band van hoogstens {value} mm breed ging op in de buur die het dichtst bij zijn kleur ligt|{count} banden van hoogstens {value} mm breed gingen op in de buren die het dichtst bij hun kleuren liggen
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} vlak van {color} heeft geen middenlijn om langs te borduren: het wordt als zijn vorm geborduurd|{count} vlakken van {color} hebben geen middenlijn om langs te borduren: ze worden als hun vormen geborduurd
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} vlak kon niet met zijn buren worden verbonden: het wordt geborduurd zoals overgetrokken|{count} vlakken konden niet met hun buren worden verbonden: ze worden geborduurd zoals overgetrokken

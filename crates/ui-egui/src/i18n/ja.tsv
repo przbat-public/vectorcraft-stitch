@@ -7079,7 +7079,6 @@ embroidery	Recomputing…	再計算中…
 embroidery	Recomputing… {percent}	再計算中… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺繍 {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	{count} 個のオブジェクトを作成しました。取り消しで削除できます。
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	元画像
 embroidery	Compare	比較
@@ -7177,3 +7176,23 @@ embroidery	Smallest area	最小の領域
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	これより小さい点 (JPEG のノイズなど) は、周りの色に加わります。
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 色が小さすぎて、ほかの色に加わりました
 @plural	{count} speck joined|{count} specks joined	{count} 個の点を結合
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	縫うものがありません。すべての色が除かれています。
+embroidery	Nothing to create: every color is left out.	作成するものがありません。すべての色が除かれています。
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} の領域はどれも {value} mm² より小さかったため、隣の色に加わりました。
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color} に選ばれた糸 {thread} はグレーではありません。選ばれたとおりに縫います。
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	このサイズでは画像は 1 ミリあたり {value} ピクセルで、{least} 未満です。より大きな画像のほうがうまくデジタイズできます。
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	画像は {width} × {height} ピクセルで読み込まれました。元の {fullWidth} × {fullHeight} より小さいサイズです。
+embroidery	The image's corners don't agree on a background: every color is sewn.	画像の四隅で背景の色が一致しません。すべての色を縫います。
+embroidery	No color traced is the background's: every area is sewn.	トレースした色に背景の色はありません。すべての領域を縫います。
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	画像はフラットなアートに見えません (写真かグラデーション?)。グラデーションは単色の帯として縫います。
+embroidery	Nothing in the image was traced: it is empty or transparent.	画像から何もトレースされませんでした。空か透明です。
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	画像のオブジェクトだけを、ドキュメントの生地・糸・ミシンで縫った場合です。
+embroidery	Updated in {value} ms after the last change ({steps})	最後の変更から {value} ms で更新 ({steps})
+embroidery	Notes	メモ
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	{objects}を作成しました ({threads})。画像は非表示のテンプレートレイヤー「{layer}」にあります。取り消しで削除できます。
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm² より小さい点 {count} 個が周りの色に加わりました
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm² より小さい点 {count} 個は加わる先がなく、除かれました
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	幅 {value} mm 以下の帯 {count} 本が、色の最も近い隣に加わりました
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} の領域 {count} か所には縫い進める中心線がないため、形のまま縫います
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} か所の領域を隣と結合できなかったため、トレースしたまま縫います

@@ -7453,7 +7453,6 @@ embroidery	Recomputing…	ხელახალი გამოთვლა…
 embroidery	Recomputing… {percent}	ხელახალი გამოთვლა… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · ნაქარგობა {w} × {h} მმ
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	შეიქმნა {count} ობიექტი; დაბრუნება მათ წაშლის.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	ორიგინალი
 embroidery	Compare	შედარება
@@ -7551,3 +7550,23 @@ embroidery	Smallest area	უმცირესი არე
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	უფრო პატარა ლაქები, მაგალითად JPEG-ის ხმაური, გარშემო ფერს უერთდება.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	ზედმეტად პატარა ფერები სხვებს შეუერთდა: {count}
 @plural	{count} speck joined|{count} specks joined	შეერთებული ლაქები: {count}
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	დასაქარგი არაფერია: ყველა ფერი გამოტოვებულია.
+embroidery	Nothing to create: every color is left out.	შესაქმნელი არაფერია: ყველა ფერი გამოტოვებულია.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color}-ის ყველა არე {value} მმ²-ზე პატარა იყო: ის მეზობლებს შეუერთდა.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color}-ისთვის არჩეული ძაფი, {thread}, ნაცრისფერი არ არის: ის არჩეულივით დაიქარგება.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	ამ ზომაზე სურათს მილიმეტრზე {value} პიქსელი აქვს, {least}-ზე ნაკლები: უფრო დიდი ასლი უკეთ ციფრდება.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	სურათი წაკითხულია {width} × {height} პიქსელად, საკუთარ {fullWidth} × {fullHeight}-ზე პატარად.
+embroidery	The image's corners don't agree on a background: every color is sewn.	სურათის კუთხეები ფონზე არ თანხმდება: ყველა ფერი იქარგება.
+embroidery	No color traced is the background's: every area is sewn.	არცერთი ტრასირებული ფერი ფონისა არ არის: ყველა არე იქარგება.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	სურათი ბრტყელ გრაფიკას არ ჰგავს (ფოტო ან გრადიენტები?): მისი გრადიენტები ერთფეროვანი ზოლებით დაიქარგება.
+embroidery	Nothing in the image was traced: it is empty or transparent.	სურათში ვერაფერი დატრასირდა: ის ცარიელი ან გამჭვირვალეა.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	მხოლოდ სურათის ობიექტები, დოკუმენტის ქსოვილით, ძაფითა და მანქანით.
+embroidery	Updated in {value} ms after the last change ({steps})	განახლდა {value} მწმ-ში ბოლო ცვლილების შემდეგ ({steps})
+embroidery	Notes	შენიშვნები
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	შეიქმნა {objects} ({threads}). სურათი დამალულ შაბლონის ფენაზეა „{layer}“. დაბრუნება მათ წაშლის.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} მმ²-ზე პატარა ლაქები გარშემო ფერებს შეუერთდა: {count}
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} მმ²-ზე პატარა ლაქებს შესაერთებელი არაფერი ჰქონდა და გამოტოვდა: {count}
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	მაქსიმუმ {value} მმ სიგანის ზოლები ფერით უახლოეს მეზობლებს შეუერთდა: {count}
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color}-ის არეები, რომლებსაც დასაქარგი ცენტრალური ხაზი არ აქვს, მათი ფორმით დაიქარგება: {count}
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	არეები, რომლებიც მეზობლებს ვერ შეუერთდა, დატრასირებულივით დაიქარგება: {count}

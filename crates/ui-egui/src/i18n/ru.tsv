@@ -7482,7 +7482,6 @@ embroidery	Recomputing…	Пересчёт…
 embroidery	Recomputing… {percent}	Пересчёт… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · вышивка {w} × {h} мм
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Создан {count} объект; «Отменить» его удалит.|Создано {count} объекта; «Отменить» их удалит.|Создано {count} объектов; «Отменить» их удалит.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Оригинал
 embroidery	Compare	Сравнение
@@ -7580,3 +7579,23 @@ embroidery	Smallest area	Наименьшая область
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Мелкие пятнышки, например шум JPEG, присоединяются к цвету вокруг.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} цвет был слишком мал и присоединился к другим|{count} цвета были слишком малы и присоединились к другим|{count} цветов были слишком малы и присоединились к другим
 @plural	{count} speck joined|{count} specks joined	{count} пятнышко присоединено|{count} пятнышка присоединены|{count} пятнышек присоединены
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Нечего вышивать: все цвета пропущены.
+embroidery	Nothing to create: every color is left out.	Нечего создавать: все цвета пропущены.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Каждая область цвета {color} была меньше {value} мм²: цвет присоединился к соседям.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Нить, выбранная для {color}, {thread}, не серая: она вышивается, как выбрана.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	При этом размере у изображения {value} пикселей на миллиметр, меньше {least}: копия побольше оцифруется лучше.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Изображение прочитано в размере {width} × {height} пикселей, меньше своих {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Углы изображения не сходятся на фоне: вышиваются все цвета.
+embroidery	No color traced is the background's: every area is sewn.	Ни один трассированный цвет не совпадает с фоном: вышиваются все области.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Изображение не похоже на плоскую графику (фото или градиенты?): его градиенты вышиваются полосами сплошного цвета.
+embroidery	Nothing in the image was traced: it is empty or transparent.	В изображении ничего не трассировано: оно пустое или прозрачное.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Только объекты изображения, с тканью, нитью и машиной документа.
+embroidery	Updated in {value} ms after the last change ({steps})	Обновлено за {value} мс после последнего изменения ({steps})
+embroidery	Notes	Заметки
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Создано: {objects} ({threads}). Изображение на скрытом слое шаблона «{layer}». «Отменить» их удалит.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} пятнышко меньше {value} мм² присоединилось к цвету вокруг|{count} пятнышка меньше {value} мм² присоединились к цветам вокруг|{count} пятнышек меньше {value} мм² присоединились к цветам вокруг
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} пятнышку меньше {value} мм² не к чему было присоединиться, и оно пропущено|{count} пятнышкам меньше {value} мм² не к чему было присоединиться, и они пропущены|{count} пятнышкам меньше {value} мм² не к чему было присоединиться, и они пропущены
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} полоса шириной не больше {value} мм присоединилась к соседу, ближайшему по цвету|{count} полосы шириной не больше {value} мм присоединились к соседям, ближайшим по цвету|{count} полос шириной не больше {value} мм присоединились к соседям, ближайшим по цвету
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} область цвета {color} не имеет средней линии для вышивки: она вышивается своей формой|{count} области цвета {color} не имеют средней линии для вышивки: они вышиваются своими формами|{count} областей цвета {color} не имеют средней линии для вышивки: они вышиваются своими формами
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} область не удалось соединить с соседями: она вышивается как трассирована|{count} области не удалось соединить с соседями: они вышиваются как трассированы|{count} областей не удалось соединить с соседями: они вышиваются как трассированы

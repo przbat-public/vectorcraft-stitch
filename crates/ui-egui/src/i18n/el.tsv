@@ -7346,7 +7346,6 @@ embroidery	Recomputing…	Επανυπολογισμός…
 embroidery	Recomputing… {percent}	Επανυπολογισμός… {percent}
 embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · κέντημα {w} × {h} mm
 embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
-@plural	Created {count} object: Undo removes it.|Created {count} objects: Undo removes them.	Δημιουργήθηκε {count} αντικείμενο· η Αναίρεση το αφαιρεί.|Δημιουργήθηκαν {count} αντικείμενα· η Αναίρεση τα αφαιρεί.
 # VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
 embroidery	Original	Πρωτότυπο
 embroidery	Compare	Σύγκριση
@@ -7444,3 +7443,23 @@ embroidery	Smallest area	Μικρότερη περιοχή
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Μικρότερες κηλίδες, όπως ο θόρυβος JPEG, ενώνονται με το χρώμα γύρω τους.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} χρώμα ήταν πολύ μικρό και ενώθηκε με άλλα|{count} χρώματα ήταν πολύ μικρά και ενώθηκαν με άλλα
 @plural	{count} speck joined|{count} specks joined	{count} κηλίδα ενώθηκε|{count} κηλίδες ενώθηκαν
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Δεν υπάρχει τίποτα για κέντημα: κάθε χρώμα παραλείπεται.
+embroidery	Nothing to create: every color is left out.	Δεν υπάρχει τίποτα για δημιουργία: κάθε χρώμα παραλείπεται.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Κάθε περιοχή του {color} ήταν μικρότερη από {value} mm²: ενώθηκε με τις γειτονικές.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Η κλωστή που επιλέχθηκε για το {color}, {thread}, δεν είναι γκρι: κεντιέται όπως επιλέχθηκε.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Σε αυτό το μέγεθος η εικόνα έχει {value} εικονοστοιχεία ανά χιλιοστό, λιγότερα από {least}: ένα μεγαλύτερο αντίγραφο ψηφιοποιείται καλύτερα.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Η εικόνα διαβάστηκε σε {width} × {height} εικονοστοιχεία, μικρότερη από τα {fullWidth} × {fullHeight} της.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Οι γωνίες της εικόνας δεν συμφωνούν σε φόντο: κεντιέται κάθε χρώμα.
+embroidery	No color traced is the background's: every area is sewn.	Κανένα ανιχνευμένο χρώμα δεν είναι του φόντου: κεντιέται κάθε περιοχή.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Η εικόνα δεν μοιάζει με επίπεδο γραφικό (φωτογραφία ή διαβαθμίσεις;): οι διαβαθμίσεις της κεντιούνται ως λωρίδες επίπεδου χρώματος.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Δεν ανιχνεύτηκε τίποτα στην εικόνα: είναι κενή ή διαφανής.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Μόνο τα αντικείμενα της εικόνας, με το ύφασμα, την κλωστή και τη μηχανή του εγγράφου.
+embroidery	Updated in {value} ms after the last change ({steps})	Ενημερώθηκε σε {value} ms μετά την τελευταία αλλαγή ({steps})
+embroidery	Notes	Σημειώσεις
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Δημιουργήθηκαν: {objects} ({threads}). Η εικόνα είναι στο κρυφό επίπεδο προτύπου «{layer}». Η Αναίρεση τα αφαιρεί.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} κηλίδα μικρότερη από {value} mm² ενώθηκε με το χρώμα γύρω της|{count} κηλίδες μικρότερες από {value} mm² ενώθηκαν με τα χρώματα γύρω τους
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} κηλίδα μικρότερη από {value} mm² δεν είχε με τι να ενωθεί και παραλείφθηκε|{count} κηλίδες μικρότερες από {value} mm² δεν είχαν με τι να ενωθούν και παραλείφθηκαν
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} λωρίδα πλάτους έως {value} mm ενώθηκε με τη γειτονική που είναι πιο κοντά στο χρώμα της|{count} λωρίδες πλάτους έως {value} mm ενώθηκαν με τις γειτονικές που είναι πιο κοντά στα χρώματά τους
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} περιοχή του {color} δεν έχει κεντρική γραμμή για κέντημα: κεντιέται ως το σχήμα της|{count} περιοχές του {color} δεν έχουν κεντρική γραμμή για κέντημα: κεντιούνται ως τα σχήματά τους
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} περιοχή δεν ενώθηκε με τις γειτονικές: κεντιέται όπως ανιχνεύτηκε|{count} περιοχές δεν ενώθηκαν με τις γειτονικές: κεντιούνται όπως ανιχνεύτηκαν

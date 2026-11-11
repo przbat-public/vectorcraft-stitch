@@ -16,6 +16,8 @@
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
+use serde_json::Value;
+
 use vectorcraft_engine::EngineError;
 use vectorcraft_engine::cmd::embroidery::{DigitizeOutputs, DigitizePipeline, DigitizeRequest, DigitizeStage};
 use vectorcraft_engine::cmd::fileio::progress::{self, Progress};
@@ -29,11 +31,15 @@ pub(crate) struct Painted {
     pub(crate) rgba: Vec<u8>,
 }
 
+/// The Check tab's reply on a plan's objects (`embroidery.check`), made on the thread with the plan:
+/// of which plan output (its number).
+pub(crate) type Checked = (u64, Arc<Value>);
+
 /// What a job's step hands over.
 pub(crate) enum Outcome {
     /// A stage done: the outputs so far, whether it was made now (rather than found kept), and,
-    /// for colours made now, the Colours view's raster.
-    Stage { stage: DigitizeStage, outputs: DigitizeOutputs, made: bool, painted: Option<Arc<Painted>> },
+    /// for colours made now, the Colours view's raster; for a plan made now, the check on it.
+    Stage { stage: DigitizeStage, outputs: DigitizeOutputs, made: bool, painted: Option<Arc<Painted>>, checked: Option<Checked> },
     /// Every stage done.
     Finished(DigitizeOutputs),
     /// Refused or failed, with the reason in words (the engine's, or a bug's).
@@ -100,11 +106,12 @@ pub(crate) fn run(pipeline: &mut DigitizePipeline, job: &Job, send: &mut dyn FnM
             let asked = |_, _| !progress.cancelled();
             pipeline.run(&job.request, &asked, &mut |stage, outputs, made| {
                 let painted = if stage == DigitizeStage::Colours && made { painted(outputs) } else { None };
+                let checked = if stage == DigitizeStage::Plan && made { checked(outputs) } else { None };
                 if stage == DigitizeStage::Plan {
                     // Built here, so the interface thread finds it ready.
                     drop(outputs.planned().map(|p| p.scene()));
                 }
-                send(job.done(Outcome::Stage { stage, outputs: outputs.clone(), made, painted }, false));
+                send(job.done(Outcome::Stage { stage, outputs: outputs.clone(), made, painted, checked }, false));
             })
         })
     });
@@ -115,6 +122,14 @@ pub(crate) fn run(pipeline: &mut DigitizePipeline, job: &Job, send: &mut dyn FnM
         Err(msg) => Outcome::Failed(internal(&msg)),
     };
     send(job.done(outcome, true));
+}
+
+/// The Check tab's reply on `outputs`' planned objects, the notes' errors and warnings: `None` when
+/// nothing is planned, or the check fails (the bar then has digitizing's own notes alone).
+pub(crate) fn checked(outputs: &DigitizeOutputs) -> Option<Checked> {
+    let number = outputs.number(DigitizeStage::Plan)?;
+    let reply = outputs.query("embroidery.check", &serde_json::json!({}))?.ok()?;
+    Some((number, Arc::new(reply)))
 }
 
 /// The Colours view's raster of `outputs`' colours.

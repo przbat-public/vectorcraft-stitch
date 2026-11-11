@@ -274,6 +274,11 @@ fn live(app: &VectorcraftApp) -> &Live {
     app.embroidery.image_window.live.as_ref().expect("the window is live")
 }
 
+/// The window's live state, to change.
+fn live_mut(app: &mut VectorcraftApp) -> &mut Live {
+    app.embroidery.image_window.live.as_mut().expect("the window is live")
+}
+
 /// Set field `key` of the open window.
 fn set(app: &mut VectorcraftApp, key: &str, value: Value) {
     app.ui.dialog.as_mut().expect("the window is open").fields.insert(key.into(), value);
@@ -893,4 +898,40 @@ fn the_count_says_what_it_counts_when_the_design_encloses_the_backgrounds_colour
     let said = "1 color besides the background, and the background's color sewn where the design encloses it.";
     assert!(texts.iter().any(|t| t == said), "{texts:?}");
     assert!(texts.iter().any(|t| t.ends_with(" · the background's color inside the design")), "{texts:?}");
+}
+
+/// `ui.dialog.confirm` with settings the engine refuses makes nothing and says why, rather than
+/// the last result, which is of the settings before.
+#[test]
+fn ui_dialog_confirm_with_a_refused_setting_makes_nothing() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, "colors", json!(500));
+    until(&mut app, &ctx, &mut time, |app| matches!(live(app).schedule.freshness(0.0), super::schedule::Freshness::Failed(_)));
+    let steps = undo_steps(&app);
+    let made = crate::dialogs::confirm(&mut app);
+    assert!(made.is_err(), "made: {:?}", made.map(|r| r["settings"]["colors"].clone()));
+    assert_eq!(undo_steps(&app), steps, "nothing made");
+}
+
+/// A Create waiting for a change the engine then refuses makes nothing: the status bar and the
+/// Live bar say why, and nothing waits any more. A person gets there by asking 70 colours in
+/// Janome's palette (78 threads), then choosing Brother's (61) and pressing Create before the
+/// change has run.
+#[test]
+fn a_create_waiting_for_a_refused_change_makes_nothing_and_says_why() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, "colors", json!(70));
+    until(&mut app, &ctx, &mut time, ready);
+    let steps = undo_steps(&app);
+    // Every stage heavy, so that the change waits for the settings to rest.
+    live_mut(&mut app).schedule.time_stages(super::schedule::LIVE_PLAN_MS * 10.0);
+    set(&mut app, PALETTE, json!("pec"));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert!(live(&app).create_waiting, "Create waits for the change");
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none() || !live(app).create_waiting);
+    assert_eq!(undo_steps(&app), steps, "nothing made");
+    assert!(open_dialog(&app).is_some(), "still open");
+    assert!(app.ui.status.starts_with("Can't digitize it: "), "{}", app.ui.status);
+    assert!(status_said(&mut app, &ctx, &mut time).starts_with("Can't digitize it: "));
 }

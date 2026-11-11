@@ -260,14 +260,21 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
         None if create_now => ask_create(app, now),
         None => {}
     }
+    // A Create waiting is settled once the run of the settings as they are has been: made, or
+    // refused with the reason (settings the engine refuses make nothing, never the result of the
+    // ones before).
     if let Some(live) = app.embroidery.image_window.live.as_mut()
         && live.create_waiting
-        && live.schedule.current(&params).is_some()
+        && live.schedule.asked_for(&params)
+        && !live.schedule.busy()
     {
         live.create_waiting = false;
-        match create(app) {
-            Ok(_) => return,
-            Err(e) => app.status(e),
+        match live_bar::create_refused(live, now) {
+            Some(why) => app.status(why),
+            None => match create(app) {
+                Ok(_) => return,
+                Err(e) => app.status(e),
+            },
         }
     }
     let Some(live) = app.embroidery.image_window.live.as_mut() else { return };

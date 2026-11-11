@@ -241,3 +241,22 @@ fn a_replaced_runs_stages_are_never_taken_in() {
     let now = sch.shown.as_ref().map(|shown| (shown.whole, shown.outputs.number(DigitizeStage::Trace)));
     assert_eq!(now, Some((false, four)), "the replaced run's later steps were passed by");
 }
+
+/// A change the engine refuses is never "current": Create, a Create waiting and
+/// `ui.dialog.confirm` can't apply the last good result, which is of the settings before.
+#[test]
+fn a_refused_change_is_never_current() {
+    let (s, id, mut sch) = setup();
+    let mut held = Held::new(&s);
+    sch.frame(&s, id, &params(3), 0.0, &mut held);
+    held.finish();
+    sch.frame(&s, id, &params(3), 0.01, &mut held);
+    assert!(sch.current(&params(3)).is_some(), "the 3-colour result is current");
+    timed(&mut sch, LIVE_PLAN_MS);
+    // Refused: more colours than the palette has threads.
+    sch.frame(&s, id, &params(500), 1.0, &mut held);
+    sch.frame(&s, id, &params(500), 1.0 + QUIET_SECS + PAST, &mut held);
+    assert!(matches!(sch.freshness(2.0), Freshness::Failed(_)), "{:?}", sch.freshness(2.0));
+    assert!(sch.shown.is_some(), "the last good result still shown");
+    assert!(sch.current(&params(500)).is_none(), "a result of other settings is no result of the refused ones");
+}

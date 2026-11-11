@@ -294,9 +294,10 @@ impl Schedule {
         self.waiting.is_some() || self.running.is_some()
     }
 
-    /// The outputs shown when they are whole and of settings `params` (what Create applies).
+    /// The outputs shown when they are whole, of settings `params`, and those settings weren't
+    /// refused (what Create applies): never the last good result kept for settings it isn't of.
     pub(crate) fn current(&self, params: &Value) -> Option<&Shown> {
-        self.shown.as_ref().filter(|s| s.whole && !self.busy() && self.asked_for(params))
+        self.shown.as_ref().filter(|s| s.whole && !self.busy() && self.failure.is_none() && self.asked_for(params))
     }
 
     /// Stop the run under way and forget the change waiting (the window closes).
@@ -305,6 +306,14 @@ impl Schedule {
             r.progress.cancel();
         }
         self.waiting = None;
+    }
+}
+
+#[cfg(test)]
+impl Schedule {
+    /// Every stage timed at `ms` milliseconds, as a test's light or heavy runs.
+    pub(crate) fn time_stages(&mut self, ms: f64) {
+        self.stage_ms = [Some(ms); DigitizeStage::ALL.len()];
     }
 }
 

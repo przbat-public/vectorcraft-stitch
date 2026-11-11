@@ -38,7 +38,10 @@ mod nearest;
 mod needle_edits;
 pub mod needle_index;
 pub(crate) mod needles;
-pub use from_image::{DIGITIZE_PROGRESS, DIGITIZE_STAGES, DigitizeFound, DigitizeJob};
+pub use from_image::{
+    AreaFacts, DIGITIZE_PROGRESS, DIGITIZE_STAGES, DigitizeFound, DigitizeJob, Outputs as DigitizeOutputs, Pipeline as DigitizePipeline,
+    Place as AreaPlace, StageId as DigitizeStage, WindowRequest as DigitizeRequest,
+};
 pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
@@ -766,6 +769,12 @@ pub(crate) const DEFAULT_PALETTE: Palette = Palette::Jef;
 
 /// The thread palette the document's colours are matched to: the one it sets
 /// (`embroidery.setup`), else [`DEFAULT_PALETTE`].
+/// The id of the thread palette document `d`'s colours are matched to (`pec` or `jef`): its own
+/// when it sets one this version knows, else the default.
+pub fn thread_palette_id(d: &Document) -> &'static str {
+    thread_palette(d).id()
+}
+
 pub(crate) fn thread_palette(d: &Document) -> Palette {
     d.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(ThreadPalette::id).and_then(Palette::from_id).unwrap_or(DEFAULT_PALETTE)
 }

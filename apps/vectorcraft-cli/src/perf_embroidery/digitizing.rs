@@ -34,14 +34,14 @@ const BADGE_PX: (u32, u32) = (1080, 980);
 
 /// The pictures' resolution: the working resolution digitizing aims for, so that each is worked
 /// pixel for pixel (`ppi` as the export takes it: 254 a inch).
-const PX_PER_MM: f64 = 10.0;
+pub(super) const PX_PER_MM: f64 = 10.0;
 const MM_PER_INCH: f64 = 25.4;
 
 /// The JPEG quality the badge is exported at: a photo editor's usual.
 const JPEG_QUALITY: u8 = 80;
 
 /// The badge's colours: its own six, as the command is asked for.
-const BADGE_COLORS: u32 = 6;
+pub(super) const BADGE_COLORS: u32 = 6;
 
 /// The specks: a grid of 50 by 50, each 6 pixels square (0.36 mm²), 20 pixels apart, on a field
 /// of 1,000 pixels a side.
@@ -165,8 +165,13 @@ fn placed(name: &str, bytes: &[u8], width_px: u32, height_px: u32) -> Result<Ses
     Ok(s)
 }
 
-/// The badge, drawn as art and exported by the engine as a JPEG.
+/// The badge, drawn as art and exported by the engine as a JPEG at [`PX_PER_MM`].
 fn badge() -> Result<Vec<u8>, String> {
+    badge_at(PX_PER_MM)
+}
+
+/// The badge, drawn as art and exported by the engine as a JPEG at `px_per_mm` pixels a millimetre.
+pub(super) fn badge_at(px_per_mm: f64) -> Result<Vec<u8>, String> {
     let (w, h) = (BADGE_MM.0 + 2.0 * MARGIN_MM, BADGE_MM.1 + 2.0 * MARGIN_MM);
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": w * PT_PER_MM, "height": h * PT_PER_MM, "artboards": 1})).map_err(err)?;
@@ -191,10 +196,17 @@ fn badge() -> Result<Vec<u8>, String> {
         s.execute("paint.setFill", &json!({"color": colour})).map_err(err)?;
         s.execute(command, &params).map_err(err)?;
     }
-    let export = json!({"format": "jpg", "ppi": PX_PER_MM * MM_PER_INCH, "quality": JPEG_QUALITY, "rect": rect_pt(0.0, 0.0, w, h)});
+    let export = json!({"format": "jpg", "ppi": px_per_mm * MM_PER_INCH, "quality": JPEG_QUALITY, "rect": rect_pt(0.0, 0.0, w, h)});
     let r = s.execute("document.export", &export).map_err(err)?;
     let data = r["dataBase64"].as_str().ok_or("perf: the badge's export gave no data")?;
     vectorcraft_format::base64_decode(data).ok_or_else(|| "perf: the badge's export isn't base64".into())
+}
+
+/// A session holding the badge's JPEG `bytes`, exported at `px_per_mm`, placed at [`PX_PER_MM`]
+/// (so a badge drawn finer is placed larger, its working copy as large as its pixels), selected.
+pub(super) fn placed_badge(bytes: &[u8], px_per_mm: f64) -> Result<Session, String> {
+    let side = |mm: f64| ((mm + 2.0 * MARGIN_MM) * px_per_mm).round() as u32;
+    placed("badge.jpg", bytes, side(BADGE_MM.0), side(BADGE_MM.1))
 }
 
 /// Squares `side` pixels a side, `cols` by `rows`, in [`GRID_COLOURS`], as PNG.

@@ -360,12 +360,12 @@ fn area_at(d: &Digitized, at: Point) -> Option<usize> {
 /// What a reply lists besides the design: the stretch of areas, whether the region map and the
 /// outlines are given, and the point whose area is asked.
 #[derive(Clone, Copy, Debug)]
-struct Listed {
-    offset: usize,
-    limit: usize,
-    regions: bool,
-    outlines: bool,
-    at: Option<Point>,
+pub(super) struct Listed {
+    pub(super) offset: usize,
+    pub(super) limit: usize,
+    pub(super) regions: bool,
+    pub(super) outlines: bool,
+    pub(super) at: Option<Point>,
 }
 
 /// Digitizing asked for, ready to run on any thread ([`DigitizeJob::run`]): the document as it was
@@ -438,7 +438,15 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
         outlines: flag(&o, "outlines")?,
         at: point(&o)?,
     };
-    let (target, image) = target(s, &o)?;
+    let (target, image, bytes) = image_of(s, &o)?;
+    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run })
+}
+
+/// The image `o` names (or the one selected), with its file: refused as the command refuses it (no
+/// image, a locked one, Global Edit on, a missing linked file).
+pub(super) fn image_of(s: &Session, o: &Map<String, Value>) -> Result<(NodeId, ImageObject, Arc<Vec<u8>>)> {
+    let st = s.doc()?;
+    let (target, image) = target(s, o)?;
     editable(st, target)?;
     let blob = st.doc.images.get(&image.key).ok_or_else(|| bad(C, format!("the image's data `{}` is missing", image.key)))?;
     // While a linked file can't be read, the document holds only its preview, a few hundred pixels
@@ -447,8 +455,7 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
         let file = image.link.as_ref().map_or_else(String::new, |l| format!(" ({})", l.path));
         return Err(bad(C, format!("the image's linked file is missing{file}: relink it (links.relink) to digitize it, not its preview")));
     }
-    let bytes = Arc::clone(&blob.bytes);
-    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run })
+    Ok((target, image, Arc::clone(&blob.bytes)))
 }
 
 impl DigitizeJob {
@@ -496,23 +503,24 @@ impl DigitizeJob {
 }
 
 /// Said when every area of the image is its background.
-const NOTHING_TO_MAKE: &str = "the image makes nothing to sew: every area of it is its background (give `background: \"none\"` to sew it all)";
+pub(super) const NOTHING_TO_MAKE: &str =
+    "the image makes nothing to sew: every area of it is its background (give `background: \"none\"` to sew it all)";
 
 /// What a reply is made of besides what digitizing made.
-struct ReplyOf<'a> {
-    id: NodeId,
-    settings: &'a Settings,
-    palette: Palette,
-    listed: Listed,
-    dry_run: bool,
-    stats: Value,
-    warnings: Vec<Warning>,
+pub(super) struct ReplyOf<'a> {
+    pub(super) id: NodeId,
+    pub(super) settings: &'a Settings,
+    pub(super) palette: Palette,
+    pub(super) listed: Listed,
+    pub(super) dry_run: bool,
+    pub(super) stats: Value,
+    pub(super) warnings: Vec<Warning>,
     /// How long making the objects took, and planning their stitches (milliseconds).
-    made_ms: [Option<f64>; 2],
+    pub(super) made_ms: [Option<f64>; 2],
 }
 
 /// The command's reply for what `d` made (`created` null: [`apply`] fills it in).
-fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
+pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let timings = d.timings();
     let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms] } = of;
     let w = d.working();
@@ -593,8 +601,22 @@ fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
         return Ok(reply);
     }
     let Some((doc, made)) = made else { return Err(bad(C, NOTHING_TO_MAKE)) };
+    put_in_place(s, uid, &original, doc, made)?;
+    reply["created"] = created_json(made);
+    Ok(reply)
+}
+
+/// The reply's `created`: what Create made.
+pub(super) fn created_json(made: Made) -> Value {
+    json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks})
+}
+
+/// `doc`, with the objects `made`, put in place of document `uid` as one undo step "Digitize Image"
+/// (the new group selected): refused when the document isn't `original` any more (it was made of
+/// an earlier one, so nothing is applied), or while Global Edit is on.
+pub(super) fn put_in_place(s: &mut Session, uid: u64, original: &Arc<Document>, doc: Document, made: Made) -> Result<()> {
     let st = s.doc()?;
-    if st.uid != uid || !Arc::ptr_eq(&st.doc, &original) {
+    if st.uid != uid || !Arc::ptr_eq(&st.doc, original) {
         return Err(bad(C, "the document changed while the image was digitized: nothing was made"));
     }
     if st.global_edit.is_some() {
@@ -605,8 +627,7 @@ fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
         sel.set([made.group]);
         Ok(())
     })?;
-    reply["created"] = json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks});
-    Ok(reply)
+    Ok(())
 }
 
 /// `embroidery.digitizeImage`: prepared, run and applied in one go ([`DigitizeJob`]).

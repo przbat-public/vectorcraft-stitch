@@ -178,6 +178,27 @@ impl Palette {
         m
     }
 
+    /// Every thread of the palette with its CIEDE2000 difference from `color`, the nearest first
+    /// (threads as near in the palette's order): what a list to choose a thread from shows. Never an
+    /// entry that isn't a thread ([`Palette::is_thread`]).
+    pub fn ranked(self, color: [u8; 3]) -> Vec<Match> {
+        let lab = color::lab(color);
+        let mut all: Vec<Match> = self
+            .labs()
+            .iter()
+            .enumerate()
+            .take(self.thread_count())
+            .map(|(i, &thread)| Match { index: i + 1, delta_e: color::delta_e(lab, thread) })
+            .collect();
+        if let Some(own) = self.own(color) {
+            for m in all.iter_mut().filter(|m| m.index == own.index) {
+                m.delta_e = own.delta_e;
+            }
+        }
+        all.sort_by(|a, b| a.delta_e.total_cmp(&b.delta_e).then(a.index.cmp(&b.index)));
+        all
+    }
+
     /// [`Palette::nearest`] for a colour that is no thread's own, worked out: compared with every
     /// thread.
     fn nearest_of_all(self, color: [u8; 3], skip: &[usize]) -> Match {
@@ -517,6 +538,25 @@ pub fn unknown_thread(block: usize, number: u64) -> Thread {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every thread of a palette is ranked by its difference from a colour, the nearest first (the
+    /// one `nearest` gives), a thread's own colour that thread at 0, never an entry that isn't a
+    /// thread.
+    #[test]
+    fn ranked_lists_every_thread_nearest_first() {
+        for palette in Palette::ALL {
+            let own = palette.threads().get(3).map(|&(rgb, _)| rgb).unwrap();
+            for color in [[240, 130, 20], [20, 40, 120], [128, 128, 128], own] {
+                let ranked = palette.ranked(color);
+                assert_eq!(ranked.len(), palette.thread_count(), "{palette:?}");
+                assert_eq!(ranked[0].index, palette.nearest(color, &[]).index, "{palette:?} {color:?}");
+                assert!(ranked.windows(2).all(|w| w[0].delta_e <= w[1].delta_e), "{palette:?} {color:?}");
+                assert!(ranked.iter().all(|m| palette.is_thread(m.index)));
+            }
+            let first = palette.ranked(own)[0];
+            assert_eq!((first.index, first.delta_e), (4, 0.0), "{palette:?}");
+        }
+    }
 
     /// A match is always a thread of its palette; the stand-in for one that isn't, the first
     /// thread, is one in every palette.

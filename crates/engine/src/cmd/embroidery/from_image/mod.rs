@@ -30,6 +30,9 @@
 //!   template layer;
 //! - [`stages`]: the stages above as functions of what each reads, run in turn by the command;
 //! - [`command`]: `embroidery.digitizeImage` and its answer, run as a job ([`DigitizeJob`]);
+//! - [`pipeline`]: the stages kept between runs, for a window that runs them again at every change,
+//!   with the objects Create would make and their stitches;
+//! - [`window`]: what a window asks of the engine: its request, its pipeline, Create of a run;
 //! - [`warnings`]: what the answer warns of, each by an id a window words, with its values.
 //!
 //! No upstream file is hooked: the trace crate is called as any caller would, and the command is
@@ -44,16 +47,19 @@ mod flat;
 mod inside;
 mod order;
 mod overlap;
+mod pipeline;
 mod regions;
 mod rules;
 mod settings;
 mod stages;
 mod trace;
 mod warnings;
+mod window;
 mod working;
 
 pub(super) use command::digitize_image;
 pub use command::{DIGITIZE_PROGRESS, DIGITIZE_STAGES, DigitizeFound, DigitizeJob};
+pub use pipeline::{AreaFacts, Outputs, Pipeline, Place, StageId, WindowRequest};
 
 #[cfg(test)]
 mod tests;
@@ -67,3 +73,5 @@ mod tests_create;
 mod tests_lines;
 #[cfg(test)]
 mod tests_overlap;
+#[cfg(test)]
+mod tests_pipeline;

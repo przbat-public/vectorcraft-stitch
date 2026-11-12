@@ -1009,3 +1009,29 @@ fn command_enter_with_a_value_refused_makes_nothing() {
     assert!(open_dialog(&app).is_some_and(|d| d.fields.get("width").is_none()), "still open, its width as it was");
     assert_eq!(undo_steps(&app), steps, "nothing made");
 }
+
+/// How near the area a press on the smallest area's slider takes lies to the one asked: a share of
+/// it, for a press rounded to the point.
+const SLIDER_NEAR: f64 = 0.05;
+
+/// The Colors step's smallest area slider starts at one working pixel's area: a press at the middle
+/// of its track, let go in the next frame, takes the area halfway on its logarithmic scale between
+/// a working pixel's area and the top of the engine's range, as the window's field then says.
+#[test]
+fn the_colors_steps_smallest_area_slider_starts_at_a_working_pixel() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(2));
+    let top = super::image_step::range_of(&reply(&mut app), "minArea").map(|r| r.1).expect("the engine's range");
+    // One working pixel's area at the engine's working resolution: where the slider starts.
+    let working = vectorcraft_engine::cmd::embroidery::DIGITIZE_WORKING_PX_PER_MM;
+    let pixel = 1.0 / (working * working);
+    let at = centre_of(&mut app, &ctx, &mut time, "Smallest area", egui::accesskit::Role::Slider);
+    let button = |pressed| Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), button(true)]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![button(false)]);
+    let taken = open_dialog(&app).and_then(|d| d.fields.get("minArea")).and_then(Value::as_f64).expect("a smallest area taken");
+    let halfway = (pixel * top).sqrt();
+    assert!((taken - halfway).abs() < SLIDER_NEAR * halfway, "took {taken} mm², halfway is {halfway} mm²");
+}

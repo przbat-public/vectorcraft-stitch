@@ -8828,9 +8828,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	गणना हो रही है…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	चरण {count} में से {number}: {name}। {summary}। {time}
-embroidery	Smoothness: {value}	चिकनाई: {value}
-embroidery	Corners: {value}	कोने: {value}
-embroidery	Colors overlap by {value} mm	रंग {value} mm तक एक-दूसरे पर चढ़ते हैं
 embroidery	The stitches follow the document's embroidery settings.	स्टिच दस्तावेज़ की कढ़ाई सेटिंग्स के अनुसार हैं।
 @plural	{count} thread + background|{count} threads + background	{count} धागा + पृष्ठभूमि|{count} धागे + पृष्ठभूमि
 @plural	{count} area|{count} areas	{count} क्षेत्र|{count} क्षेत्र
@@ -8896,3 +8893,14 @@ embroidery	the background's color inside the design	डिज़ाइन के
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	सिलने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	बनाने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	चिकनाई
+embroidery	Corners	कोने
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	अधिक: कम बिंदुओं वाली अधिक चिकनी रूपरेखाएँ। कम: चित्र के किनारों के अधिक निकट।
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	अधिक: ज़्यादा मोड़ नुकीले कोनों के रूप में बने रहते हैं। कम: उनमें से ज़्यादा गोल हो जाते हैं।
+embroidery	Straighten nearly straight lines	लगभग सीधी रेखाओं को सीधा करें
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	हल्के मुड़े किनारे सीधी रेखाएँ बन जाते हैं, वृत्तों के हिस्से सच्चे चाप, और लगभग क्षैतिज या खड़ी रेखाएँ ठीक क्षैतिज या खड़ी।
+embroidery	Colors overlap by	रंगों का एक-दूसरे पर चढ़ाव
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	पहले सिला गया रंग अगले के नीचे तक जाता है, ताकि उनके बीच फ़ैब्रिक न दिखे।
+embroidery	Thin lines sewn along their middle below	बीच से सिली जाने वाली पतली रेखाएँ, चौड़ाई इससे कम
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	इससे संकरा हिस्सा अपने बीच से रनिंग लाइन के रूप में सिला जाता है। 0: कोई नहीं।

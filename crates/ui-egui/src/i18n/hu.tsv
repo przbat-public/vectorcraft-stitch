@@ -7433,9 +7433,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Számítás…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	{number}. lépés ({count} közül): {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Simaság: {value}
-embroidery	Corners: {value}	Sarkok: {value}
-embroidery	Colors overlap by {value} mm	A színek {value} mm-rel fedik egymást
 embroidery	The stitches follow the document's embroidery settings.	Az öltések a dokumentum hímzésbeállításait követik.
 @plural	{count} thread + background|{count} threads + background	{count} szál + háttér
 @plural	{count} area|{count} areas	{count} terület
@@ -7501,3 +7498,14 @@ embroidery	the background's color inside the design	a háttér színe a mintán 
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nincs mit kihímezni: minden terület háttér. Hímezze ki a hátteret is, vagy vágjon körül kevesebbet.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nincs mit létrehozni: minden terület háttér. Hímezze ki a hátteret is, vagy vágjon körül kevesebbet.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Simaság
+embroidery	Corners	Sarkok
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Nagyobb: simább körvonalak, kevesebb ponttal. Kisebb: közelebb a kép széleihez.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Nagyobb: több törés marad éles sarok. Kisebb: több lekerekedik.
+embroidery	Straighten nearly straight lines	Majdnem egyenes vonalak kiegyenesítése
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Az enyhén ívelt szélekből egyenes vonalak lesznek, a körrészekből valódi ívek, a majdnem vízszintes vagy függőleges vonalakból pedig pontosan vízszintesek vagy függőlegesek.
+embroidery	Colors overlap by	A színek átfedése
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Az elsőként hímzett szín a következő alá nyúlik, hogy ne látsszon köztük az anyag.
+embroidery	Thin lines sewn along their middle below	A közepükön hímzett vékony vonalak szélessége kevesebb, mint
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	A keskenyebb rész egyenes öltésű vonalként, a közepén hímződik. 0: egyik sem.

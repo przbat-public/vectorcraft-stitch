@@ -7259,9 +7259,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Berekenen…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Stap {number} van {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Gladheid: {value}
-embroidery	Corners: {value}	Hoeken: {value}
-embroidery	Colors overlap by {value} mm	Kleuren overlappen {value} mm
 embroidery	The stitches follow the document's embroidery settings.	De steken volgen de borduurinstellingen van het document.
 @plural	{count} thread + background|{count} threads + background	{count} draad + achtergrond|{count} draden + achtergrond
 @plural	{count} area|{count} areas	{count} vlak|{count} vlakken
@@ -7327,3 +7324,14 @@ embroidery	the background's color inside the design	de achtergrondkleur binnen h
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Niets te borduren: elk vlak is achtergrond. Borduur de achtergrond of snijd minder bij.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Niets te maken: elk vlak is achtergrond. Borduur de achtergrond of snijd minder bij.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Gladheid
+embroidery	Corners	Hoeken
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Hoger: gladdere omtrekken met minder punten. Lager: dichter bij de randen van de afbeelding.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Hoger: meer knikken blijven scherpe hoeken. Lager: meer ervan worden afgerond.
+embroidery	Straighten nearly straight lines	Bijna rechte lijnen rechttrekken
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Licht gebogen randen worden rechte lijnen, delen van cirkels echte bogen, en bijna horizontale of verticale lijnen precies horizontaal of verticaal.
+embroidery	Colors overlap by	Kleuren overlappen
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	De kleur die eerst wordt geborduurd, loopt onder de volgende door, zodat er geen stof tussen te zien is.
+embroidery	Thin lines sewn along their middle below	Dunne lijnen langs hun midden geborduurd onder
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Een smaller deel wordt als rechte steeklijn langs het midden geborduurd. 0: geen.

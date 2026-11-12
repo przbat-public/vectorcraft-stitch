@@ -30,6 +30,7 @@ mod image_step;
 pub(crate) mod live_bar;
 pub(crate) mod preview;
 pub(crate) mod schedule;
+mod shapes_step;
 pub(crate) mod steps;
 mod words;
 pub(crate) mod worker;
@@ -50,9 +51,25 @@ use crate::state::Dialog;
 pub const KIND: &str = "embroidery.digitizeImage";
 
 /// The fields that are the engine's settings (`embroidery.digitizeImage`'s), in its names: the
-/// image's size, crop and background; the colours' mode, count, choices and smallest area. The
-/// shapes' and stitches' settings keep their defaults in this version of the window.
-pub(crate) const SETTING_FIELDS: [&str; 9] = ["width", "height", "fit", "crop", "background", "mode", "colors", "minArea", "colorChoices"];
+/// image's size, crop and background; the colours' mode, count, choices and smallest area; the
+/// shapes' smoothness, corners, straightening, overlap and thin lines. The stitches' settings keep
+/// their defaults in this version of the window.
+pub(crate) const SETTING_FIELDS: [&str; 14] = [
+    "width",
+    "height",
+    "fit",
+    "crop",
+    "background",
+    "mode",
+    "colors",
+    "minArea",
+    "colorChoices",
+    "smoothing",
+    "corners",
+    "straightLines",
+    "overlap",
+    "thinLine",
+];
 
 /// The field holding the palette the window matches threads to (`pec` or `jef`): the document's
 /// when it opens; Create makes it the document's.

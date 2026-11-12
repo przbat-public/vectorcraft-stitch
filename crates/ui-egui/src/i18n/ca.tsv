@@ -7429,9 +7429,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	S’està calculant…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Pas {number} de {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Suavitat: {value}
-embroidery	Corners: {value}	Cantonades: {value}
-embroidery	Colors overlap by {value} mm	Els colors se superposen {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Les puntades segueixen la configuració de brodat del document.
 @plural	{count} thread + background|{count} threads + background	{count} fil + fons|{count} fils + fons
 @plural	{count} area|{count} areas	{count} àrea|{count} àrees
@@ -7497,3 +7494,14 @@ embroidery	the background's color inside the design	el color del fons dins del d
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	No hi ha res per cosir: cada zona és el fons. Cusiu el fons o retalleu menys.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	No hi ha res per crear: cada zona és el fons. Cusiu el fons o retalleu menys.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Suavitat
+embroidery	Corners	Cantonades
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Més alt: contorns més suaus amb menys punts. Més baix: més a prop de les vores de la imatge.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Més alt: més girs es mantenen com a cantonades vives. Més baix: se n’arrodoneixen més.
+embroidery	Straighten nearly straight lines	Redreça les línies gairebé rectes
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Les vores lleugerament corbes es tornen línies rectes, les parts de cercles, arcs exactes, i les línies gairebé horitzontals o verticals, exactament horitzontals o verticals.
+embroidery	Colors overlap by	Els colors se superposen
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	El color que es cus primer passa per sota del següent, perquè no es vegi el teixit entre tots dos.
+embroidery	Thin lines sewn along their middle below	Línies fines cosides pel mig per sota de
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Una part més estreta es cus com una línia de punt endavant pel mig. 0: cap.

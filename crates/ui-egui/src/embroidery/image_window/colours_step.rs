@@ -33,7 +33,7 @@ const SPECKS_JOINED: &str = "specksJoined";
 
 /// A field's width, the size of the step's notes, a radio button's circle and the room after it,
 /// and a row of choices' height (points): estimates from the mockups' column.
-const FIELD_WIDTH: f32 = 64.0;
+pub(super) const FIELD_WIDTH: f32 = 64.0;
 const CHOICE_WIDTH: f32 = 230.0;
 const NOTE_TEXT: f32 = 11.5;
 const LABEL_TEXT: f32 = 12.5;
@@ -59,7 +59,7 @@ const PIXEL_MM2: f64 = 1.0 / (DIGITIZE_WORKING_PX_PER_MM * DIGITIZE_WORKING_PX_P
 
 /// How a slider's track maps to its values.
 #[derive(Clone, Copy)]
-enum Scale {
+pub(super) enum Scale {
     /// Whole numbers, evenly.
     Whole,
     /// Logarithmic, from nothing at its left end, then from `smallest` up.
@@ -91,13 +91,13 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
 }
 
 /// A section's heading.
-fn heading(ui: &mut Ui, words: &str) {
+pub(super) fn heading(ui: &mut Ui, words: &str) {
     let t = Tokens::get(ui.ctx());
     ui.label(RichText::new(words).color(t.text_dim));
 }
 
 /// A note under a section's controls.
-fn note(ui: &mut Ui, words: &str) {
+pub(super) fn note(ui: &mut Ui, words: &str) {
     let t = Tokens::get(ui.ctx());
     ui.label(RichText::new(words).size(NOTE_TEXT).color(t.text_dim));
 }
@@ -143,7 +143,7 @@ fn radio(ui: &mut Ui, words: &str, selected: bool, tip: &str) -> bool {
 
 /// A slider `name` (for screen readers) over `range` on `scale` showing `value` → the value to
 /// take: while it moves, or on the web once it is let go (its place kept meanwhile).
-fn live_slider(ui: &mut Ui, salt: &str, name: &str, value: f64, range: std::ops::RangeInclusive<f64>, scale: Scale) -> Option<f64> {
+pub(super) fn live_slider(ui: &mut Ui, salt: &str, name: &str, value: f64, range: std::ops::RangeInclusive<f64>, scale: Scale) -> Option<f64> {
     let id = ui.make_persistent_id(salt);
     let mut v = ui.data(|m| m.get_temp::<f64>(id)).unwrap_or(value);
     let slider = egui::Slider::new(&mut v, range).show_value(false);
@@ -163,7 +163,7 @@ fn live_slider(ui: &mut Ui, salt: &str, name: &str, value: f64, range: std::ops:
 
 /// `value` taken into setting `key` when it lies in `range`, else refused in the status bar with
 /// the range said in `format`.
-fn take(app: &mut VectorcraftApp, d: &mut Dialog, key: &str, value: f64, range: (f64, f64), format: &fields::NumberFormat<'_>) {
+pub(super) fn take(app: &mut VectorcraftApp, d: &mut Dialog, key: &str, value: f64, range: (f64, f64), format: &fields::NumberFormat<'_>) {
     if value.is_finite() && value >= range.0 && value <= range.1 {
         d.fields.insert(key.into(), json!(value));
         return;

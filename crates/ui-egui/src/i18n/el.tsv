@@ -7401,9 +7401,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Υπολογισμός…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Βήμα {number} από {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Ομαλότητα: {value}
-embroidery	Corners: {value}	Γωνίες: {value}
-embroidery	Colors overlap by {value} mm	Τα χρώματα επικαλύπτονται κατά {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Οι βελονιές ακολουθούν τις ρυθμίσεις κεντήματος του εγγράφου.
 @plural	{count} thread + background|{count} threads + background	{count} κλωστή + φόντο|{count} κλωστές + φόντο
 @plural	{count} area|{count} areas	{count} περιοχή|{count} περιοχές
@@ -7469,3 +7466,14 @@ embroidery	the background's color inside the design	το χρώμα του φό�
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Δεν υπάρχει τίποτα για κέντημα: κάθε περιοχή είναι φόντο. Κεντήστε και το φόντο ή περικόψτε λιγότερο.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Δεν υπάρχει τίποτα για δημιουργία: κάθε περιοχή είναι φόντο. Κεντήστε και το φόντο ή περικόψτε λιγότερο.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Ομαλότητα
+embroidery	Corners	Γωνίες
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Υψηλότερη: πιο ομαλά περιγράμματα με λιγότερα σημεία. Χαμηλότερη: πιο κοντά στις άκρες της εικόνας.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Υψηλότερη: περισσότερες στροφές μένουν αιχμηρές γωνίες. Χαμηλότερη: περισσότερες στρογγυλεύονται.
+embroidery	Straighten nearly straight lines	Ευθυγράμμιση σχεδόν ευθειών γραμμών
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Οι ελαφρώς καμπύλες ακμές γίνονται ευθείες γραμμές, τα τμήματα κύκλων αληθινά τόξα και οι σχεδόν οριζόντιες ή κατακόρυφες γραμμές ακριβώς οριζόντιες ή κατακόρυφες.
+embroidery	Colors overlap by	Τα χρώματα επικαλύπτονται κατά
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Το χρώμα που κεντιέται πρώτο μπαίνει κάτω από το επόμενο, ώστε να μη φαίνεται ύφασμα ανάμεσά τους.
+embroidery	Thin lines sewn along their middle below	Λεπτές γραμμές κεντημένες στη μέση τους κάτω από
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Ένα στενότερο τμήμα κεντιέται ως γραμμή ευθείας βελονιάς στη μέση του. 0: κανένα.

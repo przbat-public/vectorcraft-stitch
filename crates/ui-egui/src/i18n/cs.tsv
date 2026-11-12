@@ -7449,9 +7449,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Počítání…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Hladkost: {value}
-embroidery	Corners: {value}	Rohy: {value}
-embroidery	Colors overlap by {value} mm	Barvy se překrývají o {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Stehy se řídí nastavením výšivky dokumentu.
 @plural	{count} thread + background|{count} threads + background	{count} nit + pozadí|{count} nitě + pozadí|{count} nití + pozadí
 @plural	{count} area|{count} areas	{count} oblast|{count} oblasti|{count} oblastí
@@ -7517,3 +7514,14 @@ embroidery	the background's color inside the design	barva pozadí uvnitř návrh
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Není co šít: každá oblast je pozadí. Šijte i pozadí, nebo ořízněte méně.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Není co vytvořit: každá oblast je pozadí. Šijte i pozadí, nebo ořízněte méně.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Hladkost
+embroidery	Corners	Rohy
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Vyšší: hladší obrysy s méně body. Nižší: blíže okrajům obrázku.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Vyšší: více zlomů zůstane ostrými rohy. Nižší: více se jich zaoblí.
+embroidery	Straighten nearly straight lines	Narovnat téměř rovné čáry
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Mírně zakřivené okraje se stanou rovnými čarami, části kružnic skutečnými oblouky a téměř vodorovné či svislé čáry přesně vodorovnými či svislými.
+embroidery	Colors overlap by	Barvy se překrývají o
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Barva šitá dříve sahá pod následující, aby mezi nimi nebyla vidět látka.
+embroidery	Thin lines sewn along their middle below	Tenké čáry šité středem pod
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Užší část se šije jako linie rovného stehu svým středem. 0: žádná.

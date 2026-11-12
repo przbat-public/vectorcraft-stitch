@@ -7537,9 +7537,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Вычисление…
 embroidery	{value} ms	{value} мс
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Шаг {number} из {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Сглаживание: {value}
-embroidery	Corners: {value}	Углы: {value}
-embroidery	Colors overlap by {value} mm	Цвета перекрываются на {value} мм
 embroidery	The stitches follow the document's embroidery settings.	Стежки следуют настройкам вышивки документа.
 @plural	{count} thread + background|{count} threads + background	{count} нить + фон|{count} нити + фон|{count} нитей + фон
 @plural	{count} area|{count} areas	{count} область|{count} области|{count} областей
@@ -7605,3 +7602,14 @@ embroidery	the background's color inside the design	цвет фона внутр
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Нечего вышивать: каждая область — фон. Вышейте и фон или обрежьте меньше.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Нечего создавать: каждая область — фон. Вышейте и фон или обрежьте меньше.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Сглаживание
+embroidery	Corners	Углы
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Выше: более гладкие контуры с меньшим числом точек. Ниже: ближе к краям изображения.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Выше: больше изломов остаются острыми углами. Ниже: больше их скругляется.
+embroidery	Straighten nearly straight lines	Выпрямлять почти прямые линии
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Слегка изогнутые края становятся прямыми линиями, части окружностей — настоящими дугами, а почти горизонтальные или вертикальные линии — точно горизонтальными или вертикальными.
+embroidery	Colors overlap by	Цвета перекрываются на
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Цвет, вышиваемый первым, заходит под следующий, чтобы между ними не было видно ткани.
+embroidery	Thin lines sewn along their middle below	Тонкие линии шьются по середине при ширине менее
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Более узкая часть вышивается линией прямого стежка по середине. 0: никакая.

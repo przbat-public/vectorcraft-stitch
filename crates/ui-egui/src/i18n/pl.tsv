@@ -7304,9 +7304,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Obliczanie…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Wygładzenie: {value}
-embroidery	Corners: {value}	Narożniki: {value}
-embroidery	Colors overlap by {value} mm	Kolory zachodzą na siebie o {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Ściegi wynikają z ustawień haftu dokumentu.
 @plural	{count} thread + background|{count} threads + background	{count} nić + tło|{count} nici + tło|{count} nici + tło
 @plural	{count} area|{count} areas	{count} obszar|{count} obszary|{count} obszarów
@@ -7372,3 +7369,14 @@ embroidery	the background's color inside the design	kolor tła wewnątrz wzoru
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nie ma czego szyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nie ma czego utworzyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Wygładzenie
+embroidery	Corners	Narożniki
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Więcej: gładsze kontury z mniejszą liczbą punktów. Mniej: bliżej krawędzi obrazu.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Więcej: więcej załamań zostaje ostrymi narożnikami. Mniej: więcej z nich jest zaokrąglanych.
+embroidery	Straighten nearly straight lines	Prostuj prawie proste linie
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Lekko zakrzywione krawędzie stają się prostymi liniami, fragmenty okręgów prawdziwymi łukami, a prawie poziome lub pionowe linie dokładnie poziomymi lub pionowymi.
+embroidery	Colors overlap by	Kolory zachodzą na siebie o
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Kolor szyty wcześniej wchodzi pod następny, żeby między nimi nie było widać tkaniny.
+embroidery	Thin lines sewn along their middle below	Cienkie linie szyte środkiem poniżej
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Węższa część jest szyta linią ściegu prostego środkiem. 0: żadna.

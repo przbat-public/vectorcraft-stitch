@@ -7508,9 +7508,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	გამოთვლა…
 embroidery	{value} ms	{value} მწმ
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	ნაბიჯი {number} / {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	სიგლუვე: {value}
-embroidery	Corners: {value}	კუთხეები: {value}
-embroidery	Colors overlap by {value} mm	ფერები ერთმანეთს {value} მმ-ით ფარავს
 embroidery	The stitches follow the document's embroidery settings.	ნაკერები დოკუმენტის ნაქარგობის პარამეტრებს მიჰყვება.
 @plural	{count} thread + background|{count} threads + background	ძაფები: {count} + ფონი
 @plural	{count} area|{count} areas	არეები: {count}
@@ -7576,3 +7573,14 @@ embroidery	the background's color inside the design	ფონის ფერი
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	დასაქარგი არაფერია: ყველა არე ფონია. დაქარგეთ ფონიც ან ნაკლებად ამოჭერით.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	შესაქმნელი არაფერია: ყველა არე ფონია. დაქარგეთ ფონიც ან ნაკლებად ამოჭერით.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	სიგლუვე
+embroidery	Corners	კუთხეები
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	მეტი: უფრო გლუვი კონტურები ნაკლები წერტილით. ნაკლები: სურათის კიდეებთან უფრო ახლოს.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	მეტი: მეტი მოხვევა რჩება მკვეთრ კუთხედ. ნაკლები: მეტი მათგანი მომრგვალდება.
+embroidery	Straighten nearly straight lines	თითქმის სწორი ხაზების გასწორება
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	ოდნავ მოხრილი კიდეები სწორ ხაზებად იქცევა, წრეწირის ნაწილები — ნამდვილ რკალებად, თითქმის ჰორიზონტალური ან ვერტიკალური ხაზები კი — ზუსტად ჰორიზონტალურად ან ვერტიკალურად.
+embroidery	Colors overlap by	ფერების გადაფარვა
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	პირველად დაქარგული ფერი შემდეგის ქვეშ შედის, რომ მათ შორის ქსოვილი არ გამოჩნდეს.
+embroidery	Thin lines sewn along their middle below	შუაზე დაქარგული წვრილი ხაზები, სიგანე ნაკლები, ვიდრე
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	უფრო ვიწრო ნაწილი შუაზე სწორი ნაკერის ხაზით იქარგება. 0: არცერთი.

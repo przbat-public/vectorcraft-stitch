@@ -7244,9 +7244,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Računanje…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Korak {number} od {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Glatkoća: {value}
-embroidery	Corners: {value}	Uglovi: {value}
-embroidery	Colors overlap by {value} mm	Boje se preklapaju za {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Bodovi slijede postavke veza dokumenta.
 @plural	{count} thread + background|{count} threads + background	{count} konac + pozadina|{count} konca + pozadina|{count} konaca + pozadina
 @plural	{count} area|{count} areas	{count} područje|{count} područja|{count} područja
@@ -7312,3 +7309,14 @@ embroidery	the background's color inside the design	boja pozadine unutar dizajna
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nema šta da se šije: svaka oblast je pozadina. Šijte pozadinu ili manje izrežite.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nema šta da se kreira: svaka oblast je pozadina. Šijte pozadinu ili manje izrežite.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Glatkoća
+embroidery	Corners	Uglovi
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Više: glađe konture s manje tačaka. Niže: bliže ivicama slike.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Više: više zaokreta ostaje oštrim uglovima. Niže: više ih se zaobli.
+embroidery	Straighten nearly straight lines	Ispravi gotovo ravne linije
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Blago zakrivljene ivice postaju ravne linije, dijelovi kružnica pravi lukovi, a gotovo vodoravne ili uspravne linije tačno takve.
+embroidery	Colors overlap by	Boje se preklapaju za
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Boja koja se šije prva ulazi ispod sljedeće, pa se između njih ne vidi tkanina.
+embroidery	Thin lines sewn along their middle below	Tanke linije šivene po sredini ispod
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Uži dio se šije kao linija ravnog boda po sredini. 0: nijedan.

@@ -7069,9 +7069,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Calcolo…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Passaggio {number} di {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Morbidezza: {value}
-embroidery	Corners: {value}	Angoli: {value}
-embroidery	Colors overlap by {value} mm	I colori si sovrappongono di {value} mm
 embroidery	The stitches follow the document's embroidery settings.	I punti seguono le impostazioni di ricamo del documento.
 @plural	{count} thread + background|{count} threads + background	{count} filo + sfondo|{count} fili + sfondo
 @plural	{count} area|{count} areas	{count} area|{count} aree
@@ -7137,3 +7134,14 @@ embroidery	the background's color inside the design	il colore dello sfondo dentr
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Niente da ricamare: ogni area è lo sfondo. Ricama lo sfondo o ritaglia di meno.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Niente da creare: ogni area è lo sfondo. Ricama lo sfondo o ritaglia di meno.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Morbidezza
+embroidery	Corners	Angoli
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Più alto: contorni più morbidi con meno punti. Più basso: più vicini ai bordi dell’immagine.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Più alto: più svolte restano angoli vivi. Più basso: se ne arrotondano di più.
+embroidery	Straighten nearly straight lines	Raddrizza le linee quasi diritte
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	I bordi leggermente curvi diventano linee diritte, le parti di cerchio veri archi e le linee quasi orizzontali o verticali esattamente orizzontali o verticali.
+embroidery	Colors overlap by	I colori si sovrappongono di
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Il colore ricamato per primo passa sotto il successivo, così tra loro non si vede il tessuto.
+embroidery	Thin lines sewn along their middle below	Linee sottili ricamate lungo il centro sotto
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Una parte più stretta è ricamata come linea a punto dritto lungo il centro. 0: nessuna.

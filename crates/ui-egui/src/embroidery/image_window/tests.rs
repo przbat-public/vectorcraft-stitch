@@ -1055,3 +1055,101 @@ fn the_colors_steps_smallest_area_slider_starts_at_a_working_pixel() {
     let halfway = (pixel * top).sqrt();
     assert!((taken - halfway).abs() < SLIDER_NEAR * halfway, "took {taken} mm², halfway is {halfway} mm²");
 }
+
+/// The numbers of the runs that made each stage's output shown, in the stages' order.
+fn made_by(app: &VectorcraftApp) -> Vec<Option<u64>> {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let shown = live(app).schedule.shown.as_ref().expect("a result shown");
+    DigitizeStage::ALL.iter().map(|&s| shown.outputs.number(s)).collect()
+}
+
+/// The first stage the result shown made again since `before` ([`made_by`]'s numbers), every stage
+/// after it made again too.
+fn made_again_from(app: &VectorcraftApp, before: &[Option<u64>]) -> Option<vectorcraft_engine::cmd::embroidery::DigitizeStage> {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let now = made_by(app);
+    let first = before.iter().zip(&now).position(|(b, n)| b != n)?;
+    let after: Vec<bool> = before.iter().zip(&now).skip(first).map(|(b, n)| b != n).collect();
+    assert!(after.iter().all(|&again| again), "every stage after the first made again: {before:?} then {now:?}");
+    DigitizeStage::ALL.get(first).copied()
+}
+
+/// The Shapes step's outlines: the smoothness typed, the corners from their slider (a press at the
+/// middle of its track, let go in the next frame, takes the middle of 0 to 100) and straightening
+/// ticked each write their setting, and the window recomputes from the trace.
+#[test]
+fn the_shapes_steps_outlines_recompute_from_the_trace() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    let field = |app: &VectorcraftApp, key: &str| open_dialog(app).and_then(|d| d.fields.get(key).cloned());
+    let before = made_by(&app);
+    type_into(&mut app, &ctx, &mut time, "Smoothness", "80");
+    assert_eq!(field(&app, "smoothing"), Some(json!(80.0)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Trace));
+    assert_eq!(reply(&mut app)["settings"]["smoothing"], json!(80.0));
+    let before = made_by(&app);
+    let at = centre_of(&mut app, &ctx, &mut time, "Corners", Role::Slider);
+    let button = |pressed| Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), button(true)]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![button(false)]);
+    assert_eq!(field(&app, "corners"), Some(json!(50.0)), "the middle of 0 to 100");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Trace));
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Straighten nearly straight lines", Role::CheckBox);
+    assert_eq!(field(&app, "straightLines"), Some(json!(true)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Trace));
+    assert_eq!(reply(&mut app)["settings"]["straightLines"], json!(true));
+    click(&mut app, &ctx, &mut time, "Straighten nearly straight lines", Role::CheckBox);
+    assert_eq!(field(&app, "straightLines"), Some(json!(false)), "unticked");
+}
+
+/// The overlap typed writes its setting and the window recomputes from the shapes, the areas and
+/// their centre lines kept.
+#[test]
+fn the_overlap_typed_recomputes_from_the_shapes() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    let before = made_by(&app);
+    type_into(&mut app, &ctx, &mut time, "Colors overlap by", "0.8");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("overlap").cloned()), Some(json!(0.8)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Shapes));
+    assert_eq!(reply(&mut app)["settings"]["overlap"], json!(0.8));
+}
+
+/// The thin lines' width typed writes its setting and the window recomputes from the colours (where
+/// the areas narrower than it become centre lines), the trace kept.
+#[test]
+fn the_thin_lines_width_typed_recomputes_from_the_colours() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    let before = made_by(&app);
+    type_into(&mut app, &ctx, &mut time, "Thin lines sewn along their middle below", "2");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("thinLine").cloned()), Some(json!(2.0)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Colours));
+    assert_eq!(reply(&mut app)["settings"]["thinLine"], json!(2.0));
+}
+
+/// A Shapes value past the engine's range is refused: the status bar says the range, and the
+/// setting keeps what it held.
+#[test]
+fn a_shapes_value_out_of_range_is_refused_and_kept() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    type_into(&mut app, &ctx, &mut time, "Colors overlap by", "5");
+    assert_eq!(app.ui.status, "5 mm is out of range: 0 mm to 2 mm.");
+    type_into(&mut app, &ctx, &mut time, "Smoothness", "150");
+    assert_eq!(app.ui.status, "150 is out of range: 0 to 100.");
+    let d = open_dialog(&app).expect("open");
+    assert_eq!((d.fields.get("overlap"), d.fields.get("smoothing")), (None, None));
+}

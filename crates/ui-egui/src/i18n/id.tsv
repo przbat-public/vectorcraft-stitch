@@ -7208,9 +7208,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Menghitung…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Langkah {number} dari {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Kehalusan: {value}
-embroidery	Corners: {value}	Sudut: {value}
-embroidery	Colors overlap by {value} mm	Warna tumpang tindih {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Jahitan mengikuti pengaturan bordir dokumen.
 @plural	{count} thread + background|{count} threads + background	{count} benang + latar
 @plural	{count} area|{count} areas	{count} area
@@ -7276,3 +7273,14 @@ embroidery	the background's color inside the design	warna latar di dalam desain
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Tidak ada yang dijahit: setiap area adalah latar. Jahit latarnya, atau pangkas lebih sedikit.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Tidak ada yang dibuat: setiap area adalah latar. Jahit latarnya, atau pangkas lebih sedikit.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Kehalusan
+embroidery	Corners	Sudut
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Lebih tinggi: garis tepi lebih halus dengan lebih sedikit titik. Lebih rendah: lebih dekat ke tepi gambar.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Lebih tinggi: lebih banyak belokan tetap menjadi sudut tajam. Lebih rendah: lebih banyak yang dibulatkan.
+embroidery	Straighten nearly straight lines	Luruskan garis yang hampir lurus
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Tepi yang sedikit melengkung menjadi garis lurus, bagian lingkaran menjadi busur sejati, dan garis yang hampir mendatar atau tegak menjadi tepat mendatar atau tegak.
+embroidery	Colors overlap by	Warna tumpang tindih
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Warna yang dijahit lebih dulu masuk ke bawah warna berikutnya, agar kain tidak terlihat di antaranya.
+embroidery	Thin lines sewn along their middle below	Garis tipis dijahit di tengahnya di bawah
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Bagian yang lebih sempit dijahit sebagai garis jahitan lurus di tengahnya. 0: tidak ada.

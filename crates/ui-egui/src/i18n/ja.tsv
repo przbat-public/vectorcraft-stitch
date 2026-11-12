@@ -7134,9 +7134,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	計算中…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	ステップ {number}/{count}: {name}。{summary}。{time}
-embroidery	Smoothness: {value}	滑らかさ: {value}
-embroidery	Corners: {value}	角: {value}
-embroidery	Colors overlap by {value} mm	色の重なり {value} mm
 embroidery	The stitches follow the document's embroidery settings.	ステッチはドキュメントの刺繍設定に従います。
 @plural	{count} thread + background|{count} threads + background	{count} 本の糸 + 背景
 @plural	{count} area|{count} areas	{count} 個の領域
@@ -7202,3 +7199,14 @@ embroidery	the background's color inside the design	デザイン内の背景色
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	縫うものがありません。すべての領域が背景です。背景も縫うか、切り抜く量を減らしてください。
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	作成するものがありません。すべての領域が背景です。背景も縫うか、切り抜く量を減らしてください。
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	滑らかさ
+embroidery	Corners	角
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	高いほど点が少なく滑らかな輪郭になり、低いほど画像の縁に近くなります。
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	高いほど多くの曲がりが鋭い角として残り、低いほど多くが丸められます。
+embroidery	Straighten nearly straight lines	ほぼ直線の線をまっすぐにする
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	わずかに曲がった縁は直線に、円の一部は正確な円弧に、ほぼ水平や垂直の線は正確に水平や垂直になります。
+embroidery	Colors overlap by	色の重なり
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	先に縫う色が次の色の下に入り込むので、色の間に生地が見えません。
+embroidery	Thin lines sewn along their middle below	中央に沿って縫う細い線の幅の上限
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	これより細い部分は、中央に沿ってランニングステッチの線で縫います。0: なし。

@@ -252,7 +252,8 @@ pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
                 match step {
                     1 => super::image_step::show(app, ui, d),
                     2 => super::colours_step::show(app, ui, d),
-                    _ => defaults_note(ui, step, reply.as_ref()),
+                    3 => super::shapes_step::show(app, ui, d),
+                    _ => defaults_note(ui),
                 }
             }
             ui.add_space(SECTION_GAP);
@@ -260,24 +261,8 @@ pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     });
 }
 
-/// What a step whose settings this version of the window keeps at their defaults uses, read only.
-fn defaults_note(ui: &mut Ui, step: u64, reply: Option<&Value>) {
+/// What the Stitches step's settings, kept at their defaults in this version of the window, use.
+fn defaults_note(ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
-    let lang = crate::i18n::current();
-    let Some(r) = reply else { return };
-    let s = &r["settings"];
-    let lines: Vec<String> = match step {
-        3 => vec![
-            fill(crate::et!("Smoothness: {value}"), &[("value", &numbers::decimal(lang, s["smoothing"].as_f64().unwrap_or(0.0), words::WHOLE))]),
-            fill(crate::et!("Corners: {value}"), &[("value", &numbers::decimal(lang, s["corners"].as_f64().unwrap_or(0.0), words::WHOLE))]),
-            fill(
-                crate::et!("Colors overlap by {value} mm"),
-                &[("value", &numbers::decimal(lang, s["overlap"].as_f64().unwrap_or(0.0), words::TENTHS))],
-            ),
-        ],
-        _ => vec![crate::et!("The stitches follow the document's embroidery settings.").to_string()],
-    };
-    for line in lines {
-        ui.label(RichText::new(line).size(SMALL_TEXT).color(t.text));
-    }
+    ui.label(RichText::new(crate::et!("The stitches follow the document's embroidery settings.")).size(SMALL_TEXT).color(t.text));
 }

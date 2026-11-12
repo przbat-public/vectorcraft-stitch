@@ -8934,9 +8934,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Beräknar…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Steg {number} av {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Jämnhet: {value}
-embroidery	Corners: {value}	Hörn: {value}
-embroidery	Colors overlap by {value} mm	Färgerna överlappar med {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Stygnen följer dokumentets broderiinställningar.
 @plural	{count} thread + background|{count} threads + background	{count} tråd + bakgrund|{count} trådar + bakgrund
 @plural	{count} area|{count} areas	{count} område|{count} områden
@@ -9002,3 +8999,14 @@ embroidery	the background's color inside the design	bakgrundens färg inuti desi
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Inget att brodera: varje område är bakgrund. Brodera bakgrunden, eller beskär mindre.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Inget att skapa: varje område är bakgrund. Brodera bakgrunden, eller beskär mindre.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Jämnhet
+embroidery	Corners	Hörn
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Högre: jämnare konturer med färre punkter. Lägre: närmare bildens kanter.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Högre: fler knyckar behålls som skarpa hörn. Lägre: fler av dem rundas av.
+embroidery	Straighten nearly straight lines	Räta ut nästan raka linjer
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Lätt böjda kanter blir raka linjer, delar av cirklar äkta bågar, och nästan vågräta eller lodräta linjer exakt vågräta eller lodräta.
+embroidery	Colors overlap by	Färgerna överlappar med
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Färgen som broderas först går in under nästa, så att inget tyg syns mellan dem.
+embroidery	Thin lines sewn along their middle below	Tunna linjer broderas längs mitten under
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	En smalare del broderas som en rakstygnslinje längs mitten. 0: ingen.

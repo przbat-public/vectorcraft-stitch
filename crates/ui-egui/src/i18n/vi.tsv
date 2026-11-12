@@ -7050,9 +7050,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Đang tính…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Bước {number}/{count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Độ mượt: {value}
-embroidery	Corners: {value}	Góc: {value}
-embroidery	Colors overlap by {value} mm	Các màu chồng lên nhau {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Các mũi thêu theo thiết lập thêu của tài liệu.
 @plural	{count} thread + background|{count} threads + background	{count} chỉ + nền
 @plural	{count} area|{count} areas	{count} vùng
@@ -7118,3 +7115,14 @@ embroidery	the background's color inside the design	màu nền bên trong mẫu
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Không có gì để thêu: mọi vùng đều là nền. Hãy thêu cả nền, hoặc cắt xén ít hơn.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Không có gì để tạo: mọi vùng đều là nền. Hãy thêu cả nền, hoặc cắt xén ít hơn.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Độ mượt
+embroidery	Corners	Góc
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Cao hơn: đường viền mượt hơn, ít điểm hơn. Thấp hơn: sát với mép của hình hơn.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Cao hơn: nhiều chỗ ngoặt được giữ thành góc nhọn hơn. Thấp hơn: nhiều chỗ được bo tròn hơn.
+embroidery	Straighten nearly straight lines	Làm thẳng các đường gần thẳng
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Các mép hơi cong trở thành đường thẳng, các phần của đường tròn thành cung tròn thật, và các đường gần nằm ngang hoặc thẳng đứng thành nằm ngang hoặc thẳng đứng hẳn.
+embroidery	Colors overlap by	Các màu chồng lên nhau
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Màu được thêu trước lấn xuống dưới màu kế tiếp, để không lộ vải giữa chúng.
+embroidery	Thin lines sewn along their middle below	Đường mảnh thêu dọc giữa khi hẹp hơn
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Phần hẹp hơn được thêu thành đường mũi chạy dọc giữa. 0: không có.

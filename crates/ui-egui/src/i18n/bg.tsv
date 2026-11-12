@@ -7195,9 +7195,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Изчисляване…
 embroidery	{value} ms	{value} мс
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Стъпка {number} от {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Гладкост: {value}
-embroidery	Corners: {value}	Ъгли: {value}
-embroidery	Colors overlap by {value} mm	Цветовете се застъпват с {value} мм
 embroidery	The stitches follow the document's embroidery settings.	Бодовете следват настройките за бродерия на документа.
 @plural	{count} thread + background|{count} threads + background	{count} нишка + фон|{count} нишки + фон
 @plural	{count} area|{count} areas	{count} област|{count} области
@@ -7263,3 +7260,14 @@ embroidery	the background's color inside the design	цветът на фона �
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Няма какво да се шие: всяка област е фон. Шийте фона или изрежете по-малко.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Няма какво да се създаде: всяка област е фон. Шийте фона или изрежете по-малко.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Гладкост
+embroidery	Corners	Ъгли
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	По-високо: по-гладки контури с по-малко точки. По-ниско: по-близо до краищата на картината.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	По-високо: повече завои остават остри ъгли. По-ниско: повече от тях се заоблят.
+embroidery	Straighten nearly straight lines	Изправяй почти правите линии
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Леко извитите ръбове стават прави линии, частите от окръжности – истински дъги, а почти хоризонталните или вертикалните линии – точно такива.
+embroidery	Colors overlap by	Цветовете се застъпват с
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Цветът, който се шие първи, влиза под следващия, за да не се вижда плат между тях.
+embroidery	Thin lines sewn along their middle below	Тънки линии, шити по средата си, под
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	По-тясна част се шие като линия права бод по средата си. 0: никоя.

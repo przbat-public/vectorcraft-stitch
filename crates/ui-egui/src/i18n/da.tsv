@@ -7208,9 +7208,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Beregner…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Trin {number} af {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Glathed: {value}
-embroidery	Corners: {value}	Hjørner: {value}
-embroidery	Colors overlap by {value} mm	Farverne overlapper med {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Stingene følger dokumentets broderiindstillinger.
 @plural	{count} thread + background|{count} threads + background	{count} tråd + baggrund|{count} tråde + baggrund
 @plural	{count} area|{count} areas	{count} område|{count} områder
@@ -7276,3 +7273,14 @@ embroidery	the background's color inside the design	baggrundens farve inde i des
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Intet at sy: hvert område er baggrunden. Sy baggrunden, eller beskær mindre.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Intet at oprette: hvert område er baggrunden. Sy baggrunden, eller beskær mindre.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Glathed
+embroidery	Corners	Hjørner
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Højere: glattere konturer med færre punkter. Lavere: tættere på billedets kanter.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Højere: flere knæk bevares som skarpe hjørner. Lavere: flere af dem rundes.
+embroidery	Straighten nearly straight lines	Ret næsten lige linjer ud
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Let buede kanter bliver lige linjer, dele af cirkler ægte buer, og næsten vandrette eller lodrette linjer helt vandrette eller lodrette.
+embroidery	Colors overlap by	Farverne overlapper med
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Farven, der sys først, går ind under den næste, så der ikke ses stof imellem dem.
+embroidery	Thin lines sewn along their middle below	Tynde linjer sys langs midten under
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	En smallere del sys som en forstingslinje langs midten. 0: ingen.

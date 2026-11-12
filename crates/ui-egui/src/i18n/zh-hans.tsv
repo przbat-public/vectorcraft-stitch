@@ -7287,9 +7287,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	正在计算…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	第 {number} 步，共 {count} 步：{name}。{summary}。{time}
-embroidery	Smoothness: {value}	平滑度：{value}
-embroidery	Corners: {value}	转角：{value}
-embroidery	Colors overlap by {value} mm	颜色重叠 {value} mm
 embroidery	The stitches follow the document's embroidery settings.	针迹遵循文档的刺绣设置。
 @plural	{count} thread + background|{count} threads + background	{count} 种线 + 背景
 @plural	{count} area|{count} areas	{count} 个区域
@@ -7355,3 +7352,14 @@ embroidery	the background's color inside the design	设计内部的背景色
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	没有可绣制的内容：所有区域都是背景。请也绣制背景，或少裁剪一些。
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	没有可创建的内容：所有区域都是背景。请也绣制背景，或少裁剪一些。
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	平滑度
+embroidery	Corners	转角
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	越高：轮廓越平滑，点越少。越低：越贴近图片的边缘。
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	越高：越多转折保留为尖角。越低：越多转折被修圆。
+embroidery	Straighten nearly straight lines	拉直近乎笔直的线
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	略微弯曲的边缘变为直线，圆的局部变为真正的圆弧，接近水平或竖直的线变为完全水平或竖直。
+embroidery	Colors overlap by	颜色重叠
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	先绣的颜色伸到下一种颜色的下面，两者之间就不会露出面料。
+embroidery	Thin lines sewn along their middle below	沿中线绣的细线宽度上限
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	更窄的部分沿中线绣成平针线。0：无。

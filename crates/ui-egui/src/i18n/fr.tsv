@@ -7444,9 +7444,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Calcul…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Étape {number} sur {count} : {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Lissage : {value}
-embroidery	Corners: {value}	Angles : {value}
-embroidery	Colors overlap by {value} mm	Les couleurs se chevauchent de {value} mm
 embroidery	The stitches follow the document's embroidery settings.	Les points suivent les réglages de broderie du document.
 @plural	{count} thread + background|{count} threads + background	{count} fil + arrière-plan|{count} fils + arrière-plan
 @plural	{count} area|{count} areas	{count} zone|{count} zones
@@ -7512,3 +7509,14 @@ embroidery	the background's color inside the design	la couleur de l’arrière-p
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Rien à broder : chaque zone est l’arrière-plan. Brodez l’arrière-plan ou recadrez moins.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Rien à créer : chaque zone est l’arrière-plan. Brodez l’arrière-plan ou recadrez moins.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Lissage
+embroidery	Corners	Angles
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Plus élevé : contours plus lisses, avec moins de points. Plus bas : plus près des bords de l’image.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Plus élevé : davantage de virages gardés en angles vifs. Plus bas : davantage arrondis.
+embroidery	Straighten nearly straight lines	Redresser les lignes presque droites
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Les bords légèrement courbes deviennent des lignes droites, les portions de cercle de vrais arcs, et les lignes presque horizontales ou verticales exactement horizontales ou verticales.
+embroidery	Colors overlap by	Les couleurs se chevauchent de
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	La couleur brodée en premier passe sous la suivante, pour qu’aucun tissu ne paraisse entre elles.
+embroidery	Thin lines sewn along their middle below	Lignes fines brodées en leur milieu sous
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Une partie plus étroite est brodée en ligne de point droit en son milieu. 0 : aucune.

@@ -7171,3 +7171,144 @@ embroidery	Record #{value} is left out by the filter chosen.	Zapis br. {value} i
 # Align to Pixel Grid
 	Align to Pixel Grid	Poravnaj s mrežom piksela
 @msg	side is left or right, not `{s}`	side je left ili right, a ne `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitaliziraj sliku…
+embroidery	Digitize Image…	Digitaliziraj sliku…
+embroidery	Digitize Image	Digitalizacija slike
+embroidery	Digitize Image: live preview	Digitalizacija slike: pregled uživo
+embroidery	Select one image to digitize it.	Odaberite jednu sliku da biste je digitalizirali.
+embroidery	The preview isn't ready yet.	Pregled još nije spreman.
+embroidery	Cancel	Otkaži
+embroidery	Digitizing…	Digitalizacija…
+embroidery	Create Embroidery Objects	Napravi objekte veza
+embroidery	Start Over	Počni ispočetka
+embroidery	Create waits for the preview to be ready.	Pravljenje čeka da pregled bude spreman.
+embroidery	Can't digitize it: {reason}	Ne može se digitalizirati: {reason}
+embroidery	Shapes	Oblici
+embroidery	Recomputing…	Ponovno računanje…
+embroidery	Recomputing… {percent}	Ponovno računanje… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · vez {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Original
+embroidery	Compare	Usporedi
+embroidery	top left	gore lijevo
+embroidery	top	gore
+embroidery	top right	gore desno
+embroidery	left	lijevo
+embroidery	middle	u sredini
+embroidery	right	desno
+embroidery	bottom left	dolje lijevo
+embroidery	bottom	dolje
+embroidery	bottom right	dolje desno
+embroidery	Background	Pozadina
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Ne veze se
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · ne veze se
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Usporedba: original lijevo
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Pregled prikazuje planirane bodove. Prije proizvodnje izvezite probni komad.
+embroidery	Fit	Uklopi
+embroidery	Zoom	Zum
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Veličina mora biti veća od {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} je preveliko: stranica je najviše {high}.
+embroidery	A margin is 0 pixels or more.	Margina je 0 piksela ili više.
+embroidery	The margins leave no picture: crop less.	Margine ne ostavljaju ništa od slike: odrežite manje.
+embroidery	Width	Širina
+embroidery	Height	Visina
+embroidery	Fit within the width and height	Uklopi u širinu i visinu
+embroidery	The design is {width} × {height}: as large as fits.	Dizajn je {width} × {height}: najveći koji stane.
+embroidery	Type the width or the height: the other follows the picture.	Upišite širinu ili visinu: drugo prati sliku.
+embroidery	Left	Lijevo
+embroidery	Top	Gore
+embroidery	Right	Desno
+embroidery	Bottom	Dolje
+embroidery	Crop	Izrezivanje
+embroidery	Crop to the Art	Izreži do crteža
+embroidery	Whole Image	Cijela slika
+embroidery	Every color is sewn	Šije se svaka boja
+embroidery	Found: the transparency round the art	Pronađeno: prozirnost oko crteža
+embroidery	Found in the corners	Pronađena u uglovima
+embroidery	Chosen from the picture's colors	Odabrana među bojama slike
+embroidery	Not found: the corners disagree	Nije pronađena: uglovi se razlikuju
+embroidery	Leave the background out	Izostavi pozadinu
+embroidery	Or one of the picture's colors:	Ili jedna od boja slike:
+embroidery	Color {color}	Boja {color}
+embroidery	every color sewn	šije se svaka boja
+embroidery	background left out	pozadina izostavljena
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Računanje…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Korak {number} od {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Glatkoća: {value}
+embroidery	Corners: {value}	Uglovi: {value}
+embroidery	Colors overlap by {value} mm	Boje se preklapaju za {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Bodovi slijede postavke veza dokumenta.
+@plural	{count} thread + background|{count} threads + background	{count} konac + pozadina|{count} konca + pozadina|{count} konaca + pozadina
+@plural	{count} area|{count} areas	{count} područje|{count} područja|{count} područja
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Odaberite dvije ili više boja da ih spojite.
+embroidery	Select one or more colors first.	Prvo odaberite jednu ili više boja.
+embroidery	Select one color to choose its thread.	Odaberite jednu boju da biste odabrali njen konac.
+embroidery	{share} of the frame	{share} kadra
+embroidery	merged	spojena
+embroidery	unlike the image's color	ne liči na boju slike
+embroidery	no closer thread in {palette}	nema bližeg konca u {palette}
+embroidery	{color} in {thread}	{color} u {thread}
+embroidery	Background · {share} of the frame · not sewn	Pozadina · {share} kadra · ne šije se
+embroidery	Back to Auto: {thread}	Vrati na automatski: {thread}
+embroidery	Back to Auto	Vrati na automatski
+embroidery	Merge	Spoji
+embroidery	Sew these colors as one.	Ove boje se šiju kao jedna.
+embroidery	Sew	Šij
+embroidery	Sew these colors again, as Auto chooses.	Ove boje se ponovo šiju, kako odabere automatika.
+embroidery	Don't Sew	Ne šij
+embroidery	Leave these colors out: their areas aren't sewn.	Izostavite ove boje: njihova područja se ne šiju.
+embroidery	Choose Thread…	Odaberi konac…
+embroidery	Choose the thread this color is sewn in.	Odaberite konac kojim se šije ova boja.
+embroidery	Name or number	Naziv ili broj
+embroidery	{value} · nearest	{value} · najbliži
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Ravna grafika: tačno njene boje, rijetke ali različite zadržane, najviše koliko je broj boja.
+embroidery	Grays	Sive
+embroidery	Shades of gray, as many as the number of colors.	Nijanse sive, onoliko koliko je broj boja.
+embroidery	The colors that best represent the picture, at most the number of colors.	Boje koje najbolje predstavljaju sliku, najviše koliko je broj boja.
+embroidery	Mode	Način
+embroidery	{value} is out of range: {low} to {high}.	{value} je izvan raspona: od {low} do {high}.
+embroidery	Number of colors	Broj boja
+embroidery	Match to threads	Uskladi s koncima
+embroidery	Create sets the document's thread palette to {palette}.	Kreiranje postavlja paletu konaca dokumenta na {palette}.
+embroidery	Smallest area	Najmanje područje
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Manje mrlje, poput JPEG šuma, pridružuju se boji oko sebe.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} boja je bila premala i pridružila se drugima|{count} boje su bile premale i pridružile se drugima|{count} boja je bilo premalo i pridružile su se drugima
+@plural	{count} speck joined|{count} specks joined	{count} mrlja se pridružila|{count} mrlje su se pridružile|{count} mrlja se pridružilo
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Nema šta da se šije: sve boje su izostavljene.
+embroidery	Nothing to create: every color is left out.	Nema šta da se kreira: sve boje su izostavljene.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Svako područje boje {color} bilo je manje od {value} mm²: boja se pridružila susjedima.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Konac odabran za {color}, {thread}, nije siv: šije se kako je odabran.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Pri ovoj veličini slika ima {value} piksela po milimetru, manje od {least}: veća kopija se bolje digitalizuje.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Slika je pročitana u {width} × {height} piksela, manja od svojih {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Uglovi slike se ne slažu oko pozadine: šije se svaka boja.
+embroidery	No color traced is the background's: every area is sewn.	Nijedna praćena boja nije boja pozadine: šije se svako područje.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Slika ne izgleda kao ravna grafika (fotografija ili prelazi?): njeni prelazi se šiju kao trake ravne boje.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Ništa na slici nije praćeno: prazna je ili prozirna.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Samo objekti slike, s tkaninom, koncem i mašinom dokumenta.
+embroidery	Updated in {value} ms after the last change ({steps})	Ažurirano za {value} ms nakon posljednje promjene ({steps})
+embroidery	Notes	Napomene
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Napravljeno: {objects} ({threads}). Slika je na skrivenom sloju šablona „{layer}”. Poništi ih uklanja.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} mrlja manja od {value} mm² pridružila se boji oko sebe|{count} mrlje manje od {value} mm² pridružile su se bojama oko sebe|{count} mrlja manjih od {value} mm² pridružilo se bojama oko sebe
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} mrlja manja od {value} mm² nije se imala čemu pridružiti i izostavljena je|{count} mrlje manje od {value} mm² nisu se imale čemu pridružiti i izostavljene su|{count} mrlja manjih od {value} mm² nije se imalo čemu pridružiti i izostavljeno je
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} traka široka najviše {value} mm pridružila se susjedu najbližem svojoj boji|{count} trake široke najviše {value} mm pridružile su se susjedima najbližim svojim bojama|{count} traka širokih najviše {value} mm pridružilo se susjedima najbližim svojim bojama
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} područje boje {color} nema središnju liniju za šivanje: šije se kao svoj oblik|{count} područja boje {color} nemaju središnju liniju za šivanje: šiju se kao svoji oblici|{count} područja boje {color} nema središnju liniju za šivanje: šiju se kao svoji oblici
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} područje se nije moglo spojiti sa susjedima: šije se kako je praćeno|{count} područja se nisu mogla spojiti sa susjedima: šiju se kako su praćena|{count} područja se nije moglo spojiti sa susjedima: šiju se kako su praćena
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	boja pozadine unutar dizajna
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} boja osim pozadine i boja pozadine koja se šije gdje je dizajn okružuje.|{count} boje osim pozadine i boja pozadine koja se šije gdje je dizajn okružuje.|{count} boja osim pozadine i boja pozadine koja se šije gdje je dizajn okružuje.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nema šta da se šije: svaka oblast je pozadina. Šijte pozadinu ili manje izrežite.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nema šta da se kreira: svaka oblast je pozadina. Šijte pozadinu ili manje izrežite.

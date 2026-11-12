@@ -7356,3 +7356,144 @@ embroidery	Record #{value} is left out by the filter chosen.	El filtre triat dei
 	Ignore All	Ignora-ho tot
 	Add to Dictionary	Afegeix al diccionari
 	No Suggestions	No hi ha suggeriments
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalitza la imatge…
+embroidery	Digitize Image…	Digitalitza la imatge…
+embroidery	Digitize Image	Digitalització de la imatge
+embroidery	Digitize Image: live preview	Digitalització de la imatge: previsualització en directe
+embroidery	Select one image to digitize it.	Seleccioneu una imatge per digitalitzar-la.
+embroidery	The preview isn't ready yet.	La previsualització encara no és a punt.
+embroidery	Cancel	Cancel·la
+embroidery	Digitizing…	S’està digitalitzant…
+embroidery	Create Embroidery Objects	Crea objectes de brodat
+embroidery	Start Over	Torna a començar
+embroidery	Create waits for the preview to be ready.	La creació espera que la previsualització sigui a punt.
+embroidery	Can't digitize it: {reason}	No es pot digitalitzar: {reason}
+embroidery	Shapes	Formes
+embroidery	Recomputing…	S’està recalculant…
+embroidery	Recomputing… {percent}	S’està recalculant… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · brodat {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Original
+embroidery	Compare	Compara
+embroidery	top left	a dalt a l’esquerra
+embroidery	top	a dalt
+embroidery	top right	a dalt a la dreta
+embroidery	left	a l’esquerra
+embroidery	middle	al mig
+embroidery	right	a la dreta
+embroidery	bottom left	a baix a l’esquerra
+embroidery	bottom	a baix
+embroidery	bottom right	a baix a la dreta
+embroidery	Background	Fons
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	No es brodeja
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · no es brodeja
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Comparació: l’original a l’esquerra
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	La previsualització mostra les puntades previstes. Brodeu una prova abans de produir.
+embroidery	Fit	Ajusta
+embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	La mida ha de ser més gran que {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} és massa gran: un costat fa com a màxim {high}.
+embroidery	A margin is 0 pixels or more.	Un marge és de 0 píxels o més.
+embroidery	The margins leave no picture: crop less.	Els marges no deixen imatge: retalleu menys.
+embroidery	Width	Amplada
+embroidery	Height	Alçada
+embroidery	Fit within the width and height	Encaixa dins l’amplada i l’alçada
+embroidery	The design is {width} × {height}: as large as fits.	El disseny fa {width} × {height}: tan gran com hi cap.
+embroidery	Type the width or the height: the other follows the picture.	Escriviu l’amplada o l’alçada: l’altra segueix la imatge.
+embroidery	Left	Esquerra
+embroidery	Top	Dalt
+embroidery	Right	Dreta
+embroidery	Bottom	Baix
+embroidery	Crop	Retall
+embroidery	Crop to the Art	Retalla fins al dibuix
+embroidery	Whole Image	Imatge sencera
+embroidery	Every color is sewn	Es cusen tots els colors
+embroidery	Found: the transparency round the art	Trobat: la transparència al voltant del dibuix
+embroidery	Found in the corners	Trobat a les cantonades
+embroidery	Chosen from the picture's colors	Triat entre els colors de la imatge
+embroidery	Not found: the corners disagree	No s’ha trobat: les cantonades no coincideixen
+embroidery	Leave the background out	Deixa fora el fons
+embroidery	Or one of the picture's colors:	O un dels colors de la imatge:
+embroidery	Color {color}	Color {color}
+embroidery	every color sewn	es cusen tots els colors
+embroidery	background left out	fons omès
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	S’està calculant…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Pas {number} de {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Suavitat: {value}
+embroidery	Corners: {value}	Cantonades: {value}
+embroidery	Colors overlap by {value} mm	Els colors se superposen {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Les puntades segueixen la configuració de brodat del document.
+@plural	{count} thread + background|{count} threads + background	{count} fil + fons|{count} fils + fons
+@plural	{count} area|{count} areas	{count} àrea|{count} àrees
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Seleccioneu dos o més colors per fusionar-los.
+embroidery	Select one or more colors first.	Primer seleccioneu un o més colors.
+embroidery	Select one color to choose its thread.	Seleccioneu un color per triar-ne el fil.
+embroidery	{share} of the frame	{share} del marc
+embroidery	merged	fusionat
+embroidery	unlike the image's color	diferent del color de la imatge
+embroidery	no closer thread in {palette}	cap fil més proper a {palette}
+embroidery	{color} in {thread}	{color} en {thread}
+embroidery	Background · {share} of the frame · not sewn	Fons · {share} del marc · no es cus
+embroidery	Back to Auto: {thread}	Torna a automàtic: {thread}
+embroidery	Back to Auto	Torna a automàtic
+embroidery	Merge	Fusiona
+embroidery	Sew these colors as one.	Aquests colors es cusen com un de sol.
+embroidery	Sew	Cus
+embroidery	Sew these colors again, as Auto chooses.	Aquests colors es tornen a cosir, com tria l’automàtic.
+embroidery	Don't Sew	No cusis
+embroidery	Leave these colors out: their areas aren't sewn.	Deixeu fora aquests colors: les seves àrees no es cusen.
+embroidery	Choose Thread…	Tria el fil…
+embroidery	Choose the thread this color is sewn in.	Trieu el fil amb què es cus aquest color.
+embroidery	Name or number	Nom o número
+embroidery	{value} · nearest	{value} · el més proper
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Art pla: exactament els seus colors, també els rars però diferents, com a màxim el nombre de colors.
+embroidery	Grays	Grisos
+embroidery	Shades of gray, as many as the number of colors.	Tons de gris, tants com el nombre de colors.
+embroidery	The colors that best represent the picture, at most the number of colors.	Els colors que millor representen la imatge, com a màxim el nombre de colors.
+embroidery	Mode	Mode
+embroidery	{value} is out of range: {low} to {high}.	{value} és fora de l’interval: de {low} a {high}.
+embroidery	Number of colors	Nombre de colors
+embroidery	Match to threads	Fes coincidir amb els fils
+embroidery	Create sets the document's thread palette to {palette}.	En crear-los, la paleta de fils del document passa a ser {palette}.
+embroidery	Smallest area	Àrea més petita
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Les taques més petites, com el soroll del JPEG, s’uneixen al color del voltant.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} color era massa petit i s’ha unit a d’altres|{count} colors eren massa petits i s’han unit a d’altres
+@plural	{count} speck joined|{count} specks joined	{count} taca s’ha unit|{count} taques s’han unit
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	No hi ha res per cosir: tots els colors queden fora.
+embroidery	Nothing to create: every color is left out.	No hi ha res per crear: tots els colors queden fora.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Totes les àrees de {color} feien menys de {value} mm²: s’ha unit als veïns.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	El fil triat per a {color}, {thread}, no és gris: es cus tal com s’ha triat.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	A aquesta mida la imatge té {value} píxels per mil·límetre, menys de {least}: una còpia més gran es digitalitza millor.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	La imatge s’ha llegit a {width} × {height} píxels, més petita que els seus {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Les cantonades de la imatge no coincideixen en un fons: es cusen tots els colors.
+embroidery	No color traced is the background's: every area is sewn.	Cap color traçat no és el del fons: es cusen totes les àrees.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	La imatge no sembla art pla (una foto, o degradats?): els seus degradats es cusen com a franges de color pla.
+embroidery	Nothing in the image was traced: it is empty or transparent.	No s’ha traçat res de la imatge: és buida o transparent.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Només els objectes de la imatge, amb la tela, el fil i la màquina del document.
+embroidery	Updated in {value} ms after the last change ({steps})	Actualitzat en {value} ms després de l’últim canvi ({steps})
+embroidery	Notes	Notes
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	S’han creat {objects} ({threads}). La imatge és a la capa de plantilla oculta «{layer}». Desfés els suprimeix.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} taca de menys de {value} mm² s’ha unit al color del voltant|{count} taques de menys de {value} mm² s’han unit als colors del voltant
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} taca de menys de {value} mm² no tenia res a què unir-se i s’ha deixat fora|{count} taques de menys de {value} mm² no tenien res a què unir-se i s’han deixat fora
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} franja de com a màxim {value} mm d’ample s’ha unit al veí més proper al seu color|{count} franges de com a màxim {value} mm d’ample s’han unit als veïns més propers als seus colors
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} àrea de {color} no té línia central per cosir: es cus com la seva forma|{count} àrees de {color} no tenen línia central per cosir: es cusen com les seves formes
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} àrea no s’ha pogut unir als veïns: es cus tal com s’ha traçat|{count} àrees no s’han pogut unir als veïns: es cusen tal com s’han traçat
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	el color del fons dins del disseny
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} color a més del fons, i el color del fons cosit allà on el disseny l’envolta.|{count} colors a més del fons, i el color del fons cosit allà on el disseny l’envolta.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	No hi ha res per cosir: cada zona és el fons. Cusiu el fons o retalleu menys.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	No hi ha res per crear: cada zona és el fons. Cusiu el fons o retalleu menys.

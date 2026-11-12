@@ -26,7 +26,7 @@ use crate::cmd::bad;
 /// The working resolution digitizing aims for (pixels a millimetre): ten, the machine formats'
 /// grid of a tenth of a millimetre (`vectorcraft_stitch::UNITS_PER_MM`), finer than a needle point
 /// is placed.
-pub(super) const WORKING_PX_PER_MM: f64 = 10.0;
+pub const WORKING_PX_PER_MM: f64 = 10.0;
 
 /// The longest side of the working copy (pixels): upstream Image Trace traces a larger image "but
 /// more slowly", as upstream's own message words the public documentation's warning

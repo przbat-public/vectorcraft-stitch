@@ -7328,3 +7328,144 @@ breakText	Glyphs	Γλύφοι
 	Ignore All	Παράβλεψη όλων
 	Add to Dictionary	Προσθήκη στο λεξικό
 	No Suggestions	Καμία πρόταση
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Ψηφιοποίηση εικόνας…
+embroidery	Digitize Image…	Ψηφιοποίηση εικόνας…
+embroidery	Digitize Image	Ψηφιοποίηση εικόνας
+embroidery	Digitize Image: live preview	Ψηφιοποίηση εικόνας: ζωντανή προεπισκόπηση
+embroidery	Select one image to digitize it.	Επιλέξτε μία εικόνα για να την ψηφιοποιήσετε.
+embroidery	The preview isn't ready yet.	Η προεπισκόπηση δεν είναι ακόμη έτοιμη.
+embroidery	Cancel	Ακύρωση
+embroidery	Digitizing…	Ψηφιοποίηση…
+embroidery	Create Embroidery Objects	Δημιουργία αντικειμένων κεντήματος
+embroidery	Start Over	Από την αρχή
+embroidery	Create waits for the preview to be ready.	Η δημιουργία περιμένει να ετοιμαστεί η προεπισκόπηση.
+embroidery	Can't digitize it: {reason}	Δεν είναι δυνατή η ψηφιοποίηση: {reason}
+embroidery	Shapes	Σχήματα
+embroidery	Recomputing…	Επανυπολογισμός…
+embroidery	Recomputing… {percent}	Επανυπολογισμός… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · κέντημα {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Πρωτότυπο
+embroidery	Compare	Σύγκριση
+embroidery	top left	πάνω αριστερά
+embroidery	top	πάνω
+embroidery	top right	πάνω δεξιά
+embroidery	left	αριστερά
+embroidery	middle	στη μέση
+embroidery	right	δεξιά
+embroidery	bottom left	κάτω αριστερά
+embroidery	bottom	κάτω
+embroidery	bottom right	κάτω δεξιά
+embroidery	Background	Φόντο
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Δεν κεντιέται
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · δεν κεντιέται
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Σύγκριση: το πρωτότυπο αριστερά
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Η προεπισκόπηση δείχνει τις σχεδιασμένες βελονιές. Κεντήστε ένα δοκιμαστικό πριν από την παραγωγή.
+embroidery	Fit	Προσαρμογή
+embroidery	Zoom	Ζουμ
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Το μέγεθος πρέπει να είναι μεγαλύτερο από {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	Το {width} × {height} είναι πολύ μεγάλο: μια πλευρά είναι το πολύ {high}.
+embroidery	A margin is 0 pixels or more.	Ένα περιθώριο είναι 0 εικονοστοιχεία ή περισσότερα.
+embroidery	The margins leave no picture: crop less.	Τα περιθώρια δεν αφήνουν εικόνα: περικόψτε λιγότερο.
+embroidery	Width	Πλάτος
+embroidery	Height	Ύψος
+embroidery	Fit within the width and height	Προσαρμογή μέσα στο πλάτος και το ύψος
+embroidery	The design is {width} × {height}: as large as fits.	Το σχέδιο είναι {width} × {height}: όσο μεγαλύτερο χωράει.
+embroidery	Type the width or the height: the other follows the picture.	Πληκτρολογήστε το πλάτος ή το ύψος: το άλλο ακολουθεί την εικόνα.
+embroidery	Left	Αριστερά
+embroidery	Top	Πάνω
+embroidery	Right	Δεξιά
+embroidery	Bottom	Κάτω
+embroidery	Crop	Περικοπή
+embroidery	Crop to the Art	Περικοπή στο σχέδιο
+embroidery	Whole Image	Ολόκληρη η εικόνα
+embroidery	Every color is sewn	Κεντιέται κάθε χρώμα
+embroidery	Found: the transparency round the art	Βρέθηκε: η διαφάνεια γύρω από το σχέδιο
+embroidery	Found in the corners	Βρέθηκε στις γωνίες
+embroidery	Chosen from the picture's colors	Επιλέχθηκε από τα χρώματα της εικόνας
+embroidery	Not found: the corners disagree	Δεν βρέθηκε: οι γωνίες διαφέρουν
+embroidery	Leave the background out	Παράλειψη του φόντου
+embroidery	Or one of the picture's colors:	Ή ένα από τα χρώματα της εικόνας:
+embroidery	Color {color}	Χρώμα {color}
+embroidery	every color sewn	κεντιέται κάθε χρώμα
+embroidery	background left out	χωρίς το φόντο
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Υπολογισμός…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Βήμα {number} από {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Ομαλότητα: {value}
+embroidery	Corners: {value}	Γωνίες: {value}
+embroidery	Colors overlap by {value} mm	Τα χρώματα επικαλύπτονται κατά {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Οι βελονιές ακολουθούν τις ρυθμίσεις κεντήματος του εγγράφου.
+@plural	{count} thread + background|{count} threads + background	{count} κλωστή + φόντο|{count} κλωστές + φόντο
+@plural	{count} area|{count} areas	{count} περιοχή|{count} περιοχές
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Επιλέξτε δύο ή περισσότερα χρώματα για να τα συγχωνεύσετε.
+embroidery	Select one or more colors first.	Επιλέξτε πρώτα ένα ή περισσότερα χρώματα.
+embroidery	Select one color to choose its thread.	Επιλέξτε ένα χρώμα για να διαλέξετε την κλωστή του.
+embroidery	{share} of the frame	{share} του πλαισίου
+embroidery	merged	συγχωνευμένο
+embroidery	unlike the image's color	διαφέρει από το χρώμα της εικόνας
+embroidery	no closer thread in {palette}	καμία πιο κοντινή κλωστή στο {palette}
+embroidery	{color} in {thread}	{color} σε {thread}
+embroidery	Background · {share} of the frame · not sewn	Φόντο · {share} του πλαισίου · δεν κεντιέται
+embroidery	Back to Auto: {thread}	Επιστροφή στο αυτόματο: {thread}
+embroidery	Back to Auto	Επιστροφή στο αυτόματο
+embroidery	Merge	Συγχώνευση
+embroidery	Sew these colors as one.	Αυτά τα χρώματα κεντιούνται ως ένα.
+embroidery	Sew	Κέντημα
+embroidery	Sew these colors again, as Auto chooses.	Αυτά τα χρώματα κεντιούνται ξανά, όπως επιλέγει το αυτόματο.
+embroidery	Don't Sew	Χωρίς κέντημα
+embroidery	Leave these colors out: their areas aren't sewn.	Παραλείψτε αυτά τα χρώματα: οι περιοχές τους δεν κεντιούνται.
+embroidery	Choose Thread…	Επιλογή κλωστής…
+embroidery	Choose the thread this color is sewn in.	Επιλέξτε την κλωστή με την οποία κεντιέται αυτό το χρώμα.
+embroidery	Name or number	Όνομα ή αριθμός
+embroidery	{value} · nearest	{value} · η πιο κοντινή
+embroidery	Logo	Λογότυπο
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Επίπεδο γραφικό: ακριβώς τα δικά του χρώματα, και τα σπάνια αλλά διακριτά, το πολύ όσα ο αριθμός χρωμάτων.
+embroidery	Grays	Γκρι
+embroidery	Shades of gray, as many as the number of colors.	Αποχρώσεις του γκρι, τόσες όσες ο αριθμός χρωμάτων.
+embroidery	The colors that best represent the picture, at most the number of colors.	Τα χρώματα που αποδίδουν καλύτερα την εικόνα, το πολύ όσα ο αριθμός χρωμάτων.
+embroidery	Mode	Λειτουργία
+embroidery	{value} is out of range: {low} to {high}.	Το {value} είναι εκτός εύρους: {low} έως {high}.
+embroidery	Number of colors	Αριθμός χρωμάτων
+embroidery	Match to threads	Αντιστοίχιση με κλωστές
+embroidery	Create sets the document's thread palette to {palette}.	Η δημιουργία ορίζει την παλέτα κλωστών του εγγράφου σε {palette}.
+embroidery	Smallest area	Μικρότερη περιοχή
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Μικρότερες κηλίδες, όπως ο θόρυβος JPEG, ενώνονται με το χρώμα γύρω τους.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} χρώμα ήταν πολύ μικρό και ενώθηκε με άλλα|{count} χρώματα ήταν πολύ μικρά και ενώθηκαν με άλλα
+@plural	{count} speck joined|{count} specks joined	{count} κηλίδα ενώθηκε|{count} κηλίδες ενώθηκαν
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Δεν υπάρχει τίποτα για κέντημα: κάθε χρώμα παραλείπεται.
+embroidery	Nothing to create: every color is left out.	Δεν υπάρχει τίποτα για δημιουργία: κάθε χρώμα παραλείπεται.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Κάθε περιοχή του {color} ήταν μικρότερη από {value} mm²: ενώθηκε με τις γειτονικές.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Η κλωστή που επιλέχθηκε για το {color}, {thread}, δεν είναι γκρι: κεντιέται όπως επιλέχθηκε.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Σε αυτό το μέγεθος η εικόνα έχει {value} εικονοστοιχεία ανά χιλιοστό, λιγότερα από {least}: ένα μεγαλύτερο αντίγραφο ψηφιοποιείται καλύτερα.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Η εικόνα διαβάστηκε σε {width} × {height} εικονοστοιχεία, μικρότερη από τα {fullWidth} × {fullHeight} της.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Οι γωνίες της εικόνας δεν συμφωνούν σε φόντο: κεντιέται κάθε χρώμα.
+embroidery	No color traced is the background's: every area is sewn.	Κανένα ανιχνευμένο χρώμα δεν είναι του φόντου: κεντιέται κάθε περιοχή.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Η εικόνα δεν μοιάζει με επίπεδο γραφικό (φωτογραφία ή διαβαθμίσεις;): οι διαβαθμίσεις της κεντιούνται ως λωρίδες επίπεδου χρώματος.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Δεν ανιχνεύτηκε τίποτα στην εικόνα: είναι κενή ή διαφανής.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Μόνο τα αντικείμενα της εικόνας, με το ύφασμα, την κλωστή και τη μηχανή του εγγράφου.
+embroidery	Updated in {value} ms after the last change ({steps})	Ενημερώθηκε σε {value} ms μετά την τελευταία αλλαγή ({steps})
+embroidery	Notes	Σημειώσεις
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Δημιουργήθηκαν: {objects} ({threads}). Η εικόνα είναι στο κρυφό επίπεδο προτύπου «{layer}». Η Αναίρεση τα αφαιρεί.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} κηλίδα μικρότερη από {value} mm² ενώθηκε με το χρώμα γύρω της|{count} κηλίδες μικρότερες από {value} mm² ενώθηκαν με τα χρώματα γύρω τους
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} κηλίδα μικρότερη από {value} mm² δεν είχε με τι να ενωθεί και παραλείφθηκε|{count} κηλίδες μικρότερες από {value} mm² δεν είχαν με τι να ενωθούν και παραλείφθηκαν
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} λωρίδα πλάτους έως {value} mm ενώθηκε με τη γειτονική που είναι πιο κοντά στο χρώμα της|{count} λωρίδες πλάτους έως {value} mm ενώθηκαν με τις γειτονικές που είναι πιο κοντά στα χρώματά τους
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} περιοχή του {color} δεν έχει κεντρική γραμμή για κέντημα: κεντιέται ως το σχήμα της|{count} περιοχές του {color} δεν έχουν κεντρική γραμμή για κέντημα: κεντιούνται ως τα σχήματά τους
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} περιοχή δεν ενώθηκε με τις γειτονικές: κεντιέται όπως ανιχνεύτηκε|{count} περιοχές δεν ενώθηκαν με τις γειτονικές: κεντιούνται όπως ανιχνεύτηκαν
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	το χρώμα του φόντου μέσα στο σχέδιο
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} χρώμα εκτός από το φόντο, και το χρώμα του φόντου κεντημένο όπου το περικλείει το σχέδιο.|{count} χρώματα εκτός από το φόντο, και το χρώμα του φόντου κεντημένο όπου το περικλείει το σχέδιο.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Δεν υπάρχει τίποτα για κέντημα: κάθε περιοχή είναι φόντο. Κεντήστε και το φόντο ή περικόψτε λιγότερο.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Δεν υπάρχει τίποτα για δημιουργία: κάθε περιοχή είναι φόντο. Κεντήστε και το φόντο ή περικόψτε λιγότερο.

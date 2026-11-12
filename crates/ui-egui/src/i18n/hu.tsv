@@ -7360,3 +7360,144 @@ breakText	Glyphs	Glifák
 	Ignore All	Az összes kihagyása
 	Add to Dictionary	Hozzáadás a szótárhoz
 	No Suggestions	Nincs javaslat
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Kép digitalizálása…
+embroidery	Digitize Image…	Kép digitalizálása…
+embroidery	Digitize Image	Kép digitalizálása
+embroidery	Digitize Image: live preview	Kép digitalizálása: élő előnézet
+embroidery	Select one image to digitize it.	Jelöljön ki egy képet a digitalizáláshoz.
+embroidery	The preview isn't ready yet.	Az előnézet még nem készült el.
+embroidery	Cancel	Mégse
+embroidery	Digitizing…	Digitalizálás…
+embroidery	Create Embroidery Objects	Hímzésobjektumok létrehozása
+embroidery	Start Over	Újrakezdés
+embroidery	Create waits for the preview to be ready.	A létrehozás megvárja, amíg az előnézet elkészül.
+embroidery	Can't digitize it: {reason}	Nem digitalizálható: {reason}
+embroidery	Shapes	Alakzatok
+embroidery	Recomputing…	Újraszámítás…
+embroidery	Recomputing… {percent}	Újraszámítás… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · hímzés {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Eredeti
+embroidery	Compare	Összehasonlítás
+embroidery	top left	bal felül
+embroidery	top	felül
+embroidery	top right	jobb felül
+embroidery	left	balra
+embroidery	middle	középen
+embroidery	right	jobbra
+embroidery	bottom left	bal alul
+embroidery	bottom	alul
+embroidery	bottom right	jobb alul
+embroidery	Background	Háttér
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Nincs kihímezve
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · nincs kihímezve
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Összehasonlítás: balra az eredeti
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Az előnézet a tervezett öltéseket mutatja. Gyártás előtt hímezzen próbadarabot.
+embroidery	Fit	Illesztés
+embroidery	Zoom	Nagyítás
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	A méretnek nagyobbnak kell lennie, mint {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} túl nagy: egy oldal legfeljebb {high} lehet.
+embroidery	A margin is 0 pixels or more.	A margó legalább 0 képpont.
+embroidery	The margins leave no picture: crop less.	A margók nem hagynak képet: vágjon kevesebbet.
+embroidery	Width	Szélesség
+embroidery	Height	Magasság
+embroidery	Fit within the width and height	Illesztés a szélességbe és a magasságba
+embroidery	The design is {width} × {height}: as large as fits.	A minta {width} × {height}: akkora, amekkora elfér.
+embroidery	Type the width or the height: the other follows the picture.	Írja be a szélességet vagy a magasságot: a másik a képet követi.
+embroidery	Left	Bal
+embroidery	Top	Felső
+embroidery	Right	Jobb
+embroidery	Bottom	Alsó
+embroidery	Crop	Körülvágás
+embroidery	Crop to the Art	Körülvágás a rajzra
+embroidery	Whole Image	Teljes kép
+embroidery	Every color is sewn	Minden szín ki lesz hímezve
+embroidery	Found: the transparency round the art	Megtalálva: a rajz körüli átlátszóság
+embroidery	Found in the corners	A sarkokban találva
+embroidery	Chosen from the picture's colors	A kép színei közül választva
+embroidery	Not found: the corners disagree	Nem található: a sarkok eltérnek
+embroidery	Leave the background out	A háttér kihagyása
+embroidery	Or one of the picture's colors:	Vagy a kép egyik színe:
+embroidery	Color {color}	Szín: {color}
+embroidery	every color sewn	minden szín kihímezve
+embroidery	background left out	háttér kihagyva
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Számítás…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	{number}. lépés ({count} közül): {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Simaság: {value}
+embroidery	Corners: {value}	Sarkok: {value}
+embroidery	Colors overlap by {value} mm	A színek {value} mm-rel fedik egymást
+embroidery	The stitches follow the document's embroidery settings.	Az öltések a dokumentum hímzésbeállításait követik.
+@plural	{count} thread + background|{count} threads + background	{count} szál + háttér
+@plural	{count} area|{count} areas	{count} terület
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Jelöljön ki legalább két színt az összeolvasztáshoz.
+embroidery	Select one or more colors first.	Előbb jelöljön ki egy vagy több színt.
+embroidery	Select one color to choose its thread.	Jelöljön ki egy színt a szála kiválasztásához.
+embroidery	{share} of the frame	{share} a keretből
+embroidery	merged	összeolvasztva
+embroidery	unlike the image's color	eltér a kép színétől
+embroidery	no closer thread in {palette}	nincs közelebbi szál: {palette}
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	Háttér · {share} a keretből · nincs kihímezve
+embroidery	Back to Auto: {thread}	Vissza automatikusra: {thread}
+embroidery	Back to Auto	Vissza automatikusra
+embroidery	Merge	Összeolvasztás
+embroidery	Sew these colors as one.	Ezek a színek egyként lesznek kihímezve.
+embroidery	Sew	Hímezze
+embroidery	Sew these colors again, as Auto chooses.	Ezek a színek újra ki lesznek hímezve, ahogy az automatika választja.
+embroidery	Don't Sew	Ne hímezze
+embroidery	Leave these colors out: their areas aren't sewn.	Hagyja ki ezeket a színeket: a területeik nem lesznek kihímezve.
+embroidery	Choose Thread…	Szál kiválasztása…
+embroidery	Choose the thread this color is sewn in.	Válassza ki a szálat, amellyel ez a szín ki lesz hímezve.
+embroidery	Name or number	Név vagy szám
+embroidery	{value} · nearest	{value} · legközelebbi
+embroidery	Logo	Logó
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Sík grafika: pontosan a saját színei, a ritka, de jól elkülönülők is, legfeljebb a színek száma.
+embroidery	Grays	Szürkék
+embroidery	Shades of gray, as many as the number of colors.	Szürke árnyalatok, annyi, amennyi a színek száma.
+embroidery	The colors that best represent the picture, at most the number of colors.	A képet legjobban visszaadó színek, legfeljebb a színek száma.
+embroidery	Mode	Mód
+embroidery	{value} is out of range: {low} to {high}.	{value} a tartományon kívül esik: {low}–{high}.
+embroidery	Number of colors	Színek száma
+embroidery	Match to threads	Szálakhoz igazítás
+embroidery	Create sets the document's thread palette to {palette}.	A létrehozás a dokumentum szálpalettáját erre állítja: {palette}.
+embroidery	Smallest area	Legkisebb terület
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	A kisebb foltok, például a JPEG-zaj, a körülöttük lévő színhez csatlakoznak.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} szín túl kicsi volt, és másokhoz csatlakozott
+@plural	{count} speck joined|{count} specks joined	{count} folt csatlakozott
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Nincs mit kihímezni: minden szín ki van hagyva.
+embroidery	Nothing to create: every color is left out.	Nincs mit létrehozni: minden szín ki van hagyva.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} minden területe kisebb volt {value} mm²-nél: a szomszédaihoz csatlakozott.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	A(z) {color} színhez választott szál, {thread}, nem szürke: a választás szerint lesz kihímezve.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Ebben a méretben a képnek milliméterenként {value} képpontja van, kevesebb mint {least}: egy nagyobb másolata jobban digitalizálható.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	A kép {width} × {height} képpontos méretben lett beolvasva, kisebben az eredeti {fullWidth} × {fullHeight} méreténél.
+embroidery	The image's corners don't agree on a background: every color is sewn.	A kép sarkai nem egyeznek a háttérben: minden szín ki lesz hímezve.
+embroidery	No color traced is the background's: every area is sewn.	Egyik követett szín sem a háttéré: minden terület ki lesz hímezve.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	A kép nem tűnik sík grafikának (fénykép vagy színátmenetek?): az átmenetei egyszínű sávokként lesznek kihímezve.
+embroidery	Nothing in the image was traced: it is empty or transparent.	A képből semmit sem sikerült követni: üres vagy átlátszó.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Csak a kép objektumai, a dokumentum anyagával, szálával és gépével.
+embroidery	Updated in {value} ms after the last change ({steps})	Frissítve {value} ms alatt az utolsó változtatás után ({steps})
+embroidery	Notes	Megjegyzések
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Létrejött: {objects} ({threads}). A kép a rejtett „{layer}” sablonrétegen van. A Visszavonás eltávolítja őket.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} {value} mm²-nél kisebb folt a körülötte lévő színhez csatlakozott
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} {value} mm²-nél kisebb foltnak nem volt mihez csatlakoznia, ezért kimaradt
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} legfeljebb {value} mm széles sáv a színéhez legközelebbi szomszédhoz csatlakozott
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} {count} területének nincs követhető középvonala: alakzatként lesz kihímezve
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} területet nem sikerült a szomszédaihoz kapcsolni: követett formájában lesz kihímezve
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	a háttér színe a mintán belül
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} szín a háttéren kívül, és a háttér színe, kihímezve ott, ahol a minta körülveszi.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nincs mit kihímezni: minden terület háttér. Hímezze ki a hátteret is, vagy vágjon körül kevesebbet.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nincs mit létrehozni: minden terület háttér. Hímezze ki a hátteret is, vagy vágjon körül kevesebbet.

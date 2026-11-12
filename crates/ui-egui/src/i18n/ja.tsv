@@ -7061,3 +7061,144 @@ breakText	Glyphs	字形
 	Ignore All	すべて無視
 	Add to Dictionary	辞書に追加
 	No Suggestions	候補なし
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	画像をデジタイズ…
+embroidery	Digitize Image…	画像をデジタイズ…
+embroidery	Digitize Image	画像のデジタイズ
+embroidery	Digitize Image: live preview	画像のデジタイズ：ライブプレビュー
+embroidery	Select one image to digitize it.	デジタイズする画像を 1 つ選択してください。
+embroidery	The preview isn't ready yet.	プレビューはまだ準備できていません。
+embroidery	Cancel	キャンセル
+embroidery	Digitizing…	デジタイズ中…
+embroidery	Create Embroidery Objects	刺繍オブジェクトを作成
+embroidery	Start Over	最初からやり直す
+embroidery	Create waits for the preview to be ready.	作成はプレビューの準備ができるまで待ちます。
+embroidery	Can't digitize it: {reason}	デジタイズできません：{reason}
+embroidery	Shapes	シェイプ
+embroidery	Recomputing…	再計算中…
+embroidery	Recomputing… {percent}	再計算中… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺繍 {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	元画像
+embroidery	Compare	比較
+embroidery	top left	左上
+embroidery	top	上
+embroidery	top right	右上
+embroidery	left	左
+embroidery	middle	中央
+embroidery	right	右
+embroidery	bottom left	左下
+embroidery	bottom	下
+embroidery	bottom right	右下
+embroidery	Background	背景
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	縫わない
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · 縫わない
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	比較：左が元画像
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	プレビューは計画したステッチを表示します。本番の前に試し縫いをしてください。
+embroidery	Fit	全体表示
+embroidery	Zoom	ズーム
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	サイズは {low} より大きくしてください。
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} は大きすぎます。1 辺は最大 {high} です。
+embroidery	A margin is 0 pixels or more.	余白は 0 ピクセル以上です。
+embroidery	The margins leave no picture: crop less.	余白で画像がなくなります。切り抜きを減らしてください。
+embroidery	Width	幅
+embroidery	Height	高さ
+embroidery	Fit within the width and height	幅と高さに収める
+embroidery	The design is {width} × {height}: as large as fits.	デザインは {width} × {height} です。収まる最大のサイズです。
+embroidery	Type the width or the height: the other follows the picture.	幅か高さを入力してください。もう一方は画像の比率に従います。
+embroidery	Left	左
+embroidery	Top	上
+embroidery	Right	右
+embroidery	Bottom	下
+embroidery	Crop	切り抜き
+embroidery	Crop to the Art	アートに合わせて切り抜く
+embroidery	Whole Image	画像全体
+embroidery	Every color is sewn	すべての色を縫います
+embroidery	Found: the transparency round the art	検出: アートの周りの透明部分
+embroidery	Found in the corners	四隅で検出
+embroidery	Chosen from the picture's colors	画像の色から選択
+embroidery	Not found: the corners disagree	検出できません: 四隅の色が異なります
+embroidery	Leave the background out	背景を除く
+embroidery	Or one of the picture's colors:	または画像の色から 1 つ:
+embroidery	Color {color}	色 {color}
+embroidery	every color sewn	すべての色を縫う
+embroidery	background left out	背景を除く
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	計算中…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	ステップ {number}/{count}: {name}。{summary}。{time}
+embroidery	Smoothness: {value}	滑らかさ: {value}
+embroidery	Corners: {value}	角: {value}
+embroidery	Colors overlap by {value} mm	色の重なり {value} mm
+embroidery	The stitches follow the document's embroidery settings.	ステッチはドキュメントの刺繍設定に従います。
+@plural	{count} thread + background|{count} threads + background	{count} 本の糸 + 背景
+@plural	{count} area|{count} areas	{count} 個の領域
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	結合するには 2 色以上を選択してください。
+embroidery	Select one or more colors first.	先に 1 色以上を選択してください。
+embroidery	Select one color to choose its thread.	糸を選ぶには 1 色だけ選択してください。
+embroidery	{share} of the frame	フレームの {share}
+embroidery	merged	結合済み
+embroidery	unlike the image's color	画像の色と異なる
+embroidery	no closer thread in {palette}	{palette} にこれより近い糸はありません
+embroidery	{color} in {thread}	{color}：{thread}
+embroidery	Background · {share} of the frame · not sewn	背景 · フレームの {share} · 縫わない
+embroidery	Back to Auto: {thread}	自動に戻す: {thread}
+embroidery	Back to Auto	自動に戻す
+embroidery	Merge	結合
+embroidery	Sew these colors as one.	これらの色を 1 色として縫います。
+embroidery	Sew	縫う
+embroidery	Sew these colors again, as Auto chooses.	これらの色を、自動の選択どおりに再び縫います。
+embroidery	Don't Sew	縫わない
+embroidery	Leave these colors out: their areas aren't sewn.	これらの色を除きます。その領域は縫われません。
+embroidery	Choose Thread…	糸を選択…
+embroidery	Choose the thread this color is sewn in.	この色を縫う糸を選びます。
+embroidery	Name or number	名前または番号
+embroidery	{value} · nearest	{value} · 最も近い
+embroidery	Logo	ロゴ
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	フラットなアート: 画像そのものの色だけを使い、まれでもはっきり違う色は残します。最大で色の数まで。
+embroidery	Grays	グレー
+embroidery	Shades of gray, as many as the number of colors.	グレーの濃淡を色の数だけ使います。
+embroidery	The colors that best represent the picture, at most the number of colors.	画像を最もよく表す色を、最大で色の数まで。
+embroidery	Mode	モード
+embroidery	{value} is out of range: {low} to {high}.	{value} は範囲外です: {low}～{high}。
+embroidery	Number of colors	色の数
+embroidery	Match to threads	糸に合わせる
+embroidery	Create sets the document's thread palette to {palette}.	作成すると、ドキュメントの糸パレットが {palette} になります。
+embroidery	Smallest area	最小の領域
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	これより小さい点 (JPEG のノイズなど) は、周りの色に加わります。
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 色が小さすぎて、ほかの色に加わりました
+@plural	{count} speck joined|{count} specks joined	{count} 個の点を結合
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	縫うものがありません。すべての色が除かれています。
+embroidery	Nothing to create: every color is left out.	作成するものがありません。すべての色が除かれています。
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} の領域はどれも {value} mm² より小さかったため、隣の色に加わりました。
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color} に選ばれた糸 {thread} はグレーではありません。選ばれたとおりに縫います。
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	このサイズでは画像は 1 ミリあたり {value} ピクセルで、{least} 未満です。より大きな画像のほうがうまくデジタイズできます。
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	画像は {width} × {height} ピクセルで読み込まれました。元の {fullWidth} × {fullHeight} より小さいサイズです。
+embroidery	The image's corners don't agree on a background: every color is sewn.	画像の四隅で背景の色が一致しません。すべての色を縫います。
+embroidery	No color traced is the background's: every area is sewn.	トレースした色に背景の色はありません。すべての領域を縫います。
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	画像はフラットなアートに見えません (写真かグラデーション?)。グラデーションは単色の帯として縫います。
+embroidery	Nothing in the image was traced: it is empty or transparent.	画像から何もトレースされませんでした。空か透明です。
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	画像のオブジェクトだけを、ドキュメントの生地・糸・ミシンで縫った場合です。
+embroidery	Updated in {value} ms after the last change ({steps})	最後の変更から {value} ms で更新 ({steps})
+embroidery	Notes	メモ
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	{objects}を作成しました ({threads})。画像は非表示のテンプレートレイヤー「{layer}」にあります。取り消しで削除できます。
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm² より小さい点 {count} 個が周りの色に加わりました
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm² より小さい点 {count} 個は加わる先がなく、除かれました
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	幅 {value} mm 以下の帯 {count} 本が、色の最も近い隣に加わりました
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} の領域 {count} か所には縫い進める中心線がないため、形のまま縫います
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} か所の領域を隣と結合できなかったため、トレースしたまま縫います
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	デザイン内の背景色
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	背景以外の {count} 色と、デザインに囲まれた部分で縫う背景色。
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	縫うものがありません。すべての領域が背景です。背景も縫うか、切り抜く量を減らしてください。
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	作成するものがありません。すべての領域が背景です。背景も縫うか、切り抜く量を減らしてください。

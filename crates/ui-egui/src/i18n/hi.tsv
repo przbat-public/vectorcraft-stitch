@@ -8755,3 +8755,144 @@ embroidery	Record #{value} is left out by the filter chosen.	रिकॉर्�
 	Ignore All	सभी को अनदेखा करें
 	Add to Dictionary	शब्दकोश में जोड़ें
 	No Suggestions	कोई सुझाव नहीं
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	इमेज डिजिटाइज़ करें…
+embroidery	Digitize Image…	इमेज डिजिटाइज़ करें…
+embroidery	Digitize Image	इमेज डिजिटाइज़ेशन
+embroidery	Digitize Image: live preview	इमेज डिजिटाइज़ेशन: लाइव प्रीव्यू
+embroidery	Select one image to digitize it.	डिजिटाइज़ करने के लिए एक इमेज चुनें।
+embroidery	The preview isn't ready yet.	प्रीव्यू अभी तैयार नहीं है।
+embroidery	Cancel	रद्द करें
+embroidery	Digitizing…	डिजिटाइज़ हो रहा है…
+embroidery	Create Embroidery Objects	कढ़ाई ऑब्जेक्ट बनाएँ
+embroidery	Start Over	फिर से शुरू करें
+embroidery	Create waits for the preview to be ready.	बनाना प्रीव्यू तैयार होने की प्रतीक्षा करता है।
+embroidery	Can't digitize it: {reason}	डिजिटाइज़ नहीं हो सकता: {reason}
+embroidery	Shapes	शेप्स
+embroidery	Recomputing…	फिर से गणना हो रही है…
+embroidery	Recomputing… {percent}	फिर से गणना हो रही है… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · कढ़ाई {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	मूल
+embroidery	Compare	तुलना
+embroidery	top left	ऊपर बाएँ
+embroidery	top	ऊपर
+embroidery	top right	ऊपर दाएँ
+embroidery	left	बाएँ
+embroidery	middle	बीच में
+embroidery	right	दाएँ
+embroidery	bottom left	नीचे बाएँ
+embroidery	bottom	नीचे
+embroidery	bottom right	नीचे दाएँ
+embroidery	Background	पृष्ठभूमि
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	कढ़ाई नहीं होगी
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · कढ़ाई नहीं होगी
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	तुलना: मूल बाईं ओर
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	प्रीव्यू नियोजित स्टिच दिखाता है। उत्पादन से पहले एक परीक्षण नमूना कढ़ाई करें।
+embroidery	Fit	फ़िट
+embroidery	Zoom	ज़ूम
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	आकार {low} से अधिक होना चाहिए।
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} बहुत बड़ा है: एक भुजा अधिकतम {high} हो सकती है।
+embroidery	A margin is 0 pixels or more.	हाशिया 0 पिक्सेल या अधिक होता है।
+embroidery	The margins leave no picture: crop less.	हाशिये चित्र में कुछ नहीं छोड़ते: कम क्रॉप करें।
+embroidery	Width	चौड़ाई
+embroidery	Height	ऊँचाई
+embroidery	Fit within the width and height	चौड़ाई और ऊँचाई के भीतर समाएँ
+embroidery	The design is {width} × {height}: as large as fits.	डिज़ाइन {width} × {height} है: जितना बड़ा समा सके।
+embroidery	Type the width or the height: the other follows the picture.	चौड़ाई या ऊँचाई लिखें: दूसरी चित्र के अनुपात से चलती है।
+embroidery	Left	बाएँ
+embroidery	Top	ऊपर
+embroidery	Right	दाएँ
+embroidery	Bottom	नीचे
+embroidery	Crop	क्रॉप
+embroidery	Crop to the Art	आर्ट तक क्रॉप करें
+embroidery	Whole Image	पूरी इमेज
+embroidery	Every color is sewn	हर रंग सिला जाता है
+embroidery	Found: the transparency round the art	मिला: आर्ट के चारों ओर की पारदर्शिता
+embroidery	Found in the corners	कोनों में मिला
+embroidery	Chosen from the picture's colors	चित्र के रंगों में से चुना गया
+embroidery	Not found: the corners disagree	नहीं मिला: कोने अलग-अलग हैं
+embroidery	Leave the background out	पृष्ठभूमि छोड़ दें
+embroidery	Or one of the picture's colors:	या चित्र के रंगों में से एक:
+embroidery	Color {color}	रंग {color}
+embroidery	every color sewn	हर रंग सिला गया
+embroidery	background left out	पृष्ठभूमि छोड़ी गई
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	गणना हो रही है…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	चरण {count} में से {number}: {name}। {summary}। {time}
+embroidery	Smoothness: {value}	चिकनाई: {value}
+embroidery	Corners: {value}	कोने: {value}
+embroidery	Colors overlap by {value} mm	रंग {value} mm तक एक-दूसरे पर चढ़ते हैं
+embroidery	The stitches follow the document's embroidery settings.	स्टिच दस्तावेज़ की कढ़ाई सेटिंग्स के अनुसार हैं।
+@plural	{count} thread + background|{count} threads + background	{count} धागा + पृष्ठभूमि|{count} धागे + पृष्ठभूमि
+@plural	{count} area|{count} areas	{count} क्षेत्र|{count} क्षेत्र
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	मर्ज करने के लिए दो या अधिक रंग चुनें।
+embroidery	Select one or more colors first.	पहले एक या अधिक रंग चुनें।
+embroidery	Select one color to choose its thread.	उसका धागा चुनने के लिए एक रंग चुनें।
+embroidery	{share} of the frame	फ़्रेम का {share}
+embroidery	merged	मर्ज किया गया
+embroidery	unlike the image's color	चित्र के रंग से अलग
+embroidery	no closer thread in {palette}	{palette} में इससे निकट कोई धागा नहीं
+embroidery	{color} in {thread}	{color}, {thread} में
+embroidery	Background · {share} of the frame · not sewn	पृष्ठभूमि · फ़्रेम का {share} · नहीं सिला जाता
+embroidery	Back to Auto: {thread}	स्वचालित पर वापस: {thread}
+embroidery	Back to Auto	स्वचालित पर वापस
+embroidery	Merge	मर्ज करें
+embroidery	Sew these colors as one.	ये रंग एक की तरह सिले जाते हैं।
+embroidery	Sew	सिलें
+embroidery	Sew these colors again, as Auto chooses.	ये रंग फिर से सिले जाते हैं, जैसा स्वचालित चुने।
+embroidery	Don't Sew	न सिलें
+embroidery	Leave these colors out: their areas aren't sewn.	इन रंगों को छोड़ दें: इनके क्षेत्र नहीं सिले जाते।
+embroidery	Choose Thread…	धागा चुनें…
+embroidery	Choose the thread this color is sewn in.	वह धागा चुनें जिससे यह रंग सिला जाता है।
+embroidery	Name or number	नाम या संख्या
+embroidery	{value} · nearest	{value} · सबसे निकट
+embroidery	Logo	लोगो
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	सपाट आर्ट: ठीक उसके अपने रंग, दुर्लभ पर अलग रंग भी, अधिकतम रंगों की संख्या तक।
+embroidery	Grays	धूसर
+embroidery	Shades of gray, as many as the number of colors.	धूसर के शेड, रंगों की संख्या जितने।
+embroidery	The colors that best represent the picture, at most the number of colors.	वे रंग जो चित्र को सबसे अच्छी तरह दिखाते हैं, अधिकतम रंगों की संख्या तक।
+embroidery	Mode	मोड
+embroidery	{value} is out of range: {low} to {high}.	{value} सीमा से बाहर है: {low} से {high}।
+embroidery	Number of colors	रंगों की संख्या
+embroidery	Match to threads	धागों से मिलाएँ
+embroidery	Create sets the document's thread palette to {palette}.	बनाने पर दस्तावेज़ का धागा पैलेट {palette} हो जाता है।
+embroidery	Smallest area	सबसे छोटा क्षेत्र
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	छोटे धब्बे, जैसे JPEG शोर, अपने आसपास के रंग में मिल जाते हैं।
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} रंग बहुत छोटा था और दूसरों में मिल गया|{count} रंग बहुत छोटे थे और दूसरों में मिल गए
+@plural	{count} speck joined|{count} specks joined	{count} धब्बा मिलाया गया|{count} धब्बे मिलाए गए
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	सिलने को कुछ नहीं: हर रंग छोड़ा गया है।
+embroidery	Nothing to create: every color is left out.	बनाने को कुछ नहीं: हर रंग छोड़ा गया है।
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} का हर क्षेत्र {value} mm² से छोटा था: यह पड़ोसियों में मिल गया।
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color} के लिए चुना गया धागा, {thread}, धूसर नहीं है: यह चुने अनुसार सिला जाता है।
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	इस आकार पर चित्र में प्रति मिलीमीटर {value} पिक्सेल हैं, {least} से कम: इसकी बड़ी प्रति बेहतर डिजिटाइज़ होती है।
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	चित्र {width} × {height} पिक्सेल पर पढ़ा गया, अपने {fullWidth} × {fullHeight} से छोटा।
+embroidery	The image's corners don't agree on a background: every color is sewn.	चित्र के कोने किसी पृष्ठभूमि पर सहमत नहीं: हर रंग सिला जाता है।
+embroidery	No color traced is the background's: every area is sewn.	कोई भी ट्रेस किया गया रंग पृष्ठभूमि का नहीं: हर क्षेत्र सिला जाता है।
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	चित्र सपाट आर्ट जैसा नहीं दिखता (फ़ोटो या ग्रेडिएंट?): इसके ग्रेडिएंट सपाट रंग की पट्टियों के रूप में सिले जाते हैं।
+embroidery	Nothing in the image was traced: it is empty or transparent.	चित्र में कुछ भी ट्रेस नहीं हुआ: यह खाली या पारदर्शी है।
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	केवल चित्र के ऑब्जेक्ट, दस्तावेज़ के कपड़े, धागे और मशीन के साथ।
+embroidery	Updated in {value} ms after the last change ({steps})	अंतिम बदलाव के बाद {value} ms में अपडेट हुआ ({steps})
+embroidery	Notes	नोट
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	बनाए गए: {objects} ({threads})। चित्र छिपी हुई टेम्पलेट परत “{layer}” पर है। पूर्ववत करें इन्हें हटाता है।
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm² से छोटा {count} धब्बा अपने आसपास के रंग में मिल गया|{value} mm² से छोटे {count} धब्बे अपने आसपास के रंगों में मिल गए
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm² से छोटे {count} धब्बे को मिलने को कुछ नहीं था और उसे छोड़ दिया गया|{value} mm² से छोटे {count} धब्बों को मिलने को कुछ नहीं था और उन्हें छोड़ दिया गया
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	अधिकतम {value} mm चौड़ी {count} पट्टी अपने रंग के सबसे निकट पड़ोसी में मिल गई|अधिकतम {value} mm चौड़ी {count} पट्टियाँ अपने रंगों के सबसे निकट पड़ोसियों में मिल गईं
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} के {count} क्षेत्र में सिलने के लिए कोई मध्य रेखा नहीं: यह अपने आकार की तरह सिला जाता है|{color} के {count} क्षेत्रों में सिलने के लिए कोई मध्य रेखा नहीं: ये अपने आकारों की तरह सिले जाते हैं
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} क्षेत्र अपने पड़ोसियों से नहीं जुड़ सका: यह ट्रेस किए अनुसार सिला जाता है|{count} क्षेत्र अपने पड़ोसियों से नहीं जुड़ सके: ये ट्रेस किए अनुसार सिले जाते हैं
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	डिज़ाइन के भीतर पृष्ठभूमि का रंग
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	पृष्ठभूमि के अलावा {count} रंग, और पृष्ठभूमि का रंग, जो वहाँ सिला जाता है जहाँ डिज़ाइन उसे घेरता है।|पृष्ठभूमि के अलावा {count} रंग, और पृष्ठभूमि का रंग, जो वहाँ सिला जाता है जहाँ डिज़ाइन उसे घेरता है।
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	सिलने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	बनाने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।

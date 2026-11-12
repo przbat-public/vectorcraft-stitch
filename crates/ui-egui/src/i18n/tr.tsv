@@ -7329,3 +7329,144 @@ breakText	Glyphs	Glifler
 	Ignore All	Tümünü Yoksay
 	Add to Dictionary	Sözlüğe Ekle
 	No Suggestions	Öneri Yok
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Görüntüyü Dijitalleştir…
+embroidery	Digitize Image…	Görüntüyü Dijitalleştir…
+embroidery	Digitize Image	Görüntü Dijitalleştirme
+embroidery	Digitize Image: live preview	Görüntü Dijitalleştirme: canlı önizleme
+embroidery	Select one image to digitize it.	Dijitalleştirmek için bir görüntü seçin.
+embroidery	The preview isn't ready yet.	Önizleme henüz hazır değil.
+embroidery	Cancel	İptal
+embroidery	Digitizing…	Dijitalleştiriliyor…
+embroidery	Create Embroidery Objects	Nakış Nesneleri Oluştur
+embroidery	Start Over	Baştan Başla
+embroidery	Create waits for the preview to be ready.	Oluşturma, önizleme hazır olana kadar bekler.
+embroidery	Can't digitize it: {reason}	Dijitalleştirilemiyor: {reason}
+embroidery	Shapes	Şekiller
+embroidery	Recomputing…	Yeniden hesaplanıyor…
+embroidery	Recomputing… {percent}	Yeniden hesaplanıyor… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · nakış {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Özgün
+embroidery	Compare	Karşılaştır
+embroidery	top left	sol üst
+embroidery	top	üst
+embroidery	top right	sağ üst
+embroidery	left	sol
+embroidery	middle	orta
+embroidery	right	sağ
+embroidery	bottom left	sol alt
+embroidery	bottom	alt
+embroidery	bottom right	sağ alt
+embroidery	Background	Arka plan
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Dikilmez
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · dikilmez
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Karşılaştırma: solda özgün görüntü
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Önizleme planlanan dikişleri gösterir. Üretimden önce bir deneme parçası dikin.
+embroidery	Fit	Sığdır
+embroidery	Zoom	Yakınlaştırma
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Boyut {low} değerinden büyük olmalıdır.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} çok büyük: bir kenar en fazla {high} olabilir.
+embroidery	A margin is 0 pixels or more.	Kenar boşluğu 0 piksel veya daha fazladır.
+embroidery	The margins leave no picture: crop less.	Kenar boşlukları resimden bir şey bırakmıyor: daha az kırpın.
+embroidery	Width	Genişlik
+embroidery	Height	Yükseklik
+embroidery	Fit within the width and height	Genişlik ve yüksekliğe sığdır
+embroidery	The design is {width} × {height}: as large as fits.	Tasarım {width} × {height}: sığabildiği kadar büyük.
+embroidery	Type the width or the height: the other follows the picture.	Genişliği veya yüksekliği yazın: diğeri resme uyar.
+embroidery	Left	Sol
+embroidery	Top	Üst
+embroidery	Right	Sağ
+embroidery	Bottom	Alt
+embroidery	Crop	Kırpma
+embroidery	Crop to the Art	Çizime Göre Kırp
+embroidery	Whole Image	Resmin Tamamı
+embroidery	Every color is sewn	Her renk dikilir
+embroidery	Found: the transparency round the art	Bulundu: çizimin çevresindeki saydamlık
+embroidery	Found in the corners	Köşelerde bulundu
+embroidery	Chosen from the picture's colors	Resmin renklerinden seçildi
+embroidery	Not found: the corners disagree	Bulunamadı: köşeler farklı
+embroidery	Leave the background out	Arka planı dışarıda bırak
+embroidery	Or one of the picture's colors:	Ya da resmin renklerinden biri:
+embroidery	Color {color}	Renk {color}
+embroidery	every color sewn	her renk dikilir
+embroidery	background left out	arka plan dışarıda
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Hesaplanıyor…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Adım {number}/{count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Pürüzsüzlük: {value}
+embroidery	Corners: {value}	Köşeler: {value}
+embroidery	Colors overlap by {value} mm	Renkler {value} mm örtüşür
+embroidery	The stitches follow the document's embroidery settings.	Dikişler belgenin nakış ayarlarını izler.
+@plural	{count} thread + background|{count} threads + background	{count} iplik + arka plan
+@plural	{count} area|{count} areas	{count} alan
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Birleştirmek için iki veya daha fazla renk seçin.
+embroidery	Select one or more colors first.	Önce bir veya daha fazla renk seçin.
+embroidery	Select one color to choose its thread.	İpliğini seçmek için tek bir renk seçin.
+embroidery	{share} of the frame	çerçevenin {share} kadarı
+embroidery	merged	birleştirildi
+embroidery	unlike the image's color	resmin renginden farklı
+embroidery	no closer thread in {palette}	{palette} içinde daha yakın iplik yok
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	Arka plan · çerçevenin {share} kadarı · dikilmez
+embroidery	Back to Auto: {thread}	Otomatiğe dön: {thread}
+embroidery	Back to Auto	Otomatiğe dön
+embroidery	Merge	Birleştir
+embroidery	Sew these colors as one.	Bu renkler tek renk olarak dikilir.
+embroidery	Sew	Dik
+embroidery	Sew these colors again, as Auto chooses.	Bu renkler, Otomatik'in seçtiği gibi yeniden dikilir.
+embroidery	Don't Sew	Dikme
+embroidery	Leave these colors out: their areas aren't sewn.	Bu renkleri dışarıda bırakın: alanları dikilmez.
+embroidery	Choose Thread…	İplik Seç…
+embroidery	Choose the thread this color is sewn in.	Bu rengin dikileceği ipliği seçin.
+embroidery	Name or number	Ad veya numara
+embroidery	{value} · nearest	{value} · en yakın
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Düz çizim: tam olarak kendi renkleri, seyrek ama belirgin olanlar korunur, en fazla renk sayısı kadar.
+embroidery	Grays	Griler
+embroidery	Shades of gray, as many as the number of colors.	Gri tonları, renk sayısı kadar.
+embroidery	The colors that best represent the picture, at most the number of colors.	Resmi en iyi yansıtan renkler, en fazla renk sayısı kadar.
+embroidery	Mode	Mod
+embroidery	{value} is out of range: {low} to {high}.	{value} aralık dışında: {low} ile {high} arası.
+embroidery	Number of colors	Renk sayısı
+embroidery	Match to threads	İpliklerle eşleştir
+embroidery	Create sets the document's thread palette to {palette}.	Oluştur, belgenin iplik paletini {palette} olarak ayarlar.
+embroidery	Smallest area	En küçük alan
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	JPEG gürültüsü gibi daha küçük benekler, çevrelerindeki renge katılır.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} renk çok küçüktü ve diğerlerine katıldı
+@plural	{count} speck joined|{count} specks joined	{count} benek katıldı
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Dikilecek bir şey yok: her renk dışarıda bırakıldı.
+embroidery	Nothing to create: every color is left out.	Oluşturulacak bir şey yok: her renk dışarıda bırakıldı.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} renginin her alanı {value} mm² değerinden küçüktü: komşularına katıldı.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color} için seçilen iplik, {thread}, gri değil: seçildiği gibi dikilir.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Bu boyutta resimde milimetre başına {value} piksel var, {least} değerinden az: daha büyük bir kopyası daha iyi dijitalleşir.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Resim {width} × {height} piksel olarak okundu, kendi {fullWidth} × {fullHeight} boyutundan küçük.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Resmin köşeleri bir arka planda uyuşmuyor: her renk dikilir.
+embroidery	No color traced is the background's: every area is sewn.	İzlenen renklerin hiçbiri arka planın değil: her alan dikilir.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Resim düz çizime benzemiyor (fotoğraf mı, geçişler mi?): geçişleri düz renk şeritleri olarak dikilir.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Resimde hiçbir şey izlenmedi: boş ya da saydam.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Yalnızca resmin nesneleri, belgenin kumaşı, ipliği ve makinesiyle.
+embroidery	Updated in {value} ms after the last change ({steps})	Son değişiklikten {value} ms sonra güncellendi ({steps})
+embroidery	Notes	Notlar
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	{objects} oluşturuldu ({threads}). Resim gizli şablon katmanı “{layer}” üzerinde. Geri Al bunları kaldırır.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm² değerinden küçük {count} benek çevresindeki renge katıldı
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm² değerinden küçük {count} beneğin katılacağı bir şey yoktu ve dışarıda bırakıldı
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	En fazla {value} mm genişliğindeki {count} şerit, rengine en yakın komşuya katıldı
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} renginin {count} alanında boyunca dikilecek orta çizgi yok: şekli olarak dikilir
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} alan komşularına birleştirilemedi: izlendiği gibi dikilir
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	tasarımın içindeki arka plan rengi
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	Arka plan dışında {count} renk ve tasarımın çevrelediği yerlerde dikilen arka plan rengi.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Dikilecek bir şey yok: her alan arka plan. Arka planı da dikin ya da daha az kırpın.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Oluşturulacak bir şey yok: her alan arka plan. Arka planı da dikin ya da daha az kırpın.

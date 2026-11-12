@@ -7122,3 +7122,144 @@ breakText	Glyphs	Глифи
 # Align to Pixel Grid
 	Align to Pixel Grid	Подравняване към пикселната мрежа
 @msg	side is left or right, not `{s}`	side е left или right, а не `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Дигитализиране на изображение…
+embroidery	Digitize Image…	Дигитализиране на изображение…
+embroidery	Digitize Image	Дигитализиране на изображение
+embroidery	Digitize Image: live preview	Дигитализиране на изображение: преглед на живо
+embroidery	Select one image to digitize it.	Изберете едно изображение, за да го дигитализирате.
+embroidery	The preview isn't ready yet.	Прегледът още не е готов.
+embroidery	Cancel	Отказ
+embroidery	Digitizing…	Дигитализиране…
+embroidery	Create Embroidery Objects	Създай обекти за бродерия
+embroidery	Start Over	Започни отначало
+embroidery	Create waits for the preview to be ready.	Създаването изчаква прегледа да е готов.
+embroidery	Can't digitize it: {reason}	Не може да се дигитализира: {reason}
+embroidery	Shapes	Фигури
+embroidery	Recomputing…	Преизчисляване…
+embroidery	Recomputing… {percent}	Преизчисляване… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · бродерия {w} × {h} мм
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Оригинал
+embroidery	Compare	Сравнение
+embroidery	top left	горе вляво
+embroidery	top	горе
+embroidery	top right	горе вдясно
+embroidery	left	вляво
+embroidery	middle	в средата
+embroidery	right	вдясно
+embroidery	bottom left	долу вляво
+embroidery	bottom	долу
+embroidery	bottom right	долу вдясно
+embroidery	Background	Фон
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Не се бродира
+embroidery	{value} mm²	{value} мм²
+embroidery	{name} · not sewn	{name} · не се бродира
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Сравнение: оригиналът вляво
+embroidery	{value} mm	{value} мм
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Прегледът показва планираните бодове. Преди производство избродирайте проба.
+embroidery	Fit	Побиране
+embroidery	Zoom	Мащаб
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Размерът трябва да е повече от {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} е твърде голямо: страна е най-много {high}.
+embroidery	A margin is 0 pixels or more.	Полето е 0 пиксела или повече.
+embroidery	The margins leave no picture: crop less.	Полетата не оставят нищо от изображението: изрежете по-малко.
+embroidery	Width	Ширина
+embroidery	Height	Височина
+embroidery	Fit within the width and height	Вписване в ширината и височината
+embroidery	The design is {width} × {height}: as large as fits.	Дизайнът е {width} × {height}: колкото е възможно по-голям.
+embroidery	Type the width or the height: the other follows the picture.	Въведете ширината или височината: другото следва изображението.
+embroidery	Left	Ляво
+embroidery	Top	Горе
+embroidery	Right	Дясно
+embroidery	Bottom	Долу
+embroidery	Crop	Изрязване
+embroidery	Crop to the Art	Изрязване до графиката
+embroidery	Whole Image	Цялото изображение
+embroidery	Every color is sewn	Всеки цвят се шие
+embroidery	Found: the transparency round the art	Намерено: прозрачността около графиката
+embroidery	Found in the corners	Намерен в ъглите
+embroidery	Chosen from the picture's colors	Избран от цветовете на изображението
+embroidery	Not found: the corners disagree	Не е намерен: ъглите се различават
+embroidery	Leave the background out	Пропускане на фона
+embroidery	Or one of the picture's colors:	Или един от цветовете на изображението:
+embroidery	Color {color}	Цвят {color}
+embroidery	every color sewn	всеки цвят се шие
+embroidery	background left out	без фона
+embroidery	{width} × {height} mm · {background}	{width} × {height} мм · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Изчисляване…
+embroidery	{value} ms	{value} мс
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Стъпка {number} от {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Гладкост: {value}
+embroidery	Corners: {value}	Ъгли: {value}
+embroidery	Colors overlap by {value} mm	Цветовете се застъпват с {value} мм
+embroidery	The stitches follow the document's embroidery settings.	Бодовете следват настройките за бродерия на документа.
+@plural	{count} thread + background|{count} threads + background	{count} нишка + фон|{count} нишки + фон
+@plural	{count} area|{count} areas	{count} област|{count} области
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Изберете два или повече цвята, за да ги слеете.
+embroidery	Select one or more colors first.	Първо изберете един или повече цвята.
+embroidery	Select one color to choose its thread.	Изберете един цвят, за да изберете нишката му.
+embroidery	{share} of the frame	{share} от кадъра
+embroidery	merged	слят
+embroidery	unlike the image's color	различна от цвета на изображението
+embroidery	no closer thread in {palette}	няма по-близка нишка в {palette}
+embroidery	{color} in {thread}	{color} в {thread}
+embroidery	Background · {share} of the frame · not sewn	Фон · {share} от кадъра · не се шие
+embroidery	Back to Auto: {thread}	Обратно към автоматично: {thread}
+embroidery	Back to Auto	Обратно към автоматично
+embroidery	Merge	Сливане
+embroidery	Sew these colors as one.	Тези цветове се шият като един.
+embroidery	Sew	Ший
+embroidery	Sew these colors again, as Auto chooses.	Тези цветове отново се шият, както избира автоматиката.
+embroidery	Don't Sew	Не ший
+embroidery	Leave these colors out: their areas aren't sewn.	Пропуснете тези цветове: областите им не се шият.
+embroidery	Choose Thread…	Избор на нишка…
+embroidery	Choose the thread this color is sewn in.	Изберете нишката, с която се шие този цвят.
+embroidery	Name or number	Име или номер
+embroidery	{value} · nearest	{value} · най-близка
+embroidery	Logo	Лого
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Плоска графика: точно собствените ѝ цветове, редките, но отличими, запазени, най-много броя цветове.
+embroidery	Grays	Сиви
+embroidery	Shades of gray, as many as the number of colors.	Нюанси на сивото, колкото е броят цветове.
+embroidery	The colors that best represent the picture, at most the number of colors.	Цветовете, които най-добре представят изображението, най-много броя цветове.
+embroidery	Mode	Режим
+embroidery	{value} is out of range: {low} to {high}.	{value} е извън обхвата: от {low} до {high}.
+embroidery	Number of colors	Брой цветове
+embroidery	Match to threads	Съпоставяне с нишки
+embroidery	Create sets the document's thread palette to {palette}.	Създаването задава палитрата с нишки на документа на {palette}.
+embroidery	Smallest area	Най-малка област
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	По-малките петънца, като шума на JPEG, се сливат с цвета около тях.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} цвят беше твърде малък и се сля с други|{count} цвята бяха твърде малки и се сляха с други
+@plural	{count} speck joined|{count} specks joined	{count} петънце се сля|{count} петънца се сляха
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Няма какво да се шие: всички цветове са пропуснати.
+embroidery	Nothing to create: every color is left out.	Няма какво да се създаде: всички цветове са пропуснати.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Всяка област от {color} беше по-малка от {value} мм²: цветът се сля със съседите си.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Нишката, избрана за {color}, {thread}, не е сива: шие се както е избрана.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	При този размер изображението има {value} пиксела на милиметър, по-малко от {least}: по-голямо копие се дигитализира по-добре.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Изображението беше прочетено с {width} × {height} пиксела, по-малко от своите {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Ъглите на изображението не съвпадат за фона: всеки цвят се шие.
+embroidery	No color traced is the background's: every area is sewn.	Нито един проследен цвят не е цветът на фона: всяка област се шие.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Изображението не прилича на плоска графика (снимка или преливки?): преливките му се шият като ивици плътен цвят.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Нищо в изображението не беше проследено: то е празно или прозрачно.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Само обектите от изображението, с тъканта, нишката и машината на документа.
+embroidery	Updated in {value} ms after the last change ({steps})	Обновено за {value} мс след последната промяна ({steps})
+embroidery	Notes	Бележки
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Създадени: {objects} ({threads}). Изображението е на скрития шаблонен слой „{layer}“. „Отмени“ ги премахва.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} петънце, по-малко от {value} мм², се сля с цвета около него|{count} петънца, по-малки от {value} мм², се сляха с цветовете около тях
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} петънце, по-малко от {value} мм², нямаше с какво да се слее и беше пропуснато|{count} петънца, по-малки от {value} мм², нямаха с какво да се слеят и бяха пропуснати
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} ивица, широка най-много {value} мм, се сля със съседа, най-близък до цвета ѝ|{count} ивици, широки най-много {value} мм, се сляха със съседите, най-близки до цветовете им
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} област от {color} няма средна линия, по която да се шие: шие се като формата си|{count} области от {color} нямат средна линия, по която да се шият: шият се като формите си
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} област не можа да се съедини със съседите си: шие се както е проследена|{count} области не можаха да се съединят със съседите си: шият се както са проследени
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	цветът на фона вътре в дизайна
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} цвят освен фона и цветът на фона, който се шие там, където дизайнът го обгражда.|{count} цвята освен фона и цветът на фона, който се шие там, където дизайнът го обгражда.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Няма какво да се шие: всяка област е фон. Шийте фона или изрежете по-малко.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Няма какво да се създаде: всяка област е фон. Шийте фона или изрежете по-малко.

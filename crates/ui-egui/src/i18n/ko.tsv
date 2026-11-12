@@ -6957,3 +6957,144 @@ breakText	Glyphs	글리프
 	Ignore All	모두 무시
 	Add to Dictionary	사전에 추가
 	No Suggestions	제안 없음
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	이미지 디지타이징…
+embroidery	Digitize Image…	이미지 디지타이징…
+embroidery	Digitize Image	이미지 디지타이징
+embroidery	Digitize Image: live preview	이미지 디지타이징: 실시간 미리 보기
+embroidery	Select one image to digitize it.	디지타이징할 이미지를 하나 선택하세요.
+embroidery	The preview isn't ready yet.	미리 보기가 아직 준비되지 않았습니다.
+embroidery	Cancel	취소
+embroidery	Digitizing…	디지타이징 중…
+embroidery	Create Embroidery Objects	자수 개체 만들기
+embroidery	Start Over	처음부터 다시
+embroidery	Create waits for the preview to be ready.	만들기는 미리 보기가 준비될 때까지 기다립니다.
+embroidery	Can't digitize it: {reason}	디지타이징할 수 없습니다: {reason}
+embroidery	Shapes	모양
+embroidery	Recomputing…	다시 계산 중…
+embroidery	Recomputing… {percent}	다시 계산 중… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 자수 {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	원본
+embroidery	Compare	비교
+embroidery	top left	왼쪽 위
+embroidery	top	위
+embroidery	top right	오른쪽 위
+embroidery	left	왼쪽
+embroidery	middle	가운데
+embroidery	right	오른쪽
+embroidery	bottom left	왼쪽 아래
+embroidery	bottom	아래
+embroidery	bottom right	오른쪽 아래
+embroidery	Background	배경
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	수놓지 않음
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · 수놓지 않음
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	비교: 왼쪽이 원본
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	미리 보기는 계획된 스티치를 보여 줍니다. 생산 전에 시험 자수를 해 보세요.
+embroidery	Fit	맞춤
+embroidery	Zoom	확대/축소
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	크기는 {low}보다 커야 합니다.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height}은(는) 너무 큽니다. 한 변은 최대 {high}입니다.
+embroidery	A margin is 0 pixels or more.	여백은 0픽셀 이상입니다.
+embroidery	The margins leave no picture: crop less.	여백 때문에 그림이 남지 않습니다. 덜 자르세요.
+embroidery	Width	너비
+embroidery	Height	높이
+embroidery	Fit within the width and height	너비와 높이 안에 맞추기
+embroidery	The design is {width} × {height}: as large as fits.	디자인은 {width} × {height}입니다. 들어가는 만큼 크게 했습니다.
+embroidery	Type the width or the height: the other follows the picture.	너비나 높이를 입력하세요. 다른 쪽은 그림 비율을 따릅니다.
+embroidery	Left	왼쪽
+embroidery	Top	위쪽
+embroidery	Right	오른쪽
+embroidery	Bottom	아래쪽
+embroidery	Crop	자르기
+embroidery	Crop to the Art	그림에 맞게 자르기
+embroidery	Whole Image	전체 이미지
+embroidery	Every color is sewn	모든 색을 수놓습니다
+embroidery	Found: the transparency round the art	찾음: 그림 주위의 투명 영역
+embroidery	Found in the corners	모서리에서 찾음
+embroidery	Chosen from the picture's colors	그림의 색에서 선택함
+embroidery	Not found: the corners disagree	찾지 못함: 모서리 색이 서로 다릅니다
+embroidery	Leave the background out	배경 제외
+embroidery	Or one of the picture's colors:	또는 그림의 색 중 하나:
+embroidery	Color {color}	색 {color}
+embroidery	every color sewn	모든 색 수놓음
+embroidery	background left out	배경 제외
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	계산 중…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	{count}단계 중 {number}단계: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	매끄러움: {value}
+embroidery	Corners: {value}	모서리: {value}
+embroidery	Colors overlap by {value} mm	색이 {value} mm 겹칩니다
+embroidery	The stitches follow the document's embroidery settings.	스티치는 문서의 자수 설정을 따릅니다.
+@plural	{count} thread + background|{count} threads + background	실 {count}개 + 배경
+@plural	{count} area|{count} areas	영역 {count}개
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	병합하려면 두 가지 이상의 색을 선택하세요.
+embroidery	Select one or more colors first.	먼저 색을 하나 이상 선택하세요.
+embroidery	Select one color to choose its thread.	실을 고르려면 색을 하나만 선택하세요.
+embroidery	{share} of the frame	프레임의 {share}
+embroidery	merged	병합됨
+embroidery	unlike the image's color	그림의 색과 다름
+embroidery	no closer thread in {palette}	{palette}에 더 가까운 실이 없음
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	배경 · 프레임의 {share} · 수놓지 않음
+embroidery	Back to Auto: {thread}	자동으로 되돌리기: {thread}
+embroidery	Back to Auto	자동으로 되돌리기
+embroidery	Merge	병합
+embroidery	Sew these colors as one.	이 색들을 하나로 수놓습니다.
+embroidery	Sew	수놓기
+embroidery	Sew these colors again, as Auto chooses.	이 색들을 자동이 고르는 대로 다시 수놓습니다.
+embroidery	Don't Sew	수놓지 않기
+embroidery	Leave these colors out: their areas aren't sewn.	이 색들을 제외합니다. 해당 영역은 수놓지 않습니다.
+embroidery	Choose Thread…	실 선택…
+embroidery	Choose the thread this color is sewn in.	이 색을 수놓을 실을 고릅니다.
+embroidery	Name or number	이름 또는 번호
+embroidery	{value} · nearest	{value} · 가장 가까움
+embroidery	Logo	로고
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	단색 그림: 그림 고유의 색 그대로, 드물지만 뚜렷한 색도 남기며, 최대 색 수까지.
+embroidery	Grays	회색조
+embroidery	Shades of gray, as many as the number of colors.	회색 음영을 색 수만큼 사용합니다.
+embroidery	The colors that best represent the picture, at most the number of colors.	그림을 가장 잘 나타내는 색을 최대 색 수까지.
+embroidery	Mode	모드
+embroidery	{value} is out of range: {low} to {high}.	{value}은(는) 범위를 벗어났습니다: {low}~{high}.
+embroidery	Number of colors	색 수
+embroidery	Match to threads	실에 맞추기
+embroidery	Create sets the document's thread palette to {palette}.	만들기를 하면 문서의 실 팔레트가 {palette}(으)로 바뀝니다.
+embroidery	Smallest area	최소 영역
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	이보다 작은 점(JPEG 노이즈 등)은 주변 색에 합쳐집니다.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	너무 작은 색 {count}개가 다른 색에 합쳐졌습니다
+@plural	{count} speck joined|{count} specks joined	점 {count}개 합쳐짐
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	수놓을 것이 없습니다. 모든 색이 제외되었습니다.
+embroidery	Nothing to create: every color is left out.	만들 것이 없습니다. 모든 색이 제외되었습니다.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color}의 모든 영역이 {value} mm²보다 작아서 이웃 색에 합쳐졌습니다.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color}에 고른 실 {thread}은(는) 회색이 아닙니다. 고른 대로 수놓습니다.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	이 크기에서 그림은 밀리미터당 {value}픽셀로 {least}보다 적습니다. 더 큰 사본이 더 잘 디지타이징됩니다.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	그림을 원래 크기 {fullWidth} × {fullHeight}보다 작은 {width} × {height}픽셀로 읽었습니다.
+embroidery	The image's corners don't agree on a background: every color is sewn.	그림의 모서리들이 배경에 대해 일치하지 않습니다. 모든 색을 수놓습니다.
+embroidery	No color traced is the background's: every area is sewn.	트레이스한 색 중 배경 색이 없습니다. 모든 영역을 수놓습니다.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	그림이 단색 그림처럼 보이지 않습니다(사진이나 그라데이션?). 그라데이션은 단색 띠로 수놓습니다.
+embroidery	Nothing in the image was traced: it is empty or transparent.	그림에서 트레이스된 것이 없습니다. 비어 있거나 투명합니다.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	문서의 원단, 실, 기계로 수놓은 그림의 개체만입니다.
+embroidery	Updated in {value} ms after the last change ({steps})	마지막 변경 후 {value} ms 만에 업데이트됨 ({steps})
+embroidery	Notes	메모
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	{objects}를 만들었습니다({threads}). 그림은 숨겨진 템플릿 레이어 “{layer}”에 있습니다. 실행 취소로 제거할 수 있습니다.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm²보다 작은 점 {count}개가 주변 색에 합쳐졌습니다
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm²보다 작은 점 {count}개는 합칠 곳이 없어 제외되었습니다
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	폭 {value} mm 이하의 띠 {count}개가 색이 가장 가까운 이웃에 합쳐졌습니다
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color}의 영역 {count}개에는 따라 수놓을 중심선이 없어 모양대로 수놓습니다
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	영역 {count}개를 이웃과 합칠 수 없어 트레이스한 대로 수놓습니다
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	디자인 안의 배경색
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	배경 외의 색 {count}개와, 디자인이 둘러싼 곳에 수놓는 배경색.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	수놓을 것이 없습니다. 모든 영역이 배경입니다. 배경도 수놓거나 덜 자르세요.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	만들 것이 없습니다. 모든 영역이 배경입니다. 배경도 수놓거나 덜 자르세요.

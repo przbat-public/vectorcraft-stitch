@@ -7376,3 +7376,144 @@ breakText	Glyphs	Glyfy
 	Ignore All	Ignorovat vše
 	Add to Dictionary	Přidat do slovníku
 	No Suggestions	Žádné návrhy
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalizovat obrázek…
+embroidery	Digitize Image…	Digitalizovat obrázek…
+embroidery	Digitize Image	Digitalizace obrázku
+embroidery	Digitize Image: live preview	Digitalizace obrázku: živý náhled
+embroidery	Select one image to digitize it.	Vyberte jeden obrázek, který chcete digitalizovat.
+embroidery	The preview isn't ready yet.	Náhled ještě není připravený.
+embroidery	Cancel	Zrušit
+embroidery	Digitizing…	Probíhá digitalizace…
+embroidery	Create Embroidery Objects	Vytvořit objekty výšivky
+embroidery	Start Over	Začít znovu
+embroidery	Create waits for the preview to be ready.	Vytvoření počká, až bude náhled připravený.
+embroidery	Can't digitize it: {reason}	Nelze digitalizovat: {reason}
+embroidery	Shapes	Tvary
+embroidery	Recomputing…	Přepočítávání…
+embroidery	Recomputing… {percent}	Přepočítávání… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · výšivka {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Originál
+embroidery	Compare	Porovnat
+embroidery	top left	vlevo nahoře
+embroidery	top	nahoře
+embroidery	top right	vpravo nahoře
+embroidery	left	vlevo
+embroidery	middle	uprostřed
+embroidery	right	vpravo
+embroidery	bottom left	vlevo dole
+embroidery	bottom	dole
+embroidery	bottom right	vpravo dole
+embroidery	Background	Pozadí
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Nevyšívá se
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · nevyšívá se
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Porovnání: originál vlevo
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Náhled ukazuje plánované stehy. Před výrobou vyšijte zkušební kus.
+embroidery	Fit	Přizpůsobit
+embroidery	Zoom	Lupa
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Velikost musí být větší než {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} je příliš velké: strana má nejvýš {high}.
+embroidery	A margin is 0 pixels or more.	Okraj má 0 pixelů nebo víc.
+embroidery	The margins leave no picture: crop less.	Okraje z obrázku nic nenechají: ořízněte méně.
+embroidery	Width	Šířka
+embroidery	Height	Výška
+embroidery	Fit within the width and height	Vejít se do šířky a výšky
+embroidery	The design is {width} × {height}: as large as fits.	Návrh má {width} × {height}: tak velký, jak se vejde.
+embroidery	Type the width or the height: the other follows the picture.	Zadejte šířku nebo výšku: druhý rozměr se řídí obrázkem.
+embroidery	Left	Vlevo
+embroidery	Top	Nahoře
+embroidery	Right	Vpravo
+embroidery	Bottom	Dole
+embroidery	Crop	Oříznutí
+embroidery	Crop to the Art	Oříznout na kresbu
+embroidery	Whole Image	Celý obrázek
+embroidery	Every color is sewn	Šije se každá barva
+embroidery	Found: the transparency round the art	Nalezeno: průhlednost kolem kresby
+embroidery	Found in the corners	Nalezeno v rozích
+embroidery	Chosen from the picture's colors	Vybráno z barev obrázku
+embroidery	Not found: the corners disagree	Nenalezeno: rohy se neshodují
+embroidery	Leave the background out	Vynechat pozadí
+embroidery	Or one of the picture's colors:	Nebo jedna z barev obrázku:
+embroidery	Color {color}	Barva {color}
+embroidery	every color sewn	šije se každá barva
+embroidery	background left out	pozadí vynecháno
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Počítání…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Hladkost: {value}
+embroidery	Corners: {value}	Rohy: {value}
+embroidery	Colors overlap by {value} mm	Barvy se překrývají o {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Stehy se řídí nastavením výšivky dokumentu.
+@plural	{count} thread + background|{count} threads + background	{count} nit + pozadí|{count} nitě + pozadí|{count} nití + pozadí
+@plural	{count} area|{count} areas	{count} oblast|{count} oblasti|{count} oblastí
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Vyberte dvě nebo více barev, které chcete sloučit.
+embroidery	Select one or more colors first.	Nejprve vyberte jednu nebo více barev.
+embroidery	Select one color to choose its thread.	Vyberte jednu barvu a zvolte její nit.
+embroidery	{share} of the frame	{share} rámečku
+embroidery	merged	sloučeno
+embroidery	unlike the image's color	neodpovídá barvě obrázku
+embroidery	no closer thread in {palette}	v {palette} není bližší nit
+embroidery	{color} in {thread}	{color} nití {thread}
+embroidery	Background · {share} of the frame · not sewn	Pozadí · {share} rámečku · nešije se
+embroidery	Back to Auto: {thread}	Zpět na automaticky: {thread}
+embroidery	Back to Auto	Zpět na automaticky
+embroidery	Merge	Sloučit
+embroidery	Sew these colors as one.	Tyto barvy se šijí jako jedna.
+embroidery	Sew	Šít
+embroidery	Sew these colors again, as Auto chooses.	Tyto barvy se znovu šijí, jak zvolí automatika.
+embroidery	Don't Sew	Nešít
+embroidery	Leave these colors out: their areas aren't sewn.	Vynechte tyto barvy: jejich oblasti se nešijí.
+embroidery	Choose Thread…	Zvolit nit…
+embroidery	Choose the thread this color is sewn in.	Zvolte nit, kterou se tato barva šije.
+embroidery	Name or number	Název nebo číslo
+embroidery	{value} · nearest	{value} · nejbližší
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Plochá grafika: přesně její vlastní barvy, i vzácné, ale odlišné, nejvýš zadaný počet barev.
+embroidery	Grays	Šedé
+embroidery	Shades of gray, as many as the number of colors.	Odstíny šedi, tolik, kolik je počet barev.
+embroidery	The colors that best represent the picture, at most the number of colors.	Barvy, které obrázek nejlépe vystihují, nejvýš zadaný počet barev.
+embroidery	Mode	Režim
+embroidery	{value} is out of range: {low} to {high}.	{value} je mimo rozsah: {low} až {high}.
+embroidery	Number of colors	Počet barev
+embroidery	Match to threads	Přiřadit k nitím
+embroidery	Create sets the document's thread palette to {palette}.	Vytvoření nastaví paletu nití dokumentu na {palette}.
+embroidery	Smallest area	Nejmenší oblast
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Menší skvrnky, třeba šum JPEG, se připojí k barvě kolem sebe.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} barva byla příliš malá a připojila se k jiným|{count} barvy byly příliš malé a připojily se k jiným|{count} barev bylo příliš malých a připojilo se k jiným
+@plural	{count} speck joined|{count} specks joined	{count} skvrnka se připojila|{count} skvrnky se připojily|{count} skvrnek se připojilo
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Není co šít: všechny barvy jsou vynechané.
+embroidery	Nothing to create: every color is left out.	Není co vytvořit: všechny barvy jsou vynechané.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Každá oblast barvy {color} byla menší než {value} mm²: připojila se k sousedům.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Nit zvolená pro {color}, {thread}, není šedá: šije se tak, jak byla zvolena.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Při této velikosti má obrázek {value} pixelů na milimetr, méně než {least}: větší kopie se digitalizuje lépe.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Obrázek byl načten v rozměru {width} × {height} pixelů, menší než jeho {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Rohy obrázku se neshodují na pozadí: šije se každá barva.
+embroidery	No color traced is the background's: every area is sewn.	Žádná trasovaná barva není barvou pozadí: šije se každá oblast.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Obrázek nevypadá jako plochá grafika (fotka, nebo přechody?): jeho přechody se šijí jako pruhy plné barvy.
+embroidery	Nothing in the image was traced: it is empty or transparent.	V obrázku se nic netrasovalo: je prázdný nebo průhledný.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Jen objekty obrázku, s látkou, nití a strojem dokumentu.
+embroidery	Updated in {value} ms after the last change ({steps})	Aktualizováno za {value} ms po poslední změně ({steps})
+embroidery	Notes	Poznámky
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Vytvořeno: {objects} ({threads}). Obrázek je na skryté vrstvě šablony „{layer}“. Odstraníte je příkazem Zpět.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} skvrnka menší než {value} mm² se připojila k barvě kolem sebe|{count} skvrnky menší než {value} mm² se připojily k barvám kolem sebe|{count} skvrnek menších než {value} mm² se připojilo k barvám kolem sebe
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} skvrnka menší než {value} mm² se neměla k čemu připojit a byla vynechána|{count} skvrnky menší než {value} mm² se neměly k čemu připojit a byly vynechány|{count} skvrnek menších než {value} mm² se nemělo k čemu připojit a bylo vynecháno
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} pruh široký nejvýš {value} mm se připojil k sousedovi nejbližšímu své barvě|{count} pruhy široké nejvýš {value} mm se připojily k sousedům nejbližším svým barvám|{count} pruhů širokých nejvýš {value} mm se připojilo k sousedům nejbližším svým barvám
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} oblast barvy {color} nemá středovou linii, podél které by se šila: šije se jako svůj tvar|{count} oblasti barvy {color} nemají středovou linii, podél které by se šily: šijí se jako své tvary|{count} oblastí barvy {color} nemá středovou linii, podél které by se šily: šijí se jako své tvary
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} oblast se nepodařilo spojit se sousedy: šije se tak, jak byla trasována|{count} oblasti se nepodařilo spojit se sousedy: šijí se tak, jak byly trasovány|{count} oblastí se nepodařilo spojit se sousedy: šijí se tak, jak byly trasovány
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	barva pozadí uvnitř návrhu
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} barva kromě pozadí a barva pozadí šitá tam, kde ji návrh obklopuje.|{count} barvy kromě pozadí a barva pozadí šitá tam, kde ji návrh obklopuje.|{count} barev kromě pozadí a barva pozadí šitá tam, kde ji návrh obklopuje.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Není co šít: každá oblast je pozadí. Šijte i pozadí, nebo ořízněte méně.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Není co vytvořit: každá oblast je pozadí. Šijte i pozadí, nebo ořízněte méně.

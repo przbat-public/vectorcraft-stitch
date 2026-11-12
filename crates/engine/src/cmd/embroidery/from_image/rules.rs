@@ -141,6 +141,7 @@ pub(super) struct Area {
 }
 
 /// The areas of a trace after the rules, and its region map with each pixel's area.
+#[derive(Clone)]
 pub(super) struct Areas {
     pub(super) areas: Vec<Area>,
     /// The region map, its labels now the areas' places in [`Areas::areas`].

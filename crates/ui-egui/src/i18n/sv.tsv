@@ -8861,3 +8861,144 @@ digits	Hindi	Hindi
 	Ignore All	Ignorera alla
 	Add to Dictionary	Lägg till i ordlistan
 	No Suggestions	Inga förslag
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalisera bild…
+embroidery	Digitize Image…	Digitalisera bild…
+embroidery	Digitize Image	Digitalisering av bild
+embroidery	Digitize Image: live preview	Digitalisering av bild: direktförhandsvisning
+embroidery	Select one image to digitize it.	Markera en bild för att digitalisera den.
+embroidery	The preview isn't ready yet.	Förhandsvisningen är inte klar än.
+embroidery	Cancel	Avbryt
+embroidery	Digitizing…	Digitaliserar…
+embroidery	Create Embroidery Objects	Skapa broderiobjekt
+embroidery	Start Over	Börja om
+embroidery	Create waits for the preview to be ready.	Skapandet väntar tills förhandsvisningen är klar.
+embroidery	Can't digitize it: {reason}	Kan inte digitaliseras: {reason}
+embroidery	Shapes	Former
+embroidery	Recomputing…	Räknar om…
+embroidery	Recomputing… {percent}	Räknar om… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · broderi {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Original
+embroidery	Compare	Jämför
+embroidery	top left	uppe till vänster
+embroidery	top	uppe
+embroidery	top right	uppe till höger
+embroidery	left	till vänster
+embroidery	middle	i mitten
+embroidery	right	till höger
+embroidery	bottom left	nere till vänster
+embroidery	bottom	nere
+embroidery	bottom right	nere till höger
+embroidery	Background	Bakgrund
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Broderas inte
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · broderas inte
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Jämförelse: originalet till vänster
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Förhandsvisningen visar de planerade stygnen. Brodera ett provstycke före produktionen.
+embroidery	Fit	Anpassa
+embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	En storlek måste vara mer än {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} är för stort: en sida är högst {high}.
+embroidery	A margin is 0 pixels or more.	En marginal är 0 pixlar eller mer.
+embroidery	The margins leave no picture: crop less.	Marginalerna lämnar ingen bild kvar: beskär mindre.
+embroidery	Width	Bredd
+embroidery	Height	Höjd
+embroidery	Fit within the width and height	Anpassa inom bredden och höjden
+embroidery	The design is {width} × {height}: as large as fits.	Designen är {width} × {height}: så stor som får plats.
+embroidery	Type the width or the height: the other follows the picture.	Skriv bredden eller höjden: den andra följer bilden.
+embroidery	Left	Vänster
+embroidery	Top	Överkant
+embroidery	Right	Höger
+embroidery	Bottom	Nederkant
+embroidery	Crop	Beskärning
+embroidery	Crop to the Art	Beskär till motivet
+embroidery	Whole Image	Hela bilden
+embroidery	Every color is sewn	Varje färg broderas
+embroidery	Found: the transparency round the art	Hittad: genomskinligheten runt motivet
+embroidery	Found in the corners	Hittad i hörnen
+embroidery	Chosen from the picture's colors	Vald bland bildens färger
+embroidery	Not found: the corners disagree	Hittades inte: hörnen skiljer sig åt
+embroidery	Leave the background out	Utelämna bakgrunden
+embroidery	Or one of the picture's colors:	Eller en av bildens färger:
+embroidery	Color {color}	Färg {color}
+embroidery	every color sewn	varje färg broderad
+embroidery	background left out	bakgrund utelämnad
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Beräknar…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Steg {number} av {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Jämnhet: {value}
+embroidery	Corners: {value}	Hörn: {value}
+embroidery	Colors overlap by {value} mm	Färgerna överlappar med {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Stygnen följer dokumentets broderiinställningar.
+@plural	{count} thread + background|{count} threads + background	{count} tråd + bakgrund|{count} trådar + bakgrund
+@plural	{count} area|{count} areas	{count} område|{count} områden
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Markera två eller fler färger för att sammanfoga dem.
+embroidery	Select one or more colors first.	Markera först en eller flera färger.
+embroidery	Select one color to choose its thread.	Markera en färg för att välja dess tråd.
+embroidery	{share} of the frame	{share} av ramen
+embroidery	merged	sammanfogad
+embroidery	unlike the image's color	olik bildens färg
+embroidery	no closer thread in {palette}	ingen närmare tråd i {palette}
+embroidery	{color} in {thread}	{color} i {thread}
+embroidery	Background · {share} of the frame · not sewn	Bakgrund · {share} av ramen · broderas inte
+embroidery	Back to Auto: {thread}	Tillbaka till Auto: {thread}
+embroidery	Back to Auto	Tillbaka till Auto
+embroidery	Merge	Sammanfoga
+embroidery	Sew these colors as one.	De här färgerna broderas som en.
+embroidery	Sew	Brodera
+embroidery	Sew these colors again, as Auto chooses.	De här färgerna broderas igen, som Auto väljer.
+embroidery	Don't Sew	Brodera inte
+embroidery	Leave these colors out: their areas aren't sewn.	Utelämna de här färgerna: deras områden broderas inte.
+embroidery	Choose Thread…	Välj tråd…
+embroidery	Choose the thread this color is sewn in.	Välj tråden som den här färgen broderas med.
+embroidery	Name or number	Namn eller nummer
+embroidery	{value} · nearest	{value} · närmast
+embroidery	Logo	Logotyp
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Platt grafik: exakt dess egna färger, sällsynta men tydliga behålls, högst antalet färger.
+embroidery	Grays	Gråtoner
+embroidery	Shades of gray, as many as the number of colors.	Gråtoner, lika många som antalet färger.
+embroidery	The colors that best represent the picture, at most the number of colors.	De färger som bäst återger bilden, högst antalet färger.
+embroidery	Mode	Läge
+embroidery	{value} is out of range: {low} to {high}.	{value} ligger utanför intervallet: {low} till {high}.
+embroidery	Number of colors	Antal färger
+embroidery	Match to threads	Matcha mot trådar
+embroidery	Create sets the document's thread palette to {palette}.	Skapa ställer in dokumentets trådpalett på {palette}.
+embroidery	Smallest area	Minsta område
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Mindre fläckar, som JPEG-brus, går upp i färgen runt dem.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} färg var för liten och gick upp i andra|{count} färger var för små och gick upp i andra
+@plural	{count} speck joined|{count} specks joined	{count} fläck sammanfogad|{count} fläckar sammanfogade
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Inget att brodera: varje färg är utelämnad.
+embroidery	Nothing to create: every color is left out.	Inget att skapa: varje färg är utelämnad.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Varje område av {color} var mindre än {value} mm²: färgen gick upp i sina grannar.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Tråden som valts för {color}, {thread}, är inte grå: den broderas som vald.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	I den här storleken har bilden {value} pixlar per millimeter, färre än {least}: en större kopia digitaliseras bättre.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Bilden lästes i {width} × {height} pixlar, mindre än sina {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Bildens hörn är inte överens om en bakgrund: varje färg broderas.
+embroidery	No color traced is the background's: every area is sewn.	Ingen spårad färg är bakgrundens: varje område broderas.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Bilden ser inte ut som platt grafik (ett foto eller toningar?): dess toningar broderas som band av platt färg.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Inget i bilden spårades: den är tom eller genomskinlig.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Bara bildens objekt, med dokumentets tyg, tråd och maskin.
+embroidery	Updated in {value} ms after the last change ({steps})	Uppdaterat på {value} ms efter senaste ändringen ({steps})
+embroidery	Notes	Anteckningar
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Skapade {objects} ({threads}). Bilden ligger på det dolda mallagret ”{layer}”. Ångra tar bort dem.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} fläck mindre än {value} mm² gick upp i färgen runt den|{count} fläckar mindre än {value} mm² gick upp i färgerna runt dem
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} fläck mindre än {value} mm² hade inget att gå upp i och utelämnades|{count} fläckar mindre än {value} mm² hade inget att gå upp i och utelämnades
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} band högst {value} mm brett gick upp i grannen närmast dess färg|{count} band högst {value} mm breda gick upp i grannarna närmast deras färger
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} område av {color} har ingen mittlinje att brodera längs: det broderas som sin form|{count} områden av {color} har ingen mittlinje att brodera längs: de broderas som sina former
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} område kunde inte fogas till sina grannar: det broderas som spårat|{count} områden kunde inte fogas till sina grannar: de broderas som spårade
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	bakgrundens färg inuti designen
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} färg utöver bakgrunden, och bakgrundens färg, broderad där designen omsluter den.|{count} färger utöver bakgrunden, och bakgrundens färg, broderad där designen omsluter den.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Inget att brodera: varje område är bakgrund. Brodera bakgrunden, eller beskär mindre.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Inget att skapa: varje område är bakgrund. Brodera bakgrunden, eller beskär mindre.

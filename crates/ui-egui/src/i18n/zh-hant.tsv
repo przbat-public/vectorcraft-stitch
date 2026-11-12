@@ -7010,3 +7010,144 @@ breakText	Glyphs	字符
 	Align to Pixel Grid	對齊像素格點
 @msg	only paths and compound paths can be aligned to the pixel grid	只有路徑和複合路徑可以對齊像素格點
 @msg	side is left or right, not `{s}`	side 應為 left 或 right，而不是 `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	數位化影像…
+embroidery	Digitize Image…	數位化影像…
+embroidery	Digitize Image	影像數位化
+embroidery	Digitize Image: live preview	影像數位化：即時預覽
+embroidery	Select one image to digitize it.	請選取一張影像以將其數位化。
+embroidery	The preview isn't ready yet.	預覽尚未就緒。
+embroidery	Cancel	取消
+embroidery	Digitizing…	正在數位化…
+embroidery	Create Embroidery Objects	建立刺繡物件
+embroidery	Start Over	重新開始
+embroidery	Create waits for the preview to be ready.	建立將等待預覽就緒。
+embroidery	Can't digitize it: {reason}	無法數位化：{reason}
+embroidery	Shapes	形狀
+embroidery	Recomputing…	正在重新計算…
+embroidery	Recomputing… {percent}	正在重新計算… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · 刺繡 {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	原圖
+embroidery	Compare	對比
+embroidery	top left	左上
+embroidery	top	上
+embroidery	top right	右上
+embroidery	left	左
+embroidery	middle	中間
+embroidery	right	右
+embroidery	bottom left	左下
+embroidery	bottom	下
+embroidery	bottom right	右下
+embroidery	Background	背景
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	不縫製
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · 不縫製
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	對比：左側為原圖
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	預覽顯示規劃的針跡。正式生產前請先繡一塊試樣。
+embroidery	Fit	符合
+embroidery	Zoom	縮放
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	尺寸必須大於 {low}。
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} 太大：每邊最多 {high}。
+embroidery	A margin is 0 pixels or more.	邊距為 0 像素或更多。
+embroidery	The margins leave no picture: crop less.	邊距沒有留下影像：請少裁切一些。
+embroidery	Width	寬度
+embroidery	Height	高度
+embroidery	Fit within the width and height	符合寬度和高度
+embroidery	The design is {width} × {height}: as large as fits.	設計為 {width} × {height}：在範圍內盡可能大。
+embroidery	Type the width or the height: the other follows the picture.	輸入寬度或高度：另一邊隨影像比例變化。
+embroidery	Left	左
+embroidery	Top	上
+embroidery	Right	右
+embroidery	Bottom	下
+embroidery	Crop	裁切
+embroidery	Crop to the Art	裁切至圖稿
+embroidery	Whole Image	整個影像
+embroidery	Every color is sewn	每種顏色都繡出
+embroidery	Found: the transparency round the art	已找到：圖稿周圍的透明區域
+embroidery	Found in the corners	在四角找到
+embroidery	Chosen from the picture's colors	從影像的顏色中選取
+embroidery	Not found: the corners disagree	未找到：四角顏色不一致
+embroidery	Leave the background out	略去背景
+embroidery	Or one of the picture's colors:	或影像中的某種顏色：
+embroidery	Color {color}	顏色 {color}
+embroidery	every color sewn	每種顏色都繡出
+embroidery	background left out	略去背景
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	正在計算…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	第 {number} 步，共 {count} 步：{name}。{summary}。{time}
+embroidery	Smoothness: {value}	平滑度：{value}
+embroidery	Corners: {value}	轉角：{value}
+embroidery	Colors overlap by {value} mm	顏色重疊 {value} mm
+embroidery	The stitches follow the document's embroidery settings.	針跡遵循文件的刺繡設定。
+@plural	{count} thread + background|{count} threads + background	{count} 種線 + 背景
+@plural	{count} area|{count} areas	{count} 個區域
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	選擇兩種或更多顏色以合併。
+embroidery	Select one or more colors first.	請先選擇一種或多種顏色。
+embroidery	Select one color to choose its thread.	選擇一種顏色以選擇其線。
+embroidery	{share} of the frame	畫面的 {share}
+embroidery	merged	已合併
+embroidery	unlike the image's color	與影像顏色不同
+embroidery	no closer thread in {palette}	{palette} 中沒有更接近的線
+embroidery	{color} in {thread}	{color}：{thread}
+embroidery	Background · {share} of the frame · not sewn	背景 · 畫面的 {share} · 不繡製
+embroidery	Back to Auto: {thread}	恢復自動：{thread}
+embroidery	Back to Auto	恢復自動
+embroidery	Merge	合併
+embroidery	Sew these colors as one.	將這些顏色作為一種顏色繡製。
+embroidery	Sew	繡製
+embroidery	Sew these colors again, as Auto chooses.	按自動選擇重新繡製這些顏色。
+embroidery	Don't Sew	不繡製
+embroidery	Leave these colors out: their areas aren't sewn.	略去這些顏色：它們的區域不繡製。
+embroidery	Choose Thread…	選擇線…
+embroidery	Choose the thread this color is sewn in.	選擇繡製此顏色所用的線。
+embroidery	Name or number	名稱或編號
+embroidery	{value} · nearest	{value} · 最接近
+embroidery	Logo	標誌
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	平面圖稿：完全使用其自身顏色，保留少見但明顯的顏色，最多為顏色數。
+embroidery	Grays	灰階
+embroidery	Shades of gray, as many as the number of colors.	灰色色調，數量與顏色數相同。
+embroidery	The colors that best represent the picture, at most the number of colors.	最能表現影像的顏色，最多為顏色數。
+embroidery	Mode	模式
+embroidery	{value} is out of range: {low} to {high}.	{value} 超出範圍：{low} 到 {high}。
+embroidery	Number of colors	顏色數
+embroidery	Match to threads	匹配到線
+embroidery	Create sets the document's thread palette to {palette}.	建立時會將文件的線色盤設為 {palette}。
+embroidery	Smallest area	最小區域
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	更小的斑點（如 JPEG 雜訊）會併入周圍的顏色。
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 種顏色太小，已併入其他顏色
+@plural	{count} speck joined|{count} specks joined	已併入 {count} 個斑點
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	沒有可繡製的內容：所有顏色都已略去。
+embroidery	Nothing to create: every color is left out.	沒有可建立的內容：所有顏色都已略去。
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color} 的每個區域都小於 {value} mm²：它已併入相鄰顏色。
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	為 {color} 選擇的線 {thread} 不是灰色：將按所選繡製。
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	在此尺寸下，影像每毫米 {value} 像素，少於 {least}：更大的副本數位化效果更好。
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	影像以 {width} × {height} 像素讀取，小於其 {fullWidth} × {fullHeight}。
+embroidery	The image's corners don't agree on a background: every color is sewn.	影像的四角在背景上不一致：所有顏色都繡出。
+embroidery	No color traced is the background's: every area is sewn.	描摹出的顏色中沒有背景色：所有區域都繡出。
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	影像看起來不像平面圖稿（照片或漸層？）：其漸層將繡成純色色帶。
+embroidery	Nothing in the image was traced: it is empty or transparent.	影像中沒有描摹出任何內容：它是空的或透明的。
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	僅影像的物件，使用文件的布料、線和機器。
+embroidery	Updated in {value} ms after the last change ({steps})	上次變更後 {value} ms 內更新（{steps}）
+embroidery	Notes	注意事項
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	已建立 {objects}（{threads}）。影像位於隱藏的範本圖層「{layer}」上。復原可將其移除。
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} 個小於 {value} mm² 的斑點已併入周圍的顏色
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} 個小於 {value} mm² 的斑點無處可併入，已略去
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} 條寬度不超過 {value} mm 的色帶已併入顏色最接近的相鄰區域
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color} 的 {count} 個區域沒有可沿其繡製的中心線：按其形狀繡製
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} 個區域無法與相鄰區域合併：按描摹結果繡製
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	設計內部的背景色
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	背景之外的 {count} 種顏色，以及在設計包圍處繡製的背景色。
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	沒有可繡製的內容：所有區域都是背景。請也繡製背景，或少裁切一些。
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	沒有可建立的內容：所有區域都是背景。請也繡製背景，或少裁切一些。

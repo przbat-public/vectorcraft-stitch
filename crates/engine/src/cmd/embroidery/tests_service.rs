@@ -800,6 +800,76 @@ fn a_key_follows_the_document() {
     assert_eq!(s.embroidery_plans.of(uid).walks(), 1);
 }
 
+/// The document of `s` cut to objects `ids` (all of it when empty), as `selectedOnly` cuts it.
+fn cut(s: &Session, ids: &[u64]) -> Arc<Document> {
+    let st = s.doc().unwrap();
+    let mut copy = crate::DocState::new((*st.doc).clone(), None);
+    copy.selection.set(ids.iter().map(|&i| vectorcraft_doc::NodeId(i)));
+    to_plan(&copy, !ids.is_empty()).unwrap()
+}
+
+/// A planning service for a document that isn't open plans as a fresh plan does: the whole of a
+/// snapshot, and a snapshot cut to some of its objects as `selectedOnly` cuts it.
+#[test]
+fn a_detached_plan_is_the_fresh_plan() {
+    let (s, ids) = five();
+    let detached = s.detached_planning();
+    let opts = Options::default();
+    for picked in [vec![], vec![ids[1], ids[3]]] {
+        let snapshot = s.doc().unwrap().doc.clone();
+        let selection = picked.iter().map(|&i| vectorcraft_doc::NodeId(i)).collect();
+        let plan = detached.planner(snapshot, selection).unwrap().plan(&opts).unwrap();
+        assert_eq!(*plan, digitize(&cut(&s, &picked), &opts, None).unwrap(), "{picked:?}");
+    }
+}
+
+/// A detached service keeps its units' stitches between plans, as an open document's does: a plan
+/// of a copy with one object moved walks the design again and plans only that object's unit.
+#[test]
+fn a_detached_service_keeps_its_units() {
+    let (mut s, ids) = five();
+    let detached = s.detached_planning();
+    let opts = Options::default();
+    detached.planner(s.doc().unwrap().doc.clone(), vec![]).unwrap().plan(&opts).unwrap();
+    let kept = detached.service().kept();
+    assert_eq!(kept, 7, "five fills and two strokes");
+    run(&mut s, "object.move", json!({"ids": [ids[2]], "dx": 3, "dy": 0}));
+    let moved = detached.planner(s.doc().unwrap().doc.clone(), vec![]).unwrap().plan(&opts).unwrap();
+    assert_eq!((detached.service().walks(), detached.service().kept()), (2, kept + 1), "one unit planned anew");
+    assert_eq!(*moved, digitize(&s.doc().unwrap().doc, &opts, None).unwrap());
+}
+
+/// A detached service's plans are remembered within the one bound every document's share, and go
+/// when its last handle (the service or a planner of it) goes.
+#[test]
+fn its_plans_count_in_the_bound_and_go_with_it() {
+    let (s, _) = five();
+    assert_eq!(s.embroidery_plans.memos_held(), 0);
+    let detached = s.detached_planning();
+    let planner = detached.planner(s.doc().unwrap().doc.clone(), vec![]).unwrap();
+    planner.plan(&Options::default()).unwrap();
+    assert!(s.embroidery_plans.memos_held() > 0);
+    drop(detached);
+    assert!(s.embroidery_plans.memos_held() > 0, "a planner still holds it");
+    drop(planner);
+    assert_eq!(s.embroidery_plans.memos_held(), 0);
+}
+
+/// A detached service is never an open document's: the documents with a service stay as they are,
+/// and its owner can't be an open document's number.
+#[test]
+fn it_is_never_an_open_documents_service() {
+    let (mut s, _) = five();
+    run(&mut s, "embroidery.threads", json!({}));
+    let uids = s.embroidery_plans.uids();
+    let detached = s.detached_planning();
+    detached.planner(s.doc().unwrap().doc.clone(), vec![]).unwrap().plan(&Options::default()).unwrap();
+    assert_eq!(s.embroidery_plans.uids(), uids);
+    assert!(detached.owner() >= super::service::DETACHED_OWNERS_FROM);
+    assert!(s.documents().iter().all(|d| d.uid < super::service::DETACHED_OWNERS_FROM));
+    assert_ne!(s.detached_planning().owner(), detached.owner(), "each its own");
+}
+
 /// Five objects of two colours, side by side: seven units (each fill, and two strokes).
 fn five() -> (Session, Vec<u64>) {
     build(&[

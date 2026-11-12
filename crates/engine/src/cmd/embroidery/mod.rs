@@ -38,7 +38,10 @@ mod nearest;
 mod needle_edits;
 pub mod needle_index;
 pub(crate) mod needles;
-pub use from_image::{DIGITIZE_PROGRESS, DIGITIZE_STAGES, DigitizeFound, DigitizeJob};
+pub use from_image::{
+    AreaFacts, Outputs as DigitizeOutputs, Pipeline as DigitizePipeline, Place as AreaPlace, StageId as DigitizeStage,
+    WORKING_PX_PER_MM as DIGITIZE_WORKING_PX_PER_MM, WindowRequest as DigitizeRequest,
+};
 pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
@@ -137,8 +140,8 @@ use super::{CommandSpec, EngineError, NodeId, Result, Session, always, bad, cmd,
 pub use self::check::{MAX_LIMIT, POINT_MISS_MM};
 pub use self::stats::MAX_LIST_LIMIT;
 pub use options::Options;
-pub use service::Planned;
 pub(crate) use service::Services;
+pub use service::{DetachedService, Planned};
 pub(crate) use unit::PlanError;
 pub use vectorcraft_stitch::format::Format;
 pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
@@ -312,7 +315,29 @@ const _: () = {
     sent::<Planner>();
 };
 
+impl service::DetachedService {
+    /// A planner of `snapshot` cut to the objects `selection` names (all of it when empty), as
+    /// `selectedOnly` cuts a document for the read commands, whose plans this service makes and
+    /// remembers. The planner holds the cut document as its snapshot.
+    pub fn planner(&self, snapshot: Arc<Document>, selection: Vec<NodeId>) -> Result<Planner> {
+        let doc = if selection.is_empty() && matches!(snapshot.without_edit_modes(), std::borrow::Cow::Borrowed(_)) {
+            snapshot
+        } else {
+            let mut st = crate::DocState::new((*snapshot).clone(), None);
+            st.selection.set(selection.iter().copied());
+            to_plan(&st, !selection.is_empty())?
+        };
+        Ok(Planner { uid: self.owner(), service: self.shared(), snapshot: doc.clone(), doc })
+    }
+}
+
 impl Session {
+    /// A planning service for a document that isn't open ([`service::DetachedService`]): what a
+    /// window that makes a design on a copy of the document plans it with.
+    pub fn detached_planning(&self) -> service::DetachedService {
+        self.embroidery_plans.detached()
+    }
+
     /// The active document's planner: its planning service and its current snapshot, planned as
     /// the read commands plan the whole document.
     pub fn embroidery_planner(&mut self) -> Result<Planner> {
@@ -742,10 +767,50 @@ fn edit_counted(s: &mut Session, label: &str, f: impl FnOnce(&mut Document) -> R
 /// export matches the art's colours to Brother's palette itself.
 pub(crate) const DEFAULT_PALETTE: Palette = Palette::Jef;
 
+/// The id of the thread palette document `d`'s colours are matched to (`pec` or `jef`): its own
+/// when it sets one this version knows, else the default.
+pub fn thread_palette_id(d: &Document) -> &'static str {
+    thread_palette(d).id()
+}
+
 /// The thread palette the document's colours are matched to: the one it sets
 /// (`embroidery.setup`), else [`DEFAULT_PALETTE`].
 pub(crate) fn thread_palette(d: &Document) -> Palette {
     d.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(ThreadPalette::id).and_then(Palette::from_id).unwrap_or(DEFAULT_PALETTE)
+}
+
+/// A thread of a palette as Choose Thread… lists it ([`threads_nearest`]).
+#[derive(Clone, Debug, PartialEq)]
+pub struct NearThread {
+    /// Its number in the palette, from 1.
+    pub index: usize,
+    /// Its name and colour, as the palette gives them.
+    pub name: &'static str,
+    pub color: [u8; 3],
+    /// The CIEDE2000 difference from the colour it was ranked for, as shown (to hundredths).
+    pub delta_e: f64,
+    /// Whether it looks unlike that colour: past the line every list flags, read as shown.
+    pub mismatch: bool,
+}
+
+/// Every thread of palette `id` (`pec`, `jef`), nearest `color` first: what Choose Thread… lists.
+/// None for a palette this version doesn't know.
+pub fn threads_nearest(id: &str, color: [u8; 3]) -> Vec<NearThread> {
+    let Some(palette) = Palette::from_id(id) else { return Vec::new() };
+    palette
+        .ranked(color)
+        .into_iter()
+        .filter_map(|m| {
+            let (thread, name) = palette.get(m.index)?;
+            let (delta_e, mismatch) = (vectorcraft_stitch::thread::shown_delta_e(m.delta_e), vectorcraft_stitch::thread::mismatched(m.delta_e));
+            Some(NearThread { index: m.index, name, color: thread, delta_e, mismatch })
+        })
+        .collect()
+}
+
+/// The thread palettes a document can take, by id, each with how many threads it has.
+pub fn thread_palettes() -> Vec<(&'static str, usize)> {
+    Palette::ALL.into_iter().map(|p| (p.id(), (1..=p.threads().len()).filter(|&i| p.is_thread(i)).count())).collect()
 }
 
 /// A thread record the document keeps on an opened run ([`vectorcraft_doc::embroidery::StitchRun::thread`])

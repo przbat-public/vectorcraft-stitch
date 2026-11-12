@@ -7231,3 +7231,144 @@ breakText	Glyphs	Glify
 	Ignore All	Ignoruj wszystko
 	Add to Dictionary	Dodaj do słownika
 	No Suggestions	Brak sugestii
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalizuj obraz…
+embroidery	Digitize Image…	Digitalizuj obraz…
+embroidery	Digitize Image	Digitalizacja obrazu
+embroidery	Digitize Image: live preview	Digitalizacja obrazu: podgląd na żywo
+embroidery	Select one image to digitize it.	Zaznacz jeden obraz, aby go zdigitalizować.
+embroidery	The preview isn't ready yet.	Podgląd nie jest jeszcze gotowy.
+embroidery	Cancel	Anuluj
+embroidery	Digitizing…	Digitalizowanie…
+embroidery	Create Embroidery Objects	Utwórz obiekty haftu
+embroidery	Start Over	Zacznij od nowa
+embroidery	Create waits for the preview to be ready.	Utworzenie czeka, aż podgląd będzie gotowy.
+embroidery	Can't digitize it: {reason}	Nie można zdigitalizować: {reason}
+embroidery	Shapes	Kształty
+embroidery	Recomputing…	Przeliczanie…
+embroidery	Recomputing… {percent}	Przeliczanie… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · haft {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Oryginał
+embroidery	Compare	Porównaj
+embroidery	top left	u góry po lewej
+embroidery	top	u góry
+embroidery	top right	u góry po prawej
+embroidery	left	po lewej
+embroidery	middle	pośrodku
+embroidery	right	po prawej
+embroidery	bottom left	u dołu po lewej
+embroidery	bottom	u dołu
+embroidery	bottom right	u dołu po prawej
+embroidery	Background	Tło
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Nieszyte
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · nieszyte
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Porównanie: oryginał po lewej
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Podgląd pokazuje zaplanowane ściegi. Przed produkcją wyszyj próbkę.
+embroidery	Fit	Dopasuj
+embroidery	Zoom	Powiększenie
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Rozmiar musi być większy niż {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} to za dużo: bok ma najwyżej {high}.
+embroidery	A margin is 0 pixels or more.	Margines ma 0 pikseli lub więcej.
+embroidery	The margins leave no picture: crop less.	Marginesy nie zostawiają obrazu: przytnij mniej.
+embroidery	Width	Szerokość
+embroidery	Height	Wysokość
+embroidery	Fit within the width and height	Zmieść w szerokości i wysokości
+embroidery	The design is {width} × {height}: as large as fits.	Wzór ma {width} × {height}: tak duży, jak się mieści.
+embroidery	Type the width or the height: the other follows the picture.	Wpisz szerokość albo wysokość: druga wynika z proporcji obrazu.
+embroidery	Left	Lewy
+embroidery	Top	Górny
+embroidery	Right	Prawy
+embroidery	Bottom	Dolny
+embroidery	Crop	Kadrowanie
+embroidery	Crop to the Art	Przytnij do grafiki
+embroidery	Whole Image	Cały obraz
+embroidery	Every color is sewn	Każdy kolor jest wyszywany
+embroidery	Found: the transparency round the art	Znalezione: przezroczystość wokół grafiki
+embroidery	Found in the corners	Znalezione w rogach
+embroidery	Chosen from the picture's colors	Wybrane z kolorów obrazu
+embroidery	Not found: the corners disagree	Nie znaleziono: rogi się różnią
+embroidery	Leave the background out	Pomiń tło
+embroidery	Or one of the picture's colors:	Albo jeden z kolorów obrazu:
+embroidery	Color {color}	Kolor {color}
+embroidery	every color sewn	każdy kolor wyszyty
+embroidery	background left out	bez tła
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Obliczanie…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Wygładzenie: {value}
+embroidery	Corners: {value}	Narożniki: {value}
+embroidery	Colors overlap by {value} mm	Kolory zachodzą na siebie o {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Ściegi wynikają z ustawień haftu dokumentu.
+@plural	{count} thread + background|{count} threads + background	{count} nić + tło|{count} nici + tło|{count} nici + tło
+@plural	{count} area|{count} areas	{count} obszar|{count} obszary|{count} obszarów
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Zaznacz co najmniej dwa kolory, aby je scalić.
+embroidery	Select one or more colors first.	Najpierw zaznacz jeden lub więcej kolorów.
+embroidery	Select one color to choose its thread.	Zaznacz jeden kolor, aby wybrać jego nić.
+embroidery	{share} of the frame	{share} kadru
+embroidery	merged	scalony
+embroidery	unlike the image's color	niepodobna do koloru obrazu
+embroidery	no closer thread in {palette}	brak bliższej nici w palecie {palette}
+embroidery	{color} in {thread}	{color} nicią {thread}
+embroidery	Background · {share} of the frame · not sewn	Tło · {share} kadru · nieszyte
+embroidery	Back to Auto: {thread}	Przywróć Auto: {thread}
+embroidery	Back to Auto	Przywróć Auto
+embroidery	Merge	Scal
+embroidery	Sew these colors as one.	Szyj te kolory jako jeden.
+embroidery	Sew	Szyj
+embroidery	Sew these colors again, as Auto chooses.	Szyj te kolory znowu, tak jak wybierze Auto.
+embroidery	Don't Sew	Nie szyj
+embroidery	Leave these colors out: their areas aren't sewn.	Pomiń te kolory: ich obszary nie będą szyte.
+embroidery	Choose Thread…	Wybierz nić…
+embroidery	Choose the thread this color is sewn in.	Wybierz nić, którą szyty jest ten kolor.
+embroidery	Name or number	Nazwa lub numer
+embroidery	{value} · nearest	{value} · najbliższa
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Płaska grafika: dokładnie jej własne kolory, także rzadkie, ale wyraźne, najwyżej tyle, ile wynosi liczba kolorów.
+embroidery	Grays	Szarości
+embroidery	Shades of gray, as many as the number of colors.	Odcienie szarości, tyle, ile wynosi liczba kolorów.
+embroidery	The colors that best represent the picture, at most the number of colors.	Kolory, które najlepiej oddają obraz, najwyżej tyle, ile wynosi liczba kolorów.
+embroidery	Mode	Tryb
+embroidery	{value} is out of range: {low} to {high}.	{value} jest poza zakresem: od {low} do {high}.
+embroidery	Number of colors	Liczba kolorów
+embroidery	Match to threads	Dopasuj do nici
+embroidery	Create sets the document's thread palette to {palette}.	Utworzenie ustawi paletę nici dokumentu na {palette}.
+embroidery	Smallest area	Najmniejszy obszar
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Mniejsze plamki, np. szum JPEG, dołączają do koloru wokół nich.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} kolor był za mały i dołączył do innych|{count} kolory były za małe i dołączyły do innych|{count} kolorów było za małych i dołączyło do innych
+@plural	{count} speck joined|{count} specks joined	{count} plamka dołączona|{count} plamki dołączone|{count} plamek dołączonych
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Nie ma czego szyć: każdy kolor jest pominięty.
+embroidery	Nothing to create: every color is left out.	Nie ma czego utworzyć: każdy kolor jest pominięty.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Każdy obszar koloru {color} był mniejszy niż {value} mm²: kolor dołączył do sąsiadów.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Nić wybrana dla {color}, {thread}, nie jest szara: jest szyta tak, jak ją wybrano.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Przy tym rozmiarze obraz ma {value} pikseli na milimetr, mniej niż {least}: większa kopia digitalizuje się lepiej.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Obraz wczytano w rozmiarze {width} × {height} pikseli, mniejszym niż jego {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Rogi obrazu nie zgadzają się co do tła: każdy kolor jest szyty.
+embroidery	No color traced is the background's: every area is sewn.	Żaden obrysowany kolor nie jest kolorem tła: każdy obszar jest szyty.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Obraz nie wygląda na płaską grafikę (zdjęcie albo przejścia tonalne?): jego przejścia są szyte jako pasy płaskiego koloru.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Nic w obrazie nie zostało obrysowane: jest pusty albo przezroczysty.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Same obiekty z obrazu, z tkaniną, nicią i maszyną dokumentu.
+embroidery	Updated in {value} ms after the last change ({steps})	Przeliczono w {value} ms po ostatniej zmianie ({steps})
+embroidery	Notes	Uwagi
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Utworzono {objects} ({threads}). Obraz jest na ukrytej warstwie szablonu „{layer}”. Polecenie Cofnij je usunie.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} plamka mniejsza niż {value} mm² dołączyła do koloru wokół niej|{count} plamki mniejsze niż {value} mm² dołączyły do kolorów wokół nich|{count} plamek mniejszych niż {value} mm² dołączyło do kolorów wokół nich
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} plamka mniejsza niż {value} mm² nie miała do czego dołączyć i została pominięta|{count} plamki mniejsze niż {value} mm² nie miały do czego dołączyć i zostały pominięte|{count} plamek mniejszych niż {value} mm² nie miało do czego dołączyć i zostało pominiętych
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} pas o szerokości najwyżej {value} mm dołączył do sąsiada o najbliższym kolorze|{count} pasy o szerokości najwyżej {value} mm dołączyły do sąsiadów o najbliższych kolorach|{count} pasów o szerokości najwyżej {value} mm dołączyło do sąsiadów o najbliższych kolorach
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} obszar koloru {color} nie ma linii środkowej do szycia: jest szyty jako swój kształt|{count} obszary koloru {color} nie mają linii środkowej do szycia: są szyte jako swoje kształty|{count} obszarów koloru {color} nie ma linii środkowej do szycia: są szyte jako swoje kształty
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	Nie udało się połączyć {count} obszaru z sąsiadami: jest szyty tak, jak go obrysowano|Nie udało się połączyć {count} obszarów z sąsiadami: są szyte tak, jak je obrysowano|Nie udało się połączyć {count} obszarów z sąsiadami: są szyte tak, jak je obrysowano
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	kolor tła wewnątrz wzoru
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} kolor oprócz tła i kolor tła szyty tam, gdzie otacza go wzór.|{count} kolory oprócz tła i kolor tła szyty tam, gdzie otacza go wzór.|{count} kolorów oprócz tła i kolor tła szyty tam, gdzie otacza go wzór.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nie ma czego szyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nie ma czego utworzyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej.

@@ -7435,3 +7435,144 @@ font-script	Japanese	იაპონური
 	Ignore All	ყველას იგნორირება
 	Add to Dictionary	ლექსიკონში დამატება
 	No Suggestions	შემოთავაზებები არ არის
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	სურათის დიგიტალიზაცია…
+embroidery	Digitize Image…	სურათის დიგიტალიზაცია…
+embroidery	Digitize Image	სურათის დიგიტალიზაცია
+embroidery	Digitize Image: live preview	სურათის დიგიტალიზაცია: ცოცხალი გადახედვა
+embroidery	Select one image to digitize it.	მონიშნეთ ერთი სურათი მის დასაგიტალიზებლად.
+embroidery	The preview isn't ready yet.	გადახედვა ჯერ მზად არ არის.
+embroidery	Cancel	გაუქმება
+embroidery	Digitizing…	მიმდინარეობს დიგიტალიზაცია…
+embroidery	Create Embroidery Objects	ნაქარგობის ობიექტების შექმნა
+embroidery	Start Over	თავიდან დაწყება
+embroidery	Create waits for the preview to be ready.	შექმნა ელოდება გადახედვის მომზადებას.
+embroidery	Can't digitize it: {reason}	დიგიტალიზაცია შეუძლებელია: {reason}
+embroidery	Shapes	ფიგურები
+embroidery	Recomputing…	ხელახალი გამოთვლა…
+embroidery	Recomputing… {percent}	ხელახალი გამოთვლა… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · ნაქარგობა {w} × {h} მმ
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	ორიგინალი
+embroidery	Compare	შედარება
+embroidery	top left	ზემოთ მარცხნივ
+embroidery	top	ზემოთ
+embroidery	top right	ზემოთ მარჯვნივ
+embroidery	left	მარცხნივ
+embroidery	middle	შუაში
+embroidery	right	მარჯვნივ
+embroidery	bottom left	ქვემოთ მარცხნივ
+embroidery	bottom	ქვემოთ
+embroidery	bottom right	ქვემოთ მარჯვნივ
+embroidery	Background	ფონი
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	არ იქარგება
+embroidery	{value} mm²	{value} მმ²
+embroidery	{name} · not sewn	{name} · არ იქარგება
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	შედარება: ორიგინალი მარცხნივ
+embroidery	{value} mm	{value} მმ
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	გადახედვა აჩვენებს დაგეგმილ ნაკერებს. წარმოებამდე ამოქარგეთ სატესტო ნიმუში.
+embroidery	Fit	მორგება
+embroidery	Zoom	მასშტაბი
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	ზომა {low}-ზე მეტი უნდა იყოს.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} ძალიან დიდია: გვერდი მაქსიმუმ {high} შეიძლება იყოს.
+embroidery	A margin is 0 pixels or more.	კიდე 0 პიქსელი ან მეტია.
+embroidery	The margins leave no picture: crop less.	კიდეები სურათს აღარ ტოვებს: ნაკლები ამოჭერით.
+embroidery	Width	სიგანე
+embroidery	Height	სიმაღლე
+embroidery	Fit within the width and height	სიგანესა და სიმაღლეში ჩატევა
+embroidery	The design is {width} × {height}: as large as fits.	დიზაინი არის {width} × {height}: რამდენადაც ეტევა.
+embroidery	Type the width or the height: the other follows the picture.	შეიყვანეთ სიგანე ან სიმაღლე: მეორე სურათს მიჰყვება.
+embroidery	Left	მარცხნივ
+embroidery	Top	ზემოთ
+embroidery	Right	მარჯვნივ
+embroidery	Bottom	ქვემოთ
+embroidery	Crop	ამოჭრა
+embroidery	Crop to the Art	ნახატამდე ამოჭრა
+embroidery	Whole Image	მთლიანი გამოსახულება
+embroidery	Every color is sewn	ყველა ფერი იქარგება
+embroidery	Found: the transparency round the art	ნაპოვნია: ნახატის ირგვლივ გამჭვირვალობა
+embroidery	Found in the corners	ნაპოვნია კუთხეებში
+embroidery	Chosen from the picture's colors	არჩეულია სურათის ფერებიდან
+embroidery	Not found: the corners disagree	ვერ მოიძებნა: კუთხეები განსხვავდება
+embroidery	Leave the background out	ფონის გამოტოვება
+embroidery	Or one of the picture's colors:	ან სურათის ერთ-ერთი ფერი:
+embroidery	Color {color}	ფერი {color}
+embroidery	every color sewn	ყველა ფერი იქარგება
+embroidery	background left out	ფონი გამოტოვებულია
+embroidery	{width} × {height} mm · {background}	{width} × {height} მმ · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	გამოთვლა…
+embroidery	{value} ms	{value} მწმ
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	ნაბიჯი {number} / {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	სიგლუვე: {value}
+embroidery	Corners: {value}	კუთხეები: {value}
+embroidery	Colors overlap by {value} mm	ფერები ერთმანეთს {value} მმ-ით ფარავს
+embroidery	The stitches follow the document's embroidery settings.	ნაკერები დოკუმენტის ნაქარგობის პარამეტრებს მიჰყვება.
+@plural	{count} thread + background|{count} threads + background	ძაფები: {count} + ფონი
+@plural	{count} area|{count} areas	არეები: {count}
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	შესარწყმელად აირჩიეთ ორი ან მეტი ფერი.
+embroidery	Select one or more colors first.	ჯერ აირჩიეთ ერთი ან მეტი ფერი.
+embroidery	Select one color to choose its thread.	ძაფის ასარჩევად აირჩიეთ ერთი ფერი.
+embroidery	{share} of the frame	კადრის {share}
+embroidery	merged	შერწყმული
+embroidery	unlike the image's color	განსხვავდება სურათის ფერისგან
+embroidery	no closer thread in {palette}	{palette}-ში უფრო ახლო ძაფი არ არის
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	ფონი · კადრის {share} · არ იქარგება
+embroidery	Back to Auto: {thread}	ავტომატურზე დაბრუნება: {thread}
+embroidery	Back to Auto	ავტომატურზე დაბრუნება
+embroidery	Merge	შერწყმა
+embroidery	Sew these colors as one.	ეს ფერები ერთ ფერად დაიქარგება.
+embroidery	Sew	დაქარგვა
+embroidery	Sew these colors again, as Auto chooses.	ეს ფერები კვლავ დაიქარგება, როგორც ავტომატური აირჩევს.
+embroidery	Don't Sew	არ დაქარგო
+embroidery	Leave these colors out: their areas aren't sewn.	გამოტოვეთ ეს ფერები: მათი არეები არ დაიქარგება.
+embroidery	Choose Thread…	ძაფის არჩევა…
+embroidery	Choose the thread this color is sewn in.	აირჩიეთ ძაფი, რომლითაც ეს ფერი დაიქარგება.
+embroidery	Name or number	სახელი ან ნომერი
+embroidery	{value} · nearest	{value} · უახლოესი
+embroidery	Logo	ლოგო
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	ბრტყელი გრაფიკა: ზუსტად მისი ფერები, იშვიათი, მაგრამ გამორჩეულიც, მაქსიმუმ ფერების რაოდენობა.
+embroidery	Grays	ნაცრისფრები
+embroidery	Shades of gray, as many as the number of colors.	ნაცრისფრის ელფერები, იმდენი, რამდენიც ფერების რაოდენობაა.
+embroidery	The colors that best represent the picture, at most the number of colors.	ფერები, რომლებიც სურათს საუკეთესოდ გადმოსცემს, მაქსიმუმ ფერების რაოდენობა.
+embroidery	Mode	რეჟიმი
+embroidery	{value} is out of range: {low} to {high}.	{value} დიაპაზონის გარეთაა: {low}–{high}.
+embroidery	Number of colors	ფერების რაოდენობა
+embroidery	Match to threads	ძაფებთან შესაბამისობა
+embroidery	Create sets the document's thread palette to {palette}.	შექმნა დოკუმენტის ძაფების პალიტრას {palette}-ზე დააყენებს.
+embroidery	Smallest area	უმცირესი არე
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	უფრო პატარა ლაქები, მაგალითად JPEG-ის ხმაური, გარშემო ფერს უერთდება.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	ზედმეტად პატარა ფერები სხვებს შეუერთდა: {count}
+@plural	{count} speck joined|{count} specks joined	შეერთებული ლაქები: {count}
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	დასაქარგი არაფერია: ყველა ფერი გამოტოვებულია.
+embroidery	Nothing to create: every color is left out.	შესაქმნელი არაფერია: ყველა ფერი გამოტოვებულია.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	{color}-ის ყველა არე {value} მმ²-ზე პატარა იყო: ის მეზობლებს შეუერთდა.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	{color}-ისთვის არჩეული ძაფი, {thread}, ნაცრისფერი არ არის: ის არჩეულივით დაიქარგება.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	ამ ზომაზე სურათს მილიმეტრზე {value} პიქსელი აქვს, {least}-ზე ნაკლები: უფრო დიდი ასლი უკეთ ციფრდება.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	სურათი წაკითხულია {width} × {height} პიქსელად, საკუთარ {fullWidth} × {fullHeight}-ზე პატარად.
+embroidery	The image's corners don't agree on a background: every color is sewn.	სურათის კუთხეები ფონზე არ თანხმდება: ყველა ფერი იქარგება.
+embroidery	No color traced is the background's: every area is sewn.	არცერთი ტრასირებული ფერი ფონისა არ არის: ყველა არე იქარგება.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	სურათი ბრტყელ გრაფიკას არ ჰგავს (ფოტო ან გრადიენტები?): მისი გრადიენტები ერთფეროვანი ზოლებით დაიქარგება.
+embroidery	Nothing in the image was traced: it is empty or transparent.	სურათში ვერაფერი დატრასირდა: ის ცარიელი ან გამჭვირვალეა.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	მხოლოდ სურათის ობიექტები, დოკუმენტის ქსოვილით, ძაფითა და მანქანით.
+embroidery	Updated in {value} ms after the last change ({steps})	განახლდა {value} მწმ-ში ბოლო ცვლილების შემდეგ ({steps})
+embroidery	Notes	შენიშვნები
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	შეიქმნა {objects} ({threads}). სურათი დამალულ შაბლონის ფენაზეა „{layer}“. დაბრუნება მათ წაშლის.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} მმ²-ზე პატარა ლაქები გარშემო ფერებს შეუერთდა: {count}
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} მმ²-ზე პატარა ლაქებს შესაერთებელი არაფერი ჰქონდა და გამოტოვდა: {count}
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	მაქსიმუმ {value} მმ სიგანის ზოლები ფერით უახლოეს მეზობლებს შეუერთდა: {count}
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{color}-ის არეები, რომლებსაც დასაქარგი ცენტრალური ხაზი არ აქვს, მათი ფორმით დაიქარგება: {count}
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	არეები, რომლებიც მეზობლებს ვერ შეუერთდა, დატრასირებულივით დაიქარგება: {count}
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	ფონის ფერი დიზაინის შიგნით
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} ფერი ფონის გარდა და ფონის ფერი, რომელიც იქარგება იქ, სადაც დიზაინი მას გარს აკრავს.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	დასაქარგი არაფერია: ყველა არე ფონია. დაქარგეთ ფონიც ან ნაკლებად ამოჭერით.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	შესაქმნელი არაფერია: ყველა არე ფონია. დაქარგეთ ფონიც ან ნაკლებად ამოჭერით.

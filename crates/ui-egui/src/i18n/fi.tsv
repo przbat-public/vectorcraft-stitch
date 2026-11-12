@@ -7411,3 +7411,144 @@ breakText	Glyphs	Merkit
 	Ignore All	Ohita kaikki
 	Add to Dictionary	Lisää sanastoon
 	No Suggestions	Ei ehdotuksia
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitoi kuva…
+embroidery	Digitize Image…	Digitoi kuva…
+embroidery	Digitize Image	Kuvan digitointi
+embroidery	Digitize Image: live preview	Kuvan digitointi: reaaliaikainen esikatselu
+embroidery	Select one image to digitize it.	Valitse yksi kuva digitoitavaksi.
+embroidery	The preview isn't ready yet.	Esikatselu ei ole vielä valmis.
+embroidery	Cancel	Peruuta
+embroidery	Digitizing…	Digitoidaan…
+embroidery	Create Embroidery Objects	Luo kirjontaobjektit
+embroidery	Start Over	Aloita alusta
+embroidery	Create waits for the preview to be ready.	Luonti odottaa, että esikatselu on valmis.
+embroidery	Can't digitize it: {reason}	Ei voi digitoida: {reason}
+embroidery	Shapes	Muodot
+embroidery	Recomputing…	Lasketaan uudelleen…
+embroidery	Recomputing… {percent}	Lasketaan uudelleen… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · kirjonta {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Alkuperäinen
+embroidery	Compare	Vertaa
+embroidery	top left	ylhäällä vasemmalla
+embroidery	top	ylhäällä
+embroidery	top right	ylhäällä oikealla
+embroidery	left	vasemmalla
+embroidery	middle	keskellä
+embroidery	right	oikealla
+embroidery	bottom left	alhaalla vasemmalla
+embroidery	bottom	alhaalla
+embroidery	bottom right	alhaalla oikealla
+embroidery	Background	Tausta
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Ei kirjota
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · ei kirjota
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Vertailu: alkuperäinen vasemmalla
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Esikatselu näyttää suunnitellut pistot. Kirjo koekappale ennen tuotantoa.
+embroidery	Fit	Sovita
+embroidery	Zoom	Zoomaus
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Koon on oltava suurempi kuin {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} on liian suuri: sivu on enintään {high}.
+embroidery	A margin is 0 pixels or more.	Reunus on vähintään 0 pikseliä.
+embroidery	The margins leave no picture: crop less.	Reunukset eivät jätä kuvaa: rajaa vähemmän.
+embroidery	Width	Leveys
+embroidery	Height	Korkeus
+embroidery	Fit within the width and height	Sovita leveyden ja korkeuden sisään
+embroidery	The design is {width} × {height}: as large as fits.	Kuvio on {width} × {height}: niin suuri kuin mahtuu.
+embroidery	Type the width or the height: the other follows the picture.	Kirjoita leveys tai korkeus: toinen seuraa kuvaa.
+embroidery	Left	Vasen
+embroidery	Top	Ylä
+embroidery	Right	Oikea
+embroidery	Bottom	Ala
+embroidery	Crop	Rajaus
+embroidery	Crop to the Art	Rajaa kuvioon
+embroidery	Whole Image	Koko kuva
+embroidery	Every color is sewn	Jokainen väri kirjotaan
+embroidery	Found: the transparency round the art	Löytyi: läpinäkyvyys kuvion ympärillä
+embroidery	Found in the corners	Löytyi kulmista
+embroidery	Chosen from the picture's colors	Valittu kuvan väreistä
+embroidery	Not found: the corners disagree	Ei löytynyt: kulmat eroavat
+embroidery	Leave the background out	Jätä tausta pois
+embroidery	Or one of the picture's colors:	Tai jokin kuvan väreistä:
+embroidery	Color {color}	Väri {color}
+embroidery	every color sewn	jokainen väri kirjotaan
+embroidery	background left out	tausta jätetty pois
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Lasketaan…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Vaihe {number}/{count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Pehmeys: {value}
+embroidery	Corners: {value}	Kulmat: {value}
+embroidery	Colors overlap by {value} mm	Värit limittyvät {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Pistot noudattavat asiakirjan kirjontaasetuksia.
+@plural	{count} thread + background|{count} threads + background	{count} lanka + tausta|{count} lankaa + tausta
+@plural	{count} area|{count} areas	{count} alue|{count} aluetta
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Valitse vähintään kaksi väriä yhdistääksesi ne.
+embroidery	Select one or more colors first.	Valitse ensin yksi tai useampi väri.
+embroidery	Select one color to choose its thread.	Valitse yksi väri valitaksesi sen langan.
+embroidery	{share} of the frame	{share} rajauksesta
+embroidery	merged	yhdistetty
+embroidery	unlike the image's color	erilainen kuin kuvan väri
+embroidery	no closer thread in {palette}	ei lähempää lankaa: {palette}
+embroidery	{color} in {thread}	{color}: {thread}
+embroidery	Background · {share} of the frame · not sewn	Tausta · {share} rajauksesta · ei kirjota
+embroidery	Back to Auto: {thread}	Takaisin automaattiseen: {thread}
+embroidery	Back to Auto	Takaisin automaattiseen
+embroidery	Merge	Yhdistä
+embroidery	Sew these colors as one.	Nämä värit kirjotaan yhtenä.
+embroidery	Sew	Kirjo
+embroidery	Sew these colors again, as Auto chooses.	Nämä värit kirjotaan taas, kuten automaatti valitsee.
+embroidery	Don't Sew	Älä kirjo
+embroidery	Leave these colors out: their areas aren't sewn.	Jätä nämä värit pois: niiden alueita ei kirjota.
+embroidery	Choose Thread…	Valitse lanka…
+embroidery	Choose the thread this color is sewn in.	Valitse lanka, jolla tämä väri kirjotaan.
+embroidery	Name or number	Nimi tai numero
+embroidery	{value} · nearest	{value} · lähin
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Tasainen grafiikka: täsmälleen sen omat värit, harvinaiset mutta erottuvat mukana, enintään värien määrä.
+embroidery	Grays	Harmaat
+embroidery	Shades of gray, as many as the number of colors.	Harmaan sävyjä, yhtä monta kuin värien määrä.
+embroidery	The colors that best represent the picture, at most the number of colors.	Värit, jotka kuvaavat kuvaa parhaiten, enintään värien määrä.
+embroidery	Mode	Tila
+embroidery	{value} is out of range: {low} to {high}.	{value} on alueen ulkopuolella: {low}–{high}.
+embroidery	Number of colors	Värien määrä
+embroidery	Match to threads	Sovita lankoihin
+embroidery	Create sets the document's thread palette to {palette}.	Luonti vaihtaa asiakirjan lankapaletiksi {palette}.
+embroidery	Smallest area	Pienin alue
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Pienemmät täplät, kuten JPEG-kohina, liittyvät ympäröivään väriin.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} väri oli liian pieni ja liittyi muihin|{count} väriä oli liian pieniä ja liittyi muihin
+@plural	{count} speck joined|{count} specks joined	{count} täplä liitetty|{count} täplää liitetty
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Ei mitään kirjottavaa: jokainen väri on jätetty pois.
+embroidery	Nothing to create: every color is left out.	Ei mitään luotavaa: jokainen väri on jätetty pois.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Jokainen värin {color} alue oli pienempi kuin {value} mm²: väri liittyi naapureihinsa.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Värille {color} valittu lanka, {thread}, ei ole harmaa: se kirjotaan valitun mukaisesti.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Tässä koossa kuvassa on {value} pikseliä millimetrillä, alle {least}: suurempi kopio digitoituu paremmin.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Kuva luettiin kokoon {width} × {height} pikseliä, pienempänä kuin sen {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Kuvan kulmat eivät sovi yhteen taustasta: jokainen väri kirjotaan.
+embroidery	No color traced is the background's: every area is sewn.	Mikään jäljitetty väri ei ole taustan: jokainen alue kirjotaan.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Kuva ei näytä tasaiselta grafiikalta (valokuva tai liukuvärejä?): sen liukuvärit kirjotaan tasavärisinä raitoina.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Kuvasta ei jäljitetty mitään: se on tyhjä tai läpinäkyvä.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Vain kuvan objektit, asiakirjan kankaalla, langalla ja koneella.
+embroidery	Updated in {value} ms after the last change ({steps})	Päivitetty {value} ms viimeisen muutoksen jälkeen ({steps})
+embroidery	Notes	Huomautukset
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Luotiin {objects} ({threads}). Kuva on piilotetulla mallitasolla ”{layer}”. Kumoa poistaa ne.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} alle {value} mm²:n täplä liittyi ympäröivään väriin|{count} alle {value} mm²:n täplää liittyi ympäröiviin väreihin
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} alle {value} mm²:n täplällä ei ollut mihin liittyä, ja se jätettiin pois|{count} alle {value} mm²:n täplällä ei ollut mihin liittyä, ja ne jätettiin pois
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} enintään {value} mm leveä raita liittyi väriltään lähimpään naapuriin|{count} enintään {value} mm leveää raitaa liittyi väriltään lähimpiin naapureihin
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} värin {color} alueella ei ole keskiviivaa kirjottavaksi: se kirjotaan muotonaan|{count} värin {color} alueella ei ole keskiviivaa kirjottavaksi: ne kirjotaan muotoinaan
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} alue ei voinut liittyä naapureihinsa: se kirjotaan jäljitettynä|{count} aluetta ei voinut liittyä naapureihinsa: ne kirjotaan jäljitettyinä
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	taustan väri kuvion sisällä
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} väri taustan lisäksi sekä taustan väri kirjottuna siellä, missä kuvio ympäröi sen.|{count} väriä taustan lisäksi sekä taustan väri kirjottuna siellä, missä kuvio ympäröi sen.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Ei mitään kirjottavaa: jokainen alue on taustaa. Kirjo tausta tai rajaa vähemmän.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Ei mitään luotavaa: jokainen alue on taustaa. Kirjo tausta tai rajaa vähemmän.

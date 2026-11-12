@@ -6977,3 +6977,144 @@ breakText	Glyphs	Glyph
 	Ignore All	Bỏ qua tất cả
 	Add to Dictionary	Thêm vào từ điển
 	No Suggestions	Không có gợi ý
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Số hóa hình ảnh…
+embroidery	Digitize Image…	Số hóa hình ảnh…
+embroidery	Digitize Image	Số hóa hình ảnh
+embroidery	Digitize Image: live preview	Số hóa hình ảnh: xem trước trực tiếp
+embroidery	Select one image to digitize it.	Chọn một hình ảnh để số hóa.
+embroidery	The preview isn't ready yet.	Bản xem trước chưa sẵn sàng.
+embroidery	Cancel	Hủy
+embroidery	Digitizing…	Đang số hóa…
+embroidery	Create Embroidery Objects	Tạo đối tượng thêu
+embroidery	Start Over	Bắt đầu lại
+embroidery	Create waits for the preview to be ready.	Việc tạo sẽ chờ bản xem trước sẵn sàng.
+embroidery	Can't digitize it: {reason}	Không thể số hóa: {reason}
+embroidery	Shapes	Hình dạng
+embroidery	Recomputing…	Đang tính lại…
+embroidery	Recomputing… {percent}	Đang tính lại… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · thêu {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Bản gốc
+embroidery	Compare	So sánh
+embroidery	top left	trên bên trái
+embroidery	top	trên
+embroidery	top right	trên bên phải
+embroidery	left	bên trái
+embroidery	middle	ở giữa
+embroidery	right	bên phải
+embroidery	bottom left	dưới bên trái
+embroidery	bottom	dưới
+embroidery	bottom right	dưới bên phải
+embroidery	Background	Nền
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Không thêu
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · không thêu
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	So sánh: bản gốc bên trái
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Bản xem trước cho thấy các mũi thêu đã lên kế hoạch. Hãy thêu thử một mẫu trước khi sản xuất.
+embroidery	Fit	Vừa khung
+embroidery	Zoom	Thu phóng
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Kích thước phải lớn hơn {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} quá lớn: mỗi cạnh tối đa {high}.
+embroidery	A margin is 0 pixels or more.	Lề từ 0 điểm ảnh trở lên.
+embroidery	The margins leave no picture: crop less.	Các lề không còn chừa lại hình: hãy cắt ít hơn.
+embroidery	Width	Chiều rộng
+embroidery	Height	Chiều cao
+embroidery	Fit within the width and height	Vừa trong chiều rộng và chiều cao
+embroidery	The design is {width} × {height}: as large as fits.	Mẫu là {width} × {height}: lớn nhất có thể vừa.
+embroidery	Type the width or the height: the other follows the picture.	Nhập chiều rộng hoặc chiều cao: chiều còn lại theo hình.
+embroidery	Left	Trái
+embroidery	Top	Trên
+embroidery	Right	Phải
+embroidery	Bottom	Dưới
+embroidery	Crop	Cắt xén
+embroidery	Crop to the Art	Cắt theo hình vẽ
+embroidery	Whole Image	Toàn bộ hình
+embroidery	Every color is sewn	Mọi màu đều được thêu
+embroidery	Found: the transparency round the art	Đã tìm thấy: phần trong suốt quanh hình vẽ
+embroidery	Found in the corners	Tìm thấy ở các góc
+embroidery	Chosen from the picture's colors	Đã chọn từ các màu của hình
+embroidery	Not found: the corners disagree	Không tìm thấy: các góc khác nhau
+embroidery	Leave the background out	Bỏ nền
+embroidery	Or one of the picture's colors:	Hoặc một trong các màu của hình:
+embroidery	Color {color}	Màu {color}
+embroidery	every color sewn	mọi màu đều thêu
+embroidery	background left out	bỏ nền
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Đang tính…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Bước {number}/{count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Độ mượt: {value}
+embroidery	Corners: {value}	Góc: {value}
+embroidery	Colors overlap by {value} mm	Các màu chồng lên nhau {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Các mũi thêu theo thiết lập thêu của tài liệu.
+@plural	{count} thread + background|{count} threads + background	{count} chỉ + nền
+@plural	{count} area|{count} areas	{count} vùng
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Chọn từ hai màu trở lên để hợp nhất.
+embroidery	Select one or more colors first.	Hãy chọn một hoặc nhiều màu trước.
+embroidery	Select one color to choose its thread.	Chọn một màu để chọn chỉ cho màu đó.
+embroidery	{share} of the frame	{share} khung
+embroidery	merged	đã hợp nhất
+embroidery	unlike the image's color	khác màu của hình
+embroidery	no closer thread in {palette}	không có chỉ nào gần hơn trong {palette}
+embroidery	{color} in {thread}	{color} bằng {thread}
+embroidery	Background · {share} of the frame · not sewn	Nền · {share} khung · không thêu
+embroidery	Back to Auto: {thread}	Trở về Tự động: {thread}
+embroidery	Back to Auto	Trở về Tự động
+embroidery	Merge	Hợp nhất
+embroidery	Sew these colors as one.	Các màu này được thêu như một màu.
+embroidery	Sew	Thêu
+embroidery	Sew these colors again, as Auto chooses.	Các màu này được thêu lại, theo lựa chọn Tự động.
+embroidery	Don't Sew	Không thêu
+embroidery	Leave these colors out: their areas aren't sewn.	Bỏ các màu này: các vùng của chúng không được thêu.
+embroidery	Choose Thread…	Chọn chỉ…
+embroidery	Choose the thread this color is sewn in.	Chọn chỉ để thêu màu này.
+embroidery	Name or number	Tên hoặc số
+embroidery	{value} · nearest	{value} · gần nhất
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Hình phẳng: đúng các màu của chính nó, giữ cả màu hiếm nhưng khác biệt, tối đa bằng số màu.
+embroidery	Grays	Xám
+embroidery	Shades of gray, as many as the number of colors.	Các sắc xám, bằng số màu.
+embroidery	The colors that best represent the picture, at most the number of colors.	Các màu thể hiện hình tốt nhất, tối đa bằng số màu.
+embroidery	Mode	Chế độ
+embroidery	{value} is out of range: {low} to {high}.	{value} nằm ngoài phạm vi: từ {low} đến {high}.
+embroidery	Number of colors	Số màu
+embroidery	Match to threads	Khớp với chỉ
+embroidery	Create sets the document's thread palette to {palette}.	Tạo sẽ đặt bảng chỉ của tài liệu thành {palette}.
+embroidery	Smallest area	Vùng nhỏ nhất
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Các đốm nhỏ hơn, như nhiễu JPEG, nhập vào màu xung quanh.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} màu quá nhỏ và đã nhập vào các màu khác
+@plural	{count} speck joined|{count} specks joined	Đã nhập {count} đốm
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Không có gì để thêu: mọi màu đều bị bỏ.
+embroidery	Nothing to create: every color is left out.	Không có gì để tạo: mọi màu đều bị bỏ.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Mọi vùng của {color} đều nhỏ hơn {value} mm²: màu này đã nhập vào các màu lân cận.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Chỉ đã chọn cho {color}, {thread}, không phải màu xám: chỉ được thêu như đã chọn.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Ở kích thước này hình có {value} điểm ảnh mỗi milimét, ít hơn {least}: một bản lớn hơn sẽ số hóa tốt hơn.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Hình được đọc ở {width} × {height} điểm ảnh, nhỏ hơn kích thước {fullWidth} × {fullHeight} của nó.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Các góc của hình không thống nhất về nền: mọi màu đều được thêu.
+embroidery	No color traced is the background's: every area is sewn.	Không có màu được dò nào là màu nền: mọi vùng đều được thêu.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Hình không giống hình phẳng (ảnh chụp, hay chuyển màu?): các vùng chuyển màu được thêu thành dải màu phẳng.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Không dò được gì trong hình: hình trống hoặc trong suốt.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Chỉ các đối tượng của hình, với vải, chỉ và máy của tài liệu.
+embroidery	Updated in {value} ms after the last change ({steps})	Đã cập nhật trong {value} ms sau thay đổi cuối ({steps})
+embroidery	Notes	Ghi chú
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Đã tạo {objects} ({threads}). Hình nằm trên lớp mẫu ẩn “{layer}”. Hoàn tác sẽ gỡ bỏ chúng.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} đốm nhỏ hơn {value} mm² đã nhập vào màu xung quanh
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} đốm nhỏ hơn {value} mm² không có gì để nhập vào nên đã bị bỏ
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} dải rộng tối đa {value} mm đã nhập vào vùng lân cận có màu gần nhất
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} vùng của {color} không có đường giữa để thêu theo: được thêu theo hình dạng của nó
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} vùng không thể nối với các vùng lân cận: được thêu như khi dò
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	màu nền bên trong mẫu
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} màu ngoài nền, và màu nền được thêu ở chỗ mẫu bao quanh nó.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Không có gì để thêu: mọi vùng đều là nền. Hãy thêu cả nền, hoặc cắt xén ít hơn.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Không có gì để tạo: mọi vùng đều là nền. Hãy thêu cả nền, hoặc cắt xén ít hơn.

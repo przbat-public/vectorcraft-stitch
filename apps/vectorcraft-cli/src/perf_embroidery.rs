@@ -44,6 +44,9 @@
 //!   them, and its dry run in all;
 //! - routes (`routes`): running lines whose pieces meet end to end, a tree and a grid, and the
 //!   1,000-path document's fills with their rows across their shape, planned cold;
+//! - the image window (`window`): digitizing's stages kept between runs, a first run, the runs after
+//!   a thread chosen and the colours asked changed, a run with nothing changed, the 1,500-pixel
+//!   badge in logo mode and its raster painted in its threads' colours;
 //! - a cancel inside one large object (`cancel`): a fill of 2,304 holes cancelled at five points of
 //!   its plan, the longest wait, all in rows and with its narrow parts as satin;
 //! - stitch pictures of 10,000 to 2,000,000 stitches ([`stitch_picture`]: fill rows, satin columns
@@ -75,6 +78,7 @@ use crate::perf::synthetic;
 mod cancel;
 mod digitizing;
 mod routes;
+mod window;
 
 /// The paths of the synthetic document whose embroidery is planned: few enough to stay within the
 /// 2 million stitches a design may have (the 50,000-path document needs more), about a hundred
@@ -102,7 +106,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 103] = [
+pub const ROWS: [&str; 109] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -206,6 +210,12 @@ pub const ROWS: [&str; 103] = [
     routes::ROWS[4],
     cancel::ROWS[0],
     cancel::ROWS[1],
+    window::ROWS[0],
+    window::ROWS[1],
+    window::ROWS[2],
+    window::ROWS[3],
+    window::ROWS[4],
+    window::ROWS[5],
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates but one: the cancel
@@ -227,7 +237,7 @@ pub const ROWS: [&str; 103] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 103] = [
+const BUDGETS: [f64; 109] = [
     400.0,
     100.0,
     100.0,
@@ -332,6 +342,12 @@ const BUDGETS: [f64; 103] = [
     routes::BUDGETS[4],
     cancel::BUDGETS[0],
     cancel::BUDGETS[1],
+    window::BUDGETS[0],
+    window::BUDGETS[1],
+    window::BUDGETS[2],
+    window::BUDGETS[3],
+    window::BUDGETS[4],
+    window::BUDGETS[5],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.
@@ -520,6 +536,7 @@ pub fn rows() -> Result<Vec<(&'static str, f64, f64)>, String> {
     ms.extend(digitizing::times()?);
     ms.extend(routes::times()?);
     ms.extend(cancel::times()?);
+    ms.extend(window::times()?);
     // The rings toward an exit plan their parts with and without it: within a share of the plain
     // rings' time in the same run, whatever the machine's load, and the absolute budget.
     let mut budgets = BUDGETS;

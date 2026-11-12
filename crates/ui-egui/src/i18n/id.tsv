@@ -7135,3 +7135,144 @@ breakText	Glyphs	Glif
 # Align to Pixel Grid
 	Align to Pixel Grid	Sejajarkan ke grid piksel
 @msg	side is left or right, not `{s}`	side adalah left atau right, bukan `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Digitalkan gambar…
+embroidery	Digitize Image…	Digitalkan gambar…
+embroidery	Digitize Image	Digitalisasi gambar
+embroidery	Digitize Image: live preview	Digitalisasi gambar: pratinjau langsung
+embroidery	Select one image to digitize it.	Pilih satu gambar untuk mendigitalkannya.
+embroidery	The preview isn't ready yet.	Pratinjau belum siap.
+embroidery	Cancel	Batal
+embroidery	Digitizing…	Mendigitalkan…
+embroidery	Create Embroidery Objects	Buat objek bordir
+embroidery	Start Over	Mulai ulang
+embroidery	Create waits for the preview to be ready.	Pembuatan menunggu pratinjau siap.
+embroidery	Can't digitize it: {reason}	Tidak dapat didigitalkan: {reason}
+embroidery	Shapes	Bentuk
+embroidery	Recomputing…	Menghitung ulang…
+embroidery	Recomputing… {percent}	Menghitung ulang… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · bordir {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Asli
+embroidery	Compare	Bandingkan
+embroidery	top left	kiri atas
+embroidery	top	atas
+embroidery	top right	kanan atas
+embroidery	left	kiri
+embroidery	middle	tengah
+embroidery	right	kanan
+embroidery	bottom left	kiri bawah
+embroidery	bottom	bawah
+embroidery	bottom right	kanan bawah
+embroidery	Background	Latar
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Tidak dibordir
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · tidak dibordir
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Perbandingan: aslinya di kiri
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	Pratinjau menampilkan jahitan yang direncanakan. Bordir contoh uji sebelum produksi.
+embroidery	Fit	Pas
+embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Ukuran harus lebih dari {low}.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} terlalu besar: satu sisi paling panjang {high}.
+embroidery	A margin is 0 pixels or more.	Margin adalah 0 piksel atau lebih.
+embroidery	The margins leave no picture: crop less.	Margin tidak menyisakan gambar: pangkas lebih sedikit.
+embroidery	Width	Lebar
+embroidery	Height	Tinggi
+embroidery	Fit within the width and height	Muat dalam lebar dan tinggi
+embroidery	The design is {width} × {height}: as large as fits.	Desainnya {width} × {height}: sebesar yang muat.
+embroidery	Type the width or the height: the other follows the picture.	Ketik lebar atau tinggi: yang lain mengikuti gambar.
+embroidery	Left	Kiri
+embroidery	Top	Atas
+embroidery	Right	Kanan
+embroidery	Bottom	Bawah
+embroidery	Crop	Pangkas
+embroidery	Crop to the Art	Pangkas ke Gambar
+embroidery	Whole Image	Seluruh Gambar
+embroidery	Every color is sewn	Setiap warna dijahit
+embroidery	Found: the transparency round the art	Ditemukan: transparansi di sekitar gambar
+embroidery	Found in the corners	Ditemukan di sudut
+embroidery	Chosen from the picture's colors	Dipilih dari warna gambar
+embroidery	Not found: the corners disagree	Tidak ditemukan: sudut-sudutnya berbeda
+embroidery	Leave the background out	Abaikan latar
+embroidery	Or one of the picture's colors:	Atau salah satu warna gambar:
+embroidery	Color {color}	Warna {color}
+embroidery	every color sewn	setiap warna dijahit
+embroidery	background left out	latar diabaikan
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Menghitung…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Langkah {number} dari {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Kehalusan: {value}
+embroidery	Corners: {value}	Sudut: {value}
+embroidery	Colors overlap by {value} mm	Warna tumpang tindih {value} mm
+embroidery	The stitches follow the document's embroidery settings.	Jahitan mengikuti pengaturan bordir dokumen.
+@plural	{count} thread + background|{count} threads + background	{count} benang + latar
+@plural	{count} area|{count} areas	{count} area
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Pilih dua warna atau lebih untuk menggabungkannya.
+embroidery	Select one or more colors first.	Pilih satu warna atau lebih terlebih dahulu.
+embroidery	Select one color to choose its thread.	Pilih satu warna untuk memilih benangnya.
+embroidery	{share} of the frame	{share} dari bingkai
+embroidery	merged	digabungkan
+embroidery	unlike the image's color	tidak mirip warna gambar
+embroidery	no closer thread in {palette}	tidak ada benang yang lebih dekat di {palette}
+embroidery	{color} in {thread}	{color} dengan {thread}
+embroidery	Background · {share} of the frame · not sewn	Latar · {share} dari bingkai · tidak dijahit
+embroidery	Back to Auto: {thread}	Kembali ke Otomatis: {thread}
+embroidery	Back to Auto	Kembali ke Otomatis
+embroidery	Merge	Gabungkan
+embroidery	Sew these colors as one.	Warna-warna ini dijahit sebagai satu.
+embroidery	Sew	Jahit
+embroidery	Sew these colors again, as Auto chooses.	Warna-warna ini dijahit lagi, sesuai pilihan Otomatis.
+embroidery	Don't Sew	Jangan jahit
+embroidery	Leave these colors out: their areas aren't sewn.	Abaikan warna-warna ini: areanya tidak dijahit.
+embroidery	Choose Thread…	Pilih Benang…
+embroidery	Choose the thread this color is sewn in.	Pilih benang untuk menjahit warna ini.
+embroidery	Name or number	Nama atau nomor
+embroidery	{value} · nearest	{value} · terdekat
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Gambar datar: tepat warnanya sendiri, yang jarang tetapi berbeda tetap ada, paling banyak sejumlah warna.
+embroidery	Grays	Abu-abu
+embroidery	Shades of gray, as many as the number of colors.	Gradasi abu-abu, sebanyak jumlah warna.
+embroidery	The colors that best represent the picture, at most the number of colors.	Warna yang paling mewakili gambar, paling banyak sejumlah warna.
+embroidery	Mode	Mode
+embroidery	{value} is out of range: {low} to {high}.	{value} di luar rentang: {low} hingga {high}.
+embroidery	Number of colors	Jumlah warna
+embroidery	Match to threads	Cocokkan dengan benang
+embroidery	Create sets the document's thread palette to {palette}.	Buat menetapkan palet benang dokumen ke {palette}.
+embroidery	Smallest area	Area terkecil
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Bintik yang lebih kecil, seperti derau JPEG, bergabung dengan warna di sekitarnya.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} warna terlalu kecil dan bergabung dengan yang lain
+@plural	{count} speck joined|{count} specks joined	{count} bintik digabungkan
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Tidak ada yang dijahit: setiap warna diabaikan.
+embroidery	Nothing to create: every color is left out.	Tidak ada yang dibuat: setiap warna diabaikan.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Setiap area {color} lebih kecil dari {value} mm²: warna ini bergabung dengan tetangganya.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Benang yang dipilih untuk {color}, {thread}, tidak abu-abu: dijahit sesuai pilihan.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Pada ukuran ini gambar memiliki {value} piksel per milimeter, kurang dari {least}: salinan yang lebih besar didigitalkan lebih baik.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Gambar dibaca pada {width} × {height} piksel, lebih kecil dari {fullWidth} × {fullHeight} aslinya.
+embroidery	The image's corners don't agree on a background: every color is sewn.	Sudut-sudut gambar tidak sepakat soal latar: setiap warna dijahit.
+embroidery	No color traced is the background's: every area is sewn.	Tidak ada warna yang dilacak yang merupakan warna latar: setiap area dijahit.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	Gambar tidak tampak seperti gambar datar (foto, atau gradasi?): gradasinya dijahit sebagai pita warna datar.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Tidak ada yang dilacak di gambar: gambar kosong atau transparan.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Hanya objek gambar, dengan kain, benang, dan mesin dokumen.
+embroidery	Updated in {value} ms after the last change ({steps})	Diperbarui dalam {value} ms setelah perubahan terakhir ({steps})
+embroidery	Notes	Catatan
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Dibuat {objects} ({threads}). Gambar ada di lapisan templat tersembunyi “{layer}”. Urungkan menghapusnya.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} bintik lebih kecil dari {value} mm² bergabung dengan warna di sekitarnya
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} bintik lebih kecil dari {value} mm² tidak punya tempat bergabung dan diabaikan
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} pita selebar paling banyak {value} mm bergabung dengan tetangga yang warnanya paling dekat
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} area {color} tidak punya garis tengah untuk dijahit: dijahit sebagai bentuknya
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} area tidak dapat digabungkan dengan tetangganya: dijahit seperti hasil pelacakan
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	warna latar di dalam desain
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} warna selain latar, dan warna latar yang dijahit di tempat desain mengelilinginya.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Tidak ada yang dijahit: setiap area adalah latar. Jahit latarnya, atau pangkas lebih sedikit.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Tidak ada yang dibuat: setiap area adalah latar. Jahit latarnya, atau pangkas lebih sedikit.

@@ -7186,3 +7186,144 @@ breakText	Glyphs	Glyphs
 # Align to Pixel Grid
 	Align to Pixel Grid	Uitlijnen op pixelraster
 @msg	side is left or right, not `{s}`	side is left of right, niet `{s}`
+# VectorCraft Stitch: Digitize Image…, the large window that digitizes an image live: opening it, its title, its buttons and its run's state (drafted with AI assistance from the English meaning, for review)
+	Digitize Image…	Afbeelding digitaliseren…
+embroidery	Digitize Image…	Afbeelding digitaliseren…
+embroidery	Digitize Image	Afbeelding digitaliseren
+embroidery	Digitize Image: live preview	Afbeelding digitaliseren: live voorvertoning
+embroidery	Select one image to digitize it.	Selecteer één afbeelding om die te digitaliseren.
+embroidery	The preview isn't ready yet.	De voorvertoning is nog niet klaar.
+embroidery	Cancel	Annuleren
+embroidery	Digitizing…	Bezig met digitaliseren…
+embroidery	Create Embroidery Objects	Borduurobjecten maken
+embroidery	Start Over	Opnieuw beginnen
+embroidery	Create waits for the preview to be ready.	Het maken wacht tot de voorvertoning klaar is.
+embroidery	Can't digitize it: {reason}	Kan niet worden gedigitaliseerd: {reason}
+embroidery	Shapes	Vormen
+embroidery	Recomputing…	Opnieuw berekenen…
+embroidery	Recomputing… {percent}	Opnieuw berekenen… {percent}
+embroidery	{name} · {format} {width} × {height} px · embroidery {w} × {h} mm	{name} · {format} {width} × {height} px · borduurwerk {w} × {h} mm
+embroidery	{name} · {format} {width} × {height} px	{name} · {format} {width} × {height} px
+# VectorCraft Stitch: Digitize Image…'s preview: its views, the area under the pointer named, the scale bar, the zoom and the honesty line (drafted with AI assistance from the English meaning, for review)
+embroidery	Original	Origineel
+embroidery	Compare	Vergelijken
+embroidery	top left	linksboven
+embroidery	top	boven
+embroidery	top right	rechtsboven
+embroidery	left	links
+embroidery	middle	midden
+embroidery	right	rechts
+embroidery	bottom left	linksonder
+embroidery	bottom	onder
+embroidery	bottom right	rechtsonder
+embroidery	Background	Achtergrond
+embroidery	{thread} {number}	{thread} {number}
+embroidery	Not sewn	Niet geborduurd
+embroidery	{value} mm²	{value} mm²
+embroidery	{name} · not sewn	{name} · niet geborduurd
+embroidery	{name} · {size} · {place}	{name} · {size} · {place}
+embroidery	Compare: the original on the left	Vergelijking: het origineel links
+embroidery	{value} mm	{value} mm
+embroidery	The preview shows the planned stitches. Sew a test piece before production.	De voorvertoning toont de geplande steken. Borduur een proefstuk vóór de productie.
+embroidery	Fit	Passend
+embroidery	Zoom	Zoom
+# VectorCraft Stitch: Digitize Image…'s step strip and its sections, and the Image step: size, crop and background (drafted with AI assistance from the English meaning, for review)
+embroidery	A size is more than {low}.	Een grootte moet meer dan {low} zijn.
+embroidery	{width} × {height} is too large: a side is at most {high}.	{width} × {height} is te groot: een zijde is hoogstens {high}.
+embroidery	A margin is 0 pixels or more.	Een marge is 0 pixels of meer.
+embroidery	The margins leave no picture: crop less.	De marges laten geen afbeelding over: snijd minder bij.
+embroidery	Width	Breedte
+embroidery	Height	Hoogte
+embroidery	Fit within the width and height	Passen binnen de breedte en hoogte
+embroidery	The design is {width} × {height}: as large as fits.	Het ontwerp is {width} × {height}: zo groot als past.
+embroidery	Type the width or the height: the other follows the picture.	Typ de breedte of de hoogte: de andere volgt de afbeelding.
+embroidery	Left	Links
+embroidery	Top	Boven
+embroidery	Right	Rechts
+embroidery	Bottom	Onder
+embroidery	Crop	Bijsnijden
+embroidery	Crop to the Art	Bijsnijden tot de tekening
+embroidery	Whole Image	Hele afbeelding
+embroidery	Every color is sewn	Elke kleur wordt geborduurd
+embroidery	Found: the transparency round the art	Gevonden: de transparantie rond de tekening
+embroidery	Found in the corners	Gevonden in de hoeken
+embroidery	Chosen from the picture's colors	Gekozen uit de kleuren van de afbeelding
+embroidery	Not found: the corners disagree	Niet gevonden: de hoeken verschillen
+embroidery	Leave the background out	Achtergrond weglaten
+embroidery	Or one of the picture's colors:	Of een van de kleuren van de afbeelding:
+embroidery	Color {color}	Kleur {color}
+embroidery	every color sewn	elke kleur geborduurd
+embroidery	background left out	achtergrond weggelaten
+embroidery	{width} × {height} mm · {background}	{width} × {height} mm · {background}
+embroidery	{number} · {name}	{number} · {name}
+embroidery	Computing…	Berekenen…
+embroidery	{value} ms	{value} ms
+embroidery	Step {number} of {count}: {name}. {summary}. {time}	Stap {number} van {count}: {name}. {summary}. {time}
+embroidery	Smoothness: {value}	Gladheid: {value}
+embroidery	Corners: {value}	Hoeken: {value}
+embroidery	Colors overlap by {value} mm	Kleuren overlappen {value} mm
+embroidery	The stitches follow the document's embroidery settings.	De steken volgen de borduurinstellingen van het document.
+@plural	{count} thread + background|{count} threads + background	{count} draad + achtergrond|{count} draden + achtergrond
+@plural	{count} area|{count} areas	{count} vlak|{count} vlakken
+# VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
+embroidery	Select two or more colors to merge them.	Selecteer twee of meer kleuren om ze samen te voegen.
+embroidery	Select one or more colors first.	Selecteer eerst een of meer kleuren.
+embroidery	Select one color to choose its thread.	Selecteer één kleur om de draad ervan te kiezen.
+embroidery	{share} of the frame	{share} van het kader
+embroidery	merged	samengevoegd
+embroidery	unlike the image's color	anders dan de kleur van de afbeelding
+embroidery	no closer thread in {palette}	geen nauwere draad in {palette}
+embroidery	{color} in {thread}	{color} in {thread}
+embroidery	Background · {share} of the frame · not sewn	Achtergrond · {share} van het kader · niet geborduurd
+embroidery	Back to Auto: {thread}	Terug naar automatisch: {thread}
+embroidery	Back to Auto	Terug naar automatisch
+embroidery	Merge	Samenvoegen
+embroidery	Sew these colors as one.	Deze kleuren worden als één geborduurd.
+embroidery	Sew	Borduren
+embroidery	Sew these colors again, as Auto chooses.	Deze kleuren worden weer geborduurd, zoals Automatisch kiest.
+embroidery	Don't Sew	Niet borduren
+embroidery	Leave these colors out: their areas aren't sewn.	Laat deze kleuren weg: hun vlakken worden niet geborduurd.
+embroidery	Choose Thread…	Draad kiezen…
+embroidery	Choose the thread this color is sewn in.	Kies de draad waarmee deze kleur wordt geborduurd.
+embroidery	Name or number	Naam of nummer
+embroidery	{value} · nearest	{value} · dichtstbij
+embroidery	Logo	Logo
+embroidery	Flat art: exactly its own colors, rare but distinct ones kept, at most the number of colors.	Vlakke afbeelding: precies de eigen kleuren, zeldzame maar duidelijke behouden, hoogstens het aantal kleuren.
+embroidery	Grays	Grijzen
+embroidery	Shades of gray, as many as the number of colors.	Grijstinten, zoveel als het aantal kleuren.
+embroidery	The colors that best represent the picture, at most the number of colors.	De kleuren die de afbeelding het best weergeven, hoogstens het aantal kleuren.
+embroidery	Mode	Modus
+embroidery	{value} is out of range: {low} to {high}.	{value} valt buiten het bereik: {low} tot {high}.
+embroidery	Number of colors	Aantal kleuren
+embroidery	Match to threads	Afstemmen op draden
+embroidery	Create sets the document's thread palette to {palette}.	Maken stelt het draadpalet van het document in op {palette}.
+embroidery	Smallest area	Kleinste vlak
+embroidery	Smaller specks, such as JPEG noise, join the color around them.	Kleinere spikkels, zoals JPEG-ruis, gaan op in de kleur eromheen.
+@plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} kleur was te klein en ging op in andere|{count} kleuren waren te klein en gingen op in andere
+@plural	{count} speck joined|{count} specks joined	{count} spikkel opgegaan|{count} spikkels opgegaan
+# VectorCraft Stitch: Digitize Image…'s Live bar: its figures, its states and notes, and what Create made (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every color is left out.	Niets te borduren: elke kleur is weggelaten.
+embroidery	Nothing to create: every color is left out.	Niets te maken: elke kleur is weggelaten.
+embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Elk vlak van {color} was kleiner dan {value} mm²: het ging op in zijn buren.
+embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	De draad gekozen voor {color}, {thread}, is niet grijs: hij wordt geborduurd zoals gekozen.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Op dit formaat heeft de afbeelding {value} pixels per millimeter, minder dan {least}: een grotere kopie digitaliseert beter.
+embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	De afbeelding is gelezen op {width} × {height} pixels, kleiner dan haar {fullWidth} × {fullHeight}.
+embroidery	The image's corners don't agree on a background: every color is sewn.	De hoeken van de afbeelding zijn het niet eens over een achtergrond: elke kleur wordt geborduurd.
+embroidery	No color traced is the background's: every area is sewn.	Geen overgetrokken kleur is die van de achtergrond: elk vlak wordt geborduurd.
+embroidery	The image doesn't look like flat art (a photo, or gradients?): its gradients are sewn as bands of flat color.	De afbeelding lijkt geen vlakke afbeelding (een foto of verlopen?): de verlopen worden als banden effen kleur geborduurd.
+embroidery	Nothing in the image was traced: it is empty or transparent.	Er is niets in de afbeelding overgetrokken: ze is leeg of transparant.
+embroidery	The image's objects alone, with the document's fabric, thread and machine.	Alleen de objecten van de afbeelding, met de stof, draad en machine van het document.
+embroidery	Updated in {value} ms after the last change ({steps})	Bijgewerkt in {value} ms na de laatste wijziging ({steps})
+embroidery	Notes	Opmerkingen
+embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Gemaakt: {objects} ({threads}). De afbeelding staat op de verborgen sjabloonlaag ‘{layer}’. Ongedaan maken verwijdert ze.
+@plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} spikkel kleiner dan {value} mm² ging op in de kleur eromheen|{count} spikkels kleiner dan {value} mm² gingen op in de kleuren eromheen
+@plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} spikkel kleiner dan {value} mm² kon nergens in opgaan en is weggelaten|{count} spikkels kleiner dan {value} mm² konden nergens in opgaan en zijn weggelaten
+@plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} band van hoogstens {value} mm breed ging op in de buur die het dichtst bij zijn kleur ligt|{count} banden van hoogstens {value} mm breed gingen op in de buren die het dichtst bij hun kleuren liggen
+@plural	{count} area of {color} has no center line to sew along: it is sewn as its shape|{count} areas of {color} have no center line to sew along: they are sewn as their shapes	{count} vlak van {color} heeft geen middenlijn om langs te borduren: het wordt als zijn vorm geborduurd|{count} vlakken van {color} hebben geen middenlijn om langs te borduren: ze worden als hun vormen geborduurd
+@plural	{count} area couldn't be joined to its neighbors: it is sewn as traced|{count} areas couldn't be joined to their neighbors: they are sewn as traced	{count} vlak kon niet met zijn buren worden verbonden: het wordt geborduurd zoals overgetrokken|{count} vlakken konden niet met hun buren worden verbonden: ze worden geborduurd zoals overgetrokken
+# VectorCraft Stitch: the image window's colour count, what it counts (drafted with AI assistance from the English meaning, for review)
+embroidery	the background's color inside the design	de achtergrondkleur binnen het ontwerp
+@plural	{count} color besides the background, and the background's color sewn where the design encloses it.|{count} colors besides the background, and the background's color sewn where the design encloses it.	{count} kleur naast de achtergrond, en de achtergrondkleur, geborduurd waar het ontwerp haar omsluit.|{count} kleuren naast de achtergrond, en de achtergrondkleur, geborduurd waar het ontwerp haar omsluit.
+# VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
+embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Niets te borduren: elk vlak is achtergrond. Borduur de achtergrond of snijd minder bij.
+embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Niets te maken: elk vlak is achtergrond. Borduur de achtergrond of snijd minder bij.

@@ -16,7 +16,7 @@
 //! - [`stitch_preview`]: when the preview plans, and what it shows meanwhile.
 //! - [`stitch_layer`]: the canvas in the stitch view.
 //! - [`menu`]: View › Stitch Preview, its options, and the document tab's mode.
-//! - [`digitize_job`]: Digitize Image from the command palette, off the interface thread.
+//! - [`image_window`]: Digitize Image…, the large window that digitizes an image live.
 //! - [`switch`]: the canvas's Art | Stitches switch.
 //! - [`notice`]: the canvas's notice while the stitches are planned, or can't be.
 //! - [`overlay`]: the selection in the stitch view: entry and exit markers, changed objects.
@@ -36,10 +36,10 @@ pub mod bounds;
 pub mod check_marks;
 pub mod convert_job;
 pub mod counters;
-pub mod digitize_job;
 pub mod editing;
 pub mod fields;
 pub mod handles;
+pub mod image_window;
 pub mod marks;
 pub mod menu;
 pub mod nearest;
@@ -88,8 +88,8 @@ pub struct Embroidery {
     pub(crate) nearest: nearest::Nearest,
     /// Convert to Manual Stitches under way ([`convert_job`]).
     pub(crate) converting: convert_job::Converting,
-    /// Digitize Image under way from the command palette ([`digitize_job`]).
-    pub(crate) digitizing: digitize_job::Digitizing,
+    /// Digitize Image…'s window, and what each image's was left with ([`image_window`]).
+    pub(crate) image_window: image_window::State,
     /// The Embroidery panel's Sewing order tab.
     pub(crate) order: crate::panels::embroidery::order::OrderState,
     /// The Embroidery panel's Check tab.
@@ -124,15 +124,15 @@ pub fn limits(app: &VectorcraftApp) -> Option<vectorcraft_engine::cmd::embroider
 }
 
 /// Each frame, before it is drawn: the stitch preview's plans taken in
-/// ([`stitch_preview::poll`]), Nearest Connection's search, a convert and a digitizing under way
-/// looked at ([`nearest::poll`], [`convert_job::poll`], [`digitize_job::poll`]), and what the
-/// Stitches tab and the canvas's bounds
-/// keep of a document closed let go.
+/// ([`stitch_preview::poll`]), Nearest Connection's search and a convert under way looked at
+/// ([`nearest::poll`], [`convert_job::poll`]), the image window closed without Create remembered
+/// ([`image_window::poll`]), and what the Stitches tab and the canvas's bounds keep of a document
+/// closed let go.
 pub fn poll(app: &mut VectorcraftApp, ctx: &egui::Context) {
     stitch_preview::poll(app);
     nearest::poll(app, ctx);
     convert_job::poll(app, ctx);
-    digitize_job::poll(app, ctx);
+    image_window::poll(app);
     crate::panels::embroidery::stitches::forget_closed(app);
     bounds::forget_closed(app);
 }
@@ -170,8 +170,12 @@ pub fn end_frame(app: &mut VectorcraftApp, ctx: &egui::Context) {
 pub const MAX_SCREENSHOT_WAIT_MS: f64 = 5000.0;
 
 /// Whether a window capture should wait: the active document's stitches are being planned, or
-/// drawn on the stitch layer's thread, for the document as it is.
+/// drawn on the stitch layer's thread, for the document as it is; or the image window is
+/// computing.
 pub fn holds_screenshots(app: &VectorcraftApp, now: f64) -> bool {
+    if image_window::busy(app) {
+        return true;
+    }
     let Some(uid) = app.session.active().map(|st| st.uid) else { return false };
     app.embroidery.preview.busy(uid, now) || app.embroidery.layer.waiting()
 }

@@ -304,7 +304,7 @@ fn the_progress_said_only_goes_forward() {
 fn the_plan_reports_its_progress_from_nothing() {
     let (s, id) = picture_session();
     let mut pipeline = s.digitize_pipeline();
-    let request = Arc::new(s.digitize_window_request(id, &json!({"colors": 3}), None).unwrap());
+    let request = Arc::new(s.digitize_window_request(id, &json!({"colors": 3}), None, &serde_json::Value::Null).unwrap());
     let job = Job::new(1, request, Progress::new());
     let mut at_objects = None;
     worker::run(&mut pipeline, &job, &mut |d| {

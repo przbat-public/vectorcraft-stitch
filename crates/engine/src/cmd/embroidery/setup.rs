@@ -12,7 +12,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vectorcraft_doc::Document;
-use vectorcraft_doc::embroidery::{FabricSettings, FillAngle, MachineSettings, StitchValues, ThreadPalette};
+use vectorcraft_doc::embroidery::{EmbroiderySetup, FabricSettings, FillAngle, MachineSettings, StitchValues, ThreadPalette};
 use vectorcraft_stitch::fabric::{FABRICS, fabric};
 use vectorcraft_stitch::plan::{
     FABRIC_SPACING_RANGE, JUMP_RANGE, MAX_SATIN_STITCH_RANGE, MAX_TRIM, MIN_STITCH_RANGE, PULL_RANGE, Params, SPACING_PERCENT_AS_PICKED,
@@ -392,9 +392,29 @@ pub(super) fn settings(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
-    let o = object(p, C)?;
+    // The params' shape is refused before a missing document, as it was.
+    object(p, C)?;
     let d = &s.doc()?.doc;
-    let mut new = d.embroidery.as_deref().cloned().unwrap_or_default();
+    let new = setup_with(d, p)?.filter(|e| !e.is_empty());
+    // A file may hold settings with nothing in them (`"embroidery": {}`): as good as none, so
+    // asking for the settings doesn't edit the document.
+    if new.as_deref() == d.embroidery.as_deref().filter(|e| !e.is_empty()) {
+        return settings_json(d);
+    }
+    s.edit("Embroidery Setup", |d, _| {
+        d.embroidery = new;
+        Ok(())
+    })?;
+    settings_json(&s.doc()?.doc)
+}
+
+/// `d`'s embroidery settings with `embroidery.setup`'s params `p` applied, each checked as the
+/// command checks it: given at the top or under `settings` (the reply's, passed back), each once.
+/// What equals the document's own settings changes nothing (when nothing changes, they are the
+/// document's as they are); `None`: none is left set. The image window's document settings are
+/// checked by it too.
+pub(in crate::cmd::embroidery) fn setup_with(d: &Document, p: &Value) -> Result<Option<Box<EmbroiderySetup>>> {
+    let o = object(p, C)?;
     // The settings given, at the top or under `settings` (the reply's, passed back), each once.
     let mut given: Map<String, Value> = Map::new();
     for (k, v) in o.iter() {
@@ -417,6 +437,10 @@ pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
     // back, and a null where nothing is set keeps it unset (it doesn't restore a preset's value).
     let stored = serde_json::to_value(document_settings(d).settings).unwrap_or_default();
     let given = unchanged_left_out(given, &stored);
+    if given.is_empty() {
+        return Ok(d.embroidery.clone());
+    }
+    let mut new = d.embroidery.as_deref().cloned().unwrap_or_default();
     for (k, v) in &given {
         match k.as_str() {
             "palette" => new.set_palette(palette_param(v, new.palette.as_ref())?),
@@ -441,17 +465,7 @@ pub(super) fn setup(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
     }
-    let new = (!new.is_empty()).then(|| Box::new(new));
-    // A file may hold settings with nothing in them (`"embroidery": {}`): as good as none, so
-    // asking for the settings doesn't edit the document.
-    if new.as_deref() == d.embroidery.as_deref().filter(|e| !e.is_empty()) {
-        return settings_json(d);
-    }
-    s.edit("Embroidery Setup", |d, _| {
-        d.embroidery = new;
-        Ok(())
-    })?;
-    settings_json(&s.doc()?.doc)
+    Ok((!new.is_empty()).then(|| Box::new(new)))
 }
 
 /// `given` less what equals `stored` (the reply's `settings`, as passed back), key by key at any

@@ -3538,7 +3538,11 @@ A dry run makes the objects on a copy of the document and plans them with the co
 digitizes and applies in one go. The image window runs the same stages off its thread through a
 pipeline that keeps them between runs (`Session::digitize_pipeline`), and its Create
 (`Session::apply_digitize_window`) puts a run in place only on the document it was made of, so
-that the window's preview and the command make the same objects. The reply's areas are numbered in sewing order for that
+that the window's preview and the command make the same objects. The window's request also
+carries the document settings it changes (the fabric, the fill angle and joining one thread's
+objects, as `embroidery.setup` takes and checks them, by its own `setup_with`): the objects are made
+and planned on a copy with them, and Create makes them the document's in its undo step, as it does
+the window's palette (the project owner's choice of 2026-11-12). The reply's areas are numbered in sewing order for that
 reply alone; an area's key is its deepest point and its colour, which the inspector's overrides
 will be kept by.
 

@@ -179,7 +179,7 @@ pub fn open(app: &mut VectorcraftApp, id: Option<NodeId>) {
         _ => return app.status(crate::et!("Select one image to digitize it.")),
     };
     // Refused as the command refuses (not an image, locked, a missing linked file).
-    if let Err(e) = app.session.digitize_window_request(picked, &json!({}), None) {
+    if let Err(e) = app.session.digitize_window_request(picked, &json!({}), None, &Value::Null) {
         return app.status(crate::i18n::msg(&e.to_string()));
     }
     let fields = app.embroidery.image_window.remembered.get(&(uid, picked)).cloned().unwrap_or_else(|| defaults(app, uid, picked));
@@ -392,8 +392,10 @@ pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
         return create(app, &params);
     }
     let palette = params.get(PALETTE).and_then(Value::as_str).map(str::to_string);
-    let request =
-        app.session.digitize_window_request(image, &settings_of(&params), palette.as_deref()).map_err(|e| crate::i18n::msg(&e.to_string()))?;
+    let request = app
+        .session
+        .digitize_window_request(image, &settings_of(&params), palette.as_deref(), &Value::Null)
+        .map_err(|e| crate::i18n::msg(&e.to_string()))?;
     let outputs = app.session.digitize_pipeline().run(&request, &|_, _| true, &mut |_, _, _| {}).map_err(|e| crate::i18n::msg(&e.to_string()))?;
     let reply = app.session.apply_digitize_window(&request, &outputs).map_err(|e| crate::i18n::msg(&e.to_string()))?;
     closed_by_create(app, (uid, image), &reply);

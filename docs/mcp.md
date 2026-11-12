@@ -8640,7 +8640,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   an SVG path in millimetres from the document's origin, to hundredths; a line's is its centre line, open, with no
   area. The image window runs its stages off its thread
   through a pipeline that keeps them between runs (`Session::digitize_pipeline`), and its Create
-  (`Session::apply_digitize_window`) is refused when the document changed meanwhile.
+  (`Session::apply_digitize_window`) is refused when the document changed meanwhile. The window's request carries the
+  document settings it changes, `embroidery.setup`'s `fabric`, `fillAngle` and `joinSameColor` (refused as that
+  command refuses them; no other setting): its objects are planned with them, and its Create makes them the
+  document's in the same undo step, with its palette.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

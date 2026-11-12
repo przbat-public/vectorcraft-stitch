@@ -104,7 +104,12 @@ fn with(params: &Value, more: &Value) -> Value {
 /// The stages a run of `pipe` with `params` (and the window's `palette`) made rather than found
 /// kept, in order.
 fn made(s: &Session, pipe: &mut Pipeline, image: NodeId, params: &Value, palette: Option<&str>) -> Vec<StageId> {
-    let req = Arc::new(s.digitize_window_request(image, params, palette).unwrap());
+    made_with(s, pipe, image, params, palette, &json!({}))
+}
+
+/// [`made`] with the window's document settings `document` (`embroidery.setup`'s).
+fn made_with(s: &Session, pipe: &mut Pipeline, image: NodeId, params: &Value, palette: Option<&str>, document: &Value) -> Vec<StageId> {
+    let req = Arc::new(s.digitize_window_request(image, params, palette, document).unwrap());
     let mut made = Vec::new();
     pipe.run(&req, &|_, _| true, &mut |stage, _, computed| {
         if computed {
@@ -128,7 +133,7 @@ fn a_pipeline_run_is_the_commands_dry_run() {
         let (mut s, image) = placed(&picture());
         let params = json!({"mode": mode, "colors": 3});
         let want = steady(s.execute("embroidery.digitizeImage", &with(&params, &json!({"dryRun": true, "limit": 0}))).unwrap());
-        let req = Arc::new(s.digitize_window_request(image, &params, None).unwrap());
+        let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
         let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
         assert_eq!(steady(out.reply(&req).unwrap()), want, "{mode}");
     }
@@ -146,7 +151,7 @@ fn a_change_reruns_its_stage_and_those_after() {
     let (mut s, image) = placed(&picture());
     let mut pipe = s.digitize_pipeline();
     let base = json!({"colors": 3, "minArea": 1.0, "overlap": 0.4});
-    let request = |s: &Session, params: &Value, palette: Option<&str>| s.digitize_window_request(image, params, palette).unwrap();
+    let request = |s: &Session, params: &Value, palette: Option<&str>| s.digitize_window_request(image, params, palette, &json!({})).unwrap();
     assert_eq!(made(&s, &mut pipe, image, &base, None), StageId::ALL.to_vec(), "the first run makes every stage");
     assert_eq!(made(&s, &mut pipe, image, &base, None), Vec::<StageId>::new(), "nothing changed");
     assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &base, None)), None, "nothing changed");
@@ -175,6 +180,13 @@ fn a_change_reruns_its_stage_and_those_after() {
     made(&s, &mut pipe, image, &base, None);
     assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &base, Some("pec"))), Some(StageId::Colours));
     assert_eq!(made(&s, &mut pipe, image, &base, Some("pec")), from(StageId::Colours), "the window's palette");
+    // The window's document settings from the objects on: the stitches follow them.
+    for document in [json!({"fabric": "denim"}), json!({"fillAngle": "acrossShape"}), json!({"joinSameColor": false})] {
+        made(&s, &mut pipe, image, &base, None);
+        let changed = s.digitize_window_request(image, &base, None, &document).unwrap();
+        assert_eq!(request(&s, &base, None).first_stage_changed(&changed), Some(StageId::Objects), "{document}: said before");
+        assert_eq!(made_with(&s, &mut pipe, image, &base, None, &document), from(StageId::Objects), "{document}");
+    }
     made(&s, &mut pipe, image, &base, None);
     let before = request(&s, &base, None);
     s.execute("shape.rectangle", &json!({"x": 200, "y": 200, "width": 20, "height": 20})).unwrap();
@@ -203,7 +215,7 @@ fn a_cancelled_run_keeps_the_stages_it_finished() {
     let (s, image) = placed(&picture());
     let mut pipe = s.digitize_pipeline();
     let params = json!({"colors": 3});
-    let req = Arc::new(s.digitize_window_request(image, &params, None).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
     let token = CancelToken::new();
     let stop = token.clone();
     let cancelled = cancel::scope(&token, None, || {
@@ -224,7 +236,7 @@ fn a_poll_answering_no_stops_the_run_in_its_trace() {
     let (s, image) = placed(&picture());
     let mut pipe = s.digitize_pipeline();
     let params = json!({"colors": 3});
-    let req = Arc::new(s.digitize_window_request(image, &params, None).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
     let stopped = pipe.run(&req, &|_, _| false, &mut |_, _, _| {});
     assert!(matches!(stopped, Err(EngineError::Cancelled)), "{:?}", stopped.err());
     assert_eq!(made(&s, &mut pipe, image, &params, None), from(StageId::Trace));
@@ -238,7 +250,7 @@ fn create_from_a_run_is_the_commands_create() {
     let params = json!({"colors": 3});
     let (mut window, image) = placed(&picture());
     let (mut command, _) = placed(&picture());
-    let req = Arc::new(window.digitize_window_request(image, &params, None).unwrap());
+    let req = Arc::new(window.digitize_window_request(image, &params, None, &json!({})).unwrap());
     let out = window.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     let steps = window.doc().unwrap().history.undo.len();
     let from_window = window.apply_digitize_window(&req, &out).unwrap();
@@ -253,7 +265,7 @@ fn create_from_a_run_is_the_commands_create() {
 #[test]
 fn create_refuses_a_run_made_of_an_earlier_document() {
     let (mut s, image) = placed(&picture());
-    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None, &json!({})).unwrap());
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     s.execute("shape.rectangle", &json!({"x": 200, "y": 200, "width": 20, "height": 20})).unwrap();
     let before = doc(&s);
@@ -269,7 +281,7 @@ fn the_windows_palette_is_set_in_the_same_undo_step() {
     let (mut s, image) = placed(&picture());
     assert_eq!(super::super::thread_palette(&doc(&s)), super::super::DEFAULT_PALETTE);
     assert_ne!(super::super::DEFAULT_PALETTE, Palette::Pec, "the test picks the other palette");
-    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), Some("pec")).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), Some("pec"), &json!({})).unwrap());
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     let reply = out.reply(&req).unwrap();
     assert!(reply["colors"].as_array().unwrap().iter().filter(|c| !c["thread"].is_null()).all(|c| c["thread"]["palette"] == "pec"), "{reply}");
@@ -281,12 +293,54 @@ fn the_windows_palette_is_set_in_the_same_undo_step() {
     assert_eq!(super::super::thread_palette(&doc(&s)), super::super::DEFAULT_PALETTE);
 }
 
+/// The document settings the window changes (its fabric, fill angle and joining one thread's
+/// objects, as `embroidery.setup` takes them) are what its stitches are planned with, and Create
+/// makes them the document's in the same undo step: the window's reply and document are the
+/// command's after those settings were set, and Undo takes the settings back with the objects.
+#[test]
+fn the_windows_document_settings_are_planned_and_set_in_the_same_undo_step() {
+    let document = json!({"fabric": "denim", "fillAngle": "acrossShape", "joinSameColor": false});
+    let params = json!({"colors": 3});
+    let (mut window, image) = placed(&picture());
+    let (mut command, _) = placed(&picture());
+    let before = window.doc().unwrap().doc.embroidery.clone();
+    let req = Arc::new(window.digitize_window_request(image, &params, None, &document).unwrap());
+    let out = window.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let planned = out.reply(&req).unwrap();
+    command.execute("embroidery.setup", &document).unwrap();
+    let dry = command.execute("embroidery.digitizeImage", &with(&params, &json!({"dryRun": true, "limit": 0}))).unwrap();
+    assert_eq!(steady(planned), steady(dry), "planned with the window's settings");
+    let steps = window.doc().unwrap().history.undo.len();
+    window.apply_digitize_window(&req, &out).unwrap();
+    command.execute("embroidery.digitizeImage", &with(&params, &json!({"limit": 0}))).unwrap();
+    assert_eq!(*doc(&window), *doc(&command), "the settings and the objects, as the command makes them");
+    assert_eq!(window.doc().unwrap().history.undo.len(), steps + 1, "one undo step");
+    window.execute("edit.undo", &json!({})).unwrap();
+    assert_eq!(window.doc().unwrap().doc.embroidery, before, "Undo takes the settings back");
+}
+
+/// The window's document settings are refused as `embroidery.setup` refuses them, and only the
+/// three it changes are taken.
+#[test]
+fn the_windows_document_settings_are_refused_as_the_setup_refuses_them() {
+    let (mut s, image) = placed(&picture());
+    for refused in [json!({"fabric": "velvet"}), json!({"fillAngle": 999}), json!({"joinSameColor": "yes"})] {
+        let window = s.digitize_window_request(image, &json!({}), None, &refused).map(|_| ()).unwrap_err().to_string();
+        let setup = s.execute("embroidery.setup", &refused).map(|_| ()).unwrap_err().to_string();
+        assert_eq!(window, setup, "{refused}");
+    }
+    for other in [json!({"palette": "pec"}), json!({"machine": {"speed": 600}}), json!(5)] {
+        let e = s.digitize_window_request(image, &json!({}), None, &other).map(|_| ()).unwrap_err().to_string();
+        assert!(e.contains("fabric, fillAngle and joinSameColor"), "{other}: {e}");
+    }
+}
+
 /// Each area is named by its thread and its number among that thread's areas in sewing order, and
 /// placed roughly in the design's box (in thirds): two orange squares apart, a navy one between.
 #[test]
 fn areas_are_named_by_thread_and_number() {
     let (s, image) = placed(&three_squares());
-    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None, &json!({})).unwrap());
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     let left = out.area_at(50, 50).unwrap();
     let right = out.area_at(250, 50).unwrap();
@@ -306,7 +360,7 @@ fn areas_are_named_by_thread_and_number() {
 #[test]
 fn the_painted_raster_uses_the_threads_colours() {
     let (s, image) = placed(&picture());
-    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None, &json!({})).unwrap());
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     let reply = out.reply(&req).unwrap();
     let thread_of = |c: [u8; 4]| {
@@ -362,7 +416,7 @@ proptest! {
         let mut last = None;
         for c in &changes {
             params = with(&params, c);
-            let req = Arc::new(s.digitize_window_request(image, &params, None).unwrap());
+            let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
             let out = pipe.run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
             last = Some((req, out));
         }
@@ -378,12 +432,12 @@ proptest! {
 #[test]
 fn art_bounds_are_the_box_of_what_isnt_background() {
     let (s, image) = placed(&picture());
-    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3}), None, &json!({})).unwrap());
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     assert_eq!(out.art_bounds(), Some([20, 20, 230, 180]));
     assert_eq!(out.image_px(), Some((300, 200)));
     // Cropped to a corner of white alone, nothing is art.
-    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3, "crop": [0, 0, 15, 15]}), None).unwrap());
+    let req = Arc::new(s.digitize_window_request(image, &json!({"colors": 3, "crop": [0, 0, 15, 15]}), None, &json!({})).unwrap());
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {});
     assert!(out.map_or(true, |o| o.art_bounds().is_none()));
 }

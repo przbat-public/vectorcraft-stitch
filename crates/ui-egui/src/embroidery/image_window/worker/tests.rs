@@ -28,7 +28,7 @@ pub(crate) fn picture_session() -> (Session, vectorcraft_engine::doc::NodeId) {
 }
 
 fn job(s: &Session, id: vectorcraft_engine::doc::NodeId, ticket: u64, colors: u64) -> Job {
-    let request = Arc::new(s.digitize_window_request(id, &json!({"colors": colors}), None).unwrap());
+    let request = Arc::new(s.digitize_window_request(id, &json!({"colors": colors}), None, &serde_json::Value::Null).unwrap());
     Job::new(ticket, request, Progress::new())
 }
 

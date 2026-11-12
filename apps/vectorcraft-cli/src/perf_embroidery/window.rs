@@ -59,9 +59,10 @@ const LARGE_PX_PER_MM: f64 = 1500.0 / 108.0;
 /// One of the badge's colours, given a thread of its own in the thread row: its navy.
 const NAVY: &str = "#1d2a6b";
 
-/// A request for the image `id` of `s` digitized with `params`.
+/// A request for the image `id` of `s` digitized with `params`, the document's palette and
+/// settings as they are.
 fn request(s: &Session, id: NodeId, params: &Value) -> Result<vectorcraft_engine::cmd::embroidery::DigitizeRequest, String> {
-    s.digitize_window_request(id, params, None).map_err(err)
+    s.digitize_window_request(id, params, None, &Value::Null).map_err(err)
 }
 
 /// The image selected in `s`.

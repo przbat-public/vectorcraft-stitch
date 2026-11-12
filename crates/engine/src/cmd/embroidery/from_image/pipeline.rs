@@ -16,7 +16,7 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::embroidery::ThreadPalette;
+use vectorcraft_doc::embroidery::{EmbroiderySetup, ThreadPalette};
 use vectorcraft_doc::{Document, ImageObject, NodeId};
 use vectorcraft_render::lines::{LinePicture, LinePictureBuilder};
 use vectorcraft_stitch::thread::Palette;
@@ -245,16 +245,18 @@ struct ShapesKey {
 }
 
 /// What the objects read of a request: the document they are made on (the same snapshot, held)
-/// with the image's place in it, and the palette.
+/// with the image's place in it, the palette, and the document's embroidery settings with the
+/// window's changes, which their stitches are planned with.
 struct ObjectsSettings {
     document: Arc<Document>,
     target: NodeId,
     palette: Palette,
+    setup: Option<Box<EmbroiderySetup>>,
 }
 
 impl PartialEq for ObjectsSettings {
     fn eq(&self, o: &Self) -> bool {
-        Arc::ptr_eq(&self.document, &o.document) && self.target == o.target && self.palette == o.palette
+        Arc::ptr_eq(&self.document, &o.document) && self.target == o.target && self.palette == o.palette && self.setup == o.setup
     }
 }
 
@@ -283,9 +285,10 @@ pub(super) struct PlanOut {
 }
 
 /// What a window digitizes: the document as it was asked (its number and snapshot), the image
-/// (`target`, an image or an Image Trace object) and its file, the settings, and the palette the
-/// window matches threads to (the document's unless the window chose another, which Create then
-/// makes the document's).
+/// (`target`, an image or an Image Trace object) and its file, the settings, the palette the window
+/// matches threads to (the document's unless the window chose another, which Create then makes the
+/// document's), and the document's embroidery settings with the window's changes, which Create
+/// makes the document's too.
 pub struct WindowRequest {
     pub(super) uid: u64,
     pub(super) original: Arc<Document>,
@@ -294,6 +297,7 @@ pub struct WindowRequest {
     pub(super) bytes: Arc<Vec<u8>>,
     pub(super) settings: Settings,
     pub(super) palette: Palette,
+    pub(super) setup: Option<Box<EmbroiderySetup>>,
 }
 
 impl WindowRequest {
@@ -376,7 +380,7 @@ impl WindowRequest {
     }
 
     fn objects_settings(&self) -> ObjectsSettings {
-        ObjectsSettings { document: self.original.clone(), target: self.target, palette: self.palette }
+        ObjectsSettings { document: self.original.clone(), target: self.target, palette: self.palette, setup: self.setup.clone() }
     }
 }
 
@@ -856,10 +860,12 @@ pub(super) fn with_palette(document: &mut Document, palette: Palette) {
     document.embroidery = Some(Box::new(setup));
 }
 
-/// The objects Create would make of `d` on a copy of `req`'s document, its palette the window's.
+/// The objects Create would make of `d` on a copy of `req`'s document, its palette and embroidery
+/// settings the window's.
 fn objects_of(req: &WindowRequest, d: &Digitized) -> Result<ObjectsOut> {
     let started = clock();
     let mut doc = Document::clone(&req.original);
+    doc.embroidery = req.setup.clone();
     with_palette(&mut doc, req.palette);
     let made = create::made(&mut doc, req.target, d, req.palette)?.map(|m| (Arc::new(doc), m));
     Ok(ObjectsOut { of: req.original.clone(), made, ms: since(started) })

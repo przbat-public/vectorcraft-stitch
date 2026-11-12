@@ -44,7 +44,7 @@ const PRECISION_PX: f64 = vectorcraft_pathops::DEFAULT_PRECISION;
 
 /// How far beyond an area's outline the region map is asked which area lies there (working
 /// pixels): half a pixel, the centre of the pixel beside the edge.
-const BEYOND_PX: f64 = 0.5;
+pub(super) const BEYOND_PX: f64 = 0.5;
 
 /// How much of a thin neighbour's widest inscribed width a strip may take: half, so that two
 /// neighbours growing under it from both sides meet in its middle. The session's choice
@@ -73,6 +73,10 @@ const NO_MITER: f64 = 1.0;
 pub(super) struct Shapes {
     /// Each area's shape (working pixels), by its index; empty for the background's.
     pub(super) shapes: Vec<PathData>,
+    /// Each area's own shape as traced, joined with the specks that joined it, before it is made
+    /// solid under its islands and grown under its neighbours: where the colours meet, what the
+    /// outlines run along (`super::outlines`); empty for the background's.
+    pub(super) own: Vec<PathData>,
     /// The areas each area was grown under, by the indices of the areas sewn after it: none where
     /// nothing was grown (no overlap asked, a strip that came to nothing, a shape the path
     /// operations couldn't grow).
@@ -179,7 +183,7 @@ fn outline_box(sp: &SubPath) -> Option<Rect> {
 
 /// Where along a curve piece of an outline the region map is asked what lies beside it: a quarter,
 /// half and three quarters of the way, the piece taken for the neighbour two of them find.
-const SAMPLES_ALONG: [f64; 3] = [0.25, 0.5, 0.75];
+pub(super) const SAMPLES_ALONG: [f64; 3] = [0.25, 0.5, 0.75];
 
 /// The stretches of area `a`'s outline (`base`, working pixels) that border each other area, as
 /// open paths of its own curves, by that area's number: each curve piece of the outline whose
@@ -483,5 +487,5 @@ pub(super) fn shaped(
             }
         }
     }
-    Ok(Shapes { shapes, grown_under, doubled_px, failed })
+    Ok(Shapes { shapes, own, grown_under, doubled_px, failed })
 }

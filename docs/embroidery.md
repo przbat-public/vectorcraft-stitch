@@ -3524,12 +3524,28 @@ millimetres again. The stages, each a module, each reported to a progress sink
    overlap), so that a colour set to Lines however wide leaves the colours in it as drawn; a pixel
    nearer the background, an unsewn area or one sewn after the line goes to none. The one sewn
    later gives way where two would overlap.
-10. **Create** (`create.rs`): one group in the image's place, a group a colour block in sewing order
+10. **The outlines** (`outlines.rs`), when asked (the project owner's choice, 2026-11-11, „Prosty +
+   satyna z brzegu (polecam)”: both off by default): `colorOutlines`, a running line along every
+   colour edge once, by the area sewn later (once the area sewn first grows under it, the edge is
+   that area's visible seam), and round the design; `border`, a satin `borderWidth` wide (3 mm,
+   1 to 10) round the design, its holes too, centred on its edge, which the colour outlines then
+   leave to it. Each piece of an area's own outline, as traced before the overlap, is asked which
+   area lies across it, half a pixel out either side, as the overlap asks the region map; what has
+   nothing sewn across it (the background, an unsewn area, the image's edge) is the silhouette.
+   The pieces are chained where their ends meet within 0.05 mm (`MEET_MM`, half the formats' step):
+   at each meeting the two ends that turn least from one into the other are joined first, so that
+   where three areas meet the edge runs straight through. Both are sewn in one thread, the one
+   given (`outlineThread`) or the darkest of the threads the colours are sewn in (the least CIE
+   L*). Colour outlines beside the image's own lines (areas sewn along their middle) for a quarter
+   of their length or more are warned of (`outlinesBesideLines`): they sew those lines twice.
+11. **Create** (`create.rs`): one group in the image's place, a group a colour block in sewing order
    named after its thread as its swatch is, one object an area painted with its thread's own colour
    (so the plan sews it in exactly that thread; a line a stroke along its centre line, as wide as
    the line, round at its turns and, narrower than a satin column, at its ends (butt on a wider one,
    set to a running line),
-   settings set only where a job asks; the image
+   settings set only where a job asks; the outlines last, one stroke object a block in the outline
+   thread ("Color outlines" drawn 0.4 mm wide, which the planner sews as a running line; "Border"
+   as wide as asked, a satin); the image
    moves, with its id, to a hidden, locked template layer below every layer, scaled with the
    design; one undo step. Nearest Connection is not run.
 

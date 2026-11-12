@@ -157,6 +157,13 @@ pub fn structured() -> Vec<(&'static str, Value)> {
         ("embroidery.digitizeImage", json!({"colorChoices": [{"color": "#000000", "job": "lines"}], "overlap": 0, "dryRun": true})),
         ("embroidery.digitizeImage", json!({"crop": [10, 10, 5, 5], "at": [1e308, f64::NAN], "overlap": 1e308, "mode": "photo", "background": [1]})),
         ("embroidery.digitizeImage", json!({"offset": u64::MAX, "limit": u64::MAX, "regions": "yes", "outlines": [true], "height": -1e-300})),
+        (
+            "embroidery.digitizeImage",
+            json!({"colorOutlines": "yes", "border": 1, "borderWidth": 1e308, "outlineThread": {"palette": "pec", "index": u64::MAX}}),
+        ),
+        ("embroidery.digitizeImage", json!({"border": true, "borderWidth": f64::NAN, "outlineThread": [1], "colorOutlines": null})),
+        // Accepted as it is read: both outlines, the widest border, the darkest thread.
+        ("embroidery.digitizeImage", json!({"colorOutlines": true, "border": true, "borderWidth": 10, "outlineThread": null, "dryRun": true})),
         ("embroidery.copyFrom", json!({"source": "first", "ids": [1], "keys": ["angle", "angle"]})),
         ("embroidery.copyFrom", json!({"source": 1, "ids": too_many_ids()})),
         ("embroidery.copyFrom", json!({"source": u64::MAX, "part": "both"})),

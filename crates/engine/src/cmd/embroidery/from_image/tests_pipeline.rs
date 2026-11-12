@@ -126,12 +126,13 @@ fn from(first: StageId) -> Vec<StageId> {
 }
 
 /// A run answers what the command's dry run answers (its areas listed none), in colour and in logo
-/// mode: the same colours, threads, warnings, settings and figures.
+/// mode, and with outlines: the same colours, threads, warnings, settings, figures and outlines.
 #[test]
 fn a_pipeline_run_is_the_commands_dry_run() {
-    for mode in ["color", "logo"] {
+    let outlined = json!({"colors": 3, "colorOutlines": true, "border": true});
+    for params in [json!({"mode": "color", "colors": 3}), json!({"mode": "logo", "colors": 3}), outlined] {
         let (mut s, image) = placed(&picture());
-        let params = json!({"mode": mode, "colors": 3});
+        let mode = params.clone();
         let want = steady(s.execute("embroidery.digitizeImage", &with(&params, &json!({"dryRun": true, "limit": 0}))).unwrap());
         let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
         let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
@@ -170,6 +171,10 @@ fn a_change_reruns_its_stage_and_those_after() {
         (json!({"colorChoices": [{"color": hex(ORANGE), "job": "fill"}]}), StageId::Colours),
         (json!({"minArea": 2.0}), StageId::Colours),
         (json!({"overlap": 0.6}), StageId::Shapes),
+        (json!({"colorOutlines": true}), StageId::Objects),
+        (json!({"border": true}), StageId::Objects),
+        (json!({"borderWidth": 5.0}), StageId::Objects),
+        (json!({"outlineThread": {"palette": "jef", "index": 2}}), StageId::Objects),
     ];
     for (change, first) in cases {
         made(&s, &mut pipe, image, &base, None);

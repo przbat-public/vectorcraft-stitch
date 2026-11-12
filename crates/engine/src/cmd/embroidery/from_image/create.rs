@@ -19,6 +19,11 @@
 //! column (a thin line widened where its lines meet, or any line of a colour sewn as `lines`) is
 //! set to a running line. Everything else stays unset (Auto, following the document's fabric).
 //!
+//! The outlines asked for (`super::outlines`) come last, each one stroke object in a block of its
+//! own, in the outline thread (the one chosen, else the darkest of the threads the colours are
+//! sewn in): the colour outlines drawn 0.4 mm wide, so that the planner sews them as a running
+//! line, and the border as wide as asked, a satin, round the design's edge.
+//!
 //! The background's areas become no object. The source image moves, with its id, to a new template
 //! layer below every layer, hidden and locked, scaled as the design is so that it lies under it.
 //!
@@ -35,12 +40,15 @@ use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::appearance::{AppearanceItem, FillLayer};
 use vectorcraft_doc::embroidery::{Embroidery, PartSettings};
 use vectorcraft_doc::{Appearance, Document, LineCap, LineJoin, MAX_COORD, Node, NodeId, NodeKind};
-use vectorcraft_geom::{PathData, Point};
+use vectorcraft_geom::kurbo::BezPath;
+use vectorcraft_geom::{Affine, PathData, Point};
 use vectorcraft_stitch::MM_PER_PT;
-use vectorcraft_stitch::thread::Palette;
+use vectorcraft_stitch::thread::{Palette, PaletteThread};
 
 use super::super::digitize::{printed, shows};
-use super::settings::{C, Job};
+use super::colours::Colours;
+use super::outlines::{Chain, MEET_MM};
+use super::settings::{C, Job, OutlineSettings};
 use super::stages::Digitized;
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
@@ -61,13 +69,128 @@ const SATIN_MIN_WIDTH: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 pub(super) const NO_SATIN_MM: f64 = vectorcraft_stitch::plan::NARROW_RANGE.0;
 
 /// What Create made: the design's group, the layer holding the image (the new template layer, or
-/// the one it stayed on), and how many objects and colour blocks the design is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// the one it stayed on), how many objects and colour blocks the design is, and what its outlines
+/// came to.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct Made {
     pub(super) group: NodeId,
     pub(super) layer: NodeId,
     pub(super) objects: usize,
     pub(super) blocks: usize,
+    pub(super) outlined: Option<Outlined>,
+}
+
+/// The lines of one kind of outline: how many, how long (millimetres), and how many separate parts
+/// they make less one, the fewest moves of the needle between them.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct Lines {
+    pub(super) count: usize,
+    pub(super) length_mm: f64,
+    pub(super) jumps: usize,
+}
+
+/// What the outlines Create added came to: the colour outlines and the border (`None`: not
+/// asked), the thread they are sewn in (its number in the palette), and the share of the colour
+/// outlines' length that runs beside an area sewn along its middle (0 to 1).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct Outlined {
+    pub(super) colour: Option<Lines>,
+    pub(super) border: Option<Lines>,
+    pub(super) thread: usize,
+    pub(super) beside_lines: f64,
+}
+
+/// A colour block of the design as Create gathers it: its thread (its number in the palette), whether
+/// it is sewn, and its objects in sewing order.
+type Block = (Option<usize>, bool, Vec<Arc<Node>>);
+
+/// How wide the colour outlines are drawn (millimetres): under the narrowest satin column, so that
+/// the planner sews them as a running line (research note 06's 0.4 mm).
+const OUTLINE_DRAWN_MM: f64 = 0.4;
+
+/// The names of the outlines' objects, as upstream's Image Trace names its group (in English).
+const COLOUR_OUTLINES_NAME: &str = "Color outlines";
+const BORDER_NAME: &str = "Border";
+
+/// The thread outlines are sewn in, by its number in `palette`: `chosen`, else the darkest (the
+/// least CIE L*, the lower number first) of the threads `colours` are sewn in; `None` when none is.
+pub(super) fn outline_thread(chosen: Option<PaletteThread>, colours: &Colours, palette: Palette) -> Option<usize> {
+    if let Some(t) = chosen {
+        return Some(t.index());
+    }
+    colours
+        .rows
+        .iter()
+        .filter(|r| r.sewn())
+        .filter_map(|r| r.thread.as_ref().map(|m| m.thread.index))
+        .filter_map(|i| palette.get(i).map(|(rgb, _)| (i, vectorcraft_stitch::color::lab(rgb).l)))
+        .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
+        .map(|(i, _)| i)
+}
+
+/// One stroke object along `chains` (working pixels, placed by `to_doc`), `width` points wide in
+/// `color`, round at its turns, its ends `cap`, named `name`; `None` when there is no line.
+fn outline_node(doc: &mut Document, chains: &[Chain], to_doc: Affine, width: f64, color: Color, cap: LineCap, name: &str) -> Option<Node> {
+    let mut all = BezPath::new();
+    for c in chains {
+        all.extend(c.path.iter());
+    }
+    if all.elements().is_empty() {
+        return None;
+    }
+    let mut look = Appearance::basic(Paint::None, Paint::solid(color), width);
+    if let Some(s) = look.stroke_mut() {
+        s.cap = cap;
+        s.join = LineJoin::Round;
+    }
+    let mut n = Node::path(doc.alloc_id(), PathData::from_bezpath(&(to_doc * all)), look);
+    n.name = Some(name.into());
+    Some(n)
+}
+
+/// The outlines `asked` made of what `d` digitized, in `palette`'s threads, as blocks after the
+/// areas' (`blocks`, each a thread, whether it is sewn and its objects), counted in `objects`:
+/// what they came to; `None` when none is asked or no thread is sewn.
+fn add_outlines(
+    doc: &mut Document,
+    d: &Digitized,
+    palette: Palette,
+    asked: OutlineSettings,
+    blocks: &mut Vec<Block>,
+    objects: &mut usize,
+) -> Result<Option<Outlined>> {
+    if !asked.colour && !asked.border {
+        return Ok(None);
+    }
+    let Some(thread) = outline_thread(asked.thread, d.colours(), palette) else { return Ok(None) };
+    let Some(([r, g, b], _)) = palette.get(thread) else { return Ok(None) };
+    let color = Color::rgb8(r, g, b);
+    let found = super::outlines::outlined(d, !asked.border)?;
+    let (px_per_mm, to_doc) = (d.working().px_per_mm, d.working().to_doc);
+    let meet_px = MEET_MM * px_per_mm;
+    let lines = |chains: &[Chain]| Lines {
+        count: chains.len(),
+        length_mm: chains.iter().map(|c| c.length_px).sum::<f64>() / px_per_mm,
+        jumps: super::outlines::parts(chains, meet_px).saturating_sub(1),
+    };
+    let mut out = Outlined { colour: None, border: None, thread, beside_lines: 0.0 };
+    let mut add = |n: Option<Node>| {
+        if let Some(n) = n {
+            blocks.push((Some(thread), true, vec![Arc::new(n)]));
+            *objects += 1;
+        }
+    };
+    if asked.colour {
+        add(outline_node(doc, &found.colour, to_doc, OUTLINE_DRAWN_MM * PT_PER_MM, color, LineCap::Round, COLOUR_OUTLINES_NAME));
+        out.colour = Some(lines(&found.colour));
+        let length = found.colour_px();
+        out.beside_lines = if length > 0.0 { found.beside_lines_px / length } else { 0.0 };
+    }
+    if asked.border {
+        add(outline_node(doc, &found.silhouette, to_doc, asked.border_mm * PT_PER_MM, color, LineCap::Butt, BORDER_NAME));
+        out.border = Some(lines(&found.silhouette));
+    }
+    Ok(Some(out))
 }
 
 /// The settings an area of a colour sewn as `job` is given: none for Auto, nor for an area of a
@@ -145,9 +268,9 @@ fn ordinary_layer_above(doc: &Document, below: NodeId) -> Option<NodeId> {
 }
 
 /// The objects digitizing made of `target` (an image, or an Image Trace object) as `d` says, in
-/// `palette`'s threads, made in `doc` (this module's rules); `None`, and `doc` to be dropped, when
-/// there is nothing to make (every area is the background's).
-pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: Palette) -> Result<Option<Made>> {
+/// `palette`'s threads, with the outlines `outlines` asks for, made in `doc` (this module's rules);
+/// `None`, and `doc` to be dropped, when there is nothing to make (every area is the background's).
+pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: Palette, outlines: OutlineSettings) -> Result<Option<Made>> {
     let src = doc.node(target).cloned().ok_or(EngineError::NoNode(target))?;
     let traced = matches!(src.kind, NodeKind::Group { .. }) && src.name.as_deref() == Some(TRACE_NAME);
     let mut image = if traced { src.children().and_then(|c| c.first()).map(|c| (**c).clone()).ok_or(EngineError::NoNode(target))? } else { src };
@@ -168,7 +291,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
     let layer_name = template_name(image.name.as_deref(), img.link.as_ref());
     image.visible = true;
     // The areas in sewing order, by colour block: a block's thread, whether it is sewn, its objects.
-    let mut blocks: Vec<(Option<usize>, bool, Vec<Arc<Node>>)> = Vec::new();
+    let mut blocks: Vec<Block> = Vec::new();
     let mut objects = 0usize;
     for &a in &d.order().sewn {
         vectorcraft_doc::cancel::check()?;
@@ -207,6 +330,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
     if objects == 0 {
         return Ok(None);
     }
+    let outlined = add_outlines(doc, d, palette, outlines, &mut blocks, &mut objects)?;
     let count = blocks.len();
     let groups: Vec<Arc<Node>> = blocks
         .into_iter()
@@ -228,7 +352,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         if let Some(NodeKind::Image(img)) = doc.node_mut(image.id).map(|n| &mut n.kind) {
             img.xf = xf;
         }
-        return Ok(Some(Made { group: id, layer: below, objects, blocks: count }));
+        return Ok(Some(Made { group: id, layer: below, objects, blocks: count, outlined }));
     }
     let (parent, index, _) = doc.position(target).ok_or(EngineError::NoNode(target))?;
     doc.remove(target)?;
@@ -244,5 +368,5 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         }
     }
     doc.insert(Some(layer), 0, image)?;
-    Ok(Some(Made { group: id, layer, objects, blocks: count }))
+    Ok(Some(Made { group: id, layer, objects, blocks: count, outlined }))
 }

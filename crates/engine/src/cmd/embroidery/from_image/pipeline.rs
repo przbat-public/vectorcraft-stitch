@@ -25,7 +25,7 @@ use super::super::{DetachedService, Options, Planned, Planner};
 use super::command::{Listed, NOTHING_TO_MAKE, ReplyOf, reply_json};
 use super::create::{self, Made};
 use super::rules::AreaKind;
-use super::settings::{BackgroundSetting, ColourChoice, Mode, Settings, Size};
+use super::settings::{BackgroundSetting, ColourChoice, Mode, OutlineSettings, Settings, Size};
 use super::stages::{self, ColoursOut, Digitized, ImageOut, LinesOut, RegionsOut, ShapesOut, TraceOut, clock, since};
 use super::trace;
 use super::warnings::Warning;
@@ -252,11 +252,16 @@ struct ObjectsSettings {
     target: NodeId,
     palette: Palette,
     setup: Option<Box<EmbroiderySetup>>,
+    outlines: OutlineSettings,
 }
 
 impl PartialEq for ObjectsSettings {
     fn eq(&self, o: &Self) -> bool {
-        Arc::ptr_eq(&self.document, &o.document) && self.target == o.target && self.palette == o.palette && self.setup == o.setup
+        Arc::ptr_eq(&self.document, &o.document)
+            && self.target == o.target
+            && self.palette == o.palette
+            && self.setup == o.setup
+            && self.outlines == o.outlines
     }
 }
 
@@ -380,7 +385,13 @@ impl WindowRequest {
     }
 
     fn objects_settings(&self) -> ObjectsSettings {
-        ObjectsSettings { document: self.original.clone(), target: self.target, palette: self.palette, setup: self.setup.clone() }
+        ObjectsSettings {
+            document: self.original.clone(),
+            target: self.target,
+            palette: self.palette,
+            setup: self.setup.clone(),
+            outlines: self.settings.outlines,
+        }
     }
 }
 
@@ -536,7 +547,8 @@ impl Outputs {
             dry_run: true,
             stats: plan.as_ref().map_or(Value::Null, |p| p.stats.clone()),
             warnings,
-            made_ms: [objects.and_then(|o| o.ms), plan.and_then(|p| p.ms)],
+            made_ms: [objects.as_ref().and_then(|o| o.ms), plan.and_then(|p| p.ms)],
+            outlined: objects.as_ref().and_then(|o| o.made.as_ref()).and_then(|(_, m)| m.outlined),
         };
         Some(reply_json(&d, of))
     }
@@ -867,7 +879,7 @@ fn objects_of(req: &WindowRequest, d: &Digitized) -> Result<ObjectsOut> {
     let mut doc = Document::clone(&req.original);
     doc.embroidery = req.setup.clone();
     with_palette(&mut doc, req.palette);
-    let made = create::made(&mut doc, req.target, d, req.palette)?.map(|m| (Arc::new(doc), m));
+    let made = create::made(&mut doc, req.target, d, req.palette, req.settings.outlines)?.map(|m| (Arc::new(doc), m));
     Ok(ObjectsOut { of: req.original.clone(), made, ms: since(started) })
 }
 

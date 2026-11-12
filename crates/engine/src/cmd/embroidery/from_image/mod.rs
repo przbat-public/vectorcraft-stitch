@@ -26,6 +26,8 @@
 //! - [`centre`]: a thin line's middle, the path a running stitch follows through its junctions;
 //! - [`overlap`]: the shapes they are sewn as, each grown under the neighbours sewn after it (and
 //!   under a centre line to its middle);
+//! - [`outlines`]: a running line along each colour edge once and round the design, and the
+//!   design's silhouette for a satin border round it, when asked;
 //! - [`create`]: the embroidery objects made of them, in place of the image, which moves to a
 //!   template layer;
 //! - [`stages`]: the stages above as functions of what each reads, run in turn by the command;
@@ -46,6 +48,7 @@ mod create;
 mod flat;
 mod inside;
 mod order;
+mod outlines;
 mod overlap;
 mod pipeline;
 mod regions;
@@ -71,6 +74,8 @@ mod tests_colours;
 mod tests_create;
 #[cfg(test)]
 mod tests_lines;
+#[cfg(test)]
+mod tests_outlines;
 #[cfg(test)]
 mod tests_overlap;
 #[cfg(test)]

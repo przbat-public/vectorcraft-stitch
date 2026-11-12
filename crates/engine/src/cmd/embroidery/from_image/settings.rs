@@ -59,6 +59,8 @@ pub(super) enum Kind {
     Rect,
     /// `"corners"` (found where the image's corners agree), `"none"`, or a colour `"#rrggbb"`.
     Background,
+    /// On or off, `default` when left out.
+    Flag { default: bool },
     /// A list of choices for the image's colours ([`ColourChoice`]), at most [`MAX_COLOUR_CHOICES`].
     Choices,
 }
@@ -208,8 +210,13 @@ pub(super) enum BackgroundSetting {
     Colour([u8; 3]),
 }
 
+/// How thin an area may be along its middle and be sewn as one running line there (`thinLine`,
+/// millimetres): from none (no area is a line) to 3 mm, past which one running line no longer reads
+/// as the band it sews. An estimate.
+pub(super) const THIN_LINE_RANGE_MM: (f64, f64) = (0.0, 3.0);
+
 /// Every setting, in the window's order.
-pub(super) const SETTINGS: [Setting; 12] = [
+pub(super) const SETTINGS: [Setting; 14] = [
     Setting {
         name: "width",
         key: "width",
@@ -276,11 +283,25 @@ pub(super) const SETTINGS: [Setting; 12] = [
         source: "upstream Image Trace's default Corners",
     },
     Setting {
+        name: "straightLines",
+        key: "straight_lines",
+        step: Step::Shapes,
+        kind: Kind::Flag { default: false },
+        source: "upstream Image Trace's Snap Curves to Lines, off by default",
+    },
+    Setting {
         name: "overlap",
         key: "overlap",
         step: Step::Shapes,
         kind: Kind::Number { unit: "mm", range: OVERLAP_RANGE_MM, default: Some(OVERLAP_MM) },
         source: "the project owner's choice (2026-11-01): one fill row, rounded to the formats' 0.1 mm",
+    },
+    Setting {
+        name: "thinLine",
+        key: "thin_line",
+        step: Step::Shapes,
+        kind: Kind::Number { unit: "mm", range: THIN_LINE_RANGE_MM, default: Some(super::rules::THIN_LINE_MM) },
+        source: "the narrowest satin column the planner sews (`plan::SATIN_MIN_WIDTH`, from Melco's design checker); 0: no area is sewn along its middle",
     },
 ];
 
@@ -348,8 +369,13 @@ pub(super) struct Settings {
     pub(super) min_area: f64,
     pub(super) smoothing: f64,
     pub(super) corners: f64,
+    /// Nearly straight curves traced as lines.
+    pub(super) straight_lines: bool,
     /// Millimetres.
     pub(super) overlap: f64,
+    /// How thin an area may be along its middle and be sewn as one running line there
+    /// (millimetres).
+    pub(super) thin_line: f64,
 }
 
 /// The row of setting `name`. Every name the settings read is in [`SETTINGS`] (a test holds it),
@@ -373,6 +399,7 @@ fn wants(setting: &Setting) -> String {
         Kind::Size => format!("[width, height] in mm, each above 0, at most {}", SIZE_RANGE_MM.1),
         Kind::Rect => "[x0, y0, x1, y1]: whole pixels of the image, x0 < x1 and y0 < y1".into(),
         Kind::Background => "\"corners\", \"none\" or a colour \"#rrggbb\"".into(),
+        Kind::Flag { .. } => "true or false".into(),
         Kind::Choices => format!(
             "a list of at most {MAX_COLOUR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"lines\"|\"none\"}}, mergeInto alone"
         ),
@@ -488,6 +515,16 @@ fn number(o: &Map<String, Value>, name: &str) -> Result<Option<f64>> {
     }
 }
 
+/// Setting `name` on or off, its default when left out.
+fn flag(o: &Map<String, Value>, name: &str) -> Result<bool> {
+    let s = row(name);
+    let Kind::Flag { default } = s.kind else { return Ok(false) };
+    match o.get(name) {
+        None | Some(Value::Null) => Ok(default),
+        Some(v) => v.as_bool().ok_or_else(|| refused(s, v)),
+    }
+}
+
 /// A size `[width, height]` in millimetres, each within [`SIZE_RANGE_MM`].
 fn size_pair(o: &Map<String, Value>, name: &str) -> Result<Option<(f64, f64)>> {
     let s = row(name);
@@ -556,7 +593,9 @@ impl Settings {
             min_area: number(o, "minArea")?.unwrap_or(MIN_AREA_MM2),
             smoothing: number(o, "smoothing")?.unwrap_or(SMOOTHING),
             corners: number(o, "corners")?.unwrap_or(CORNERS),
+            straight_lines: flag(o, "straightLines")?,
             overlap: number(o, "overlap")?.unwrap_or(OVERLAP_MM),
+            thin_line: number(o, "thinLine")?.unwrap_or(super::rules::THIN_LINE_MM),
         })
     }
 
@@ -590,7 +629,9 @@ impl Settings {
             "minArea": self.min_area,
             "smoothing": self.smoothing,
             "corners": self.corners,
+            "straightLines": self.straight_lines,
             "overlap": self.overlap,
+            "thinLine": self.thin_line,
         })
     }
 }
@@ -618,6 +659,7 @@ pub(super) fn table(palette: Palette) -> Value {
                     Kind::Rect => ("px", Value::Null, Value::Null),
                     Kind::Background => ("", json!(["corners", "none", "#rrggbb"]), json!("corners")),
                     Kind::Choices => ("", json!([0, MAX_COLOUR_CHOICES]), json!([])),
+                    Kind::Flag { default } => ("", json!([false, true]), json!(default)),
                 };
                 json!({"name": s.name, "key": s.key, "step": s.step.id(), "unit": unit, "range": range, "default": default, "source": s.source})
             })

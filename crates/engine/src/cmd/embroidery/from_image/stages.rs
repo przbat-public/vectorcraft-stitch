@@ -196,7 +196,7 @@ pub(super) fn colours_stage(image: &ImageOut, trace: &TraceOut, regions: &Region
     let rows = colours::rows(traced, &touches, regions.background, &settings.choices);
     let row_of = rows.row_of(traced.paths.len());
     let min_px = trace::area_px(settings.min_area, w.px_per_mm) as usize;
-    let areas = rules::applied(map.clone(), &rows, &row_of, w.px_per_mm, min_px)?;
+    let areas = rules::applied(map.clone(), &rows, &row_of, w.px_per_mm, min_px, settings.thin_line)?;
     if areas.areas.len() > MAX_IMAGE_AREAS {
         return Err(bad(
             C,
@@ -256,7 +256,7 @@ pub(super) struct LinesOut {
 
 /// The centre lines of the areas sewn along their middle, then what lies inside what and the order
 /// the areas are sewn in.
-pub(super) fn lines_stage(image: &ImageOut, colours: &ColoursOut) -> Result<LinesOut> {
+pub(super) fn lines_stage(image: &ImageOut, colours: &ColoursOut, settings: &Settings) -> Result<LinesOut> {
     // A line along its middle: a thin one of a colour sewn by the rules (or kept unsewn, to be sewn
     // later), and every area of a colour sewn as Lines; not a colour sewn as Fill. Found before the
     // order, which sews a line after the fills it touches: an area with no centre line to sew along
@@ -268,7 +268,7 @@ pub(super) fn lines_stage(image: &ImageOut, colours: &ColoursOut) -> Result<Line
     let mut areas = colours.areas.clone();
     let mut warnings = Vec::new();
     // A line by the rules is held to its width away from where its lines meet.
-    let thin_px = rules::THIN_LINE_MM * px_per_mm + rules::MEASURE_SLACK_PX;
+    let thin_px = settings.thin_line * px_per_mm + rules::MEASURE_SLACK_PX;
     let wanted: Vec<centre::Wanted> = areas
         .areas
         .iter()

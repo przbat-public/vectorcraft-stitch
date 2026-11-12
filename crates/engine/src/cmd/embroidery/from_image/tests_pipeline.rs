@@ -159,6 +159,8 @@ fn a_change_reruns_its_stage_and_those_after() {
         (json!({"mode": "logo"}), StageId::Trace),
         (json!({"colors": 4}), StageId::Trace),
         (json!({"smoothing": 30}), StageId::Trace),
+        (json!({"straightLines": true}), StageId::Trace),
+        (json!({"thinLine": 2.0}), StageId::Colours),
         (json!({"minArea": 0.1}), StageId::Trace),
         (json!({"colorChoices": [{"color": hex(ORANGE), "job": "fill"}]}), StageId::Colours),
         (json!({"minArea": 2.0}), StageId::Colours),

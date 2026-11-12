@@ -8567,13 +8567,16 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `"#rrggbb"`), `mode` (`color`, `logo`, `grayscale`), `colors` (2 to the palette's threads, default 6),
   `colorChoices: [{color, thread?: {palette, index}, mergeInto?, job?: "auto"|"fill"|"lines"|"none"}]` (at most 256;
   `lines`: every area of the colour sewn along its middle, whatever its width),
-  `minArea` (mm², default 1), `smoothing` and `corners` (0 to 100) and `overlap` (mm, 0 to 2, default 0.4); the
-  reply's `table` gives each setting's step, unit, range, default and its source. The image is worked at a copy of at
+  `minArea` (mm², default 1), `smoothing` and `corners` (0 to 100), `straightLines` (true: nearly straight curves
+  traced as lines, those within a few degrees of level or upright exactly so; default false), `overlap` (mm, 0 to 2,
+  default 0.4) and `thinLine` (mm, 0 to 3, default 1: how thin an area may be along its middle and be a line; 0: no
+  line); the reply's `table` gives each setting's step, unit, range, default and its source. The image is worked at a copy of at
   most 10 pixels a millimetre (fewer past 1,500 pixels a side, or where the image has fewer) and traced in its own
   colours; each colour gets a thread of the document's palette, chosen together (CIEDE2000, flagged past ΔE 10; two
   colours whose only thread within ΔE 10 is the same one are merged); the background is only what touches the
-  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than 1 mm along its middle, up to
-  √2 times its own width where its lines meet and no wider than 1 mm away from them, and at least 2 mm long stays), an island narrower than 4 mm is sewn over the area
+  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than `thinLine` along its middle, up
+  to √2 times its own width where its lines meet and no wider than `thinLine` away from them, and at least 2 mm long
+  stays), an island narrower than 4 mm is sewn over the area
   round it with no hole cut, and where two colours meet the one sewn first reaches `overlap` under the one sewn after,
   only along the edge they share. A line (and every area of a colour set to `lines`) is sewn along its centre line, a
   stroke as wide as it, round at its ends under 1 mm wide (butt at 1 mm or more, its ends half a thread short of the

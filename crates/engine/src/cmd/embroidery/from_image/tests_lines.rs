@@ -726,3 +726,52 @@ fn a_lines_reply_keeps_its_shape() {
     let line = &areas_of(&r, NAVY)[0]["line"];
     assert_eq!(super::super::tests_contract::shape(line), "{ends: int, junctions: int, length: float, pieces: int, width: float}");
 }
+
+/// How thin a line is sewn along its middle is a setting (`thinLine`, millimetres; 1 mm by
+/// default, the narrowest satin): a bar 1.5 mm wide is filled at the default, and sewn as a line
+/// along its middle when the setting is 2 mm; at 0 no area is a line, the 0.6 mm T filled too.
+#[test]
+fn how_thin_a_line_is_sewn_along_its_middle_is_a_setting() {
+    /// The bar's width (millimetres): between the default and the wider setting.
+    const BAR_MM: f64 = 1.5;
+    /// A setting wider than the bar (millimetres).
+    const WIDER_MM: f64 = 2.0;
+    let bar = vec![(Point::new(5.0, 10.0), Point::new(25.0, 10.0))];
+    let mut s = placed(&picture(30.0, 20.0, PX_PER_MM, lines_of(BAR_MM, bar, NAVY, WHITE)), PX_PER_MM);
+    let kinds = |r: &Value| areas_of(r, NAVY).iter().map(|a| a["kind"].clone()).collect::<Vec<_>>();
+    assert_eq!(kinds(&digitize(&mut s, json!({"colors": 2}), true)), [json!("fill")], "filled at the default");
+    assert_eq!(kinds(&digitize(&mut s, json!({"colors": 2, "thinLine": WIDER_MM}), true)), [json!("line")], "a line at 2 mm");
+    let mut t = placed(&picture(30.0, 25.0, PX_PER_MM, lines(t_segments(), NAVY, WHITE)), PX_PER_MM);
+    assert_eq!(kinds(&digitize(&mut t, json!({"colors": 2}), true)), [json!("line")], "the T a line at the default");
+    assert!(kinds(&digitize(&mut t, json!({"colors": 2, "thinLine": 0}), true)).iter().all(|k| k == "fill"), "no line at 0");
+}
+
+/// Straightening nearly straight lines is a setting (`straightLines`, off by default, upstream
+/// Image Trace's own): it also makes a line within a few degrees of level or upright exactly so, so
+/// a square turned by a degree and a half has its edges level and upright when it is on, and none
+/// of them when it is off.
+#[test]
+fn straightening_nearly_straight_lines_is_a_setting() {
+    /// The square's half side and its turn (millimetres, radians: a degree and a half, under the
+    /// trace's 2.5° of level).
+    const HALF_MM: f64 = 6.0;
+    const TURN: f64 = 1.5 * std::f64::consts::PI / 180.0;
+    let centre = Point::new(15.0, 15.0);
+    let (sin, cos) = TURN.sin_cos();
+    let inside = move |q: Point| {
+        let d = q - centre;
+        (d.x * cos + d.y * sin).abs() <= HALF_MM && (d.y * cos - d.x * sin).abs() <= HALF_MM
+    };
+    let mut s = placed(&picture(30.0, 30.0, PX_PER_MM, move |q| if inside(q) { NAVY } else { WHITE }), PX_PER_MM);
+    // The edges of the navy outline that lie exactly level or upright (to the reply's hundredths).
+    let square = |r: &Value| {
+        let outline = areas_of(r, NAVY).first().and_then(|a| a["outline"].as_str().map(str::to_string)).unwrap_or_default();
+        let points: Vec<(String, String)> = outline
+            .split(|c: char| c.is_ascii_alphabetic())
+            .filter_map(|p| p.trim().split_once(',').map(|(x, y)| (x.to_string(), y.to_string())))
+            .collect();
+        points.windows(2).filter(|w| w[0].0 == w[1].0 || w[0].1 == w[1].1).count()
+    };
+    assert_eq!(square(&digitize(&mut s, json!({"colors": 2, "outlines": true}), true)), 0, "turned as traced");
+    assert_eq!(square(&digitize(&mut s, json!({"colors": 2, "outlines": true, "straightLines": true}), true)), 4, "level and upright");
+}

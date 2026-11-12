@@ -132,7 +132,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let trace_out = Arc::new(stages::trace_stage(&image_out, settings, steps)?);
     let regions_out = Arc::new(stages::regions_stage(&image_out, &trace_out, settings)?);
     let colours_out = Arc::new(stages::colours_stage(&image_out, &trace_out, &regions_out, settings, palette)?);
-    let lines_out = Arc::new(stages::lines_stage(&image_out, &colours_out)?);
+    let lines_out = Arc::new(stages::lines_stage(&image_out, &colours_out, settings)?);
     let shapes_out = Arc::new(stages::shapes_stage(&image_out, &trace_out, &colours_out, &lines_out, settings)?);
     vectorcraft_doc::cancel::progress(stages::MAKING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     Ok(Digitized { image_out, trace_out, regions_out, colours_out, lines_out, shapes_out })

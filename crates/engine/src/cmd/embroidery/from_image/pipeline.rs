@@ -153,15 +153,16 @@ impl PartialEq for ImageKey {
     }
 }
 
-/// What the trace reads of a request: the mode, the colours, the smoothing, the corners, and the
-/// noise the smallest area makes, kept as that area itself up to a thread's footprint (a smallest
-/// area above it traces the same).
+/// What the trace reads of a request: the mode, the colours, the smoothing, the corners, whether
+/// nearly straight curves become lines, and the noise the smallest area makes, kept as that area
+/// itself up to a thread's footprint (a smallest area above it traces the same).
 #[derive(PartialEq)]
 struct TraceSettings {
     mode: Mode,
     colors: u32,
     smoothing: f64,
     corners: f64,
+    straight_lines: bool,
     noise_mm2: f64,
 }
 
@@ -189,14 +190,15 @@ struct RegionsKey {
     settings: RegionsSettings,
 }
 
-/// What the colours read of a request: the colour choices, the smallest area, the mode and the
-/// palette.
+/// What the colours read of a request: the colour choices, the smallest area, the mode, the palette,
+/// and how thin an area is a line.
 #[derive(PartialEq)]
 struct ColoursSettings {
     choices: Vec<ColourChoice>,
     min_area: f64,
     mode: Mode,
     palette: Palette,
+    thin_line: f64,
 }
 
 /// What the colours read: the working copy, the trace, the region map, and the request's
@@ -209,12 +211,20 @@ struct ColoursKey {
     settings: ColoursSettings,
 }
 
-/// What the centre lines and the order read: the working copy and the colours (nothing of the
-/// request itself).
+/// What the centre lines read of a request: how thin an area is a line, held to its width away
+/// from its junctions.
+#[derive(PartialEq)]
+struct LinesSettings {
+    thin_line: f64,
+}
+
+/// What the centre lines and the order read: the working copy, the colours and the request's
+/// [`LinesSettings`].
 #[derive(PartialEq)]
 struct LinesKey {
     image: u64,
     colours: u64,
+    settings: LinesSettings,
 }
 
 /// What the shapes read of a request: the overlap.
@@ -322,8 +332,9 @@ impl WindowRequest {
             StageId::Trace => self.trace_settings() == o.trace_settings(),
             StageId::Regions => self.regions_settings() == o.regions_settings(),
             StageId::Colours => self.colours_settings() == o.colours_settings(),
-            // The lines read only the outputs before them, the plan only the objects.
-            StageId::Lines | StageId::Plan => true,
+            StageId::Lines => self.lines_settings() == o.lines_settings(),
+            // The plan reads only the objects.
+            StageId::Plan => true,
             StageId::Shapes => self.shapes_settings() == o.shapes_settings(),
             StageId::Objects => self.objects_settings() == o.objects_settings(),
         }
@@ -337,7 +348,14 @@ impl WindowRequest {
 
     fn trace_settings(&self) -> TraceSettings {
         let s = &self.settings;
-        TraceSettings { mode: s.mode, colors: s.colors, smoothing: s.smoothing, corners: s.corners, noise_mm2: s.min_area.min(trace::TRACE_AREA_MM2) }
+        TraceSettings {
+            mode: s.mode,
+            colors: s.colors,
+            smoothing: s.smoothing,
+            corners: s.corners,
+            straight_lines: s.straight_lines,
+            noise_mm2: s.min_area.min(trace::TRACE_AREA_MM2),
+        }
     }
 
     fn regions_settings(&self) -> RegionsSettings {
@@ -346,7 +364,11 @@ impl WindowRequest {
 
     fn colours_settings(&self) -> ColoursSettings {
         let s = &self.settings;
-        ColoursSettings { choices: s.choices.clone(), min_area: s.min_area, mode: s.mode, palette: self.palette }
+        ColoursSettings { choices: s.choices.clone(), min_area: s.min_area, mode: s.mode, palette: self.palette, thin_line: s.thin_line }
+    }
+
+    fn lines_settings(&self) -> LinesSettings {
+        LinesSettings { thin_line: self.settings.thin_line }
     }
 
     fn shapes_settings(&self) -> ShapesSettings {
@@ -800,8 +822,8 @@ impl Pipeline {
             stage(&mut self.colours, &mut self.next, key, || stages::colours_stage(&image.value, &traced.value, &regions.value, s, req.palette))?;
         out.colours = Some(colours.clone());
         done(StageId::Colours, &out, made);
-        let key = LinesKey { image: image.number, colours: colours.number };
-        let (lines, made) = stage(&mut self.lines, &mut self.next, key, || stages::lines_stage(&image.value, &colours.value))?;
+        let key = LinesKey { image: image.number, colours: colours.number, settings: req.lines_settings() };
+        let (lines, made) = stage(&mut self.lines, &mut self.next, key, || stages::lines_stage(&image.value, &colours.value, s))?;
         out.lines = Some(lines.clone());
         done(StageId::Lines, &out, made);
         let key =

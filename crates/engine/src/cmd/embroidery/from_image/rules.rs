@@ -36,9 +36,9 @@ use super::colours::Colours;
 use super::regions::Regions;
 use super::settings::Job;
 
-/// The narrowest a long area may be and still be no line (millimetres): the narrowest satin column
-/// the planner sews (`plan::SATIN_MIN_WIDTH`, from Melco's design checker); narrower, the planner
-/// sews it as a running line along its middle.
+/// The narrowest a long area may be and still be no line, unless the settings say otherwise
+/// (`thinLine`, millimetres): the narrowest satin column the planner sews (`plan::SATIN_MIN_WIDTH`,
+/// from Melco's design checker); narrower, the planner sews it as a running line along its middle.
 pub(super) const THIN_LINE_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
 /// How much wider than its lines a drawing of lines may be where they meet and still be lines: √2,
@@ -169,12 +169,19 @@ fn root(parent: &mut [usize], mut i: usize) -> usize {
 }
 
 /// The rules applied to the areas of `regions` (one a traced path), whose colours `colours` lists
-/// (`row_of` each path's row), at `px_per_mm`, keeping `min_area_px` pixels at least. A cancel
-/// stops it.
-pub(super) fn applied(regions: Regions, colours: &Colours, row_of: &[usize], px_per_mm: f64, min_area_px: usize) -> crate::Result<Areas> {
+/// (`row_of` each path's row), at `px_per_mm`, keeping `min_area_px` pixels at least, an area
+/// narrower than `thin_line_mm` along its middle a line. A cancel stops it.
+pub(super) fn applied(
+    regions: Regions,
+    colours: &Colours,
+    row_of: &[usize],
+    px_per_mm: f64,
+    min_area_px: usize,
+    thin_line_mm: f64,
+) -> crate::Result<Areas> {
     let n = regions.areas.len();
     let background = |i: usize| row_of.get(i).and_then(|&r| colours.rows.get(r)).is_some_and(|r| r.background);
-    let thin_px = THIN_LINE_MM * px_per_mm;
+    let thin_px = thin_line_mm * px_per_mm;
     let long_px = LINE_KEEP_LENGTH_MM * px_per_mm;
     let band_px = SLIVER_MAX_MM * px_per_mm;
     // A line: narrower than a satin column along its middle, at its widest no more than where its

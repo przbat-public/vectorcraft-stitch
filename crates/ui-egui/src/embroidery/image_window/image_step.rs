@@ -2,8 +2,9 @@
 //! height typed, the other following the picture's proportions; or both, a box the design fits
 //! within), the crop as four margins in the image's own pixels (Crop to the Art: the box of what
 //! isn't the background; Whole Image), and the background: left out (the colour found at the
-//! image's corners, the transparency round the art, or one of the image's colours chosen) or sewn.
-//! A value out of its range is refused, said in the status bar, the field keeping its value.
+//! image's corners, the transparency round the art, or one of the image's colours chosen, which
+//! comes back when the background is sewn and then left out again) or sewn. A value out of its
+//! range is refused, said in the status bar, the field keeping its value.
 
 use egui::{RichText, Ui};
 use serde_json::{Map, Value, json};
@@ -26,6 +27,11 @@ pub(crate) const BACKGROUND: &str = "background";
 /// The background's setting that sews every colour, and the one that finds it at the image's
 /// corners (the engine's default, what no setting means).
 pub(crate) const NONE: &str = "none";
+
+/// The window's own field (never the engine's) keeping a background colour chosen from the picture
+/// while every colour is sewn, "Leave the background out" unticked, so that ticking it again brings
+/// that colour back rather than the one found (the project owner's choice, 2026-11-12).
+pub(crate) const CHOSEN_BACKGROUND: &str = "chosenBackground";
 const AUTO: &str = "corners";
 
 /// Where the reply says the background came from.
@@ -327,8 +333,17 @@ fn background_section(ui: &mut Ui, d: &mut Dialog, reply: &Value) {
     });
     if rows::check(ui, crate::et!("Leave the background out"), Some(!sewn), t.panel) {
         if sewn {
-            d.fields.remove(BACKGROUND);
+            // Ticked again: the colour chosen before it was unticked, else the one found.
+            match d.fields.remove(CHOSEN_BACKGROUND) {
+                Some(c) => d.fields.insert(BACKGROUND.into(), c),
+                None => d.fields.remove(BACKGROUND),
+            };
         } else {
+            // Unticked: a colour chosen is kept to come back.
+            match setting.as_deref().filter(|s| *s != NONE && *s != AUTO) {
+                Some(c) => d.fields.insert(CHOSEN_BACKGROUND.into(), json!(c)),
+                None => d.fields.remove(CHOSEN_BACKGROUND),
+            };
             d.fields.insert(BACKGROUND.into(), json!(NONE));
         }
     }
@@ -342,6 +357,7 @@ fn background_section(ui: &mut Ui, d: &mut Dialog, reply: &Value) {
             let chosen = setting.as_deref().is_some_and(|s| s.eq_ignore_ascii_case(c));
             if swatch(ui, c, chosen).clicked() {
                 d.fields.insert(BACKGROUND.into(), json!(c));
+                d.fields.remove(CHOSEN_BACKGROUND);
             }
         }
     });

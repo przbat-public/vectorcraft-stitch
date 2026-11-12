@@ -560,6 +560,26 @@ fn the_background_can_be_left_out_or_sewn() {
     assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("background").cloned()), Some(sewn));
 }
 
+/// A background colour chosen from the picture comes back when "Leave the background out" is
+/// unticked and ticked again, not the colour found in the corners (the project owner's choice,
+/// 2026-11-12).
+#[test]
+fn a_background_colour_chosen_comes_back_when_left_out_again() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(1));
+    let r = reply(&mut app);
+    let colours = r["colors"].as_array().cloned().unwrap_or_default();
+    let chosen = colours.iter().find(|c| c["background"] == json!(false)).and_then(|c| c["color"].as_str()).expect("a colour sewn").to_string();
+    let background = |app: &VectorcraftApp| open_dialog(app).and_then(|d| d.fields.get("background").cloned());
+    click(&mut app, &ctx, &mut time, &format!("Color {chosen}"), Role::Button);
+    assert_eq!(background(&app), Some(json!(chosen)), "chosen as the background");
+    click(&mut app, &ctx, &mut time, "Leave the background out", Role::CheckBox);
+    assert_eq!(background(&app), Some(json!("none")), "every colour sewn");
+    click(&mut app, &ctx, &mut time, "Leave the background out", Role::CheckBox);
+    assert_eq!(background(&app), Some(json!(chosen)), "the colour chosen before, not the corners' again");
+}
+
 /// A click of the control screen readers call `name`, whatever its role.
 fn click_named(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str) {
     let nodes_now = nodes(app, ctx, time);

@@ -446,3 +446,35 @@ fn ends_of(c: &Chain) -> (Point, Point, bool) {
     let end = if closed { start } else { c.path.segments().last().map_or(start, |s| s.end()) };
     (start, end, closed)
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
+
+    use vectorcraft_geom::kurbo::Line;
+
+    use super::*;
+
+    /// A piece its points disagree on (an area beside each of them, as near a corner the trace
+    /// rounded) takes what lies across the piece before it along the outline: the edge runs on
+    /// unbroken, never through nothing sewn.
+    #[test]
+    fn a_piece_its_points_disagree_on_takes_the_one_before() {
+        // Area 0 left of x = 10; right of it, from the top: area 1, then areas 2, 3 and 4 in short
+        // bands beside the middle piece (one at each of its points), then area 5.
+        let (w, h) = (20u32, 30u32);
+        let band = |y: u32| match y {
+            0..10 => 1,
+            10..15 => 2,
+            15..18 => 3,
+            18..22 => 4,
+            _ => 5,
+        };
+        let labels: Vec<u32> = (0..h).flat_map(|y| (0..w).map(move |x| if x < 10 { 0 } else { band(y) })).collect();
+        let regions = Regions::from_labels(labels, w, h, 6, None);
+        let line = |a: (f64, f64), b: (f64, f64)| PathSeg::Line(Line::new(a, b));
+        let segs = [line((10.0, 0.0), (10.0, 10.0)), line((10.0, 10.0), (10.0, 22.0)), line((10.0, 22.0), (10.0, 30.0))];
+        let across = |l: u32| usize::try_from(l).map_or(Across::Nothing, Across::Area);
+        assert_eq!(across_each(&regions, &segs, 0, &across), vec![Across::Area(1), Across::Area(1), Across::Area(5)]);
+    }
+}

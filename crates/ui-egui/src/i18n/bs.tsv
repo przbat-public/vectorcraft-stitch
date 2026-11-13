@@ -7244,7 +7244,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Računanje…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Korak {number} od {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Bodovi slijede postavke veza dokumenta.
 @plural	{count} thread + background|{count} threads + background	{count} konac + pozadina|{count} konca + pozadina|{count} konaca + pozadina
 @plural	{count} area|{count} areas	{count} područje|{count} područja|{count} područja
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7320,3 +7319,17 @@ embroidery	Colors overlap by	Boje se preklapaju za
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Boja koja se šije prva ulazi ispod sljedeće, pa se između njih ne vidi tkanina.
 embroidery	Thin lines sewn along their middle below	Tanke linije šivene po sredini ispod
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Uži dio se šije kao linija ravnog boda po sredini. 0: nijedan.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Tanke linije
+embroidery	Running stitch along the middle	Ravni bod po sredini
+embroidery	Shapes: below {value}	Oblici: ispod {value}
+embroidery	Set in the Shapes step.	Postavlja se u koraku Oblici.
+embroidery	below {value}	ispod {value}
+embroidery	Tatami, rows {value} apart	Tatami, redovi na {value}
+embroidery	Fill angle	Ugao ispune
+embroidery	Fixed	Fiksni
+embroidery	Across the shape	Poprijeko oblika
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Smjer redova ispune: pod fiksnim uglom na stranici ili poprijeko dužine svakog oblika.
+embroidery	The fills' rows, counter-clockwise on the page.	Redovi ispuna, suprotno od kazaljke na satu na stranici.
+embroidery	From the background to the details. The Order tab changes it after Create.	Od pozadine prema detaljima. Kartica Redoslijed ga mijenja nakon kreiranja.
+embroidery	Create sets these in the document's embroidery settings.	Kreiranje ih postavlja u postavke veza dokumenta.

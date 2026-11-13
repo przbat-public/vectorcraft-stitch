@@ -38,6 +38,7 @@ pub mod convert_job;
 pub mod counters;
 pub mod editing;
 pub mod fields;
+pub mod fill_angle;
 pub mod handles;
 pub mod image_window;
 pub mod marks;

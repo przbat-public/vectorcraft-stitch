@@ -7259,7 +7259,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Berekenen…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Stap {number} van {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	De steken volgen de borduurinstellingen van het document.
 @plural	{count} thread + background|{count} threads + background	{count} draad + achtergrond|{count} draden + achtergrond
 @plural	{count} area|{count} areas	{count} vlak|{count} vlakken
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7335,3 +7334,17 @@ embroidery	Colors overlap by	Kleuren overlappen
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	De kleur die eerst wordt geborduurd, loopt onder de volgende door, zodat er geen stof tussen te zien is.
 embroidery	Thin lines sewn along their middle below	Dunne lijnen langs hun midden geborduurd onder
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Een smaller deel wordt als rechte steeklijn langs het midden geborduurd. 0: geen.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Dunne lijnen
+embroidery	Running stitch along the middle	Rechte steek langs het midden
+embroidery	Shapes: below {value}	Vormen: onder {value}
+embroidery	Set in the Shapes step.	In te stellen in de stap Vormen.
+embroidery	below {value}	onder {value}
+embroidery	Tatami, rows {value} apart	Tatami, rijen {value} uit elkaar
+embroidery	Fill angle	Vulhoek
+embroidery	Fixed	Vast
+embroidery	Across the shape	Dwars op de vorm
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	De richting van de rijen van een vulling: onder een vaste hoek op de pagina, of dwars op de lengte van elke vorm.
+embroidery	The fills' rows, counter-clockwise on the page.	De rijen van de vullingen, tegen de klok in op de pagina.
+embroidery	From the background to the details. The Order tab changes it after Create.	Van de achtergrond naar de details. Het tabblad Volgorde wijzigt hem na Maken.
+embroidery	Create sets these in the document's embroidery settings.	Maken stelt ze in de borduurinstellingen van het document in.

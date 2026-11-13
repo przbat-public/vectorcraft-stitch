@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-12 · **Change:** the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-12 · **Change:** the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -98,7 +98,6 @@ The tables below list the window's own words in the order the code draws them; w
 | Computing… | Obliczanie… |
 | {value} ms | {value} ms |
 | Step {number} of {count}: {name}. {summary}. {time} | Krok {number} z {count}: {name}. {summary}. {time} |
-| The stitches follow the document's embroidery settings. | Ściegi wynikają z ustawień haftu dokumentu. |
 
 ## Step 1, the Image
 
@@ -188,6 +187,26 @@ The tables below list the window's own words in the order the code draws them; w
 | Thin lines sewn along their middle below | Cienkie linie szyte środkiem poniżej |
 | A narrower part is sewn as a running line along its middle. 0: none. | Węższa część jest szyta linią ściegu prostego środkiem. 0: żadna. |
 
+## Step 4, the Stitches
+
+It also uses words of the Embroidery panel and Document Setup: Fabric, Built-in values, Custom, the fabrics' names, Narrow parts as satin, Row spacing, Angle, Sewing order, Join one thread's objects when nothing lies between them, and where a value comes from (default, fabric).
+
+| English | Polish |
+|---|---|
+| Thin lines | Cienkie linie |
+| Running stitch along the middle | Ścieg prosty środkiem |
+| Shapes: below {value} | Kształty: poniżej {value} |
+| Set in the Shapes step. | Ustawiane w kroku Kształty. |
+| below {value} | poniżej {value} |
+| Tatami, rows {value} apart | Tatami, rzędy co {value} |
+| Fill angle | Kąt wypełnienia |
+| Fixed | Stały |
+| Across the shape | W poprzek kształtu |
+| The direction of a fill's rows: at a fixed angle on the page, or across each shape's length. | Kierunek rzędów wypełnienia: pod stałym kątem na stronie albo w poprzek długości każdego kształtu. |
+| The fills' rows, counter-clockwise on the page. | Rzędy wypełnień, przeciwnie do ruchu wskazówek zegara na stronie. |
+| From the background to the details. The Order tab changes it after Create. | Od tła do szczegółów. Po utworzeniu zmienia ją zakładka Kolejność. |
+| Create sets these in the document's embroidery settings. | Utworzenie ustawi je w ustawieniach haftu dokumentu. |
+
 ## The Live bar, its notes, and Create
 
 | English | Polish |
@@ -231,3 +250,4 @@ The tables below list the window's own words in the order the code draws them; w
 | 2026-11-11 | update | Nothing to sew said by its cause: every area the background has words of its own, saying what to do, in the bar, the note and Create's refusal. |
 | 2026-11-11 | update | ↺ named for screen readers by the row's thread (its row's placeholder renamed in every catalogue); the Polish tooltips of Merge and Sew made commands, as the English ones are. |
 | 2026-11-12 | update | The second part: the Shapes step's controls (smoothness, corners, straightening, the overlap, the thin lines' width) and their notes; the note that listed the step's values goes. |
+| 2026-11-12 | update | The Stitches step: the fabric, the rule rows with their sources, the fill angle (Fixed or Across the shape), joining one thread's objects, the sewing order, and the note that Create sets them in the document; the note that said the step used the document's settings goes. |

@@ -8934,7 +8934,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Beräknar…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Steg {number} av {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Stygnen följer dokumentets broderiinställningar.
 @plural	{count} thread + background|{count} threads + background	{count} tråd + bakgrund|{count} trådar + bakgrund
 @plural	{count} area|{count} areas	{count} område|{count} områden
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -9010,3 +9009,17 @@ embroidery	Colors overlap by	Färgerna överlappar med
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Färgen som broderas först går in under nästa, så att inget tyg syns mellan dem.
 embroidery	Thin lines sewn along their middle below	Tunna linjer broderas längs mitten under
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	En smalare del broderas som en rakstygnslinje längs mitten. 0: ingen.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Tunna linjer
+embroidery	Running stitch along the middle	Rakstygn längs mitten
+embroidery	Shapes: below {value}	Former: under {value}
+embroidery	Set in the Shapes step.	Ställs in i steget Former.
+embroidery	below {value}	under {value}
+embroidery	Tatami, rows {value} apart	Tatami, rader med {value} mellanrum
+embroidery	Fill angle	Fyllningens vinkel
+embroidery	Fixed	Fast
+embroidery	Across the shape	Tvärs över formen
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Riktningen för fyllningens rader: i en fast vinkel på sidan, eller tvärs över varje forms längd.
+embroidery	The fills' rows, counter-clockwise on the page.	Fyllningarnas rader, moturs på sidan.
+embroidery	From the background to the details. The Order tab changes it after Create.	Från bakgrunden till detaljerna. Fliken Ordning ändrar den efter Skapa.
+embroidery	Create sets these in the document's embroidery settings.	Skapa ställer in dem i dokumentets broderiinställningar.

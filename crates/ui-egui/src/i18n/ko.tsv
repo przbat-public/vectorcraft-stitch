@@ -7030,7 +7030,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	계산 중…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	{count}단계 중 {number}단계: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	스티치는 문서의 자수 설정을 따릅니다.
 @plural	{count} thread + background|{count} threads + background	실 {count}개 + 배경
 @plural	{count} area|{count} areas	영역 {count}개
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7106,3 +7105,17 @@ embroidery	Colors overlap by	색 겹침
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	먼저 수놓는 색이 다음 색 아래로 들어가, 색 사이로 원단이 보이지 않습니다.
 embroidery	Thin lines sewn along their middle below	가운데를 따라 수놓는 가는 선의 너비 상한
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	이보다 좁은 부분은 가운데를 따라 러닝 스티치 선으로 수놓습니다. 0: 없음.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	가는 선
+embroidery	Running stitch along the middle	가운데를 따라 러닝 스티치
+embroidery	Shapes: below {value}	모양: {value} 미만
+embroidery	Set in the Shapes step.	모양 단계에서 설정합니다.
+embroidery	below {value}	{value} 미만
+embroidery	Tatami, rows {value} apart	타타미, 줄 간격 {value}
+embroidery	Fill angle	칠 각도
+embroidery	Fixed	고정
+embroidery	Across the shape	모양을 가로질러
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	칠의 줄 방향: 페이지에서 고정된 각도, 또는 각 모양의 길이를 가로지르는 방향.
+embroidery	The fills' rows, counter-clockwise on the page.	칠의 줄, 페이지에서 시계 반대 방향.
+embroidery	From the background to the details. The Order tab changes it after Create.	배경에서 세부로. 만든 다음 순서 탭에서 바꿉니다.
+embroidery	Create sets these in the document's embroidery settings.	만들기를 하면 이 값들이 문서의 자수 설정이 됩니다.

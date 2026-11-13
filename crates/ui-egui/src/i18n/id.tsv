@@ -7208,7 +7208,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Menghitung…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Langkah {number} dari {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Jahitan mengikuti pengaturan bordir dokumen.
 @plural	{count} thread + background|{count} threads + background	{count} benang + latar
 @plural	{count} area|{count} areas	{count} area
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7284,3 +7283,17 @@ embroidery	Colors overlap by	Warna tumpang tindih
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Warna yang dijahit lebih dulu masuk ke bawah warna berikutnya, agar kain tidak terlihat di antaranya.
 embroidery	Thin lines sewn along their middle below	Garis tipis dijahit di tengahnya di bawah
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Bagian yang lebih sempit dijahit sebagai garis jahitan lurus di tengahnya. 0: tidak ada.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Garis tipis
+embroidery	Running stitch along the middle	Jahitan lurus di tengah
+embroidery	Shapes: below {value}	Bentuk: di bawah {value}
+embroidery	Set in the Shapes step.	Diatur di langkah Bentuk.
+embroidery	below {value}	di bawah {value}
+embroidery	Tatami, rows {value} apart	Tatami, baris berjarak {value}
+embroidery	Fill angle	Sudut isian
+embroidery	Fixed	Tetap
+embroidery	Across the shape	Melintang bentuk
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Arah baris isian: pada sudut tetap di halaman, atau melintang panjang setiap bentuk.
+embroidery	The fills' rows, counter-clockwise on the page.	Baris isian, berlawanan arah jarum jam di halaman.
+embroidery	From the background to the details. The Order tab changes it after Create.	Dari latar ke detail. Tab Urutan mengubahnya setelah Buat.
+embroidery	Create sets these in the document's embroidery settings.	Buat menetapkannya di pengaturan bordir dokumen.

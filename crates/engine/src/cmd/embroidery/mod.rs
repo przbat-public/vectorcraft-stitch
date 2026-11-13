@@ -144,6 +144,9 @@ pub(crate) use service::Services;
 pub use service::{DetachedService, Planned};
 pub(crate) use unit::PlanError;
 pub use vectorcraft_stitch::format::Format;
+/// The widest part of a fill sewn as a satin column where nothing sets `narrowAsSatin`
+/// (millimetres): what the image window's Stitches step says of the rule.
+pub use vectorcraft_stitch::plan::NARROW_SATIN;
 pub use vectorcraft_stitch::{mm_to_pt, pt_to_mm};
 
 /// The marked upstream hooks of the stitch commands: Delete with needle points selected

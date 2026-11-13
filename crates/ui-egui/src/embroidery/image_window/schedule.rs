@@ -74,11 +74,11 @@ impl Runner for Driver {
     }
 }
 
-/// The request settings `params` (with the window's palette in them) make for image `image`, as the
-/// window asks the engine for a run.
+/// The request settings `params` (with the window's palette and document settings in them) make for
+/// image `image`, as the window asks the engine for a run.
 fn request_of(session: &Session, image: NodeId, params: &Value) -> vectorcraft_engine::Result<DigitizeRequest> {
     let palette = params.get(super::PALETTE).and_then(Value::as_str);
-    session.digitize_window_request(image, &super::settings_of(params), palette, &Value::Null)
+    session.digitize_window_request(image, &super::settings_of(params), palette, &super::document_of(params))
 }
 
 /// How a result shown stands.

@@ -32,6 +32,7 @@ pub(crate) mod preview;
 pub(crate) mod schedule;
 mod shapes_step;
 pub(crate) mod steps;
+mod stitches_step;
 mod words;
 pub(crate) mod worker;
 
@@ -116,6 +117,14 @@ pub(crate) struct Live {
     pub(crate) announced: String,
     /// The command's reply for the result shown, built once a result.
     reply: Option<(ReplyOf, Value)>,
+    /// The document's embroidery settings as the result shown was planned with them (by the run
+    /// that made its objects), built once a result.
+    document: Option<(Option<u64>, vectorcraft_engine::cmd::embroidery::setup::DocumentSettings)>,
+    /// The fabric presets' ids, listed once the Stitches step first shows them.
+    fabrics: Option<Vec<String>>,
+    /// The document's own embroidery settings, by the snapshot of the document they were read of:
+    /// read again only when the document changes (reading them walks all of it).
+    own: Option<(std::sync::Arc<vectorcraft_engine::doc::Document>, vectorcraft_engine::cmd::embroidery::setup::DocumentSettings)>,
     /// The fields as last drawn: what is remembered when it closes without Create.
     fields: Map<String, Value>,
     /// Create was asked for before the result was of the settings as they are: it applies once it
@@ -151,6 +160,43 @@ impl Live {
             self.reply = Some((key, reply));
         }
         self.reply.as_ref().map(|(_, r)| r)
+    }
+
+    /// The document's embroidery settings as the result shown is planned with them (the window's
+    /// palette and document settings in place), each with where it comes from.
+    pub(crate) fn document_settings(&mut self) -> Option<&vectorcraft_engine::cmd::embroidery::setup::DocumentSettings> {
+        use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+        let shown = self.schedule.shown.as_ref()?;
+        let key = shown.outputs.number(DigitizeStage::Objects);
+        if self.document.as_ref().is_none_or(|(k, _)| *k != key) {
+            self.document = Some((key, shown.request.document_settings()));
+        }
+        self.document.as_ref().map(|(_, s)| s)
+    }
+
+    /// The active document's own embroidery settings, read again only when the document changed
+    /// since they were last read.
+    pub(crate) fn own_settings(
+        &mut self,
+        session: &vectorcraft_engine::Session,
+    ) -> Option<&vectorcraft_engine::cmd::embroidery::setup::DocumentSettings> {
+        let doc = session.active()?.doc.clone();
+        if self.own.as_ref().is_none_or(|(d, _)| !std::sync::Arc::ptr_eq(d, &doc)) {
+            let settings = session.embroidery_settings().ok()?;
+            self.own = Some((doc, settings));
+        }
+        self.own.as_ref().map(|(_, s)| s)
+    }
+
+    /// The fabric presets' ids, as `embroidery.fabrics` lists them (none when it fails: the
+    /// built-in values alone are offered then).
+    pub(crate) fn fabric_presets(&mut self, session: &mut vectorcraft_engine::Session) -> Vec<String> {
+        self.fabrics
+            .get_or_insert_with(|| {
+                let listed = session.execute("embroidery.fabrics", &json!({})).unwrap_or(Value::Null);
+                listed["fabrics"].as_array().into_iter().flatten().filter_map(|f| f["id"].as_str().map(str::to_string)).collect()
+            })
+            .clone()
     }
 }
 
@@ -199,10 +245,11 @@ pub(crate) fn start_over(app: &mut VectorcraftApp) {
     }
 }
 
-/// The engine's settings and the palette the fields hold: what a change is measured on.
+/// The engine's settings, the palette and the document settings the fields hold: what a change is
+/// measured on.
 pub(crate) fn params_of(fields: &Map<String, Value>) -> Value {
     let mut p = Map::new();
-    for k in SETTING_FIELDS.iter().chain([&PALETTE]) {
+    for k in SETTING_FIELDS.iter().chain([&PALETTE]).chain(stitches_step::DOCUMENT_FIELDS.iter()) {
         if let Some(v) = fields.get(*k).filter(|v| !v.is_null()) {
             p.insert((*k).to_string(), v.clone());
         }
@@ -210,13 +257,23 @@ pub(crate) fn params_of(fields: &Map<String, Value>) -> Value {
     Value::Object(p)
 }
 
-/// `params` without the palette: the settings `embroidery.digitizeImage` takes.
+/// `params` without the palette and the document settings: the settings `embroidery.digitizeImage`
+/// takes.
 pub(crate) fn settings_of(params: &Value) -> Value {
     let mut p = params.clone();
     if let Some(o) = p.as_object_mut() {
         o.remove(PALETTE);
+        for k in stitches_step::DOCUMENT_FIELDS {
+            o.remove(k);
+        }
     }
     p
+}
+
+/// The document settings `params` change, as `embroidery.setup` takes them: what the window's
+/// request carries besides the command's settings.
+pub(crate) fn document_of(params: &Value) -> Value {
+    stitches_step::document_of(params)
 }
 
 /// The document and the image `d` is of.
@@ -257,6 +314,9 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             figures: None,
             announced: String::new(),
             reply: None,
+            document: None,
+            fabrics: None,
+            own: None,
             fields: d.fields.clone(),
             create_waiting: false,
             created: false,
@@ -394,7 +454,7 @@ pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
     let palette = params.get(PALETTE).and_then(Value::as_str).map(str::to_string);
     let request = app
         .session
-        .digitize_window_request(image, &settings_of(&params), palette.as_deref(), &Value::Null)
+        .digitize_window_request(image, &settings_of(&params), palette.as_deref(), &document_of(&params))
         .map_err(|e| crate::i18n::msg(&e.to_string()))?;
     let outputs = app.session.digitize_pipeline().run(&request, &|_, _| true, &mut |_, _, _| {}).map_err(|e| crate::i18n::msg(&e.to_string()))?;
     let reply = app.session.apply_digitize_window(&request, &outputs).map_err(|e| crate::i18n::msg(&e.to_string()))?;

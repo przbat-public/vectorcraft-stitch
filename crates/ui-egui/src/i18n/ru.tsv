@@ -7537,7 +7537,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Вычисление…
 embroidery	{value} ms	{value} мс
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Шаг {number} из {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Стежки следуют настройкам вышивки документа.
 @plural	{count} thread + background|{count} threads + background	{count} нить + фон|{count} нити + фон|{count} нитей + фон
 @plural	{count} area|{count} areas	{count} область|{count} области|{count} областей
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7613,3 +7612,17 @@ embroidery	Colors overlap by	Цвета перекрываются на
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Цвет, вышиваемый первым, заходит под следующий, чтобы между ними не было видно ткани.
 embroidery	Thin lines sewn along their middle below	Тонкие линии шьются по середине при ширине менее
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Более узкая часть вышивается линией прямого стежка по середине. 0: никакая.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Тонкие линии
+embroidery	Running stitch along the middle	Прямой стежок по середине
+embroidery	Shapes: below {value}	Фигуры: меньше {value}
+embroidery	Set in the Shapes step.	Задаётся на шаге «Фигуры».
+embroidery	below {value}	меньше {value}
+embroidery	Tatami, rows {value} apart	Татами, ряды через {value}
+embroidery	Fill angle	Угол заливки
+embroidery	Fixed	Фиксированный
+embroidery	Across the shape	Поперёк формы
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Направление рядов заливки: под фиксированным углом на странице или поперёк длины каждой формы.
+embroidery	The fills' rows, counter-clockwise on the page.	Ряды заливок, против часовой стрелки на странице.
+embroidery	From the background to the details. The Order tab changes it after Create.	От фона к деталям. Вкладка «Порядок» меняет его после создания.
+embroidery	Create sets these in the document's embroidery settings.	Создание запишет их в настройки вышивки документа.

@@ -324,6 +324,24 @@ fn the_windows_document_settings_are_planned_and_set_in_the_same_undo_step() {
     assert_eq!(window.doc().unwrap().doc.embroidery, before, "Undo takes the settings back");
 }
 
+/// The window's request says the document's settings as its objects are planned with them, each
+/// with where it comes from, its changes in place: the fabric chosen in it and its rows' spacing
+/// from that fabric, the fill angle across the shape, and its palette.
+#[test]
+fn the_windows_request_says_the_settings_it_plans_with() {
+    let (s, image) = placed(&picture());
+    let plain = s.digitize_window_request(image, &json!({}), None, &json!({})).unwrap().document_settings();
+    assert_eq!(plain.resolved.fabric.tatami.spacing.source, "default");
+    assert!(plain.resolved.fabric.preset.is_none());
+    let document = json!({"fabric": "denim", "fillAngle": "acrossShape"});
+    let changed = s.digitize_window_request(image, &json!({}), Some("pec"), &document).unwrap().document_settings();
+    assert_eq!(changed.resolved.fabric.preset.as_ref().map(|p| p.id.as_str()), Some("denim"));
+    assert_eq!(changed.resolved.fabric.tatami.spacing.source, "document");
+    assert_eq!(changed.resolved.fill_angle.value, json!("acrossShape"));
+    assert_eq!(changed.resolved.palette.value, "pec");
+    assert!(s.doc().unwrap().doc.embroidery.is_none(), "the document itself as it was");
+}
+
 /// The window's document settings are refused as `embroidery.setup` refuses them, and only the
 /// three it changes are taken.
 #[test]

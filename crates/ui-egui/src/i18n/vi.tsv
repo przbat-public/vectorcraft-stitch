@@ -7050,7 +7050,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Đang tính…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Bước {number}/{count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Các mũi thêu theo thiết lập thêu của tài liệu.
 @plural	{count} thread + background|{count} threads + background	{count} chỉ + nền
 @plural	{count} area|{count} areas	{count} vùng
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7126,3 +7125,17 @@ embroidery	Colors overlap by	Các màu chồng lên nhau
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Màu được thêu trước lấn xuống dưới màu kế tiếp, để không lộ vải giữa chúng.
 embroidery	Thin lines sewn along their middle below	Đường mảnh thêu dọc giữa khi hẹp hơn
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Phần hẹp hơn được thêu thành đường mũi chạy dọc giữa. 0: không có.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Đường mảnh
+embroidery	Running stitch along the middle	Mũi chạy dọc giữa
+embroidery	Shapes: below {value}	Hình dạng: dưới {value}
+embroidery	Set in the Shapes step.	Đặt ở bước Hình dạng.
+embroidery	below {value}	dưới {value}
+embroidery	Tatami, rows {value} apart	Tatami, các hàng cách nhau {value}
+embroidery	Fill angle	Góc tô
+embroidery	Fixed	Cố định
+embroidery	Across the shape	Ngang qua hình
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Hướng các hàng của phần tô: theo một góc cố định trên trang, hoặc ngang qua chiều dài của từng hình.
+embroidery	The fills' rows, counter-clockwise on the page.	Các hàng của phần tô, ngược chiều kim đồng hồ trên trang.
+embroidery	From the background to the details. The Order tab changes it after Create.	Từ nền đến chi tiết. Thẻ Thứ tự thay đổi nó sau khi Tạo.
+embroidery	Create sets these in the document's embroidery settings.	Tạo sẽ đặt chúng vào cài đặt thêu của tài liệu.

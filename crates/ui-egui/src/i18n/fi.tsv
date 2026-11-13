@@ -7484,7 +7484,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Lasketaan…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Vaihe {number}/{count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Pistot noudattavat asiakirjan kirjontaasetuksia.
 @plural	{count} thread + background|{count} threads + background	{count} lanka + tausta|{count} lankaa + tausta
 @plural	{count} area|{count} areas	{count} alue|{count} aluetta
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7560,3 +7559,17 @@ embroidery	Colors overlap by	Värit limittyvät
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Ensin kirjottava väri ulottuu seuraavan alle, jotta niiden välistä ei näy kangasta.
 embroidery	Thin lines sewn along their middle below	Ohuet viivat kirjotaan keskeltä, leveys alle
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Kapeampi osa kirjotaan suoran piston viivana keskeltään. 0: ei mitään.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Ohuet viivat
+embroidery	Running stitch along the middle	Suora pisto keskeltä
+embroidery	Shapes: below {value}	Muodot: alle {value}
+embroidery	Set in the Shapes step.	Asetetaan vaiheessa Muodot.
+embroidery	below {value}	alle {value}
+embroidery	Tatami, rows {value} apart	Tatami, rivit {value} välein
+embroidery	Fill angle	Täytön kulma
+embroidery	Fixed	Kiinteä
+embroidery	Across the shape	Muodon poikki
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Täytön rivien suunta: kiinteässä kulmassa sivulla tai kunkin muodon pituuden poikki.
+embroidery	The fills' rows, counter-clockwise on the page.	Täyttöjen rivit, vastapäivään sivulla.
+embroidery	From the background to the details. The Order tab changes it after Create.	Taustasta yksityiskohtiin. Järjestys-välilehti muuttaa sitä luonnin jälkeen.
+embroidery	Create sets these in the document's embroidery settings.	Luonti asettaa ne asiakirjan kirjontaasetuksiin.

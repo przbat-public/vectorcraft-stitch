@@ -7433,7 +7433,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Számítás…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	{number}. lépés ({count} közül): {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Az öltések a dokumentum hímzésbeállításait követik.
 @plural	{count} thread + background|{count} threads + background	{count} szál + háttér
 @plural	{count} area|{count} areas	{count} terület
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7509,3 +7508,17 @@ embroidery	Colors overlap by	A színek átfedése
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Az elsőként hímzett szín a következő alá nyúlik, hogy ne látsszon köztük az anyag.
 embroidery	Thin lines sewn along their middle below	A közepükön hímzett vékony vonalak szélessége kevesebb, mint
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	A keskenyebb rész egyenes öltésű vonalként, a közepén hímződik. 0: egyik sem.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Vékony vonalak
+embroidery	Running stitch along the middle	Egyenes öltés középen
+embroidery	Shapes: below {value}	Alakzatok: {value} alatt
+embroidery	Set in the Shapes step.	Az Alakzatok lépésben állítható.
+embroidery	below {value}	{value} alatt
+embroidery	Tatami, rows {value} apart	Tatami, a sorok {value} távolságra
+embroidery	Fill angle	Kitöltés szöge
+embroidery	Fixed	Rögzített
+embroidery	Across the shape	Az alakzaton keresztben
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	A kitöltés sorainak iránya: rögzített szögben az oldalon, vagy minden alakzat hosszán keresztben.
+embroidery	The fills' rows, counter-clockwise on the page.	A kitöltések sorai, az óramutató járásával ellentétesen az oldalon.
+embroidery	From the background to the details. The Order tab changes it after Create.	A háttértől a részletekig. A létrehozás után a Sorrend lap módosítja.
+embroidery	Create sets these in the document's embroidery settings.	A létrehozás beállítja őket a dokumentum hímzésbeállításaiban.

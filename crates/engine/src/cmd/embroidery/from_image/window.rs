@@ -16,6 +16,7 @@ use super::command::{NOTHING_TO_MAKE, created_json, image_of, put_in_place};
 use super::pipeline::{Outputs, Pipeline, WindowRequest};
 use super::settings::{C, Settings};
 use crate::cmd::bad;
+use crate::cmd::embroidery::setup::DocumentSettings;
 use crate::{Result, Session};
 
 /// The document settings the window changes, as `embroidery.setup` names them: the fabric, the fill
@@ -69,6 +70,18 @@ impl Session {
         reply["dryRun"] = Value::Bool(false);
         reply["created"] = created_json(made);
         Ok(reply)
+    }
+}
+
+impl WindowRequest {
+    /// The document's embroidery settings as the window's objects are planned with them (its
+    /// palette and its changes in place), each with where it comes from, as `embroidery.settings`
+    /// answers with them: what the window's Stitches step shows.
+    pub fn document_settings(&self) -> DocumentSettings {
+        let mut d = Document::clone(&self.original);
+        d.embroidery = self.setup.clone();
+        super::pipeline::with_palette(&mut d, self.palette);
+        super::super::setup::document_settings(&d)
     }
 }
 

@@ -7134,7 +7134,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	計算中…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	ステップ {number}/{count}: {name}。{summary}。{time}
-embroidery	The stitches follow the document's embroidery settings.	ステッチはドキュメントの刺繍設定に従います。
 @plural	{count} thread + background|{count} threads + background	{count} 本の糸 + 背景
 @plural	{count} area|{count} areas	{count} 個の領域
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7210,3 +7209,17 @@ embroidery	Colors overlap by	色の重なり
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	先に縫う色が次の色の下に入り込むので、色の間に生地が見えません。
 embroidery	Thin lines sewn along their middle below	中央に沿って縫う細い線の幅の上限
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	これより細い部分は、中央に沿ってランニングステッチの線で縫います。0: なし。
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	細い線
+embroidery	Running stitch along the middle	中央に沿ったランニングステッチ
+embroidery	Shapes: below {value}	シェイプ: {value} 未満
+embroidery	Set in the Shapes step.	シェイプのステップで設定します。
+embroidery	below {value}	{value} 未満
+embroidery	Tatami, rows {value} apart	タタミ、列の間隔 {value}
+embroidery	Fill angle	塗りの角度
+embroidery	Fixed	固定
+embroidery	Across the shape	形状を横切る
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	塗りの列の向き: ページ上の固定の角度、またはそれぞれの形状の長さを横切る向き。
+embroidery	The fills' rows, counter-clockwise on the page.	塗りの列、ページ上で反時計回り。
+embroidery	From the background to the details. The Order tab changes it after Create.	背景から細部へ。作成後に縫い順タブで変更できます。
+embroidery	Create sets these in the document's embroidery settings.	作成すると、これらがドキュメントの刺繍設定になります。

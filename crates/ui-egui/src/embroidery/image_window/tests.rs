@@ -1153,3 +1153,106 @@ fn a_shapes_value_out_of_range_is_refused_and_kept() {
     let d = open_dialog(&app).expect("open");
     assert_eq!((d.fields.get("overlap"), d.fields.get("smoothing")), (None, None));
 }
+
+/// A choice made in a row's list: the row's button screen readers call `name`, then its option
+/// `option`.
+fn choose(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, option: &str) {
+    click_named(app, ctx, time, name);
+    click_named(app, ctx, time, option);
+}
+
+/// The note saying that Create sets the window's document settings in the document.
+const SETS_THEM: &str = "Create sets these in the document's embroidery settings.";
+
+/// Whether `nodes` say `words`.
+fn says(nodes: &[(egui::accesskit::NodeId, egui::accesskit::Node)], words: &str) -> bool {
+    nodes.iter().any(|(_, n)| n.value() == Some(words))
+}
+
+/// The Stitches step's fabric is the one the design is planned with, from the objects on, the
+/// window saying that Create sets it in the document; Create makes it the document's in the same
+/// undo step (the project owner's choice, 2026-11-12, as the palette); the document's own again
+/// changes nothing.
+#[test]
+fn the_stitches_steps_fabric_is_planned_and_made_the_documents_on_create() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    assert!(!says(&nodes(&mut app, &ctx, &mut time), SETS_THEM), "nothing changed yet");
+    choose(&mut app, &ctx, &mut time, "Fabric", "Built-in values");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("fabric").cloned()), None, "the document's own: no change");
+    let before = made_by(&app);
+    choose(&mut app, &ctx, &mut time, "Fabric", "Denim or heavy twill");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("fabric").cloned()), Some(json!("denim")));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    assert!(says(&nodes(&mut app, &ctx, &mut time), SETS_THEM));
+    let steps = undo_steps(&app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    assert_eq!(undo_steps(&app), steps + 1, "one undo step");
+    let settings = app.session.embroidery_settings().expect("settings");
+    assert_eq!(settings.settings.fabric.and_then(|f| f.preset).as_deref(), Some("denim"));
+}
+
+/// The fill angle across the shape is what the design is planned with, and Fixed takes the degrees
+/// typed; degrees past a full turn are refused and kept.
+#[test]
+fn the_fill_angle_is_fixed_or_across_the_shape() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let angle = |app: &VectorcraftApp| open_dialog(app).and_then(|d| d.fields.get("fillAngle").cloned());
+    let before = made_by(&app);
+    choose(&mut app, &ctx, &mut time, "Fill angle", "Across the shape");
+    assert_eq!(angle(&app), Some(json!("acrossShape")));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    assert_eq!(live_mut(&mut app).document_settings().map(|s| s.resolved.fill_angle.value.clone()), Some(json!("acrossShape")), "planned so");
+    choose(&mut app, &ctx, &mut time, "Fill angle", "Fixed");
+    assert_eq!(angle(&app), None, "the document's own rows again");
+    type_into(&mut app, &ctx, &mut time, "Angle", "45");
+    assert_eq!(angle(&app), Some(json!(45.0)));
+    type_into(&mut app, &ctx, &mut time, "Angle", "500");
+    assert_eq!(app.ui.status, "500° is out of range: -360° to 360°.");
+    assert_eq!(angle(&app), Some(json!(45.0)), "kept");
+}
+
+/// Joining one thread's objects is a checkbox, from the objects on.
+#[test]
+fn joining_one_threads_objects_is_a_setting() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Join one thread's objects when nothing lies between them", Role::CheckBox);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("joinSameColor").cloned()), Some(json!(false)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    click(&mut app, &ctx, &mut time, "Join one thread's objects when nothing lies between them", Role::CheckBox);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("joinSameColor").cloned()), None, "the document's own again");
+}
+
+/// The rules are read only, each with its value and where it comes from: the thin lines from the
+/// Shapes step, the narrow parts' satin by default, the rows' spacing by default and then from the
+/// fabric chosen, fleece's closer rows (what the step draws: its read-only rows are painted words).
+#[test]
+fn the_rules_say_where_their_values_come_from() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    for words in ["Thin lines", "Running stitch along the middle", "Shapes: below 1 mm", "Narrow parts as satin", "below 7 mm", "Row spacing"] {
+        assert!(drawn.iter().any(|w| w == words), "{words} not drawn: {drawn:?}");
+    }
+    let tatami = |drawn: &[String]| drawn.iter().find(|w| w.starts_with("Tatami, rows ")).cloned().unwrap_or_default();
+    let built_in = tatami(&drawn);
+    assert_eq!(drawn.iter().filter(|w| *w == "default").count(), 2, "the narrow parts' and the rows' source: {drawn:?}");
+    // Fleece's rows are closer than the built-in ones (its own spacing, from the heavy knit class).
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    until(&mut app, &ctx, &mut time, ready);
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    assert!(drawn.iter().any(|w| w == "fabric"), "the rows' spacing from the fabric: {drawn:?}");
+    assert_eq!((built_in.as_str(), tatami(&drawn).as_str()), ("Tatami, rows 0.38 mm apart", "Tatami, rows 0.33 mm apart"));
+}

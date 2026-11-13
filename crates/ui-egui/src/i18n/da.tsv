@@ -7208,7 +7208,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Beregner…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Trin {number} af {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Stingene følger dokumentets broderiindstillinger.
 @plural	{count} thread + background|{count} threads + background	{count} tråd + baggrund|{count} tråde + baggrund
 @plural	{count} area|{count} areas	{count} område|{count} områder
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7284,3 +7283,17 @@ embroidery	Colors overlap by	Farverne overlapper med
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Farven, der sys først, går ind under den næste, så der ikke ses stof imellem dem.
 embroidery	Thin lines sewn along their middle below	Tynde linjer sys langs midten under
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	En smallere del sys som en forstingslinje langs midten. 0: ingen.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Tynde linjer
+embroidery	Running stitch along the middle	Forsting langs midten
+embroidery	Shapes: below {value}	Former: under {value}
+embroidery	Set in the Shapes step.	Indstilles i trinnet Former.
+embroidery	below {value}	under {value}
+embroidery	Tatami, rows {value} apart	Tatami, rækker med {value} imellem
+embroidery	Fill angle	Udfyldningens vinkel
+embroidery	Fixed	Fast
+embroidery	Across the shape	På tværs af formen
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Retningen af udfyldningens rækker: i en fast vinkel på siden eller på tværs af hver forms længde.
+embroidery	The fills' rows, counter-clockwise on the page.	Udfyldningernes rækker, mod uret på siden.
+embroidery	From the background to the details. The Order tab changes it after Create.	Fra baggrunden til detaljerne. Fanen Rækkefølge ændrer den efter Opret.
+embroidery	Create sets these in the document's embroidery settings.	Opret sætter dem i dokumentets broderiindstillinger.

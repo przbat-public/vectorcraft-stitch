@@ -7195,7 +7195,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Изчисляване…
 embroidery	{value} ms	{value} мс
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Стъпка {number} от {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Бодовете следват настройките за бродерия на документа.
 @plural	{count} thread + background|{count} threads + background	{count} нишка + фон|{count} нишки + фон
 @plural	{count} area|{count} areas	{count} област|{count} области
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7271,3 +7270,17 @@ embroidery	Colors overlap by	Цветовете се застъпват с
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Цветът, който се шие първи, влиза под следващия, за да не се вижда плат между тях.
 embroidery	Thin lines sewn along their middle below	Тънки линии, шити по средата си, под
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	По-тясна част се шие като линия права бод по средата си. 0: никоя.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Тънки линии
+embroidery	Running stitch along the middle	Прав бод по средата
+embroidery	Shapes: below {value}	Фигури: под {value}
+embroidery	Set in the Shapes step.	Задава се в стъпка „Фигури“.
+embroidery	below {value}	под {value}
+embroidery	Tatami, rows {value} apart	Татами, редове през {value}
+embroidery	Fill angle	Ъгъл на запълването
+embroidery	Fixed	Фиксиран
+embroidery	Across the shape	Напречно на фигурата
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Посоката на редовете на запълването: под фиксиран ъгъл на страницата или напречно на дължината на всяка фигура.
+embroidery	The fills' rows, counter-clockwise on the page.	Редовете на запълванията, обратно на часовниковата стрелка на страницата.
+embroidery	From the background to the details. The Order tab changes it after Create.	От фона към детайлите. Разделът „Ред“ го променя след създаването.
+embroidery	Create sets these in the document's embroidery settings.	Създаването ги задава в настройките за бродерия на документа.

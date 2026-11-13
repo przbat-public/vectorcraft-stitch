@@ -7508,7 +7508,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	გამოთვლა…
 embroidery	{value} ms	{value} მწმ
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	ნაბიჯი {number} / {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	ნაკერები დოკუმენტის ნაქარგობის პარამეტრებს მიჰყვება.
 @plural	{count} thread + background|{count} threads + background	ძაფები: {count} + ფონი
 @plural	{count} area|{count} areas	არეები: {count}
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7584,3 +7583,17 @@ embroidery	Colors overlap by	ფერების გადაფარვა
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	პირველად დაქარგული ფერი შემდეგის ქვეშ შედის, რომ მათ შორის ქსოვილი არ გამოჩნდეს.
 embroidery	Thin lines sewn along their middle below	შუაზე დაქარგული წვრილი ხაზები, სიგანე ნაკლები, ვიდრე
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	უფრო ვიწრო ნაწილი შუაზე სწორი ნაკერის ხაზით იქარგება. 0: არცერთი.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	წვრილი ხაზები
+embroidery	Running stitch along the middle	სწორი ნაკერი შუაზე
+embroidery	Shapes: below {value}	ფიგურები: {value}-ზე ნაკლები
+embroidery	Set in the Shapes step.	ფიგურების ნაბიჯში დგინდება.
+embroidery	below {value}	{value}-ზე ნაკლები
+embroidery	Tatami, rows {value} apart	ტატამი, რიგები {value}-ის დაშორებით
+embroidery	Fill angle	შევსების კუთხე
+embroidery	Fixed	ფიქსირებული
+embroidery	Across the shape	ფორმის განივად
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	შევსების რიგების მიმართულება: გვერდზე ფიქსირებული კუთხით, ან თითოეული ფორმის სიგრძის განივად.
+embroidery	The fills' rows, counter-clockwise on the page.	შევსებების რიგები, გვერდზე საათის ისრის საწინააღმდეგოდ.
+embroidery	From the background to the details. The Order tab changes it after Create.	ფონიდან დეტალებამდე. შექმნის შემდეგ მას რიგის ჩანართი ცვლის.
+embroidery	Create sets these in the document's embroidery settings.	შექმნა მათ დოკუმენტის ქარგვის პარამეტრებში დააყენებს.

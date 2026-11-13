@@ -181,7 +181,7 @@ pub const THREAD_WIDTH: f64 = 0.4;
 /// warns that a satin too wide sews loose and covers badly
 /// (<https://docs.wilcom.com/embroiderystudio/28/en/OnlineHelp/Digitizing/stitches/stitches-8.htm>);
 /// 7 mm stays below that, with room for pull compensation. An estimate.
-pub(crate) const NARROW_SATIN: f64 = 7.0;
+pub const NARROW_SATIN: f64 = 7.0;
 /// A satin column's width when none is given (millimetres). The export always gives one, the
 /// stroke's width; this is for callers of the planner that don't.
 const SATIN_WIDTH: f64 = 3.0;

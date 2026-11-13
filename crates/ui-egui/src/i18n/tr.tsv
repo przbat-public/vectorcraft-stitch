@@ -7402,7 +7402,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Hesaplanıyor…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Adım {number}/{count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Dikişler belgenin nakış ayarlarını izler.
 @plural	{count} thread + background|{count} threads + background	{count} iplik + arka plan
 @plural	{count} area|{count} areas	{count} alan
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7478,3 +7477,17 @@ embroidery	Colors overlap by	Renk örtüşmesi
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	İlk dikilen renk bir sonrakinin altına uzanır; böylece aralarında kumaş görünmez.
 embroidery	Thin lines sewn along their middle below	Ortasından dikilen ince çizgilerin üst sınırı
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Daha dar bir parça, ortasından düz dikiş çizgisiyle dikilir. 0: hiçbiri.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	İnce çizgiler
+embroidery	Running stitch along the middle	Ortasından düz dikiş
+embroidery	Shapes: below {value}	Şekiller: {value} altı
+embroidery	Set in the Shapes step.	Şekiller adımında ayarlanır.
+embroidery	below {value}	{value} altı
+embroidery	Tatami, rows {value} apart	Tatami, sıralar {value} arayla
+embroidery	Fill angle	Dolgu açısı
+embroidery	Fixed	Sabit
+embroidery	Across the shape	Şeklin enine
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Dolgunun sıralarının yönü: sayfada sabit bir açıyla ya da her şeklin uzunluğuna enine.
+embroidery	The fills' rows, counter-clockwise on the page.	Dolguların sıraları, sayfada saat yönünün tersine.
+embroidery	From the background to the details. The Order tab changes it after Create.	Arka plandan ayrıntılara. Oluştur’dan sonra Sıra sekmesi değiştirir.
+embroidery	Create sets these in the document's embroidery settings.	Oluştur, bunları belgenin nakış ayarlarına yazar.

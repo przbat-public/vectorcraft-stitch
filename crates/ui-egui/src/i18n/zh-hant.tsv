@@ -7083,7 +7083,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	正在計算…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	第 {number} 步，共 {count} 步：{name}。{summary}。{time}
-embroidery	The stitches follow the document's embroidery settings.	針跡遵循文件的刺繡設定。
 @plural	{count} thread + background|{count} threads + background	{count} 種線 + 背景
 @plural	{count} area|{count} areas	{count} 個區域
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7159,3 +7158,17 @@ embroidery	Colors overlap by	顏色重疊
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	先繡的顏色伸到下一種顏色的下面，兩者之間就不會露出布料。
 embroidery	Thin lines sewn along their middle below	沿中線繡的細線寬度上限
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	更窄的部分沿中線繡成平針線。0：無。
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	細線
+embroidery	Running stitch along the middle	沿中線平針
+embroidery	Shapes: below {value}	形狀：小於 {value}
+embroidery	Set in the Shapes step.	在「形狀」步驟中設定。
+embroidery	below {value}	小於 {value}
+embroidery	Tatami, rows {value} apart	榻榻米，行距 {value}
+embroidery	Fill angle	填色角度
+embroidery	Fixed	固定
+embroidery	Across the shape	橫跨形狀
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	填色各行的方向：頁面上的固定角度，或橫跨每個形狀的長度。
+embroidery	The fills' rows, counter-clockwise on the page.	填色的行，在頁面上按逆時針方向。
+embroidery	From the background to the details. The Order tab changes it after Create.	從背景到細節。建立後可在「順序」分頁中變更。
+embroidery	Create sets these in the document's embroidery settings.	建立時會將這些設為文件的刺繡設定。

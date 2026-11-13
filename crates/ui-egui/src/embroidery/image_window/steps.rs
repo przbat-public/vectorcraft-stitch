@@ -253,16 +253,10 @@ pub(crate) fn accordion(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
                     1 => super::image_step::show(app, ui, d),
                     2 => super::colours_step::show(app, ui, d),
                     3 => super::shapes_step::show(app, ui, d),
-                    _ => defaults_note(ui),
+                    _ => super::stitches_step::show(app, ui, d),
                 }
             }
             ui.add_space(SECTION_GAP);
         }
     });
-}
-
-/// What the Stitches step's settings, kept at their defaults in this version of the window, use.
-fn defaults_note(ui: &mut Ui) {
-    let t = Tokens::get(ui.ctx());
-    ui.label(RichText::new(crate::et!("The stitches follow the document's embroidery settings.")).size(SMALL_TEXT).color(t.text));
 }

@@ -7401,7 +7401,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Υπολογισμός…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Βήμα {number} από {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Οι βελονιές ακολουθούν τις ρυθμίσεις κεντήματος του εγγράφου.
 @plural	{count} thread + background|{count} threads + background	{count} κλωστή + φόντο|{count} κλωστές + φόντο
 @plural	{count} area|{count} areas	{count} περιοχή|{count} περιοχές
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7477,3 +7476,17 @@ embroidery	Colors overlap by	Τα χρώματα επικαλύπτονται κ
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Το χρώμα που κεντιέται πρώτο μπαίνει κάτω από το επόμενο, ώστε να μη φαίνεται ύφασμα ανάμεσά τους.
 embroidery	Thin lines sewn along their middle below	Λεπτές γραμμές κεντημένες στη μέση τους κάτω από
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Ένα στενότερο τμήμα κεντιέται ως γραμμή ευθείας βελονιάς στη μέση του. 0: κανένα.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Λεπτές γραμμές
+embroidery	Running stitch along the middle	Ευθεία βελονιά στη μέση
+embroidery	Shapes: below {value}	Σχήματα: κάτω από {value}
+embroidery	Set in the Shapes step.	Ορίζεται στο βήμα Σχήματα.
+embroidery	below {value}	κάτω από {value}
+embroidery	Tatami, rows {value} apart	Τατάμι, σειρές ανά {value}
+embroidery	Fill angle	Γωνία γεμίσματος
+embroidery	Fixed	Σταθερή
+embroidery	Across the shape	Εγκάρσια στο σχήμα
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Η κατεύθυνση των σειρών του γεμίσματος: σε σταθερή γωνία στη σελίδα ή εγκάρσια στο μήκος κάθε σχήματος.
+embroidery	The fills' rows, counter-clockwise on the page.	Οι σειρές των γεμισμάτων, αριστερόστροφα στη σελίδα.
+embroidery	From the background to the details. The Order tab changes it after Create.	Από το φόντο προς τις λεπτομέρειες. Η καρτέλα Σειρά την αλλάζει μετά τη δημιουργία.
+embroidery	Create sets these in the document's embroidery settings.	Η δημιουργία τα ορίζει στις ρυθμίσεις κεντήματος του εγγράφου.

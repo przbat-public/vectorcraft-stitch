@@ -7429,7 +7429,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	S’està calculant…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Pas {number} de {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Les puntades segueixen la configuració de brodat del document.
 @plural	{count} thread + background|{count} threads + background	{count} fil + fons|{count} fils + fons
 @plural	{count} area|{count} areas	{count} àrea|{count} àrees
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7505,3 +7504,17 @@ embroidery	Colors overlap by	Els colors se superposen
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	El color que es cus primer passa per sota del següent, perquè no es vegi el teixit entre tots dos.
 embroidery	Thin lines sewn along their middle below	Línies fines cosides pel mig per sota de
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Una part més estreta es cus com una línia de punt endavant pel mig. 0: cap.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Línies fines
+embroidery	Running stitch along the middle	Punt endavant pel mig
+embroidery	Shapes: below {value}	Formes: per sota de {value}
+embroidery	Set in the Shapes step.	Es defineix al pas Formes.
+embroidery	below {value}	per sota de {value}
+embroidery	Tatami, rows {value} apart	Tatami, files cada {value}
+embroidery	Fill angle	Angle del farciment
+embroidery	Fixed	Fix
+embroidery	Across the shape	A través de la forma
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	La direcció de les files del farciment: amb un angle fix a la pàgina, o a través de la llargada de cada forma.
+embroidery	The fills' rows, counter-clockwise on the page.	Les files dels farciments, en sentit antihorari a la pàgina.
+embroidery	From the background to the details. The Order tab changes it after Create.	Del fons als detalls. La pestanya Ordre el canvia després de crear-los.
+embroidery	Create sets these in the document's embroidery settings.	En crear-los, passen a la configuració de brodat del document.

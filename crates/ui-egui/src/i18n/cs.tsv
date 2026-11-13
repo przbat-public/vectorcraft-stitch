@@ -7449,7 +7449,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Počítání…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	Stehy se řídí nastavením výšivky dokumentu.
 @plural	{count} thread + background|{count} threads + background	{count} nit + pozadí|{count} nitě + pozadí|{count} nití + pozadí
 @plural	{count} area|{count} areas	{count} oblast|{count} oblasti|{count} oblastí
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7525,3 +7524,17 @@ embroidery	Colors overlap by	Barvy se překrývají o
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Barva šitá dříve sahá pod následující, aby mezi nimi nebyla vidět látka.
 embroidery	Thin lines sewn along their middle below	Tenké čáry šité středem pod
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Užší část se šije jako linie rovného stehu svým středem. 0: žádná.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Tenké čáry
+embroidery	Running stitch along the middle	Rovný steh středem
+embroidery	Shapes: below {value}	Tvary: pod {value}
+embroidery	Set in the Shapes step.	Nastavuje se v kroku Tvary.
+embroidery	below {value}	pod {value}
+embroidery	Tatami, rows {value} apart	Tatami, řady po {value}
+embroidery	Fill angle	Úhel výplně
+embroidery	Fixed	Pevný
+embroidery	Across the shape	Napříč tvarem
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Směr řad výplně: pod pevným úhlem na stránce, nebo napříč délkou každého tvaru.
+embroidery	The fills' rows, counter-clockwise on the page.	Řady výplní, proti směru hodinových ručiček na stránce.
+embroidery	From the background to the details. The Order tab changes it after Create.	Od pozadí k detailům. Karta Pořadí ho po vytvoření změní.
+embroidery	Create sets these in the document's embroidery settings.	Vytvoření je nastaví v nastavení vyšívání dokumentu.

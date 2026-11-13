@@ -7069,7 +7069,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Calcolo…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Passaggio {number} di {count}: {name}. {summary}. {time}
-embroidery	The stitches follow the document's embroidery settings.	I punti seguono le impostazioni di ricamo del documento.
 @plural	{count} thread + background|{count} threads + background	{count} filo + sfondo|{count} fili + sfondo
 @plural	{count} area|{count} areas	{count} area|{count} aree
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7145,3 +7144,17 @@ embroidery	Colors overlap by	I colori si sovrappongono di
 embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Il colore ricamato per primo passa sotto il successivo, così tra loro non si vede il tessuto.
 embroidery	Thin lines sewn along their middle below	Linee sottili ricamate lungo il centro sotto
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Una parte più stretta è ricamata come linea a punto dritto lungo il centro. 0: nessuna.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Linee sottili
+embroidery	Running stitch along the middle	Punto dritto lungo il centro
+embroidery	Shapes: below {value}	Forme: sotto {value}
+embroidery	Set in the Shapes step.	Si imposta nel passo Forme.
+embroidery	below {value}	sotto {value}
+embroidery	Tatami, rows {value} apart	Tatami, file ogni {value}
+embroidery	Fill angle	Angolo del riempimento
+embroidery	Fixed	Fisso
+embroidery	Across the shape	Di traverso alla forma
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	La direzione delle file del riempimento: con un angolo fisso sulla pagina, o di traverso alla lunghezza di ogni forma.
+embroidery	The fills' rows, counter-clockwise on the page.	Le file dei riempimenti, in senso antiorario sulla pagina.
+embroidery	From the background to the details. The Order tab changes it after Create.	Dallo sfondo ai dettagli. La scheda Ordine lo cambia dopo Crea.
+embroidery	Create sets these in the document's embroidery settings.	Crea li imposta nelle impostazioni di ricamo del documento.

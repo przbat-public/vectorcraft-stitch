@@ -3722,7 +3722,8 @@ Settings… over it.
   the app's panels and lists do. The window ends above the hint line and the status bar.
 - **The Live bar** (`live_bar.rs`): the figures of the image's objects sewn alone with the
   document's fabric, thread and machine, in the status bar counters' words; how long the last
-  change took and its steps; the notes (the Check tab's errors and warnings on the objects, checked
+  change took and its steps (a value changed back, found kept, the steps it reached, shown again
+  from what was kept); the notes (the Check tab's errors and warnings on the objects, checked
   on the window's thread, and digitizing's warnings, each in words, problems first); Start Over,
   Cancel, and Create, disabled with its reason when nothing would be sewn: every colour left out,
   or every area the background, which says what to do (sew the background, or crop less). Create

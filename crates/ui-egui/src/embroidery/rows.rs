@@ -22,7 +22,7 @@
 //!   labels do, a field as wide as its words want (a choice wider than the others where its row
 //!   has room for its words: Document Setup's wide columns). Where the panel is too narrow for all
 //!   of it, the hint after ↺ gives way first (↺'s tooltip then says it), then long labels wrap
-//!   beside their fields, then fields cut their words short (a choice's whole in its tooltip); only
+//!   beside their fields, then fields cut their words short (whole in their tooltips); only
 //!   then does each label go above its field. A badge, and the count after ↺, keep their room.
 
 use std::ops::RangeInclusive;
@@ -517,7 +517,8 @@ fn button_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Col
     resp.clicked()
 }
 
-/// A value read only, drawn as a field holding it.
+/// A value read only, drawn as a field holding it; its words, cut short where the column is narrow,
+/// whole in the field's tooltip, as a choice's are.
 fn words_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Color32) {
     let t = Tokens::get(ui.ctx());
     let (rect, resp) = ui.allocate_exact_size(vec2(width, WORDS_HEIGHT), Sense::hover());
@@ -530,11 +531,15 @@ fn words_field(ui: &mut Ui, width: f32, row: &Row<'_>, words: &str, colour: Colo
         egui::TextStyle::Body,
     );
     let at = Align2::LEFT_CENTER.align_size_within_rect(galley.size(), rect.shrink2(vec2(WORDS_INSET, 0.0))).min;
+    let cut = galley.elided;
     ui.painter().galley(at, galley, colour);
     // The language's own punctuation between a name and its value (French spaces its colon).
     let said = crate::embroidery::text::fill(crate::et!("{section}: {setting}"), &[("section", row.name), ("setting", words)]);
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, said.clone()));
     ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(row.description.clone()));
+    if cut {
+        resp.on_hover_text(words);
+    }
 }
 
 /// After the field: ↺ and the words after it (the hint only where it fits whole, else in ↺'s

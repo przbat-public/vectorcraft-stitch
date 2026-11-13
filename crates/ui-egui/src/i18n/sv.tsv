@@ -9011,11 +9011,9 @@ embroidery	Thin lines sewn along their middle below	Tunna linjer broderas längs
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	En smalare del broderas som en rakstygnslinje längs mitten. 0: ingen.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Tunna linjer
-embroidery	Running stitch along the middle	Rakstygn längs mitten
 embroidery	Shapes: below {value}	Former: under {value}
 embroidery	Set in the Shapes step.	Ställs in i steget Former.
 embroidery	below {value}	under {value}
-embroidery	Tatami, rows {value} apart	Tatami, rader med {value} mellanrum
 embroidery	Fill angle	Fyllningens vinkel
 embroidery	Fixed	Fast
 embroidery	Across the shape	Tvärs över formen
@@ -9038,3 +9036,5 @@ embroidery	Border: {length}	Kant: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Färgkonturerna löper längs bildens egna linjer på {share} av sin längd: de linjerna broderas två gånger. Utelämna linjernas färg, eller stäng av konturerna.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Öppnar fliken Broderi i Dokumentinställningar. Det här fönstret kommer tillbaka när den stängs.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

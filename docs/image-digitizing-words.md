@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-12 · **Change:** the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-13 · **Change:** the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -189,16 +189,15 @@ The tables below list the window's own words in the order the code draws them; w
 
 ## Step 4, the Stitches
 
-It also uses words of the Embroidery panel and Document Setup: Fabric, Built-in values, Custom, the fabrics' names, Narrow parts as satin, Row spacing, Angle, Sewing order, Join one thread's objects when nothing lies between them, and where a value comes from (default, fabric).
+It also uses words of the Embroidery panel and Document Setup: Fabric, Built-in values, Custom, the fabrics' names, Running stitch, Narrow parts as satin, Row spacing, Angle, Sewing order, Join one thread's objects when nothing lies between them, and where a value comes from (default, fabric).
 
 | English | Polish |
 |---|---|
 | Thin lines | Cienkie linie |
-| Running stitch along the middle | Ścieg prosty środkiem |
 | Shapes: below {value} | Kształty: poniżej {value} |
 | Set in the Shapes step. | Ustawiane w kroku Kształty. |
 | below {value} | poniżej {value} |
-| Tatami, rows {value} apart | Tatami, rzędy co {value} |
+| Tatami, {value} | Tatami, {value} |
 | Fill angle | Kąt wypełnienia |
 | Fixed | Stały |
 | Across the shape | W poprzek kształtu |
@@ -279,3 +278,4 @@ They also use Choose Thread…, Name or number, and the warning in the Live bar'
 | 2026-11-12 | update | The second part: the Shapes step's controls (smoothness, corners, straightening, the overlap, the thin lines' width) and their notes; the note that listed the step's values goes. |
 | 2026-11-12 | update | The Stitches step: the fabric, the rule rows with their sources, the fill angle (Fixed or Across the shape), joining one thread's objects, the sewing order, and the note that Create sets them in the document; the note that said the step used the document's settings goes. |
 | 2026-11-12 | update | The Stitches step's outlines: two checkboxes, the border's width, the outlines' thread with the darkest marked and ↺ back to it, what they came to, and the warning when they run beside the picture's own lines. |
+| 2026-11-13 | update | The Stitches step's rules made short enough for their fields: the thin lines' "Running stitch" (the panel's word, "along the middle" said in the Shapes step), the rows' spacing "Tatami, {value}". |

@@ -7107,11 +7107,9 @@ embroidery	Thin lines sewn along their middle below	가운데를 따라 수놓�
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	이보다 좁은 부분은 가운데를 따라 러닝 스티치 선으로 수놓습니다. 0: 없음.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	가는 선
-embroidery	Running stitch along the middle	가운데를 따라 러닝 스티치
 embroidery	Shapes: below {value}	모양: {value} 미만
 embroidery	Set in the Shapes step.	모양 단계에서 설정합니다.
 embroidery	below {value}	{value} 미만
-embroidery	Tatami, rows {value} apart	타타미, 줄 간격 {value}
 embroidery	Fill angle	칠 각도
 embroidery	Fixed	고정
 embroidery	Across the shape	모양을 가로질러
@@ -7134,3 +7132,5 @@ embroidery	Border: {length}	테두리: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	색 윤곽선이 길이의 {share}에서 그림 자체의 선을 따라갑니다. 그 선은 두 번 수놓아집니다. 선의 색을 제외하거나 윤곽선을 끄세요.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	문서 설정의 자수 탭을 엽니다. 그것을 닫으면 이 창이 다시 열립니다.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	타타미, {value}

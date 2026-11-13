@@ -7127,11 +7127,9 @@ embroidery	Thin lines sewn along their middle below	Đường mảnh thêu dọc
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Phần hẹp hơn được thêu thành đường mũi chạy dọc giữa. 0: không có.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Đường mảnh
-embroidery	Running stitch along the middle	Mũi chạy dọc giữa
 embroidery	Shapes: below {value}	Hình dạng: dưới {value}
 embroidery	Set in the Shapes step.	Đặt ở bước Hình dạng.
 embroidery	below {value}	dưới {value}
-embroidery	Tatami, rows {value} apart	Tatami, các hàng cách nhau {value}
 embroidery	Fill angle	Góc tô
 embroidery	Fixed	Cố định
 embroidery	Across the shape	Ngang qua hình
@@ -7154,3 +7152,5 @@ embroidery	Border: {length}	Viền: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Đường viền màu chạy cạnh các đường của chính hình trên {share} chiều dài của chúng: các đường đó được thêu hai lần. Hãy bỏ màu của các đường, hoặc tắt đường viền.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Mở thẻ Thêu của Thiết lập tài liệu. Cửa sổ này quay lại khi nó đóng.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

@@ -7506,11 +7506,9 @@ embroidery	Thin lines sewn along their middle below	Línies fines cosides pel mi
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Una part més estreta es cus com una línia de punt endavant pel mig. 0: cap.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Línies fines
-embroidery	Running stitch along the middle	Punt endavant pel mig
 embroidery	Shapes: below {value}	Formes: per sota de {value}
 embroidery	Set in the Shapes step.	Es defineix al pas Formes.
 embroidery	below {value}	per sota de {value}
-embroidery	Tatami, rows {value} apart	Tatami, files cada {value}
 embroidery	Fill angle	Angle del farciment
 embroidery	Fixed	Fix
 embroidery	Across the shape	A través de la forma
@@ -7533,3 +7531,5 @@ embroidery	Border: {length}	Vora: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Els contorns dels colors passen al costat de les línies pròpies de la imatge en un {share} de la seva llargada: aquestes línies es cusen dues vegades. Deixeu fora el color de les línies, o desactiveu els contorns.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Obre la pestanya Brodat de Configuració del document. Aquesta finestra torna quan es tanca.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

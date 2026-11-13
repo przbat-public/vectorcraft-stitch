@@ -104,9 +104,13 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let mut owned = vec![fabric_row(d, &document, &presets), lines_row(&reply, lang), narrow_row(lang), wider_row(&planned, lang)];
     owned.extend(crate::embroidery::fill_angle::rows(&angle_now(d, &document)));
     let drawn: Vec<rows::Row<'_>> = owned.iter().map(|o| o.row(lang)).collect();
-    let cols = Columns::fit(ui, ui.available_width(), &drawn);
+    let width = ui.available_width();
+    let cols = Columns::fit(ui, width, &drawn);
     let mut edits: Vec<(&'static str, Edit)> = Vec::new();
     for (o, row) in owned.iter().zip(&drawn) {
+        // The fabrics' names are longer than a value: the choice takes the room its row has, as
+        // Document Setup's does.
+        let cols = if o.key == FABRIC { cols.wide(crate::embroidery::setup_tab::FABRIC_FIELD, width) } else { cols };
         if let Some(edit) = rows::show(ui, &cols, row) {
             edits.push((o.key, edit));
         }
@@ -162,13 +166,14 @@ fn fabric_row(d: &Dialog, document: &DocumentSettings, presets: &[String]) -> Ow
     Owned::new(FABRIC, label, label.to_string(), vocabulary::setup_tip("fabric"), field, Marks::inherited(None, None))
 }
 
-/// The thin lines' rule: sewn as a running line along their middle, below the Shapes step's width.
+/// The thin lines' rule: a running stitch (along their middle, as the Shapes step says), below the
+/// Shapes step's width.
 fn lines_row(reply: &Value, lang: Lang) -> Owned {
     let below = reply["settings"]["thinLine"].as_f64().unwrap_or(0.0);
     let mm = fields::format(lang, "mm", MM_DECIMALS).show(below);
     let source = fill(crate::et!("Shapes: below {value}"), &[("value", &mm)]);
     let label = crate::et!("Thin lines");
-    let field = OwnedField::Words(crate::et!("Running stitch along the middle").to_string());
+    let field = OwnedField::Words(crate::et!("Running stitch").to_string());
     Owned::new(THIN_LINES, label, label.to_string(), crate::et!("Set in the Shapes step."), field, Marks::inherited(Some(source), None))
 }
 
@@ -186,7 +191,7 @@ fn wider_row(planned: &DocumentSettings, lang: Lang) -> Owned {
     let spacing = &planned.resolved.fabric.tatami.spacing;
     let mm = fields::format(lang, "mm", SPACING_DECIMALS).show(spacing.value);
     let label = vocabulary::label(SPACING, Some("tatami"));
-    let field = OwnedField::Words(fill(crate::et!("Tatami, rows {value} apart"), &[("value", &mm)]));
+    let field = OwnedField::Words(fill(crate::et!("Tatami, {value}"), &[("value", &mm)]));
     let source = vocabulary::source(&spacing.source, Some("fabric"));
     Owned::new(SPACING, label, label.to_string(), vocabulary::tip(SPACING), field, Marks::inherited(Some(source), None))
 }
@@ -272,7 +277,9 @@ fn thread_row(ui: &mut Ui, d: &mut Dialog, reply: &Value) {
         words = fill(crate::et!("{value} · darkest of the design"), &[("value", &words)]);
     }
     let mut picked = None;
-    ui.horizontal(|ui| {
+    // The thread's words wrap within the column, its buttons on a line of their own, so that a long
+    // name never widens the window.
+    ui.horizontal_wrapped(|ui| {
         crate::widgets::field_label(ui, crate::et!("Outlines' thread"));
         if let Some(c) = thread["color"].as_str().and_then(super::image_step::parse) {
             let (rect, _) = ui.allocate_exact_size(egui::vec2(SWATCH, SWATCH), egui::Sense::hover());
@@ -280,6 +287,8 @@ fn thread_row(ui: &mut Ui, d: &mut Dialog, reply: &Value) {
             ui.painter().circle_stroke(rect.center(), SWATCH / 2.0, egui::Stroke::new(1.0, t.border));
         }
         ui.label(&words);
+    });
+    ui.horizontal(|ui| {
         let back = crate::et!("Back to the darkest thread");
         if chosen && rows::restore(ui, back, back).clicked() {
             d.fields.remove(OUTLINE_THREAD);
@@ -311,12 +320,13 @@ fn picker(ui: &mut Ui, button: &egui::Response, palette: &str) -> Option<usize> 
             if opening {
                 field.request_focus();
             }
-            // Nearest black first: the darkest threads at the top.
+            // Nearest black first: the darkest threads at the top, each with its colour, as the
+            // colour list's Choose Thread… shows them.
             let threads = super::colour_list::picker_rows(palette, "#000000", &search);
+            let (t, lang) = (Tokens::get(ui.ctx()), crate::i18n::current());
             egui::ScrollArea::vertical().max_height(PICKER_LIST_HEIGHT).show(ui, |ui| {
                 for thread in &threads {
-                    let words = super::colour_list::thread_words(thread.name, palette, thread.index);
-                    if ui.add(egui::Button::selectable(false, words)).clicked() {
+                    if super::colour_list::picker_row(ui, thread, None, palette, lang, &t).clicked() {
                         picked = Some(thread.index);
                     }
                 }

@@ -1243,10 +1243,10 @@ fn the_rules_say_where_their_values_come_from() {
     let (mut app, ctx, mut time) = opened();
     set(&mut app, STEP, json!(4));
     let drawn = frame_texts(&mut app, &ctx, &mut time);
-    for words in ["Thin lines", "Running stitch along the middle", "Shapes: below 1 mm", "Narrow parts as satin", "below 7 mm", "Row spacing"] {
+    for words in ["Thin lines", "Running stitch", "Shapes: below 1 mm", "Narrow parts as satin", "below 7 mm", "Row spacing"] {
         assert!(drawn.iter().any(|w| w == words), "{words} not drawn: {drawn:?}");
     }
-    let tatami = |drawn: &[String]| drawn.iter().find(|w| w.starts_with("Tatami, rows ")).cloned().unwrap_or_default();
+    let tatami = |drawn: &[String]| drawn.iter().find(|w| w.starts_with("Tatami, ")).cloned().unwrap_or_default();
     let built_in = tatami(&drawn);
     assert_eq!(drawn.iter().filter(|w| *w == "default").count(), 2, "the narrow parts' and the rows' source: {drawn:?}");
     // Fleece's rows are closer than the built-in ones (its own spacing, from the heavy knit class).
@@ -1254,7 +1254,7 @@ fn the_rules_say_where_their_values_come_from() {
     until(&mut app, &ctx, &mut time, ready);
     let drawn = frame_texts(&mut app, &ctx, &mut time);
     assert!(drawn.iter().any(|w| w == "fabric"), "the rows' spacing from the fabric: {drawn:?}");
-    assert_eq!((built_in.as_str(), tatami(&drawn).as_str()), ("Tatami, rows 0.38 mm apart", "Tatami, rows 0.33 mm apart"));
+    assert_eq!((built_in.as_str(), tatami(&drawn).as_str()), ("Tatami, 0.38 mm", "Tatami, 0.33 mm"));
 }
 
 /// The outlines are two checkboxes, both off by default (the project owner's choice, 2026-11-12):
@@ -1317,6 +1317,111 @@ fn the_outlines_thread_is_chosen_and_goes_back_to_the_darkest() {
     assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("outlineThread").cloned()), None);
     until(&mut app, &ctx, &mut time, ready);
     assert_eq!(reply(&mut app)["outlined"]["thread"]["index"], darkest);
+}
+
+/// A few frames on a screen `screen` points large (the column learns its content's size, the window
+/// its own) → the last one's shapes, flattened, the window and its settings column.
+fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, screen: egui::Vec2) -> (Vec<egui::Shape>, Rect, Rect) {
+    fn flatten(s: egui::Shape, out: &mut Vec<egui::Shape>) {
+        match s {
+            egui::Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
+            other => out.push(other),
+        }
+    }
+    let mut shapes = Vec::new();
+    for _ in 0..3 {
+        *time += 0.05;
+        let raw = egui::RawInput { time: Some(*time), screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), screen)), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            crate::dialogs::show(app, ui.ctx());
+        });
+        out.textures_delta.clear();
+        shapes = Vec::new();
+        out.shapes.into_iter().for_each(|c| flatten(c.shape, &mut shapes));
+    }
+    let window = ctx.memory(|m| m.area_rect(egui::Id::unique("embroidery-digitize-image"))).expect("the window drawn");
+    (shapes, window, frame::regions(window.shrink(17.0)).settings)
+}
+
+/// The window open in language `lang` on step 4, its outlines and border on, their result shown.
+fn step_four_outlined(lang: &str) -> (VectorcraftApp, egui::Context, f64) {
+    let mut app = app();
+    app.session.prefs.interface_language = lang.into();
+    let (mut app, ctx, mut time) = opened_with(app);
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    set(&mut app, "border", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    (app, ctx, time)
+}
+
+/// Step 4's rows are drawn whole at the window's usual size, in English and in Polish: the fabric
+/// chosen, the rules' values, the outlines' rows and their thread (a cut galley keeps its whole
+/// text, marked elided).
+#[test]
+fn step_four_draws_its_rows_whole() {
+    for lang in ["en", "pl"] {
+        let (mut app, ctx, mut time) = step_four_outlined(lang);
+        let (shapes, _, settings) = drawn_on(&mut app, &ctx, &mut time, vec2(1440.0, 900.0));
+        let cut: Vec<String> = shapes
+            .iter()
+            .filter_map(|s| match s {
+                egui::Shape::Text(t) if t.galley.elided && settings.x_range().contains(t.visual_bounding_rect().center().x) => {
+                    Some(t.galley.text().to_string())
+                }
+                _ => None,
+            })
+            .collect();
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        assert!(cut.is_empty(), "{lang}: cut short: {cut:?}");
+    }
+}
+
+/// The outlines' Choose Thread… list shows each thread's colour beside its name, as the colour
+/// list's does: the darkest threads, first in it, drawn as swatches.
+#[test]
+fn the_outlines_thread_list_shows_each_threads_colour() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Choose Thread…", Role::Button);
+    let (shapes, ..) = drawn_on(&mut app, &ctx, &mut time, vec2(1440.0, 900.0));
+    let fills: Vec<egui::Color32> = shapes
+        .iter()
+        .filter_map(|s| match s {
+            egui::Shape::Circle(c) => Some(c.fill),
+            _ => None,
+        })
+        .collect();
+    for thread in super::colour_list::picker_rows("jef", "#000000", "").iter().take(3) {
+        let [r, g, b] = thread.color;
+        assert!(fills.contains(&egui::Color32::from_rgb(r, g, b)), "{} not drawn: {fills:?}", thread.name);
+    }
+}
+
+/// Turning step 4's outlines on keeps the window its size, at its smallest (the compact column) and
+/// at its usual size, in English and in Polish: the outlines' thread row wraps rather than widening
+/// the column.
+#[test]
+fn step_fours_outlines_keep_the_window_its_size() {
+    for lang in ["en", "pl"] {
+        for screen in [vec2(1000.0, 650.0), vec2(1440.0, 900.0)] {
+            let mut app = app();
+            app.session.prefs.interface_language = lang.into();
+            let (mut app, ctx, mut time) = opened_with(app);
+            set(&mut app, STEP, json!(4));
+            let before = drawn_on(&mut app, &ctx, &mut time, screen).1.size();
+            set(&mut app, "colorOutlines", json!(true));
+            set(&mut app, "border", json!(true));
+            until(&mut app, &ctx, &mut time, ready);
+            let after = drawn_on(&mut app, &ctx, &mut time, screen).1.size();
+            crate::i18n::set_current(crate::i18n::Lang::EN);
+            assert_eq!(after.round(), before.round(), "{lang} on {screen:?}");
+        }
+    }
 }
 
 /// Embroidery Settings… steps the window aside for Document Setup's Embroidery tab, its settings

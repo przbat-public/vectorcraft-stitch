@@ -7364,11 +7364,9 @@ embroidery	Thin lines sewn along their middle below	沿中线绣的细线宽度�
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	更窄的部分沿中线绣成平针线。0：无。
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	细线
-embroidery	Running stitch along the middle	沿中线平针
 embroidery	Shapes: below {value}	形状：小于 {value}
 embroidery	Set in the Shapes step.	在“形状”步骤中设置。
 embroidery	below {value}	小于 {value}
-embroidery	Tatami, rows {value} apart	榻榻米，行距 {value}
 embroidery	Fill angle	填色角度
 embroidery	Fixed	固定
 embroidery	Across the shape	横跨形状
@@ -7391,3 +7389,5 @@ embroidery	Border: {length}	边框：{length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	颜色轮廓线有 {share} 的长度紧贴图片本身的线条：这些线条会被绣两次。请排除这些线条的颜色，或关闭轮廓线。
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	打开“文档设置”的“刺绣”选项卡。它关闭后会回到此窗口。
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	榻榻米，{value}

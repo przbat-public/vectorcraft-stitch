@@ -7479,11 +7479,9 @@ embroidery	Thin lines sewn along their middle below	Ortasından dikilen ince çi
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Daha dar bir parça, ortasından düz dikiş çizgisiyle dikilir. 0: hiçbiri.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	İnce çizgiler
-embroidery	Running stitch along the middle	Ortasından düz dikiş
 embroidery	Shapes: below {value}	Şekiller: {value} altı
 embroidery	Set in the Shapes step.	Şekiller adımında ayarlanır.
 embroidery	below {value}	{value} altı
-embroidery	Tatami, rows {value} apart	Tatami, sıralar {value} arayla
 embroidery	Fill angle	Dolgu açısı
 embroidery	Fixed	Sabit
 embroidery	Across the shape	Şeklin enine
@@ -7506,3 +7504,5 @@ embroidery	Border: {length}	Kenarlık: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Renk dış hatları, uzunluklarının {share} kadarında resmin kendi çizgileri boyunca ilerliyor: bu çizgiler iki kez dikilir. Çizgilerin rengini dışarıda bırakın ya da dış hatları kapatın.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Belge Düzeni’nin Nakış sekmesini açar. Kapandığında bu pencere geri gelir.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

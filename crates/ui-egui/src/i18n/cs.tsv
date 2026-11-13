@@ -7526,11 +7526,9 @@ embroidery	Thin lines sewn along their middle below	Tenké čáry šité střede
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Užší část se šije jako linie rovného stehu svým středem. 0: žádná.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Tenké čáry
-embroidery	Running stitch along the middle	Rovný steh středem
 embroidery	Shapes: below {value}	Tvary: pod {value}
 embroidery	Set in the Shapes step.	Nastavuje se v kroku Tvary.
 embroidery	below {value}	pod {value}
-embroidery	Tatami, rows {value} apart	Tatami, řady po {value}
 embroidery	Fill angle	Úhel výplně
 embroidery	Fixed	Pevný
 embroidery	Across the shape	Napříč tvarem
@@ -7553,3 +7551,5 @@ embroidery	Border: {length}	Lem: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Obrysy barev vedou podél vlastních čar obrázku na {share} své délky: ty čáry se šijí dvakrát. Vynechte barvu čar, nebo vypněte obrysy.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Otevře kartu Výšivka v Nastavení dokumentu. Toto okno se vrátí, až se zavře.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

@@ -7510,11 +7510,9 @@ embroidery	Thin lines sewn along their middle below	A közepükön hímzett vék
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	A keskenyebb rész egyenes öltésű vonalként, a közepén hímződik. 0: egyik sem.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Vékony vonalak
-embroidery	Running stitch along the middle	Egyenes öltés középen
 embroidery	Shapes: below {value}	Alakzatok: {value} alatt
 embroidery	Set in the Shapes step.	Az Alakzatok lépésben állítható.
 embroidery	below {value}	{value} alatt
-embroidery	Tatami, rows {value} apart	Tatami, a sorok {value} távolságra
 embroidery	Fill angle	Kitöltés szöge
 embroidery	Fixed	Rögzített
 embroidery	Across the shape	Az alakzaton keresztben
@@ -7537,3 +7535,5 @@ embroidery	Border: {length}	Szegély: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	A színek körvonalai hosszuk {share} részén a kép saját vonalai mellett futnak: ezek a vonalak kétszer hímződnek. Hagyja ki a vonalak színét, vagy kapcsolja ki a körvonalakat.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Megnyitja a Dokumentumbeállítás Hímzés lapját. Ez az ablak visszatér, amikor az bezárul.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

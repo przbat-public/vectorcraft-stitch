@@ -7478,11 +7478,9 @@ embroidery	Thin lines sewn along their middle below	Λεπτές γραμμές 
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Ένα στενότερο τμήμα κεντιέται ως γραμμή ευθείας βελονιάς στη μέση του. 0: κανένα.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Λεπτές γραμμές
-embroidery	Running stitch along the middle	Ευθεία βελονιά στη μέση
 embroidery	Shapes: below {value}	Σχήματα: κάτω από {value}
 embroidery	Set in the Shapes step.	Ορίζεται στο βήμα Σχήματα.
 embroidery	below {value}	κάτω από {value}
-embroidery	Tatami, rows {value} apart	Τατάμι, σειρές ανά {value}
 embroidery	Fill angle	Γωνία γεμίσματος
 embroidery	Fixed	Σταθερή
 embroidery	Across the shape	Εγκάρσια στο σχήμα
@@ -7505,3 +7503,5 @@ embroidery	Border: {length}	Πλαίσιο: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Τα περιγράμματα χρωμάτων περνούν δίπλα στις γραμμές της ίδιας της εικόνας στο {share} του μήκους τους: αυτές οι γραμμές κεντιούνται δύο φορές. Παραλείψτε το χρώμα των γραμμών ή απενεργοποιήστε τα περιγράμματα.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Ανοίγει την καρτέλα Κέντημα της Ρύθμισης εγγράφου. Αυτό το παράθυρο επιστρέφει όταν κλείσει.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Τατάμι, {value}

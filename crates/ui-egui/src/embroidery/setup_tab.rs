@@ -90,7 +90,7 @@ const COLUMN_GAP: f32 = 24.0;
 /// window's edge, on both sides (upstream's `dialogs::MARGIN`, 22, and `EDGE_GAP`, 8).
 const DIALOG_EDGES: f32 = 60.0;
 /// The fabric choice's field, points: the presets' names are longer than a value's field.
-const FABRIC_FIELD: f32 = 220.0;
+pub(crate) const FABRIC_FIELD: f32 = 220.0;
 /// The bar's padding, corners and the room between its lines, points.
 const BAR_PAD: f32 = 10.0;
 const BAR_RADIUS: u8 = 6;

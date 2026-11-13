@@ -7285,11 +7285,9 @@ embroidery	Thin lines sewn along their middle below	Garis tipis dijahit di tenga
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Bagian yang lebih sempit dijahit sebagai garis jahitan lurus di tengahnya. 0: tidak ada.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Garis tipis
-embroidery	Running stitch along the middle	Jahitan lurus di tengah
 embroidery	Shapes: below {value}	Bentuk: di bawah {value}
 embroidery	Set in the Shapes step.	Diatur di langkah Bentuk.
 embroidery	below {value}	di bawah {value}
-embroidery	Tatami, rows {value} apart	Tatami, baris berjarak {value}
 embroidery	Fill angle	Sudut isian
 embroidery	Fixed	Tetap
 embroidery	Across the shape	Melintang bentuk
@@ -7312,3 +7310,5 @@ embroidery	Border: {length}	Bingkai: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Garis tepi warna berjalan di samping garis gambar itu sendiri sepanjang {share} panjangnya: garis-garis itu dijahit dua kali. Abaikan warna garis itu, atau matikan garis tepi.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Membuka tab Bordir di Pengaturan dokumen. Jendela ini kembali saat tab itu ditutup.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

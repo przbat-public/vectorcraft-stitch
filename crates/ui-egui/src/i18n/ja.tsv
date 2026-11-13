@@ -7211,11 +7211,9 @@ embroidery	Thin lines sewn along their middle below	中央に沿って縫う細�
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	これより細い部分は、中央に沿ってランニングステッチの線で縫います。0: なし。
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	細い線
-embroidery	Running stitch along the middle	中央に沿ったランニングステッチ
 embroidery	Shapes: below {value}	シェイプ: {value} 未満
 embroidery	Set in the Shapes step.	シェイプのステップで設定します。
 embroidery	below {value}	{value} 未満
-embroidery	Tatami, rows {value} apart	タタミ、列の間隔 {value}
 embroidery	Fill angle	塗りの角度
 embroidery	Fixed	固定
 embroidery	Across the shape	形状を横切る
@@ -7238,3 +7236,5 @@ embroidery	Border: {length}	縁取り: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	色の輪郭線が長さの {share} で画像自体の線に沿っています。その線は2回縫われます。線の色を除外するか、輪郭線をオフにしてください。
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	ドキュメント設定の刺繍タブを開きます。閉じるとこのウィンドウに戻ります。
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	タタミ、{value}

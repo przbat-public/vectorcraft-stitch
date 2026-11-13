@@ -7381,11 +7381,9 @@ embroidery	Thin lines sewn along their middle below	Cienkie linie szyte środkie
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Węższa część jest szyta linią ściegu prostego środkiem. 0: żadna.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Cienkie linie
-embroidery	Running stitch along the middle	Ścieg prosty środkiem
 embroidery	Shapes: below {value}	Kształty: poniżej {value}
 embroidery	Set in the Shapes step.	Ustawiane w kroku Kształty.
 embroidery	below {value}	poniżej {value}
-embroidery	Tatami, rows {value} apart	Tatami, rzędy co {value}
 embroidery	Fill angle	Kąt wypełnienia
 embroidery	Fixed	Stały
 embroidery	Across the shape	W poprzek kształtu
@@ -7408,3 +7406,5 @@ embroidery	Border: {length}	Obwódka: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Kontury kolorów biegną wzdłuż własnych linii obrazu na {share} swojej długości: te linie są szyte dwa razy. Pomiń kolor linii albo wyłącz kontury.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Otwiera kartę Haft w Ustawieniach dokumentu. To okno wraca, gdy się zamknie.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

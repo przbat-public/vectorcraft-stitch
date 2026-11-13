@@ -7336,11 +7336,9 @@ embroidery	Thin lines sewn along their middle below	Dunne lijnen langs hun midde
 embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Een smaller deel wordt als rechte steeklijn langs het midden geborduurd. 0: geen.
 # VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
 embroidery	Thin lines	Dunne lijnen
-embroidery	Running stitch along the middle	Rechte steek langs het midden
 embroidery	Shapes: below {value}	Vormen: onder {value}
 embroidery	Set in the Shapes step.	In te stellen in de stap Vormen.
 embroidery	below {value}	onder {value}
-embroidery	Tatami, rows {value} apart	Tatami, rijen {value} uit elkaar
 embroidery	Fill angle	Vulhoek
 embroidery	Fixed	Vast
 embroidery	Across the shape	Dwars op de vorm
@@ -7363,3 +7361,5 @@ embroidery	Border: {length}	Rand: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	De kleurcontouren lopen over {share} van hun lengte langs de eigen lijnen van de afbeelding: die lijnen worden twee keer geborduurd. Laat de kleur van de lijnen weg, of zet de contouren uit.
 # VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Opent het tabblad Borduurwerk van Documentinstellingen. Dit venster komt terug wanneer het sluit.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}

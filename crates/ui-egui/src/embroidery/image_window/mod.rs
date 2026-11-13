@@ -475,7 +475,11 @@ pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
 /// open any more, after OK or Cancel, recomputing only what the settings changed (the project
 /// owner's choice, 2026-11-12, „Okno ustąpi i wróci (polecam)”).
 pub(crate) fn step_aside(app: &mut VectorcraftApp) {
-    let Some(key) = app.embroidery.image_window.live.as_ref().map(|l| (l.uid, l.image)) else { return };
+    let Some(live) = app.embroidery.image_window.live.as_mut() else { return };
+    // A Create waiting for its run is let go: it was asked of the settings before the person went
+    // to change them, and would otherwise make the design behind their back once they are back.
+    live.create_waiting = false;
+    let key = (live.uid, live.image);
     app.embroidery.image_window.back_to = Some(key);
     if let Err(e) = crate::embroidery::setup_tab::open_at_tab(app, &json!({})) {
         app.embroidery.image_window.back_to = None;

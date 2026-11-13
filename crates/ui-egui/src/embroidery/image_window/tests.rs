@@ -1362,3 +1362,42 @@ fn embroidery_settings_ok_brings_it_back_recomputed_from_the_objects() {
     assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
     assert_eq!(app.session.embroidery_settings().expect("settings").settings.thread_weight, Some(30.0));
 }
+
+/// A thread chosen for the outlines is of the palette it was chosen in: choosing another palette
+/// leaves it out with the colours' threads, so the run that follows isn't refused for it; the
+/// outlines then take the darkest thread of the new palette.
+#[test]
+fn another_palette_leaves_out_the_outlines_thread_chosen() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(2));
+    set(&mut app, "colorOutlines", json!(true));
+    set(&mut app, "outlineThread", json!({"palette": "jef", "index": 2}));
+    until(&mut app, &ctx, &mut time, ready);
+    click_named(&mut app, &ctx, &mut time, "Match to threads");
+    click_named(&mut app, &ctx, &mut time, "Brother (PES) · 61 threads");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("outlineThread").cloned()), None, "left out");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(reply(&mut app)["outlined"]["thread"]["palette"], json!("pec"));
+}
+
+/// A Create waiting for its run when Embroidery Settings… is pressed is let go: back from Document
+/// Setup, the window makes nothing until Create is asked again.
+#[test]
+fn embroidery_settings_lets_a_waiting_create_go() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let steps = undo_steps(&app);
+    // Stepped aside in the frame Create was asked in (no frame between, which would make it).
+    live_mut(&mut app).create_waiting = true;
+    super::step_aside(&mut app);
+    assert!(!live(&app).create_waiting, "let go");
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    until(&mut app, &ctx, &mut time, ready);
+    for _ in 0..5 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert!(open_dialog(&app).is_some() && undo_steps(&app) == steps, "nothing made");
+}

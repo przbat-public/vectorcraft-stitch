@@ -316,8 +316,10 @@ pub(crate) fn reset(f: &mut Map<String, Value>, color: &str) {
     change_choice(f, color, Map::clear);
 }
 
-/// Every thread chosen left out, merges and jobs kept: the threads were of another palette.
+/// Every thread chosen left out, the colours' and the outlines', merges and jobs kept: the threads
+/// were of another palette, which the engine refuses.
 pub(crate) fn drop_threads(f: &mut Map<String, Value>) {
+    f.remove(super::stitches_step::OUTLINE_THREAD);
     let all: Vec<Map<String, Value>> = choices(f)
         .into_iter()
         .map(|mut c| {

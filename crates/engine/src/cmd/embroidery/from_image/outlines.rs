@@ -18,7 +18,7 @@
 
 use std::collections::HashMap;
 
-use vectorcraft_geom::kurbo::{BezPath, ParamCurve, ParamCurveArclen, ParamCurveDeriv, PathSeg, Vec2};
+use vectorcraft_geom::kurbo::{BezPath, ParamCurve, ParamCurveArclen, ParamCurveDeriv, PathEl, PathSeg, Vec2};
 use vectorcraft_geom::{PathData, Point};
 
 use super::overlap::{BEYOND_PX, SAMPLES_ALONG};
@@ -29,7 +29,7 @@ use crate::Result;
 /// How near the ends of two pieces lie for them to be chained (millimetres): half the formats'
 /// 0.1 mm step (an estimate, research note 06), far over the hundredth of a pixel by which the
 /// path operations may move the ends of an edge's two sides apart.
-pub(super) const MEET_MM: f64 = 0.05;
+const MEET_MM: f64 = 0.05;
 
 /// How exactly a piece's length is measured (working pixels): a thousandth of a pixel.
 const LENGTH_ACCURACY_PX: f64 = 1e-3;
@@ -392,29 +392,57 @@ fn chain_of(segs: &[PathSeg], closed: bool) -> Chain {
     Chain { path, length_px }
 }
 
-/// How many separate parts `chains` make: chains whose points (their pieces' ends) lie within
-/// `meet_px` of each other's are one part, as a junction joins the line running through it and the
-/// one going on from it.
-pub(super) fn parts(chains: &[Chain], meet_px: f64) -> usize {
-    let mut points = Vec::new();
-    let mut of = Vec::new();
-    for (i, c) in chains.iter().enumerate() {
-        for seg in c.path.segments() {
-            points.extend([seg.start(), seg.end()]);
-            of.extend([i, i]);
-        }
-    }
-    let sets = near_sets(&points, meet_px);
-    let mut up: Vec<usize> = (0..chains.len()).collect();
-    let mut first_of_set: HashMap<usize, usize> = HashMap::new();
-    for (k, &set) in sets.iter().enumerate() {
-        let Some(&chain) = of.get(k) else { continue };
-        match first_of_set.get(&set) {
-            Some(&other) => unite(&mut up, chain, other),
-            None => {
-                first_of_set.insert(set, chain);
+/// The most lines put in order nearest first; past it, the rest keep the order they were chained
+/// in. An estimate: each line put in order is compared with every line left, so 4,096 lines are
+/// some eight million comparisons, a few milliseconds, against seconds for the rest of a design that
+/// big.
+const NEAREST_FIRST_MAX: usize = 4096;
+
+/// `chains` in the order they are sewn, each an object of its own (the needle lifting from one to
+/// the next): from the first, each time the one with an end nearest where the last ended (a closed
+/// one ends where it starts), an open one turned round when its far end is the nearer; a tie goes
+/// to the earlier chain, unturned. Each chain is measured by its ends alone; past
+/// [`NEAREST_FIRST_MAX`] chains the rest keep their order.
+pub(super) fn nearest_first(chains: Vec<Chain>) -> Vec<Chain> {
+    let ends: Vec<(Point, Point, bool)> = chains.iter().map(ends_of).collect();
+    let mut left: Vec<Option<Chain>> = chains.into_iter().map(Some).collect();
+    let mut out = Vec::with_capacity(left.len());
+    let mut at: Option<Point> = None;
+    while out.len() < NEAREST_FIRST_MAX {
+        let mut best: Option<(f64, usize, bool)> = None;
+        for (i, (chain, &(start, end, closed))) in left.iter().zip(&ends).enumerate() {
+            if chain.is_none() {
+                continue;
+            }
+            let here = at.unwrap_or(start);
+            let mut take = |d: f64, turn: bool| {
+                if best.is_none_or(|(b, ..)| d < b) {
+                    best = Some((d, i, turn));
+                }
+            };
+            take((start - here).hypot(), false);
+            if !closed {
+                take((end - here).hypot(), true);
             }
         }
+        let Some((_, i, turn)) = best else { break };
+        let (Some(slot), Some(&(start, end, _))) = (left.get_mut(i), ends.get(i)) else { break };
+        let Some(mut chain) = slot.take() else { break };
+        if turn {
+            chain.path = chain.path.reverse_subpaths();
+        }
+        at = Some(if turn { start } else { end });
+        out.push(chain);
     }
-    (0..chains.len()).filter(|&i| root(&mut up, i) == i).count()
+    out.extend(left.into_iter().flatten());
+    out
+}
+
+/// Where chain `c` starts and ends (working pixels), and whether it closes on itself (it then ends
+/// where it starts).
+fn ends_of(c: &Chain) -> (Point, Point, bool) {
+    let closed = matches!(c.path.elements().last(), Some(PathEl::ClosePath));
+    let start = c.path.segments().next().map_or(Point::ZERO, |s| s.start());
+    let end = if closed { start } else { c.path.segments().last().map_or(start, |s| s.end()) };
+    (start, end, closed)
 }

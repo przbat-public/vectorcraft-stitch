@@ -8592,8 +8592,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
   its thread's own colour (a line, a stroke along its centre line), embroidery settings set only where a colour's job
   asks (`fill`: `narrowAsSatin` 0; `none`: not sewn) or a line's stroke is 1 mm wide or more (`stitch: "running"`);
-  the outlines asked for come last, one stroke object named "Color outlines" (drawn 0.4 mm wide, sewn as a running
-  line) and one named "Border" (`borderWidth` wide, a satin), each a block of its own in the outline thread;
+  the outlines asked for come last, each kind a block of its own in the outline thread, a stroke object a line,
+  nearest first, so that the needle lifts between them: "Color outlines" (drawn 0.4 mm wide, sewn as a running line),
+  "Border" (`borderWidth` wide, a satin);
   the image moves, with its id, to a new template layer below every layer, hidden and locked, scaled as the
   design is. One undo step "Digitize Image", the new group selected; Nearest Connection is not run. More than 10,000
   areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
@@ -8603,9 +8604,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   at, color, thread, kind, sewn, size, widest, line, box, inside, sewnOver, joined, touches, grownUnder, outline,
   order}],
   areaAt, doubledArea, traced, joined, leftOut, regions, stats, outlined, warnings, settings, table, timings}`:
-  `outlined` is null without outlines, else `{colorOutlines: {lines, length, jumps} | null, border: {lines, length,
-  jumps} | null, thread: {palette, index, name, color}}` (`lines` how many separate lines, chained where they meet; `length` in
-  mm; `jumps` how many separate parts they make less one, the fewest moves between them); `stats` is what
+  `outlined` is null without outlines, else `{colorOutlines: {lines, length} | null, border: {lines, length} | null,
+  thread: {palette, index, name, color}}` (`lines` how many separate lines, chained where they meet, an object each;
+  `length` in mm); `stats` is what
   `embroidery.stats {selectedOnly: true}` answers with the new group selected (null when nothing is made), a dry run's
   as Create's. `warnings` lists `{id, values, message}`: `id` names the warning for a window to word in its own
   language, `values` holds what that wording needs, and `message` says it in English: `coarse` {pxPerMm, fewerThan},

@@ -3545,9 +3545,11 @@ millimetres again. The stages, each a module, each reported to a progress sink
    (so the plan sews it in exactly that thread; a line a stroke along its centre line, as wide as
    the line, round at its turns and, narrower than a satin column, at its ends (butt on a wider one,
    set to a running line),
-   settings set only where a job asks; the outlines last, one stroke object a block in the outline
-   thread ("Color outlines" drawn 0.4 mm wide, which the planner sews as a running line; "Border"
-   as wide as asked, a satin); the image
+   settings set only where a job asks; the outlines last, a block each in the outline thread, a
+   stroke object a line, nearest first, so that the needle lifts between them (in one object the
+   planner sews a short move between lines as a stitch, which would lie on top of the design;
+   "Color outlines" drawn 0.4 mm wide, which the planner sews as a running line; "Border" as wide
+   as asked, a satin); the image
    moves, with its id, to a hidden, locked template layer below every layer, scaled with the
    design; one undo step. Nearest Connection is not run.
 

@@ -19,10 +19,12 @@
 //! column (a thin line widened where its lines meet, or any line of a colour sewn as `lines`) is
 //! set to a running line. Everything else stays unset (Auto, following the document's fabric).
 //!
-//! The outlines asked for (`super::outlines`) come last, each one stroke object in a block of its
-//! own, in the outline thread (the one chosen, else the darkest of the threads the colours are
-//! sewn in): the colour outlines drawn 0.4 mm wide, so that the planner sews them as a running
-//! line, and the border as wide as asked, a satin, round the design's edge.
+//! The outlines asked for (`super::outlines`) come last, each kind in a block of its own, in the
+//! outline thread (the one chosen, else the darkest of the threads the colours are sewn in): the
+//! colour outlines drawn 0.4 mm wide, so that the planner sews them as a running line, and the
+//! border as wide as asked, a satin, round the design's edge. Each line is a stroke object of its
+//! own, nearest first, so that the needle lifts from one to the next: within one object the planner
+//! sews a short move between its lines as a stitch, which on top of the design would lie across it.
 //!
 //! The background's areas become no object. The source image moves, with its id, to a new template
 //! layer below every layer, hidden and locked, scaled as the design is so that it lies under it.
@@ -40,14 +42,13 @@ use vectorcraft_color::{Color, Paint};
 use vectorcraft_doc::appearance::{AppearanceItem, FillLayer};
 use vectorcraft_doc::embroidery::{Embroidery, PartSettings};
 use vectorcraft_doc::{Appearance, Document, LineCap, LineJoin, MAX_COORD, Node, NodeId, NodeKind};
-use vectorcraft_geom::kurbo::BezPath;
 use vectorcraft_geom::{Affine, PathData, Point};
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::{Palette, PaletteThread};
 
 use super::super::digitize::{printed, shows};
 use super::colours::Colours;
-use super::outlines::{Chain, MEET_MM};
+use super::outlines::Chain;
 use super::settings::{C, Job, OutlineSettings};
 use super::stages::Digitized;
 use crate::cmd::bad;
@@ -80,13 +81,11 @@ pub(super) struct Made {
     pub(super) outlined: Option<Outlined>,
 }
 
-/// The lines of one kind of outline: how many, how long (millimetres), and how many separate parts
-/// they make less one, the fewest moves of the needle between them.
+/// The lines of one kind of outline, each an object: how many, and how long (millimetres).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct Lines {
     pub(super) count: usize,
     pub(super) length_mm: f64,
-    pub(super) jumps: usize,
 }
 
 /// What the outlines Create added came to: the colour outlines and the border (`None`: not
@@ -128,24 +127,25 @@ pub(super) fn outline_thread(chosen: Option<PaletteThread>, colours: &Colours, p
         .map(|(i, _)| i)
 }
 
-/// One stroke object along `chains` (working pixels, placed by `to_doc`), `width` points wide in
-/// `color`, round at its turns, its ends `cap`, named `name`; `None` when there is no line.
-fn outline_node(doc: &mut Document, chains: &[Chain], to_doc: Affine, width: f64, color: Color, cap: LineCap, name: &str) -> Option<Node> {
-    let mut all = BezPath::new();
-    for c in chains {
-        all.extend(c.path.iter());
+/// A stroke object a line of `chains` (working pixels, placed by `to_doc`), nearest first
+/// ([`super::outlines::nearest_first`]): each `width` points wide in `color`, round at its turns,
+/// its ends `cap`, named `name`.
+fn outline_nodes(doc: &mut Document, chains: Vec<Chain>, to_doc: Affine, width: f64, color: Color, cap: LineCap, name: &str) -> Vec<Node> {
+    let mut out = Vec::new();
+    for chain in super::outlines::nearest_first(chains) {
+        if chain.path.elements().is_empty() {
+            continue;
+        }
+        let mut look = Appearance::basic(Paint::None, Paint::solid(color), width);
+        if let Some(s) = look.stroke_mut() {
+            s.cap = cap;
+            s.join = LineJoin::Round;
+        }
+        let mut n = Node::path(doc.alloc_id(), PathData::from_bezpath(&(to_doc * chain.path)), look);
+        n.name = Some(name.into());
+        out.push(n);
     }
-    if all.elements().is_empty() {
-        return None;
-    }
-    let mut look = Appearance::basic(Paint::None, Paint::solid(color), width);
-    if let Some(s) = look.stroke_mut() {
-        s.cap = cap;
-        s.join = LineJoin::Round;
-    }
-    let mut n = Node::path(doc.alloc_id(), PathData::from_bezpath(&(to_doc * all)), look);
-    n.name = Some(name.into());
-    Some(n)
+    out
 }
 
 /// The outlines `asked` made of what `d` digitized, in `palette`'s threads, as blocks after the
@@ -167,28 +167,23 @@ fn add_outlines(
     let color = Color::rgb8(r, g, b);
     let found = super::outlines::outlined(d, !asked.border)?;
     let (px_per_mm, to_doc) = (d.working().px_per_mm, d.working().to_doc);
-    let meet_px = MEET_MM * px_per_mm;
-    let lines = |chains: &[Chain]| Lines {
-        count: chains.len(),
-        length_mm: chains.iter().map(|c| c.length_px).sum::<f64>() / px_per_mm,
-        jumps: super::outlines::parts(chains, meet_px).saturating_sub(1),
-    };
+    let lines = |chains: &[Chain]| Lines { count: chains.len(), length_mm: chains.iter().map(|c| c.length_px).sum::<f64>() / px_per_mm };
     let mut out = Outlined { colour: None, border: None, thread, beside_lines: 0.0 };
-    let mut add = |n: Option<Node>| {
-        if let Some(n) = n {
-            blocks.push((Some(thread), true, vec![Arc::new(n)]));
-            *objects += 1;
+    let mut add = |nodes: Vec<Node>| {
+        if !nodes.is_empty() {
+            *objects += nodes.len();
+            blocks.push((Some(thread), true, nodes.into_iter().map(Arc::new).collect()));
         }
     };
     if asked.colour {
-        add(outline_node(doc, &found.colour, to_doc, OUTLINE_DRAWN_MM * PT_PER_MM, color, LineCap::Round, COLOUR_OUTLINES_NAME));
         out.colour = Some(lines(&found.colour));
         let length = found.colour_px();
         out.beside_lines = if length > 0.0 { found.beside_lines_px / length } else { 0.0 };
+        add(outline_nodes(doc, found.colour, to_doc, OUTLINE_DRAWN_MM * PT_PER_MM, color, LineCap::Round, COLOUR_OUTLINES_NAME));
     }
     if asked.border {
-        add(outline_node(doc, &found.silhouette, to_doc, asked.border_mm * PT_PER_MM, color, LineCap::Butt, BORDER_NAME));
         out.border = Some(lines(&found.silhouette));
+        add(outline_nodes(doc, found.silhouette, to_doc, asked.border_mm * PT_PER_MM, color, LineCap::Butt, BORDER_NAME));
     }
     Ok(Some(out))
 }

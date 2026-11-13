@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use kurbo::{ParamCurveArclen, Shape};
+use kurbo::{ParamCurve, ParamCurveArclen, Shape};
 use proptest::prelude::*;
 use serde_json::{Value, json};
 use vectorcraft_doc::{ImageBlob, ImageObject, Node, NodeId, NodeKind};
@@ -14,7 +14,7 @@ use vectorcraft_stitch::thread::Palette;
 use vectorcraft_trace as tr;
 
 use super::command::digitized;
-use super::outlines::{MEET_MM, outlined, parts};
+use super::outlines::outlined;
 use super::settings::Settings;
 use super::stages::Digitized;
 use crate::Session;
@@ -97,7 +97,10 @@ fn two_squares_sew_their_shared_edge_once() {
     assert!(edges.silhouette.iter().all(closed));
     let all = outlined(&d, true).unwrap();
     assert!((all.colour_px() - 900.0).abs() < NEAR_PX, "and round the design: {}", all.colour_px());
-    assert_eq!(parts(&all.colour, MEET_MM / MM_PER_PX), 1, "one line, no jump");
+    // Chained straight through each junction: round the orange, and the navy's other three sides
+    // going on from it.
+    let l = lengths(&all.colour);
+    assert!(l.len() == 2 && (l[0] - 300.0).abs() < NEAR_PX && (l[1] - 600.0).abs() < NEAR_PX, "{l:?}");
 }
 
 /// The colour outlines are as long as half of every area's outline and the silhouette together:
@@ -165,7 +168,7 @@ fn a_rings_hole_gets_a_border_loop() {
 }
 
 /// Three areas meeting at a point give chained lines: the edge running straight through the
-/// junction is one line, and the third edge goes on from it, with no jump between them.
+/// junction is one line, and the third edge goes on from it.
 #[test]
 fn three_areas_at_a_junction_give_chained_lines() {
     let picture = tr::Raster::from_fn(300, 200, |x, y| match (x < 150, y < 100) {
@@ -178,7 +181,9 @@ fn three_areas_at_a_junction_give_chained_lines() {
     let l = lengths(&o.colour);
     assert_eq!(l.len(), 2, "{l:?}");
     assert!((l[0] - 150.0).abs() < NEAR_PX && (l[1] - 200.0).abs() < NEAR_PX, "the edge through the junction whole: {l:?}");
-    assert_eq!(parts(&o.colour, MEET_MM / MM_PER_PX), 1, "they meet: no jump");
+    let third = o.colour.iter().find(|c| (c.length_px - 150.0).abs() < NEAR_PX).unwrap();
+    let ends = [third.path.segments().next().unwrap().start(), third.path.segments().last().unwrap().end()];
+    assert!(ends.iter().any(|p| (p.x - 150.0).abs() < NEAR_PX && (p.y - 100.0).abs() < NEAR_PX), "on from the junction: {ends:?}");
 }
 
 /// A session holding `raster` placed at a tenth of a millimetre a pixel at the origin, selected,
@@ -218,7 +223,7 @@ fn stroke_of(n: &Node) -> (kurbo::BezPath, [u8; 3], f64) {
     (path.to_bezpath(), [r, g, b], stroke.width)
 }
 
-/// The colour outlines and the border come last, one stroke object in a block each, in the darkest
+/// The colour outlines and the border come last, a block each, an object a line, in the darkest
 /// thread the colours are sewn in (the navy's), the outlines drawn 0.4 mm wide and the border
 /// 3 mm by default; the reply says what they came to, as its dry run did.
 #[test]
@@ -237,7 +242,7 @@ fn outlines_are_sewn_last_one_block_each_in_the_darkest_thread() {
     let b = blocks(&s, r["created"]["group"].as_u64().unwrap());
     assert_eq!(r["created"]["blocks"].as_u64(), Some(b.len() as u64));
     let [.., outlines, border] = b.as_slice() else { panic!("{} blocks", b.len()) };
-    assert_eq!((outlines.len(), border.len()), (1, 1), "one object each");
+    assert_eq!((outlines.len(), border.len()), (1, 1), "a line each: the shared edge, and round the design");
     assert_eq!((outlines[0].name.as_deref(), border[0].name.as_deref()), (Some("Color outlines"), Some("Border")));
     let (line, colour, width) = stroke_of(&outlines[0]);
     let navy_rgb = navy["color"].as_str().and_then(super::settings::hex_colour).unwrap();
@@ -308,4 +313,59 @@ fn outlines_beside_the_images_lines_are_warned_of() {
     let (mut s, _) = placed(&two_squares());
     let r = s.execute("embroidery.digitizeImage", &json!({"colors": 2, "colorOutlines": true, "dryRun": true, "limit": 0})).unwrap();
     assert!(!warned(&r), "{}", r["warnings"]);
+}
+
+/// Between two bars 3 mm apart, millimetres from the document's origin: their facing sides at 3.5
+/// and 6.5 mm, half a millimetre in from each (an edge traced to about a pixel).
+const BETWEEN_BARS_MM: std::ops::Range<f64> = 4.0..6.0;
+
+/// Two orange bars on white, 1.5 mm wide and 3 mm apart: each point of one bar's outline lies
+/// 4.5 mm from the same point of the other's, under the 5 mm a move within one object is sewn up
+/// to.
+fn bars_apart() -> tr::Raster {
+    tr::Raster::from_fn(100, 80, |x, y| if inside(x, y, [20, 20, 35, 60]) || inside(x, y, [65, 20, 80, 60]) { ORANGE } else { WHITE })
+}
+
+/// Each line of outline is an object of its own, so that the needle lifts from one line to the next
+/// (a jump, cut when long) and no stitch runs across the design between them: they are sewn last,
+/// on top of everything. Two bars 3 mm apart give two lines, no outline stitch across the gap
+/// between them, and two objects.
+#[test]
+fn the_needle_lifts_between_the_outlines_lines() {
+    let (mut s, _) = placed(&bars_apart());
+    let r = s.execute("embroidery.digitizeImage", &json!({"colors": 2, "colorOutlines": true, "limit": 0})).unwrap();
+    assert_eq!(r["outlined"]["colorOutlines"]["lines"], json!(2), "{}", r["outlined"]);
+    let b = blocks(&s, r["created"]["group"].as_u64().unwrap());
+    let outlines = b.last().unwrap();
+    let ids: Vec<u64> = outlines.iter().map(|n| n.id.0).collect();
+    let listed = s.execute("embroidery.stitches", &json!({"ids": ids, "limit": 10000})).unwrap();
+    let records = listed["records"].as_array().unwrap();
+    assert!(records.len() > 20, "the two lines sewn: {}", records.len());
+    let at = |r: &Value| (r["at"][0].as_f64().unwrap(), r["at"][1].as_f64().unwrap());
+    for pair in records.windows(2) {
+        let [before, stitch] = pair else { continue };
+        if stitch["kind"] != "stitch" || stitch["length"].is_null() {
+            continue;
+        }
+        let ((x0, _), (x1, _)) = (at(before), at(stitch));
+        let middle = (x0 + x1) / 2.0;
+        assert!(!BETWEEN_BARS_MM.contains(&middle), "a stitch across the gap: {before} → {stitch}");
+    }
+    assert_eq!(outlines.len(), 2, "an object a line");
+}
+
+/// The lines are sewn nearest first: from the first, each time the one with an end nearest where the
+/// last ended, an open line turned round when its far end is the nearer.
+#[test]
+fn the_lines_are_sewn_nearest_first() {
+    let line = |a: (f64, f64), b: (f64, f64)| {
+        let mut path = kurbo::BezPath::new();
+        path.move_to(a);
+        path.line_to(b);
+        super::outlines::Chain { path, length_px: (b.0 - a.0).hypot(b.1 - a.1) }
+    };
+    let chains = vec![line((0.0, 0.0), (10.0, 0.0)), line((100.0, 0.0), (110.0, 0.0)), line((25.0, 0.0), (15.0, 0.0))];
+    let ordered = super::outlines::nearest_first(chains);
+    let starts: Vec<(f64, f64)> = ordered.iter().map(|c| c.path.segments().next().map(|s| (s.start().x, s.start().y)).unwrap()).collect();
+    assert_eq!(starts, vec![(0.0, 0.0), (15.0, 0.0), (100.0, 0.0)], "the near one next, turned round");
 }

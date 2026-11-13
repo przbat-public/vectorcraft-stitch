@@ -866,3 +866,32 @@ fn document_setup_opens_at_the_embroidery_tab_for_an_agent() {
     assert_eq!(settings(&mut app)["settings"]["threadWeight"], json!(30.0));
     assert!(app.run("embroidery.documentSetup", json!({"tab": "x"})).is_err(), "it takes no parameters");
 }
+
+/// The tab's fill angle: Across the shape set in the document on OK, Fixed with its degrees, back at
+/// the planner's 135° unset; degrees past a full turn marked at once and refused on OK.
+#[test]
+fn the_fill_angle_is_fixed_or_across_the_shape() {
+    let ctx = context();
+    let mut app = app();
+    open_tab(&mut app);
+    let drawn = ready(&mut app, &ctx, WIDE);
+    assert!(drawn.has("Fill angle") && drawn.has("Fixed"), "{:?}", drawn.words);
+    edit(&mut app, "fillAngle", json!("acrossShape"));
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert_eq!(settings(&mut app)["settings"]["fillAngle"], json!("acrossShape"));
+    open_tab(&mut app);
+    assert_eq!(dialog(&mut app).fields["embroidery.fillAngle"], json!("acrossShape"), "opens with the document's");
+    edit(&mut app, "fillAngle", json!(45.0));
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert_eq!(settings(&mut app)["settings"]["fillAngle"], json!(45.0));
+    open_tab(&mut app);
+    edit(&mut app, "fillAngle", json!(135.0));
+    crate::dialogs::confirm(&mut app).unwrap();
+    assert_eq!(settings(&mut app)["settings"]["fillAngle"], Value::Null, "the planner's rows again: unset");
+    open_tab(&mut app);
+    edit(&mut app, "fillAngle", json!(500.0));
+    let drawn = ready(&mut app, &ctx, WIDE);
+    let range = text::fill(crate::et!("From {min} to {max}"), &[("min", "-360°"), ("max", "360°")]);
+    assert!(drawn.has(&range), "{range}: {:?}", drawn.words);
+    assert!(crate::dialogs::confirm(&mut app).is_err(), "OK refuses it");
+}

@@ -71,3 +71,19 @@ pub(crate) fn edited(key: &str, edit: &Edit, own: &Value) -> Result<Option<Value
         _ => Ok(None),
     }
 }
+
+/// What is wrong with fill angle `value` as typed: degrees outside a full turn either way, which
+/// `embroidery.setup` refuses on OK ("From -360° to 360°"); `None` for a value it takes.
+pub(crate) fn problem(value: &Value, lang: crate::i18n::Lang) -> Option<String> {
+    let Some(vectorcraft_engine::cmd::embroidery::SettingField::Number { min, max, decimals, .. }) =
+        vectorcraft_engine::cmd::embroidery::setting_field("angle")
+    else {
+        return None;
+    };
+    let v = value.as_f64()?;
+    if v.is_finite() && (min..=max).contains(&v) {
+        return None;
+    }
+    let f = crate::embroidery::fields::format(lang, "°", decimals);
+    Some(fill(crate::et!("From {min} to {max}"), &[("min", &f.show(min)), ("max", &f.show(max))]))
+}

@@ -67,6 +67,8 @@ const MACHINE: [&str; 5] = ["machine.jumpLength", "machine.trimLength", "machine
 const THREAD_WEIGHT: &str = "threadWeight";
 const PALETTE: &str = "palette";
 const JOIN: &str = "joinSameColor";
+/// The fills' rows: degrees, or across each shape (`crate::embroidery::fill_angle`).
+const FILL_ANGLE: &str = "fillAngle";
 /// The design's start and name: shown (and unset) only when the document has them.
 const START: &str = "start";
 const LABEL: &str = "label";
@@ -158,7 +160,7 @@ impl Opened {
     /// field read by its key from the settings as the reply gives them ([`at`]).
     fn read(uid: u64, s: &DocumentSettings, fabrics: &Value, d: &DocumentSettings) -> Self {
         let (now, blank) = (json_of(s), json_of(d));
-        let documents = [THREAD_WEIGHT, PALETTE, JOIN].into_iter().chain(MACHINE);
+        let documents = [THREAD_WEIGHT, PALETTE, JOIN, FILL_ANGLE].into_iter().chain(MACHINE);
         let defaults = FABRIC_VALUES.into_iter().chain(documents.clone()).map(|k| (k.to_string(), at(&blank["resolved"], k, "value"))).collect();
         let mut o = Opened { uid, defaults, presets: presets(fabrics), overrides: s.overrides.clone(), ..Opened::default() };
         let stored = s.settings.fabric.as_ref();
@@ -387,8 +389,12 @@ pub(crate) fn run(app: &mut VectorcraftApp, params: Value) -> Result<Value, Stri
 /// have (a misspelt name would be lost), a fabric it doesn't offer, a start or name other than
 /// null (the tab only unsets them), a bar's list that isn't a list of its values.
 fn check(fields: &Map<String, Value>, o: &Opened) -> Result<(), String> {
-    let names: Vec<String> =
-        ["fabric", THREAD_WEIGHT, PALETTE, JOIN, START, LABEL, APPLY].into_iter().chain(FABRIC_VALUES).chain(MACHINE).map(field).collect();
+    let names: Vec<String> = ["fabric", THREAD_WEIGHT, PALETTE, JOIN, FILL_ANGLE, START, LABEL, APPLY]
+        .into_iter()
+        .chain(FABRIC_VALUES)
+        .chain(MACHINE)
+        .map(field)
+        .collect();
     if let Some(k) = fields.keys().find(|k| k.starts_with(PREFIX) && !names.contains(k)) {
         return Err(format!("`{}`: Document Setup's Embroidery tab has no such field", vocabulary::shortened(k)));
     }
@@ -509,8 +515,8 @@ fn changes(fields: &Map<String, Value>, o: &Opened) -> Map<String, Value> {
     if let Some(f) = fabric {
         out.insert("fabric".into(), f);
     }
-    // The thread, the joining: unset where back at the default.
-    for key in [THREAD_WEIGHT, PALETTE, JOIN] {
+    // The thread, the joining, the fills' rows: unset where back at the default.
+    for key in [THREAD_WEIGHT, PALETTE, JOIN, FILL_ANGLE] {
         let value = now(key);
         if !same(&value, &o.was(key)) {
             out.insert(key.into(), if same(&value, &o.default_of(key)) { Value::Null } else { value });
@@ -673,17 +679,18 @@ impl Left {
     }
 }
 
-/// The right column's rows (or the rest of one's): the machine, and the design's start and name
-/// when the document has them.
+/// The right column's rows (or the rest of one's): the machine, the fills' rows, and the design's
+/// start and name when the document has them.
 struct Right {
     machine: Vec<Owned>,
+    angle: Vec<Owned>,
     design: Vec<Owned>,
 }
 
 impl Right {
     /// The rows to fit the columns to.
     fn rows(&self, lang: Lang) -> Vec<Row<'_>> {
-        self.machine.iter().chain(&self.design).map(|r| r.row(lang)).collect()
+        self.machine.iter().chain(&self.angle).chain(&self.design).map(|r| r.row(lang)).collect()
     }
 }
 
@@ -724,8 +731,12 @@ fn right_rows(d: &Dialog, o: &Opened, lang: Lang) -> Right {
         let value = fields::format(lang, "mm", WORDS_DECIMALS).show(jump);
         row.problem = Some(text::fill(crate::et!("At least the jump length ({value}): only a jump is cut"), &[("value", &value)]));
     }
+    let mut angle = crate::embroidery::fill_angle::rows(&now(d, FILL_ANGLE));
+    if let Some(row) = angle.iter_mut().find(|r| r.key == crate::embroidery::fill_angle::DEGREES) {
+        row.problem = crate::embroidery::fill_angle::problem(&now(d, FILL_ANGLE), lang);
+    }
     let design = [START, LABEL].into_iter().filter(|k| !o.was(k).is_null()).map(|k| design_row(k, &now(d, k), lang)).collect();
-    Right { machine, design }
+    Right { machine, angle, design }
 }
 
 /// The left column (or the first part of one), `width` points wide: the fabric and the thread.
@@ -764,6 +775,16 @@ fn right(ui: &mut Ui, d: &Dialog, o: &Opened, r: &Right, cols: Columns, lang: La
     for row in &r.machine {
         if let Some(edit) = rows::show(ui, &cols, &row.row(lang)) {
             edits.extend(edit_of(row.key, edit, o, ""));
+        }
+    }
+    rows::heading(ui, crate::et!("Fill"));
+    for row in &r.angle {
+        let Some(edit) = rows::show(ui, &cols, &row.row(lang)) else { continue };
+        // A value out of range is kept in the field, marked under its row, as the tab's numbers are.
+        match (crate::embroidery::fill_angle::edited(row.key, &edit, &now(d, FILL_ANGLE)), edit) {
+            (Ok(Some(value)), _) => edits.push((FILL_ANGLE.into(), value)),
+            (Err(_), Edit::Number(v)) => edits.push((FILL_ANGLE.into(), json!(v))),
+            _ => {}
         }
     }
     rows::heading(ui, crate::et!("Sewing order"));

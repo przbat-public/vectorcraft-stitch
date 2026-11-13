@@ -231,7 +231,9 @@ fn outlines_are_sewn_last_one_block_each_in_the_darkest_thread() {
     let r = s.execute("embroidery.digitizeImage", &params).unwrap();
     assert_eq!(r["outlined"], said["outlined"], "the dry run said so");
     let navy = r["colors"].as_array().unwrap().iter().find(|c| c["color"] == "#142878").unwrap()["thread"].clone();
-    assert_eq!(r["outlined"]["thread"], json!({"palette": "jef", "index": navy["index"]}), "{}", r["outlined"]);
+    let thread = &r["outlined"]["thread"];
+    assert_eq!((thread["palette"].clone(), thread["index"].clone()), (json!("jef"), navy["index"].clone()), "{}", r["outlined"]);
+    assert_eq!((thread["name"].clone(), thread["color"].clone()), (navy["name"].clone(), navy["color"].clone()), "named as the colour list names it");
     let b = blocks(&s, r["created"]["group"].as_u64().unwrap());
     assert_eq!(r["created"]["blocks"].as_u64(), Some(b.len() as u64));
     let [.., outlines, border] = b.as_slice() else { panic!("{} blocks", b.len()) };

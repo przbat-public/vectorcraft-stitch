@@ -8604,7 +8604,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   order}],
   areaAt, doubledArea, traced, joined, leftOut, regions, stats, outlined, warnings, settings, table, timings}`:
   `outlined` is null without outlines, else `{colorOutlines: {lines, length, jumps} | null, border: {lines, length,
-  jumps} | null, thread: {palette, index}}` (`lines` how many separate lines, chained where they meet; `length` in
+  jumps} | null, thread: {palette, index, name, color}}` (`lines` how many separate lines, chained where they meet; `length` in
   mm; `jumps` how many separate parts they make less one, the fewest moves between them); `stats` is what
   `embroidery.stats {selectedOnly: true}` answers with the new group selected (null when nothing is made), a dry run's
   as Create's. `warnings` lists `{id, values, message}`: `id` names the warning for a window to word in its own

@@ -8917,3 +8917,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	फ़िल की पंक्तियाँ, पेज पर घड़ी की उलटी दिशा में।
 embroidery	From the background to the details. The Order tab changes it after Create.	पृष्ठभूमि से विवरणों तक। बनाने के बाद क्रम टैब इसे बदलता है।
 embroidery	Create sets these in the document's embroidery settings.	बनाने पर ये दस्तावेज़ की कढ़ाई सेटिंग्स में सेट हो जाते हैं।
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	रूपरेखाएँ
+embroidery	Color outlines (running stitch)	रंगों की रूपरेखाएँ (रनिंग स्टिच)
+embroidery	A running line along each edge between two colors, once, and round the design.	दो रंगों के बीच हर किनारे पर एक बार रनिंग लाइन, और डिज़ाइन के चारों ओर।
+embroidery	Design border (satin)	डिज़ाइन की किनारी (सैटिन)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	पूरे डिज़ाइन के चारों ओर, उसके छेदों के भी, उसके किनारे पर सैटिन की किनारी: डिज़ाइन किनारी की आधी चौड़ाई जितना बढ़ता है।
+embroidery	Border width	किनारी की चौड़ाई
+embroidery	Outlines' thread	रूपरेखाओं का धागा
+embroidery	{value} · darkest of the design	{value} · डिज़ाइन का सबसे गहरा
+embroidery	Back to the darkest thread	सबसे गहरे धागे पर लौटें
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	रंगों की रूपरेखाएँ: {count} रेखा, {length}|रंगों की रूपरेखाएँ: {count} रेखाएँ, {length}
+embroidery	Border: {length}	किनारी: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	रंगों की रूपरेखाएँ अपनी लंबाई के {share} हिस्से में चित्र की अपनी रेखाओं के साथ चलती हैं: वे रेखाएँ दो बार सिली जाती हैं। रेखाओं का रंग छोड़ दें, या रूपरेखाएँ बंद करें।
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	डॉक्यूमेंट सेटअप का कढ़ाई टैब खोलता है। उसके बंद होने पर यह विंडो लौट आती है।

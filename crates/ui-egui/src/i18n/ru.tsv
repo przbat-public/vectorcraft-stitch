@@ -7626,3 +7626,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Ряды заливок, против часовой стрелки на странице.
 embroidery	From the background to the details. The Order tab changes it after Create.	От фона к деталям. Вкладка «Порядок» меняет его после создания.
 embroidery	Create sets these in the document's embroidery settings.	Создание запишет их в настройки вышивки документа.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Контуры
+embroidery	Color outlines (running stitch)	Контуры цветов (прямой стежок)
+embroidery	A running line along each edge between two colors, once, and round the design.	Линия прямого стежка вдоль каждого края между двумя цветами, один раз, и вокруг рисунка.
+embroidery	Design border (satin)	Кайма рисунка (гладь)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Кайма гладью вокруг всего рисунка, и вокруг его отверстий, по его краю: рисунок увеличивается на половину ширины каймы.
+embroidery	Border width	Ширина каймы
+embroidery	Outlines' thread	Нить контуров
+embroidery	{value} · darkest of the design	{value} · самая тёмная в рисунке
+embroidery	Back to the darkest thread	Вернуть самую тёмную нить
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Контуры цветов: {count} линия, {length}|Контуры цветов: {count} линии, {length}|Контуры цветов: {count} линий, {length}
+embroidery	Border: {length}	Кайма: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Контуры цветов идут вдоль собственных линий изображения на {share} своей длины: эти линии вышиваются дважды. Исключите цвет линий или выключите контуры.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Открывает вкладку «Вышивка» в «Параметрах документа». Это окно вернётся, когда они закроются.

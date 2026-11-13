@@ -7490,3 +7490,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Οι σειρές των γεμισμάτων, αριστερόστροφα στη σελίδα.
 embroidery	From the background to the details. The Order tab changes it after Create.	Από το φόντο προς τις λεπτομέρειες. Η καρτέλα Σειρά την αλλάζει μετά τη δημιουργία.
 embroidery	Create sets these in the document's embroidery settings.	Η δημιουργία τα ορίζει στις ρυθμίσεις κεντήματος του εγγράφου.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Περιγράμματα
+embroidery	Color outlines (running stitch)	Περιγράμματα χρωμάτων (ευθεία βελονιά)
+embroidery	A running line along each edge between two colors, once, and round the design.	Μια γραμμή ευθείας βελονιάς σε κάθε άκρη ανάμεσα σε δύο χρώματα, μία φορά, και γύρω από το σχέδιο.
+embroidery	Design border (satin)	Πλαίσιο σχεδίου (σατέν)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Ένα σατέν πλαίσιο γύρω από όλο το σχέδιο, και γύρω από τις τρύπες του, πάνω στην άκρη του: το σχέδιο μεγαλώνει κατά το μισό πλάτος του πλαισίου.
+embroidery	Border width	Πλάτος πλαισίου
+embroidery	Outlines' thread	Κλωστή περιγραμμάτων
+embroidery	{value} · darkest of the design	{value} · η πιο σκούρα του σχεδίου
+embroidery	Back to the darkest thread	Επιστροφή στην πιο σκούρα κλωστή
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Περιγράμματα χρωμάτων: {count} γραμμή, {length}|Περιγράμματα χρωμάτων: {count} γραμμές, {length}
+embroidery	Border: {length}	Πλαίσιο: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Τα περιγράμματα χρωμάτων περνούν δίπλα στις γραμμές της ίδιας της εικόνας στο {share} του μήκους τους: αυτές οι γραμμές κεντιούνται δύο φορές. Παραλείψτε το χρώμα των γραμμών ή απενεργοποιήστε τα περιγράμματα.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Ανοίγει την καρτέλα Κέντημα της Ρύθμισης εγγράφου. Αυτό το παράθυρο επιστρέφει όταν κλείσει.

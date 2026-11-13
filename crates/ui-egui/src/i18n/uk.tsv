@@ -7138,3 +7138,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Ряди заливок, проти годинникової стрілки на сторінці.
 embroidery	From the background to the details. The Order tab changes it after Create.	Від тла до деталей. Вкладка «Порядок» змінює його після створення.
 embroidery	Create sets these in the document's embroidery settings.	Створення запише їх у налаштування вишивки документа.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Контури
+embroidery	Color outlines (running stitch)	Контури кольорів (прямий стібок)
+embroidery	A running line along each edge between two colors, once, and round the design.	Лінія прямого стібка вздовж кожного краю між двома кольорами, один раз, і навколо візерунка.
+embroidery	Design border (satin)	Облямівка візерунка (гладь)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Облямівка гладдю навколо всього візерунка, і навколо його отворів, по його краю: візерунок збільшується на половину ширини облямівки.
+embroidery	Border width	Ширина облямівки
+embroidery	Outlines' thread	Нитка контурів
+embroidery	{value} · darkest of the design	{value} · найтемніша у візерунку
+embroidery	Back to the darkest thread	Повернути найтемнішу нитку
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Контури кольорів: {count} лінія, {length}|Контури кольорів: {count} лінії, {length}|Контури кольорів: {count} ліній, {length}
+embroidery	Border: {length}	Облямівка: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Контури кольорів ідуть уздовж власних ліній зображення на {share} своєї довжини: ці лінії вишиваються двічі. Вилучіть колір ліній або вимкніть контури.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Відкриває вкладку «Вишивка» в «Параметрах документа». Це вікно повернеться, коли їх буде закрито.

@@ -515,13 +515,14 @@ pub(super) struct ReplyOf<'a> {
 pub(super) const DOUBLE_OUTLINE_SHARE: f64 = 0.25;
 
 /// The reply's `outlined`: the colour outlines' lines, length and jumps, the border's, and the
-/// thread they are sewn in.
+/// thread they are sewn in (its palette, number, name and colour).
 fn outlined_json(o: &Outlined, palette: Palette) -> Value {
     let lines = |l: &Option<create::Lines>| l.map(|l| json!({"lines": l.count, "length": hundredths(l.length_mm), "jumps": l.jumps}));
+    let (rgb, name) = palette.get(o.thread).unwrap_or(([0, 0, 0], ""));
     json!({
         "colorOutlines": lines(&o.colour),
         "border": lines(&o.border),
-        "thread": {"palette": palette.id(), "index": o.thread},
+        "thread": {"palette": palette.id(), "index": o.thread, "name": name, "color": super::super::hex(rgb)},
     })
 }
 

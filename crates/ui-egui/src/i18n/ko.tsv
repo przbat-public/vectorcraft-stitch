@@ -7119,3 +7119,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	칠의 줄, 페이지에서 시계 반대 방향.
 embroidery	From the background to the details. The Order tab changes it after Create.	배경에서 세부로. 만든 다음 순서 탭에서 바꿉니다.
 embroidery	Create sets these in the document's embroidery settings.	만들기를 하면 이 값들이 문서의 자수 설정이 됩니다.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	윤곽선
+embroidery	Color outlines (running stitch)	색 윤곽선(러닝 스티치)
+embroidery	A running line along each edge between two colors, once, and round the design.	두 색 사이의 각 가장자리를 따라 한 번씩, 그리고 디자인 둘레에 러닝 스티치 선을 수놓습니다.
+embroidery	Design border (satin)	디자인 테두리(새틴)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	디자인 전체(구멍 포함)의 가장자리를 따라 새틴 테두리를 수놓습니다. 디자인은 테두리 너비의 절반만큼 커집니다.
+embroidery	Border width	테두리 너비
+embroidery	Outlines' thread	윤곽선 실
+embroidery	{value} · darkest of the design	{value} · 디자인에서 가장 어두운 실
+embroidery	Back to the darkest thread	가장 어두운 실로 되돌리기
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	색 윤곽선: {count}줄, {length}
+embroidery	Border: {length}	테두리: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	색 윤곽선이 길이의 {share}에서 그림 자체의 선을 따라갑니다. 그 선은 두 번 수놓아집니다. 선의 색을 제외하거나 윤곽선을 끄세요.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	문서 설정의 자수 탭을 엽니다. 그것을 닫으면 이 창이 다시 열립니다.

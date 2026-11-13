@@ -33,6 +33,18 @@ pub(crate) const DOCUMENT_FIELDS: [&str; 3] = [FABRIC, FILL_ANGLE, JOIN];
 pub(crate) const BUILT_IN: &str = "builtIn";
 const CUSTOM: &str = "custom";
 
+/// The outlines' settings (the engine's names).
+pub(crate) const COLOR_OUTLINES: &str = "colorOutlines";
+pub(crate) const BORDER: &str = "border";
+pub(crate) const BORDER_WIDTH: &str = "borderWidth";
+pub(crate) const OUTLINE_THREAD: &str = "outlineThread";
+
+/// A thread's swatch beside its words, and Choose Thread…'s list: its width and the most its rows
+/// take before it scrolls (points), as the colour list's.
+const SWATCH: f32 = 14.0;
+const PICKER_WIDTH: f32 = 260.0;
+const PICKER_LIST_HEIGHT: f32 = 240.0;
+
 /// The keys of the rule rows (ids, never words).
 const THIN_LINES: &str = "thinLines";
 const NARROW: &str = "narrowAsSatin";
@@ -109,12 +121,24 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     if rows::check(ui, crate::et!("Join one thread's objects when nothing lies between them"), Some(join), t.panel) {
         set_or_document(d, JOIN, json!(!join), &json!(document.resolved.join_same_color.value));
     }
+    outlines_section(app, ui, d, &reply, lang);
     rows::heading(ui, crate::et!("Sewing order"));
     note(ui, crate::et!("From the background to the details. The Order tab changes it after Create."));
     if DOCUMENT_FIELDS.iter().any(|k| d.fields.contains_key(*k)) {
         note(ui, crate::et!("Create sets these in the document's embroidery settings."));
     }
+    // The rest of the document's settings (the fabric's values, the thread, the machine): Document
+    // Setup's tab, the window coming back when it closes.
+    let label = crate::panels::embroidery::command_label(app, SETTINGS);
+    let tip = crate::et!("Opens the Embroidery tab of Document Setup. This window comes back when it closes.");
+    if ui.button(label).on_hover_text(tip).clicked() {
+        super::step_aside(app);
+    }
 }
+
+/// The command Embroidery Settings… runs elsewhere (the Object tab's): Document Setup at its
+/// Embroidery tab.
+const SETTINGS: &str = "embroidery.documentSetup";
 
 /// The fabric's row: the built-in values, the presets (`presets`, their ids), and the document's
 /// own values while it has them; the window's choice, else the document's.
@@ -179,5 +203,141 @@ fn edited(app: &mut VectorcraftApp, d: &mut Dialog, document: &DocumentSettings,
         Ok(Some(value)) => set_or_document(d, FILL_ANGLE, value, &own_angle),
         Ok(None) => {}
         Err(words) => super::refuse(app, words),
+    }
+}
+
+/// The outlines: a running line along each colour edge and round the design, a satin border round
+/// it with its width, the thread both are sewn in (the darkest of the design's, unless one is
+/// chosen), and what they came to.
+fn outlines_section(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &Value, lang: Lang) {
+    let t = Tokens::get(ui.ctx());
+    rows::heading(ui, crate::et!("Outlines"));
+    let on = |d: &Dialog, key: &str| d.fields.get(key).and_then(Value::as_bool).or(reply["settings"][key].as_bool()).unwrap_or(false);
+    let colour = on(d, COLOR_OUTLINES);
+    let tip = crate::et!("A running line along each edge between two colors, once, and round the design.");
+    if rows::check_with_tip(ui, crate::et!("Color outlines (running stitch)"), Some(colour), t.panel, tip) {
+        d.fields.insert(COLOR_OUTLINES.into(), json!(!colour));
+    }
+    let border = on(d, BORDER);
+    let tip = crate::et!("A satin border round the whole design, its holes too, on its edge: the design grows by half its width.");
+    if rows::check_with_tip(ui, crate::et!("Design border (satin)"), Some(border), t.panel, tip) {
+        d.fields.insert(BORDER.into(), json!(!border));
+    }
+    if border {
+        width_row(app, ui, d, reply, lang);
+    }
+    if reply["outlined"].is_object() {
+        thread_row(ui, d, reply);
+        figures_note(ui, reply, lang);
+    }
+}
+
+/// The border's width: a field in millimetres over the engine's range, a value out of it refused.
+fn width_row(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, reply: &Value, lang: Lang) {
+    let Some((lo, hi)) = super::image_step::range_of(reply, BORDER_WIDTH) else { return };
+    let value = d.fields.get(BORDER_WIDTH).and_then(Value::as_f64).or(reply["settings"][BORDER_WIDTH].as_f64()).unwrap_or(lo);
+    let format = fields::format(lang, "mm", MM_DECIMALS);
+    let mut taken = None;
+    ui.horizontal(|ui| {
+        crate::widgets::field_label(ui, crate::et!("Border width"));
+        taken = fields::number_field(
+            ui,
+            ("digitize", BORDER_WIDTH),
+            Some(value),
+            &format,
+            &fields::Look::default(),
+            super::colours_step::FIELD_WIDTH,
+            &(lo..=hi),
+        );
+    });
+    if let Some(words) = fields::take_unreadable(ui) {
+        super::refuse(app, words);
+    }
+    if let Some(v) = taken {
+        super::colours_step::take(app, d, BORDER_WIDTH, v, (lo, hi), &format);
+    }
+}
+
+/// The outlines' thread, as the result shown sews them: its colour, name and number (the darkest of
+/// the design's unless one is chosen, said so), ↺ back to the darkest, and Choose Thread… with the
+/// palette's threads, the darkest first.
+fn thread_row(ui: &mut Ui, d: &mut Dialog, reply: &Value) {
+    let t = Tokens::get(ui.ctx());
+    let thread = &reply["outlined"]["thread"];
+    let palette = thread["palette"].as_str().unwrap_or_default().to_string();
+    let (name, index) = (thread["name"].as_str().unwrap_or_default(), thread["index"].as_u64().unwrap_or(0));
+    let chosen = d.fields.get(OUTLINE_THREAD).is_some_and(|v| !v.is_null());
+    let mut words = super::colour_list::thread_words(name, &palette, index);
+    if !chosen {
+        words = fill(crate::et!("{value} · darkest of the design"), &[("value", &words)]);
+    }
+    let mut picked = None;
+    ui.horizontal(|ui| {
+        crate::widgets::field_label(ui, crate::et!("Outlines' thread"));
+        if let Some(c) = thread["color"].as_str().and_then(super::image_step::parse) {
+            let (rect, _) = ui.allocate_exact_size(egui::vec2(SWATCH, SWATCH), egui::Sense::hover());
+            ui.painter().circle_filled(rect.center(), SWATCH / 2.0, c);
+            ui.painter().circle_stroke(rect.center(), SWATCH / 2.0, egui::Stroke::new(1.0, t.border));
+        }
+        ui.label(&words);
+        let back = crate::et!("Back to the darkest thread");
+        if chosen && rows::restore(ui, back, back).clicked() {
+            d.fields.remove(OUTLINE_THREAD);
+        }
+        let button = ui.button(crate::et!("Choose Thread…"));
+        picked = picker(ui, &button, &palette);
+    });
+    if let Some(i) = picked {
+        d.fields.insert(OUTLINE_THREAD.into(), json!({"palette": palette, "index": i}));
+    }
+}
+
+/// Choose Thread…'s list for the outlines, below `button` once it is clicked and until a thread is
+/// picked or a click lands outside: a search field and `palette`'s threads, the darkest first → the
+/// thread picked (its number).
+fn picker(ui: &mut Ui, button: &egui::Response, palette: &str) -> Option<usize> {
+    let id = ui.make_persistent_id("digitize-outline-thread");
+    let (mut open, mut search) = ui.data(|m| m.get_temp::<(bool, String)>(id)).unwrap_or_default();
+    let opening = button.clicked() && !open;
+    open |= button.clicked();
+    let mut picked = None;
+    egui::Popup::from_response(button)
+        .open_bool(&mut open)
+        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+        .accessible_name(crate::et!("Choose Thread…"))
+        .show(|ui| {
+            ui.set_width(PICKER_WIDTH);
+            let field = ui.add(egui::TextEdit::singleline(&mut search).hint_text(crate::et!("Name or number")).desired_width(PICKER_WIDTH));
+            if opening {
+                field.request_focus();
+            }
+            // Nearest black first: the darkest threads at the top.
+            let threads = super::colour_list::picker_rows(palette, "#000000", &search);
+            egui::ScrollArea::vertical().max_height(PICKER_LIST_HEIGHT).show(ui, |ui| {
+                for thread in &threads {
+                    let words = super::colour_list::thread_words(thread.name, palette, thread.index);
+                    if ui.add(egui::Button::selectable(false, words)).clicked() {
+                        picked = Some(thread.index);
+                    }
+                }
+            });
+        });
+    let keep = open && picked.is_none();
+    ui.data_mut(|m| m.insert_temp(id, (keep, if keep { search } else { String::new() })));
+    picked
+}
+
+/// What the outlines came to, under their rows: the colour outlines' lines and length, the
+/// border's length.
+fn figures_note(ui: &mut Ui, reply: &Value, lang: Lang) {
+    let o = &reply["outlined"];
+    let mm = |v: &Value| fields::format(lang, "mm", 0).show(v["length"].as_f64().unwrap_or(0.0));
+    if o["colorOutlines"].is_object() {
+        let lines = o["colorOutlines"]["lines"].as_u64().unwrap_or(0);
+        let words = crate::etn!(lines, "Color outlines: {count} line, {length}", "Color outlines: {count} lines, {length}");
+        note(ui, &fill(&words, &[("length", &mm(&o["colorOutlines"]))]));
+    }
+    if o["border"].is_object() {
+        note(ui, &fill(crate::et!("Border: {length}"), &[("length", &mm(&o["border"]))]));
     }
 }

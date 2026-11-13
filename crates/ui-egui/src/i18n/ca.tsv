@@ -7518,3 +7518,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Les files dels farciments, en sentit antihorari a la pàgina.
 embroidery	From the background to the details. The Order tab changes it after Create.	Del fons als detalls. La pestanya Ordre el canvia després de crear-los.
 embroidery	Create sets these in the document's embroidery settings.	En crear-los, passen a la configuració de brodat del document.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Contorns
+embroidery	Color outlines (running stitch)	Contorns dels colors (punt endavant)
+embroidery	A running line along each edge between two colors, once, and round the design.	Una línia de punt endavant al llarg de cada vora entre dos colors, un cop, i al voltant del disseny.
+embroidery	Design border (satin)	Vora del disseny (setí)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Una vora de setí al voltant de tot el disseny, també dels seus forats, sobre la vora: el disseny creix la meitat de l’amplada de la vora.
+embroidery	Border width	Amplada de la vora
+embroidery	Outlines' thread	Fil dels contorns
+embroidery	{value} · darkest of the design	{value} · el més fosc del disseny
+embroidery	Back to the darkest thread	Torna al fil més fosc
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Contorns dels colors: {count} línia, {length}|Contorns dels colors: {count} línies, {length}
+embroidery	Border: {length}	Vora: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Els contorns dels colors passen al costat de les línies pròpies de la imatge en un {share} de la seva llargada: aquestes línies es cusen dues vegades. Deixeu fora el color de les línies, o desactiveu els contorns.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Obre la pestanya Brodat de Configuració del document. Aquesta finestra torna quan es tanca.

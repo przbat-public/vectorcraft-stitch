@@ -53,9 +53,10 @@ pub const KIND: &str = "embroidery.digitizeImage";
 
 /// The fields that are the engine's settings (`embroidery.digitizeImage`'s), in its names: the
 /// image's size, crop and background; the colours' mode, count, choices and smallest area; the
-/// shapes' smoothness, corners, straightening, overlap and thin lines. The stitches' settings keep
-/// their defaults in this version of the window.
-pub(crate) const SETTING_FIELDS: [&str; 14] = [
+/// shapes' smoothness, corners, straightening, overlap and thin lines; the outlines, the border's
+/// width and their thread. The document settings the Stitches step changes are fields of their own
+/// (`stitches_step::DOCUMENT_FIELDS`).
+pub(crate) const SETTING_FIELDS: [&str; 18] = [
     "width",
     "height",
     "fit",
@@ -70,6 +71,10 @@ pub(crate) const SETTING_FIELDS: [&str; 14] = [
     "straightLines",
     "overlap",
     "thinLine",
+    "colorOutlines",
+    "border",
+    "borderWidth",
+    "outlineThread",
 ];
 
 /// The field holding the palette the window matches threads to (`pec` or `jef`): the document's
@@ -98,6 +103,9 @@ pub struct State {
     /// By document and image: the fields of a window closed without Create, for the session.
     remembered: HashMap<(u64, NodeId), Map<String, Value>>,
     pub(crate) live: Option<Live>,
+    /// The window stepped aside for Document Setup (Embroidery Settings…): its document and image,
+    /// to come back to when no dialog is open any more.
+    back_to: Option<(u64, NodeId)>,
 }
 
 /// The window open: what it is of, where its runs go and when, and what it was left with.
@@ -462,13 +470,43 @@ pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
     Ok(reply)
 }
 
-/// Each frame, before the window is drawn: a window that closed without Create (Cancel, Escape,
-/// another dialog, its document no longer active) leaves its fields remembered for its image, and
-/// its runs stop.
+/// Embroidery Settings…: the window steps aside for Document Setup's Embroidery tab (there is one
+/// dialog at a time), its settings and its kept stages waiting, and comes back when no dialog is
+/// open any more, after OK or Cancel, recomputing only what the settings changed (the project
+/// owner's choice, 2026-11-12, „Okno ustąpi i wróci (polecam)”).
+pub(crate) fn step_aside(app: &mut VectorcraftApp) {
+    let Some(key) = app.embroidery.image_window.live.as_ref().map(|l| (l.uid, l.image)) else { return };
+    app.embroidery.image_window.back_to = Some(key);
+    if let Err(e) = crate::embroidery::setup_tab::open_at_tab(app, &json!({})) {
+        app.embroidery.image_window.back_to = None;
+        app.status(e);
+    }
+}
+
+/// Each frame, before the window is drawn: a window that stepped aside for Document Setup waits
+/// while a dialog is open and comes back once none is, as it was left; a window that closed without
+/// Create (Cancel, Escape, another dialog, its document no longer active) leaves its fields
+/// remembered for its image, and its runs stop.
 pub(crate) fn poll(app: &mut VectorcraftApp) {
     let open = app.ui.dialog.as_ref().is_some_and(|d| d.kind == KIND);
     if open {
         return;
+    }
+    if let Some(back) = app.embroidery.image_window.back_to {
+        let waiting = app.embroidery.image_window.live.as_ref().is_some_and(|l| (l.uid, l.image) == back)
+            && app.session.active().map(|st| st.uid) == Some(back.0);
+        if waiting && app.ui.dialog.is_some() {
+            return;
+        }
+        app.embroidery.image_window.back_to = None;
+        if let Some(live) = app.embroidery.image_window.live.as_ref().filter(|_| waiting) {
+            // Back where it was, its fields as it left them; its runs kept, so the next frame
+            // recomputes only from what the settings changed.
+            let mut fields = live.fields.clone();
+            fields.remove(STATE);
+            app.ui.dialog = Some(Dialog::new(KIND, Value::Object(fields)));
+            return;
+        }
     }
     let Some(mut live) = app.embroidery.image_window.live.take() else { return };
     live.schedule.stop();

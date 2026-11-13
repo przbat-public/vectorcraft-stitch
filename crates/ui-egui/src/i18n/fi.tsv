@@ -7573,3 +7573,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Täyttöjen rivit, vastapäivään sivulla.
 embroidery	From the background to the details. The Order tab changes it after Create.	Taustasta yksityiskohtiin. Järjestys-välilehti muuttaa sitä luonnin jälkeen.
 embroidery	Create sets these in the document's embroidery settings.	Luonti asettaa ne asiakirjan kirjontaasetuksiin.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Ääriviivat
+embroidery	Color outlines (running stitch)	Värien ääriviivat (suora pisto)
+embroidery	A running line along each edge between two colors, once, and round the design.	Suora pistoviiva jokaista kahden värin välistä reunaa pitkin, kerran, ja kuvion ympäri.
+embroidery	Design border (satin)	Kuvion reunus (satiini)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Satiinireunus koko kuvion ympäri, myös sen reikien, sen reunalla: kuvio kasvaa puolella reunuksen leveydestä.
+embroidery	Border width	Reunuksen leveys
+embroidery	Outlines' thread	Ääriviivojen lanka
+embroidery	{value} · darkest of the design	{value} · kuvion tummin
+embroidery	Back to the darkest thread	Takaisin tummimpaan lankaan
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Värien ääriviivat: {count} viiva, {length}|Värien ääriviivat: {count} viivaa, {length}
+embroidery	Border: {length}	Reunus: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Värien ääriviivat kulkevat kuvan omien viivojen vieressä {share} pituudestaan: ne viivat kirjotaan kahdesti. Jätä viivojen väri pois tai ääriviivat pois päältä.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Avaa Asiakirjan asetusten Kirjonta-välilehden. Tämä ikkuna palaa, kun se suljetaan.

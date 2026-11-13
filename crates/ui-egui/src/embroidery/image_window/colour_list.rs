@@ -357,7 +357,7 @@ fn thread_name(t: &Thread) -> String {
 }
 
 /// The thread `name`, number `index` in `palette`, as the rows and Choose Thread…'s list write it.
-fn thread_words(name: &str, palette: &str, index: impl std::fmt::Display) -> String {
+pub(crate) fn thread_words(name: &str, palette: &str, index: impl std::fmt::Display) -> String {
     format!("{name}  {} {index}", palette.to_uppercase())
 }
 

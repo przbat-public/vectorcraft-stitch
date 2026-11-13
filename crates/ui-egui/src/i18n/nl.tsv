@@ -7348,3 +7348,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	De rijen van de vullingen, tegen de klok in op de pagina.
 embroidery	From the background to the details. The Order tab changes it after Create.	Van de achtergrond naar de details. Het tabblad Volgorde wijzigt hem na Maken.
 embroidery	Create sets these in the document's embroidery settings.	Maken stelt ze in de borduurinstellingen van het document in.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Contouren
+embroidery	Color outlines (running stitch)	Kleurcontouren (rechte steek)
+embroidery	A running line along each edge between two colors, once, and round the design.	Een rechte steeklijn langs elke rand tussen twee kleuren, één keer, en rond het ontwerp.
+embroidery	Design border (satin)	Rand om het ontwerp (satijn)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Een satijnen rand rond het hele ontwerp, ook rond de gaten, op de rand: het ontwerp groeit met de helft van de randbreedte.
+embroidery	Border width	Randbreedte
+embroidery	Outlines' thread	Draad van de contouren
+embroidery	{value} · darkest of the design	{value} · donkerste van het ontwerp
+embroidery	Back to the darkest thread	Terug naar de donkerste draad
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Kleurcontouren: {count} lijn, {length}|Kleurcontouren: {count} lijnen, {length}
+embroidery	Border: {length}	Rand: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	De kleurcontouren lopen over {share} van hun lengte langs de eigen lijnen van de afbeelding: die lijnen worden twee keer geborduurd. Laat de kleur van de lijnen weg, of zet de contouren uit.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Opent het tabblad Borduurwerk van Documentinstellingen. Dit venster komt terug wanneer het sluit.

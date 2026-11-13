@@ -58,7 +58,7 @@ fn step_of(id: &str) -> u8 {
     match id {
         "coarse" | "decodedSmaller" => 1,
         "notLines" | "shapesNotJoined" => 3,
-        "nothingToMake" => 4,
+        "nothingToMake" | "outlinesBesideLines" => 4,
         _ => 2,
     }
 }
@@ -255,6 +255,18 @@ pub(crate) fn warning_words(w: &Value, lang: Lang) -> Option<Note> {
             ),
         ),
         "nothingTraced" => note(Mark::Warning, crate::et!("Nothing in the image was traced: it is empty or transparent.").to_string()),
+        "outlinesBesideLines" => {
+            let share = v["share"].as_f64().filter(|s| s.is_finite()).unwrap_or(0.0).clamp(0.0, 100.0).round() as u64;
+            note(
+                Mark::Warning,
+                fill(
+                    crate::et!(
+                        "The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off."
+                    ),
+                    &[("share", &numbers::percent(lang, share))],
+                ),
+            )
+        }
         // Said only when every area is the background.
         "nothingToMake" => note(Mark::Warning, Nothing::Background.words().to_string()),
         _ => None,
@@ -457,7 +469,7 @@ mod tests {
     use super::*;
 
     /// The ids of digitizing's warnings, as the engine gives them.
-    const IDS: [&str; 14] = [
+    const IDS: [&str; 15] = [
         "bandsJoined",
         "choiceNotGray",
         "coarse",
@@ -469,6 +481,7 @@ mod tests {
         "notLines",
         "nothingToMake",
         "nothingTraced",
+        "outlinesBesideLines",
         "shapesNotJoined",
         "specksJoined",
         "specksLeftOut",
@@ -479,7 +492,7 @@ mod tests {
     #[test]
     fn every_warning_is_said_in_words() {
         let values = json!({"count": 3, "color": "#e0115f", "minArea": 1.0, "maxWidth": 0.6, "pxPerMm": 3.5, "fewerThan": 5.0,
-            "decoded": [4000, 3000], "pixels": [8000, 6000], "thread": {"name": "Dark Fuchsia"}});
+            "decoded": [4000, 3000], "pixels": [8000, 6000], "thread": {"name": "Dark Fuchsia"}, "share": 57.0});
         for id in IDS {
             let note = warning_words(&json!({"id": id, "values": values}), Lang::EN).unwrap_or_else(|| panic!("{id}: no words"));
             assert!(!note.words.is_empty() && !note.words.contains('{'), "{id}: {}", note.words);

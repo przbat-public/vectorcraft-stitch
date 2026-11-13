@@ -7393,3 +7393,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Rzędy wypełnień, przeciwnie do ruchu wskazówek zegara na stronie.
 embroidery	From the background to the details. The Order tab changes it after Create.	Od tła do szczegółów. Po utworzeniu zmienia ją zakładka Kolejność.
 embroidery	Create sets these in the document's embroidery settings.	Utworzenie ustawi je w ustawieniach haftu dokumentu.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Kontury
+embroidery	Color outlines (running stitch)	Kontury kolorów (ścieg prosty)
+embroidery	A running line along each edge between two colors, once, and round the design.	Linia ściegu prostego wzdłuż każdej krawędzi między dwoma kolorami, raz, i dookoła wzoru.
+embroidery	Design border (satin)	Obwódka wzoru (satyna)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Satynowa obwódka dookoła całego wzoru, także jego otworów, na jego krawędzi: wzór rośnie o połowę szerokości obwódki.
+embroidery	Border width	Szerokość obwódki
+embroidery	Outlines' thread	Nić konturów
+embroidery	{value} · darkest of the design	{value} · najciemniejsza we wzorze
+embroidery	Back to the darkest thread	Wróć do najciemniejszej nici
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Kontury kolorów: {count} linia, {length}|Kontury kolorów: {count} linie, {length}|Kontury kolorów: {count} linii, {length}
+embroidery	Border: {length}	Obwódka: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Kontury kolorów biegną wzdłuż własnych linii obrazu na {share} swojej długości: te linie są szyte dwa razy. Pomiń kolor linii albo wyłącz kontury.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Otwiera kartę Haft w Ustawieniach dokumentu. To okno wraca, gdy się zamknie.

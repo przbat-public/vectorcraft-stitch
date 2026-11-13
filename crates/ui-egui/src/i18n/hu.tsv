@@ -7522,3 +7522,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	A kitöltések sorai, az óramutató járásával ellentétesen az oldalon.
 embroidery	From the background to the details. The Order tab changes it after Create.	A háttértől a részletekig. A létrehozás után a Sorrend lap módosítja.
 embroidery	Create sets these in the document's embroidery settings.	A létrehozás beállítja őket a dokumentum hímzésbeállításaiban.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Körvonalak
+embroidery	Color outlines (running stitch)	Színek körvonalai (egyenes öltés)
+embroidery	A running line along each edge between two colors, once, and round the design.	Egyenes öltésű vonal minden két szín közötti szél mentén, egyszer, és a minta körül.
+embroidery	Design border (satin)	Minta szegélye (szatén)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Szatén szegély az egész minta körül, a lyukai körül is, a szélén: a minta a szegély szélességének felével nő.
+embroidery	Border width	Szegély szélessége
+embroidery	Outlines' thread	Körvonalak cérnája
+embroidery	{value} · darkest of the design	{value} · a minta legsötétebbje
+embroidery	Back to the darkest thread	Vissza a legsötétebb cérnára
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Színek körvonalai: {count} vonal, {length}
+embroidery	Border: {length}	Szegély: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	A színek körvonalai hosszuk {share} részén a kép saját vonalai mellett futnak: ezek a vonalak kétszer hímződnek. Hagyja ki a vonalak színét, vagy kapcsolja ki a körvonalakat.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Megnyitja a Dokumentumbeállítás Hímzés lapját. Ez az ablak visszatér, amikor az bezárul.

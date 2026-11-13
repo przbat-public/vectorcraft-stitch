@@ -7376,3 +7376,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	填色的行，在页面上按逆时针方向。
 embroidery	From the background to the details. The Order tab changes it after Create.	从背景到细节。创建后可在“顺序”选项卡中更改。
 embroidery	Create sets these in the document's embroidery settings.	创建时会将这些设为文档的刺绣设置。
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	轮廓线
+embroidery	Color outlines (running stitch)	颜色轮廓线（平针）
+embroidery	A running line along each edge between two colors, once, and round the design.	沿两种颜色之间的每条边绣一次平针线，并环绕整个图案。
+embroidery	Design border (satin)	图案边框（缎纹）
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	沿整个图案（包括其中的孔）的边缘绣一圈缎纹边框：图案会增大边框宽度的一半。
+embroidery	Border width	边框宽度
+embroidery	Outlines' thread	轮廓线的线
+embroidery	{value} · darkest of the design	{value} · 图案中最深的
+embroidery	Back to the darkest thread	恢复为最深的线
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	颜色轮廓线：{count} 条，{length}
+embroidery	Border: {length}	边框：{length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	颜色轮廓线有 {share} 的长度紧贴图片本身的线条：这些线条会被绣两次。请排除这些线条的颜色，或关闭轮廓线。
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	打开“文档设置”的“刺绣”选项卡。它关闭后会回到此窗口。

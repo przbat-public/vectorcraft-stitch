@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-12 · **Change:** the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-12 · **Change:** the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -207,6 +207,33 @@ It also uses words of the Embroidery panel and Document Setup: Fabric, Built-in 
 | From the background to the details. The Order tab changes it after Create. | Od tła do szczegółów. Po utworzeniu zmienia ją zakładka Kolejność. |
 | Create sets these in the document's embroidery settings. | Utworzenie ustawi je w ustawieniach haftu dokumentu. |
 
+### Embroidery Settings…
+
+The button is the Object tab's, its words the command's own.
+
+| English | Polish |
+|---|---|
+| Opens the Embroidery tab of Document Setup. This window comes back when it closes. | Otwiera kartę Haft w Ustawieniach dokumentu. To okno wraca, gdy się zamknie. |
+
+### The outlines
+
+They also use Choose Thread…, Name or number, and the warning in the Live bar's notes.
+
+| English | Polish |
+|---|---|
+| Outlines | Kontury |
+| Color outlines (running stitch) | Kontury kolorów (ścieg prosty) |
+| A running line along each edge between two colors, once, and round the design. | Linia ściegu prostego wzdłuż każdej krawędzi między dwoma kolorami, raz, i dookoła wzoru. |
+| Design border (satin) | Obwódka wzoru (satyna) |
+| A satin border round the whole design, its holes too, on its edge: the design grows by half its width. | Satynowa obwódka dookoła całego wzoru, także jego otworów, na jego krawędzi: wzór rośnie o połowę szerokości obwódki. |
+| Border width | Szerokość obwódki |
+| Outlines' thread | Nić konturów |
+| {value} · darkest of the design | {value} · najciemniejsza we wzorze |
+| Back to the darkest thread | Wróć do najciemniejszej nici |
+| Color outlines: {count} line, {length}\|Color outlines: {count} lines, {length} | Kontury kolorów: {count} linia, {length}\|Kontury kolorów: {count} linie, {length}\|Kontury kolorów: {count} linii, {length} |
+| Border: {length} | Obwódka: {length} |
+| The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off. | Kontury kolorów biegną wzdłuż własnych linii obrazu na {share} swojej długości: te linie są szyte dwa razy. Pomiń kolor linii albo wyłącz kontury. |
+
 ## The Live bar, its notes, and Create
 
 | English | Polish |
@@ -251,3 +278,4 @@ It also uses words of the Embroidery panel and Document Setup: Fabric, Built-in 
 | 2026-11-11 | update | ↺ named for screen readers by the row's thread (its row's placeholder renamed in every catalogue); the Polish tooltips of Merge and Sew made commands, as the English ones are. |
 | 2026-11-12 | update | The second part: the Shapes step's controls (smoothness, corners, straightening, the overlap, the thin lines' width) and their notes; the note that listed the step's values goes. |
 | 2026-11-12 | update | The Stitches step: the fabric, the rule rows with their sources, the fill angle (Fixed or Across the shape), joining one thread's objects, the sewing order, and the note that Create sets them in the document; the note that said the step used the document's settings goes. |
+| 2026-11-12 | update | The Stitches step's outlines: two checkboxes, the border's width, the outlines' thread with the darkest marked and ↺ back to it, what they came to, and the warning when they run beside the picture's own lines. |

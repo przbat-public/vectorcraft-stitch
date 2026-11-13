@@ -7139,3 +7139,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Các hàng của phần tô, ngược chiều kim đồng hồ trên trang.
 embroidery	From the background to the details. The Order tab changes it after Create.	Từ nền đến chi tiết. Thẻ Thứ tự thay đổi nó sau khi Tạo.
 embroidery	Create sets these in the document's embroidery settings.	Tạo sẽ đặt chúng vào cài đặt thêu của tài liệu.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Đường viền
+embroidery	Color outlines (running stitch)	Đường viền màu (mũi chạy)
+embroidery	A running line along each edge between two colors, once, and round the design.	Một đường mũi chạy dọc mỗi mép giữa hai màu, một lần, và quanh mẫu thêu.
+embroidery	Design border (satin)	Viền mẫu thêu (satin)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Một đường viền satin quanh toàn bộ mẫu thêu, cả các lỗ của nó, nằm trên mép: mẫu thêu lớn thêm nửa bề rộng của viền.
+embroidery	Border width	Bề rộng viền
+embroidery	Outlines' thread	Chỉ đường viền
+embroidery	{value} · darkest of the design	{value} · đậm nhất của mẫu
+embroidery	Back to the darkest thread	Quay về chỉ đậm nhất
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Đường viền màu: {count} đường, {length}
+embroidery	Border: {length}	Viền: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Đường viền màu chạy cạnh các đường của chính hình trên {share} chiều dài của chúng: các đường đó được thêu hai lần. Hãy bỏ màu của các đường, hoặc tắt đường viền.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Mở thẻ Thêu của Thiết lập tài liệu. Cửa sổ này quay lại khi nó đóng.

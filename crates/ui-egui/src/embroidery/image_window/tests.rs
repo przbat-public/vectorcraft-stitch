@@ -1256,3 +1256,109 @@ fn the_rules_say_where_their_values_come_from() {
     assert!(drawn.iter().any(|w| w == "fabric"), "the rows' spacing from the fabric: {drawn:?}");
     assert_eq!((built_in.as_str(), tatami(&drawn).as_str()), ("Tatami, rows 0.38 mm apart", "Tatami, rows 0.33 mm apart"));
 }
+
+/// The outlines are two checkboxes, both off by default (the project owner's choice, 2026-11-12):
+/// each reruns from the objects; the colour outlines say what they came to and the darkest thread
+/// they are sewn in; the border shows its width, 5 mm typed taken and 12 mm refused and kept.
+#[test]
+fn the_outlines_are_two_checkboxes_off_by_default() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let field = |app: &VectorcraftApp, key: &str| open_dialog(app).and_then(|d| d.fields.get(key).cloned());
+    let r = reply(&mut app);
+    assert_eq!(
+        (r["settings"]["colorOutlines"].clone(), r["settings"]["border"].clone(), r["outlined"].clone()),
+        (json!(false), json!(false), Value::Null)
+    );
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Color outlines (running stitch)", Role::CheckBox);
+    assert_eq!(field(&app, "colorOutlines"), Some(json!(true)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    let r = reply(&mut app);
+    assert!(r["outlined"]["colorOutlines"]["lines"].as_u64() >= Some(1), "{}", r["outlined"]);
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    assert!(drawn.iter().any(|w| w.starts_with("Color outlines: ")), "{drawn:?}");
+    assert!(drawn.iter().any(|w| w.ends_with(" · darkest of the design")), "{drawn:?}");
+    click(&mut app, &ctx, &mut time, "Design border (satin)", Role::CheckBox);
+    assert_eq!(field(&app, "border"), Some(json!(true)));
+    until(&mut app, &ctx, &mut time, ready);
+    type_into(&mut app, &ctx, &mut time, "Border width", "5");
+    assert_eq!(field(&app, "borderWidth"), Some(json!(5.0)));
+    type_into(&mut app, &ctx, &mut time, "Border width", "12");
+    assert_eq!(app.ui.status, "12 mm is out of range: 1 mm to 10 mm.");
+    assert_eq!(field(&app, "borderWidth"), Some(json!(5.0)), "kept");
+}
+
+/// The outlines' thread is chosen from Choose Thread…'s list, the darkest threads first, and goes
+/// back to the darkest of the design's with ↺.
+#[test]
+fn the_outlines_thread_is_chosen_and_goes_back_to_the_darkest() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    let darkest = reply(&mut app)["outlined"]["thread"]["index"].clone();
+    click(&mut app, &ctx, &mut time, "Choose Thread…", Role::Button);
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let mut listed: Vec<&egui::accesskit::Node> =
+        nodes_now.iter().map(|(_, n)| n).filter(|n| n.role() == Role::Button && n.label().is_some_and(|l| l.contains("  JEF "))).collect();
+    listed.sort_by(|a, b| a.bounds().map_or(0.0, |r| r.y0).total_cmp(&b.bounds().map_or(0.0, |r| r.y0)));
+    let other = listed.iter().filter_map(|n| n.label()).find(|l| !l.ends_with(&format!(" {darkest}"))).expect("another thread").to_string();
+    let index: u64 = other.rsplit(' ').next().and_then(|n| n.parse().ok()).expect("a number");
+    click(&mut app, &ctx, &mut time, &other, Role::Button);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("outlineThread").cloned()), Some(json!({"palette": "jef", "index": index})));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(reply(&mut app)["outlined"]["thread"]["index"], json!(index));
+    click(&mut app, &ctx, &mut time, "Back to the darkest thread", Role::Button);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("outlineThread").cloned()), None);
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(reply(&mut app)["outlined"]["thread"]["index"], darkest);
+}
+
+/// Embroidery Settings… steps the window aside for Document Setup's Embroidery tab, its settings
+/// and its runs kept; Cancel brings it back as it was, nothing recomputed (the project owner's
+/// choice, 2026-11-12).
+#[test]
+fn embroidery_settings_steps_aside_and_cancel_brings_it_back() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "fillAngle", json!("acrossShape"));
+    until(&mut app, &ctx, &mut time, ready);
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    let d = app.ui.dialog.clone().expect("Document Setup");
+    assert_eq!((d.kind == KIND, d.fields.get("tab").cloned()), (false, Some(json!("Embroidery"))));
+    assert!(app.embroidery.image_window.live.is_some(), "its runs kept meanwhile");
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    let d = open_dialog(&app).expect("the window back");
+    assert_eq!(d.fields.get("fillAngle"), Some(&json!("acrossShape")), "as it was left");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_by(&app), before, "nothing recomputed");
+}
+
+/// Document Setup's OK brings the window back too, recomputing from the objects on with the
+/// document's settings as they now are.
+#[test]
+fn embroidery_settings_ok_brings_it_back_recomputed_from_the_objects() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.threadWeight".into(), json!(30));
+    crate::dialogs::confirm(&mut app).expect("OK");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(open_dialog(&app).is_some(), "the window back");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    assert_eq!(app.session.embroidery_settings().expect("settings").settings.thread_weight, Some(30.0));
+}

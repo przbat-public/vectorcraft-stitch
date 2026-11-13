@@ -7538,3 +7538,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Řady výplní, proti směru hodinových ručiček na stránce.
 embroidery	From the background to the details. The Order tab changes it after Create.	Od pozadí k detailům. Karta Pořadí ho po vytvoření změní.
 embroidery	Create sets these in the document's embroidery settings.	Vytvoření je nastaví v nastavení vyšívání dokumentu.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Obrysy
+embroidery	Color outlines (running stitch)	Obrysy barev (rovný steh)
+embroidery	A running line along each edge between two colors, once, and round the design.	Linie rovného stehu podél každého okraje mezi dvěma barvami, jednou, a kolem motivu.
+embroidery	Design border (satin)	Lem motivu (satén)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Saténový lem kolem celého motivu, i kolem jeho děr, na jeho okraji: motiv se zvětší o polovinu šířky lemu.
+embroidery	Border width	Šířka lemu
+embroidery	Outlines' thread	Nit obrysů
+embroidery	{value} · darkest of the design	{value} · nejtmavší v motivu
+embroidery	Back to the darkest thread	Zpět na nejtmavší nit
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Obrysy barev: {count} linie, {length}|Obrysy barev: {count} linie, {length}|Obrysy barev: {count} linií, {length}
+embroidery	Border: {length}	Lem: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Obrysy barev vedou podél vlastních čar obrázku na {share} své délky: ty čáry se šijí dvakrát. Vynechte barvu čar, nebo vypněte obrysy.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Otevře kartu Výšivka v Nastavení dokumentu. Toto okno se vrátí, až se zavře.

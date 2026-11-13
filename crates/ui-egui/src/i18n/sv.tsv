@@ -9023,3 +9023,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Fyllningarnas rader, moturs på sidan.
 embroidery	From the background to the details. The Order tab changes it after Create.	Från bakgrunden till detaljerna. Fliken Ordning ändrar den efter Skapa.
 embroidery	Create sets these in the document's embroidery settings.	Skapa ställer in dem i dokumentets broderiinställningar.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Konturer
+embroidery	Color outlines (running stitch)	Färgkonturer (rakstygn)
+embroidery	A running line along each edge between two colors, once, and round the design.	En rakstygnslinje längs varje kant mellan två färger, en gång, och runt motivet.
+embroidery	Design border (satin)	Kant runt motivet (satin)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	En satinkant runt hela motivet, även runt dess hål, på kanten: motivet växer med halva kantens bredd.
+embroidery	Border width	Kantens bredd
+embroidery	Outlines' thread	Konturernas tråd
+embroidery	{value} · darkest of the design	{value} · motivets mörkaste
+embroidery	Back to the darkest thread	Tillbaka till den mörkaste tråden
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Färgkonturer: {count} linje, {length}|Färgkonturer: {count} linjer, {length}
+embroidery	Border: {length}	Kant: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Färgkonturerna löper längs bildens egna linjer på {share} av sin längd: de linjerna broderas två gånger. Utelämna linjernas färg, eller stäng av konturerna.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Öppnar fliken Broderi i Dokumentinställningar. Det här fönstret kommer tillbaka när den stängs.

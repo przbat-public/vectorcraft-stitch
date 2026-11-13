@@ -7333,3 +7333,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Redovi ispuna, suprotno od kazaljke na satu na stranici.
 embroidery	From the background to the details. The Order tab changes it after Create.	Od pozadine prema detaljima. Kartica Redoslijed ga mijenja nakon kreiranja.
 embroidery	Create sets these in the document's embroidery settings.	Kreiranje ih postavlja u postavke veza dokumenta.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Obrisi
+embroidery	Color outlines (running stitch)	Obrisi boja (ravni bod)
+embroidery	A running line along each edge between two colors, once, and round the design.	Ravna linija duž svake ivice između dvije boje, jednom, i oko motiva.
+embroidery	Design border (satin)	Okvir motiva (saten)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Satenski okvir oko cijelog motiva, i oko njegovih rupa, na njegovoj ivici: motiv raste za pola širine okvira.
+embroidery	Border width	Širina okvira
+embroidery	Outlines' thread	Konac za obrise
+embroidery	{value} · darkest of the design	{value} · najtamniji u motivu
+embroidery	Back to the darkest thread	Nazad na najtamniji konac
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Obrisi boja: {count} linija, {length}|Obrisi boja: {count} linije, {length}|Obrisi boja: {count} linija, {length}
+embroidery	Border: {length}	Okvir: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Obrisi boja idu uz vlastite linije slike na {share} svoje dužine: te linije se šiju dvaput. Izostavite boju linija ili isključite obrise.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Otvara karticu Vez u Postavkama dokumenta. Ovaj prozor se vraća kad se ona zatvori.

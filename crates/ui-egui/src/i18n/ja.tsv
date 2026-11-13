@@ -7223,3 +7223,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	塗りの列、ページ上で反時計回り。
 embroidery	From the background to the details. The Order tab changes it after Create.	背景から細部へ。作成後に縫い順タブで変更できます。
 embroidery	Create sets these in the document's embroidery settings.	作成すると、これらがドキュメントの刺繍設定になります。
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	輪郭線
+embroidery	Color outlines (running stitch)	色の輪郭線（ランニングステッチ）
+embroidery	A running line along each edge between two colors, once, and round the design.	2色の境目ごとに1回ずつ、そしてデザインの周りにランニングステッチの線を縫います。
+embroidery	Design border (satin)	デザインの縁取り（サテン）
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	デザイン全体（穴も含む）の縁に沿ったサテンの縁取り。デザインは縁取りの幅の半分だけ大きくなります。
+embroidery	Border width	縁取りの幅
+embroidery	Outlines' thread	輪郭線の糸
+embroidery	{value} · darkest of the design	{value} · デザインで最も暗い糸
+embroidery	Back to the darkest thread	最も暗い糸に戻す
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	色の輪郭線: {count} 本、{length}
+embroidery	Border: {length}	縁取り: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	色の輪郭線が長さの {share} で画像自体の線に沿っています。その線は2回縫われます。線の色を除外するか、輪郭線をオフにしてください。
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	ドキュメント設定の刺繍タブを開きます。閉じるとこのウィンドウに戻ります。

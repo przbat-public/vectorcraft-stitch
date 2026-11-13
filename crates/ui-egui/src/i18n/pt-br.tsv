@@ -7610,3 +7610,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	As fileiras dos preenchimentos, no sentido anti-horário na página.
 embroidery	From the background to the details. The Order tab changes it after Create.	Do fundo para os detalhes. A guia Ordem a altera depois de Criar.
 embroidery	Create sets these in the document's embroidery settings.	Criar os define nas configurações de bordado do documento.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Contornos
+embroidery	Color outlines (running stitch)	Contornos das cores (ponto reto)
+embroidery	A running line along each edge between two colors, once, and round the design.	Uma linha de ponto reto ao longo de cada borda entre duas cores, uma vez, e ao redor do desenho.
+embroidery	Design border (satin)	Borda do desenho (cetim)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Uma borda de cetim ao redor de todo o desenho, também de seus furos, sobre a borda: o desenho cresce metade da largura da borda.
+embroidery	Border width	Largura da borda
+embroidery	Outlines' thread	Linha dos contornos
+embroidery	{value} · darkest of the design	{value} · a mais escura do desenho
+embroidery	Back to the darkest thread	Voltar à linha mais escura
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Contornos das cores: {count} linha, {length}|Contornos das cores: {count} linhas, {length}
+embroidery	Border: {length}	Borda: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Os contornos das cores correm junto às linhas próprias da imagem em {share} do seu comprimento: essas linhas são bordadas duas vezes. Deixe de fora a cor das linhas, ou desligue os contornos.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Abre a guia Bordado da Configuração do Documento. Esta janela volta quando ela fecha.

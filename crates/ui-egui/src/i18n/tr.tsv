@@ -7491,3 +7491,18 @@ embroidery	The direction of a fill's rows: at a fixed angle on the page, or acro
 embroidery	The fills' rows, counter-clockwise on the page.	Dolguların sıraları, sayfada saat yönünün tersine.
 embroidery	From the background to the details. The Order tab changes it after Create.	Arka plandan ayrıntılara. Oluştur’dan sonra Sıra sekmesi değiştirir.
 embroidery	Create sets these in the document's embroidery settings.	Oluştur, bunları belgenin nakış ayarlarına yazar.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Dış hatlar
+embroidery	Color outlines (running stitch)	Renk dış hatları (düz dikiş)
+embroidery	A running line along each edge between two colors, once, and round the design.	İki renk arasındaki her kenar boyunca bir kez ve desenin çevresinde düz dikiş çizgisi.
+embroidery	Design border (satin)	Desen kenarlığı (saten)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Desenin tamamının, deliklerinin de çevresinde, kenarı üzerinde saten kenarlık: desen, kenarlığın yarı genişliği kadar büyür.
+embroidery	Border width	Kenarlık genişliği
+embroidery	Outlines' thread	Dış hat ipliği
+embroidery	{value} · darkest of the design	{value} · desenin en koyusu
+embroidery	Back to the darkest thread	En koyu ipliğe dön
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Renk dış hatları: {count} çizgi, {length}
+embroidery	Border: {length}	Kenarlık: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Renk dış hatları, uzunluklarının {share} kadarında resmin kendi çizgileri boyunca ilerliyor: bu çizgiler iki kez dikilir. Çizgilerin rengini dışarıda bırakın ya da dış hatları kapatın.
+# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Belge Düzeni’nin Nakış sekmesini açar. Kapandığında bu pencere geri gelir.

@@ -380,9 +380,18 @@ fn node<'a>(
     name: &str,
     role: egui::accesskit::Role,
 ) -> Option<&'a egui::accesskit::Node> {
+    node_with_id(nodes, name, role).map(|(_, n)| n)
+}
+
+/// [`node`] with its id.
+fn node_with_id<'a>(
+    nodes: &'a [(egui::accesskit::NodeId, egui::accesskit::Node)],
+    name: &str,
+    role: egui::accesskit::Role,
+) -> Option<&'a (egui::accesskit::NodeId, egui::accesskit::Node)> {
     let labels: Vec<egui::accesskit::NodeId> =
         nodes.iter().filter(|(_, n)| n.role() == egui::accesskit::Role::Label && n.value() == Some(name)).map(|(id, _)| *id).collect();
-    nodes.iter().map(|(_, n)| n).find(|n| n.role() == role && (n.label() == Some(name) || n.labelled_by().iter().any(|l| labels.contains(l))))
+    nodes.iter().find(|(_, n)| n.role() == role && (n.label() == Some(name) || n.labelled_by().iter().any(|l| labels.contains(l))))
 }
 
 /// The centre of the control screen readers call `name`, of `role`.
@@ -398,6 +407,19 @@ fn click(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &s
     let button = |pressed| Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
     *time += 0.05;
     frame(app, ctx, *time, vec![Event::PointerMoved(at), button(true), button(false)]);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![]);
+}
+
+/// A screen reader's click of the control it calls `name`, of `role`: pressed wherever the control
+/// lies, below the part of the step in view too, where a pointer's click would miss it.
+fn press(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) {
+    use egui::accesskit::{Action, ActionRequest, TreeId};
+    let nodes = nodes(app, ctx, time);
+    let target_node = node_with_id(&nodes, name, role).map(|(id, _)| *id).unwrap_or_else(|| panic!("no {role:?} {name}"));
+    let request = ActionRequest { action: Action::Click, target_tree: TreeId::ROOT, target_node, data: None };
+    *time += 0.05;
+    frame(app, ctx, *time, vec![Event::AccessKitActionRequest(request)]);
     *time += 0.05;
     frame(app, ctx, *time, vec![]);
 }
@@ -1609,6 +1631,54 @@ fn the_documents_own_palette_chosen_back_in_document_setup_is_the_windows_too() 
     app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.palette".into(), json!("jef"));
     setup_ok(&mut app, &ctx, &mut time);
     assert_eq!(window_field(&app, "palette"), Some(json!("jef")));
+}
+
+/// An OK given earlier to Document Setup opened from the menu leaves a later Cancel from the
+/// window's Embroidery Settings… a Cancel: the window still holds its own fabric, and Create sets
+/// it.
+#[test]
+fn an_earlier_document_setup_ok_leaves_a_later_cancel_a_cancel() {
+    use egui::accesskit::Role;
+    let mut app = app();
+    app.run("file.documentSetup", json!({})).expect("Document Setup from the menu");
+    crate::dialogs::confirm(&mut app).expect("OK");
+    let (mut app, ctx, mut time) = opened_with(app);
+    set(&mut app, STEP, json!(4));
+    choose(&mut app, &ctx, &mut time, "Fabric", "Denim or heavy twill");
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert_eq!(window_field(&app, "fabric"), Some(json!("denim")), "the window's own fabric kept");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let fabric = app.session.embroidery_settings().expect("settings").settings.fabric.and_then(|f| f.preset);
+    assert_eq!(fabric.as_deref(), Some("denim"));
+}
+
+/// Another palette chosen in Document Setup and confirmed drops the threads the window had chosen
+/// of the old one, a colour's and the outlines', which the engine would refuse: the window's next
+/// run is made, and Create works on the new palette.
+#[test]
+fn another_palette_chosen_in_document_setup_drops_the_old_palettes_threads() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorChoices", json!([{"color": "#f08214", "thread": {"palette": "jef", "index": 5}}]));
+    set(&mut app, "colorOutlines", json!(true));
+    set(&mut app, "outlineThread", json!({"palette": "jef", "index": 2}));
+    until(&mut app, &ctx, &mut time, ready);
+    // The outlines' rows put the button below the part of the step in view.
+    press(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.palette"), Some(json!("jef")), "Document Setup open, the window's palette shown");
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.palette".into(), json!("pec"));
+    setup_ok(&mut app, &ctx, &mut time);
+    let threads = |app: &VectorcraftApp| (window_field(app, "outlineThread"), window_field(app, "colorChoices"));
+    assert_eq!(threads(&app), (None, None), "the old palette's threads gone");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    assert_eq!(document_settings_json(&app)["palette"], json!("pec"));
 }
 
 /// "Built-in values" chosen in the window over a preset the document has plans with no fabric, and

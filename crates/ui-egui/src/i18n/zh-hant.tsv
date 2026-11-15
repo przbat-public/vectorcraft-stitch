@@ -7183,7 +7183,7 @@ embroidery	Back to the darkest thread	恢復為最深的線
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	顏色輪廓線：{count} 條，{length}
 embroidery	Border: {length}	邊框：{length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	顏色輪廓線有 {share} 的長度緊貼圖片本身的線條：這些線條會被繡兩次。請排除這些線條的顏色，或關閉輪廓線。
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	開啟「文件設定」的「刺繡」分頁。它關閉後會回到此視窗。
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	榻榻米，{value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	開啟「文件設定」的「刺繡」分頁。「文件設定」關閉後會回到此視窗。

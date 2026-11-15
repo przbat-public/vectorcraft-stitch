@@ -7502,7 +7502,7 @@ embroidery	Back to the darkest thread	En koyu ipliğe dön
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Renk dış hatları: {count} çizgi, {length}
 embroidery	Border: {length}	Kenarlık: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Renk dış hatları, uzunluklarının {share} kadarında resmin kendi çizgileri boyunca ilerliyor: bu çizgiler iki kez dikilir. Çizgilerin rengini dışarıda bırakın ya da dış hatları kapatın.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Belge Düzeni’nin Nakış sekmesini açar. Kapandığında bu pencere geri gelir.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Belge Düzeni’nin Nakış sekmesini açar. Belge Düzeni kapandığında bu pencere geri gelir.

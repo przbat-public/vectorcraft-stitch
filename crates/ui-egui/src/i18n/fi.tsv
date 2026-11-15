@@ -7584,7 +7584,7 @@ embroidery	Back to the darkest thread	Takaisin tummimpaan lankaan
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Värien ääriviivat: {count} viiva, {length}|Värien ääriviivat: {count} viivaa, {length}
 embroidery	Border: {length}	Reunus: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Värien ääriviivat kulkevat kuvan omien viivojen vieressä {share} pituudestaan: ne viivat kirjotaan kahdesti. Jätä viivojen väri pois tai ääriviivat pois päältä.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Avaa Asiakirjan asetusten Kirjonta-välilehden. Tämä ikkuna palaa, kun se suljetaan.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Avaa Asiakirjan asetusten Kirjonta-välilehden. Tämä ikkuna palaa, kun Asiakirjan asetukset suljetaan.

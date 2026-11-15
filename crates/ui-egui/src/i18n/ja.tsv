@@ -7234,7 +7234,7 @@ embroidery	Back to the darkest thread	最も暗い糸に戻す
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	色の輪郭線: {count} 本、{length}
 embroidery	Border: {length}	縁取り: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	色の輪郭線が長さの {share} で画像自体の線に沿っています。その線は2回縫われます。線の色を除外するか、輪郭線をオフにしてください。
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	ドキュメント設定の刺繍タブを開きます。閉じるとこのウィンドウに戻ります。
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	タタミ、{value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	ドキュメント設定の刺繍タブを開きます。ドキュメント設定を閉じるとこのウィンドウに戻ります。

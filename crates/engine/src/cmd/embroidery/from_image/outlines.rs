@@ -393,9 +393,10 @@ fn chain_of(segs: &[PathSeg], closed: bool) -> Chain {
 }
 
 /// The most lines put in order nearest first; past it, the rest keep the order they were chained
-/// in. An estimate: each line put in order is compared with every line left, so 4,096 lines are
-/// some eight million comparisons, a few milliseconds, against seconds for the rest of a design that
-/// big.
+/// in. An estimate: each line put in order is compared with every line left, so n lines take at
+/// most 4,096 × n comparisons: some eight million for 2,000 lines, and about 10⁸ for the tens of
+/// thousands of lines a design near the 10,000-area cap may have (a tenth of a second or so), small
+/// beside the rest of that design's objects stage.
 const NEAREST_FIRST_MAX: usize = 4096;
 
 /// `chains` in the order they are sewn, each an object of its own (the needle lifting from one to

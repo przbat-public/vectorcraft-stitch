@@ -7608,7 +7608,7 @@ embroidery	Back to the darkest thread	ყველაზე მუქ ძაფ�
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	ფერების კონტურები: {count} ხაზი, {length}
 embroidery	Border: {length}	არშია: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	ფერების კონტურები თავისი სიგრძის {share}-ზე სურათის საკუთარი ხაზების გასწვრივ გადის: ეს ხაზები ორჯერ იქარგება. გამოტოვეთ ხაზების ფერი ან გამორთეთ კონტურები.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	ხსნის დოკუმენტის პარამეტრების ნაქარგობის ჩანართს. ეს ფანჯარა დაბრუნდება, როცა ის დაიხურება.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	ტატამი, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	ხსნის დოკუმენტის პარამეტრების ნაქარგობის ჩანართს. ეს ფანჯარა დაბრუნდება, როცა დოკუმენტის პარამეტრები დაიხურება.

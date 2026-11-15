@@ -1685,6 +1685,28 @@ fn the_double_outline_warning_is_the_stitches_steps() {
     assert!(beside.step == 4 && matches!(beside.mark, Mark::Warning), "{beside:?}");
 }
 
+/// How many of Choose Thread…'s first rows a test compares: those the list shows before it scrolls.
+const FIRST_ROWS: usize = 5;
+
+/// The outlines' Choose Thread… lists the palette's threads darkest first, by CIE L*, as the
+/// outlines take the darkest of a design's threads.
+#[test]
+fn the_outlines_thread_list_is_darkest_first() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Choose Thread…", Role::Button);
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let mut listed: Vec<&egui::accesskit::Node> =
+        nodes_now.iter().map(|(_, n)| n).filter(|n| n.role() == Role::Button && n.label().is_some_and(|l| l.contains("  JEF "))).collect();
+    listed.sort_by(|a, b| a.bounds().map_or(0.0, |r| r.y0).total_cmp(&b.bounds().map_or(0.0, |r| r.y0)));
+    let shown: Vec<usize> = listed.iter().take(FIRST_ROWS).filter_map(|n| n.label()?.rsplit(' ').next()?.parse().ok()).collect();
+    let darkest: Vec<usize> = vectorcraft_engine::cmd::embroidery::threads_darkest_first("jef").iter().take(FIRST_ROWS).map(|t| t.index).collect();
+    assert_eq!(shown, darkest);
+}
+
 /// A thread chosen for the outlines is of the palette it was chosen in: choosing another palette
 /// leaves it out with the colours' threads, so the run that follows isn't refused for it; the
 /// outlines then take the darkest thread of the new palette.

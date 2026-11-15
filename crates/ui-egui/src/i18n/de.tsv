@@ -7135,7 +7135,7 @@ embroidery	Back to the darkest thread	Zurück zum dunkelsten Faden
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Farbkonturen: {count} Linie, {length}|Farbkonturen: {count} Linien, {length}
 embroidery	Border: {length}	Rand: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Die Farbkonturen verlaufen auf {share} ihrer Länge neben den eigenen Linien des Bildes: Diese Linien werden doppelt gestickt. Lassen Sie die Farbe der Linien weg oder schalten Sie die Konturen aus.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Öffnet den Reiter „Stickerei“ von „Dokument einrichten“. Dieses Fenster kehrt zurück, wenn es geschlossen wird.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Öffnet den Reiter „Stickerei“ von „Dokument einrichten“. Dieses Fenster kehrt zurück, wenn „Dokument einrichten“ geschlossen wird.

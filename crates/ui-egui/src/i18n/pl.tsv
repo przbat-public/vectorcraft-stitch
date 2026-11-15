@@ -7371,8 +7371,8 @@ embroidery	Nothing to create: every area is the background. Sew the background, 
 # VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
 embroidery	Smoothness	Wygładzenie
 embroidery	Corners	Narożniki
-embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Więcej: gładsze kontury z mniejszą liczbą punktów. Mniej: bliżej krawędzi obrazu.
-embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Więcej: więcej załamań zostaje ostrymi narożnikami. Mniej: więcej z nich jest zaokrąglanych.
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Wyżej: gładsze kontury z mniejszą liczbą punktów. Niżej: bliżej krawędzi obrazu.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Wyżej: więcej załamań zostaje ostrymi narożnikami. Niżej: więcej z nich jest zaokrąglanych.
 embroidery	Straighten nearly straight lines	Prostuj prawie proste linie
 embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Lekko zakrzywione krawędzie stają się prostymi liniami, fragmenty okręgów prawdziwymi łukami, a prawie poziome lub pionowe linie dokładnie poziomymi lub pionowymi.
 embroidery	Colors overlap by	Kolory zachodzą na siebie o
@@ -7404,7 +7404,7 @@ embroidery	Back to the darkest thread	Wróć do najciemniejszej nici
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Kontury kolorów: {count} linia, {length}|Kontury kolorów: {count} linie, {length}|Kontury kolorów: {count} linii, {length}
 embroidery	Border: {length}	Obwódka: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Kontury kolorów biegną wzdłuż własnych linii obrazu na {share} swojej długości: te linie są szyte dwa razy. Pomiń kolor linii albo wyłącz kontury.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Otwiera kartę Haft w Ustawieniach dokumentu. To okno wraca, gdy się zamknie.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otwiera kartę Haft w Ustawieniach dokumentu. To okno wróci po zamknięciu Ustawień dokumentu.

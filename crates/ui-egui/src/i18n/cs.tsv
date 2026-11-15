@@ -7549,7 +7549,7 @@ embroidery	Back to the darkest thread	Zpět na nejtmavší nit
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Obrysy barev: {count} linie, {length}|Obrysy barev: {count} linie, {length}|Obrysy barev: {count} linií, {length}
 embroidery	Border: {length}	Lem: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Obrysy barev vedou podél vlastních čar obrázku na {share} své délky: ty čáry se šijí dvakrát. Vynechte barvu čar, nebo vypněte obrysy.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Otevře kartu Výšivka v Nastavení dokumentu. Toto okno se vrátí, až se zavře.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otevře kartu Výšivka v Nastavení dokumentu. Toto okno se vrátí, až se Nastavení dokumentu zavře.

@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-13 · **Change:** the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-15 · **Change:** Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -177,9 +177,9 @@ The tables below list the window's own words in the order the code draws them; w
 | English | Polish |
 |---|---|
 | Smoothness | Wygładzenie |
-| Higher: smoother outlines with fewer points. Lower: closer to the picture's edges. | Więcej: gładsze kontury z mniejszą liczbą punktów. Mniej: bliżej krawędzi obrazu. |
+| Higher: smoother outlines with fewer points. Lower: closer to the picture's edges. | Wyżej: gładsze kontury z mniejszą liczbą punktów. Niżej: bliżej krawędzi obrazu. |
 | Corners | Narożniki |
-| Higher: more turns kept as sharp corners. Lower: more of them rounded. | Więcej: więcej załamań zostaje ostrymi narożnikami. Mniej: więcej z nich jest zaokrąglanych. |
+| Higher: more turns kept as sharp corners. Lower: more of them rounded. | Wyżej: więcej załamań zostaje ostrymi narożnikami. Niżej: więcej z nich jest zaokrąglanych. |
 | Straighten nearly straight lines | Prostuj prawie proste linie |
 | Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so. | Lekko zakrzywione krawędzie stają się prostymi liniami, fragmenty okręgów prawdziwymi łukami, a prawie poziome lub pionowe linie dokładnie poziomymi lub pionowymi. |
 | Colors overlap by | Kolory zachodzą na siebie o |
@@ -212,7 +212,7 @@ The button is the Object tab's, its words the command's own.
 
 | English | Polish |
 |---|---|
-| Opens the Embroidery tab of Document Setup. This window comes back when it closes. | Otwiera kartę Haft w Ustawieniach dokumentu. To okno wraca, gdy się zamknie. |
+| Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes. | Otwiera kartę Haft w Ustawieniach dokumentu. To okno wróci po zamknięciu Ustawień dokumentu. |
 
 ### The outlines
 
@@ -279,3 +279,4 @@ They also use Choose Thread…, Name or number, and the warning in the Live bar'
 | 2026-11-12 | update | The Stitches step: the fabric, the rule rows with their sources, the fill angle (Fixed or Across the shape), joining one thread's objects, the sewing order, and the note that Create sets them in the document; the note that said the step used the document's settings goes. |
 | 2026-11-12 | update | The Stitches step's outlines: two checkboxes, the border's width, the outlines' thread with the darkest marked and ↺ back to it, what they came to, and the warning when they run beside the picture's own lines. |
 | 2026-11-13 | update | The Stitches step's rules made short enough for their fields: the thin lines' "Running stitch" (the panel's word, "along the middle" said in the Shapes step), the rows' spacing "Tatami, {value}". |
+| 2026-11-15 | update | The review of PR #38: Embroidery Settings…'s tooltip says "when Document Setup closes" („po zamknięciu Ustawień dokumentu”), as "it" read as this window; the Shapes step's slider notes say „Wyżej/Niżej” for "Higher/Lower" (a slider's value, not an amount). |

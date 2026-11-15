@@ -994,3 +994,16 @@ fn threads_nearest_lists_a_palettes_threads_nearest_first() {
     assert!(super::threads_nearest("dmc", [0, 0, 0]).is_empty());
     assert_eq!(super::thread_palettes(), vec![("pec", 61), ("jef", 78)]);
 }
+
+/// The outlines' Choose Thread… lists every thread of the palette, the darkest first, by CIE L* as
+/// the outlines take the darkest of a design's threads; none for a palette this version doesn't
+/// know.
+#[test]
+fn threads_darkest_first_lists_a_palettes_threads_by_lightness() {
+    let jef = super::threads_darkest_first("jef");
+    assert_eq!(jef.len(), 78);
+    let lightness = |t: &super::NearThread| vectorcraft_stitch::color::lab(t.color).l;
+    assert!(jef.windows(2).all(|w| lightness(&w[0]) <= lightness(&w[1])), "darkest first");
+    assert_eq!(super::threads_darkest_first("pec").len(), 61);
+    assert!(super::threads_darkest_first("dmc").is_empty());
+}

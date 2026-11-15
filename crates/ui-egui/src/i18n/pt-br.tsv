@@ -7621,7 +7621,7 @@ embroidery	Back to the darkest thread	Voltar à linha mais escura
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Contornos das cores: {count} linha, {length}|Contornos das cores: {count} linhas, {length}
 embroidery	Border: {length}	Borda: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Os contornos das cores correm junto às linhas próprias da imagem em {share} do seu comprimento: essas linhas são bordadas duas vezes. Deixe de fora a cor das linhas, ou desligue os contornos.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Abre a guia Bordado da Configuração do Documento. Esta janela volta quando ela fecha.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Abre a guia Bordado da Configuração do Documento. Esta janela volta quando a Configuração do Documento fecha.

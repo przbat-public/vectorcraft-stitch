@@ -50,10 +50,12 @@ const THIN_LINES: &str = "thinLines";
 const NARROW: &str = "narrowAsSatin";
 const SPACING: &str = "spacing";
 
-/// The decimals a width in millimetres is written to (tenths: the formats' 0.1 mm), and a rows'
-/// spacing (hundredths, as Document Setup writes it).
+/// The decimals a width in millimetres is written to (tenths: the formats' 0.1 mm), a rows'
+/// spacing (hundredths, as Document Setup writes it), and the outlines' lengths (whole millimetres:
+/// they run to metres).
 const MM_DECIMALS: usize = 1;
 const SPACING_DECIMALS: usize = 2;
+const LENGTH_DECIMALS: usize = 0;
 
 /// `embroidery.setup`'s params for the document settings `params` (the window's) change: each
 /// field held, the built-in fabric as null.
@@ -134,7 +136,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     // The rest of the document's settings (the fabric's values, the thread, the machine): Document
     // Setup's tab, the window coming back when it closes.
     let label = crate::panels::embroidery::command_label(app, SETTINGS);
-    let tip = crate::et!("Opens the Embroidery tab of Document Setup. This window comes back when it closes.");
+    let tip = crate::et!("Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.");
     if ui.button(label).on_hover_text(tip).clicked() {
         super::step_aside(app, &d.fields);
     }
@@ -320,9 +322,10 @@ fn picker(ui: &mut Ui, button: &egui::Response, palette: &str) -> Option<usize> 
             if opening {
                 field.request_focus();
             }
-            // Nearest black first: the darkest threads at the top, each with its colour, as the
-            // colour list's Choose Thread… shows them.
-            let threads = super::colour_list::picker_rows(palette, "#000000", &search);
+            // The darkest first (by CIE L*, as the outlines take the darkest of a design's
+            // threads), each with its colour, as the colour list's Choose Thread… shows them.
+            let darkest = vectorcraft_engine::cmd::embroidery::threads_darkest_first(palette);
+            let threads = super::colour_list::searched(darkest, &search);
             let (t, lang) = (Tokens::get(ui.ctx()), crate::i18n::current());
             egui::ScrollArea::vertical().max_height(PICKER_LIST_HEIGHT).show(ui, |ui| {
                 for thread in &threads {
@@ -341,7 +344,7 @@ fn picker(ui: &mut Ui, button: &egui::Response, palette: &str) -> Option<usize> 
 /// border's length.
 fn figures_note(ui: &mut Ui, reply: &Value, lang: Lang) {
     let o = &reply["outlined"];
-    let mm = |v: &Value| fields::format(lang, "mm", 0).show(v["length"].as_f64().unwrap_or(0.0));
+    let mm = |v: &Value| fields::format(lang, "mm", LENGTH_DECIMALS).show(v["length"].as_f64().unwrap_or(0.0));
     if o["colorOutlines"].is_object() {
         let lines = o["colorOutlines"]["lines"].as_u64().unwrap_or(0);
         let words = crate::etn!(lines, "Color outlines: {count} line, {length}", "Color outlines: {count} lines, {length}");

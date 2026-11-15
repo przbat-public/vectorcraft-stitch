@@ -811,6 +811,23 @@ pub fn threads_nearest(id: &str, color: [u8; 3]) -> Vec<NearThread> {
         .collect()
 }
 
+/// Every thread of palette `id`, the darkest first (the least CIE L*, the lower number first), as
+/// digitizing's outlines take the darkest of a design's threads: what the outlines' Choose Thread…
+/// lists, with no colour measured against (each difference 0). None for a palette this version
+/// doesn't know.
+pub fn threads_darkest_first(id: &str) -> Vec<NearThread> {
+    let Some(palette) = Palette::from_id(id) else { return Vec::new() };
+    let mut threads: Vec<(f64, NearThread)> = (1..=palette.threads().len())
+        .filter(|&i| palette.is_thread(i))
+        .filter_map(|i| {
+            let (color, name) = palette.get(i)?;
+            Some((vectorcraft_stitch::color::lab(color).l, NearThread { index: i, name, color, delta_e: 0.0, mismatch: false }))
+        })
+        .collect();
+    threads.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.index.cmp(&b.1.index)));
+    threads.into_iter().map(|(_, t)| t).collect()
+}
+
 /// The thread palettes a document can take, by id, each with how many threads it has.
 pub fn thread_palettes() -> Vec<(&'static str, usize)> {
     Palette::ALL.into_iter().map(|p| (p.id(), (1..=p.threads().len()).filter(|&i| p.is_thread(i)).count())).collect()

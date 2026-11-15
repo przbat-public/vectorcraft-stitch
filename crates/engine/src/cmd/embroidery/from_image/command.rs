@@ -514,8 +514,8 @@ pub(super) struct ReplyOf<'a> {
 /// estimate, the session's ruling of 2026-11-12 on the project owner's double-outline warning).
 pub(super) const DOUBLE_OUTLINE_SHARE: f64 = 0.25;
 
-/// The reply's `outlined`: the colour outlines' lines, length and jumps, the border's, and the
-/// thread they are sewn in (its palette, number, name and colour).
+/// The reply's `outlined`: the colour outlines' lines and length, the border's, and the thread they
+/// are sewn in (its palette, number, name and colour).
 fn outlined_json(o: &Outlined, palette: Palette) -> Value {
     let lines = |l: &Option<create::Lines>| l.map(|l| json!({"lines": l.count, "length": hundredths(l.length_mm)}));
     let (rgb, name) = palette.get(o.thread).unwrap_or(([0, 0, 0], ""));

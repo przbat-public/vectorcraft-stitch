@@ -335,11 +335,14 @@ pub(crate) fn drop_threads(f: &mut Map<String, Value>) {
 /// whose name holds `search` (any case) or whose number starts with it.
 pub(crate) fn picker_rows(palette: &str, color: &str, search: &str) -> Vec<NearThread> {
     let Some(rgb) = super::image_step::parse(color).map(|c| [c.r(), c.g(), c.b()]) else { return Vec::new() };
+    searched(vectorcraft_engine::cmd::embroidery::threads_nearest(palette, rgb), search)
+}
+
+/// Of `threads`, those Choose Thread…'s search `search` finds: whose name holds it (any case) or
+/// whose number starts with it; all of them for no search.
+pub(crate) fn searched(threads: Vec<NearThread>, search: &str) -> Vec<NearThread> {
     let wanted = search.trim().to_lowercase();
-    vectorcraft_engine::cmd::embroidery::threads_nearest(palette, rgb)
-        .into_iter()
-        .filter(|t| wanted.is_empty() || t.name.to_lowercase().contains(&wanted) || t.index.to_string().starts_with(&wanted))
-        .collect()
+    threads.into_iter().filter(|t| wanted.is_empty() || t.name.to_lowercase().contains(&wanted) || t.index.to_string().starts_with(&wanted)).collect()
 }
 
 /// A difference as a badge writes it: one decimal, two where one would round onto the line.

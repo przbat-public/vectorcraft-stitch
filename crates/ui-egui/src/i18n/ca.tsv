@@ -7529,7 +7529,7 @@ embroidery	Back to the darkest thread	Torna al fil més fosc
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Contorns dels colors: {count} línia, {length}|Contorns dels colors: {count} línies, {length}
 embroidery	Border: {length}	Vora: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Els contorns dels colors passen al costat de les línies pròpies de la imatge en un {share} de la seva llargada: aquestes línies es cusen dues vegades. Deixeu fora el color de les línies, o desactiveu els contorns.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	Obre la pestanya Brodat de Configuració del document. Aquesta finestra torna quan es tanca.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Obre la pestanya Brodat de Configuració del document. Aquesta finestra torna quan es tanca Configuració del document.

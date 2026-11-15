@@ -7130,7 +7130,7 @@ embroidery	Back to the darkest thread	가장 어두운 실로 되돌리기
 @plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	색 윤곽선: {count}줄, {length}
 embroidery	Border: {length}	테두리: {length}
 embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	색 윤곽선이 길이의 {share}에서 그림 자체의 선을 따라갑니다. 그 선은 두 번 수놓아집니다. 선의 색을 제외하거나 윤곽선을 끄세요.
-# VectorCraft Stitch: the image window's Embroidery Settings… (drafted with AI assistance from the English meaning, for review)
-embroidery	Opens the Embroidery tab of Document Setup. This window comes back when it closes.	문서 설정의 자수 탭을 엽니다. 그것을 닫으면 이 창이 다시 열립니다.
 # VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
 embroidery	Tatami, {value}	타타미, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	문서 설정의 자수 탭을 엽니다. 문서 설정을 닫으면 이 창이 다시 열립니다.

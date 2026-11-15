@@ -255,6 +255,9 @@ impl Deadline {
         }
     }
 
+    // VectorCraft Stitch: clippy 1.100 (CI's stable since 2026-11-09) flags the `if` the web build
+    // needs (no deadline there); upstream has rewritten `passed` since.
+    #[allow(clippy::needless_bool)]
     pub(crate) fn passed(&self) -> bool {
         #[cfg(not(target_arch = "wasm32"))]
         if std::time::Instant::now() >= self.at {

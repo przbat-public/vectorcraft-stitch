@@ -627,14 +627,17 @@ reads moved: Image Trace's new options keep their old behaviour by default, its 
 (which now keeps no piece over its tolerance, `2facf55c2`) moves none of the listing's areas, the
 mirrored values are unchanged, and the centre lines' module is untouched.
 
-**Upstream's CI lints with the stable clippy** (Rust 1.99.1, on 2026-10-24 and still on
-2026-11-10), newer than the fork's 1.95 gate (`rust-version = "1.95"`), and since that sync the
-same CI runs on the fork's PRs (Practicalities). Code must pass both:
+**Upstream's CI lints with the stable clippy** (Rust 1.99.1 from 2026-10-24, Rust 1.100 since its
+release on 2026-11-09), newer than the fork's 1.95 gate (`rust-version = "1.95"`), and since that
+sync the same CI runs on the fork's PRs (Practicalities). Code must pass both:
 - Upstream code can fail the fork's 1.95 gate, through a lint 1.95 doesn't know or one 1.95 flags
   and the newer clippy doesn't. Allow it in place, marked "VectorCraft Stitch", and list it with
   the hooks below. Drop the allow when the fork's gate moves to upstream's clippy.
 - The fork's code can fail the stable clippy (the DST reader's `chunks_exact`, which 1.99 wants as
   `as_chunks`). Fix it there, in a way 1.95 accepts too.
+- Upstream code can fail a new stable clippy before a sync brings upstream's own change to it (the
+  plugin host's `passed`, which clippy 1.100 flags, on 2026-11-15). Allow it in place, marked, and
+  list it with the hooks below; the next sync takes upstream's code and drops the allow.
 - So before pushing, also run `cargo +stable clippy --workspace --all-targets --keep-going -- -D
   warnings`.
 - Upstream's workspace lints bind the fork's code as well (since 2026-10-27, `Cargo.toml` and
@@ -807,6 +810,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     (`layout/flow.rs`), `effects`' `validate` (`solids/classic.rs`), and the engine's
     `encode_and_write` (`fileio/screens.rs`) and `input_applied` (`tooling.rs`), and
     `collapsible_match` on `js`'s `trace_object` (`heap.rs`);
+  - for CI's stable clippy (1.100): `#[allow(clippy::needless_bool)]` on `plugins/src/host.rs`'s
+    `passed` (the `if` the web build needs; upstream has rewritten `passed` since, so the next sync
+    takes upstream's);
   - `render/src/lib.rs`: `pub mod lines`, and `render/src/node_checks.rs`'s `MAX_DEVICE` made
     `pub(crate)` for it (the stitch view's lines keep within the device range the renderer does);
     `testkit/src/lib.rs`: `pub mod embroidery`;

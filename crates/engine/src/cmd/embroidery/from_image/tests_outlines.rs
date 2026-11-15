@@ -7,7 +7,7 @@ use std::sync::Arc;
 use kurbo::{ParamCurve, ParamCurveArclen, Shape};
 use proptest::prelude::*;
 use serde_json::{Value, json};
-use vectorcraft_doc::{ImageBlob, ImageObject, Node, NodeId, NodeKind};
+use vectorcraft_doc::{ImageBlob, ImageObject, LineJoin, Node, NodeId, NodeKind};
 use vectorcraft_geom::Affine;
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::Palette;
@@ -244,6 +244,8 @@ fn outlines_are_sewn_last_one_block_each_in_the_darkest_thread() {
     let [.., outlines, border] = b.as_slice() else { panic!("{} blocks", b.len()) };
     assert_eq!((outlines.len(), border.len()), (1, 1), "a line each: the shared edge, and round the design");
     assert_eq!((outlines[0].name.as_deref(), border[0].name.as_deref()), (Some("Color outlines"), Some("Border")));
+    let round = |n: &Node| n.appearance.stroke().is_some_and(|s| s.join == LineJoin::Round);
+    assert!(round(&outlines[0]) && round(&border[0]), "round at their turns");
     let (line, colour, width) = stroke_of(&outlines[0]);
     let navy_rgb = navy["color"].as_str().and_then(super::settings::hex_colour).unwrap();
     assert_eq!(colour, navy_rgb, "the darkest thread");

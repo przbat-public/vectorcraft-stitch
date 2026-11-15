@@ -1611,6 +1611,80 @@ fn the_documents_own_palette_chosen_back_in_document_setup_is_the_windows_too() 
     assert_eq!(window_field(&app, "palette"), Some(json!("jef")));
 }
 
+/// "Built-in values" chosen in the window over a preset the document has plans with no fabric, and
+/// Create unsets the document's.
+#[test]
+fn built_in_values_chosen_over_a_document_preset_unset_it_on_create() {
+    let mut app = app();
+    app.run("embroidery.setup", json!({"fabric": "denim"})).unwrap();
+    let (mut app, ctx, mut time) = opened_with(app);
+    set(&mut app, STEP, json!(4));
+    choose(&mut app, &ctx, &mut time, "Fabric", "Built-in values");
+    assert_eq!(window_field(&app, "fabric"), Some(json!("builtIn")));
+    until(&mut app, &ctx, &mut time, ready);
+    assert!(live_mut(&mut app).document_settings().is_some_and(|s| s.settings.fabric.is_none()), "planned with no fabric");
+    create_now(&mut app, &ctx, &mut time);
+    assert!(app.session.embroidery_settings().expect("settings").settings.fabric.is_none(), "the document's fabric unset");
+}
+
+/// After Document Setup's OK changed the document's fabric, the window's fabric row shows the
+/// document's as it now is.
+#[test]
+fn the_rows_show_the_documents_settings_after_document_setup_changed_them() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    setup_ok(&mut app, &ctx, &mut time);
+    until(&mut app, &ctx, &mut time, ready);
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    assert!(drawn.iter().any(|w| w == "Fleece"), "the fabric row: {drawn:?}");
+}
+
+/// The document switched while Document Setup is open over the window: the window doesn't wait to
+/// come back to a document no longer active; its runs stop and its settings are remembered for its
+/// image.
+#[test]
+fn a_document_switched_while_document_setup_is_open_closes_the_window() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    let (uid, image) = (live(&app).uid, live(&app).image);
+    set(&mut app, STEP, json!(4));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(app.embroidery.image_window.live.is_none(), "its runs stopped");
+    let remembered = app.embroidery.image_window.remembered.get(&(uid, image)).and_then(|f| f.get(STEP).cloned());
+    assert_eq!(remembered, Some(json!(4)), "its settings remembered");
+}
+
+/// The double-outline warning is the Stitches step's, where the outlines are set: a thin navy line
+/// across an orange band, sewn along its middle, with the colour outlines on beside it.
+#[test]
+fn the_double_outline_warning_is_the_stitches_steps() {
+    use crate::embroidery::marks::Mark;
+    let line = image::RgbaImage::from_fn(200, 100, |x, y| {
+        image::Rgba(match ((20..180).contains(&x), (49..51).contains(&y), (10..90).contains(&y)) {
+            (true, true, _) => [20, 40, 120, 255],
+            (true, _, true) => [240, 130, 20, 255],
+            _ => [255, 255, 255, 255],
+        })
+    });
+    let (mut app, ctx, mut time) = opened_with(app_with(line));
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    let warnings = reply(&mut app)["warnings"].clone();
+    assert!(warnings.as_array().unwrap().iter().any(|w| w["id"] == "outlinesBesideLines"), "{warnings}");
+    let notes = super::live_bar::current_notes(live_mut(&mut app), crate::i18n::Lang::EN);
+    let beside = notes.iter().find(|n| n.words.starts_with("The color outlines run beside")).expect("the warning's note");
+    assert!(beside.step == 4 && matches!(beside.mark, Mark::Warning), "{beside:?}");
+}
+
 /// A thread chosen for the outlines is of the palette it was chosen in: choosing another palette
 /// leaves it out with the colours' threads, so the run that follows isn't refused for it; the
 /// outlines then take the darkest thread of the new palette.

@@ -477,4 +477,18 @@ mod tests {
         let across = |l: u32| usize::try_from(l).map_or(Across::Nothing, Across::Area);
         assert_eq!(across_each(&regions, &segs, 0, &across), vec![Across::Area(1), Across::Area(1), Across::Area(5)]);
     }
+
+    /// How far apart two pieces' ends lie in the test below (working pixels): a hundredth of a
+    /// pixel, about what the path operations may move an edge's two sides apart by.
+    const APART_PX: f64 = 0.01;
+
+    /// Pieces whose ends lie a hundredth of a pixel apart are chained as one line: they meet within
+    /// [`MEET_MM`] at the working copy's resolution.
+    #[test]
+    fn pieces_whose_ends_lie_a_hundredth_of_a_pixel_apart_are_one_line() {
+        let line = |a: (f64, f64), b: (f64, f64)| PathSeg::Line(Line::new(a, b));
+        let runs = vec![(vec![line((0.0, 0.0), (10.0, 0.0))], false), (vec![line((10.0 + APART_PX, 0.0), (20.0, 0.0))], false)];
+        let chains = chained(runs, MEET_MM * super::super::working::WORKING_PX_PER_MM);
+        assert_eq!(chains.len(), 1, "one line");
+    }
 }

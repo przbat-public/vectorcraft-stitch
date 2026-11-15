@@ -1468,6 +1468,149 @@ fn embroidery_settings_ok_brings_it_back_recomputed_from_the_objects() {
     assert_eq!(app.session.embroidery_settings().expect("settings").settings.thread_weight, Some(30.0));
 }
 
+/// The document's embroidery settings, as the document keeps them, in their JSON.
+fn document_settings_json(app: &VectorcraftApp) -> Value {
+    serde_json::to_value(&app.session.embroidery_settings().expect("settings").settings).unwrap_or_default()
+}
+
+/// Field `key` of the open dialog, whichever it is (Document Setup's while the window is aside).
+fn dialog_field(app: &VectorcraftApp, key: &str) -> Option<Value> {
+    app.ui.dialog.as_ref().and_then(|d| d.fields.get(key).cloned())
+}
+
+/// Field `key` of the window, open again.
+fn window_field(app: &VectorcraftApp, key: &str) -> Option<Value> {
+    open_dialog(app).and_then(|d| d.fields.get(key).cloned())
+}
+
+/// Document Setup's OK, and the frame after it that brings the window back.
+fn setup_ok(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) {
+    crate::dialogs::confirm(app).expect("OK");
+    *time += 0.05;
+    frame(app, ctx, *time, vec![]);
+}
+
+/// Create with the window's fields as they are (Cmd/Ctrl+Enter), until the window has closed.
+fn create_now(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) {
+    *time += 0.05;
+    frame(app, ctx, *time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(app, ctx, time, |app| open_dialog(app).is_none());
+}
+
+/// Embroidery Settings… opens Document Setup showing what the window plans with, the window's own
+/// fabric among it; a fabric chosen there and confirmed with OK is the document's, the window lets
+/// go of its own and plans with the document's, and Create keeps it (the project owner's choice,
+/// 2026-11-15).
+#[test]
+fn a_fabric_chosen_in_document_setup_is_the_documents_after_create() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    choose(&mut app, &ctx, &mut time, "Fabric", "Denim or heavy twill");
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.fabric"), Some(json!("denim")), "Document Setup shows the window's fabric");
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!(window_field(&app, "fabric"), None, "the window's own fabric let go");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let fabric = app.session.embroidery_settings().expect("settings").settings.fabric.and_then(|f| f.preset);
+    assert_eq!(fabric.as_deref(), Some("fleece"));
+}
+
+/// A thread palette chosen in Document Setup through Embroidery Settings… and confirmed with OK is
+/// the document's and the window's: the window matches the threads to it, and Create keeps it.
+#[test]
+fn a_palette_chosen_in_document_setup_is_the_documents_after_create() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.palette"), Some(json!("jef")), "the window's palette shown");
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.palette".into(), json!("pec"));
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!(window_field(&app, "palette"), Some(json!("pec")), "the window matches to the document's palette");
+    until(&mut app, &ctx, &mut time, ready);
+    assert!(reply(&mut app)["colors"].as_array().unwrap().iter().filter(|c| c["sewn"] == true).all(|c| c["thread"]["palette"] == "pec"));
+    create_now(&mut app, &ctx, &mut time);
+    assert_eq!(document_settings_json(&app)["palette"], json!("pec"));
+}
+
+/// The fill angle and joining one thread's objects, shown in Document Setup as the window holds
+/// them, chosen there and confirmed with OK, are the document's after Create.
+#[test]
+fn the_fill_angle_and_joining_chosen_in_document_setup_are_the_documents_after_create() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "fillAngle", json!("acrossShape"));
+    set(&mut app, "joinSameColor", json!(false));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(
+        (dialog_field(&app, "embroidery.fillAngle"), dialog_field(&app, "embroidery.joinSameColor")),
+        (Some(json!("acrossShape")), Some(json!(false))),
+        "the window's shown"
+    );
+    let d = app.ui.dialog.as_mut().expect("Document Setup");
+    d.fields.insert("embroidery.fillAngle".into(), json!(45.0));
+    d.fields.insert("embroidery.joinSameColor".into(), json!(true));
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!((window_field(&app, "fillAngle"), window_field(&app, "joinSameColor")), (None, None), "the window's own let go");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let resolved = app.session.embroidery_settings().expect("settings").resolved;
+    assert_eq!((resolved.fill_angle.value, resolved.join_same_color.value), (json!(45.0), true));
+}
+
+/// Document Setup cancelled leaves the document and the window's own settings as they were: the
+/// window plans with its own fabric, palette, fill angle and joining still, and Create sets them.
+#[test]
+fn document_setup_cancelled_leaves_the_windows_own_settings() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let own = json!({"fabric": "denim", "palette": "pec", "fillAngle": "acrossShape", "joinSameColor": false});
+    for (k, v) in own.as_object().unwrap() {
+        set(&mut app, k, v.clone());
+    }
+    until(&mut app, &ctx, &mut time, ready);
+    let before = document_settings_json(&app);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    for (k, v) in own.as_object().unwrap() {
+        assert_eq!(window_field(&app, k).as_ref(), Some(v), "{k} kept");
+    }
+    assert_eq!(document_settings_json(&app), before, "the document as it was");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let s = app.session.embroidery_settings().expect("settings");
+    assert_eq!(s.settings.fabric.and_then(|f| f.preset).as_deref(), Some("denim"));
+    assert_eq!(document_settings_json(&app)["palette"], json!("pec"));
+}
+
+/// The document's own palette chosen back in Document Setup, over the window's, is the window's
+/// too: OK makes what Document Setup holds the document's, even where that changes nothing in the
+/// document.
+#[test]
+fn the_documents_own_palette_chosen_back_in_document_setup_is_the_windows_too() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "palette", json!("pec"));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.palette"), Some(json!("pec")), "the window's palette shown");
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.palette".into(), json!("jef"));
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!(window_field(&app, "palette"), Some(json!("jef")));
+}
+
 /// A thread chosen for the outlines is of the palette it was chosen in: choosing another palette
 /// leaves it out with the colours' threads, so the run that follows isn't refused for it; the
 /// outlines then take the darkest thread of the new palette.
@@ -1494,7 +1637,8 @@ fn embroidery_settings_lets_a_waiting_create_go() {
     let steps = undo_steps(&app);
     // Stepped aside in the frame Create was asked in (no frame between, which would make it).
     live_mut(&mut app).create_waiting = true;
-    super::step_aside(&mut app);
+    let fields = open_dialog(&app).map(|d| d.fields.clone()).unwrap_or_default();
+    super::step_aside(&mut app, &fields);
     assert!(!live(&app).create_waiting, "let go");
     crate::dialogs::cancel(&mut app);
     time += 0.05;

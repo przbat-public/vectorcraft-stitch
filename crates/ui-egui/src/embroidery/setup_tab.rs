@@ -378,10 +378,16 @@ pub(crate) fn run(app: &mut VectorcraftApp, params: Value) -> Result<Value, Stri
     if !apply.is_empty() {
         commands.push(json!({"command": "embroidery.applyFabric", "params": {"all": true, "keys": apply}}));
     }
-    match commands.as_slice() {
+    let done = match commands.as_slice() {
         [only] => app.run("document.setup", only["params"].clone()),
         _ => app.run("command.batch", json!({"label": "Document Setup", "commands": commands})),
+    };
+    // What the tab held is the document's now: a window that stepped aside for it lets go of its
+    // own values when it comes back.
+    if done.is_ok() {
+        app.embroidery.setup_confirmed = true;
     }
+    done
 }
 
 /// Refuse what the tab can't take among the dialog's `fields` (an agent's, `ui.dialog.set`), as
@@ -1121,6 +1127,21 @@ pub(crate) fn open_at_tab(app: &mut VectorcraftApp, p: &Value) -> Result<Value, 
         d.fields.insert("tab".into(), json!(TAB));
     }
     Ok(r)
+}
+
+/// [`open_at_tab`], with `values` (`embroidery.setup`'s names: `fabric`, a preset's id or
+/// `builtIn`; `palette`; `fillAngle`; `joinSameColor`) given to the tab's fields as its rows give
+/// them, a fabric copying its values: what a window planning with values of its own shows (the image
+/// window's Embroidery Settings…, the project owner's choice of 2026-11-15).
+pub(crate) fn open_at_tab_with(app: &mut VectorcraftApp, values: &Map<String, Value>) -> Result<Value, String> {
+    let opened = open_at_tab(app, &json!({}))?;
+    let uid = app.session.active().map(|st| st.uid);
+    if let (Some(d), Some(o)) = (app.ui.dialog.as_mut(), app.embroidery.setup.as_mut().filter(|o| Some(o.uid) == uid)) {
+        for (key, value) in values {
+            apply(&mut d.fields, o, key, value.clone());
+        }
+    }
+    Ok(opened)
 }
 
 /// Give field `key` `value` in the open dialog's Embroidery tab, as its rows do (the pictures).

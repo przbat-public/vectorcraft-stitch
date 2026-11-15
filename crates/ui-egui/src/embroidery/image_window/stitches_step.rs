@@ -136,7 +136,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let label = crate::panels::embroidery::command_label(app, SETTINGS);
     let tip = crate::et!("Opens the Embroidery tab of Document Setup. This window comes back when it closes.");
     if ui.button(label).on_hover_text(tip).clicked() {
-        super::step_aside(app);
+        super::step_aside(app, &d.fields);
     }
 }
 

@@ -3715,7 +3715,12 @@ Settings… over it.
   Settings…, which opens Document Setup's Embroidery tab for the rest (the fabric's values, the
   thread, the machine): there is one dialog at a time, so the window steps aside, its settings and
   its kept stages waiting, and comes back when Document Setup closes, OK or Cancel, recomputing
-  only from what changed, the objects on (the project owner's choice of 2026-11-12).
+  only from what changed, the objects on (the project owner's choice of 2026-11-12). Document
+  Setup opens showing what the window plans with, its own palette, fabric, fill angle and joining
+  over the document's; its OK makes what it then holds the document's (its own undo step), and the
+  window lets go of its own values of those settings and plans with the document's, matching its
+  threads to the document's palette; Cancel leaves the document and the window's values as they
+  were; Create sets only what the window still holds (the project owner's choice of 2026-11-15).
   The settings column, the colour list and
   Choose Thread…'s list show their scroll bars whenever they overflow, in a column of their own, as
   the app's panels and lists do. The window ends above the hint line and the status bar.

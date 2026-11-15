@@ -473,15 +473,20 @@ pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
 /// Embroidery Settings…: the window steps aside for Document Setup's Embroidery tab (there is one
 /// dialog at a time), its settings and its kept stages waiting, and comes back when no dialog is
 /// open any more, after OK or Cancel, recomputing only what the settings changed (the project
-/// owner's choice, 2026-11-12, „Okno ustąpi i wróci (polecam)”).
-pub(crate) fn step_aside(app: &mut VectorcraftApp) {
+/// owner's choice, 2026-11-12, „Okno ustąpi i wróci (polecam)”). Document Setup opens showing what
+/// the window plans with, its fields' (`fields`) own palette, fabric, fill angle and joining over
+/// the document's (the project owner's choice, 2026-11-15, „Jedne wartości (polecam)”).
+pub(crate) fn step_aside(app: &mut VectorcraftApp, fields: &Map<String, Value>) {
     let Some(live) = app.embroidery.image_window.live.as_mut() else { return };
     // A Create waiting for its run is let go: it was asked of the settings before the person went
     // to change them, and would otherwise make the design behind their back once they are back.
     live.create_waiting = false;
     let key = (live.uid, live.image);
     app.embroidery.image_window.back_to = Some(key);
-    if let Err(e) = crate::embroidery::setup_tab::open_at_tab(app, &json!({})) {
+    app.embroidery.setup_confirmed = false;
+    let own: Map<String, Value> =
+        [PALETTE].into_iter().chain(stitches_step::DOCUMENT_FIELDS).filter_map(|k| fields.get(k).map(|v| (k.to_string(), v.clone()))).collect();
+    if let Err(e) = crate::embroidery::setup_tab::open_at_tab_with(app, &own) {
         app.embroidery.image_window.back_to = None;
         app.status(e);
     }
@@ -508,6 +513,20 @@ pub(crate) fn poll(app: &mut VectorcraftApp) {
             // recomputes only from what the settings changed.
             let mut fields = live.fields.clone();
             fields.remove(STATE);
+            // After Document Setup's OK what it held is the document's: the window lets go of its
+            // own values of those settings and plans with the document's, matching its threads to
+            // the document's palette (the project owner's choice, 2026-11-15, „Jedne wartości
+            // (polecam)”). After Cancel they stay the window's.
+            if std::mem::take(&mut app.embroidery.setup_confirmed) {
+                for k in stitches_step::DOCUMENT_FIELDS {
+                    fields.remove(k);
+                }
+                let palette = app.session.active().map(|st| vectorcraft_engine::cmd::embroidery::thread_palette_id(&st.doc));
+                if let Some(palette) = palette.filter(|p| fields.get(PALETTE).and_then(Value::as_str) != Some(*p)) {
+                    fields.insert(PALETTE.into(), json!(palette));
+                    colour_list::drop_threads(&mut fields);
+                }
+            }
             app.ui.dialog = Some(Dialog::new(KIND, Value::Object(fields)));
             return;
         }

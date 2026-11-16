@@ -515,9 +515,12 @@ fn the_sewing_place_names_the_areas_either_side() {
     numbers.sort_unstable();
     assert_eq!(numbers, [1, 2, 3]);
     let first = places.iter().find(|p| p.number == 1).unwrap();
-    assert!(first.before.is_none() && first.after.as_ref().and_then(|a| a.number) == Some(2), "{first:?}");
+    assert!(first.before.is_none() && first.after.as_ref().and_then(|(a, _)| a.number) == Some(2), "{first:?}");
     let last = places.iter().find(|p| p.number == 3).unwrap();
-    assert!(last.after.is_none() && last.before.as_ref().and_then(|a| a.number) == Some(2), "{last:?}");
+    assert!(last.after.is_none() && last.before.as_ref().and_then(|(a, _)| a.number) == Some(2), "{last:?}");
+    // Each neighbour's key finds it.
+    let (facts, key) = first.after.clone().unwrap();
+    assert_eq!(out.find(&key).and_then(|(x, y)| out.area_at(x, y)).and_then(|f| f.number), facts.number);
 }
 
 /// The object an area was made into is in the made document, painted with the area's thread.
@@ -554,4 +557,20 @@ fn a_run_says_what_became_of_each_change() {
     let orange = |c: [u8; 3]| vectorcraft_stitch::color::delta_e_rgb(c, [ORANGE[0], ORANGE[1], ORANGE[2]]) < 1.0;
     assert!(matches!(states.first(), Some(super::pipeline::ChangeState::Applies(f)) if orange(f.color)), "{states:?}");
     assert_eq!(states.get(1), Some(&super::pipeline::ChangeState::Kept("otherColor")));
+}
+
+/// Show in Sewing Order's mask covers the areas sewn after an area, and nothing else.
+#[test]
+fn the_sewn_after_mask_covers_the_areas_sewn_later() {
+    let (_, _, out) = run_of(&three_squares(), json!({"colors": 3}));
+    let squares = [(50, 50), (150, 50), (250, 50)];
+    let number = |(x, y): (u32, u32)| out.area_at(x, y).and_then(|f| f.number).unwrap();
+    for at in squares {
+        let (w, _, mask) = out.sewn_after(at.0, at.1).unwrap();
+        for other in squares {
+            let flag = mask[(other.1 * w + other.0) as usize];
+            assert_eq!(flag == 1, number(other) > number(at), "{at:?} against {other:?}");
+        }
+        assert_eq!(mask[(5 * w + 5) as usize], 0, "the background never");
+    }
 }

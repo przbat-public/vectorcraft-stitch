@@ -7196,3 +7196,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	寬於 {wi
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	緞紋需要至少 {least} mm 寬的線：這條為 {width} mm。
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	緞紋可繡寬至 {most} mm 的部分：此區域寬 {width} mm。
 @plural	about {count} stitch|about {count} stitches	約 {count} 針
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	套用到 {count} 個相似區域
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	將此區域的針法和角度設定到顏色、類型相同且大小相近的區域。
+embroidery	Show in Sewing Order	在刺繡順序中顯示
+embroidery	Dims what is sewn after this area.	淡化此區域之後繡製的部分。
+embroidery	Sewn {number} of {of}, after {before}, before {after}	第 {number}/{of} 個繡製，在 {before} 之後、{after} 之前
+embroidery	Sewn {number} of {of}, before {after}	第 {number}/{of} 個繡製，在 {after} 之前
+embroidery	Sewn {number} of {of}, after {before}	第 {number}/{of} 個繡製，在 {before} 之後
+embroidery	Sewn {number} of {of}	第 {number}/{of} 個繡製
+embroidery	Previous area in sewing order	刺繡順序中的上一個區域
+embroidery	Next area in sewing order	刺繡順序中的下一個區域
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	區域變更
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	在預覽中按一下某個區域，可變更其針法或角度，或將其略過。其餘保持自動。
+embroidery	Remove this change	移除此變更
+embroidery	Reset All	全部重設
+embroidery	Another color lies here now	此處現在是另一種顏色
+embroidery	No area here now	此處現在沒有區域
+embroidery	Its area is a line now	其區域現在是線條
+embroidery	Its area is filled now	其區域現在是填充
+embroidery	Its color isn't sewn	其顏色不縫製

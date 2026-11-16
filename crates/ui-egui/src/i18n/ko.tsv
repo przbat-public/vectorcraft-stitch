@@ -7143,3 +7143,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width}mm�
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	새틴은 너비가 {least}mm 이상인 선이 필요합니다. 이 선은 {width}mm입니다.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	새틴은 너비 {most}mm까지의 부분을 수놓습니다. 이 영역의 너비는 {width}mm입니다.
 @plural	about {count} stitch|about {count} stitches	약 {count}땀
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	비슷한 영역 {count}개에 적용
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	이 영역의 스티치와 각도를 같은 색·종류이고 크기가 비슷한 영역에 설정합니다.
+embroidery	Show in Sewing Order	자수 순서에서 보기
+embroidery	Dims what is sewn after this area.	이 영역 다음에 수놓는 부분을 흐리게 표시합니다.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	{of}개 중 {number}번째로 수놓음({before} 다음, {after} 앞)
+embroidery	Sewn {number} of {of}, before {after}	{of}개 중 {number}번째로 수놓음({after} 앞)
+embroidery	Sewn {number} of {of}, after {before}	{of}개 중 {number}번째로 수놓음({before} 다음)
+embroidery	Sewn {number} of {of}	{of}개 중 {number}번째로 수놓음
+embroidery	Previous area in sewing order	자수 순서에서 이전 영역
+embroidery	Next area in sewing order	자수 순서에서 다음 영역
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	영역 변경
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	미리 보기에서 영역을 클릭하면 스티치나 각도를 바꾸거나 수놓지 않게 할 수 있습니다. 나머지는 자동으로 유지됩니다.
+embroidery	Remove this change	이 변경 제거
+embroidery	Reset All	모두 초기화
+embroidery	Another color lies here now	이제 여기에는 다른 색이 있습니다
+embroidery	No area here now	이제 여기에는 영역이 없습니다
+embroidery	Its area is a line now	해당 영역은 이제 선입니다
+embroidery	Its area is filled now	해당 영역은 이제 채움입니다
+embroidery	Its color isn't sewn	해당 색은 수놓지 않습니다

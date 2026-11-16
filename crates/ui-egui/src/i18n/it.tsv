@@ -7182,3 +7182,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Più larga
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Il raso richiede una linea larga almeno {least} mm: questa è di {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Il raso ricama parti fino a {most} mm: quest’area è larga {width} mm.
 @plural	about {count} stitch|about {count} stitches	circa {count} punto|circa {count} punti
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Applica a {count} area simile|Applica a {count} aree simili
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Applica il punto e l’angolo di quest’area alle aree dello stesso colore e tipo e di dimensioni simili.
+embroidery	Show in Sewing Order	Mostra nell’ordine di cucitura
+embroidery	Dims what is sewn after this area.	Attenua ciò che viene cucito dopo quest’area.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Cucita in posizione {number} su {of}, dopo {before}, prima di {after}
+embroidery	Sewn {number} of {of}, before {after}	Cucita in posizione {number} su {of}, prima di {after}
+embroidery	Sewn {number} of {of}, after {before}	Cucita in posizione {number} su {of}, dopo {before}
+embroidery	Sewn {number} of {of}	Cucita in posizione {number} su {of}
+embroidery	Previous area in sewing order	Area precedente nell’ordine di cucitura
+embroidery	Next area in sewing order	Area successiva nell’ordine di cucitura
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Modifiche delle aree
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Fai clic su un’area nell’anteprima per cambiarne il punto o l’angolo, o per ometterla. Il resto rimane automatico.
+embroidery	Remove this change	Rimuovi questa modifica
+embroidery	Reset All	Ripristina tutto
+embroidery	Another color lies here now	Ora qui c’è un altro colore
+embroidery	No area here now	Ora qui non c’è nessuna area
+embroidery	Its area is a line now	La sua area ora è una linea
+embroidery	Its area is filled now	La sua area ora è piena
+embroidery	Its color isn't sewn	Il suo colore non è ricamato

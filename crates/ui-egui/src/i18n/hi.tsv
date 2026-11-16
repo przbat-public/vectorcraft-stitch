@@ -8941,3 +8941,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	सैटिन के लिए रेखा कम से कम {least} mm चौड़ी चाहिए: यह {width} mm है।
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	सैटिन {most} mm तक के भाग सिलता है: यह क्षेत्र {width} mm चौड़ा है।
 @plural	about {count} stitch|about {count} stitches	लगभग {count} स्टिच|लगभग {count} स्टिच
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	{count} समान क्षेत्र पर लागू करें|{count} समान क्षेत्रों पर लागू करें
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	इस क्षेत्र का स्टिच और कोण उसी रंग और प्रकार के लगभग समान आकार वाले क्षेत्रों पर लगाता है।
+embroidery	Show in Sewing Order	सिलाई क्रम में दिखाएँ
+embroidery	Dims what is sewn after this area.	इस क्षेत्र के बाद सिलने वाला भाग धुँधला करता है।
+embroidery	Sewn {number} of {of}, after {before}, before {after}	{of} में से {number}वें स्थान पर सिला जाता है, {before} के बाद, {after} से पहले
+embroidery	Sewn {number} of {of}, before {after}	{of} में से {number}वें स्थान पर सिला जाता है, {after} से पहले
+embroidery	Sewn {number} of {of}, after {before}	{of} में से {number}वें स्थान पर सिला जाता है, {before} के बाद
+embroidery	Sewn {number} of {of}	{of} में से {number}वें स्थान पर सिला जाता है
+embroidery	Previous area in sewing order	सिलाई क्रम में पिछला क्षेत्र
+embroidery	Next area in sewing order	सिलाई क्रम में अगला क्षेत्र
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	क्षेत्र बदलाव
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	किसी क्षेत्र का स्टिच या कोण बदलने या उसे छोड़ने के लिए पूर्वावलोकन में उस पर क्लिक करें। बाकी स्वचालित रहता है।
+embroidery	Remove this change	यह बदलाव हटाएँ
+embroidery	Reset All	सब रीसेट करें
+embroidery	Another color lies here now	अब यहाँ कोई दूसरा रंग है
+embroidery	No area here now	अब यहाँ कोई क्षेत्र नहीं है
+embroidery	Its area is a line now	इसका क्षेत्र अब एक रेखा है
+embroidery	Its area is filled now	इसका क्षेत्र अब भरा हुआ है
+embroidery	Its color isn't sewn	इसका रंग नहीं सिला जाता

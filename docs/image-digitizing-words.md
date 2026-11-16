@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-16 · **Change:** the area inspector: an area's facts, how Auto sews it and why, why Satin isn't offered, and its stitches (the inspector PR); before that, Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-16 · **Change:** Apply to Similar Areas, Show in Sewing Order and its place, step 4's list of area changes and why one applies to none; before that, the area inspector: an area's facts, how Auto sews it and why, why Satin isn't offered, and its stitches (the inspector PR); before that, Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -247,6 +247,30 @@ A click on an area of the preview opens it beside the area. Its stitch names, Au
 | Satin needs a line at least {least} mm wide: this one is {width} mm. | Satyna wymaga linii o szerokości co najmniej {least} mm: ta ma {width} mm. |
 | Satin sews parts up to {most} mm: this area is {width} mm wide. | Satyna szyje części do {most} mm: ten obszar ma {width} mm szerokości. |
 | about {count} stitch\|about {count} stitches | ok. {count} ścieg\|ok. {count} ściegi\|ok. {count} ściegów |
+| Apply to {count} Similar Area\|Apply to {count} Similar Areas | Zastosuj do {count} podobnego obszaru\|Zastosuj do {count} podobnych obszarów\|Zastosuj do {count} podobnych obszarów |
+| Sets this area's stitch and angle on the areas of its color and kind about its size. | Ustawia ścieg i kąt tego obszaru na obszarach tego samego koloru i rodzaju o podobnej wielkości. |
+| Show in Sewing Order | Pokaż w kolejności szycia |
+| Dims what is sewn after this area. | Przygasza to, co jest szyte po tym obszarze. |
+| Sewn {number} of {of}, after {before}, before {after} | Szyty jako {number}. z {of}, po {before}, przed {after} |
+| Sewn {number} of {of}, before {after} | Szyty jako {number}. z {of}, przed {after} |
+| Sewn {number} of {of}, after {before} | Szyty jako {number}. z {of}, po {before} |
+| Sewn {number} of {of} | Szyty jako {number}. z {of} |
+| Previous area in sewing order | Poprzedni obszar w kolejności szycia |
+| Next area in sewing order | Następny obszar w kolejności szycia |
+
+The Stitches step's list of area changes (the mockup's Polish heading and help line):
+
+| English | Polish |
+|---|---|
+| Area changes | Nadpisania obszarów |
+| Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic. | Kliknij obszar na podglądzie, aby zmienić ścieg, kąt albo go pominąć. Reszta zostaje automatyczna. |
+| Remove this change | Usuń to nadpisanie |
+| Reset All | Resetuj wszystko |
+| Another color lies here now | W tym miejscu jest teraz inny kolor |
+| No area here now | W tym miejscu nie ma teraz obszaru |
+| Its area is a line now | Jego obszar jest teraz linią |
+| Its area is filled now | Jego obszar jest teraz wypełniony |
+| Its color isn't sewn | Jego kolor nie jest szyty |
 
 ## The Live bar, its notes, and Create
 
@@ -296,3 +320,4 @@ A click on an area of the preview opens it beside the area. Its stitch names, Au
 | 2026-11-13 | update | The Stitches step's rules made short enough for their fields: the thin lines' "Running stitch" (the panel's word, "along the middle" said in the Shapes step), the rows' spacing "Tatami, {value}". |
 | 2026-11-15 | update | The review of PR #38: Embroidery Settings…'s tooltip says "when Document Setup closes" („po zamknięciu Ustawień dokumentu”), as "it" read as this window; the Shapes step's slider notes say „Wyżej/Niżej” for "Higher/Lower" (a slider's value, not an amount). |
 | 2026-11-16 | update | The area inspector: an area's facts line, how Auto sews it and why (its kind, its width against narrow parts as satin), that a stitch was chosen for it, why Satin isn't offered (a filled area past 12 mm, a line under 1 mm), and its stitches as planned. |
+| 2026-11-16 | update | Apply to Similar Areas and its tooltip, Show in Sewing Order and the area's place in the order with ◀ ▶ named for screen readers, and the Stitches step's list of area changes: its heading and help line (the mockup's Polish), ↺, Reset All, and why a change applies to none. |

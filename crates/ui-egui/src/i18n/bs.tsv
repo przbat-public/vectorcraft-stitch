@@ -7357,3 +7357,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Šire od {
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Saten traži liniju široku najmanje {least} mm: ova ima {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Saten veze dijelove do {most} mm: ovo područje je široko {width} mm.
 @plural	about {count} stitch|about {count} stitches	oko {count} bod|oko {count} boda|oko {count} bodova
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Primijeni na {count} slično područje|Primijeni na {count} slična područja|Primijeni na {count} sličnih područja
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Postavlja bod i ugao ovog područja na područja iste boje i vrste i slične veličine.
+embroidery	Show in Sewing Order	Prikaži u redoslijedu šivenja
+embroidery	Dims what is sewn after this area.	Zatamnjuje ono što se šije poslije ovog područja.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Šije se {number}. od {of}, poslije {before}, prije {after}
+embroidery	Sewn {number} of {of}, before {after}	Šije se {number}. od {of}, prije {after}
+embroidery	Sewn {number} of {of}, after {before}	Šije se {number}. od {of}, poslije {before}
+embroidery	Sewn {number} of {of}	Šije se {number}. od {of}
+embroidery	Previous area in sewing order	Prethodno područje u redoslijedu šivenja
+embroidery	Next area in sewing order	Sljedeće područje u redoslijedu šivenja
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Izmjene područja
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Kliknite područje u pregledu da promijenite njegov bod ili ugao ili da ga izostavite. Ostalo ostaje automatsko.
+embroidery	Remove this change	Ukloni ovu izmjenu
+embroidery	Reset All	Poništi sve
+embroidery	Another color lies here now	Ovdje je sada druga boja
+embroidery	No area here now	Ovdje sada nema područja
+embroidery	Its area is a line now	Njegovo područje je sada linija
+embroidery	Its area is filled now	Njegovo područje je sada ispunjeno
+embroidery	Its color isn't sewn	Njegova boja se ne veze

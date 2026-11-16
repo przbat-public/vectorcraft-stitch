@@ -7515,3 +7515,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Saten en az {least} mm genişliğinde bir çizgi ister: bu çizgi {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Saten en fazla {most} mm genişliğindeki bölümleri diker: bu alan {width} mm genişliğinde.
 @plural	about {count} stitch|about {count} stitches	yaklaşık {count} dikiş
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	{count} benzer alana uygula
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Bu alanın dikişini ve açısını aynı renk ve türdeki, yaklaşık aynı boyuttaki alanlara uygular.
+embroidery	Show in Sewing Order	Dikiş sırasında göster
+embroidery	Dims what is sewn after this area.	Bu alandan sonra dikilenleri soluklaştırır.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	{of} alan içinde {number}. sırada dikilir; önce {before}, sonra {after}
+embroidery	Sewn {number} of {of}, before {after}	{of} alan içinde {number}. sırada dikilir; sonra {after}
+embroidery	Sewn {number} of {of}, after {before}	{of} alan içinde {number}. sırada dikilir; önce {before}
+embroidery	Sewn {number} of {of}	{of} alan içinde {number}. sırada dikilir
+embroidery	Previous area in sewing order	Dikiş sırasında önceki alan
+embroidery	Next area in sewing order	Dikiş sırasında sonraki alan
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Alan değişiklikleri
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Dikişini veya açısını değiştirmek ya da atlamak için önizlemede bir alana tıklayın. Gerisi otomatik kalır.
+embroidery	Remove this change	Bu değişikliği kaldır
+embroidery	Reset All	Tümünü sıfırla
+embroidery	Another color lies here now	Burada artık başka bir renk var
+embroidery	No area here now	Burada artık alan yok
+embroidery	Its area is a line now	Alanı artık bir çizgi
+embroidery	Its area is filled now	Alanı artık dolgu
+embroidery	Its color isn't sewn	Rengi dikilmez

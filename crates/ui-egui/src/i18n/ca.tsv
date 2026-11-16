@@ -7542,3 +7542,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Més ampla
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	El setí necessita una línia d’almenys {least} mm d’amplada: aquesta fa {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	El setí brodeja parts de fins a {most} mm: aquesta àrea fa {width} mm d’amplada.
 @plural	about {count} stitch|about {count} stitches	aprox. {count} puntada|aprox. {count} puntades
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Aplica a {count} àrea semblant|Aplica a {count} àrees semblants
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Aplica el punt i l’angle d’aquesta àrea a les àrees del seu color i tipus i de mida semblant.
+embroidery	Show in Sewing Order	Mostra en l’ordre de cosit
+embroidery	Dims what is sewn after this area.	Atenua el que es cus després d’aquesta àrea.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Es cus en la posició {number} de {of}, després de {before}, abans de {after}
+embroidery	Sewn {number} of {of}, before {after}	Es cus en la posició {number} de {of}, abans de {after}
+embroidery	Sewn {number} of {of}, after {before}	Es cus en la posició {number} de {of}, després de {before}
+embroidery	Sewn {number} of {of}	Es cus en la posició {number} de {of}
+embroidery	Previous area in sewing order	Àrea anterior en l’ordre de cosit
+embroidery	Next area in sewing order	Àrea següent en l’ordre de cosit
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Canvis d’àrees
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Feu clic en una àrea de la previsualització per canviar-ne el punt o l’angle, o per ometre-la. La resta es manté automàtica.
+embroidery	Remove this change	Elimina aquest canvi
+embroidery	Reset All	Restableix-ho tot
+embroidery	Another color lies here now	Ara aquí hi ha un altre color
+embroidery	No area here now	Ara aquí no hi ha cap àrea
+embroidery	Its area is a line now	La seva àrea ara és una línia
+embroidery	Its area is filled now	La seva àrea ara és plena
+embroidery	Its color isn't sewn	El seu color no es brodeja

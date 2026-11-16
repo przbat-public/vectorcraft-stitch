@@ -7372,3 +7372,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Breder dan
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satijn vraagt een lijn van minstens {least} mm breed: deze is {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satijn borduurt delen tot {most} mm: dit vlak is {width} mm breed.
 @plural	about {count} stitch|about {count} stitches	ongeveer {count} steek|ongeveer {count} steken
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Toepassen op {count} vergelijkbaar vlak|Toepassen op {count} vergelijkbare vlakken
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Geeft de vlakken van dezelfde kleur en soort en ongeveer dezelfde grootte de steek en hoek van dit vlak.
+embroidery	Show in Sewing Order	Tonen in borduurvolgorde
+embroidery	Dims what is sewn after this area.	Dimt wat na dit vlak wordt geborduurd.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Geborduurd als {number} van {of}, na {before}, vóór {after}
+embroidery	Sewn {number} of {of}, before {after}	Geborduurd als {number} van {of}, vóór {after}
+embroidery	Sewn {number} of {of}, after {before}	Geborduurd als {number} van {of}, na {before}
+embroidery	Sewn {number} of {of}	Geborduurd als {number} van {of}
+embroidery	Previous area in sewing order	Vorig vlak in de borduurvolgorde
+embroidery	Next area in sewing order	Volgend vlak in de borduurvolgorde
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Vlakwijzigingen
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Klik op een vlak in de voorvertoning om de steek of hoek te wijzigen of het over te slaan. De rest blijft automatisch.
+embroidery	Remove this change	Deze wijziging verwijderen
+embroidery	Reset All	Alles herstellen
+embroidery	Another color lies here now	Hier ligt nu een andere kleur
+embroidery	No area here now	Hier ligt nu geen vlak
+embroidery	Its area is a line now	Het vlak is nu een lijn
+embroidery	Its area is filled now	Het vlak is nu gevuld
+embroidery	Its color isn't sewn	De kleur wordt niet geborduurd

@@ -16,6 +16,9 @@
 //! - **The angle** of a filled area's rows: Auto (the document's), or a degree of its own, ↺ back.
 //! - **A change** is the window's `areaChanges` entry for the area: one per area, under the key of
 //!   the change that already applied to it if one did; Auto with no angle of its own removes it.
+//! - **Apply to Similar Areas** sets the area's stitch and angle on the areas of its colour and kind
+//!   about its size (outlined in the preview while the button is hovered); **Show in Sewing
+//!   Order** dims what is sewn after the area and says where it is sewn, ◀ ▶ walking the order.
 
 use egui::{Color32, Id, Pos2, Rect, RichText, Ui, vec2};
 use serde_json::{Map, Value, json};
@@ -52,10 +55,14 @@ const ANGLE_DECIMALS: usize = 1;
 const FILL_CHOICES: [&str; 4] = ["auto", "tatami", "satin", "none"];
 const LINE_CHOICES: [&str; 4] = ["auto", "running", "satin", "none"];
 
-/// The area the inspector is open on, by the key it follows its area with.
+/// The area the inspector is open on, by the key it follows its area with; whether it shows the
+/// area's place in the sewing order (the preview dimming what is sewn after it), and whether Apply
+/// to Similar Areas is hovered (the preview outlining them).
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Inspected {
     pub(crate) key: AreaKey,
+    pub(crate) order: bool,
+    pub(crate) similar_shown: bool,
 }
 
 /// The popover's id in egui's memory, which holds one open popup at a time: another opened closes
@@ -77,7 +84,7 @@ pub(crate) fn clicked(
         Some(key) => {
             // Under the key of a change already applying to it, so that its edits change that one.
             let key = applying(fields, outputs, &key).unwrap_or(key);
-            *inspector = Some(Inspected { key });
+            *inspector = Some(Inspected { key, order: false, similar_shown: false });
             egui::Popup::open_id(ctx, popup_id());
         }
         None => close(ctx, inspector),
@@ -103,7 +110,7 @@ pub(crate) fn show(
     to_screen: impl Fn(Point) -> Pos2,
 ) {
     let ctx = ui.ctx().clone();
-    let Some(open) = inspector.clone() else { return };
+    let Some(mut open) = inspector.clone() else { return };
     if !egui::Popup::is_id_open(&ctx, popup_id()) || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         return close(&ctx, inspector);
     }
@@ -118,9 +125,10 @@ pub(crate) fn show(
     egui::Area::new(popup_id()).order(egui::Order::Foreground).fixed_pos(Pos2::new(left, rect.top())).constrain_to(pane).show(&ctx, |ui| {
         egui::Frame::popup(ui.style()).show(ui, |ui| {
             ui.set_width(WIDTH);
-            body(ui, fields, outputs, &open.key, at, &facts);
+            body(ui, fields, outputs, &mut open, at, &facts);
         });
     });
+    *inspector = Some(open);
 }
 
 /// The box on screen of `path` (document points).
@@ -132,7 +140,8 @@ fn screen_box(path: &vectorcraft_geom::BezPath, to_screen: &impl Fn(Point) -> Po
 
 /// The popover's contents for the area under working pixel `at`, whose facts are `facts`, inspected
 /// by `key`.
-fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs, key: &AreaKey, at: (u32, u32), facts: &AreaFacts) {
+fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs, open: &mut Inspected, at: (u32, u32), facts: &AreaFacts) {
+    let key = &open.key.clone();
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current();
     let mm = |v: f64| numbers::decimal(lang, v, MM_DECIMALS);
@@ -193,6 +202,70 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
     if let Some(n) = part["sewing"]["stitches"].as_u64() {
         ui.add_space(GAP);
         ui.label(RichText::new(crate::etn!(n, "about {count} stitch", "about {count} stitches")).small().color(t.text_dim));
+    }
+    // The areas like it, and its place in the sewing order.
+    ui.add_space(GAP);
+    let similar = outputs.similar(at.0, at.1);
+    open.similar_shown = false;
+    ui.horizontal_wrapped(|ui| {
+        if !similar.is_empty() {
+            let n = u64::try_from(similar.len()).unwrap_or(u64::MAX);
+            let words = crate::etn!(n, "Apply to {count} Similar Area", "Apply to {count} Similar Areas");
+            let tip = crate::et!("Sets this area's stitch and angle on the areas of its color and kind about its size.");
+            let resp = ui.add_enabled(stitch.is_some() || angle.is_some(), egui::Button::new(words)).on_hover_text(tip);
+            // Outlined while the pointer is on it, greyed out too: which areas are alike.
+            open.similar_shown = resp.contains_pointer();
+            if resp.clicked() {
+                for k in &similar {
+                    set(fields, outputs, k, stitch.as_deref(), angle);
+                }
+            }
+        }
+        let order =
+            ui.selectable_label(open.order, crate::et!("Show in Sewing Order")).on_hover_text(crate::et!("Dims what is sewn after this area."));
+        if order.clicked() {
+            open.order = !open.order;
+        }
+    });
+    if open.order {
+        place_row(ui, outputs, open, at, lang);
+    }
+}
+
+/// Where the area is sewn, in words ("Sewn 2 of 5, after Blue Ink 1, before Orange 1"), with ◀ ▶
+/// moving the inspector to the area sewn before or after it.
+fn place_row(ui: &mut Ui, outputs: &DigitizeOutputs, open: &mut Inspected, at: (u32, u32), lang: crate::i18n::Lang) {
+    let t = Tokens::get(ui.ctx());
+    let Some(place) = outputs.sewing_place(at.0, at.1) else { return };
+    let count = |n: usize| numbers::count(lang, u64::try_from(n).unwrap_or(u64::MAX));
+    let (number, of) = (count(place.number), count(place.of));
+    let before = place.before.as_ref().map(|(f, _)| super::preview::area_name(f));
+    let after = place.after.as_ref().map(|(f, _)| super::preview::area_name(f));
+    let words = match (&before, &after) {
+        (Some(b), Some(a)) => fill(
+            crate::et!("Sewn {number} of {of}, after {before}, before {after}"),
+            &[("number", &number), ("of", &of), ("before", b), ("after", a)],
+        ),
+        (None, Some(a)) => fill(crate::et!("Sewn {number} of {of}, before {after}"), &[("number", &number), ("of", &of), ("after", a)]),
+        (Some(b), None) => fill(crate::et!("Sewn {number} of {of}, after {before}"), &[("number", &number), ("of", &of), ("before", b)]),
+        (None, None) => fill(crate::et!("Sewn {number} of {of}"), &[("number", &number), ("of", &of)]),
+    };
+    let mut to = None;
+    ui.horizontal_wrapped(|ui| {
+        for (glyph, name, next) in [
+            ("◀", crate::et!("Previous area in sewing order"), place.before.as_ref().map(|(_, k)| k)),
+            ("▶", crate::et!("Next area in sewing order"), place.after.as_ref().map(|(_, k)| k)),
+        ] {
+            let resp = ui.add_enabled(next.is_some(), egui::Button::new(glyph)).on_hover_text(name);
+            resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, next.is_some(), name));
+            if resp.clicked() {
+                to = next.cloned();
+            }
+        }
+        ui.label(RichText::new(words).small().color(t.text_dim));
+    });
+    if let Some(k) = to {
+        open.key = k;
     }
 }
 

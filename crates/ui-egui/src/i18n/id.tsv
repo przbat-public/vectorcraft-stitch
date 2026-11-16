@@ -7321,3 +7321,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Lebih leba
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin memerlukan garis selebar paling sedikit {least} mm: garis ini {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin menjahit bagian hingga {most} mm: area ini selebar {width} mm.
 @plural	about {count} stitch|about {count} stitches	sekitar {count} jahitan
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Terapkan ke {count} area serupa
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Menerapkan jahitan dan sudut area ini ke area dengan warna dan jenis yang sama serta ukuran yang mirip.
+embroidery	Show in Sewing Order	Tampilkan dalam urutan jahit
+embroidery	Dims what is sewn after this area.	Meredupkan yang dijahit setelah area ini.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Dijahit ke-{number} dari {of}, setelah {before}, sebelum {after}
+embroidery	Sewn {number} of {of}, before {after}	Dijahit ke-{number} dari {of}, sebelum {after}
+embroidery	Sewn {number} of {of}, after {before}	Dijahit ke-{number} dari {of}, setelah {before}
+embroidery	Sewn {number} of {of}	Dijahit ke-{number} dari {of}
+embroidery	Previous area in sewing order	Area sebelumnya dalam urutan jahit
+embroidery	Next area in sewing order	Area berikutnya dalam urutan jahit
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Perubahan area
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Klik area di pratinjau untuk mengubah jahitan atau sudutnya, atau untuk melewatinya. Sisanya tetap otomatis.
+embroidery	Remove this change	Hapus perubahan ini
+embroidery	Reset All	Atur ulang semua
+embroidery	Another color lies here now	Sekarang ada warna lain di sini
+embroidery	No area here now	Sekarang tidak ada area di sini
+embroidery	Its area is a line now	Areanya sekarang berupa garis
+embroidery	Its area is filled now	Areanya sekarang terisi
+embroidery	Its color isn't sewn	Warnanya tidak dibordir

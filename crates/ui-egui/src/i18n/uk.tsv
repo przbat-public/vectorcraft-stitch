@@ -7162,3 +7162,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Ширша
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Для гладі потрібна лінія завширшки щонайменше {least} мм: ця — {width} мм.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Гладь вишиває частини завширшки до {most} мм: ця область завширшки {width} мм.
 @plural	about {count} stitch|about {count} stitches	приблизно {count} стібок|приблизно {count} стібки|приблизно {count} стібків
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Застосувати до {count} схожої області|Застосувати до {count} схожих областей|Застосувати до {count} схожих областей
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Задає стібок і кут цієї області областям того самого кольору й виду приблизно того самого розміру.
+embroidery	Show in Sewing Order	Показати в порядку вишивання
+embroidery	Dims what is sewn after this area.	Приглушує те, що вишивається після цієї області.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Вишивається {number}-ю з {of}, після «{before}», перед «{after}»
+embroidery	Sewn {number} of {of}, before {after}	Вишивається {number}-ю з {of}, перед «{after}»
+embroidery	Sewn {number} of {of}, after {before}	Вишивається {number}-ю з {of}, після «{before}»
+embroidery	Sewn {number} of {of}	Вишивається {number}-ю з {of}
+embroidery	Previous area in sewing order	Попередня область у порядку вишивання
+embroidery	Next area in sewing order	Наступна область у порядку вишивання
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Зміни областей
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Клацніть область у перегляді, щоб змінити її стібок чи кут або пропустити її. Решта лишається автоматичною.
+embroidery	Remove this change	Вилучити цю зміну
+embroidery	Reset All	Скинути все
+embroidery	Another color lies here now	Тут тепер інший колір
+embroidery	No area here now	Тут тепер немає області
+embroidery	Its area is a line now	Її область тепер лінія
+embroidery	Its area is filled now	Її область тепер заливка
+embroidery	Its color isn't sewn	Її колір не вишивається

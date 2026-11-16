@@ -7321,3 +7321,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Bredere en
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin kræver en linje på mindst {least} mm: denne er {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin syr dele op til {most} mm: dette område er {width} mm bredt.
 @plural	about {count} stitch|about {count} stitches	ca. {count} sting|ca. {count} sting
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Anvend på {count} lignende område|Anvend på {count} lignende områder
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Giver områder i samme farve og slags og omtrent samme størrelse dette områdes sting og vinkel.
+embroidery	Show in Sewing Order	Vis i syrækkefølgen
+embroidery	Dims what is sewn after this area.	Dæmper det, der sys efter dette område.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Sys som nr. {number} af {of}, efter {before}, før {after}
+embroidery	Sewn {number} of {of}, before {after}	Sys som nr. {number} af {of}, før {after}
+embroidery	Sewn {number} of {of}, after {before}	Sys som nr. {number} af {of}, efter {before}
+embroidery	Sewn {number} of {of}	Sys som nr. {number} af {of}
+embroidery	Previous area in sewing order	Forrige område i syrækkefølgen
+embroidery	Next area in sewing order	Næste område i syrækkefølgen
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Ændringer af områder
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Klik på et område i forhåndsvisningen for at ændre dets sting eller vinkel eller udelade det. Resten forbliver automatisk.
+embroidery	Remove this change	Fjern denne ændring
+embroidery	Reset All	Nulstil alle
+embroidery	Another color lies here now	Her ligger nu en anden farve
+embroidery	No area here now	Her er nu intet område
+embroidery	Its area is a line now	Dets område er nu en linje
+embroidery	Its area is filled now	Dets område er nu udfyldt
+embroidery	Its color isn't sewn	Dets farve broderes ikke

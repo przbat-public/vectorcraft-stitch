@@ -7546,3 +7546,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Szélesebb
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	A szaténhoz legalább {least} mm széles vonal kell: ez {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	A szatén legfeljebb {most} mm-es részeket hímez: ez a terület {width} mm széles.
 @plural	about {count} stitch|about {count} stitches	kb. {count} öltés
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Alkalmazás {count} hasonló területre
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ennek a területnek az öltését és szögét beállítja az azonos színű és fajtájú, nagyjából azonos méretű területekre.
+embroidery	Show in Sewing Order	Megjelenítés a varrási sorrendben
+embroidery	Dims what is sewn after this area.	Halványítja azt, amit e terület után varr.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Varrás: {number}./{of}, {before} után, {after} előtt
+embroidery	Sewn {number} of {of}, before {after}	Varrás: {number}./{of}, {after} előtt
+embroidery	Sewn {number} of {of}, after {before}	Varrás: {number}./{of}, {before} után
+embroidery	Sewn {number} of {of}	Varrás: {number}./{of}
+embroidery	Previous area in sewing order	Előző terület a varrási sorrendben
+embroidery	Next area in sewing order	Következő terület a varrási sorrendben
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Területmódosítások
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Kattintson egy területre az előnézetben az öltése vagy szöge módosításához, vagy a kihagyásához. A többi automatikus marad.
+embroidery	Remove this change	A módosítás eltávolítása
+embroidery	Reset All	Összes visszaállítása
+embroidery	Another color lies here now	Itt most másik szín van
+embroidery	No area here now	Itt most nincs terület
+embroidery	Its area is a line now	A területe most vonal
+embroidery	Its area is filled now	A területe most kitöltött
+embroidery	Its color isn't sewn	A színe nincs kihímezve

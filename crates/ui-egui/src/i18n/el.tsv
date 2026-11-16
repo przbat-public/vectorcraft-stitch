@@ -7514,3 +7514,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Φαρδύ
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Το σατέν θέλει γραμμή πλάτους τουλάχιστον {least} mm: αυτή είναι {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Το σατέν κεντά τμήματα έως {most} mm: αυτή η περιοχή έχει πλάτος {width} mm.
 @plural	about {count} stitch|about {count} stitches	περίπου {count} βελονιά|περίπου {count} βελονιές
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Εφαρμογή σε {count} παρόμοια περιοχή|Εφαρμογή σε {count} παρόμοιες περιοχές
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ορίζει τη βελονιά και τη γωνία αυτής της περιοχής στις περιοχές ίδιου χρώματος και είδους και παρόμοιου μεγέθους.
+embroidery	Show in Sewing Order	Εμφάνιση στη σειρά ραφής
+embroidery	Dims what is sewn after this area.	Αχνίζει ό,τι ράβεται μετά από αυτή την περιοχή.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Ράβεται {number}η από {of}, μετά από {before}, πριν από {after}
+embroidery	Sewn {number} of {of}, before {after}	Ράβεται {number}η από {of}, πριν από {after}
+embroidery	Sewn {number} of {of}, after {before}	Ράβεται {number}η από {of}, μετά από {before}
+embroidery	Sewn {number} of {of}	Ράβεται {number}η από {of}
+embroidery	Previous area in sewing order	Προηγούμενη περιοχή στη σειρά ραφής
+embroidery	Next area in sewing order	Επόμενη περιοχή στη σειρά ραφής
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Αλλαγές περιοχών
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Κάντε κλικ σε μια περιοχή στην προεπισκόπηση για να αλλάξετε τη βελονιά ή τη γωνία της ή να την παραλείψετε. Τα υπόλοιπα μένουν αυτόματα.
+embroidery	Remove this change	Αφαίρεση αυτής της αλλαγής
+embroidery	Reset All	Επαναφορά όλων
+embroidery	Another color lies here now	Εδώ βρίσκεται τώρα άλλο χρώμα
+embroidery	No area here now	Εδώ δεν υπάρχει πλέον περιοχή
+embroidery	Its area is a line now	Η περιοχή της είναι τώρα γραμμή
+embroidery	Its area is filled now	Η περιοχή της είναι τώρα γεμάτη
+embroidery	Its color isn't sewn	Το χρώμα της δεν κεντιέται

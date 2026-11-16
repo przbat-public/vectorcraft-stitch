@@ -26,6 +26,7 @@
 pub(crate) mod colour_list;
 mod colours_step;
 pub(crate) mod frame;
+mod history;
 mod image_step;
 pub(crate) mod inspector;
 pub(crate) mod live_bar;
@@ -123,6 +124,8 @@ pub(crate) struct Live {
     pub(crate) colours: colour_list::State,
     /// The area the inspector is open on.
     pub(crate) inspector: Option<inspector::Inspected>,
+    /// Undo inside the window.
+    pub(crate) history: history::History,
     /// The figures last shown: kept, dimmed, while a newer result is on its way or the settings
     /// can't be digitized.
     figures: Option<crate::embroidery::counters::Figures>,
@@ -325,6 +328,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             preview: preview::Preview::default(),
             colours: colour_list::State::default(),
             inspector: None,
+            history: history::History::default(),
             figures: None,
             announced: String::new(),
             reply: None,
@@ -337,6 +341,17 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             refused: false,
         };
         app.embroidery.image_window.live = Some(live);
+    }
+    // Undo inside the window: Shift+Cmd/Ctrl+Z, then Cmd/Ctrl+Z (which egui matches with Shift
+    // too), unless a field being typed in takes the keys for its own undo.
+    if !ctx.egui_wants_keyboard_input()
+        && let Some(live) = app.embroidery.image_window.live.as_mut()
+    {
+        if ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND | Modifiers::SHIFT, Key::Z)) {
+            live.history.redo(&mut d.fields);
+        } else if ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::Z)) {
+            live.history.undo(&mut d.fields);
+        }
     }
     let params = params_of(&d.fields);
     if let Some(live) = app.embroidery.image_window.live.as_mut() {
@@ -388,6 +403,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
     }
     let Some(live) = app.embroidery.image_window.live.as_mut() else { return };
     d.fields.insert(STATE.into(), state_json(live, now));
+    live.history.note(&d.fields, ctx.input(|i| i.pointer.any_down()));
     live.fields = d.fields.clone();
     if live.schedule.busy() {
         ctx.request_repaint_after(std::time::Duration::from_secs_f64(PROGRESS_REPAINT_SECS));

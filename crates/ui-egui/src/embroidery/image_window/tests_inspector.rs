@@ -187,3 +187,165 @@ fn a_click_on_another_area_moves_the_inspector_there() {
     // The click is no click elsewhere that closes it: the popup open in egui's memory.
     assert!(egui::Popup::is_id_open(&ctx, super::inspector::popup_id()), "open in egui's memory");
 }
+
+/// A picture placed at its 72 ppi: two orange squares 14 mm a side and a navy one, on white.
+fn three_squares() -> image::RgbaImage {
+    image::RgbaImage::from_fn(200, 100, |x, y| {
+        let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
+        image::Rgba(if inside([10, 10, 50, 50]) || inside([70, 10, 110, 50]) {
+            [240, 130, 20, 255]
+        } else if inside([130, 10, 170, 50]) {
+            [20, 40, 120, 255]
+        } else {
+            [255, 255, 255, 255]
+        })
+    })
+}
+
+/// A screen reader's click of the control it calls `name`, whatever its role.
+fn press_named(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str) {
+    let role = nodes(app, ctx, time).iter().find(|(_, n)| n.label() == Some(name)).map(|(_, n)| n.role()).unwrap_or_else(|| panic!("no {name}"));
+    press(app, ctx, time, name, role);
+}
+
+/// Apply to Similar Areas sets the area's stitch on each area like it: the two orange squares.
+#[test]
+fn apply_to_similar_areas_changes_each() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    press_named(&mut app, &ctx, &mut time, "Apply to 1 Similar Area");
+    let changes = window_field(&app, "areaChanges").expect("changes");
+    let all = changes.as_array().cloned().unwrap_or_default();
+    assert_eq!(all.len(), 2, "{changes}");
+    assert!(all.iter().all(|c| c["stitch"] == json!("tatami") && c["color"] == all[0]["color"]), "{changes}");
+    until(&mut app, &ctx, &mut time, ready);
+    let r = reply(&mut app);
+    assert!(r["areaChanges"].as_array().is_some_and(|s| s.iter().all(|s| s["applies"] == json!(true))), "{}", r["areaChanges"]);
+}
+
+/// While Apply to Similar Areas is hovered, the preview outlines the areas it would change.
+#[test]
+fn the_similar_areas_are_outlined_while_the_button_is_hovered() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    let at = super::tests::centre_of(&mut app, &ctx, &mut time, "Apply to 1 Similar Area", Role::Button);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at)]);
+    assert!(live(&app).inspector.as_ref().is_some_and(|i| i.similar_shown), "hovered");
+}
+
+/// Show in Sewing Order says where the area is sewn, and ▶ moves the inspector to the area sewn
+/// next.
+#[test]
+fn show_in_sewing_order_says_its_place_and_steps_through() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    let first = inspected(&app).and_then(|f| f.number).expect("a number");
+    press_named(&mut app, &ctx, &mut time, "Show in Sewing Order");
+    assert!(says(&mut app, &ctx, &mut time, "Sewn "), "its place said");
+    let name = if first < 3 { "Next area in sewing order" } else { "Previous area in sewing order" };
+    press(&mut app, &ctx, &mut time, name, Role::Button);
+    let now = inspected(&app).and_then(|f| f.number).expect("still open");
+    assert_eq!(now.abs_diff(first), 1, "moved to the area sewn next to it");
+    assert!(live(&app).inspector.as_ref().is_some_and(|i| i.order), "still showing the order");
+}
+
+/// The number in sewing order of the area the preview's keyboard is on.
+fn focused_number(app: &VectorcraftApp) -> Option<usize> {
+    let l = live(app);
+    let outputs = &l.schedule.shown.as_ref()?.outputs;
+    let (x, y) = outputs.find(l.preview.focused.as_ref()?)?;
+    outputs.area_at(x, y)?.number
+}
+
+/// A frame with key `k` pressed with `modifiers`.
+fn keyed(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, k: Key, modifiers: Modifiers) {
+    *time += 0.05;
+    frame(app, ctx, *time, vec![key(k, modifiers)]);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![Event::Key { key: k, physical_key: None, pressed: false, repeat: false, modifiers }]);
+}
+
+/// `[` and `]` step through the areas in sewing order while the preview has the keyboard, and
+/// Enter opens the inspector on the area it is on.
+#[test]
+fn brackets_step_through_the_areas_in_sewing_order() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    // A click on the background: the preview takes the keyboard, no inspector opens.
+    click_at(&mut app, &ctx, &mut time, 190, 90);
+    assert!(live(&app).inspector.is_none());
+    keyed(&mut app, &ctx, &mut time, Key::CloseBracket, Modifiers::NONE);
+    assert_eq!(focused_number(&app), Some(1), "the first area");
+    keyed(&mut app, &ctx, &mut time, Key::CloseBracket, Modifiers::NONE);
+    assert_eq!(focused_number(&app), Some(2));
+    keyed(&mut app, &ctx, &mut time, Key::OpenBracket, Modifiers::NONE);
+    assert_eq!(focused_number(&app), Some(1));
+    keyed(&mut app, &ctx, &mut time, Key::Enter, Modifiers::NONE);
+    assert_eq!(inspected(&app).and_then(|f| f.number), Some(1), "Enter opens the inspector on it");
+}
+
+/// Step 4 lists each change, what it sets and its area, or why it applies to none; ↺ removes one,
+/// Reset All every one.
+#[test]
+fn the_list_shows_each_change_and_removes_them() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    set(&mut app, super::STEP, json!(4));
+    let changes = json!([
+        {"at": [150.5, 30.5], "color": "#142878", "kind": "fill", "stitch": "tatami"},
+        {"at": [150.5, 30.5], "color": "#f08214", "kind": "fill", "stitch": "none"},
+    ]);
+    set(&mut app, "areaChanges", changes);
+    until(&mut app, &ctx, &mut time, ready);
+    assert!(says(&mut app, &ctx, &mut time, "Another color lies here now"), "the kept one's reason");
+    press(&mut app, &ctx, &mut time, "Remove this change", Role::Button);
+    assert_eq!(window_field(&app, "areaChanges").and_then(|c| c.as_array().map(Vec::len)), Some(1), "one removed");
+    press_named(&mut app, &ctx, &mut time, "Reset All");
+    assert_eq!(window_field(&app, "areaChanges"), None, "every one removed");
+    assert!(says(&mut app, &ctx, &mut time, "Click an area in the preview"), "how to make one");
+}
+
+/// Cmd/Ctrl+Z undoes an area change and a setting in turn, Shift+Cmd/Ctrl+Z redoes; the document's
+/// own undo is untouched.
+#[test]
+fn cmd_z_undoes_a_setting_and_a_change_and_shift_redoes() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    let document = app.session.doc().map(|d| d.history.undo.len()).ok();
+    let before = window_field(&app, "colors");
+    set(&mut app, "colors", json!(3));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    assert!(window_field(&app, "areaChanges").is_some());
+    // Escape first, so that the inspector's popover doesn't hold the keyboard.
+    keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND);
+    assert_eq!((window_field(&app, "areaChanges"), window_field(&app, "colors")), (None, Some(json!(3))), "the change undone");
+    keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND);
+    assert_eq!(window_field(&app, "colors"), before, "the setting undone");
+    keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND | Modifiers::SHIFT);
+    assert_eq!(window_field(&app, "colors"), Some(json!(3)), "redone");
+    assert_eq!(app.session.doc().map(|d| d.history.undo.len()).ok(), document, "the document's undo untouched");
+}
+
+/// The history survives Embroidery Settings…: a setting changed before the window stepped aside is
+/// undone after it comes back.
+#[test]
+fn the_history_survives_embroidery_settings() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    set(&mut app, super::STEP, json!(4));
+    let before = window_field(&app, "colors");
+    set(&mut app, "colors", json!(3));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    until(&mut app, &ctx, &mut time, ready);
+    press(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(open_dialog(&app).is_some(), "the window back");
+    keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND);
+    assert_eq!(window_field(&app, "colors"), before, "undone after coming back");
+}

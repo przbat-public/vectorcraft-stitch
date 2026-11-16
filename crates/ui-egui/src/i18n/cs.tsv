@@ -7562,3 +7562,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Širší n
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satén potřebuje čáru širokou aspoň {least} mm: tato má {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satén vyšívá části do {most} mm: tato oblast je široká {width} mm.
 @plural	about {count} stitch|about {count} stitches	asi {count} steh|asi {count} stehy|asi {count} stehů
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Použít na {count} podobnou oblast|Použít na {count} podobné oblasti|Použít na {count} podobných oblastí
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Nastaví steh a úhel této oblasti oblastem stejné barvy a druhu a podobné velikosti.
+embroidery	Show in Sewing Order	Zobrazit v pořadí šití
+embroidery	Dims what is sewn after this area.	Ztlumí to, co se šije po této oblasti.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Šije se {number}. z {of}, po {before}, před {after}
+embroidery	Sewn {number} of {of}, before {after}	Šije se {number}. z {of}, před {after}
+embroidery	Sewn {number} of {of}, after {before}	Šije se {number}. z {of}, po {before}
+embroidery	Sewn {number} of {of}	Šije se {number}. z {of}
+embroidery	Previous area in sewing order	Předchozí oblast v pořadí šití
+embroidery	Next area in sewing order	Další oblast v pořadí šití
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Změny oblastí
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Klepnutím na oblast v náhledu změníte její steh nebo úhel, nebo ji vynecháte. Zbytek zůstává automatický.
+embroidery	Remove this change	Odebrat tuto změnu
+embroidery	Reset All	Obnovit vše
+embroidery	Another color lies here now	Nyní tu leží jiná barva
+embroidery	No area here now	Nyní tu není žádná oblast
+embroidery	Its area is a line now	Jeho oblast je nyní čára
+embroidery	Its area is filled now	Jeho oblast je nyní vyplněná
+embroidery	Its color isn't sewn	Jeho barva se nevyšívá

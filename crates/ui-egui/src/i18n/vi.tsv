@@ -7163,3 +7163,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Rộng hơ
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin cần đường rộng ít nhất {least} mm: đường này rộng {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin thêu các phần rộng tới {most} mm: vùng này rộng {width} mm.
 @plural	about {count} stitch|about {count} stitches	khoảng {count} mũi
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Áp dụng cho {count} vùng tương tự
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Đặt mũi và góc của vùng này cho các vùng cùng màu, cùng loại và có kích thước tương tự.
+embroidery	Show in Sewing Order	Hiện trong thứ tự thêu
+embroidery	Dims what is sewn after this area.	Làm mờ những gì được thêu sau vùng này.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Thêu thứ {number}/{of}, sau {before}, trước {after}
+embroidery	Sewn {number} of {of}, before {after}	Thêu thứ {number}/{of}, trước {after}
+embroidery	Sewn {number} of {of}, after {before}	Thêu thứ {number}/{of}, sau {before}
+embroidery	Sewn {number} of {of}	Thêu thứ {number}/{of}
+embroidery	Previous area in sewing order	Vùng trước trong thứ tự thêu
+embroidery	Next area in sewing order	Vùng tiếp theo trong thứ tự thêu
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Thay đổi vùng
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Nhấp vào một vùng trong bản xem trước để đổi mũi hoặc góc của nó, hoặc bỏ qua nó. Phần còn lại vẫn tự động.
+embroidery	Remove this change	Xóa thay đổi này
+embroidery	Reset All	Đặt lại tất cả
+embroidery	Another color lies here now	Giờ đây ở đây là màu khác
+embroidery	No area here now	Giờ đây ở đây không có vùng nào
+embroidery	Its area is a line now	Vùng của nó giờ là một đường
+embroidery	Its area is filled now	Vùng của nó giờ được tô
+embroidery	Its color isn't sewn	Màu của nó không được thêu

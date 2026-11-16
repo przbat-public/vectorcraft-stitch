@@ -7247,3 +7247,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	サテンには幅{least} mm以上の線が必要です。この線は{width} mmです。
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	サテンは幅{most} mmまでの部分を縫います。この領域の幅は{width} mmです。
 @plural	about {count} stitch|about {count} stitches	約{count}針
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	似た{count}個の領域に適用
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	この領域のステッチと角度を、同じ色・種類でほぼ同じ大きさの領域に設定します。
+embroidery	Show in Sewing Order	縫い順で表示
+embroidery	Dims what is sewn after this area.	この領域の後に縫う部分を淡く表示します。
+embroidery	Sewn {number} of {of}, after {before}, before {after}	{of}中{number}番目に縫う（{before}の後、{after}の前）
+embroidery	Sewn {number} of {of}, before {after}	{of}中{number}番目に縫う（{after}の前）
+embroidery	Sewn {number} of {of}, after {before}	{of}中{number}番目に縫う（{before}の後）
+embroidery	Sewn {number} of {of}	{of}中{number}番目に縫う
+embroidery	Previous area in sewing order	縫い順で前の領域
+embroidery	Next area in sewing order	縫い順で次の領域
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	領域ごとの変更
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	プレビューで領域をクリックすると、ステッチや角度を変えたり、縫わないようにしたりできます。それ以外は自動のままです。
+embroidery	Remove this change	この変更を削除
+embroidery	Reset All	すべてリセット
+embroidery	Another color lies here now	ここには今は別の色があります
+embroidery	No area here now	ここには今は領域がありません
+embroidery	Its area is a line now	その領域は今は線です
+embroidery	Its area is filled now	その領域は今は塗りつぶしです
+embroidery	Its color isn't sewn	その色は縫いません

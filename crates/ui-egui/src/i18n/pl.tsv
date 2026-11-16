@@ -7417,3 +7417,24 @@ embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Szerszy ni
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satyna wymaga linii o szerokości co najmniej {least} mm: ta ma {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satyna szyje części do {most} mm: ten obszar ma {width} mm szerokości.
 @plural	about {count} stitch|about {count} stitches	ok. {count} ścieg|ok. {count} ściegi|ok. {count} ściegów
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Zastosuj do {count} podobnego obszaru|Zastosuj do {count} podobnych obszarów|Zastosuj do {count} podobnych obszarów
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ustawia ścieg i kąt tego obszaru na obszarach tego samego koloru i rodzaju o podobnej wielkości.
+embroidery	Show in Sewing Order	Pokaż w kolejności szycia
+embroidery	Dims what is sewn after this area.	Przygasza to, co jest szyte po tym obszarze.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Szyty jako {number}. z {of}, po {before}, przed {after}
+embroidery	Sewn {number} of {of}, before {after}	Szyty jako {number}. z {of}, przed {after}
+embroidery	Sewn {number} of {of}, after {before}	Szyty jako {number}. z {of}, po {before}
+embroidery	Sewn {number} of {of}	Szyty jako {number}. z {of}
+embroidery	Previous area in sewing order	Poprzedni obszar w kolejności szycia
+embroidery	Next area in sewing order	Następny obszar w kolejności szycia
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Nadpisania obszarów
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Kliknij obszar na podglądzie, aby zmienić ścieg, kąt albo go pominąć. Reszta zostaje automatyczna.
+embroidery	Remove this change	Usuń to nadpisanie
+embroidery	Reset All	Resetuj wszystko
+embroidery	Another color lies here now	W tym miejscu jest teraz inny kolor
+embroidery	No area here now	W tym miejscu nie ma teraz obszaru
+embroidery	Its area is a line now	Jego obszar jest teraz linią
+embroidery	Its area is filled now	Jego obszar jest teraz wypełniony
+embroidery	Its color isn't sewn	Jego kolor nie jest szyty

@@ -501,13 +501,13 @@ pub struct AreaKey {
 }
 
 /// Where an area is sewn: its number in the sewing order (from 1), how many areas there are, and
-/// the areas sewn just before and just after it.
+/// the areas sewn just before and just after it, each with its key.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SewingPlace {
     pub number: usize,
     pub of: usize,
-    pub before: Option<AreaFacts>,
-    pub after: Option<AreaFacts>,
+    pub before: Option<(AreaFacts, AreaKey)>,
+    pub after: Option<(AreaFacts, AreaKey)>,
 }
 
 /// What became of a change to an area in a run: the area it applies to, or why it applies to none
@@ -808,8 +808,29 @@ impl Outputs {
         let a = d.areas().regions.at(x, y)? as usize;
         let sewn = &d.order().sewn;
         let i = sewn.iter().position(|&b| b == a)?;
-        let facts = |j: Option<usize>| j.and_then(|j| sewn.get(j)).and_then(|&b| self.facts(b));
+        let facts = |j: Option<usize>| j.and_then(|j| sewn.get(j)).and_then(|&b| Some((self.facts(b)?, key_of(&d, b)?)));
         Some(SewingPlace { number: i + 1, of: sewn.len(), before: facts(i.checked_sub(1)), after: facts(i.checked_add(1)) })
+    }
+
+    /// The key of the area sewn first, once the order is found: where the keyboard starts in the
+    /// preview.
+    pub fn first_key(&self) -> Option<AreaKey> {
+        let d = self.digitized()?;
+        d.order().sewn.iter().find_map(|&a| key_of(&d, a))
+    }
+
+    /// Which working pixels belong to an area sewn after the one under working pixel `(x, y)`: the
+    /// map's width and height and a byte a pixel, 1 for those, 0 for the rest (the background, and
+    /// the areas sewn before it or it); what Show in Sewing Order dims.
+    pub fn sewn_after(&self, x: u32, y: u32) -> Option<(u32, u32, Vec<u8>)> {
+        let d = self.digitized()?;
+        let regions = &d.areas().regions;
+        let a = regions.at(x, y)? as usize;
+        let placed = &d.order().placed;
+        let index = |l: usize| placed.get(l).and_then(|p| p.index);
+        let own = index(a)?;
+        let mask = regions.labels.iter().map(|&l| u8::from(index(l as usize).is_some_and(|i| i > own))).collect();
+        Some((regions.w, regions.h, mask))
     }
 
     /// What became of each of `req`'s changes to single areas in this run, in their order, once the

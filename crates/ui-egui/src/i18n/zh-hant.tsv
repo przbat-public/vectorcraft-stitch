@@ -7187,3 +7187,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	榻榻米，{value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	開啟「文件設定」的「刺繡」分頁。「文件設定」關閉後會回到此視窗。
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	為此區域選擇
+embroidery	Sewn along its middle as one running line	沿中線以一道平針縫製
+embroidery	No part wider than {width} mm: satin	沒有寬於 {width} mm 的部分：緞紋
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	寬於 {width} mm：榻榻米，較窄處用緞紋
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	緞紋需要至少 {least} mm 寬的線：這條為 {width} mm。
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	緞紋可繡寬至 {most} mm 的部分：此區域寬 {width} mm。
+@plural	about {count} stitch|about {count} stitches	約 {count} 針

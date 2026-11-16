@@ -27,6 +27,7 @@ pub(crate) mod colour_list;
 mod colours_step;
 pub(crate) mod frame;
 mod image_step;
+pub(crate) mod inspector;
 pub(crate) mod live_bar;
 pub(crate) mod preview;
 pub(crate) mod schedule;
@@ -54,9 +55,10 @@ pub const KIND: &str = "embroidery.digitizeImage";
 /// The fields that are the engine's settings (`embroidery.digitizeImage`'s), in its names: the
 /// image's size, crop and background; the colours' mode, count, choices and smallest area; the
 /// shapes' smoothness, corners, straightening, overlap and thin lines; the outlines, the border's
-/// width and their thread. The document settings the Stitches step changes are fields of their own
+/// width and their thread; the changes to single areas (the inspector's). The document settings the
+/// Stitches step changes are fields of their own
 /// (`stitches_step::DOCUMENT_FIELDS`).
-pub(crate) const SETTING_FIELDS: [&str; 18] = [
+pub(crate) const SETTING_FIELDS: [&str; 19] = [
     "width",
     "height",
     "fit",
@@ -75,6 +77,7 @@ pub(crate) const SETTING_FIELDS: [&str; 18] = [
     "border",
     "borderWidth",
     "outlineThread",
+    "areaChanges",
 ];
 
 /// The field holding the palette the window matches threads to (`pec` or `jef`): the document's
@@ -118,6 +121,8 @@ pub(crate) struct Live {
     pub(crate) preview: preview::Preview,
     /// The colour list's selection and its thread choice.
     pub(crate) colours: colour_list::State,
+    /// The area the inspector is open on.
+    pub(crate) inspector: Option<inspector::Inspected>,
     /// The figures last shown: kept, dimmed, while a newer result is on its way or the settings
     /// can't be digitized.
     figures: Option<crate::embroidery::counters::Figures>,
@@ -319,6 +324,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             schedule: Schedule::default(),
             preview: preview::Preview::default(),
             colours: colour_list::State::default(),
+            inspector: None,
             figures: None,
             announced: String::new(),
             reply: None,
@@ -551,3 +557,5 @@ pub(crate) fn busy(app: &VectorcraftApp) -> bool {
 mod tests;
 #[cfg(test)]
 mod tests_gate;
+#[cfg(test)]
+mod tests_inspector;

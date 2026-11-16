@@ -8932,3 +8932,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	टाटामी, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	डॉक्यूमेंट सेटअप का कढ़ाई टैब खोलता है। डॉक्यूमेंट सेटअप बंद होने पर यह विंडो लौट आती है।
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	इस क्षेत्र के लिए चुना गया
+embroidery	Sewn along its middle as one running line	बीच से एक रनिंग स्टिच रेखा के रूप में सिली जाती है
+embroidery	No part wider than {width} mm: satin	कोई भाग {width} mm से चौड़ा नहीं: सैटिन
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm से चौड़ा: टाटामी, संकरे भाग सैटिन के रूप में
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	सैटिन के लिए रेखा कम से कम {least} mm चौड़ी चाहिए: यह {width} mm है।
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	सैटिन {most} mm तक के भाग सिलता है: यह क्षेत्र {width} mm चौड़ा है।
+@plural	about {count} stitch|about {count} stitches	लगभग {count} स्टिच|लगभग {count} स्टिच

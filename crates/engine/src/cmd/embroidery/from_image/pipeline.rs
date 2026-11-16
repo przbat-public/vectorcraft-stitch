@@ -472,6 +472,23 @@ pub struct AreaFacts {
     pub size_mm: (f64, f64),
 }
 
+/// The widest a filled area may be for Satin to be offered on it (millimetres): the most narrow
+/// parts as satin takes (`plan::NARROW_RANGE`), past which satin can't sew it whole (the project
+/// owner's choice, 2026-11-16, „Do 12 mm szerokości (polecam)”).
+pub const SATIN_AREA_MOST_MM: f64 = vectorcraft_stitch::plan::NARROW_RANGE.1;
+
+/// The narrowest a line may be for Satin to be offered on it (millimetres): the narrowest satin
+/// column the planner sews (`plan::SATIN_MIN_WIDTH`).
+pub const SATIN_LINE_LEAST_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
+
+impl AreaFacts {
+    /// Whether Satin is offered on it: a filled area at most [`SATIN_AREA_MOST_MM`] wide at its
+    /// widest, a line at least [`SATIN_LINE_LEAST_MM`] wide (a line not found yet: not).
+    pub fn satin_fits(&self) -> bool {
+        if self.line { self.line_width_mm.is_some_and(|w| w >= SATIN_LINE_LEAST_MM) } else { self.widest_mm <= SATIN_AREA_MOST_MM }
+    }
+}
+
 /// What finds an area again after the settings change: a point inside it (its deepest, in the
 /// image's own pixels), its colour (the image's, before threads) and its kind; the key a change to
 /// it is kept by (`areaChanges`).

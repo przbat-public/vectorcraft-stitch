@@ -7312,3 +7312,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Åbner fanen Broderi i Dokumentopsætning. Dette vindue kommer tilbage, når Dokumentopsætning lukkes.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Valgt til dette område
+embroidery	Sewn along its middle as one running line	Broderes langs midten som én linje forsting
+embroidery	No part wider than {width} mm: satin	Ingen del er bredere end {width} mm: satin
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Bredere end {width} mm: tatami, de smallere dele som satin
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin kræver en linje på mindst {least} mm: denne er {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin syr dele op til {most} mm: dette område er {width} mm bredt.
+@plural	about {count} stitch|about {count} stitches	ca. {count} sting|ca. {count} sting

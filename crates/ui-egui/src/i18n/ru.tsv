@@ -7641,3 +7641,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Татами, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Открывает вкладку «Вышивка» в «Параметрах документа». Это окно вернётся, когда «Параметры документа» закроются.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} мм
+embroidery	Chosen for this area	Выбрано для этой области
+embroidery	Sewn along its middle as one running line	Вышивается по середине одной линией прямого стежка
+embroidery	No part wider than {width} mm: satin	Ни одна часть не шире {width} мм: гладь
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Шире {width} мм: татами, более узкие части гладью
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Для глади нужна линия шириной не менее {least} мм: эта — {width} мм.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Гладь вышивает части шириной до {most} мм: эта область шириной {width} мм.
+@plural	about {count} stitch|about {count} stitches	примерно {count} стежок|примерно {count} стежка|примерно {count} стежков

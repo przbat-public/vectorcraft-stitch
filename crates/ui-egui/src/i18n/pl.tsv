@@ -7408,3 +7408,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otwiera kartę Haft w Ustawieniach dokumentu. To okno wróci po zamknięciu Ustawień dokumentu.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Wybrane dla tego obszaru
+embroidery	Sewn along its middle as one running line	Szyty środkiem jedną linią ściegu prostego
+embroidery	No part wider than {width} mm: satin	Żadna część nie jest szersza niż {width} mm: satyna
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Szerszy niż {width} mm: tatami, węższe części jako satyna
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satyna wymaga linii o szerokości co najmniej {least} mm: ta ma {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satyna szyje części do {most} mm: ten obszar ma {width} mm szerokości.
+@plural	about {count} stitch|about {count} stitches	ok. {count} ścieg|ok. {count} ściegi|ok. {count} ściegów

@@ -525,16 +525,28 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     }
     // The area under the pointer, outlined two-tone and named.
     live.preview.hovered = None;
+    let mut under = None;
     if let Some(at) = resp.hover_pos() {
         let doc_pt = xf.to_doc(at);
         let working = outputs.working_to_doc().map(|a| a.inverse() * doc_pt);
         if let Some(p) = working.filter(|p| p.x >= 0.0 && p.y >= 0.0 && p.x.is_finite() && p.y.is_finite()) {
             let (x, y) = (p.x.floor() as u32, p.y.floor() as u32);
             live.preview.hovered = outputs.area_at(x, y);
+            under = Some((x, y));
             if let Some(path) = outputs.outline_at(x, y) {
                 outline(&painter, &path, xf);
             }
         }
+    }
+    // A click opens the inspector on the area clicked, in any view but the picture itself; on the
+    // background it closes it.
+    if resp.clicked() && view != View::Original {
+        super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, under);
+    }
+    // The area inspected, outlined as the hovered one is.
+    let inspected = live.inspector.as_ref().and_then(|i| outputs.find(&i.key));
+    if let Some(path) = inspected.and_then(|(x, y)| outputs.outline_at(x, y)) {
+        outline(&painter, &path, xf);
     }
     if let Some(facts) = &live.preview.hovered {
         let words = area_line(facts);
@@ -554,6 +566,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
         painter.galley(at.min + BADGE_PAD, galley, t.text);
     }
     foot_row(ui, foot, d, xf, view == View::Stitches || (view == View::Compare && View::of_step(step) == View::Stitches));
+    super::inspector::show(ui, pane, &mut d.fields, &mut live.inspector, outputs, |p| xf.to_screen(p));
 }
 
 /// The Colors view's raster the thread painted for the colours shown, if any.

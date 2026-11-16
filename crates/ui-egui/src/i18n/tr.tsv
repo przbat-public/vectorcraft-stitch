@@ -7506,3 +7506,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Belge Düzeni’nin Nakış sekmesini açar. Belge Düzeni kapandığında bu pencere geri gelir.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Bu alan için seçildi
+embroidery	Sewn along its middle as one running line	Ortasından tek bir düz dikiş çizgisiyle dikilir
+embroidery	No part wider than {width} mm: satin	{width} mm'den geniş bölüm yok: saten
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm'den geniş: tatami, daha dar bölümleri saten
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Saten en az {least} mm genişliğinde bir çizgi ister: bu çizgi {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Saten en fazla {most} mm genişliğindeki bölümleri diker: bu alan {width} mm genişliğinde.
+@plural	about {count} stitch|about {count} stitches	yaklaşık {count} dikiş

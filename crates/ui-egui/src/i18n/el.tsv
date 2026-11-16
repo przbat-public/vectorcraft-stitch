@@ -7505,3 +7505,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Τατάμι, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Ανοίγει την καρτέλα Κέντημα της Ρύθμισης εγγράφου. Αυτό το παράθυρο επιστρέφει όταν κλείσει η Ρύθμιση εγγράφου.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Επιλέχθηκε για αυτή την περιοχή
+embroidery	Sewn along its middle as one running line	Κεντιέται στη μέση της ως μία γραμμή ευθείας βελονιάς
+embroidery	No part wider than {width} mm: satin	Κανένα τμήμα φαρδύτερο από {width} mm: σατέν
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Φαρδύτερη από {width} mm: τατάμι, τα στενότερα τμήματα ως σατέν
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Το σατέν θέλει γραμμή πλάτους τουλάχιστον {least} mm: αυτή είναι {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Το σατέν κεντά τμήματα έως {most} mm: αυτή η περιοχή έχει πλάτος {width} mm.
+@plural	about {count} stitch|about {count} stitches	περίπου {count} βελονιά|περίπου {count} βελονιές

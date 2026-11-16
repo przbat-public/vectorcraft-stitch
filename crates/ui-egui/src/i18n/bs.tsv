@@ -7348,3 +7348,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otvara karticu Vez u Postavkama dokumenta. Ovaj prozor se vraća kad se Postavke dokumenta zatvore.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Odabrano za ovo područje
+embroidery	Sewn along its middle as one running line	Veze se po sredini kao jedna linija ravnog boda
+embroidery	No part wider than {width} mm: satin	Nijedan dio nije širi od {width} mm: saten
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Šire od {width} mm: tatami, uži dijelovi kao saten
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Saten traži liniju široku najmanje {least} mm: ova ima {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Saten veze dijelove do {most} mm: ovo područje je široko {width} mm.
+@plural	about {count} stitch|about {count} stitches	oko {count} bod|oko {count} boda|oko {count} bodova

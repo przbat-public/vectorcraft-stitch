@@ -626,9 +626,10 @@ fn app_with_image_window() -> VectorcraftApp {
 type WindowDrawn = (Vec<(String, Rect)>, Vec<Node>, Rect, Vec<String>);
 
 /// The image window in `lang` on a screen `screen` points large, step `step` open, once its result
-/// is in → its texts with their boxes, its screen-reader tree, the window's box, and the names it
-/// draws as they are (the picture's, the threads').
-fn image_window(lang: Lang, screen: egui::Vec2, step: u64) -> WindowDrawn {
+/// is in (with `inspect`, the area inspector open on the orange square's upper part) → its texts with
+/// their boxes, its screen-reader tree, the window's box, and the names it draws as they are (the
+/// picture's, the threads').
+fn image_window(lang: Lang, screen: egui::Vec2, step: u64, inspect: bool) -> WindowDrawn {
     use crate::embroidery::image_window::STEP;
     crate::i18n::set_current(lang);
     let ctx = egui::Context::default();
@@ -650,6 +651,9 @@ fn image_window(lang: Lang, screen: egui::Vec2, step: u64) -> WindowDrawn {
         assert!(std::time::Instant::now() < deadline, "{}: never ready", lang.code());
         if settled(&app) {
             extra -= 1;
+            if inspect {
+                open_inspector(&mut app, &ctx);
+            }
         }
         time += 0.05;
         let raw = egui::RawInput { time: Some(time), screen_rect: Some(Rect::from_min_size(Pos2::ZERO, screen)), ..Default::default() };
@@ -692,6 +696,20 @@ fn image_window(lang: Lang, screen: egui::Vec2, step: u64) -> WindowDrawn {
     (texts, nodes, window, names)
 }
 
+/// The area inspector opened on the orange square's upper part (the picture's pixel (100, 25)),
+/// unless it is open.
+fn open_inspector(app: &mut VectorcraftApp, ctx: &egui::Context) {
+    let fields = app.ui.dialog.as_ref().map(|d| d.fields.clone()).unwrap_or_default();
+    let Some(live) = app.embroidery.image_window.live.as_mut() else { return };
+    let Some(shown) = live.schedule.shown.clone() else { return };
+    if live.inspector.is_some() {
+        return;
+    }
+    let (Some((iw, ih)), Some((ww, wh, _))) = (shown.outputs.image_px(), shown.outputs.working_rgba()) else { return };
+    let at = (100 * ww / iw.max(1), 25 * wh / ih.max(1));
+    crate::embroidery::image_window::inspector::clicked(ctx, &mut live.inspector, &fields, &shown.outputs, Some(at));
+}
+
 /// In every complete language, the image window, at its smallest (960 × 600 points: its compact
 /// column) and on a laptop's display, with the Image and the Colors steps open, draws no English the
 /// language's catalogue doesn't give, keeps its words inside it, and names every control for
@@ -705,14 +723,14 @@ fn the_image_window_in_every_language() {
     let mut english = vec![];
     for [w, h] in SCREENS {
         for step in STEPS {
-            english.extend(image_window(Lang::EN, vec2(w, h), step).0.into_iter().map(|(t, _)| numbers_blanked(&t)));
+            english.extend(image_window(Lang::EN, vec2(w, h), step, false).0.into_iter().map(|(t, _)| numbers_blanked(&t)));
         }
     }
     for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
         let lang = Lang::from_code(info.code).unwrap();
         for [w, h] in SCREENS {
             for step in STEPS {
-                let (texts, nodes, window, names) = image_window(lang, vec2(w, h), step);
+                let (texts, nodes, window, names) = image_window(lang, vec2(w, h), step, false);
                 for (text, rect) in &texts {
                     if english.contains(&numbers_blanked(text)) {
                         assert!(may_be_english(info.source, text, &names), "{} at {w}, step {step}: {text:?} is drawn in English", info.code);
@@ -727,6 +745,37 @@ fn the_image_window_in_every_language() {
                     let named = n.label().is_some_and(|l| !l.trim().is_empty()) || !n.labelled_by().is_empty();
                     assert!(named, "{} at {w}, step {step}: a {:?} has no name", info.code, n.role());
                 }
+            }
+        }
+    }
+}
+
+/// In every complete language, the area inspector, open on the orange square's upper part, at the image
+/// window's smallest and on a laptop's display, draws no English the language's catalogue doesn't
+/// give, keeps its words inside the window, and names every control for screen readers.
+#[test]
+fn the_area_inspector_in_every_language() {
+    const SCREENS: [[f32; 2]; 2] = [[960.0, 600.0], [1440.0, 900.0]];
+    let controls = [Role::Button, Role::CheckBox, Role::RadioButton, Role::TextInput, Role::ComboBox, Role::Slider, Role::Tab, Role::ListBoxOption];
+    let mut english = vec![];
+    for [w, h] in SCREENS {
+        let (texts, ..) = image_window(Lang::EN, vec2(w, h), 4, true);
+        assert!(texts.iter().any(|(t, _)| t.contains(" mm² · ") && t.ends_with(" mm")), "the inspector drawn: {texts:?}");
+        english.extend(texts.into_iter().map(|(t, _)| numbers_blanked(&t)));
+    }
+    for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
+        let lang = Lang::from_code(info.code).unwrap();
+        for [w, h] in SCREENS {
+            let (texts, nodes, window, names) = image_window(lang, vec2(w, h), 4, true);
+            for (text, rect) in &texts {
+                if english.contains(&numbers_blanked(text)) {
+                    assert!(may_be_english(info.source, text, &names), "{} at {w}: {text:?} is drawn in English", info.code);
+                }
+                assert!(window.expand(0.5).contains_rect(*rect), "{} at {w}: {text:?} {rect:?} leaves the window {window:?}", info.code);
+            }
+            for n in nodes.iter().filter(|n| controls.contains(&n.role())) {
+                let named = n.label().is_some_and(|l| !l.trim().is_empty()) || !n.labelled_by().is_empty();
+                assert!(named, "{} at {w}: a {:?} has no name", info.code, n.role());
             }
         }
     }

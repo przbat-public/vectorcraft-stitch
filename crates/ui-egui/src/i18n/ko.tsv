@@ -7134,3 +7134,12 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	타타미, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	문서 설정의 자수 탭을 엽니다. 문서 설정을 닫으면 이 창이 다시 열립니다.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height}mm
+embroidery	Chosen for this area	이 영역에 선택됨
+embroidery	Sewn along its middle as one running line	가운데를 따라 러닝 스티치 한 줄로 수놓음
+embroidery	No part wider than {width} mm: satin	{width}mm보다 넓은 부분 없음: 새틴
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width}mm보다 넓음: 타타미, 좁은 부분은 새틴
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	새틴은 너비가 {least}mm 이상인 선이 필요합니다. 이 선은 {width}mm입니다.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	새틴은 너비 {most}mm까지의 부분을 수놓습니다. 이 영역의 너비는 {width}mm입니다.
+@plural	about {count} stitch|about {count} stitches	약 {count}땀

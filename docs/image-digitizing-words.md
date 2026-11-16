@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-15 · **Change:** Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-16 · **Change:** the area inspector: an area's facts, how Auto sews it and why, why Satin isn't offered, and its stitches (the inspector PR); before that, Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -233,6 +233,21 @@ They also use Choose Thread…, Name or number, and the warning in the Live bar'
 | Border: {length} | Obwódka: {length} |
 | The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off. | Kontury kolorów biegną wzdłuż własnych linii obrazu na {share} swojej długości: te linie są szyte dwa razy. Pomiń kolor linii albo wyłącz kontury. |
 
+## The area inspector
+
+A click on an area of the preview opens it beside the area. Its stitch names, Auto's choice (`Auto: {choice}`), "Angle" and "Back to Auto" are the Embroidery panel's words.
+
+| English | Polish |
+|---|---|
+| {thread} · {area} · {width} × {height} mm | {thread} · {area} · {width} × {height} mm |
+| Chosen for this area | Wybrane dla tego obszaru |
+| Sewn along its middle as one running line | Szyty środkiem jedną linią ściegu prostego |
+| No part wider than {width} mm: satin | Żadna część nie jest szersza niż {width} mm: satyna |
+| Wider than {width} mm: tatami, its narrower parts as satin | Szerszy niż {width} mm: tatami, węższe części jako satyna |
+| Satin needs a line at least {least} mm wide: this one is {width} mm. | Satyna wymaga linii o szerokości co najmniej {least} mm: ta ma {width} mm. |
+| Satin sews parts up to {most} mm: this area is {width} mm wide. | Satyna szyje części do {most} mm: ten obszar ma {width} mm szerokości. |
+| about {count} stitch\|about {count} stitches | ok. {count} ścieg\|ok. {count} ściegi\|ok. {count} ściegów |
+
 ## The Live bar, its notes, and Create
 
 | English | Polish |
@@ -280,3 +295,4 @@ They also use Choose Thread…, Name or number, and the warning in the Live bar'
 | 2026-11-12 | update | The Stitches step's outlines: two checkboxes, the border's width, the outlines' thread with the darkest marked and ↺ back to it, what they came to, and the warning when they run beside the picture's own lines. |
 | 2026-11-13 | update | The Stitches step's rules made short enough for their fields: the thin lines' "Running stitch" (the panel's word, "along the middle" said in the Shapes step), the rows' spacing "Tatami, {value}". |
 | 2026-11-15 | update | The review of PR #38: Embroidery Settings…'s tooltip says "when Document Setup closes" („po zamknięciu Ustawień dokumentu”), as "it" read as this window; the Shapes step's slider notes say „Wyżej/Niżej” for "Higher/Lower" (a slider's value, not an amount). |
+| 2026-11-16 | update | The area inspector: an area's facts line, how Auto sews it and why (its kind, its width against narrow parts as satin), that a stitch was chosen for it, why Satin isn't offered (a filled area past 12 mm, a line under 1 mm), and its stitches as planned. |

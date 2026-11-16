@@ -434,8 +434,9 @@ const _: () = {
 
 /// The keys the command takes besides the settings: the image (`id`), whether it only answers, the
 /// areas listed (`offset`, `limit`), whether the region map and the areas' outlines are given
-/// (`regions`, `outlines`), and a point whose area is asked (`at`).
-pub(super) const OTHER_KEYS: [&str; 7] = ["id", "dryRun", "offset", "limit", "regions", "outlines", "at"];
+/// (`regions`, `outlines`), a point whose area is asked (`at`), and whether Create keeps a live
+/// object (`live`).
+pub(super) const OTHER_KEYS: [&str; 8] = ["id", "dryRun", "offset", "limit", "regions", "outlines", "at", "live"];
 
 /// How large the design is made.
 #[derive(Clone, Copy, Debug, PartialEq)]

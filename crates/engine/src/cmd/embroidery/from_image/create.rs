@@ -82,16 +82,20 @@ const SATIN_MIN_WIDTH: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 pub(super) const NO_SATIN_MM: f64 = vectorcraft_stitch::plan::NARROW_RANGE.0;
 
 /// What Create made: the design's group, the layer holding the image (the new template layer, or
-/// the one it stayed on), how many objects and colour blocks the design is, what its outlines came
-/// to, and the object each area was made into (its place in the areas, the object's id).
+/// the one it stayed on) and whether Create added it, the image's id, how many objects and colour
+/// blocks the design is, what its outlines came to, the object each area was made into (its place
+/// in the areas, the object's id), and whether the design is a live object (`super::live`).
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Made {
     pub(super) group: NodeId,
     pub(super) layer: NodeId,
+    pub(super) added_layer: bool,
+    pub(super) image: NodeId,
     pub(super) objects: usize,
     pub(super) blocks: usize,
     pub(super) outlined: Option<Outlined>,
     pub(super) areas: Arc<[(usize, NodeId)]>,
+    pub(super) live: bool,
 }
 
 /// The lines of one kind of outline, each an object: how many, and how long (millimetres).
@@ -396,7 +400,18 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         if let Some(NodeKind::Image(img)) = doc.node_mut(image.id).map(|n| &mut n.kind) {
             img.xf = xf;
         }
-        return Ok(Some(Made { group: id, layer: below, objects, blocks: count, outlined, areas: made_of.into() }));
+        let image = image.id;
+        return Ok(Some(Made {
+            group: id,
+            layer: below,
+            added_layer: false,
+            image,
+            objects,
+            blocks: count,
+            outlined,
+            areas: made_of.into(),
+            live: false,
+        }));
     }
     let (parent, index, _) = doc.position(target).ok_or(EngineError::NoNode(target))?;
     doc.remove(target)?;
@@ -411,6 +426,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
             *template = true;
         }
     }
+    let image_id = image.id;
     doc.insert(Some(layer), 0, image)?;
-    Ok(Some(Made { group: id, layer, objects, blocks: count, outlined, areas: made_of.into() }))
+    Ok(Some(Made { group: id, layer, added_layer: true, image: image_id, objects, blocks: count, outlined, areas: made_of.into(), live: false }))
 }

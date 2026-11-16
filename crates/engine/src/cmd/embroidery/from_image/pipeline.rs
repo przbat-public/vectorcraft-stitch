@@ -612,6 +612,7 @@ impl Outputs {
             warnings,
             made_ms: [objects.as_ref().and_then(|o| o.ms), plan.and_then(|p| p.ms)],
             outlined: objects.as_ref().and_then(|o| o.made.as_ref()).and_then(|(_, m)| m.outlined),
+            edited: req.original.node(req.target).and_then(super::live::edited),
         };
         Some(reply_json(&d, of))
     }

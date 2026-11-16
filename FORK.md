@@ -962,8 +962,14 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
   test `bounds_measured_from_what_changed_are_the_full_walks` compares the cache with the full walk
   on random documents and edits, and `containers_measure_as_worked_out_by_hand` holds the
   containers' boxes by hand. Upstream could take it as it is (a proposal for upstream, not filed).
-- **Digitizing from an image's window, in upstream files** (the window's own code is
-  `ui-egui/src/embroidery/image_window/`), each marked "VectorCraft Stitch":
+- **Digitizing from an image, in upstream files** (the window's own code is
+  `ui-egui/src/embroidery/image_window/`, the engine's `cmd/embroidery/from_image/`), each marked
+  "VectorCraft Stitch":
+  - `engine/src/cmd/buildcmds/trace.rs`: in `prepare`, once its target is found, Image Trace's
+    Make, Make and Expand and the panel's run refuse a live object of a digitized image
+    (`embroidery::live_digitizing`, `LIVE_EMBROIDERY_REFUSED`), which only Digitize Image… makes
+    and digitizes again, as the project owner chose on 2026-11-16 (the Decisions register;
+    `image_trace_refuses_a_live_embroidery_object`);
   - `ui-egui/src/dialogs.rs`: the window's row at the end of the `registry!` (`EmbroideryImage`, a
     `DialogSpec::window` the fork's code draws), after Restore Object's question;
   - `ui-egui/src/menus/tree.rs`: Object › Image Trace › Digitize Image…, after a separator under
@@ -1020,9 +1026,10 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     (`tools/src/xform/wand.rs`): while stitches are edited the Lasso is upstream's, as the project
     owner chose on 2026-10-31 (the Decisions register); a sync that changes what it sends changes
     it (`the_lasso_tool_selects_needle_points_while_editing`).
-  - Digitizing from an image (`cmd/embroidery/from_image/`, no hook) calls upstream's trace crate
-    through its public API (`trace_watched`, `TraceParams` built with `..Default`, `TraceError`
-    matched with a wildcard, `Raster::{decode_to_fit, new, from_fn, pixel}`, `MAX_PIXELS`), draws
+  - Digitizing from an image (`cmd/embroidery/from_image/`, no hook but Image Trace's refusal
+    above) calls upstream's trace crate through its public API (`trace_watched`, `TraceParams`
+    built with `..Default`, `TraceError` matched with a wildcard, `Raster::{decode_to_fit, new,
+    from_fn, pixel}`, `MAX_PIXELS`), draws
     and cuts the overlap's strips with `pathops::{outline_stroke, try_boolean, try_unite_all_with,
     DEFAULT_PRECISION}`, makes its objects with `cmd::pathops::shape_node` (a path, or a compound
     path of several subpaths), knows an Image Trace object by `buildcmds::TRACE_NAME` and its first
@@ -1055,6 +1062,13 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     digitizing's region map rather than called (upstream's module is the trace crate's own, `mod
     centerline` and `pub(crate) fn lines`, with no hook): compare the two at each sync, as a fix
     upstream makes there reaches the fork only by hand.
+  - A live object of a digitized image (Keep as Live Object, `from_image/live.rs`) is made as
+    upstream's Image Trace makes its objects: a group named `buildcmds::TRACE_NAME`, its source
+    image first and hidden, a `trace` value (`preset` Custom, `view` from `TraceView::id`), so that
+    upstream's View, Expand and Release act on it as on their own (Expand leaves plain objects,
+    Release the image) with no hook: a sync that changes what makes an Image Trace object, or what
+    those three do with one, changes the live object with it
+    (`upstreams_view_expand_and_release_work_on_a_live_object`).
   - View › Outline is each document view's own since the 2026-11-06 sync (`View::outline`): the
     stitch view's layers, its notice, stitch editing's key and the art it redraws read the view
     the canvas draws (`app.outline_view()`), and each window's tab its own. Only the current window

@@ -48,6 +48,7 @@ mod command;
 mod create;
 mod flat;
 mod inside;
+mod live;
 mod order;
 mod outlines;
 mod overlap;
@@ -62,6 +63,8 @@ mod window;
 mod working;
 
 pub(super) use command::digitize_image;
+pub(crate) use live::live_digitizing;
+pub use live::live_settings;
 pub use pipeline::{
     AreaFacts, AreaKey, ChangeState, Outputs, Pipeline, Place, SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM, SewingPlace, StageId, WindowRequest,
 };
@@ -79,6 +82,8 @@ mod tests_colours;
 mod tests_create;
 #[cfg(test)]
 mod tests_lines;
+#[cfg(test)]
+mod tests_live;
 #[cfg(test)]
 mod tests_outlines;
 #[cfg(test)]

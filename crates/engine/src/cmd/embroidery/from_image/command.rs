@@ -12,7 +12,7 @@
 use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::{Document, ImageObject, NodeId, NodeKind};
+use vectorcraft_doc::{Document, ImageObject, Node, NodeId, NodeKind};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_delta_e};
@@ -396,6 +396,11 @@ struct DigitizeJob {
     palette: Palette,
     listed: Listed,
     dry_run: bool,
+    /// Create keeps a live object (`live`); the live object digitized again, as it was; whether its
+    /// objects were edited by hand since it was made.
+    live: bool,
+    was: Option<Node>,
+    edited: Option<bool>,
 }
 
 /// What a run made ([`DigitizeJob::run`]), to apply to the document it was made of ([`apply`]):
@@ -441,7 +446,10 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
         at: point(&o)?,
     };
     let (target, image, bytes) = image_of(s, &o)?;
-    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run })
+    let live = flag(&o, "live")?;
+    let was = st.doc.node(target).filter(|n| super::live::live_digitizing(n).is_some()).cloned();
+    let edited = was.as_ref().and_then(super::live::edited);
+    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run, live, was, edited })
 }
 
 /// The image `o` names (or the one selected), with its file: refused as the command refuses it (no
@@ -468,12 +476,16 @@ impl DigitizeJob {
     /// that trace it, which a scope's cancel doesn't reach, as Image Trace's own run asks it, and
     /// stops the run when it answers `false`.
     fn run(&self, steps: &(dyn Fn(u64, u64) -> bool + Sync)) -> Result<DigitizeFound> {
-        let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run } = self;
+        let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run, live, was, edited } = self;
         let d = digitized(image, bytes, settings, *palette, steps)?;
         let started = clock();
         let mut doc = Document::clone(original);
         let mut warnings = d.warnings();
         let made = match create::made(&mut doc, *target, &d, *palette, settings)? {
+            Some(m) if *live => {
+                let m = super::live::into_live(&mut doc, &m, was.clone(), settings)?;
+                Some((doc, m))
+            }
             Some(m) => Some((doc, m)),
             None if *dry_run => {
                 warnings.push(Warning::new("nothingToMake", json!({}), NOTHING_TO_MAKE));
@@ -499,6 +511,7 @@ impl DigitizeJob {
             warnings,
             made_ms: [objects_ms, stitches_ms],
             outlined: made.as_ref().and_then(|(_, m)| m.outlined),
+            edited: *edited,
         };
         let reply = reply_json(&d, of);
         Ok(DigitizeFound { uid: *uid, original: original.clone(), made, reply, dry_run: *dry_run })
@@ -522,6 +535,9 @@ pub(super) struct ReplyOf<'a> {
     pub(super) made_ms: [Option<f64>; 2],
     /// What the outlines Create adds came to (`None`: none asked, or nothing made).
     pub(super) outlined: Option<Outlined>,
+    /// Whether the live object digitized again was edited by hand since it was made (`None`: it is
+    /// no live object).
+    pub(super) edited: Option<bool>,
 }
 
 /// The share of the colour outlines' length beside the image's own lines (the areas sewn along
@@ -544,7 +560,7 @@ fn outlined_json(o: &Outlined, palette: Palette) -> Value {
 /// The command's reply for what `d` made (`created` null: [`apply`] fills it in).
 pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let timings = d.timings();
-    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms], outlined } = of;
+    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms], outlined, edited } = of;
     let w = d.working();
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
@@ -617,6 +633,7 @@ pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
         "colors": colors_json(d.colours(), palette, px_per_mm2, frame_px),
         "unusedChoices": unused,
         "areaChanges": change_states,
+        "edited": edited,
         "areaCount": area_count,
         "offset": listed.offset,
         "truncated": listed.offset.saturating_add(areas.len()) < area_count,
@@ -652,7 +669,7 @@ fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
 
 /// The reply's `created`: what Create made.
 pub(super) fn created_json(made: &Made) -> Value {
-    json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks})
+    json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks, "live": made.live})
 }
 
 /// `doc`, with the objects made in `group`, put in place of document `uid` as one undo step

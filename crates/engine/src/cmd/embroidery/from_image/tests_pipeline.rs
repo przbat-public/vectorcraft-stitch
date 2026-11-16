@@ -259,7 +259,7 @@ fn create_from_a_run_is_the_commands_create() {
     let req = Arc::new(window.digitize_window_request(image, &params, None, &json!({})).unwrap());
     let out = window.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     let steps = window.doc().unwrap().history.undo.len();
-    let from_window = window.apply_digitize_window(&req, &out).unwrap();
+    let from_window = window.apply_digitize_window(&req, &out, false).unwrap();
     let from_command = command.execute("embroidery.digitizeImage", &with(&params, &json!({"limit": 0}))).unwrap();
     assert_eq!(from_window["dryRun"], json!(false), "made, so no dry run");
     assert_eq!(steady(from_window), steady(from_command));
@@ -275,7 +275,7 @@ fn create_refuses_a_run_made_of_an_earlier_document() {
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
     s.execute("shape.rectangle", &json!({"x": 200, "y": 200, "width": 20, "height": 20})).unwrap();
     let before = doc(&s);
-    let e = s.apply_digitize_window(&req, &out).unwrap_err().to_string();
+    let e = s.apply_digitize_window(&req, &out, false).unwrap_err().to_string();
     assert!(e.contains("changed"), "{e}");
     assert!(Arc::ptr_eq(&before, &doc(&s)), "nothing made");
 }
@@ -292,7 +292,7 @@ fn the_windows_palette_is_set_in_the_same_undo_step() {
     let reply = out.reply(&req).unwrap();
     assert!(reply["colors"].as_array().unwrap().iter().filter(|c| !c["thread"].is_null()).all(|c| c["thread"]["palette"] == "pec"), "{reply}");
     let steps = s.doc().unwrap().history.undo.len();
-    s.apply_digitize_window(&req, &out).unwrap();
+    s.apply_digitize_window(&req, &out, false).unwrap();
     assert_eq!(super::super::thread_palette(&doc(&s)), Palette::Pec);
     assert_eq!(s.doc().unwrap().history.undo.len(), steps + 1, "one undo step");
     s.execute("edit.undo", &json!({})).unwrap();
@@ -317,7 +317,7 @@ fn the_windows_document_settings_are_planned_and_set_in_the_same_undo_step() {
     let dry = command.execute("embroidery.digitizeImage", &with(&params, &json!({"dryRun": true, "limit": 0}))).unwrap();
     assert_eq!(steady(planned), steady(dry), "planned with the window's settings");
     let steps = window.doc().unwrap().history.undo.len();
-    window.apply_digitize_window(&req, &out).unwrap();
+    window.apply_digitize_window(&req, &out, false).unwrap();
     command.execute("embroidery.digitizeImage", &with(&params, &json!({"limit": 0}))).unwrap();
     assert_eq!(*doc(&window), *doc(&command), "the settings and the objects, as the command makes them");
     assert_eq!(window.doc().unwrap().history.undo.len(), steps + 1, "one undo step");

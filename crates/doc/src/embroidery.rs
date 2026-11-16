@@ -41,7 +41,7 @@ pub use digitizing::Digitizing;
 pub use marks::{Mark, Placed, SAME_SPOT, shape_of};
 pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
 pub use setup::{FabricPreset, FabricSettings, FabricValues, MachineSettings, StitchValues};
-pub use transform::scale_factors;
+pub use transform::{scale_factors, turned_angle};
 
 /// What machine embroidery makes of an object.
 ///

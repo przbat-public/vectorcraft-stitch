@@ -452,7 +452,7 @@ fn create(app: &mut VectorcraftApp, params: &Value) -> DialogResult {
     let Some(live) = app.embroidery.image_window.live.as_ref() else { return Err("the image window isn't open".into()) };
     let Some(shown) = live.schedule.current(params).cloned() else { return Err(crate::et!("The preview isn't ready yet.").to_string()) };
     let key = (live.uid, live.image);
-    let reply = app.session.apply_digitize_window(&shown.request, &shown.outputs).map_err(|e| crate::i18n::msg(&e.to_string()))?;
+    let reply = app.session.apply_digitize_window(&shown.request, &shown.outputs, false).map_err(|e| crate::i18n::msg(&e.to_string()))?;
     closed_by_create(app, key, &reply);
     Ok(reply)
 }
@@ -487,7 +487,7 @@ pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
         .digitize_window_request(image, &settings_of(&params), palette.as_deref(), &document_of(&params))
         .map_err(|e| crate::i18n::msg(&e.to_string()))?;
     let outputs = app.session.digitize_pipeline().run(&request, &|_, _| true, &mut |_, _, _| {}).map_err(|e| crate::i18n::msg(&e.to_string()))?;
-    let reply = app.session.apply_digitize_window(&request, &outputs).map_err(|e| crate::i18n::msg(&e.to_string()))?;
+    let reply = app.session.apply_digitize_window(&request, &outputs, false).map_err(|e| crate::i18n::msg(&e.to_string()))?;
     closed_by_create(app, (uid, image), &reply);
     Ok(reply)
 }

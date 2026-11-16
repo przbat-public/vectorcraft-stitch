@@ -822,7 +822,7 @@ fn create_refuses_a_run_made_of_an_earlier_document() {
     let steps = undo_steps(&app);
     let earlier = live(&app).schedule.shown.clone().expect("a result");
     app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 20, "height": 20})).unwrap();
-    assert!(app.session.apply_digitize_window(&earlier.request, &earlier.outputs).is_err(), "made of the earlier document");
+    assert!(app.session.apply_digitize_window(&earlier.request, &earlier.outputs, false).is_err(), "made of the earlier document");
     assert_eq!(undo_steps(&app), steps + 1, "nothing applied");
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);

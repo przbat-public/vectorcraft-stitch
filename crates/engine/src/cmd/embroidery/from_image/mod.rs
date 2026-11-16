@@ -69,6 +69,8 @@ mod tests;
 #[cfg(test)]
 mod tests_areas;
 #[cfg(test)]
+mod tests_changes;
+#[cfg(test)]
 mod tests_colours;
 #[cfg(test)]
 mod tests_create;

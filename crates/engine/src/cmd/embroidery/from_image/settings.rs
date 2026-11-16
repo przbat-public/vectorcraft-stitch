@@ -11,8 +11,10 @@
 //! naming the range, rather than clamped, as the other embroidery commands do.
 
 use serde_json::{Map, Value, json};
+use vectorcraft_geom::Point;
 use vectorcraft_stitch::thread::{Palette, PaletteThread};
 
+use super::super::options::ANGLE_RANGE;
 use super::super::vocabulary::is_snake_case_of;
 use crate::Result;
 use crate::cmd::bad;
@@ -68,6 +70,8 @@ pub(super) enum Kind {
     Choices,
     /// A thread `{palette, index}` of the palette the colours are matched to, or null (unset).
     Thread,
+    /// A list of changes to single areas ([`AreaChange`]), at most [`MAX_AREA_CHANGES`].
+    Changes,
 }
 
 /// One setting.
@@ -231,8 +235,70 @@ pub(super) const BORDER_WIDTH_MM: f64 = 3.0;
 /// the checks hold it (Melco's design checker, 10 mm).
 pub(super) const BORDER_WIDTH_RANGE_MM: (f64, f64) = (vectorcraft_stitch::plan::SATIN_MIN_WIDTH, super::super::check::SATIN_WIDEST);
 
+/// The most changes to single areas one call takes (`areaChanges`): far past what a person sets in
+/// one design (the test logos have 38 to 61 areas), and a bound on the work of finding them again,
+/// a look-up round each one's point a run. An estimate.
+pub(super) const MAX_AREA_CHANGES: usize = 1_000;
+
+/// How a changed area is sewn ([`AreaChange::stitch`]): a filled area as tatami, as satin or not at
+/// all; a line (an area sewn along its middle) as a running stitch, as satin or not at all.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum AreaStitch {
+    Tatami,
+    Satin,
+    Running,
+    None,
+}
+
+impl AreaStitch {
+    /// Every stitch, as the commands list them.
+    pub(super) const ALL: [Self; 4] = [Self::Tatami, Self::Satin, Self::Running, Self::None];
+
+    /// Its id in commands and replies.
+    pub(super) fn id(self) -> &'static str {
+        match self {
+            Self::Tatami => "tatami",
+            Self::Satin => "satin",
+            Self::Running => "running",
+            Self::None => "none",
+        }
+    }
+
+    fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|s| s.id() == id)
+    }
+
+    /// Whether an area of this kind (`line`: sewn along its middle; else filled) can be sewn so.
+    pub(super) fn fits(self, line: bool) -> bool {
+        match self {
+            Self::Tatami => !line,
+            Self::Running => line,
+            Self::Satin | Self::None => true,
+        }
+    }
+}
+
+/// A person's change to one area of the image: how it is sewn, and a filled area's rows. Kept by a
+/// point inside the area and its colour, not by the area's number (research note 07), so that it is
+/// found again after a setting changes the areas (`super::changes`).
+#[derive(Clone, Debug, PartialEq)]
+pub(super) struct AreaChange {
+    /// A point inside the area, in the image's own pixels: its deepest point when it was set.
+    pub(super) at: Point,
+    /// The area's colour, the image's (before the threads).
+    pub(super) color: [u8; 3],
+    /// Set on a line (an area sewn along its middle), not a filled area: a change is for one kind.
+    pub(super) line: bool,
+    pub(super) stitch: Option<AreaStitch>,
+    /// A filled area's rows, degrees counter-clockwise in the picture as the window shows it.
+    pub(super) angle: Option<f64>,
+}
+
+/// The keys a change takes.
+const CHANGE_KEYS: [&str; 5] = ["at", "color", "kind", "stitch", "angle"];
+
 /// Every setting, in the window's order.
-pub(super) const SETTINGS: [Setting; 18] = [
+pub(super) const SETTINGS: [Setting; 19] = [
     Setting {
         name: "width",
         key: "width",
@@ -347,6 +413,13 @@ pub(super) const SETTINGS: [Setting; 18] = [
         kind: Kind::Thread,
         source: "the project owner's choice (2026-11-12): unset, the darkest of the threads the colours are matched to",
     },
+    Setting {
+        name: "areaChanges",
+        key: "area_changes",
+        step: Step::Stitches,
+        kind: Kind::Changes,
+        source: "unset: no changes; each kept by a point inside its area and the area's colour (research note 07)",
+    },
 ];
 
 // Every file key is its setting's name in snake_case.
@@ -422,6 +495,8 @@ pub(super) struct Settings {
     pub(super) thin_line: f64,
     /// The outlines Create adds.
     pub(super) outlines: OutlineSettings,
+    /// The changes to single areas, in the order given (a later one wins where two set the same).
+    pub(super) changes: Vec<AreaChange>,
 }
 
 /// The outlines Create adds (`super::outlines`): a running line on every colour edge and round the
@@ -464,6 +539,9 @@ fn wants(setting: &Setting) -> String {
         Kind::Choices => format!(
             "a list of at most {MAX_COLOUR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"lines\"|\"none\"}}, mergeInto alone"
         ),
+        Kind::Changes => {
+            format!("a list of at most {MAX_AREA_CHANGES} changes {{at: [x, y], color: \"#rrggbb\", kind: \"fill\"|\"line\", stitch?, angle?}}")
+        }
     }
 }
 
@@ -588,6 +666,77 @@ fn choices(o: &Map<String, Value>, palette: Palette) -> Result<Vec<ColourChoice>
     }
 }
 
+/// The changes to single areas `o` gives.
+fn area_changes(o: &Map<String, Value>) -> Result<Vec<AreaChange>> {
+    let s = row("areaChanges");
+    match o.get("areaChanges") {
+        None | Some(Value::Null) => Ok(vec![]),
+        Some(Value::Array(list)) if list.len() <= MAX_AREA_CHANGES => list.iter().map(area_change).collect(),
+        Some(v) => Err(refused(s, v)),
+    }
+}
+
+/// One of the changes `v` gives, or why it is refused: a stitch of the other kind of area, an
+/// angle on a line (its stitches follow it), or a change that changes nothing.
+fn area_change(v: &Value) -> Result<AreaChange> {
+    let why = |what: &str| bad(C, format!("`areaChanges` {v}: {what}"));
+    let o = v.as_object().ok_or_else(|| refused(row("areaChanges"), v))?;
+    if let Some(k) = o.keys().find(|k| !CHANGE_KEYS.contains(&k.as_str())) {
+        return Err(why(&format!("unknown key `{k}`; a change takes at, color, kind, stitch and angle")));
+    }
+    let at = o
+        .get("at")
+        .and_then(Value::as_array)
+        .filter(|a| a.len() == 2)
+        .and_then(|a| Some(Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)))
+        .filter(|p| p.x.is_finite() && p.y.is_finite())
+        .ok_or_else(|| why("`at` is [x, y], a point inside the area in the image's own pixels"))?;
+    let color = o.get("color").and_then(Value::as_str).and_then(hex_colour).ok_or_else(|| why("`color` is the area's colour \"#rrggbb\""))?;
+    let line = match o.get("kind").and_then(Value::as_str) {
+        Some("fill") => false,
+        Some("line") => true,
+        _ => return Err(why("`kind` is \"fill\" or \"line\": the kind of area it is for")),
+    };
+    let stitch = match o.get("stitch") {
+        None | Some(Value::Null) => None,
+        Some(st) => Some(st.as_str().and_then(AreaStitch::from_id).filter(|s| s.fits(line)).ok_or_else(|| {
+            why(if line {
+                "a line's `stitch` is \"running\", \"satin\" or \"none\""
+            } else {
+                "a filled area's `stitch` is \"tatami\", \"satin\" or \"none\""
+            })
+        })?),
+    };
+    let angle = match o.get("angle") {
+        None | Some(Value::Null) => None,
+        Some(_) if line => return Err(why("a line takes no `angle`: its stitches follow it")),
+        Some(a) => Some(
+            a.as_f64()
+                .filter(|a| a.is_finite() && (ANGLE_RANGE.0..=ANGLE_RANGE.1).contains(a))
+                .ok_or_else(|| why(&format!("`angle` is degrees from {} to {}", ANGLE_RANGE.0, ANGLE_RANGE.1)))?,
+        ),
+    };
+    if stitch.is_none() && angle.is_none() {
+        return Err(why("a change sets `stitch`, `angle` or both"));
+    }
+    Ok(AreaChange { at, color, line, stitch, angle })
+}
+
+/// Change `c` as the command takes it and a reply echoes it.
+pub(super) fn change_json(c: &AreaChange) -> Value {
+    let mut o = Map::new();
+    o.insert("at".into(), json!([c.at.x, c.at.y]));
+    o.insert("color".into(), json!(super::super::hex(c.color)));
+    o.insert("kind".into(), json!(if c.line { "line" } else { "fill" }));
+    if let Some(s) = c.stitch {
+        o.insert("stitch".into(), json!(s.id()));
+    }
+    if let Some(a) = c.angle {
+        o.insert("angle".into(), json!(a));
+    }
+    Value::Object(o)
+}
+
 /// The error for `v`, given for `setting`.
 fn refused(setting: &Setting, v: &Value) -> crate::EngineError {
     bad(C, format!("`{}` {v}: {}", setting.name, wants(setting)))
@@ -690,6 +839,7 @@ impl Settings {
                 border_mm: number(o, "borderWidth")?.unwrap_or(BORDER_WIDTH_MM),
                 thread: outline_thread(o, palette)?,
             },
+            changes: area_changes(o)?,
         })
     }
 
@@ -730,6 +880,7 @@ impl Settings {
             "border": self.outlines.border,
             "borderWidth": self.outlines.border_mm,
             "outlineThread": self.outlines.thread.map(|t| json!({"palette": t.palette().id(), "index": t.index()})),
+            "areaChanges": self.changes.iter().map(change_json).collect::<Vec<_>>(),
         })
     }
 }
@@ -759,6 +910,7 @@ pub(super) fn table(palette: Palette) -> Value {
                     Kind::Choices => ("", json!([0, MAX_COLOUR_CHOICES]), json!([])),
                     Kind::Flag { default } => ("", json!([false, true]), json!(default)),
                     Kind::Thread => ("", Value::Null, Value::Null),
+                    Kind::Changes => ("", json!([0, MAX_AREA_CHANGES]), json!([])),
                 };
                 json!({"name": s.name, "key": s.key, "step": s.step.id(), "unit": unit, "range": range, "default": default, "source": s.source})
             })

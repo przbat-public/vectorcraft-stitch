@@ -175,6 +175,7 @@ fn a_change_reruns_its_stage_and_those_after() {
         (json!({"border": true}), StageId::Objects),
         (json!({"borderWidth": 5.0}), StageId::Objects),
         (json!({"outlineThread": {"palette": "jef", "index": 2}}), StageId::Objects),
+        (json!({"areaChanges": [{"at": [30.0, 30.0], "color": hex(ORANGE), "kind": "fill", "stitch": "tatami"}]}), StageId::Objects),
     ];
     for (change, first) in cases {
         made(&s, &mut pipe, image, &base, None);

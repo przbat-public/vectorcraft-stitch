@@ -25,7 +25,7 @@ use super::super::{DetachedService, Options, Planned, Planner};
 use super::command::{Listed, NOTHING_TO_MAKE, ReplyOf, reply_json};
 use super::create::{self, Made};
 use super::rules::AreaKind;
-use super::settings::{BackgroundSetting, ColourChoice, Mode, OutlineSettings, Settings, Size};
+use super::settings::{AreaChange, BackgroundSetting, ColourChoice, Mode, OutlineSettings, Settings, Size};
 use super::stages::{self, ColoursOut, Digitized, ImageOut, LinesOut, RegionsOut, ShapesOut, TraceOut, clock, since};
 use super::trace;
 use super::warnings::Warning;
@@ -245,14 +245,16 @@ struct ShapesKey {
 }
 
 /// What the objects read of a request: the document they are made on (the same snapshot, held)
-/// with the image's place in it, the palette, and the document's embroidery settings with the
-/// window's changes, which their stitches are planned with.
+/// with the image's place in it, the palette, the document's embroidery settings with the
+/// window's changes, which their stitches are planned with, the outlines, and the changes to
+/// single areas.
 struct ObjectsSettings {
     document: Arc<Document>,
     target: NodeId,
     palette: Palette,
     setup: Option<Box<EmbroiderySetup>>,
     outlines: OutlineSettings,
+    changes: Vec<AreaChange>,
 }
 
 impl PartialEq for ObjectsSettings {
@@ -262,6 +264,7 @@ impl PartialEq for ObjectsSettings {
             && self.palette == o.palette
             && self.setup == o.setup
             && self.outlines == o.outlines
+            && self.changes == o.changes
     }
 }
 
@@ -391,6 +394,7 @@ impl WindowRequest {
             palette: self.palette,
             setup: self.setup.clone(),
             outlines: self.settings.outlines,
+            changes: self.settings.changes.clone(),
         }
     }
 }

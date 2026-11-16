@@ -46,7 +46,8 @@
 //!   1,000-path document's fills with their rows across their shape, planned cold;
 //! - the image window (`window`): digitizing's stages kept between runs, a first run, the runs after
 //!   a thread chosen and the colours asked changed, a run with nothing changed, the 1,500-pixel
-//!   badge in logo mode and its raster painted in its threads' colours;
+//!   badge in logo mode and its raster painted in its threads' colours, a fabric chosen, the
+//!   outlines turned on, and one area changed;
 //! - a cancel inside one large object (`cancel`): a fill of 2,304 holes cancelled at five points of
 //!   its plan, the longest wait, all in rows and with its narrow parts as satin;
 //! - stitch pictures of 10,000 to 2,000,000 stitches ([`stitch_picture`]: fill rows, satin columns
@@ -106,7 +107,7 @@ const SCENE_PATHS: [usize; 3] = [1_000, 5_000, 22_000];
 const CANCEL_AFTER_MS: u64 = 50;
 
 /// The rows' names, as the report lists them (at most 42 characters, the report's column).
-pub const ROWS: [&str; 111] = [
+pub const ROWS: [&str; 112] = [
     "embroidery: cold plan, 1,000 paths",
     "embroidery: warm plan, 1,000 paths",
     "embroidery: nudge and re-plan, 1,000 paths",
@@ -218,6 +219,7 @@ pub const ROWS: [&str; 111] = [
     window::ROWS[5],
     window::ROWS[6],
     window::ROWS[7],
+    window::ROWS[8],
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`], all estimates but one: the cancel
@@ -239,7 +241,7 @@ pub const ROWS: [&str; 111] = [
 /// exit 475 and 507 ms (the median of three; they plan their parts with and without it, the plain
 /// row 467 and 469 ms beside them), an exit or an entry moved 2.6 to 2.8 ms (the median of five;
 /// it plans again its own unit).
-const BUDGETS: [f64; 111] = [
+const BUDGETS: [f64; 112] = [
     400.0,
     100.0,
     100.0,
@@ -352,6 +354,7 @@ const BUDGETS: [f64; 111] = [
     window::BUDGETS[5],
     window::BUDGETS[6],
     window::BUDGETS[7],
+    window::BUDGETS[8],
 ];
 
 /// The median of `samples` (milliseconds), 0 for none.

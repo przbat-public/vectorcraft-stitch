@@ -15,6 +15,8 @@
 //! - logo mode to its result: within 1,000 ms;
 //! - the Stitches step's fabric chosen (denim) to its result, from the objects on: within 250 ms;
 //! - the colour outlines and the border turned on to their result: within 500 ms;
+//! - one area changed (the first in sewing order left unsewn, as the inspector's Don't Sew changes
+//!   it), the outlines on, to its result: within 250 ms;
 //! - Compare's split dragged for 90 frames: nothing uploaded.
 //!
 //! The budgets are the plan's; the table of what was measured is printed.
@@ -44,6 +46,9 @@ const LOGO_MODE_BUDGET_MS: f64 = 1000.0;
 /// running lines and satin border: twice that (an estimate).
 const FABRIC_BUDGET_MS: f64 = 250.0;
 const OUTLINES_BUDGET_MS: f64 = 500.0;
+/// An area changed in the inspector reruns the objects and their stitches alone, as a fabric chosen
+/// does: the same budget (an estimate).
+const AREA_CHANGE_BUDGET_MS: f64 = FABRIC_BUDGET_MS;
 /// The window, points, and its pixels a point: a laptop's display.
 const WINDOW: [f32; 2] = [1440.0, 900.0];
 const PIXELS_PER_POINT: f32 = 2.0;
@@ -214,6 +219,7 @@ struct Measured {
     logo: f64,
     fabric: f64,
     outlines: f64,
+    area: f64,
     compare_bytes: u64,
 }
 
@@ -257,6 +263,13 @@ fn measure(name: &str, png: &[u8], rect: [f64; 4]) -> Measured {
     set(&mut app, "colorOutlines", json!(true));
     set(&mut app, "border", json!(true));
     let outlines = until_fresh(&mut app, &ctx, &mut pace, Instant::now(), name);
+    // One area changed: the first in sewing order left unsewn, kept by its point, colour and kind.
+    let key = app.embroidery.image_window.live.as_ref().and_then(|l| l.schedule.shown.as_ref()).and_then(|s| s.outputs.first_key());
+    let key = key.unwrap_or_else(|| panic!("{name}: no area"));
+    let [r, g, b] = key.color;
+    let kind = if key.line { "line" } else { "fill" };
+    set(&mut app, "areaChanges", json!([{"at": key.at, "color": format!("#{r:02x}{g:02x}{b:02x}"), "kind": kind, "stitch": "none"}]));
+    let area = until_fresh(&mut app, &ctx, &mut pace, Instant::now(), name);
     // Compare at the stitches, settled, then its split dragged.
     set(&mut app, VIEW, json!("compare"));
     set(&mut app, STEP, json!(4));
@@ -268,7 +281,7 @@ fn measure(name: &str, png: &[u8], rect: [f64; 4]) -> Measured {
         set(&mut app, preview::SPLIT, json!(k as f64 / DRAG_FRAMES as f64));
         compare_bytes += pace.tick(&mut app, &ctx).1;
     }
-    Measured { name: name.to_string(), longest: longest_side(png), open, colours, slider_p95, logo, fabric, outlines, compare_bytes }
+    Measured { name: name.to_string(), longest: longest_side(png), open, colours, slider_p95, logo, fabric, outlines, area, compare_bytes }
 }
 
 #[test]
@@ -290,15 +303,15 @@ fn image_window_gate() {
     let (png, rect) = logo();
     pictures.push((format!("drawn logo, {LOGO_MM} mm"), png, rect));
     println!(
-        "{:<44} {:>7} {:>9} {:>11} {:>12} {:>9} {:>10} {:>12} {:>14}",
-        "picture (10 px/mm)", "px", "open ms", "colours ms", "slider p95", "logo ms", "fabric ms", "outlines ms", "compare bytes"
+        "{:<44} {:>7} {:>9} {:>11} {:>12} {:>9} {:>10} {:>12} {:>8} {:>14}",
+        "picture (10 px/mm)", "px", "open ms", "colours ms", "slider p95", "logo ms", "fabric ms", "outlines ms", "area ms", "compare bytes"
     );
     let mut failed = Vec::new();
     for (name, png, rect) in &pictures {
         let m = measure(name, png, *rect);
         println!(
-            "{:<44} {:>7} {:>9.0} {:>11.0} {:>12.1} {:>9.0} {:>10.0} {:>12.0} {:>14}",
-            m.name, m.longest, m.open, m.colours, m.slider_p95, m.logo, m.fabric, m.outlines, m.compare_bytes
+            "{:<44} {:>7} {:>9.0} {:>11.0} {:>12.1} {:>9.0} {:>10.0} {:>12.0} {:>8.0} {:>14}",
+            m.name, m.longest, m.open, m.colours, m.slider_p95, m.logo, m.fabric, m.outlines, m.area, m.compare_bytes
         );
         let over = [
             (m.open > OPEN_BUDGET_MS, "open"),
@@ -307,6 +320,7 @@ fn image_window_gate() {
             (m.logo > LOGO_MODE_BUDGET_MS, "logo mode"),
             (m.fabric > FABRIC_BUDGET_MS, "fabric"),
             (m.outlines > OUTLINES_BUDGET_MS, "outlines"),
+            (m.area > AREA_CHANGE_BUDGET_MS, "area change"),
             (m.compare_bytes > 0, "compare uploads"),
         ];
         failed.extend(over.into_iter().filter(|(o, _)| *o).map(|(_, what)| format!("{}: {what}", m.name)));

@@ -883,7 +883,7 @@ fn objects_of(req: &WindowRequest, d: &Digitized) -> Result<ObjectsOut> {
     let mut doc = Document::clone(&req.original);
     doc.embroidery = req.setup.clone();
     with_palette(&mut doc, req.palette);
-    let made = create::made(&mut doc, req.target, d, req.palette, req.settings.outlines)?.map(|m| (Arc::new(doc), m));
+    let made = create::made(&mut doc, req.target, d, req.palette, &req.settings)?.map(|m| (Arc::new(doc), m));
     Ok(ObjectsOut { of: req.original.clone(), made, ms: since(started) })
 }
 

@@ -42,6 +42,7 @@
 
 mod background;
 mod centre;
+mod changes;
 mod colours;
 mod command;
 mod create;

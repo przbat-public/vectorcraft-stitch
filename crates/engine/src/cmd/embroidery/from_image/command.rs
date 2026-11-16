@@ -18,6 +18,7 @@ use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_delta_e};
 
 use super::background::Background;
+use super::changes::{self, Applied, Found};
 use super::colours::Colours;
 use super::create::{self, Made, Outlined};
 use super::rules;
@@ -244,7 +245,8 @@ fn outline_of(d: &Digitized, a: usize) -> Option<(String, usize)> {
 /// The areas `offset` to `offset + limit` in sewing order, as the reply lists them, with their
 /// outlines when `outlines` asks: then at most [`MAX_OUTLINE_ELEMENTS`] path elements of them, the
 /// list ending at the area that would pass it (the first one listed whatever it has).
-fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outlines: bool) -> Vec<Value> {
+fn areas_json(d: &Digitized, palette: Palette, listed: Listed, changed: &[Option<Applied>]) -> Vec<Value> {
+    let Listed { offset, limit, outlines, .. } = listed;
     let w = d.working();
     let px = w.px_per_mm;
     let number = |a: usize| d.order().placed.get(a).and_then(|p| p.index).map(|i| i + 1);
@@ -312,6 +314,7 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 "touches": touches,
                 "grownUnder": d.shapes().grown_under.get(a).map_or(vec![], |g| g.iter().filter_map(|&b| number(b)).collect::<Vec<_>>()),
                 "outline": outline.map(|(svg, _)| svg),
+                "change": changed.get(a).copied().flatten().map(|c| applied_json(&c)),
                 "order": {
                     "taken": placed.taken.id(),
                     "after": placed.after.iter().filter_map(|&(o, why)| Some(json!({"area": number(o)?, "because": why.id()}))).collect::<Vec<_>>(),
@@ -319,6 +322,18 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
             }))
         })
         .collect()
+}
+
+/// A change applied to an area, as a reply lists it: the stitch and the angle it sets.
+fn applied_json(c: &Applied) -> Value {
+    let mut o = Map::new();
+    if let Some(s) = c.stitch {
+        o.insert("stitch".into(), json!(s.id()));
+    }
+    if let Some(a) = c.angle {
+        o.insert("angle".into(), json!(a));
+    }
+    Value::Object(o)
 }
 
 /// The region map as a reply gives it: each working pixel's area by its number in sewing order (0
@@ -458,7 +473,7 @@ impl DigitizeJob {
         let started = clock();
         let mut doc = Document::clone(original);
         let mut warnings = d.warnings();
-        let made = match create::made(&mut doc, *target, &d, *palette, settings.outlines)? {
+        let made = match create::made(&mut doc, *target, &d, *palette, settings)? {
             Some(m) => Some((doc, m)),
             None if *dry_run => {
                 warnings.push(Warning::new("nothingToMake", json!({}), NOTHING_TO_MAKE));
@@ -534,7 +549,17 @@ pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
     let unused: Vec<Value> = d.colours().unused.iter().map(|&(i, why)| json!({"choice": i, "reason": why})).collect();
-    let areas = areas_json(d, palette, listed.offset, listed.limit, listed.outlines);
+    let found = changes::found(&settings.changes, d);
+    let changed = changes::per_area(&settings.changes, &found, d.areas().areas.len());
+    let number = |a: usize| d.order().placed.get(a).and_then(|p| p.index).map(|i| i + 1);
+    let change_states: Vec<Value> = found
+        .iter()
+        .map(|f| match *f {
+            Found::Applies(a) => json!({"applies": true, "area": number(a), "why": null}),
+            Found::Kept(why) => json!({"applies": false, "area": null, "why": why.id()}),
+        })
+        .collect();
+    let areas = areas_json(d, palette, listed, &changed);
     let area_count = d.order().sewn.len();
     let specks = d.areas().joined.saturating_sub(d.areas().bands);
     if specks > 0 {
@@ -591,6 +616,7 @@ pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
         "colorCount": thread_count(d.colours()),
         "colors": colors_json(d.colours(), palette, px_per_mm2, frame_px),
         "unusedChoices": unused,
+        "areaChanges": change_states,
         "areaCount": area_count,
         "offset": listed.offset,
         "truncated": listed.offset.saturating_add(areas.len()) < area_count,

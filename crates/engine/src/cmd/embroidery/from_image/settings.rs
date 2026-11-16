@@ -290,7 +290,8 @@ pub(super) struct AreaChange {
     /// Set on a line (an area sewn along its middle), not a filled area: a change is for one kind.
     pub(super) line: bool,
     pub(super) stitch: Option<AreaStitch>,
-    /// A filled area's rows, degrees counter-clockwise in the picture as the window shows it.
+    /// A filled area's rows, degrees counter-clockwise on the page, as the window shows the design
+    /// (the object's own fill angle).
     pub(super) angle: Option<f64>,
 }
 

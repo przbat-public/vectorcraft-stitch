@@ -7590,3 +7590,5 @@ embroidery	Created a live object: {objects} ({threads}). Digitize Image… chang
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Ne pas remplacer
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Cet objet dynamique a été créé dans une autre palette de fils : ses couleurs sont de nouveau associées à la palette du document.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Images numérisées dynamiques mises à l’échelle de plus de {value} % depuis leur numérisation : numérisez-les à nouveau

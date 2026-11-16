@@ -108,6 +108,32 @@ fn fingerprint(n: &Node, xf: Affine) -> Option<u64> {
     Some(h)
 }
 
+/// The size an image of `width` × `height` pixels placed by `xf` has on the page, millimetres:
+/// each side along its own direction, so that a turn changes nothing.
+fn image_size_mm(width: u32, height: u32, xf: Affine) -> [f64; 2] {
+    let side = |v: u32, x: f64, y: f64| f64::from(v) * x.hypot(y) * MM_PER_PT;
+    let [m0, m1, m2, m3, _, _] = xf.as_coeffs();
+    [side(width, m0, m1), side(height, m2, m3)]
+}
+
+/// How much live object `n` was scaled since it was digitized: the least and the most it stretches
+/// a length by, in any direction (`scale_factors`, as stitches sewn as they are are judged), its
+/// image's transform now against the one it had then. That one is rebuilt from the size kept, the
+/// lengths of its image's sides: a placed image's sides are square to each other, so the turn it
+/// also had changes nothing (a picture skewed when it was digitized is judged as if it weren't).
+/// `None` when `n` is no live object, keeps no size, or a factor isn't a finite number.
+pub(crate) fn live_scale_since(n: &Node) -> Option<[f64; 2]> {
+    let made = live_digitizing(n)?.size?;
+    let NodeKind::Image(img) = &n.children()?.first()?.kind else { return None };
+    // Points a pixel along each side then.
+    let then = [made[0] / (f64::from(img.width) * MM_PER_PT), made[1] / (f64::from(img.height) * MM_PER_PT)];
+    if !then.iter().all(|s| s.is_finite() && *s > 0.0) {
+        return None;
+    }
+    let [m0, m1, m2, m3, _, _] = img.xf.as_coeffs();
+    vectorcraft_doc::embroidery::scale_factors(Affine::new([m0 / then[0], m1 / then[0], m2 / then[1], m3 / then[1], 0.0, 0.0]))
+}
+
 /// The settings a live object keeps, by their file keys (`settings`' echo but the size), a change's
 /// angle turned into the image as transform `xf` shows it (page degrees taken back through `xf`).
 fn kept_settings(settings: &Settings, xf: Affine) -> Map<String, Value> {
@@ -161,7 +187,8 @@ pub(super) fn into_live(doc: &mut Document, made: &Made, was: Option<Node>, sett
     }
     let NodeKind::Image(img) = &image.kind else { return Err(EngineError::NoNode(made.image)) };
     let xf = img.xf;
-    let size = [f64::from(img.width), f64::from(img.height)];
+    // The size it is made at: its image's, as placed.
+    let size = image_size_mm(img.width, img.height, xf);
     image.visible = false;
     let design = doc.node(made.group).cloned().ok_or(EngineError::NoNode(made.group))?;
     let blocks: Vec<Arc<Node>> = design.children().cloned().unwrap_or_default();
@@ -182,10 +209,6 @@ pub(super) fn into_live(doc: &mut Document, made: &Made, was: Option<Node>, sett
     if let Some(children) = live.children_mut() {
         *children = std::iter::once(Arc::new(image)).chain(blocks).collect();
     }
-    // The size it is made at, in millimetres: its image's, as placed.
-    let side = |v: f64, x: f64, y: f64| v * x.hypot(y) * MM_PER_PT;
-    let [m0, m1, m2, m3, _, _] = xf.as_coeffs();
-    let size = [side(size[0], m0, m1), side(size[1], m2, m3)];
     let mut digitizing = Digitizing { settings: kept_settings(settings, xf).into(), fingerprint: None, size: Some(size), extra: Default::default() };
     digitizing.fingerprint = fingerprint(&live, xf);
     live.extras_mut().embroidery.get_or_insert_with(Default::default).digitizing = Some(digitizing);

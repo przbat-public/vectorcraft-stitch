@@ -7433,3 +7433,5 @@ embroidery	Created a live object: {objects} ({threads}). Digitize Image… chang
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	不替换
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	此实时对象是用另一个线色板制作的：其颜色将重新匹配文档的色板。
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	数字化后缩放超过 {value}% 的实时数字化图像：请重新数字化

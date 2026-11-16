@@ -63,6 +63,7 @@ mod window;
 mod working;
 
 pub(super) use command::digitize_image;
+pub(crate) use live::live_scale_since;
 pub use live::{edited as live_edited, live_digitizing, live_settings};
 pub use pipeline::{
     AreaFacts, AreaKey, ChangeState, Outputs, Pipeline, Place, SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM, SewingPlace, StageId, WindowRequest,

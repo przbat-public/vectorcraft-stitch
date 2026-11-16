@@ -13,9 +13,10 @@
 //! design checker names without a number ([`NOT_CHECKED`]; `docs/embroidery.md` › Using it ›
 //! Checks).
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use serde_json::{Value, json};
+use vectorcraft_doc::{Document, Node, NodeId};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::Command;
 use vectorcraft_stitch::format::Format;
@@ -451,6 +452,20 @@ pub(crate) const RULES: &[Rule] = &[
         ],
     },
     Rule {
+        id: "liveObjectScaled",
+        title: "Live object of a digitized image scaled since it was digitized: digitize it again",
+        severity: Severity::Warning,
+        threshold: Some(SCALED_PERCENT),
+        unit: Some("percent"),
+        measures: "how much a live object of a digitized image was enlarged or reduced since it was digitized, along the direction it changed most (its image's transform now against the one it had then); a live object in a symbol's art isn't judged, as its instances can't be digitized again",
+        extreme: Some(Extreme::Largest),
+        sources: &[Source {
+            name: "the project owner's choice, 2026-11-16 (docs/embroidery.md › Digitizing from an image): the line stitches sewn as they are take (stitchesScaled)",
+            url: "",
+            value: "scaled by more than ±10 %: its stitches, satin columns, lines and overlap were chosen for the size it was digitized at",
+        }],
+    },
+    Rule {
         id: "threadMismatch",
         title: "Thread that looks unlike the art's colour",
         severity: Severity::Warning,
@@ -671,12 +686,59 @@ pub(crate) enum Extreme {
     Smallest,
 }
 
-/// What a check is asked for: the rules to run, the format whose limits apply, and how many hits
-/// each lists.
+/// What a check is asked for: the rules to run, the format whose limits apply, how many hits each
+/// lists, and the live objects of digitized images the plan sews ([`live_scaled`]).
 pub(crate) struct Ask {
     pub(crate) rules: Vec<&'static Rule>,
     pub(crate) format: Format,
     pub(crate) limit: usize,
+    pub(crate) live: Vec<LiveScaled>,
+}
+
+/// A live object of a digitized image that a plan sews, and how it was scaled since it was
+/// digitized: the least and the most it stretches a length by (`from_image::live_scale_since`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct LiveScaled {
+    pub(crate) id: NodeId,
+    pub(crate) scale: [f64; 2],
+}
+
+/// The live objects of digitized images in `doc`'s layers that `plan` sews (it, or an object of
+/// theirs, is planned, as itself or as the object its pieces are expanded from), with how they were
+/// scaled since they were digitized. One whose scale isn't known is left out, and so is one in a
+/// symbol's art: its instances can't be digitized again.
+pub(crate) fn live_scaled(doc: &Document, plan: &DesignPlan) -> Vec<LiveScaled> {
+    // The live objects first (a live object holds no other), with how they were scaled.
+    let mut scaled: Vec<(&Node, [f64; 2])> = Vec::new();
+    let mut stack: Vec<&Node> = doc.layers.iter().map(|l| l.as_ref()).collect();
+    while let Some(n) = stack.pop() {
+        if super::live_digitizing(n).is_none() {
+            stack.extend(n.children().into_iter().flatten().map(|c| c.as_ref()));
+            continue;
+        }
+        if let Some(scale) = super::from_image::live_scale_since(n) {
+            scaled.push((n, scale));
+        }
+    }
+    if scaled.is_empty() {
+        return Vec::new();
+    }
+    // Those the plan sews: it or an object of theirs planned, as itself or as the object an
+    // expanded piece comes from.
+    let sewn: HashSet<NodeId> = plan.units.iter().flat_map(|u| [u.origin.node, u.origin.selected()]).collect();
+    let planned = |n: &Node| {
+        let mut inside: Vec<&Node> = vec![n];
+        while let Some(c) = inside.pop() {
+            if sewn.contains(&c.id) {
+                return true;
+            }
+            inside.extend(c.children().into_iter().flatten().map(|c| c.as_ref()));
+        }
+        false
+    };
+    let mut out: Vec<LiveScaled> = scaled.into_iter().filter(|(n, _)| planned(n)).map(|(n, scale)| LiveScaled { id: n.id, scale }).collect();
+    out.sort_by_key(|l| l.id.0);
+    out
 }
 
 /// A check under way.
@@ -918,6 +980,24 @@ impl<'a> Checker<'a> {
                     }
                 }
                 _ => {}
+            }
+        }
+        // A live object of a digitized image scaled since it was digitized: its areas were sewn as
+        // they were chosen for the size it had then.
+        let ask = self.ask;
+        for live in &ask.live {
+            let change = scale_change(live.scale);
+            self.judged("liveObjectScaled", change);
+            if change > SCALED_PERCENT {
+                let [least, most] = live.scale;
+                let note = if most - 1.0 >= 1.0 - least { "larger" } else { "smaller" };
+                if let Some(f) = self.found.get_mut("liveObjectScaled") {
+                    f.objects.insert(live.id.0);
+                }
+                self.add(
+                    "liveObjectScaled",
+                    Hit { objects: Some(vec![live.id.0]), value: Some(change), note: Some(note.to_string()), ..Hit::default() },
+                );
             }
         }
         let threads = std::mem::take(&mut self.threads);

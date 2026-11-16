@@ -7579,3 +7579,5 @@ embroidery	Created a live object: {objects} ({threads}). Digitize Image… chang
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Nincs csere
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Ez a dinamikus objektum egy másik cérnapalettában készült: a színei újra a dokumentum palettájához igazodnak.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	A digitalizálás óta több mint {value}%-kal átméretezett dinamikus digitalizált képek: digitalizálja őket újra

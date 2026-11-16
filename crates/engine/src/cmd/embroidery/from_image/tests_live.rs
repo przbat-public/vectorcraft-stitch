@@ -215,3 +215,71 @@ fn image_trace_refuses_a_live_embroidery_object() {
     let e = crate::cmd::buildcmds::TraceRun::prepare(&s, "imageTrace.make", &json!({"id": live.0})).map(|_| ()).unwrap_err().to_string();
     assert!(e.contains("Digitize Image"), "the panel's run: {e}");
 }
+
+/// The Check tab warns of a live object scaled more than ±10 % since it was digitized, by its
+/// image's size now against the size kept, along the side that changed most; turning it, or
+/// scaling it less, finds nothing, and digitizing it again at its new size settles it (the project
+/// owner's choice, 2026-11-16).
+#[test]
+fn the_check_warns_of_a_live_object_scaled_since_it_was_digitized() {
+    let check = |s: &mut Session| {
+        let v = s.execute("embroidery.check", &json!({"rules": ["liveObjectScaled"]})).unwrap();
+        v["rules"].as_array().and_then(|r| r.first()).cloned().expect("the rule")
+    };
+    let measured = |rule: &Value| rule["measured"].as_f64().expect("measured");
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    transformed(&mut s, live, Affine::rotate(0.5));
+    let rule = check(&mut s);
+    assert!(rule["hits"] == json!(0) && measured(&rule) < 0.01, "turned only: {rule}");
+    transformed(&mut s, live, Affine::rotate(-0.5) * Affine::scale(1.05));
+    let rule = check(&mut s);
+    assert!(rule["hits"] == json!(0) && (measured(&rule) - 5.0).abs() < 0.01, "within 10 %: {rule}");
+    transformed(&mut s, live, Affine::scale_non_uniform(1.0, 1.2));
+    let rule = check(&mut s);
+    assert_eq!((rule["hits"].as_u64(), rule["severity"].as_str()), (Some(1), Some("warning")), "{rule}");
+    assert_eq!(rule["objects"], json!([live.0]));
+    let hit = &rule["examples"][0];
+    assert_eq!((hit["objects"].clone(), hit["note"].as_str()), (json!([live.0]), Some("larger")), "{hit}");
+    assert!((hit["value"].as_f64().unwrap() - 26.0).abs() < 0.01, "1.05 × 1.2 along its height: {hit}");
+    // Digitized again at its size now: nothing to warn of, and still judged.
+    s.execute("embroidery.digitizeImage", &json!({"id": live.0, "live": true, "colors": 3})).unwrap();
+    let rule = check(&mut s);
+    assert!(rule["hits"] == json!(0) && measured(&rule) < 0.01, "settled: {rule}");
+    // Scaled by exactly 10 %: it passes, as stitches scaled by exactly 10 % do.
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    transformed(&mut s, live, Affine::scale(1.1));
+    let rule = check(&mut s);
+    assert!(rule["hits"] == json!(0) && (measured(&rule) - 10.0).abs() < 0.01, "exactly 10 %: {rule}");
+    // Turned 45° and stretched 18 % along the page: 18 % along the direction it changed most, though
+    // each of its image's sides grew by less than 10 %.
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    transformed(&mut s, live, Affine::rotate(std::f64::consts::FRAC_PI_4));
+    transformed(&mut s, live, Affine::scale_non_uniform(1.18, 1.0));
+    let hit = check(&mut s)["examples"][0].clone();
+    assert!(hit["note"] == json!("larger") && (hit["value"].as_f64().unwrap() - 18.0).abs() < 0.01, "a stretch across its sides: {hit}");
+    // Every object of it given two fills, sewn as pieces expanded from each: judged all the same.
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    s.edit("two fills", |d, _| {
+        let objects: Vec<NodeId> = d
+            .node(live)
+            .and_then(|n| n.children())
+            .map(|c| c.iter().skip(1).flat_map(|b| b.children().into_iter().flatten().map(|o| o.id)).collect())
+            .unwrap_or_default();
+        for id in objects {
+            let n = d.node_mut(id).ok_or(crate::EngineError::NoNode(id))?;
+            if let Some(first) = n.appearance.items.first().cloned() {
+                n.appearance.items.push(first);
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+    transformed(&mut s, live, Affine::scale(1.5));
+    let rule = check(&mut s);
+    assert_eq!(rule["objects"], json!([live.0]), "sewn as expanded pieces: {rule}");
+    // Reduced to 80 % along one side: smaller.
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    transformed(&mut s, live, Affine::scale_non_uniform(1.0, 0.8));
+    let hit = check(&mut s)["examples"][0].clone();
+    assert!(hit["note"] == json!("smaller") && (hit["value"].as_f64().unwrap() - 20.0).abs() < 0.01, "reduced: {hit}");
+}

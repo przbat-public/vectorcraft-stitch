@@ -465,3 +465,93 @@ fn art_bounds_are_the_box_of_what_isnt_background() {
     let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {});
     assert!(out.map_or(true, |o| o.art_bounds().is_none()));
 }
+
+/// What a run made of `params` for `raster` placed and selected: its request and its outputs.
+fn run_of(raster: &tr::Raster, params: Value) -> (Session, Arc<super::pipeline::WindowRequest>, super::pipeline::Outputs) {
+    let (s, image) = placed(raster);
+    let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
+    let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
+    (s, req, out)
+}
+
+/// An area's key (its deepest point in the image's pixels, its colour, its kind) finds it again in
+/// another run: with a colour more, the square under the same pixel is found, and the key the
+/// background would have is none.
+#[test]
+fn an_areas_key_finds_it_again_after_a_recompute() {
+    let (s, image) = placed(&picture());
+    let mut pipe = s.digitize_pipeline();
+    let request = |params: Value| Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
+    let three = pipe.run(&request(json!({"colors": 3})), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let key = three.area_key(180, 100).expect("the green square's key");
+    let like = |c: [u8; 3], to: [u8; 4]| vectorcraft_stitch::color::delta_e_rgb(c, [to[0], to[1], to[2]]) < 1.0;
+    assert!(like(key.color, GREEN) && !key.line, "{key:?}");
+    assert!(three.area_key(5, 5).is_none(), "the background has no key");
+    let four = pipe.run(&request(json!({"colors": 4})), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let (x, y) = four.find(&key).expect("found again");
+    assert_eq!(four.area_at(x, y).map(|f| f.color), four.area_at(180, 100).map(|f| f.color), "the same square");
+    let navy = super::pipeline::AreaKey { color: [NAVY[0], NAVY[1], NAVY[2]], ..key };
+    assert_eq!(four.find(&navy), None, "a key of another colour finds nothing there");
+}
+
+/// Similar areas are of the same colour and kind, sizes within a quarter of each other: the two
+/// orange squares are each other's, the navy one between them has none.
+#[test]
+fn similar_areas_are_alike_in_colour_kind_and_size() {
+    let (_, _, out) = run_of(&three_squares(), json!({"colors": 3}));
+    let (left, right) = (out.area_key(50, 50).unwrap(), out.area_key(250, 50).unwrap());
+    assert_eq!(out.similar(50, 50), vec![right]);
+    assert_eq!(out.similar(250, 50), vec![left]);
+    assert_eq!(out.similar(150, 50), vec![]);
+}
+
+/// An area's place in the sewing order names the areas sewn just before and after it.
+#[test]
+fn the_sewing_place_names_the_areas_either_side() {
+    let (_, _, out) = run_of(&three_squares(), json!({"colors": 3}));
+    let places: Vec<_> = [(50, 50), (150, 50), (250, 50)].into_iter().map(|(x, y)| out.sewing_place(x, y).unwrap()).collect();
+    assert!(places.iter().all(|p| p.of == 3));
+    let mut numbers: Vec<usize> = places.iter().map(|p| p.number).collect();
+    numbers.sort_unstable();
+    assert_eq!(numbers, [1, 2, 3]);
+    let first = places.iter().find(|p| p.number == 1).unwrap();
+    assert!(first.before.is_none() && first.after.as_ref().and_then(|a| a.number) == Some(2), "{first:?}");
+    let last = places.iter().find(|p| p.number == 3).unwrap();
+    assert!(last.after.is_none() && last.before.as_ref().and_then(|a| a.number) == Some(2), "{last:?}");
+}
+
+/// The object an area was made into is in the made document, painted with the area's thread.
+#[test]
+fn the_area_object_is_the_one_made_of_it() {
+    let (_, _, out) = run_of(&three_squares(), json!({"colors": 3}));
+    let (doc, _) = out.made().unwrap();
+    for (x, y) in [(50, 50), (150, 50), (250, 50)] {
+        let id = out.area_object(x, y).expect("an object");
+        let thread = out.area_at(x, y).and_then(|f| f.thread_color).expect("a thread");
+        let node = doc.node(id).expect("in the made document");
+        let painted = node.appearance.items.iter().find_map(|i| match i {
+            vectorcraft_doc::appearance::AppearanceItem::Fill(f) => match &f.paint {
+                vectorcraft_color::Paint::Solid { color, .. } => Some(color.to_hex()),
+                _ => None,
+            },
+            _ => None,
+        });
+        assert_eq!(painted, Some(super::super::hex(thread)), "({x}, {y})");
+    }
+    assert_eq!(out.area_object(5, 5), None, "the background made nothing");
+}
+
+/// What became of each change in a run: the area it applies to, described, or why not.
+#[test]
+fn a_run_says_what_became_of_each_change() {
+    let hex = |c: [u8; 4]| super::super::hex([c[0], c[1], c[2]]);
+    let changes = json!([
+        {"at": [50.5, 50.5], "color": hex(ORANGE), "kind": "fill", "stitch": "tatami"},
+        {"at": [150.5, 50.5], "color": hex(ORANGE), "kind": "fill", "stitch": "tatami"},
+    ]);
+    let (_, req, out) = run_of(&three_squares(), json!({"colors": 3, "areaChanges": changes}));
+    let states = out.change_states(&req).unwrap();
+    let orange = |c: [u8; 3]| vectorcraft_stitch::color::delta_e_rgb(c, [ORANGE[0], ORANGE[1], ORANGE[2]]) < 1.0;
+    assert!(matches!(states.first(), Some(super::pipeline::ChangeState::Applies(f)) if orange(f.color)), "{states:?}");
+    assert_eq!(states.get(1), Some(&super::pipeline::ChangeState::Kept("otherColor")));
+}

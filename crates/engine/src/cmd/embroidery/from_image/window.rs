@@ -65,10 +65,10 @@ impl Session {
             return Err(bad(C, "the document changed while the image was digitized: nothing was made"));
         }
         let doc = Arc::try_unwrap(doc).unwrap_or_else(|shared| (*shared).clone());
-        put_in_place(self, req.uid, &req.original, doc, made)?;
+        put_in_place(self, req.uid, &req.original, doc, made.group)?;
         // The run's reply is its dry run's; the objects are made now, so it is no dry run any more.
         reply["dryRun"] = Value::Bool(false);
-        reply["created"] = created_json(made);
+        reply["created"] = created_json(&made);
         Ok(reply)
     }
 }

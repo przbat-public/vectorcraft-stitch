@@ -645,20 +645,20 @@ fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
         return Ok(reply);
     }
     let Some((doc, made)) = made else { return Err(bad(C, NOTHING_TO_MAKE)) };
-    put_in_place(s, uid, &original, doc, made)?;
-    reply["created"] = created_json(made);
+    put_in_place(s, uid, &original, doc, made.group)?;
+    reply["created"] = created_json(&made);
     Ok(reply)
 }
 
 /// The reply's `created`: what Create made.
-pub(super) fn created_json(made: Made) -> Value {
+pub(super) fn created_json(made: &Made) -> Value {
     json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks})
 }
 
-/// `doc`, with the objects `made`, put in place of document `uid` as one undo step "Digitize Image"
-/// (the new group selected): refused when the document isn't `original` any more (it was made of
-/// an earlier one, so nothing is applied), or while Global Edit is on.
-pub(super) fn put_in_place(s: &mut Session, uid: u64, original: &Arc<Document>, doc: Document, made: Made) -> Result<()> {
+/// `doc`, with the objects made in `group`, put in place of document `uid` as one undo step
+/// "Digitize Image" (the new group selected): refused when the document isn't `original` any more
+/// (it was made of an earlier one, so nothing is applied), or while Global Edit is on.
+pub(super) fn put_in_place(s: &mut Session, uid: u64, original: &Arc<Document>, doc: Document, group: NodeId) -> Result<()> {
     let st = s.doc()?;
     if st.uid != uid || !Arc::ptr_eq(&st.doc, original) {
         return Err(bad(C, "the document changed while the image was digitized: nothing was made"));
@@ -668,7 +668,7 @@ pub(super) fn put_in_place(s: &mut Session, uid: u64, original: &Arc<Document>, 
     }
     s.edit(LABEL, |d, sel| {
         *d = doc;
-        sel.set([made.group]);
+        sel.set([group]);
         Ok(())
     })?;
     Ok(())

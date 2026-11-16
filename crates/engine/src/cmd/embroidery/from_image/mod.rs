@@ -62,7 +62,7 @@ mod window;
 mod working;
 
 pub(super) use command::digitize_image;
-pub use pipeline::{AreaFacts, Outputs, Pipeline, Place, StageId, WindowRequest};
+pub use pipeline::{AreaFacts, AreaKey, ChangeState, Outputs, Pipeline, Place, SewingPlace, StageId, WindowRequest};
 pub use working::WORKING_PX_PER_MM;
 
 #[cfg(test)]

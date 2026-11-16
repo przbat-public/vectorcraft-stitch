@@ -22,10 +22,11 @@ use vectorcraft_render::lines::{LinePicture, LinePictureBuilder};
 use vectorcraft_stitch::thread::Palette;
 
 use super::super::{DetachedService, Options, Planned, Planner};
+use super::changes::Found;
 use super::command::{Listed, NOTHING_TO_MAKE, ReplyOf, reply_json};
 use super::create::{self, Made};
-use super::rules::AreaKind;
-use super::settings::{AreaChange, BackgroundSetting, ColourChoice, Mode, OutlineSettings, Settings, Size};
+use super::rules::{Area, AreaKind};
+use super::settings::{AreaChange, AreaStitch, BackgroundSetting, ColourChoice, Mode, OutlineSettings, Settings, Size};
 use super::stages::{self, ColoursOut, Digitized, ImageOut, LinesOut, RegionsOut, ShapesOut, TraceOut, clock, since};
 use super::trace;
 use super::warnings::Warning;
@@ -462,7 +463,48 @@ pub struct AreaFacts {
     pub background: bool,
     /// Where it lies in the design's box.
     pub place: Place,
+    /// Its widest part (millimetres): twice the distance from its deepest point to its edge.
+    pub widest_mm: f64,
+    /// How wide the line sewn along its middle is (millimetres; `None`: a filled area, or the
+    /// lines aren't found yet).
+    pub line_width_mm: Option<f64>,
+    /// Its box's width and height (millimetres).
+    pub size_mm: (f64, f64),
 }
+
+/// What finds an area again after the settings change: a point inside it (its deepest, in the
+/// image's own pixels), its colour (the image's, before threads) and its kind; the key a change to
+/// it is kept by (`areaChanges`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct AreaKey {
+    pub at: [f64; 2],
+    pub color: [u8; 3],
+    /// A line sewn along its middle, not a filled area.
+    pub line: bool,
+}
+
+/// Where an area is sewn: its number in the sewing order (from 1), how many areas there are, and
+/// the areas sewn just before and just after it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SewingPlace {
+    pub number: usize,
+    pub of: usize,
+    pub before: Option<AreaFacts>,
+    pub after: Option<AreaFacts>,
+}
+
+/// What became of a change to an area in a run: the area it applies to, or why it applies to none
+/// (`otherColor`, `noArea`, `otherKind`, `notSewn`, as the reply's `areaChanges` says).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ChangeState {
+    Applies(AreaFacts),
+    Kept(&'static str),
+}
+
+/// Two areas are alike for Apply to Similar Areas when they are of the same colour and kind and
+/// their sizes lie within this share of the larger: an estimate the area inspector's gate 0 found
+/// groups what a person calls alike (a fox's ears and eyes, a watermelon's seeds, a logo's letters).
+const SIMILAR_SHARE: f64 = 0.25;
 
 /// What a run has made so far, stage by stage: shared outputs, cheap to clone and to hand to
 /// another thread.
@@ -638,11 +680,18 @@ impl Outputs {
     /// numbers and its place once the order is too).
     pub fn area_at(&self, x: u32, y: u32) -> Option<AreaFacts> {
         let c = &self.colours.as_ref()?.value;
+        let areas = self.lines.as_ref().map_or(&c.areas, |l| &l.value.areas);
+        self.facts(areas.regions.at(x, y)? as usize)
+    }
+
+    /// Area `a` (its place in the areas) named and described, once the colours are done (its
+    /// numbers, its place and its line's width once the order is too).
+    fn facts(&self, a: usize) -> Option<AreaFacts> {
+        let c = &self.colours.as_ref()?.value;
         let palette = self.palette?;
         let px_per_mm = self.px_per_mm()?;
         let lines = self.lines.as_ref().map(|l| &l.value);
         let areas = lines.map_or(&c.areas, |l| &l.areas);
-        let a = areas.regions.at(x, y)? as usize;
         let area = areas.areas.get(a)?;
         let row = c.colours.rows.get(area.row)?;
         let thread =
@@ -669,6 +718,8 @@ impl Outputs {
         let [x0, y0, x1, y1] = box_of.unwrap_or([0, 0, areas.regions.w, areas.regions.h]).map(f64::from);
         let (cx, cy) = (f64::from(stats.bbox[0] + stats.bbox[2]) / 2.0, f64::from(stats.bbox[1] + stats.bbox[3]) / 2.0);
         let share = |v: f64, lo: f64, hi: f64| if hi > lo { (v - lo) / (hi - lo) } else { 0.5 };
+        let [bx0, by0, bx1, by1] = stats.bbox.map(f64::from);
+        let line_width_mm = lines.and_then(|l| l.lines.get(a)).and_then(Option::as_ref).map(|line| line.width_px / px_per_mm);
         Some(AreaFacts {
             number: number.filter(|_| sewn),
             color: row.color,
@@ -680,7 +731,84 @@ impl Outputs {
             sewn,
             background: row.background,
             place: Place::of(share(cx, x0, x1), share(cy, y0, y1)),
+            widest_mm: stats.widest_px / px_per_mm,
+            line_width_mm,
+            size_mm: ((bx1 - bx0) / px_per_mm, (by1 - by0) / px_per_mm),
         })
+    }
+
+    /// The key of the area under working pixel `(x, y)` (a point inside it, its colour and its
+    /// kind), once the image is digitized; `None` on the background.
+    pub fn area_key(&self, x: u32, y: u32) -> Option<AreaKey> {
+        let d = self.digitized()?;
+        key_of(&d, d.areas().regions.at(x, y)? as usize)
+    }
+
+    /// The working pixel of the area `key` finds now (its deepest), by the rule a change to it is
+    /// found again by (`super::changes`), once the image is digitized; `None` when a change would
+    /// be kept, applying to nothing.
+    pub fn find(&self, key: &AreaKey) -> Option<(u32, u32)> {
+        let d = self.digitized()?;
+        let probe = AreaChange {
+            at: vectorcraft_geom::Point::new(key.at[0], key.at[1]),
+            color: key.color,
+            line: key.line,
+            stitch: Some(AreaStitch::None),
+            angle: None,
+        };
+        match super::changes::found(std::slice::from_ref(&probe), &d).first()? {
+            Found::Applies(a) => d.areas().regions.areas.get(*a).map(|s| s.deepest),
+            Found::Kept(_) => None,
+        }
+    }
+
+    /// The object the area under working pixel `(x, y)` was made into, in the document
+    /// [`Outputs::made`] holds, once the objects are made.
+    pub fn area_object(&self, x: u32, y: u32) -> Option<NodeId> {
+        let a = self.lines.as_ref()?.value.areas.regions.at(x, y)? as usize;
+        let (_, made) = self.objects.as_ref()?.value.made.as_ref()?;
+        made.areas.iter().find(|(b, _)| *b == a).map(|(_, id)| *id)
+    }
+
+    /// The keys of the areas alike to the one under working pixel `(x, y)`, in sewing order: of its
+    /// colour and kind, their sizes within [`SIMILAR_SHARE`] of the larger; none before the image
+    /// is digitized.
+    pub fn similar(&self, x: u32, y: u32) -> Vec<AreaKey> {
+        let Some(d) = self.digitized() else { return vec![] };
+        let areas = d.areas();
+        let Some(a) = areas.regions.at(x, y).map(|l| l as usize) else { return vec![] };
+        let Some(this) = areas.areas.get(a) else { return vec![] };
+        let alike = |b: &Area| {
+            let (p, q) = (b.pixels as f64, this.pixels as f64);
+            b.row == this.row && b.kind == this.kind && (p - q).abs() <= SIMILAR_SHARE * p.max(q)
+        };
+        d.order().sewn.iter().filter(|&&b| b != a && areas.areas.get(b).is_some_and(alike)).filter_map(|&b| key_of(&d, b)).collect()
+    }
+
+    /// Where the area under working pixel `(x, y)` is sewn, once the order is found.
+    pub fn sewing_place(&self, x: u32, y: u32) -> Option<SewingPlace> {
+        let d = self.digitized()?;
+        let a = d.areas().regions.at(x, y)? as usize;
+        let sewn = &d.order().sewn;
+        let i = sewn.iter().position(|&b| b == a)?;
+        let facts = |j: Option<usize>| j.and_then(|j| sewn.get(j)).and_then(|&b| self.facts(b));
+        Some(SewingPlace { number: i + 1, of: sewn.len(), before: facts(i.checked_sub(1)), after: facts(i.checked_add(1)) })
+    }
+
+    /// What became of each of `req`'s changes to single areas in this run, in their order, once the
+    /// image is digitized.
+    pub fn change_states(&self, req: &WindowRequest) -> Option<Vec<ChangeState>> {
+        let d = self.digitized()?;
+        let found = super::changes::found(&req.settings.changes, &d);
+        Some(
+            found
+                .into_iter()
+                .map(|f| match f {
+                    Found::Applies(a) => self.facts(a).map_or(ChangeState::Kept(super::changes::KeptWhy::NoArea.id()), ChangeState::Applies),
+                    Found::Kept(why) => ChangeState::Kept(why.id()),
+                })
+                .collect(),
+        )
     }
 
     /// The Shapes view's lines, once the shapes are done: each area's shape as it is sewn (its
@@ -898,11 +1026,22 @@ fn plan_of(planning: &DetachedService, objects: &ObjectsOut) -> Result<PlanOut> 
     Ok(PlanOut { planned: Some((planner, planned)), stats, ms: since(started) })
 }
 
+/// The key of area `a` of `d` (its place in the areas): its deepest point in the image's own
+/// pixels, its colour and its kind; `None` for the background.
+fn key_of(d: &Digitized, a: usize) -> Option<AreaKey> {
+    let area = d.areas().areas.get(a)?;
+    d.colours().rows.get(area.row).filter(|r| !r.background)?;
+    let (x, y) = d.areas().regions.areas.get(a)?.deepest;
+    let at = d.working().to_image * vectorcraft_geom::Point::new(f64::from(x) + 0.5, f64::from(y) + 0.5);
+    let color = d.colours().rows.get(area.row)?.color;
+    Some(AreaKey { at: [at.x, at.y], color, line: area.kind == AreaKind::Line })
+}
+
 impl Outputs {
     /// What the run's objects were made on, the document with them, and what was made (`None`:
     /// nothing to make, or the objects aren't made yet).
     pub(super) fn made_for_create(&self) -> Option<(&Arc<Document>, Arc<Document>, Made)> {
         let o = &self.objects.as_ref()?.value;
-        o.made.as_ref().map(|(d, m)| (&o.of, d.clone(), *m))
+        o.made.as_ref().map(|(d, m)| (&o.of, d.clone(), m.clone()))
     }
 }

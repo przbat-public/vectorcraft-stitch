@@ -7393,3 +7393,15 @@ embroidery	No area here now	Hier ligt nu geen vlak
 embroidery	Its area is a line now	Het vlak is nu een lijn
 embroidery	Its area is filled now	Het vlak is nu gevuld
 embroidery	Its color isn't sewn	De kleur wordt niet geborduurd
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Behouden als dynamisch object
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Bewaart de afbeelding bij de objecten die ervan zijn gemaakt, zodat ‘Afbeelding digitaliseren…’ ze opnieuw kan wijzigen.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	De objecten zijn met de hand gewijzigd. Opnieuw digitaliseren vervangt die wijzigingen; Ongedaan maken brengt ze terug.
+embroidery	Replace	Vervangen
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	De instellingen van dit dynamische object konden niet worden gelezen: het venster begint met de standaardwaarden.
+embroidery	Edit in Digitize Image…	Bewerken in ‘Afbeelding digitaliseren’…
+embroidery	Live digitized image	Dynamisch gedigitaliseerde afbeelding
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Dynamisch object gemaakt: {objects} ({threads}). ‘Afbeelding digitaliseren…’ wijzigt het opnieuw; Ongedaan maken verwijdert het.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Niet vervangen
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Dit dynamische object is gemaakt in een ander garenpalet: de kleuren worden opnieuw gekoppeld aan het palet van het document.

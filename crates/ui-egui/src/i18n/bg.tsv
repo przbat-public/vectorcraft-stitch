@@ -7329,3 +7329,15 @@ embroidery	No area here now	Сега тук няма област
 embroidery	Its area is a line now	Областта ѝ сега е линия
 embroidery	Its area is filled now	Областта ѝ сега е запълнена
 embroidery	Its color isn't sewn	Цветът ѝ не се бродира
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Запази като динамичен обект
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Запазва изображението заедно с обектите, създадени от него, за да може „Дигитализиране на изображение…“ да ги промени отново.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Обектите му са променени ръчно. Повторното дигитализиране заменя тези промени; „Отмени“ ги връща.
+embroidery	Replace	Замени
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Настройките на този динамичен обект не могат да бъдат прочетени: прозорецът започва от стандартните.
+embroidery	Edit in Digitize Image…	Редактирай в „Дигитализиране на изображение“…
+embroidery	Live digitized image	Динамично дигитализирано изображение
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Създаден е динамичен обект: {objects} ({threads}). „Дигитализиране на изображение…“ го променя отново; „Отмени“ го премахва.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Не заменяй
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Този динамичен обект е създаден с друга палитра от конци: цветовете му се съпоставят отново с палитрата на документа.

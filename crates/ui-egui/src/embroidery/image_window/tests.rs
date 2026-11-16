@@ -74,7 +74,7 @@ pub(super) fn open_dialog(app: &VectorcraftApp) -> Option<&Dialog> {
     app.ui.dialog.as_ref().filter(|d| d.kind == KIND)
 }
 
-fn undo_steps(app: &VectorcraftApp) -> usize {
+pub(super) fn undo_steps(app: &VectorcraftApp) -> usize {
     app.session.doc().unwrap().history.undo.len()
 }
 

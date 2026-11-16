@@ -970,8 +970,9 @@ Where merging `main` (upstream) into the fork conflicts, and how to resolve each
     (`embroidery::live_digitizing`, `LIVE_EMBROIDERY_REFUSED`), which only Digitize Image… makes
     and digitizes again, as the project owner chose on 2026-11-16 (the Decisions register;
     `image_trace_refuses_a_live_embroidery_object`);
-  - `ui-egui/src/dialogs.rs`: the window's row at the end of the `registry!` (`EmbroideryImage`, a
-    `DialogSpec::window` the fork's code draws), after Restore Object's question;
+  - `ui-egui/src/dialogs.rs`: the window's row at the end of the `registry!` (`EmbroideryImage`, its
+    `image_window::SPEC`: a window the fork's code draws, as upstream's `DialogSpec::window` makes
+    one, whose fields `ui.dialog.set` takes besides those it holds), after Restore Object's question;
   - `ui-egui/src/menus/tree.rs`: Object › Image Trace › Digitize Image…, after a separator under
     Expand;
   - `ui-egui/src/widgets.rs`: `menu_floor` re-exported outside tests too (upstream re-exports it

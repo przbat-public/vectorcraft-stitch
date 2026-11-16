@@ -7655,3 +7655,15 @@ embroidery	No area here now	Agora não há área aqui
 embroidery	Its area is a line now	A área dela agora é uma linha
 embroidery	Its area is filled now	A área dela agora é preenchida
 embroidery	Its color isn't sewn	A cor dela não é bordada
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Manter como objeto dinâmico
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Mantém a imagem junto com os objetos feitos a partir dela, para que “Digitalizar imagem…” possa alterá-los novamente.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Os objetos dele foram alterados à mão. Digitalizá-lo novamente substitui essas alterações; Desfazer as traz de volta.
+embroidery	Replace	Substituir
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Não foi possível ler as configurações deste objeto dinâmico: a janela começa com os valores padrão.
+embroidery	Edit in Digitize Image…	Editar em “Digitalizar imagem”…
+embroidery	Live digitized image	Imagem digitalizada dinâmica
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Objeto dinâmico criado: {objects} ({threads}). “Digitalizar imagem…” o altera novamente; Desfazer o remove.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Não substituir
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Este objeto dinâmico foi feito em outra paleta de linhas: suas cores são combinadas novamente com a paleta do documento.

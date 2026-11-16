@@ -7642,3 +7642,15 @@ embroidery	No area here now	აქ ახლა არე არ არის
 embroidery	Its area is a line now	მისი არე ახლა ხაზია
 embroidery	Its area is filled now	მისი არე ახლა შევსებულია
 embroidery	Its color isn't sewn	მისი ფერი არ იქარგება
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	დინამიკურ ობიექტად შენახვა
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	ინახავს სურათს მისგან შექმნილ ობიექტებთან ერთად, რათა „სურათის დიგიტალიზაციამ…“ შეძლოს მათი ხელახლა შეცვლა.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	მისი ობიექტები ხელით შეიცვალა. ხელახლა დიგიტალიზაცია ამ ცვლილებებს ჩაანაცვლებს; დაბრუნება მათ აღადგენს.
+embroidery	Replace	ჩანაცვლება
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	ამ დინამიკური ობიექტის პარამეტრების წაკითხვა ვერ მოხერხდა: ფანჯარა ნაგულისხმევი მნიშვნელობებით იწყება.
+embroidery	Edit in Digitize Image…	„სურათის დიგიტალიზაციაში“ რედაქტირება…
+embroidery	Live digitized image	დინამიკური დიგიტალიზებული სურათი
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	შეიქმნა დინამიკური ობიექტი: {objects} ({threads}). „სურათის დიგიტალიზაცია…“ მას ხელახლა შეცვლის; დაბრუნება მას წაშლის.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	არ ჩაანაცვლო
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	ეს დინამიკური ობიექტი სხვა ძაფების პალიტრით შეიქმნა: მისი ფერები ხელახლა ესადაგება დოკუმენტის პალიტრას.

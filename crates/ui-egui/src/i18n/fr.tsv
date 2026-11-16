@@ -7578,3 +7578,15 @@ embroidery	No area here now	Aucune zone ici maintenant
 embroidery	Its area is a line now	Sa zone est maintenant une ligne
 embroidery	Its area is filled now	Sa zone est maintenant remplie
 embroidery	Its color isn't sewn	Sa couleur n’est pas brodée
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Conserver comme objet dynamique
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Conserve l’image avec les objets qui en sont faits, pour que « Numériser l’image… » puisse les modifier à nouveau.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Ses objets ont été modifiés à la main. Le numériser à nouveau remplace ces modifications ; Annuler les rétablit.
+embroidery	Replace	Remplacer
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Les réglages de cet objet dynamique n’ont pas pu être lus : la fenêtre part des valeurs par défaut.
+embroidery	Edit in Digitize Image…	Modifier dans « Numériser l’image »…
+embroidery	Live digitized image	Image numérisée dynamique
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Objet dynamique créé : {objects} ({threads}). « Numériser l’image… » le modifie à nouveau ; on le retire avec Annuler.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Ne pas remplacer
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Cet objet dynamique a été créé dans une autre palette de fils : ses couleurs sont de nouveau associées à la palette du document.

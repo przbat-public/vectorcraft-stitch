@@ -7342,3 +7342,15 @@ embroidery	No area here now	Sekarang tidak ada area di sini
 embroidery	Its area is a line now	Areanya sekarang berupa garis
 embroidery	Its area is filled now	Areanya sekarang terisi
 embroidery	Its color isn't sewn	Warnanya tidak dibordir
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Simpan sebagai objek dinamis
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Menyimpan gambar bersama objek yang dibuat darinya, agar “Digitalkan gambar…” dapat mengubahnya lagi.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Objeknya diubah secara manual. Mendigitalkannya lagi akan mengganti perubahan itu; Urungkan mengembalikannya.
+embroidery	Replace	Ganti
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Pengaturan objek dinamis ini tidak dapat dibaca: jendela dimulai dari nilai default.
+embroidery	Edit in Digitize Image…	Edit di “Digitalkan gambar”…
+embroidery	Live digitized image	Gambar terdigitalkan dinamis
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Objek dinamis dibuat: {objects} ({threads}). “Digitalkan gambar…” mengubahnya lagi; Urungkan menghapusnya.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Jangan ganti
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Objek dinamis ini dibuat dengan palet benang lain: warnanya dicocokkan lagi dengan palet dokumen.

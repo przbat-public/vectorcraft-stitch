@@ -9068,3 +9068,15 @@ embroidery	No area here now	Här finns nu inget område
 embroidery	Its area is a line now	Dess område är nu en linje
 embroidery	Its area is filled now	Dess område är nu fyllt
 embroidery	Its color isn't sewn	Dess färg broderas inte
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Behåll som dynamiskt objekt
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Behåller bilden tillsammans med objekten som gjorts av den, så att ”Digitalisera bild…” kan ändra dem igen.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Dess objekt har ändrats för hand. Att digitalisera det igen ersätter de ändringarna; Ångra tar tillbaka dem.
+embroidery	Replace	Ersätt
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Det dynamiska objektets inställningar kunde inte läsas: fönstret börjar från standardvärdena.
+embroidery	Edit in Digitize Image…	Redigera i ”Digitalisera bild”…
+embroidery	Live digitized image	Dynamiskt digitaliserad bild
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Skapade ett dynamiskt objekt: {objects} ({threads}). ”Digitalisera bild…” ändrar det igen; Ångra tar bort det.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Ersätt inte
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Det här dynamiska objektet gjordes i en annan trådpalett: dess färger matchas mot dokumentets palett igen.

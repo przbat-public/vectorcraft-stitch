@@ -7525,3 +7525,15 @@ embroidery	No area here now	Ahora aquí no hay ningún área
 embroidery	Its area is a line now	Su área ahora es una línea
 embroidery	Its area is filled now	Su área ahora está rellena
 embroidery	Its color isn't sewn	Su color no se borda
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Conservar como objeto dinámico
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Conserva la imagen con los objetos hechos a partir de ella, para que «Digitalizar imagen…» pueda volver a cambiarlos.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Sus objetos se cambiaron a mano. Volver a digitalizarlo reemplaza esos cambios; Deshacer los recupera.
+embroidery	Replace	Reemplazar
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	No se pudieron leer los ajustes de este objeto dinámico: la ventana empieza con los valores predeterminados.
+embroidery	Edit in Digitize Image…	Editar en «Digitalizar imagen»…
+embroidery	Live digitized image	Imagen digitalizada dinámica
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Se creó un objeto dinámico: {objects} ({threads}). «Digitalizar imagen…» lo vuelve a cambiar; se quita con Deshacer.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	No reemplazar
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Este objeto dinámico se hizo en otra paleta de hilos: sus colores se vuelven a emparejar con la paleta del documento.

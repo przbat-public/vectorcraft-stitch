@@ -7421,3 +7421,15 @@ embroidery	No area here now	此处现在没有区域
 embroidery	Its area is a line now	其区域现在是线条
 embroidery	Its area is filled now	其区域现在是填充
 embroidery	Its color isn't sewn	其颜色不缝制
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	保留为实时对象
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	将图像与由其生成的对象保存在一起，以便“数字化图像…”可以再次更改它们。
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	其对象已被手动更改。重新数字化会替换这些更改；撤销可将其恢复。
+embroidery	Replace	替换
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	无法读取此实时对象的设置：窗口从默认值开始。
+embroidery	Edit in Digitize Image…	在“数字化图像”中编辑…
+embroidery	Live digitized image	实时数字化图像
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	已创建实时对象：{objects}（{threads}）。“数字化图像…”可再次更改它；撤销可将其移除。
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	不替换
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	此实时对象是用另一个线色板制作的：其颜色将重新匹配文档的色板。

@@ -34,7 +34,7 @@ const NOT_KEPT: [&str; 3] = ["width", "height", "fit"];
 
 /// The digitizing a live object holds: `n` is a group named as Image Trace names its objects, an
 /// image first in it, and it keeps a digitizing.
-pub(crate) fn live_digitizing(n: &Node) -> Option<&Digitizing> {
+pub fn live_digitizing(n: &Node) -> Option<&Digitizing> {
     let image_first = n.children().and_then(|c| c.first()).is_some_and(|c| matches!(c.kind, NodeKind::Image(_)));
     let traced = matches!(n.kind, NodeKind::Group { clip: false, .. }) && n.name.as_deref() == Some(TRACE_NAME) && image_first;
     traced.then(|| n.extras().embroidery.as_deref()?.digitizing.as_ref()).flatten()
@@ -50,8 +50,9 @@ fn image_of(n: &Node) -> Option<(&Node, Affine)> {
 }
 
 /// Whether live object `n`'s objects were edited by hand since it was made: their fingerprint now
-/// against the one kept (none kept: taken as edited). `None` when `n` is no live object.
-pub(crate) fn edited(n: &Node) -> Option<bool> {
+/// against the one kept (none kept: taken as edited). `None` when `n` is no live object. It walks
+/// all of its objects' points: ask it once, not every frame.
+pub fn edited(n: &Node) -> Option<bool> {
     let d = live_digitizing(n)?;
     let (_, xf) = image_of(n)?;
     Some(d.fingerprint.is_none() || fingerprint(n, xf) != d.fingerprint)

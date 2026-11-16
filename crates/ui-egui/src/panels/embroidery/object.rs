@@ -243,6 +243,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             return;
         }
     };
+    let digitize_live = edit_live(app, ui, &ids);
     // Read from the document alone, on every frame: the fabric's name and the thread's weight.
     let (fabric, weight) = app.session.active().map(|st| fabric_and_thread(&st.doc)).unwrap_or((FabricChoice::BuiltIn, 0.0));
     let footer_words = footer_words(&fabric, weight, lang);
@@ -326,6 +327,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             app.status(e);
         }
     }
+    if let Some(id) = digitize_live {
+        crate::embroidery::image_window::open(app, Some(id));
+    }
     if let Some(id) = edit {
         crate::embroidery::editing::start(app, id);
     }
@@ -406,6 +410,8 @@ fn kind_words(n: &vectorcraft_doc::Node, info: Option<&ObjectSettings>) -> Strin
         return crate::et!("Manual stitches").to_string();
     }
     let kind = match &n.kind {
+        // A live object of a digitized image (Keep as Live Object): a group to upstream.
+        NodeKind::Group { .. } if vectorcraft_engine::cmd::embroidery::live_digitizing(n).is_some() => crate::et!("Live digitized image"),
         NodeKind::Path { guide: true, .. } => crate::et!("Guide"),
         NodeKind::Path { .. } if literal => crate::et!("Stitches from a file"),
         NodeKind::Path { .. } => crate::et!("Path"),
@@ -899,6 +905,15 @@ fn edit_stitches(ui: &mut Ui, id: Option<NodeId>) -> Option<NodeId> {
     rows::keyboard_tip(ui, resp.id, tip);
     resp.on_hover_text(tip).clicked().then_some(id)
 }
+
+/// Edit in Digitize Image… for the one live object of a digitized image selected (`ids`) → its id
+/// when pressed: the window opens on it with the settings it was made with.
+fn edit_live(app: &VectorcraftApp, ui: &mut Ui, ids: &[NodeId]) -> Option<NodeId> {
+    let [id] = ids else { return None };
+    app.session.active()?.doc.node(*id).and_then(vectorcraft_engine::cmd::embroidery::live_digitizing)?;
+    crate::widgets::secondary_button(ui, crate::et!("Edit in Digitize Image…")).clicked().then_some(*id)
+}
+
 /// How far from 100 % a scale since converting must be for the tab to say it, percent: what its
 /// words round to (a whole percent), so that a scale undone by rounding isn't said.
 const SCALE_SAID: f64 = 0.5;

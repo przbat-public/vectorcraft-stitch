@@ -7268,3 +7268,15 @@ embroidery	No area here now	ここには今は領域がありません
 embroidery	Its area is a line now	その領域は今は線です
 embroidery	Its area is filled now	その領域は今は塗りつぶしです
 embroidery	Its color isn't sewn	その色は縫いません
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	ライブオブジェクトとして保持
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	画像をそこから作成したオブジェクトと一緒に保持し、「画像をデジタイズ…」で再び変更できるようにします。
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	オブジェクトが手動で変更されています。もう一度デジタイズするとそれらの変更は置き換えられ、取り消しで元に戻せます。
+embroidery	Replace	置き換える
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	このライブオブジェクトの設定を読み取れませんでした。ウィンドウは既定値から始まります。
+embroidery	Edit in Digitize Image…	「画像をデジタイズ」で編集…
+embroidery	Live digitized image	ライブのデジタイズ画像
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	ライブオブジェクトを作成しました：{objects} ({threads})。「画像をデジタイズ…」で再び変更でき、取り消しで削除できます。
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	置き換えない
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	このライブオブジェクトは別の糸パレットで作成されました。色はドキュメントのパレットに改めて合わせられます。

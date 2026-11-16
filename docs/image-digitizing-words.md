@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-16 · **Change:** Apply to Similar Areas, Show in Sewing Order and its place, step 4's list of area changes and why one applies to none; before that, the area inspector: an area's facts, how Auto sews it and why, why Satin isn't offered, and its stitches (the inspector PR); before that, Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-16 · **Change:** the live object: Keep as Live Object, the question before hand edits are replaced, opening one again, the Object tab's Edit in Digitize Image… and its kind; before that, Apply to Similar Areas, Show in Sewing Order and its place, step 4's list of area changes and why one applies to none; before that, the area inspector: an area's facts, how Auto sews it and why, why Satin isn't offered, and its stitches (the inspector PR); before that, Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -24,6 +24,7 @@ The tables below list the window's own words in the order the code draws them; w
 | center line | linia środkowa | note 09, Appendix A |
 | thread palette | paleta nici | Document Setup's Embroidery tab |
 | ΔE (CIEDE2000) | ΔE | not translated: a symbol |
+| live object (Keep as Live Object) | żywy obiekt | the mockup of the window's Stitches step that the project owner approved („Zachowaj jako żywy obiekt”) |
 
 ## Choices of wording made while building
 
@@ -36,6 +37,9 @@ The tables below list the window's own words in the order the code draws them; w
 - The colour list's two tooltips that were descriptions in Polish are commands, as in English: "Szyj te kolory jako jeden.", "Szyj te kolory znowu, tak jak wybierze Auto.".
 - The Shapes step's field for thin lines keeps the owner's words, "Thin lines sewn along their middle below [1 mm]" („Cienkie linie szyte środkiem poniżej”), its field after them; languages that put "below" after the number reword it so that the field can follow: Japanese, Korean, Turkish and Chinese name the width's upper limit ("the upper limit of the width of thin lines sewn along their middle"), and Hindi, Hungarian, Georgian and Finnish say "width less than".
 - Nothing to sew is said by its cause: every color left out ("Nothing to sew: every color is left out."), or every area the background, which says what to do ("Nothing to sew: every area is the background. Sew the background, or crop less."); Create's refusal and the note say the same.
+- A digitized image kept live is „żywy obiekt” in Polish, the mockup's word, while the app's „Obiekt dynamiczny” stays upstream's, for blends and envelopes; the other languages take their catalogue's word for a live object, as that is what upstream calls such an object there.
+- Create's words for a live object put its counts after a colon, "Created a live object: 23 objects (7 threads).", so that no language needs a case after "of".
+- The question before hand edits are replaced answers with "Don't Replace" and "Replace" rather than "Cancel": the window's × is "Cancel" to screen readers, and while the question shows the two would share a name and do different things.
 
 ## The window: its title, its run, and what it remembers
 
@@ -306,6 +310,21 @@ The Stitches step's list of area changes (the mockup's Polish heading and help l
 | Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them. | Utworzono {objects} ({threads}). Obraz jest na ukrytej warstwie szablonu „{layer}”. Polecenie Cofnij je usunie. |
 | {count} object\|{count} objects | {count} obiekt\|{count} obiekty\|{count} obiektów |
 
+## The live object
+
+| English | Polish |
+|---|---|
+| Keep as Live Object | Zachowaj jako żywy obiekt |
+| Keeps the image with the objects made of it, so that Digitize Image… can change them again. | Zachowuje obraz razem z obiektami z niego utworzonymi, aby „Digitalizuj obraz…” mogło je ponownie zmienić. |
+| Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back. | Jego obiekty zostały zmienione ręcznie. Ponowna digitalizacja zastąpi te zmiany; polecenie Cofnij je przywróci. |
+| Replace | Zastąp |
+| Don't Replace | Nie zastępuj |
+| This live object's settings couldn't be read: the window starts from the defaults. | Nie udało się odczytać ustawień tego żywego obiektu: okno zaczyna od ustawień domyślnych. |
+| This live object was made in another thread palette: its colors are matched to the document's palette again. | Ten żywy obiekt powstał w innej palecie nici: jego kolory są ponownie dopasowywane do palety dokumentu. |
+| Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it. | Utworzono żywy obiekt: {objects} ({threads}). „Digitalizuj obraz…” zmieni go ponownie; polecenie Cofnij go usunie. |
+| Edit in Digitize Image… (the Object tab) | Edytuj w „Digitalizuj obraz”… |
+| Live digitized image (the Object tab's kind) | Żywy obraz zdigitalizowany |
+
 ## Revision history
 
 | Date | Change | Summary |
@@ -321,3 +340,4 @@ The Stitches step's list of area changes (the mockup's Polish heading and help l
 | 2026-11-15 | update | The review of PR #38: Embroidery Settings…'s tooltip says "when Document Setup closes" („po zamknięciu Ustawień dokumentu”), as "it" read as this window; the Shapes step's slider notes say „Wyżej/Niżej” for "Higher/Lower" (a slider's value, not an amount). |
 | 2026-11-16 | update | The area inspector: an area's facts line, how Auto sews it and why (its kind, its width against narrow parts as satin), that a stitch was chosen for it, why Satin isn't offered (a filled area past 12 mm, a line under 1 mm), and its stitches as planned. |
 | 2026-11-16 | update | Apply to Similar Areas and its tooltip, Show in Sewing Order and the area's place in the order with ◀ ▶ named for screen readers, and the Stitches step's list of area changes: its heading and help line (the mockup's Polish), ↺, Reset All, and why a change applies to none. |
+| 2026-11-16 | update | The live object: Keep as Live Object and its tooltip, the question before objects changed by hand are replaced (Don't Replace, Replace), the words when a live object's settings can't be read, Create's words for a live object, and the Object tab's Edit in Digitize Image… and its kind; „żywy obiekt” in Polish, the mockup's word. |

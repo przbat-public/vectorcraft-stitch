@@ -7583,3 +7583,15 @@ embroidery	No area here now	Nyní tu není žádná oblast
 embroidery	Its area is a line now	Jeho oblast je nyní čára
 embroidery	Its area is filled now	Jeho oblast je nyní vyplněná
 embroidery	Its color isn't sewn	Jeho barva se nevyšívá
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Ponechat jako živý objekt
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Ponechá obrázek s objekty z něj vytvořenými, aby je „Digitalizovat obrázek…“ mohl znovu změnit.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Jeho objekty byly ručně změněny. Opětovná digitalizace tyto změny nahradí; příkaz Zpět je vrátí.
+embroidery	Replace	Nahradit
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Nastavení tohoto živého objektu nelze přečíst: okno začíná s výchozími hodnotami.
+embroidery	Edit in Digitize Image…	Upravit v „Digitalizovat obrázek“…
+embroidery	Live digitized image	Živý digitalizovaný obrázek
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Vytvořen živý objekt: {objects} ({threads}). „Digitalizovat obrázek…“ ho znovu změní; odstraníte ho příkazem Zpět.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Nenahrazovat
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Tento živý objekt vznikl v jiné paletě nití: jeho barvy se znovu přiřadí k paletě dokumentu.

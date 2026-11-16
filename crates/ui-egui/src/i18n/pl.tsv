@@ -7438,3 +7438,15 @@ embroidery	No area here now	W tym miejscu nie ma teraz obszaru
 embroidery	Its area is a line now	Jego obszar jest teraz linią
 embroidery	Its area is filled now	Jego obszar jest teraz wypełniony
 embroidery	Its color isn't sewn	Jego kolor nie jest szyty
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Zachowaj jako żywy obiekt
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Zachowuje obraz razem z obiektami z niego utworzonymi, aby „Digitalizuj obraz…” mogło je ponownie zmienić.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Jego obiekty zostały zmienione ręcznie. Ponowna digitalizacja zastąpi te zmiany; polecenie Cofnij je przywróci.
+embroidery	Replace	Zastąp
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Nie udało się odczytać ustawień tego żywego obiektu: okno zaczyna od ustawień domyślnych.
+embroidery	Edit in Digitize Image…	Edytuj w „Digitalizuj obraz”…
+embroidery	Live digitized image	Żywy obraz zdigitalizowany
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Utworzono żywy obiekt: {objects} ({threads}). „Digitalizuj obraz…” zmieni go ponownie; polecenie Cofnij go usunie.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Nie zastępuj
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Ten żywy obiekt powstał w innej palecie nici: jego kolory są ponownie dopasowywane do palety dokumentu.

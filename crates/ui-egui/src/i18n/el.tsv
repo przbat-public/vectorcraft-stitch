@@ -7535,3 +7535,15 @@ embroidery	No area here now	Εδώ δεν υπάρχει πλέον περιοχ
 embroidery	Its area is a line now	Η περιοχή της είναι τώρα γραμμή
 embroidery	Its area is filled now	Η περιοχή της είναι τώρα γεμάτη
 embroidery	Its color isn't sewn	Το χρώμα της δεν κεντιέται
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Διατήρηση ως δυναμικό αντικείμενο
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Διατηρεί την εικόνα μαζί με τα αντικείμενα που φτιάχτηκαν από αυτήν, ώστε η «Ψηφιοποίηση εικόνας…» να μπορεί να τα αλλάξει ξανά.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Τα αντικείμενά του άλλαξαν με το χέρι. Η εκ νέου ψηφιοποίηση αντικαθιστά αυτές τις αλλαγές· η Αναίρεση τις επαναφέρει.
+embroidery	Replace	Αντικατάσταση
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Δεν ήταν δυνατή η ανάγνωση των ρυθμίσεων αυτού του δυναμικού αντικειμένου: το παράθυρο ξεκινά από τις προεπιλογές.
+embroidery	Edit in Digitize Image…	Επεξεργασία στην «Ψηφιοποίηση εικόνας»…
+embroidery	Live digitized image	Δυναμική ψηφιοποιημένη εικόνα
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Δημιουργήθηκε δυναμικό αντικείμενο: {objects} ({threads}). Η «Ψηφιοποίηση εικόνας…» το αλλάζει ξανά· η Αναίρεση το αφαιρεί.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Χωρίς αντικατάσταση
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Αυτό το δυναμικό αντικείμενο δημιουργήθηκε σε άλλη παλέτα κλωστών: τα χρώματά του αντιστοιχίζονται ξανά στην παλέτα του εγγράφου.

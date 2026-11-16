@@ -1,5 +1,5 @@
 //! The image window's Live bar: how its result stands, the figures of what Create would make, its
-//! notes, and Start Over, Cancel and Create Embroidery Objects.
+//! notes, and Start Over, Cancel, Keep as Live Object and Create Embroidery Objects.
 //!
 //! - **Figures** in the status bar counters' words ("8,105 stitches · 4 threads · 3 thread changes
 //!   · about 12 min · 98 × 88.2 mm"): the image's objects sewn alone, with the document's fabric,
@@ -12,14 +12,19 @@
 //!   (errors and warnings), problems first: a chip with the first and "+2", a list of them all.
 //! - **Screen readers** hear the bar as a polite status, said again only once a run settles.
 //! - **Create** is disabled with its reason when nothing would be made, or the settings can't be
-//!   digitized.
+//!   digitized; so is **Keep as Live Object** beside it (the mockup's place, between Cancel and
+//!   Create).
+//! - **The question** before a live object's objects changed by hand are replaced takes the
+//!   buttons' place (one dialog at a time): its words, Don't Replace (which takes the keyboard) and
+//!   Replace; they answer only once the double-click time has passed with nothing held, and the
+//!   keyboard goes back to the button that asked when it is let go.
 
 use egui::{Align, Color32, FontId, Layout, RichText, Sense, Stroke, Ui, pos2, vec2};
 use serde_json::Value;
 use vectorcraft_engine::cmd::embroidery::DigitizeStage;
 
 use super::schedule::Freshness;
-use super::{Live, frame::Asked, words};
+use super::{Live, Making, frame::Asked, words};
 use crate::VectorcraftApp;
 use crate::embroidery::counters::{self, Figures};
 use crate::embroidery::marks::{self, Mark};
@@ -318,6 +323,16 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<As
     let shown_figures = live.last_figures(said_now.as_ref());
     let create_waiting = live.create_waiting;
     let announced = live.announced.clone();
+    // The question's buttons answer only once it is armed (`Question::armed`), as of the frame
+    // before: it arms once the double-click time has passed with no key or button held.
+    let held = ui.input(|i| i.pointer.any_down() || i.key_down(egui::Key::Enter) || i.key_down(egui::Key::Space));
+    let double_click = ui.ctx().options(|o| o.input_options.max_double_click_delay);
+    let question = live.question.as_mut().map(|q| {
+        let asking = (q.armed, std::mem::take(&mut q.focus));
+        q.armed |= now - q.shown >= double_click && !held;
+        asking
+    });
+    let refocus = live.refocus.take();
     let mut asked = None;
     ui.horizontal(|ui| {
         ui.vertical(|ui| {
@@ -330,13 +345,24 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<As
             }
         });
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            if let Some((armed, focus)) = question {
+                asked = replace_question(ui, armed, focus);
+                return;
+            }
             let create = widgets::primary_button_enabled(ui, crate::et!("Create Embroidery Objects"), refused.is_none());
-            let create = match &refused {
-                Some(why) => create.on_disabled_hover_text(why),
-                None => create,
-            };
-            if create.clicked() {
+            if refocus == Some(Making::Objects) {
+                create.request_focus();
+            }
+            if with_refusal(create, refused.as_deref()).clicked() {
                 asked = Some(Asked::Create);
+            }
+            let keep = ui.add_enabled_ui(refused.is_none(), |ui| widgets::secondary_button(ui, crate::et!("Keep as Live Object"))).inner;
+            if refocus == Some(Making::LiveObject) {
+                keep.request_focus();
+            }
+            let tip = crate::et!("Keeps the image with the objects made of it, so that Digitize Image… can change them again.");
+            if with_refusal(keep.on_hover_text(tip), refused.as_deref()).clicked() {
+                asked = Some(Asked::KeepLive);
             }
             if widgets::secondary_button(ui, crate::et!("Cancel")).clicked() {
                 asked = Some(Asked::Cancel);
@@ -346,6 +372,46 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<As
             }
         });
     });
+    asked
+}
+
+/// `button`, disabled with the reason Create is refused (`refused`) in its tooltip.
+fn with_refusal(button: egui::Response, refused: Option<&str>) -> egui::Response {
+    match refused {
+        Some(why) => button.on_disabled_hover_text(why),
+        None => button,
+    }
+}
+
+/// The question's id in egui's memory, which holds one open popup at a time: the question holds it
+/// while it shows, so that dialogs leave Escape to it.
+pub(crate) fn question_id() -> egui::Id {
+    egui::Id::unique("digitize-replace-question")
+}
+
+/// The question before objects changed by hand are replaced, in place of the bar's buttons (one
+/// dialog at a time): its words, Don't Replace and Replace, each described by its words for screen
+/// readers. They answer once it is `armed`; Don't Replace, the safe answer, takes the keyboard when
+/// it first shows (`focus`) → its answer.
+fn replace_question(ui: &mut Ui, armed: bool, focus: bool) -> Option<Asked> {
+    let words = crate::et!("Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.");
+    let described = |ui: &Ui, resp: &egui::Response| ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(words));
+    let mut asked = None;
+    let replace = widgets::primary_button(ui, crate::et!("Replace"));
+    described(ui, &replace);
+    if replace.clicked() && armed {
+        asked = Some(Asked::Replace);
+    }
+    let keep = widgets::secondary_button(ui, crate::et!("Don't Replace"));
+    described(ui, &keep);
+    if focus {
+        keep.request_focus();
+    }
+    if keep.clicked() && armed {
+        asked = Some(Asked::KeepEdits);
+    }
+    let t = Tokens::get(ui.ctx());
+    ui.add(egui::Label::new(RichText::new(words).size(SMALL_TEXT).color(t.text_strong)).wrap());
     asked
 }
 
@@ -458,6 +524,18 @@ pub(crate) fn created_words(objects: u64, threads: u64, layer: &str) -> String {
             ("objects", &crate::etn!(objects, "{count} object", "{count} objects")),
             ("threads", &crate::etn!(threads, "{count} thread", "{count} threads")),
             ("layer", layer),
+        ],
+    )
+}
+
+/// The status bar's words once Keep as Live Object made the live object: of how many objects, in
+/// how many threads, and how to change it again.
+pub(crate) fn kept_live_words(objects: u64, threads: u64) -> String {
+    fill(
+        crate::et!("Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it."),
+        &[
+            ("objects", &crate::etn!(objects, "{count} object", "{count} objects")),
+            ("threads", &crate::etn!(threads, "{count} thread", "{count} threads")),
         ],
     )
 }

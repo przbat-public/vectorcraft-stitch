@@ -7184,3 +7184,15 @@ embroidery	No area here now	Giờ đây ở đây không có vùng nào
 embroidery	Its area is a line now	Vùng của nó giờ là một đường
 embroidery	Its area is filled now	Vùng của nó giờ được tô
 embroidery	Its color isn't sewn	Màu của nó không được thêu
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Giữ làm đối tượng động
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Giữ hình ảnh cùng các đối tượng tạo từ nó, để “Số hóa hình ảnh…” có thể thay đổi chúng lần nữa.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Các đối tượng của nó đã được thay đổi thủ công. Số hóa lại sẽ thay thế những thay đổi đó; Hoàn tác sẽ khôi phục chúng.
+embroidery	Replace	Thay thế
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Không đọc được cài đặt của đối tượng động này: cửa sổ bắt đầu từ giá trị mặc định.
+embroidery	Edit in Digitize Image…	Sửa trong “Số hóa hình ảnh”…
+embroidery	Live digitized image	Hình ảnh số hóa động
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Đã tạo đối tượng động: {objects} ({threads}). “Số hóa hình ảnh…” sẽ thay đổi nó lần nữa; Hoàn tác sẽ gỡ bỏ nó.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Không thay thế
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Đối tượng động này được tạo bằng một bảng chỉ khác: màu của nó được ghép lại với bảng màu của tài liệu.

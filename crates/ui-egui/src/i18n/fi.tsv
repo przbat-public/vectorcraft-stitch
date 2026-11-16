@@ -7618,3 +7618,15 @@ embroidery	No area here now	Tässä ei ole nyt aluetta
 embroidery	Its area is a line now	Sen alue on nyt viiva
 embroidery	Its area is filled now	Sen alue on nyt täytetty
 embroidery	Its color isn't sewn	Sen väriä ei kirjota
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Säilytä dynaamisena objektina
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Säilyttää kuvan siitä tehtyjen objektien kanssa, jotta Digitoi kuva… voi muuttaa niitä uudelleen.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Sen objekteja on muutettu käsin. Uudelleen digitointi korvaa nämä muutokset; Kumoa palauttaa ne.
+embroidery	Replace	Korvaa
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Tämän dynaamisen objektin asetuksia ei voitu lukea: ikkuna alkaa oletusarvoista.
+embroidery	Edit in Digitize Image…	Muokkaa Digitoi kuva -ikkunassa…
+embroidery	Live digitized image	Dynaaminen digitoitu kuva
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Luotiin dynaaminen objekti: {objects} ({threads}). Digitoi kuva… muuttaa sitä uudelleen; Kumoa poistaa sen.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Älä korvaa
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Tämä dynaaminen objekti tehtiin toisessa lankapaletissa: sen värit sovitetaan uudelleen asiakirjan palettiin.

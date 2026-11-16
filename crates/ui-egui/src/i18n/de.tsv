@@ -7169,3 +7169,15 @@ embroidery	No area here now	Hier ist jetzt keine Fläche
 embroidery	Its area is a line now	Ihre Fläche ist jetzt eine Linie
 embroidery	Its area is filled now	Ihre Fläche ist jetzt gefüllt
 embroidery	Its color isn't sewn	Ihre Farbe wird nicht gestickt
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Als dynamisches Objekt behalten
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Behält das Bild bei den daraus erstellten Objekten, damit „Bild digitalisieren…“ sie erneut ändern kann.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Seine Objekte wurden von Hand geändert. Erneutes Digitalisieren ersetzt diese Änderungen; „Rückgängig“ stellt sie wieder her.
+embroidery	Replace	Ersetzen
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Die Einstellungen dieses dynamischen Objekts konnten nicht gelesen werden: Das Fenster beginnt mit den Standardwerten.
+embroidery	Edit in Digitize Image…	In „Bild digitalisieren“ bearbeiten…
+embroidery	Live digitized image	Dynamisch digitalisiertes Bild
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Dynamisches Objekt erstellt: {objects} ({threads}). „Bild digitalisieren…“ ändert es erneut; „Rückgängig“ entfernt es.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Nicht ersetzen
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Dieses dynamische Objekt wurde in einer anderen Garnpalette erstellt: Seine Farben werden erneut der Palette des Dokuments zugeordnet.

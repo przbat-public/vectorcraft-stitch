@@ -7217,3 +7217,15 @@ embroidery	No area here now	此處現在沒有區域
 embroidery	Its area is a line now	其區域現在是線條
 embroidery	Its area is filled now	其區域現在是填充
 embroidery	Its color isn't sewn	其顏色不縫製
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	保留為即時物件
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	將影像與由其產生的物件保存在一起，以便「數位化影像…」可以再次變更它們。
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	其物件已被手動變更。重新數位化會取代這些變更；復原可將其還原。
+embroidery	Replace	取代
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	無法讀取此即時物件的設定：視窗從預設值開始。
+embroidery	Edit in Digitize Image…	在「數位化影像」中編輯…
+embroidery	Live digitized image	即時數位化影像
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	已建立即時物件：{objects}（{threads}）。「數位化影像…」可再次變更它；復原可將其移除。
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	不取代
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	此即時物件是以另一個線色板製作的：其顏色將重新配對文件的色板。

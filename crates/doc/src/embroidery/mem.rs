@@ -60,9 +60,11 @@ pub(crate) fn object_bytes(e: &Embroidery) -> usize {
             + map_bytes(&p.extra)
             + p.points.as_ref().map_or(0, |q| map_bytes(&q.extra))
     };
+    let digitizing = |d: &super::Digitizing| ALLOC + map_bytes(&d.settings) + map_bytes(&d.extra);
     map_bytes(&e.extra)
         + e.stitches.as_ref().map_or(0, run)
         + e.original.as_ref().map_or(0, original)
+        + e.digitizing.as_ref().map_or(0, digitizing)
         + e.unread.as_ref().map_or(0, json_bytes)
         + e.fill.as_deref().map_or(0, part)
         + e.stroke.as_deref().map_or(0, part)

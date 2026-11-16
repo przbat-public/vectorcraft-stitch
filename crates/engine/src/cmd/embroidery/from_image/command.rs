@@ -19,7 +19,7 @@ use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_
 
 use super::background::Background;
 use super::colours::Colours;
-use super::create::{self, Made};
+use super::create::{self, Made, Outlined};
 use super::rules;
 use super::settings::{BackgroundSetting, C, Settings, table};
 use super::stages::{self, Digitized, clock, since};
@@ -132,7 +132,7 @@ pub(super) fn digitized(image: &ImageObject, bytes: &[u8], settings: &Settings, 
     let trace_out = Arc::new(stages::trace_stage(&image_out, settings, steps)?);
     let regions_out = Arc::new(stages::regions_stage(&image_out, &trace_out, settings)?);
     let colours_out = Arc::new(stages::colours_stage(&image_out, &trace_out, &regions_out, settings, palette)?);
-    let lines_out = Arc::new(stages::lines_stage(&image_out, &colours_out)?);
+    let lines_out = Arc::new(stages::lines_stage(&image_out, &colours_out, settings)?);
     let shapes_out = Arc::new(stages::shapes_stage(&image_out, &trace_out, &colours_out, &lines_out, settings)?);
     vectorcraft_doc::cancel::progress(stages::MAKING, DIGITIZE_STAGES, DIGITIZE_PROGRESS);
     Ok(Digitized { image_out, trace_out, regions_out, colours_out, lines_out, shapes_out })
@@ -458,7 +458,7 @@ impl DigitizeJob {
         let started = clock();
         let mut doc = Document::clone(original);
         let mut warnings = d.warnings();
-        let made = match create::made(&mut doc, *target, &d, *palette)? {
+        let made = match create::made(&mut doc, *target, &d, *palette, settings.outlines)? {
             Some(m) => Some((doc, m)),
             None if *dry_run => {
                 warnings.push(Warning::new("nothingToMake", json!({}), NOTHING_TO_MAKE));
@@ -483,6 +483,7 @@ impl DigitizeJob {
             stats,
             warnings,
             made_ms: [objects_ms, stitches_ms],
+            outlined: made.as_ref().and_then(|(_, m)| m.outlined),
         };
         let reply = reply_json(&d, of);
         Ok(DigitizeFound { uid: *uid, original: original.clone(), made, reply, dry_run: *dry_run })
@@ -504,12 +505,31 @@ pub(super) struct ReplyOf<'a> {
     pub(super) warnings: Vec<Warning>,
     /// How long making the objects took, and planning their stitches (milliseconds).
     pub(super) made_ms: [Option<f64>; 2],
+    /// What the outlines Create adds came to (`None`: none asked, or nothing made).
+    pub(super) outlined: Option<Outlined>,
+}
+
+/// The share of the colour outlines' length beside the image's own lines (the areas sewn along
+/// their middle) from which the reply warns that they are sewn twice there: a quarter (an
+/// estimate, the session's ruling of 2026-11-12 on the project owner's double-outline warning).
+pub(super) const DOUBLE_OUTLINE_SHARE: f64 = 0.25;
+
+/// The reply's `outlined`: the colour outlines' lines and length, the border's, and the thread they
+/// are sewn in (its palette, number, name and colour).
+fn outlined_json(o: &Outlined, palette: Palette) -> Value {
+    let lines = |l: &Option<create::Lines>| l.map(|l| json!({"lines": l.count, "length": hundredths(l.length_mm)}));
+    let (rgb, name) = palette.get(o.thread).unwrap_or(([0, 0, 0], ""));
+    json!({
+        "colorOutlines": lines(&o.colour),
+        "border": lines(&o.border),
+        "thread": {"palette": palette.id(), "index": o.thread, "name": name, "color": super::super::hex(rgb)},
+    })
 }
 
 /// The command's reply for what `d` made (`created` null: [`apply`] fills it in).
 pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let timings = d.timings();
-    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms] } = of;
+    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms], outlined } = of;
     let w = d.working();
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
@@ -532,6 +552,16 @@ pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
                 "{} bands at most {} mm wide, in a colour between their neighbours', joined the neighbour nearest their colour",
                 d.areas().bands,
                 rules::SLIVER_MAX_MM
+            ),
+        ));
+    }
+    if let Some(o) = outlined.filter(|o| o.colour.is_some() && o.beside_lines >= DOUBLE_OUTLINE_SHARE) {
+        let share = (o.beside_lines * PERCENT).round();
+        warnings.push(Warning::new(
+            "outlinesBesideLines",
+            json!({"share": share}),
+            format!(
+                "the colour outlines run beside the image's own lines along {share}% of their length, sewing them twice there: leave the lines' colour out, or the outlines off"
             ),
         ));
     }
@@ -572,6 +602,7 @@ pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
         "leftOut": d.areas().dropped,
         "regions": if listed.regions { regions_json(d) } else { Value::Null },
         "stats": stats,
+        "outlined": outlined.map(|o| outlined_json(&o, palette)),
         "warnings": warnings.iter().map(Warning::json).collect::<Vec<_>>(),
         "settings": settings.echo(),
         "table": table(palette),

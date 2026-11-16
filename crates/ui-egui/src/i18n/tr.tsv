@@ -7402,10 +7402,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Hesaplanıyor…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Adım {number}/{count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Pürüzsüzlük: {value}
-embroidery	Corners: {value}	Köşeler: {value}
-embroidery	Colors overlap by {value} mm	Renkler {value} mm örtüşür
-embroidery	The stitches follow the document's embroidery settings.	Dikişler belgenin nakış ayarlarını izler.
 @plural	{count} thread + background|{count} threads + background	{count} iplik + arka plan
 @plural	{count} area|{count} areas	{count} alan
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7470,3 +7466,43 @@ embroidery	the background's color inside the design	tasarımın içindeki arka p
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Dikilecek bir şey yok: her alan arka plan. Arka planı da dikin ya da daha az kırpın.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Oluşturulacak bir şey yok: her alan arka plan. Arka planı da dikin ya da daha az kırpın.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Pürüzsüzlük
+embroidery	Corners	Köşeler
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Yüksek: daha az noktalı, daha pürüzsüz dış hatlar. Düşük: resmin kenarlarına daha yakın.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Yüksek: daha fazla dönüş keskin köşe olarak kalır. Düşük: daha fazlası yuvarlatılır.
+embroidery	Straighten nearly straight lines	Neredeyse düz çizgileri düzelt
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Hafifçe kavisli kenarlar düz çizgi, çember parçaları gerçek yay, neredeyse yatay ya da dikey çizgiler de tam yatay ya da dikey olur.
+embroidery	Colors overlap by	Renk örtüşmesi
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	İlk dikilen renk bir sonrakinin altına uzanır; böylece aralarında kumaş görünmez.
+embroidery	Thin lines sewn along their middle below	Ortasından dikilen ince çizgilerin üst sınırı
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Daha dar bir parça, ortasından düz dikiş çizgisiyle dikilir. 0: hiçbiri.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	İnce çizgiler
+embroidery	Shapes: below {value}	Şekiller: {value} altı
+embroidery	Set in the Shapes step.	Şekiller adımında ayarlanır.
+embroidery	below {value}	{value} altı
+embroidery	Fill angle	Dolgu açısı
+embroidery	Fixed	Sabit
+embroidery	Across the shape	Şeklin enine
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Dolgunun sıralarının yönü: sayfada sabit bir açıyla ya da her şeklin uzunluğuna enine.
+embroidery	The fills' rows, counter-clockwise on the page.	Dolguların sıraları, sayfada saat yönünün tersine.
+embroidery	From the background to the details. The Order tab changes it after Create.	Arka plandan ayrıntılara. Oluştur’dan sonra Sıra sekmesi değiştirir.
+embroidery	Create sets these in the document's embroidery settings.	Oluştur, bunları belgenin nakış ayarlarına yazar.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Dış hatlar
+embroidery	Color outlines (running stitch)	Renk dış hatları (düz dikiş)
+embroidery	A running line along each edge between two colors, once, and round the design.	İki renk arasındaki her kenar boyunca bir kez ve desenin çevresinde düz dikiş çizgisi.
+embroidery	Design border (satin)	Desen kenarlığı (saten)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Desenin tamamının, deliklerinin de çevresinde, kenarı üzerinde saten kenarlık: desen, kenarlığın yarı genişliği kadar büyür.
+embroidery	Border width	Kenarlık genişliği
+embroidery	Outlines' thread	Dış hat ipliği
+embroidery	{value} · darkest of the design	{value} · desenin en koyusu
+embroidery	Back to the darkest thread	En koyu ipliğe dön
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Renk dış hatları: {count} çizgi, {length}
+embroidery	Border: {length}	Kenarlık: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Renk dış hatları, uzunluklarının {share} kadarında resmin kendi çizgileri boyunca ilerliyor: bu çizgiler iki kez dikilir. Çizgilerin rengini dışarıda bırakın ya da dış hatları kapatın.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Belge Düzeni’nin Nakış sekmesini açar. Belge Düzeni kapandığında bu pencere geri gelir.

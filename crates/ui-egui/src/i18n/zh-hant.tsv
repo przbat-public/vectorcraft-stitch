@@ -7083,10 +7083,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	正在計算…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	第 {number} 步，共 {count} 步：{name}。{summary}。{time}
-embroidery	Smoothness: {value}	平滑度：{value}
-embroidery	Corners: {value}	轉角：{value}
-embroidery	Colors overlap by {value} mm	顏色重疊 {value} mm
-embroidery	The stitches follow the document's embroidery settings.	針跡遵循文件的刺繡設定。
 @plural	{count} thread + background|{count} threads + background	{count} 種線 + 背景
 @plural	{count} area|{count} areas	{count} 個區域
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7151,3 +7147,43 @@ embroidery	the background's color inside the design	設計內部的背景色
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	沒有可繡製的內容：所有區域都是背景。請也繡製背景，或少裁切一些。
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	沒有可建立的內容：所有區域都是背景。請也繡製背景，或少裁切一些。
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	平滑度
+embroidery	Corners	轉角
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	越高：輪廓越平滑，點越少。越低：越貼近圖片的邊緣。
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	越高：越多轉折保留為尖角。越低：越多轉折被修圓。
+embroidery	Straighten nearly straight lines	拉直近乎筆直的線
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	略微彎曲的邊緣變為直線，圓的局部變為真正的圓弧，接近水平或垂直的線變為完全水平或垂直。
+embroidery	Colors overlap by	顏色重疊
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	先繡的顏色伸到下一種顏色的下面，兩者之間就不會露出布料。
+embroidery	Thin lines sewn along their middle below	沿中線繡的細線寬度上限
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	更窄的部分沿中線繡成平針線。0：無。
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	細線
+embroidery	Shapes: below {value}	形狀：小於 {value}
+embroidery	Set in the Shapes step.	在「形狀」步驟中設定。
+embroidery	below {value}	小於 {value}
+embroidery	Fill angle	填色角度
+embroidery	Fixed	固定
+embroidery	Across the shape	橫跨形狀
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	填色各行的方向：頁面上的固定角度，或橫跨每個形狀的長度。
+embroidery	The fills' rows, counter-clockwise on the page.	填色的行，在頁面上按逆時針方向。
+embroidery	From the background to the details. The Order tab changes it after Create.	從背景到細節。建立後可在「順序」分頁中變更。
+embroidery	Create sets these in the document's embroidery settings.	建立時會將這些設為文件的刺繡設定。
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	輪廓線
+embroidery	Color outlines (running stitch)	顏色輪廓線（平針）
+embroidery	A running line along each edge between two colors, once, and round the design.	沿兩種顏色之間的每條邊繡一次平針線，並環繞整個圖案。
+embroidery	Design border (satin)	圖案邊框（緞紋）
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	沿整個圖案（包括其中的孔）的邊緣繡一圈緞紋邊框：圖案會增大邊框寬度的一半。
+embroidery	Border width	邊框寬度
+embroidery	Outlines' thread	輪廓線的線
+embroidery	{value} · darkest of the design	{value} · 圖案中最深的
+embroidery	Back to the darkest thread	恢復為最深的線
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	顏色輪廓線：{count} 條，{length}
+embroidery	Border: {length}	邊框：{length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	顏色輪廓線有 {share} 的長度緊貼圖片本身的線條：這些線條會被繡兩次。請排除這些線條的顏色，或關閉輪廓線。
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	榻榻米，{value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	開啟「文件設定」的「刺繡」分頁。「文件設定」關閉後會回到此視窗。

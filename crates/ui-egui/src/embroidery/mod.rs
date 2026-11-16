@@ -38,6 +38,7 @@ pub mod convert_job;
 pub mod counters;
 pub mod editing;
 pub mod fields;
+pub mod fill_angle;
 pub mod handles;
 pub mod image_window;
 pub mod marks;
@@ -100,6 +101,10 @@ pub struct Embroidery {
     pub(crate) stitches: crate::panels::embroidery::stitches::StitchesState,
     /// Document Setup's Embroidery tab, while the dialog is open: what it opened with.
     pub(crate) setup: Option<setup_tab::Opened>,
+    /// Document Setup's OK went through with its Embroidery tab since a window that stepped aside
+    /// for it cleared this: what the tab held is the document's now, and that window lets go of its
+    /// own values of those settings when it comes back ([`image_window::poll`]).
+    pub(crate) setup_confirmed: bool,
     /// The status bar's counters.
     pub(crate) counters: counters::Counters,
     /// The canvas's bounds of each open document, measured only where an edit changed it

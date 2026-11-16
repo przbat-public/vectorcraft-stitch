@@ -7449,10 +7449,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Počítání…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Hladkost: {value}
-embroidery	Corners: {value}	Rohy: {value}
-embroidery	Colors overlap by {value} mm	Barvy se překrývají o {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Stehy se řídí nastavením výšivky dokumentu.
 @plural	{count} thread + background|{count} threads + background	{count} nit + pozadí|{count} nitě + pozadí|{count} nití + pozadí
 @plural	{count} area|{count} areas	{count} oblast|{count} oblasti|{count} oblastí
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7517,3 +7513,43 @@ embroidery	the background's color inside the design	barva pozadí uvnitř návrh
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Není co šít: každá oblast je pozadí. Šijte i pozadí, nebo ořízněte méně.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Není co vytvořit: každá oblast je pozadí. Šijte i pozadí, nebo ořízněte méně.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Hladkost
+embroidery	Corners	Rohy
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Vyšší: hladší obrysy s méně body. Nižší: blíže okrajům obrázku.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Vyšší: více zlomů zůstane ostrými rohy. Nižší: více se jich zaoblí.
+embroidery	Straighten nearly straight lines	Narovnat téměř rovné čáry
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Mírně zakřivené okraje se stanou rovnými čarami, části kružnic skutečnými oblouky a téměř vodorovné či svislé čáry přesně vodorovnými či svislými.
+embroidery	Colors overlap by	Barvy se překrývají o
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Barva šitá dříve sahá pod následující, aby mezi nimi nebyla vidět látka.
+embroidery	Thin lines sewn along their middle below	Tenké čáry šité středem pod
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Užší část se šije jako linie rovného stehu svým středem. 0: žádná.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Tenké čáry
+embroidery	Shapes: below {value}	Tvary: pod {value}
+embroidery	Set in the Shapes step.	Nastavuje se v kroku Tvary.
+embroidery	below {value}	pod {value}
+embroidery	Fill angle	Úhel výplně
+embroidery	Fixed	Pevný
+embroidery	Across the shape	Napříč tvarem
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Směr řad výplně: pod pevným úhlem na stránce, nebo napříč délkou každého tvaru.
+embroidery	The fills' rows, counter-clockwise on the page.	Řady výplní, proti směru hodinových ručiček na stránce.
+embroidery	From the background to the details. The Order tab changes it after Create.	Od pozadí k detailům. Karta Pořadí ho po vytvoření změní.
+embroidery	Create sets these in the document's embroidery settings.	Vytvoření je nastaví v nastavení vyšívání dokumentu.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Obrysy
+embroidery	Color outlines (running stitch)	Obrysy barev (rovný steh)
+embroidery	A running line along each edge between two colors, once, and round the design.	Linie rovného stehu podél každého okraje mezi dvěma barvami, jednou, a kolem motivu.
+embroidery	Design border (satin)	Lem motivu (satén)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Saténový lem kolem celého motivu, i kolem jeho děr, na jeho okraji: motiv se zvětší o polovinu šířky lemu.
+embroidery	Border width	Šířka lemu
+embroidery	Outlines' thread	Nit obrysů
+embroidery	{value} · darkest of the design	{value} · nejtmavší v motivu
+embroidery	Back to the darkest thread	Zpět na nejtmavší nit
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Obrysy barev: {count} linie, {length}|Obrysy barev: {count} linie, {length}|Obrysy barev: {count} linií, {length}
+embroidery	Border: {length}	Lem: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Obrysy barev vedou podél vlastních čar obrázku na {share} své délky: ty čáry se šijí dvakrát. Vynechte barvu čar, nebo vypněte obrysy.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otevře kartu Výšivka v Nastavení dokumentu. Toto okno se vrátí, až se Nastavení dokumentu zavře.

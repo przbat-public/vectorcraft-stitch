@@ -7208,10 +7208,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Beregner…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Trin {number} af {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Glathed: {value}
-embroidery	Corners: {value}	Hjørner: {value}
-embroidery	Colors overlap by {value} mm	Farverne overlapper med {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Stingene følger dokumentets broderiindstillinger.
 @plural	{count} thread + background|{count} threads + background	{count} tråd + baggrund|{count} tråde + baggrund
 @plural	{count} area|{count} areas	{count} område|{count} områder
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7276,3 +7272,43 @@ embroidery	the background's color inside the design	baggrundens farve inde i des
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Intet at sy: hvert område er baggrunden. Sy baggrunden, eller beskær mindre.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Intet at oprette: hvert område er baggrunden. Sy baggrunden, eller beskær mindre.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Glathed
+embroidery	Corners	Hjørner
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Højere: glattere konturer med færre punkter. Lavere: tættere på billedets kanter.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Højere: flere knæk bevares som skarpe hjørner. Lavere: flere af dem rundes.
+embroidery	Straighten nearly straight lines	Ret næsten lige linjer ud
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Let buede kanter bliver lige linjer, dele af cirkler ægte buer, og næsten vandrette eller lodrette linjer helt vandrette eller lodrette.
+embroidery	Colors overlap by	Farverne overlapper med
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Farven, der sys først, går ind under den næste, så der ikke ses stof imellem dem.
+embroidery	Thin lines sewn along their middle below	Tynde linjer sys langs midten under
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	En smallere del sys som en forstingslinje langs midten. 0: ingen.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Tynde linjer
+embroidery	Shapes: below {value}	Former: under {value}
+embroidery	Set in the Shapes step.	Indstilles i trinnet Former.
+embroidery	below {value}	under {value}
+embroidery	Fill angle	Udfyldningens vinkel
+embroidery	Fixed	Fast
+embroidery	Across the shape	På tværs af formen
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Retningen af udfyldningens rækker: i en fast vinkel på siden eller på tværs af hver forms længde.
+embroidery	The fills' rows, counter-clockwise on the page.	Udfyldningernes rækker, mod uret på siden.
+embroidery	From the background to the details. The Order tab changes it after Create.	Fra baggrunden til detaljerne. Fanen Rækkefølge ændrer den efter Opret.
+embroidery	Create sets these in the document's embroidery settings.	Opret sætter dem i dokumentets broderiindstillinger.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Konturer
+embroidery	Color outlines (running stitch)	Farvekonturer (forsting)
+embroidery	A running line along each edge between two colors, once, and round the design.	En forstingslinje langs hver kant mellem to farver, én gang, og rundt om motivet.
+embroidery	Design border (satin)	Kant om motivet (satin)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	En satinkant rundt om hele motivet, også om dets huller, på kanten: motivet vokser med halvdelen af kantens bredde.
+embroidery	Border width	Kantens bredde
+embroidery	Outlines' thread	Konturernes tråd
+embroidery	{value} · darkest of the design	{value} · motivets mørkeste
+embroidery	Back to the darkest thread	Tilbage til den mørkeste tråd
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Farvekonturer: {count} linje, {length}|Farvekonturer: {count} linjer, {length}
+embroidery	Border: {length}	Kant: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Farvekonturerne løber langs billedets egne linjer på {share} af deres længde: de linjer sys to gange. Udelad linjernes farve, eller slå konturerne fra.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Åbner fanen Broderi i Dokumentopsætning. Dette vindue kommer tilbage, når Dokumentopsætning lukkes.

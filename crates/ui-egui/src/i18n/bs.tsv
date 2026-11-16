@@ -7244,10 +7244,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Računanje…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Korak {number} od {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Glatkoća: {value}
-embroidery	Corners: {value}	Uglovi: {value}
-embroidery	Colors overlap by {value} mm	Boje se preklapaju za {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Bodovi slijede postavke veza dokumenta.
 @plural	{count} thread + background|{count} threads + background	{count} konac + pozadina|{count} konca + pozadina|{count} konaca + pozadina
 @plural	{count} area|{count} areas	{count} područje|{count} područja|{count} područja
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7312,3 +7308,43 @@ embroidery	the background's color inside the design	boja pozadine unutar dizajna
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nema šta da se šije: svaka oblast je pozadina. Šijte pozadinu ili manje izrežite.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nema šta da se kreira: svaka oblast je pozadina. Šijte pozadinu ili manje izrežite.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Glatkoća
+embroidery	Corners	Uglovi
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Više: glađe konture s manje tačaka. Niže: bliže ivicama slike.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Više: više zaokreta ostaje oštrim uglovima. Niže: više ih se zaobli.
+embroidery	Straighten nearly straight lines	Ispravi gotovo ravne linije
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Blago zakrivljene ivice postaju ravne linije, dijelovi kružnica pravi lukovi, a gotovo vodoravne ili uspravne linije tačno takve.
+embroidery	Colors overlap by	Boje se preklapaju za
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Boja koja se šije prva ulazi ispod sljedeće, pa se između njih ne vidi tkanina.
+embroidery	Thin lines sewn along their middle below	Tanke linije šivene po sredini ispod
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Uži dio se šije kao linija ravnog boda po sredini. 0: nijedan.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Tanke linije
+embroidery	Shapes: below {value}	Oblici: ispod {value}
+embroidery	Set in the Shapes step.	Postavlja se u koraku Oblici.
+embroidery	below {value}	ispod {value}
+embroidery	Fill angle	Ugao ispune
+embroidery	Fixed	Fiksni
+embroidery	Across the shape	Poprijeko oblika
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Smjer redova ispune: pod fiksnim uglom na stranici ili poprijeko dužine svakog oblika.
+embroidery	The fills' rows, counter-clockwise on the page.	Redovi ispuna, suprotno od kazaljke na satu na stranici.
+embroidery	From the background to the details. The Order tab changes it after Create.	Od pozadine prema detaljima. Kartica Redoslijed ga mijenja nakon kreiranja.
+embroidery	Create sets these in the document's embroidery settings.	Kreiranje ih postavlja u postavke veza dokumenta.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Obrisi
+embroidery	Color outlines (running stitch)	Obrisi boja (ravni bod)
+embroidery	A running line along each edge between two colors, once, and round the design.	Ravna linija duž svake ivice između dvije boje, jednom, i oko motiva.
+embroidery	Design border (satin)	Okvir motiva (saten)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Satenski okvir oko cijelog motiva, i oko njegovih rupa, na njegovoj ivici: motiv raste za pola širine okvira.
+embroidery	Border width	Širina okvira
+embroidery	Outlines' thread	Konac za obrise
+embroidery	{value} · darkest of the design	{value} · najtamniji u motivu
+embroidery	Back to the darkest thread	Nazad na najtamniji konac
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Obrisi boja: {count} linija, {length}|Obrisi boja: {count} linije, {length}|Obrisi boja: {count} linija, {length}
+embroidery	Border: {length}	Okvir: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Obrisi boja idu uz vlastite linije slike na {share} svoje dužine: te linije se šiju dvaput. Izostavite boju linija ili isključite obrise.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otvara karticu Vez u Postavkama dokumenta. Ovaj prozor se vraća kad se Postavke dokumenta zatvore.

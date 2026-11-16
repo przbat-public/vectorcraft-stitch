@@ -7259,10 +7259,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Berekenen…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Stap {number} van {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Gladheid: {value}
-embroidery	Corners: {value}	Hoeken: {value}
-embroidery	Colors overlap by {value} mm	Kleuren overlappen {value} mm
-embroidery	The stitches follow the document's embroidery settings.	De steken volgen de borduurinstellingen van het document.
 @plural	{count} thread + background|{count} threads + background	{count} draad + achtergrond|{count} draden + achtergrond
 @plural	{count} area|{count} areas	{count} vlak|{count} vlakken
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7327,3 +7323,43 @@ embroidery	the background's color inside the design	de achtergrondkleur binnen h
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Niets te borduren: elk vlak is achtergrond. Borduur de achtergrond of snijd minder bij.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Niets te maken: elk vlak is achtergrond. Borduur de achtergrond of snijd minder bij.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Gladheid
+embroidery	Corners	Hoeken
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Hoger: gladdere omtrekken met minder punten. Lager: dichter bij de randen van de afbeelding.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Hoger: meer knikken blijven scherpe hoeken. Lager: meer ervan worden afgerond.
+embroidery	Straighten nearly straight lines	Bijna rechte lijnen rechttrekken
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Licht gebogen randen worden rechte lijnen, delen van cirkels echte bogen, en bijna horizontale of verticale lijnen precies horizontaal of verticaal.
+embroidery	Colors overlap by	Kleuren overlappen
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	De kleur die eerst wordt geborduurd, loopt onder de volgende door, zodat er geen stof tussen te zien is.
+embroidery	Thin lines sewn along their middle below	Dunne lijnen langs hun midden geborduurd onder
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Een smaller deel wordt als rechte steeklijn langs het midden geborduurd. 0: geen.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Dunne lijnen
+embroidery	Shapes: below {value}	Vormen: onder {value}
+embroidery	Set in the Shapes step.	In te stellen in de stap Vormen.
+embroidery	below {value}	onder {value}
+embroidery	Fill angle	Vulhoek
+embroidery	Fixed	Vast
+embroidery	Across the shape	Dwars op de vorm
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	De richting van de rijen van een vulling: onder een vaste hoek op de pagina, of dwars op de lengte van elke vorm.
+embroidery	The fills' rows, counter-clockwise on the page.	De rijen van de vullingen, tegen de klok in op de pagina.
+embroidery	From the background to the details. The Order tab changes it after Create.	Van de achtergrond naar de details. Het tabblad Volgorde wijzigt hem na Maken.
+embroidery	Create sets these in the document's embroidery settings.	Maken stelt ze in de borduurinstellingen van het document in.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Contouren
+embroidery	Color outlines (running stitch)	Kleurcontouren (rechte steek)
+embroidery	A running line along each edge between two colors, once, and round the design.	Een rechte steeklijn langs elke rand tussen twee kleuren, één keer, en rond het ontwerp.
+embroidery	Design border (satin)	Rand om het ontwerp (satijn)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Een satijnen rand rond het hele ontwerp, ook rond de gaten, op de rand: het ontwerp groeit met de helft van de randbreedte.
+embroidery	Border width	Randbreedte
+embroidery	Outlines' thread	Draad van de contouren
+embroidery	{value} · darkest of the design	{value} · donkerste van het ontwerp
+embroidery	Back to the darkest thread	Terug naar de donkerste draad
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Kleurcontouren: {count} lijn, {length}|Kleurcontouren: {count} lijnen, {length}
+embroidery	Border: {length}	Rand: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	De kleurcontouren lopen over {share} van hun lengte langs de eigen lijnen van de afbeelding: die lijnen worden twee keer geborduurd. Laat de kleur van de lijnen weg, of zet de contouren uit.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Opent het tabblad Borduurwerk van Documentinstellingen. Dit venster komt terug wanneer Documentinstellingen sluit.

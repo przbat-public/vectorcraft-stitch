@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-11 · **Change:** ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-15 · **Change:** Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -34,6 +34,7 @@ The tables below list the window's own words in the order the code draws them; w
 - The number of colors counts the colours besides the background; the background's colour where the design encloses it (the white inside a letter) is sewn too, a row of its own, so the threads can be one more. When it is, a note under the number says both ("6 colors besides the background, and the background's color sewn where the design encloses it."), and its row says "the background's color inside the design".
 - ↺ is named for screen readers by the row's thread as the row writes it ("Back to Auto: Dark Fuchsia  PEC 7"), not by the colour's code; a row with no thread keeps the code.
 - The colour list's two tooltips that were descriptions in Polish are commands, as in English: "Szyj te kolory jako jeden.", "Szyj te kolory znowu, tak jak wybierze Auto.".
+- The Shapes step's field for thin lines keeps the owner's words, "Thin lines sewn along their middle below [1 mm]" („Cienkie linie szyte środkiem poniżej”), its field after them; languages that put "below" after the number reword it so that the field can follow: Japanese, Korean, Turkish and Chinese name the width's upper limit ("the upper limit of the width of thin lines sewn along their middle"), and Hindi, Hungarian, Georgian and Finnish say "width less than".
 - Nothing to sew is said by its cause: every color left out ("Nothing to sew: every color is left out."), or every area the background, which says what to do ("Nothing to sew: every area is the background. Sew the background, or crop less."); Create's refusal and the note say the same.
 
 ## The window: its title, its run, and what it remembers
@@ -97,10 +98,6 @@ The tables below list the window's own words in the order the code draws them; w
 | Computing… | Obliczanie… |
 | {value} ms | {value} ms |
 | Step {number} of {count}: {name}. {summary}. {time} | Krok {number} z {count}: {name}. {summary}. {time} |
-| Smoothness: {value} | Wygładzenie: {value} |
-| Corners: {value} | Narożniki: {value} |
-| Colors overlap by {value} mm | Kolory zachodzą na siebie o {value} mm |
-| The stitches follow the document's embroidery settings. | Ściegi wynikają z ustawień haftu dokumentu. |
 
 ## Step 1, the Image
 
@@ -175,6 +172,67 @@ The tables below list the window's own words in the order the code draws them; w
 | Name or number | Nazwa lub numer |
 | {value} · nearest | {value} · najbliższa |
 
+## Step 3, the Shapes
+
+| English | Polish |
+|---|---|
+| Smoothness | Wygładzenie |
+| Higher: smoother outlines with fewer points. Lower: closer to the picture's edges. | Wyżej: gładsze kontury z mniejszą liczbą punktów. Niżej: bliżej krawędzi obrazu. |
+| Corners | Narożniki |
+| Higher: more turns kept as sharp corners. Lower: more of them rounded. | Wyżej: więcej załamań zostaje ostrymi narożnikami. Niżej: więcej z nich jest zaokrąglanych. |
+| Straighten nearly straight lines | Prostuj prawie proste linie |
+| Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so. | Lekko zakrzywione krawędzie stają się prostymi liniami, fragmenty okręgów prawdziwymi łukami, a prawie poziome lub pionowe linie dokładnie poziomymi lub pionowymi. |
+| Colors overlap by | Kolory zachodzą na siebie o |
+| The color sewn first reaches under the next, so no fabric shows between them. | Kolor szyty wcześniej wchodzi pod następny, żeby między nimi nie było widać tkaniny. |
+| Thin lines sewn along their middle below | Cienkie linie szyte środkiem poniżej |
+| A narrower part is sewn as a running line along its middle. 0: none. | Węższa część jest szyta linią ściegu prostego środkiem. 0: żadna. |
+
+## Step 4, the Stitches
+
+It also uses words of the Embroidery panel and Document Setup: Fabric, Built-in values, Custom, the fabrics' names, Running stitch, Narrow parts as satin, Row spacing, Angle, Sewing order, Join one thread's objects when nothing lies between them, and where a value comes from (default, fabric).
+
+| English | Polish |
+|---|---|
+| Thin lines | Cienkie linie |
+| Shapes: below {value} | Kształty: poniżej {value} |
+| Set in the Shapes step. | Ustawiane w kroku Kształty. |
+| below {value} | poniżej {value} |
+| Tatami, {value} | Tatami, {value} |
+| Fill angle | Kąt wypełnienia |
+| Fixed | Stały |
+| Across the shape | W poprzek kształtu |
+| The direction of a fill's rows: at a fixed angle on the page, or across each shape's length. | Kierunek rzędów wypełnienia: pod stałym kątem na stronie albo w poprzek długości każdego kształtu. |
+| The fills' rows, counter-clockwise on the page. | Rzędy wypełnień, przeciwnie do ruchu wskazówek zegara na stronie. |
+| From the background to the details. The Order tab changes it after Create. | Od tła do szczegółów. Po utworzeniu zmienia ją zakładka Kolejność. |
+| Create sets these in the document's embroidery settings. | Utworzenie ustawi je w ustawieniach haftu dokumentu. |
+
+### Embroidery Settings…
+
+The button is the Object tab's, its words the command's own.
+
+| English | Polish |
+|---|---|
+| Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes. | Otwiera kartę Haft w Ustawieniach dokumentu. To okno wróci po zamknięciu Ustawień dokumentu. |
+
+### The outlines
+
+They also use Choose Thread…, Name or number, and the warning in the Live bar's notes.
+
+| English | Polish |
+|---|---|
+| Outlines | Kontury |
+| Color outlines (running stitch) | Kontury kolorów (ścieg prosty) |
+| A running line along each edge between two colors, once, and round the design. | Linia ściegu prostego wzdłuż każdej krawędzi między dwoma kolorami, raz, i dookoła wzoru. |
+| Design border (satin) | Obwódka wzoru (satyna) |
+| A satin border round the whole design, its holes too, on its edge: the design grows by half its width. | Satynowa obwódka dookoła całego wzoru, także jego otworów, na jego krawędzi: wzór rośnie o połowę szerokości obwódki. |
+| Border width | Szerokość obwódki |
+| Outlines' thread | Nić konturów |
+| {value} · darkest of the design | {value} · najciemniejsza we wzorze |
+| Back to the darkest thread | Wróć do najciemniejszej nici |
+| Color outlines: {count} line, {length}\|Color outlines: {count} lines, {length} | Kontury kolorów: {count} linia, {length}\|Kontury kolorów: {count} linie, {length}\|Kontury kolorów: {count} linii, {length} |
+| Border: {length} | Obwódka: {length} |
+| The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off. | Kontury kolorów biegną wzdłuż własnych linii obrazu na {share} swojej długości: te linie są szyte dwa razy. Pomiń kolor linii albo wyłącz kontury. |
+
 ## The Live bar, its notes, and Create
 
 | English | Polish |
@@ -217,3 +275,8 @@ The tables below list the window's own words in the order the code draws them; w
 | 2026-11-11 | update | What the number of colors counts, beside the threads: the note under it and the row of the background's colour inside the design. |
 | 2026-11-11 | update | Nothing to sew said by its cause: every area the background has words of its own, saying what to do, in the bar, the note and Create's refusal. |
 | 2026-11-11 | update | ↺ named for screen readers by the row's thread (its row's placeholder renamed in every catalogue); the Polish tooltips of Merge and Sew made commands, as the English ones are. |
+| 2026-11-12 | update | The second part: the Shapes step's controls (smoothness, corners, straightening, the overlap, the thin lines' width) and their notes; the note that listed the step's values goes. |
+| 2026-11-12 | update | The Stitches step: the fabric, the rule rows with their sources, the fill angle (Fixed or Across the shape), joining one thread's objects, the sewing order, and the note that Create sets them in the document; the note that said the step used the document's settings goes. |
+| 2026-11-12 | update | The Stitches step's outlines: two checkboxes, the border's width, the outlines' thread with the darkest marked and ↺ back to it, what they came to, and the warning when they run beside the picture's own lines. |
+| 2026-11-13 | update | The Stitches step's rules made short enough for their fields: the thin lines' "Running stitch" (the panel's word, "along the middle" said in the Shapes step), the rows' spacing "Tatami, {value}". |
+| 2026-11-15 | update | The review of PR #38: Embroidery Settings…'s tooltip says "when Document Setup closes" („po zamknięciu Ustawień dokumentu”), as "it" read as this window; the Shapes step's slider notes say „Wyżej/Niżej” for "Higher/Lower" (a slider's value, not an amount). |

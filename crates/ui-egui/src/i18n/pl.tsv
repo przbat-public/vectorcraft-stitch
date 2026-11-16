@@ -7304,10 +7304,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Obliczanie…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Krok {number} z {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Wygładzenie: {value}
-embroidery	Corners: {value}	Narożniki: {value}
-embroidery	Colors overlap by {value} mm	Kolory zachodzą na siebie o {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Ściegi wynikają z ustawień haftu dokumentu.
 @plural	{count} thread + background|{count} threads + background	{count} nić + tło|{count} nici + tło|{count} nici + tło
 @plural	{count} area|{count} areas	{count} obszar|{count} obszary|{count} obszarów
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7372,3 +7368,43 @@ embroidery	the background's color inside the design	kolor tła wewnątrz wzoru
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nie ma czego szyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nie ma czego utworzyć: każdy obszar jest tłem. Szyj tło albo przytnij mniej.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Wygładzenie
+embroidery	Corners	Narożniki
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Wyżej: gładsze kontury z mniejszą liczbą punktów. Niżej: bliżej krawędzi obrazu.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Wyżej: więcej załamań zostaje ostrymi narożnikami. Niżej: więcej z nich jest zaokrąglanych.
+embroidery	Straighten nearly straight lines	Prostuj prawie proste linie
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Lekko zakrzywione krawędzie stają się prostymi liniami, fragmenty okręgów prawdziwymi łukami, a prawie poziome lub pionowe linie dokładnie poziomymi lub pionowymi.
+embroidery	Colors overlap by	Kolory zachodzą na siebie o
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Kolor szyty wcześniej wchodzi pod następny, żeby między nimi nie było widać tkaniny.
+embroidery	Thin lines sewn along their middle below	Cienkie linie szyte środkiem poniżej
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Węższa część jest szyta linią ściegu prostego środkiem. 0: żadna.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Cienkie linie
+embroidery	Shapes: below {value}	Kształty: poniżej {value}
+embroidery	Set in the Shapes step.	Ustawiane w kroku Kształty.
+embroidery	below {value}	poniżej {value}
+embroidery	Fill angle	Kąt wypełnienia
+embroidery	Fixed	Stały
+embroidery	Across the shape	W poprzek kształtu
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Kierunek rzędów wypełnienia: pod stałym kątem na stronie albo w poprzek długości każdego kształtu.
+embroidery	The fills' rows, counter-clockwise on the page.	Rzędy wypełnień, przeciwnie do ruchu wskazówek zegara na stronie.
+embroidery	From the background to the details. The Order tab changes it after Create.	Od tła do szczegółów. Po utworzeniu zmienia ją zakładka Kolejność.
+embroidery	Create sets these in the document's embroidery settings.	Utworzenie ustawi je w ustawieniach haftu dokumentu.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Kontury
+embroidery	Color outlines (running stitch)	Kontury kolorów (ścieg prosty)
+embroidery	A running line along each edge between two colors, once, and round the design.	Linia ściegu prostego wzdłuż każdej krawędzi między dwoma kolorami, raz, i dookoła wzoru.
+embroidery	Design border (satin)	Obwódka wzoru (satyna)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Satynowa obwódka dookoła całego wzoru, także jego otworów, na jego krawędzi: wzór rośnie o połowę szerokości obwódki.
+embroidery	Border width	Szerokość obwódki
+embroidery	Outlines' thread	Nić konturów
+embroidery	{value} · darkest of the design	{value} · najciemniejsza we wzorze
+embroidery	Back to the darkest thread	Wróć do najciemniejszej nici
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Kontury kolorów: {count} linia, {length}|Kontury kolorów: {count} linie, {length}|Kontury kolorów: {count} linii, {length}
+embroidery	Border: {length}	Obwódka: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Kontury kolorów biegną wzdłuż własnych linii obrazu na {share} swojej długości: te linie są szyte dwa razy. Pomiń kolor linii albo wyłącz kontury.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otwiera kartę Haft w Ustawieniach dokumentu. To okno wróci po zamknięciu Ustawień dokumentu.

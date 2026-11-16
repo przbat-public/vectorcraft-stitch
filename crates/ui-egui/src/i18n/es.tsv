@@ -7391,10 +7391,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Calculando…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Paso {number} de {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Suavidad: {value}
-embroidery	Corners: {value}	Esquinas: {value}
-embroidery	Colors overlap by {value} mm	Los colores se superponen {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Las puntadas siguen los ajustes de bordado del documento.
 @plural	{count} thread + background|{count} threads + background	{count} hilo + fondo|{count} hilos + fondo
 @plural	{count} area|{count} areas	{count} área|{count} áreas
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7459,3 +7455,43 @@ embroidery	the background's color inside the design	el color del fondo dentro de
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	No hay nada que bordar: cada zona es el fondo. Borde el fondo o recorte menos.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	No hay nada que crear: cada zona es el fondo. Borde el fondo o recorte menos.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Suavidad
+embroidery	Corners	Esquinas
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Más alto: contornos más suaves con menos puntos. Más bajo: más cerca de los bordes de la imagen.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Más alto: más giros se mantienen como esquinas vivas. Más bajo: se redondean más.
+embroidery	Straighten nearly straight lines	Enderezar las líneas casi rectas
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Los bordes ligeramente curvos pasan a ser líneas rectas, las partes de círculos, arcos exactos, y las líneas casi horizontales o verticales, exactamente horizontales o verticales.
+embroidery	Colors overlap by	Los colores se superponen
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	El color que se borda primero pasa por debajo del siguiente, para que no se vea la tela entre ellos.
+embroidery	Thin lines sewn along their middle below	Líneas finas bordadas por su centro por debajo de
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Una parte más estrecha se borda como una línea de puntada recta por su centro. 0: ninguna.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Líneas finas
+embroidery	Shapes: below {value}	Formas: por debajo de {value}
+embroidery	Set in the Shapes step.	Se ajusta en el paso Formas.
+embroidery	below {value}	por debajo de {value}
+embroidery	Fill angle	Ángulo del relleno
+embroidery	Fixed	Fijo
+embroidery	Across the shape	A lo ancho de la forma
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	La dirección de las filas del relleno: con un ángulo fijo en la página, o a lo ancho del largo de cada forma.
+embroidery	The fills' rows, counter-clockwise on the page.	Las filas de los rellenos, en sentido antihorario en la página.
+embroidery	From the background to the details. The Order tab changes it after Create.	Del fondo a los detalles. La pestaña Orden lo cambia después de crear.
+embroidery	Create sets these in the document's embroidery settings.	Crear los establece en los ajustes de bordado del documento.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Contornos
+embroidery	Color outlines (running stitch)	Contornos de color (puntada recta)
+embroidery	A running line along each edge between two colors, once, and round the design.	Una línea de puntada recta por cada borde entre dos colores, una vez, y alrededor del diseño.
+embroidery	Design border (satin)	Borde del diseño (satén)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Un borde de satén alrededor de todo el diseño, también de sus huecos, sobre su borde: el diseño crece la mitad del ancho del borde.
+embroidery	Border width	Ancho del borde
+embroidery	Outlines' thread	Hilo de los contornos
+embroidery	{value} · darkest of the design	{value} · el más oscuro del diseño
+embroidery	Back to the darkest thread	Volver al hilo más oscuro
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Contornos de color: {count} línea, {length}|Contornos de color: {count} líneas, {length}
+embroidery	Border: {length}	Borde: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Los contornos de color pasan junto a las líneas propias de la imagen en un {share} de su largo: esas líneas se bordan dos veces. Omita el color de las líneas, o desactive los contornos.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Abre la pestaña Bordado de Ajustar documento. Esta ventana vuelve cuando se cierra Ajustar documento.

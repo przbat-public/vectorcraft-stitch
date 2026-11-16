@@ -316,8 +316,10 @@ pub(crate) fn reset(f: &mut Map<String, Value>, color: &str) {
     change_choice(f, color, Map::clear);
 }
 
-/// Every thread chosen left out, merges and jobs kept: the threads were of another palette.
+/// Every thread chosen left out, the colours' and the outlines', merges and jobs kept: the threads
+/// were of another palette, which the engine refuses.
 pub(crate) fn drop_threads(f: &mut Map<String, Value>) {
+    f.remove(super::stitches_step::OUTLINE_THREAD);
     let all: Vec<Map<String, Value>> = choices(f)
         .into_iter()
         .map(|mut c| {
@@ -333,11 +335,14 @@ pub(crate) fn drop_threads(f: &mut Map<String, Value>) {
 /// whose name holds `search` (any case) or whose number starts with it.
 pub(crate) fn picker_rows(palette: &str, color: &str, search: &str) -> Vec<NearThread> {
     let Some(rgb) = super::image_step::parse(color).map(|c| [c.r(), c.g(), c.b()]) else { return Vec::new() };
+    searched(vectorcraft_engine::cmd::embroidery::threads_nearest(palette, rgb), search)
+}
+
+/// Of `threads`, those Choose Thread…'s search `search` finds: whose name holds it (any case) or
+/// whose number starts with it; all of them for no search.
+pub(crate) fn searched(threads: Vec<NearThread>, search: &str) -> Vec<NearThread> {
     let wanted = search.trim().to_lowercase();
-    vectorcraft_engine::cmd::embroidery::threads_nearest(palette, rgb)
-        .into_iter()
-        .filter(|t| wanted.is_empty() || t.name.to_lowercase().contains(&wanted) || t.index.to_string().starts_with(&wanted))
-        .collect()
+    threads.into_iter().filter(|t| wanted.is_empty() || t.name.to_lowercase().contains(&wanted) || t.index.to_string().starts_with(&wanted)).collect()
 }
 
 /// A difference as a badge writes it: one decimal, two where one would round onto the line.
@@ -357,7 +362,7 @@ fn thread_name(t: &Thread) -> String {
 }
 
 /// The thread `name`, number `index` in `palette`, as the rows and Choose Thread…'s list write it.
-fn thread_words(name: &str, palette: &str, index: impl std::fmt::Display) -> String {
+pub(crate) fn thread_words(name: &str, palette: &str, index: impl std::fmt::Display) -> String {
     format!("{name}  {} {index}", palette.to_uppercase())
 }
 
@@ -650,7 +655,7 @@ fn picker(ui: &mut Ui, state: &mut State, button: &egui::Response, palette: &str
             scrolled(ui, "digitize-thread-choice", threads.len(), PICKER_ROW_HEIGHT, PICKER_LIST_HEIGHT, |ui| {
                 for (k, thread) in threads.iter().enumerate() {
                     let nearest = k == 0 && search.trim().is_empty();
-                    if picker_row(ui, thread, nearest, palette, lang, &t).clicked() {
+                    if picker_row(ui, thread, Some(nearest), palette, lang, &t).clicked() {
                         picked = Some((color.clone(), thread.index));
                     }
                 }
@@ -660,8 +665,10 @@ fn picker(ui: &mut Ui, state: &mut State, button: &egui::Response, palette: &str
     picked
 }
 
-/// A thread in Choose Thread…'s list: its colour, name and number, ΔE, and "nearest" on the first.
-fn picker_row(ui: &mut Ui, thread: &NearThread, nearest: bool, palette: &str, lang: Lang, t: &Tokens) -> egui::Response {
+/// A thread in a Choose Thread… list: its colour, name and number, and, when the list measures the
+/// threads against a colour (`against`: whether this one is the nearest), its ΔE and "nearest" on
+/// the first; the outlines' list measures against none.
+pub(crate) fn picker_row(ui: &mut Ui, thread: &NearThread, against: Option<bool>, palette: &str, lang: Lang, t: &Tokens) -> egui::Response {
     // As wide as the list leaves it beside its bar.
     let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), PICKER_ROW_HEIGHT), Sense::click());
     let p = ui.painter_at(rect);
@@ -675,13 +682,18 @@ fn picker_row(ui: &mut Ui, thread: &NearThread, nearest: bool, palette: &str, la
     p.circle_stroke(centre, SWATCH / 2.0, Stroke::new(1.0, t.border));
     let name = thread_words(thread.name, palette, thread.index);
     p.text(pos2(centre.x + SWATCH / 2.0 + GAP, mid), Align2::LEFT_CENTER, &name, FontId::proportional(NAME_TEXT), t.text_strong);
-    let mut right = delta_e_words(lang, thread.delta_e);
-    if nearest {
-        right = fill(crate::et!("{value} · nearest"), &[("value", &right)]);
-    }
-    let colour = if thread.mismatch { marks::text_colour(t, Mark::Warning) } else { t.text_dim };
-    p.text(pos2(rect.right() - PAD, mid), Align2::RIGHT_CENTER, &right, FontId::proportional(SMALL_TEXT), colour);
-    let said = format!("{name}, {right}");
+    let said = match against {
+        Some(nearest) => {
+            let mut right = delta_e_words(lang, thread.delta_e);
+            if nearest {
+                right = fill(crate::et!("{value} · nearest"), &[("value", &right)]);
+            }
+            let colour = if thread.mismatch { marks::text_colour(t, Mark::Warning) } else { t.text_dim };
+            p.text(pos2(rect.right() - PAD, mid), Align2::RIGHT_CENTER, &right, FontId::proportional(SMALL_TEXT), colour);
+            format!("{name}, {right}")
+        }
+        None => name,
+    };
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, said.clone()));
     resp
 }

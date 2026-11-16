@@ -304,7 +304,7 @@ fn the_progress_said_only_goes_forward() {
 fn the_plan_reports_its_progress_from_nothing() {
     let (s, id) = picture_session();
     let mut pipeline = s.digitize_pipeline();
-    let request = Arc::new(s.digitize_window_request(id, &json!({"colors": 3}), None).unwrap());
+    let request = Arc::new(s.digitize_window_request(id, &json!({"colors": 3}), None, &serde_json::Value::Null).unwrap());
     let job = Job::new(1, request, Progress::new());
     let mut at_objects = None;
     worker::run(&mut pipeline, &job, &mut |d| {
@@ -313,4 +313,35 @@ fn the_plan_reports_its_progress_from_nothing() {
         }
     });
     assert_eq!(at_objects, Some((0, 0)), "the stages' count went");
+}
+
+/// A value changed and changed back is found kept, every stage of it: the note still says which
+/// steps the change reached, shown again from what was kept (the same as the change there said),
+/// never an empty list.
+#[test]
+fn a_value_changed_back_says_which_steps_it_reached() {
+    let (s, id, mut sch) = setup();
+    let mut held = Held::new(&s);
+    let mut now = 0.0;
+    let mut run = |sch: &mut Schedule, p: &Value| {
+        now += 1.0;
+        sch.frame(&s, id, p, now, &mut held);
+        now += QUIET_SECS + PAST;
+        sch.frame(&s, id, p, now, &mut held);
+        held.finish();
+        now += PAST;
+        sch.frame(&s, id, p, now, &mut held);
+    };
+    // The steps the note names, as the bar names them: each stage's step, once.
+    let steps = |sch: &Schedule| {
+        let mut steps: Vec<u8> = sch.updated.as_ref().map(|(_, stages)| stages.iter().map(|s| s.step()).collect()).unwrap_or_default();
+        steps.dedup();
+        steps
+    };
+    run(&mut sch, &params(3));
+    run(&mut sch, &params(4));
+    let there = steps(&sch);
+    assert!(!there.is_empty(), "the change's steps");
+    run(&mut sch, &params(3));
+    assert_eq!(steps(&sch), there, "changed back");
 }

@@ -16,7 +16,7 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::embroidery::ThreadPalette;
+use vectorcraft_doc::embroidery::{EmbroiderySetup, ThreadPalette};
 use vectorcraft_doc::{Document, ImageObject, NodeId};
 use vectorcraft_render::lines::{LinePicture, LinePictureBuilder};
 use vectorcraft_stitch::thread::Palette;
@@ -25,7 +25,7 @@ use super::super::{DetachedService, Options, Planned, Planner};
 use super::command::{Listed, NOTHING_TO_MAKE, ReplyOf, reply_json};
 use super::create::{self, Made};
 use super::rules::AreaKind;
-use super::settings::{BackgroundSetting, ColourChoice, Mode, Settings, Size};
+use super::settings::{BackgroundSetting, ColourChoice, Mode, OutlineSettings, Settings, Size};
 use super::stages::{self, ColoursOut, Digitized, ImageOut, LinesOut, RegionsOut, ShapesOut, TraceOut, clock, since};
 use super::trace;
 use super::warnings::Warning;
@@ -153,15 +153,16 @@ impl PartialEq for ImageKey {
     }
 }
 
-/// What the trace reads of a request: the mode, the colours, the smoothing, the corners, and the
-/// noise the smallest area makes, kept as that area itself up to a thread's footprint (a smallest
-/// area above it traces the same).
+/// What the trace reads of a request: the mode, the colours, the smoothing, the corners, whether
+/// nearly straight curves become lines, and the noise the smallest area makes, kept as that area
+/// itself up to a thread's footprint (a smallest area above it traces the same).
 #[derive(PartialEq)]
 struct TraceSettings {
     mode: Mode,
     colors: u32,
     smoothing: f64,
     corners: f64,
+    straight_lines: bool,
     noise_mm2: f64,
 }
 
@@ -189,14 +190,15 @@ struct RegionsKey {
     settings: RegionsSettings,
 }
 
-/// What the colours read of a request: the colour choices, the smallest area, the mode and the
-/// palette.
+/// What the colours read of a request: the colour choices, the smallest area, the mode, the palette,
+/// and how thin an area is a line.
 #[derive(PartialEq)]
 struct ColoursSettings {
     choices: Vec<ColourChoice>,
     min_area: f64,
     mode: Mode,
     palette: Palette,
+    thin_line: f64,
 }
 
 /// What the colours read: the working copy, the trace, the region map, and the request's
@@ -209,12 +211,20 @@ struct ColoursKey {
     settings: ColoursSettings,
 }
 
-/// What the centre lines and the order read: the working copy and the colours (nothing of the
-/// request itself).
+/// What the centre lines read of a request: how thin an area is a line, held to its width away
+/// from its junctions.
+#[derive(PartialEq)]
+struct LinesSettings {
+    thin_line: f64,
+}
+
+/// What the centre lines and the order read: the working copy, the colours and the request's
+/// [`LinesSettings`].
 #[derive(PartialEq)]
 struct LinesKey {
     image: u64,
     colours: u64,
+    settings: LinesSettings,
 }
 
 /// What the shapes read of a request: the overlap.
@@ -235,16 +245,23 @@ struct ShapesKey {
 }
 
 /// What the objects read of a request: the document they are made on (the same snapshot, held)
-/// with the image's place in it, and the palette.
+/// with the image's place in it, the palette, and the document's embroidery settings with the
+/// window's changes, which their stitches are planned with.
 struct ObjectsSettings {
     document: Arc<Document>,
     target: NodeId,
     palette: Palette,
+    setup: Option<Box<EmbroiderySetup>>,
+    outlines: OutlineSettings,
 }
 
 impl PartialEq for ObjectsSettings {
     fn eq(&self, o: &Self) -> bool {
-        Arc::ptr_eq(&self.document, &o.document) && self.target == o.target && self.palette == o.palette
+        Arc::ptr_eq(&self.document, &o.document)
+            && self.target == o.target
+            && self.palette == o.palette
+            && self.setup == o.setup
+            && self.outlines == o.outlines
     }
 }
 
@@ -273,9 +290,10 @@ pub(super) struct PlanOut {
 }
 
 /// What a window digitizes: the document as it was asked (its number and snapshot), the image
-/// (`target`, an image or an Image Trace object) and its file, the settings, and the palette the
-/// window matches threads to (the document's unless the window chose another, which Create then
-/// makes the document's).
+/// (`target`, an image or an Image Trace object) and its file, the settings, the palette the window
+/// matches threads to (the document's unless the window chose another, which Create then makes the
+/// document's), and the document's embroidery settings with the window's changes, which Create
+/// makes the document's too.
 pub struct WindowRequest {
     pub(super) uid: u64,
     pub(super) original: Arc<Document>,
@@ -284,6 +302,7 @@ pub struct WindowRequest {
     pub(super) bytes: Arc<Vec<u8>>,
     pub(super) settings: Settings,
     pub(super) palette: Palette,
+    pub(super) setup: Option<Box<EmbroiderySetup>>,
 }
 
 impl WindowRequest {
@@ -322,8 +341,9 @@ impl WindowRequest {
             StageId::Trace => self.trace_settings() == o.trace_settings(),
             StageId::Regions => self.regions_settings() == o.regions_settings(),
             StageId::Colours => self.colours_settings() == o.colours_settings(),
-            // The lines read only the outputs before them, the plan only the objects.
-            StageId::Lines | StageId::Plan => true,
+            StageId::Lines => self.lines_settings() == o.lines_settings(),
+            // The plan reads only the objects.
+            StageId::Plan => true,
             StageId::Shapes => self.shapes_settings() == o.shapes_settings(),
             StageId::Objects => self.objects_settings() == o.objects_settings(),
         }
@@ -337,7 +357,14 @@ impl WindowRequest {
 
     fn trace_settings(&self) -> TraceSettings {
         let s = &self.settings;
-        TraceSettings { mode: s.mode, colors: s.colors, smoothing: s.smoothing, corners: s.corners, noise_mm2: s.min_area.min(trace::TRACE_AREA_MM2) }
+        TraceSettings {
+            mode: s.mode,
+            colors: s.colors,
+            smoothing: s.smoothing,
+            corners: s.corners,
+            straight_lines: s.straight_lines,
+            noise_mm2: s.min_area.min(trace::TRACE_AREA_MM2),
+        }
     }
 
     fn regions_settings(&self) -> RegionsSettings {
@@ -346,7 +373,11 @@ impl WindowRequest {
 
     fn colours_settings(&self) -> ColoursSettings {
         let s = &self.settings;
-        ColoursSettings { choices: s.choices.clone(), min_area: s.min_area, mode: s.mode, palette: self.palette }
+        ColoursSettings { choices: s.choices.clone(), min_area: s.min_area, mode: s.mode, palette: self.palette, thin_line: s.thin_line }
+    }
+
+    fn lines_settings(&self) -> LinesSettings {
+        LinesSettings { thin_line: self.settings.thin_line }
     }
 
     fn shapes_settings(&self) -> ShapesSettings {
@@ -354,7 +385,13 @@ impl WindowRequest {
     }
 
     fn objects_settings(&self) -> ObjectsSettings {
-        ObjectsSettings { document: self.original.clone(), target: self.target, palette: self.palette }
+        ObjectsSettings {
+            document: self.original.clone(),
+            target: self.target,
+            palette: self.palette,
+            setup: self.setup.clone(),
+            outlines: self.settings.outlines,
+        }
     }
 }
 
@@ -510,7 +547,8 @@ impl Outputs {
             dry_run: true,
             stats: plan.as_ref().map_or(Value::Null, |p| p.stats.clone()),
             warnings,
-            made_ms: [objects.and_then(|o| o.ms), plan.and_then(|p| p.ms)],
+            made_ms: [objects.as_ref().and_then(|o| o.ms), plan.and_then(|p| p.ms)],
+            outlined: objects.as_ref().and_then(|o| o.made.as_ref()).and_then(|(_, m)| m.outlined),
         };
         Some(reply_json(&d, of))
     }
@@ -800,8 +838,8 @@ impl Pipeline {
             stage(&mut self.colours, &mut self.next, key, || stages::colours_stage(&image.value, &traced.value, &regions.value, s, req.palette))?;
         out.colours = Some(colours.clone());
         done(StageId::Colours, &out, made);
-        let key = LinesKey { image: image.number, colours: colours.number };
-        let (lines, made) = stage(&mut self.lines, &mut self.next, key, || stages::lines_stage(&image.value, &colours.value))?;
+        let key = LinesKey { image: image.number, colours: colours.number, settings: req.lines_settings() };
+        let (lines, made) = stage(&mut self.lines, &mut self.next, key, || stages::lines_stage(&image.value, &colours.value, s))?;
         out.lines = Some(lines.clone());
         done(StageId::Lines, &out, made);
         let key =
@@ -834,12 +872,14 @@ pub(super) fn with_palette(document: &mut Document, palette: Palette) {
     document.embroidery = Some(Box::new(setup));
 }
 
-/// The objects Create would make of `d` on a copy of `req`'s document, its palette the window's.
+/// The objects Create would make of `d` on a copy of `req`'s document, its palette and embroidery
+/// settings the window's.
 fn objects_of(req: &WindowRequest, d: &Digitized) -> Result<ObjectsOut> {
     let started = clock();
     let mut doc = Document::clone(&req.original);
+    doc.embroidery = req.setup.clone();
     with_palette(&mut doc, req.palette);
-    let made = create::made(&mut doc, req.target, d, req.palette)?.map(|m| (Arc::new(doc), m));
+    let made = create::made(&mut doc, req.target, d, req.palette, req.settings.outlines)?.map(|m| (Arc::new(doc), m));
     Ok(ObjectsOut { of: req.original.clone(), made, ms: since(started) })
 }
 

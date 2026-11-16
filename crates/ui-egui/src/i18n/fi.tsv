@@ -7484,10 +7484,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Lasketaan…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Vaihe {number}/{count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Pehmeys: {value}
-embroidery	Corners: {value}	Kulmat: {value}
-embroidery	Colors overlap by {value} mm	Värit limittyvät {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Pistot noudattavat asiakirjan kirjontaasetuksia.
 @plural	{count} thread + background|{count} threads + background	{count} lanka + tausta|{count} lankaa + tausta
 @plural	{count} area|{count} areas	{count} alue|{count} aluetta
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7552,3 +7548,43 @@ embroidery	the background's color inside the design	taustan väri kuvion sisäll
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Ei mitään kirjottavaa: jokainen alue on taustaa. Kirjo tausta tai rajaa vähemmän.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Ei mitään luotavaa: jokainen alue on taustaa. Kirjo tausta tai rajaa vähemmän.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Pehmeys
+embroidery	Corners	Kulmat
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Suurempi: pehmeämmät ääriviivat ja vähemmän pisteitä. Pienempi: lähempänä kuvan reunoja.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Suurempi: useampi mutka säilyy terävänä kulmana. Pienempi: useampi pyöristyy.
+embroidery	Straighten nearly straight lines	Suorista lähes suorat viivat
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Hieman kaarevista reunoista tulee suoria viivoja, ympyrän osista oikeita kaaria ja lähes vaaka- tai pystysuorista viivoista täsmälleen vaaka- tai pystysuoria.
+embroidery	Colors overlap by	Värit limittyvät
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Ensin kirjottava väri ulottuu seuraavan alle, jotta niiden välistä ei näy kangasta.
+embroidery	Thin lines sewn along their middle below	Ohuet viivat kirjotaan keskeltä, leveys alle
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Kapeampi osa kirjotaan suoran piston viivana keskeltään. 0: ei mitään.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Ohuet viivat
+embroidery	Shapes: below {value}	Muodot: alle {value}
+embroidery	Set in the Shapes step.	Asetetaan vaiheessa Muodot.
+embroidery	below {value}	alle {value}
+embroidery	Fill angle	Täytön kulma
+embroidery	Fixed	Kiinteä
+embroidery	Across the shape	Muodon poikki
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Täytön rivien suunta: kiinteässä kulmassa sivulla tai kunkin muodon pituuden poikki.
+embroidery	The fills' rows, counter-clockwise on the page.	Täyttöjen rivit, vastapäivään sivulla.
+embroidery	From the background to the details. The Order tab changes it after Create.	Taustasta yksityiskohtiin. Järjestys-välilehti muuttaa sitä luonnin jälkeen.
+embroidery	Create sets these in the document's embroidery settings.	Luonti asettaa ne asiakirjan kirjontaasetuksiin.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Ääriviivat
+embroidery	Color outlines (running stitch)	Värien ääriviivat (suora pisto)
+embroidery	A running line along each edge between two colors, once, and round the design.	Suora pistoviiva jokaista kahden värin välistä reunaa pitkin, kerran, ja kuvion ympäri.
+embroidery	Design border (satin)	Kuvion reunus (satiini)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Satiinireunus koko kuvion ympäri, myös sen reikien, sen reunalla: kuvio kasvaa puolella reunuksen leveydestä.
+embroidery	Border width	Reunuksen leveys
+embroidery	Outlines' thread	Ääriviivojen lanka
+embroidery	{value} · darkest of the design	{value} · kuvion tummin
+embroidery	Back to the darkest thread	Takaisin tummimpaan lankaan
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Värien ääriviivat: {count} viiva, {length}|Värien ääriviivat: {count} viivaa, {length}
+embroidery	Border: {length}	Reunus: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Värien ääriviivat kulkevat kuvan omien viivojen vieressä {share} pituudestaan: ne viivat kirjotaan kahdesti. Jätä viivojen väri pois tai ääriviivat pois päältä.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Avaa Asiakirjan asetusten Kirjonta-välilehden. Tämä ikkuna palaa, kun Asiakirjan asetukset suljetaan.

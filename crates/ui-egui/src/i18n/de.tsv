@@ -7035,10 +7035,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Wird berechnet…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Schritt {number} von {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Glätte: {value}
-embroidery	Corners: {value}	Ecken: {value}
-embroidery	Colors overlap by {value} mm	Farben überlappen um {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Die Stiche folgen den Stickeinstellungen des Dokuments.
 @plural	{count} thread + background|{count} threads + background	{count} Garn + Hintergrund|{count} Garne + Hintergrund
 @plural	{count} area|{count} areas	{count} Fläche|{count} Flächen
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7103,3 +7099,43 @@ embroidery	the background's color inside the design	die Hintergrundfarbe innerha
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nichts zu sticken: Jede Fläche ist Hintergrund. Sticken Sie den Hintergrund mit oder schneiden Sie weniger zu.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nichts zu erstellen: Jede Fläche ist Hintergrund. Sticken Sie den Hintergrund mit oder schneiden Sie weniger zu.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Glätte
+embroidery	Corners	Ecken
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Höher: glattere Umrisse mit weniger Punkten. Niedriger: näher an den Kanten des Bildes.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Höher: mehr Knicke bleiben scharfe Ecken. Niedriger: mehr davon werden abgerundet.
+embroidery	Straighten nearly straight lines	Fast gerade Linien begradigen
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Leicht gebogene Kanten werden zu geraden Linien, Kreisteile zu echten Bögen und fast waagerechte oder senkrechte Linien genau waagerecht oder senkrecht.
+embroidery	Colors overlap by	Farben überlappen um
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Die zuerst gestickte Farbe reicht unter die nächste, damit kein Stoff zwischen ihnen durchscheint.
+embroidery	Thin lines sewn along their middle below	Dünne Linien entlang ihrer Mitte gestickt unter
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Ein schmalerer Teil wird als Geradstichlinie entlang seiner Mitte gestickt. 0: keiner.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Dünne Linien
+embroidery	Shapes: below {value}	Formen: unter {value}
+embroidery	Set in the Shapes step.	Wird im Schritt „Formen“ eingestellt.
+embroidery	below {value}	unter {value}
+embroidery	Fill angle	Flächenwinkel
+embroidery	Fixed	Fest
+embroidery	Across the shape	Quer zur Form
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Die Richtung der Reihen einer Fläche: in einem festen Winkel auf der Seite oder quer zur Länge jeder Form.
+embroidery	The fills' rows, counter-clockwise on the page.	Die Reihen der Flächen, gegen den Uhrzeigersinn auf der Seite.
+embroidery	From the background to the details. The Order tab changes it after Create.	Vom Hintergrund zu den Details. Der Reiter „Reihenfolge“ ändert sie nach dem Erstellen.
+embroidery	Create sets these in the document's embroidery settings.	Erstellen setzt sie in den Sticheinstellungen des Dokuments.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Konturen
+embroidery	Color outlines (running stitch)	Farbkonturen (Geradstich)
+embroidery	A running line along each edge between two colors, once, and round the design.	Eine Geradstichlinie entlang jeder Kante zwischen zwei Farben, einmal, und um das Motiv.
+embroidery	Design border (satin)	Motivrand (Satin)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Ein Satinrand um das ganze Motiv, auch um seine Löcher, auf seiner Kante: Das Motiv wächst um die halbe Randbreite.
+embroidery	Border width	Randbreite
+embroidery	Outlines' thread	Faden der Konturen
+embroidery	{value} · darkest of the design	{value} · der dunkelste des Motivs
+embroidery	Back to the darkest thread	Zurück zum dunkelsten Faden
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Farbkonturen: {count} Linie, {length}|Farbkonturen: {count} Linien, {length}
+embroidery	Border: {length}	Rand: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Die Farbkonturen verlaufen auf {share} ihrer Länge neben den eigenen Linien des Bildes: Diese Linien werden doppelt gestickt. Lassen Sie die Farbe der Linien weg oder schalten Sie die Konturen aus.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Öffnet den Reiter „Stickerei“ von „Dokument einrichten“. Dieses Fenster kehrt zurück, wenn „Dokument einrichten“ geschlossen wird.

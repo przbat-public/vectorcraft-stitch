@@ -380,9 +380,18 @@ fn node<'a>(
     name: &str,
     role: egui::accesskit::Role,
 ) -> Option<&'a egui::accesskit::Node> {
+    node_with_id(nodes, name, role).map(|(_, n)| n)
+}
+
+/// [`node`] with its id.
+fn node_with_id<'a>(
+    nodes: &'a [(egui::accesskit::NodeId, egui::accesskit::Node)],
+    name: &str,
+    role: egui::accesskit::Role,
+) -> Option<&'a (egui::accesskit::NodeId, egui::accesskit::Node)> {
     let labels: Vec<egui::accesskit::NodeId> =
         nodes.iter().filter(|(_, n)| n.role() == egui::accesskit::Role::Label && n.value() == Some(name)).map(|(id, _)| *id).collect();
-    nodes.iter().map(|(_, n)| n).find(|n| n.role() == role && (n.label() == Some(name) || n.labelled_by().iter().any(|l| labels.contains(l))))
+    nodes.iter().find(|(_, n)| n.role() == role && (n.label() == Some(name) || n.labelled_by().iter().any(|l| labels.contains(l))))
 }
 
 /// The centre of the control screen readers call `name`, of `role`.
@@ -398,6 +407,19 @@ fn click(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &s
     let button = |pressed| Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
     *time += 0.05;
     frame(app, ctx, *time, vec![Event::PointerMoved(at), button(true), button(false)]);
+    *time += 0.05;
+    frame(app, ctx, *time, vec![]);
+}
+
+/// A screen reader's click of the control it calls `name`, of `role`: pressed wherever the control
+/// lies, below the part of the step in view too, where a pointer's click would miss it.
+fn press(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) {
+    use egui::accesskit::{Action, ActionRequest, TreeId};
+    let nodes = nodes(app, ctx, time);
+    let target_node = node_with_id(&nodes, name, role).map(|(id, _)| *id).unwrap_or_else(|| panic!("no {role:?} {name}"));
+    let request = ActionRequest { action: Action::Click, target_tree: TreeId::ROOT, target_node, data: None };
+    *time += 0.05;
+    frame(app, ctx, *time, vec![Event::AccessKitActionRequest(request)]);
     *time += 0.05;
     frame(app, ctx, *time, vec![]);
 }
@@ -1054,4 +1076,743 @@ fn the_colors_steps_smallest_area_slider_starts_at_a_working_pixel() {
     let taken = open_dialog(&app).and_then(|d| d.fields.get("minArea")).and_then(Value::as_f64).expect("a smallest area taken");
     let halfway = (pixel * top).sqrt();
     assert!((taken - halfway).abs() < SLIDER_NEAR * halfway, "took {taken} mm², halfway is {halfway} mm²");
+}
+
+/// The numbers of the runs that made each stage's output shown, in the stages' order.
+fn made_by(app: &VectorcraftApp) -> Vec<Option<u64>> {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let shown = live(app).schedule.shown.as_ref().expect("a result shown");
+    DigitizeStage::ALL.iter().map(|&s| shown.outputs.number(s)).collect()
+}
+
+/// The first stage the result shown made again since `before` ([`made_by`]'s numbers), every stage
+/// after it made again too.
+fn made_again_from(app: &VectorcraftApp, before: &[Option<u64>]) -> Option<vectorcraft_engine::cmd::embroidery::DigitizeStage> {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let now = made_by(app);
+    let first = before.iter().zip(&now).position(|(b, n)| b != n)?;
+    let after: Vec<bool> = before.iter().zip(&now).skip(first).map(|(b, n)| b != n).collect();
+    assert!(after.iter().all(|&again| again), "every stage after the first made again: {before:?} then {now:?}");
+    DigitizeStage::ALL.get(first).copied()
+}
+
+/// The Shapes step's outlines: the smoothness typed, the corners from their slider (a press at the
+/// middle of its track, let go in the next frame, takes the middle of 0 to 100) and straightening
+/// ticked each write their setting, and the window recomputes from the trace.
+#[test]
+fn the_shapes_steps_outlines_recompute_from_the_trace() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    let field = |app: &VectorcraftApp, key: &str| open_dialog(app).and_then(|d| d.fields.get(key).cloned());
+    let before = made_by(&app);
+    type_into(&mut app, &ctx, &mut time, "Smoothness", "80");
+    assert_eq!(field(&app, "smoothing"), Some(json!(80.0)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Trace));
+    assert_eq!(reply(&mut app)["settings"]["smoothing"], json!(80.0));
+    let before = made_by(&app);
+    let at = centre_of(&mut app, &ctx, &mut time, "Corners", Role::Slider);
+    let button = |pressed| Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at), button(true)]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![button(false)]);
+    assert_eq!(field(&app, "corners"), Some(json!(50.0)), "the middle of 0 to 100");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Trace));
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Straighten nearly straight lines", Role::CheckBox);
+    assert_eq!(field(&app, "straightLines"), Some(json!(true)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Trace));
+    assert_eq!(reply(&mut app)["settings"]["straightLines"], json!(true));
+    click(&mut app, &ctx, &mut time, "Straighten nearly straight lines", Role::CheckBox);
+    assert_eq!(field(&app, "straightLines"), Some(json!(false)), "unticked");
+}
+
+/// The overlap typed writes its setting and the window recomputes from the shapes, the areas and
+/// their centre lines kept.
+#[test]
+fn the_overlap_typed_recomputes_from_the_shapes() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    let before = made_by(&app);
+    type_into(&mut app, &ctx, &mut time, "Colors overlap by", "0.8");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("overlap").cloned()), Some(json!(0.8)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Shapes));
+    assert_eq!(reply(&mut app)["settings"]["overlap"], json!(0.8));
+}
+
+/// The thin lines' width typed writes its setting and the window recomputes from the colours (where
+/// the areas narrower than it become centre lines), the trace kept.
+#[test]
+fn the_thin_lines_width_typed_recomputes_from_the_colours() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    let before = made_by(&app);
+    type_into(&mut app, &ctx, &mut time, "Thin lines sewn along their middle below", "2");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("thinLine").cloned()), Some(json!(2.0)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Colours));
+    assert_eq!(reply(&mut app)["settings"]["thinLine"], json!(2.0));
+}
+
+/// A Shapes value past the engine's range is refused: the status bar says the range, and the
+/// setting keeps what it held.
+#[test]
+fn a_shapes_value_out_of_range_is_refused_and_kept() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(3));
+    type_into(&mut app, &ctx, &mut time, "Colors overlap by", "5");
+    assert_eq!(app.ui.status, "5 mm is out of range: 0 mm to 2 mm.");
+    type_into(&mut app, &ctx, &mut time, "Smoothness", "150");
+    assert_eq!(app.ui.status, "150 is out of range: 0 to 100.");
+    let d = open_dialog(&app).expect("open");
+    assert_eq!((d.fields.get("overlap"), d.fields.get("smoothing")), (None, None));
+}
+
+/// A choice made in a row's list: the row's button screen readers call `name`, then its option
+/// `option`.
+fn choose(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, option: &str) {
+    click_named(app, ctx, time, name);
+    click_named(app, ctx, time, option);
+}
+
+/// The note saying that Create sets the window's document settings in the document.
+const SETS_THEM: &str = "Create sets these in the document's embroidery settings.";
+
+/// Whether `nodes` say `words`.
+fn says(nodes: &[(egui::accesskit::NodeId, egui::accesskit::Node)], words: &str) -> bool {
+    nodes.iter().any(|(_, n)| n.value() == Some(words))
+}
+
+/// The Stitches step's fabric is the one the design is planned with, from the objects on, the
+/// window saying that Create sets it in the document; Create makes it the document's in the same
+/// undo step (the project owner's choice, 2026-11-12, as the palette); the document's own again
+/// changes nothing.
+#[test]
+fn the_stitches_steps_fabric_is_planned_and_made_the_documents_on_create() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    assert!(!says(&nodes(&mut app, &ctx, &mut time), SETS_THEM), "nothing changed yet");
+    choose(&mut app, &ctx, &mut time, "Fabric", "Built-in values");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("fabric").cloned()), None, "the document's own: no change");
+    let before = made_by(&app);
+    choose(&mut app, &ctx, &mut time, "Fabric", "Denim or heavy twill");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("fabric").cloned()), Some(json!("denim")));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    assert!(says(&nodes(&mut app, &ctx, &mut time), SETS_THEM));
+    let steps = undo_steps(&app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    assert_eq!(undo_steps(&app), steps + 1, "one undo step");
+    let settings = app.session.embroidery_settings().expect("settings");
+    assert_eq!(settings.settings.fabric.and_then(|f| f.preset).as_deref(), Some("denim"));
+}
+
+/// The fill angle across the shape is what the design is planned with, and Fixed takes the degrees
+/// typed; degrees past a full turn are refused and kept.
+#[test]
+fn the_fill_angle_is_fixed_or_across_the_shape() {
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let angle = |app: &VectorcraftApp| open_dialog(app).and_then(|d| d.fields.get("fillAngle").cloned());
+    let before = made_by(&app);
+    choose(&mut app, &ctx, &mut time, "Fill angle", "Across the shape");
+    assert_eq!(angle(&app), Some(json!("acrossShape")));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    assert_eq!(live_mut(&mut app).document_settings().map(|s| s.resolved.fill_angle.value.clone()), Some(json!("acrossShape")), "planned so");
+    choose(&mut app, &ctx, &mut time, "Fill angle", "Fixed");
+    assert_eq!(angle(&app), None, "the document's own rows again");
+    type_into(&mut app, &ctx, &mut time, "Angle", "45");
+    assert_eq!(angle(&app), Some(json!(45.0)));
+    type_into(&mut app, &ctx, &mut time, "Angle", "500");
+    assert_eq!(app.ui.status, "500° is out of range: -360° to 360°.");
+    assert_eq!(angle(&app), Some(json!(45.0)), "kept");
+}
+
+/// Joining one thread's objects is a checkbox, from the objects on.
+#[test]
+fn joining_one_threads_objects_is_a_setting() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Join one thread's objects when nothing lies between them", Role::CheckBox);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("joinSameColor").cloned()), Some(json!(false)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    click(&mut app, &ctx, &mut time, "Join one thread's objects when nothing lies between them", Role::CheckBox);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("joinSameColor").cloned()), None, "the document's own again");
+}
+
+/// The rules are read only, each with its value and where it comes from: the thin lines from the
+/// Shapes step, the narrow parts' satin by default, the rows' spacing by default and then from the
+/// fabric chosen, fleece's closer rows (what the step draws: its read-only rows are painted words).
+#[test]
+fn the_rules_say_where_their_values_come_from() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    for words in ["Thin lines", "Running stitch", "Shapes: below 1 mm", "Narrow parts as satin", "below 7 mm", "Row spacing"] {
+        assert!(drawn.iter().any(|w| w == words), "{words} not drawn: {drawn:?}");
+    }
+    let tatami = |drawn: &[String]| drawn.iter().find(|w| w.starts_with("Tatami, ")).cloned().unwrap_or_default();
+    let built_in = tatami(&drawn);
+    assert_eq!(drawn.iter().filter(|w| *w == "default").count(), 2, "the narrow parts' and the rows' source: {drawn:?}");
+    // Fleece's rows are closer than the built-in ones (its own spacing, from the heavy knit class).
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    until(&mut app, &ctx, &mut time, ready);
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    assert!(drawn.iter().any(|w| w == "fabric"), "the rows' spacing from the fabric: {drawn:?}");
+    assert_eq!((built_in.as_str(), tatami(&drawn).as_str()), ("Tatami, 0.38 mm", "Tatami, 0.33 mm"));
+}
+
+/// The outlines are two checkboxes, both off by default (the project owner's choice, 2026-11-12):
+/// each reruns from the objects; the colour outlines say what they came to and the darkest thread
+/// they are sewn in; the border shows its width, 5 mm typed taken and 12 mm refused and kept.
+#[test]
+fn the_outlines_are_two_checkboxes_off_by_default() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let field = |app: &VectorcraftApp, key: &str| open_dialog(app).and_then(|d| d.fields.get(key).cloned());
+    let r = reply(&mut app);
+    assert_eq!(
+        (r["settings"]["colorOutlines"].clone(), r["settings"]["border"].clone(), r["outlined"].clone()),
+        (json!(false), json!(false), Value::Null)
+    );
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Color outlines (running stitch)", Role::CheckBox);
+    assert_eq!(field(&app, "colorOutlines"), Some(json!(true)));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    let r = reply(&mut app);
+    assert!(r["outlined"]["colorOutlines"]["lines"].as_u64() >= Some(1), "{}", r["outlined"]);
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    assert!(drawn.iter().any(|w| w.starts_with("Color outlines: ")), "{drawn:?}");
+    assert!(drawn.iter().any(|w| w.ends_with(" · darkest of the design")), "{drawn:?}");
+    click(&mut app, &ctx, &mut time, "Design border (satin)", Role::CheckBox);
+    assert_eq!(field(&app, "border"), Some(json!(true)));
+    until(&mut app, &ctx, &mut time, ready);
+    type_into(&mut app, &ctx, &mut time, "Border width", "5");
+    assert_eq!(field(&app, "borderWidth"), Some(json!(5.0)));
+    type_into(&mut app, &ctx, &mut time, "Border width", "12");
+    assert_eq!(app.ui.status, "12 mm is out of range: 1 mm to 10 mm.");
+    assert_eq!(field(&app, "borderWidth"), Some(json!(5.0)), "kept");
+}
+
+/// The outlines' thread is chosen from Choose Thread…'s list, the darkest threads first, and goes
+/// back to the darkest of the design's with ↺.
+#[test]
+fn the_outlines_thread_is_chosen_and_goes_back_to_the_darkest() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    let darkest = reply(&mut app)["outlined"]["thread"]["index"].clone();
+    click(&mut app, &ctx, &mut time, "Choose Thread…", Role::Button);
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let mut listed: Vec<&egui::accesskit::Node> =
+        nodes_now.iter().map(|(_, n)| n).filter(|n| n.role() == Role::Button && n.label().is_some_and(|l| l.contains("  JEF "))).collect();
+    listed.sort_by(|a, b| a.bounds().map_or(0.0, |r| r.y0).total_cmp(&b.bounds().map_or(0.0, |r| r.y0)));
+    let other = listed.iter().filter_map(|n| n.label()).find(|l| !l.ends_with(&format!(" {darkest}"))).expect("another thread").to_string();
+    let index: u64 = other.rsplit(' ').next().and_then(|n| n.parse().ok()).expect("a number");
+    click(&mut app, &ctx, &mut time, &other, Role::Button);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("outlineThread").cloned()), Some(json!({"palette": "jef", "index": index})));
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(reply(&mut app)["outlined"]["thread"]["index"], json!(index));
+    click(&mut app, &ctx, &mut time, "Back to the darkest thread", Role::Button);
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("outlineThread").cloned()), None);
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(reply(&mut app)["outlined"]["thread"]["index"], darkest);
+}
+
+/// A few frames on a screen `screen` points large (the column learns its content's size, the window
+/// its own) → the last one's shapes, flattened, the window and its settings column.
+fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, screen: egui::Vec2) -> (Vec<egui::Shape>, Rect, Rect) {
+    fn flatten(s: egui::Shape, out: &mut Vec<egui::Shape>) {
+        match s {
+            egui::Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
+            other => out.push(other),
+        }
+    }
+    let mut shapes = Vec::new();
+    for _ in 0..3 {
+        *time += 0.05;
+        let raw = egui::RawInput { time: Some(*time), screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), screen)), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| {
+            app.logic(ui.ctx());
+            crate::dialogs::show(app, ui.ctx());
+        });
+        out.textures_delta.clear();
+        shapes = Vec::new();
+        out.shapes.into_iter().for_each(|c| flatten(c.shape, &mut shapes));
+    }
+    let window = ctx.memory(|m| m.area_rect(egui::Id::unique("embroidery-digitize-image"))).expect("the window drawn");
+    (shapes, window, frame::regions(window.shrink(17.0)).settings)
+}
+
+/// The window open in language `lang` on step 4, its outlines and border on, their result shown.
+fn step_four_outlined(lang: &str) -> (VectorcraftApp, egui::Context, f64) {
+    let mut app = app();
+    app.session.prefs.interface_language = lang.into();
+    let (mut app, ctx, mut time) = opened_with(app);
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    set(&mut app, "border", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    (app, ctx, time)
+}
+
+/// Step 4's rows are drawn whole at the window's usual size, in English and in Polish: the fabric
+/// chosen, the rules' values, the outlines' rows and their thread (a cut galley keeps its whole
+/// text, marked elided).
+#[test]
+fn step_four_draws_its_rows_whole() {
+    for lang in ["en", "pl"] {
+        let (mut app, ctx, mut time) = step_four_outlined(lang);
+        let (shapes, _, settings) = drawn_on(&mut app, &ctx, &mut time, vec2(1440.0, 900.0));
+        let cut: Vec<String> = shapes
+            .iter()
+            .filter_map(|s| match s {
+                egui::Shape::Text(t) if t.galley.elided && settings.x_range().contains(t.visual_bounding_rect().center().x) => {
+                    Some(t.galley.text().to_string())
+                }
+                _ => None,
+            })
+            .collect();
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        assert!(cut.is_empty(), "{lang}: cut short: {cut:?}");
+    }
+}
+
+/// The outlines' Choose Thread… list shows each thread's colour beside its name, as the colour
+/// list's does: the darkest threads, first in it, drawn as swatches.
+#[test]
+fn the_outlines_thread_list_shows_each_threads_colour() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Choose Thread…", Role::Button);
+    let (shapes, ..) = drawn_on(&mut app, &ctx, &mut time, vec2(1440.0, 900.0));
+    let fills: Vec<egui::Color32> = shapes
+        .iter()
+        .filter_map(|s| match s {
+            egui::Shape::Circle(c) => Some(c.fill),
+            _ => None,
+        })
+        .collect();
+    for thread in super::colour_list::picker_rows("jef", "#000000", "").iter().take(3) {
+        let [r, g, b] = thread.color;
+        assert!(fills.contains(&egui::Color32::from_rgb(r, g, b)), "{} not drawn: {fills:?}", thread.name);
+    }
+}
+
+/// Turning step 4's outlines on keeps the window its size, at its smallest (the compact column) and
+/// at its usual size, in English and in Polish: the outlines' thread row wraps rather than widening
+/// the column.
+#[test]
+fn step_fours_outlines_keep_the_window_its_size() {
+    for lang in ["en", "pl"] {
+        for screen in [vec2(1000.0, 650.0), vec2(1440.0, 900.0)] {
+            let mut app = app();
+            app.session.prefs.interface_language = lang.into();
+            let (mut app, ctx, mut time) = opened_with(app);
+            set(&mut app, STEP, json!(4));
+            let before = drawn_on(&mut app, &ctx, &mut time, screen).1.size();
+            set(&mut app, "colorOutlines", json!(true));
+            set(&mut app, "border", json!(true));
+            until(&mut app, &ctx, &mut time, ready);
+            let after = drawn_on(&mut app, &ctx, &mut time, screen).1.size();
+            crate::i18n::set_current(crate::i18n::Lang::EN);
+            assert_eq!(after.round(), before.round(), "{lang} on {screen:?}");
+        }
+    }
+}
+
+/// Embroidery Settings… steps the window aside for Document Setup's Embroidery tab, its settings
+/// and its runs kept; Cancel brings it back as it was, nothing recomputed (the project owner's
+/// choice, 2026-11-12).
+#[test]
+fn embroidery_settings_steps_aside_and_cancel_brings_it_back() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "fillAngle", json!("acrossShape"));
+    until(&mut app, &ctx, &mut time, ready);
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    let d = app.ui.dialog.clone().expect("Document Setup");
+    assert_eq!((d.kind == KIND, d.fields.get("tab").cloned()), (false, Some(json!("Embroidery"))));
+    assert!(app.embroidery.image_window.live.is_some(), "its runs kept meanwhile");
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    let d = open_dialog(&app).expect("the window back");
+    assert_eq!(d.fields.get("fillAngle"), Some(&json!("acrossShape")), "as it was left");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_by(&app), before, "nothing recomputed");
+}
+
+/// Document Setup's OK brings the window back too, recomputing from the objects on with the
+/// document's settings as they now are.
+#[test]
+fn embroidery_settings_ok_brings_it_back_recomputed_from_the_objects() {
+    use egui::accesskit::Role;
+    use vectorcraft_engine::cmd::embroidery::DigitizeStage;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let before = made_by(&app);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.threadWeight".into(), json!(30));
+    crate::dialogs::confirm(&mut app).expect("OK");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(open_dialog(&app).is_some(), "the window back");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(made_again_from(&app, &before), Some(DigitizeStage::Objects));
+    assert_eq!(app.session.embroidery_settings().expect("settings").settings.thread_weight, Some(30.0));
+}
+
+/// The document's embroidery settings, as the document keeps them, in their JSON.
+fn document_settings_json(app: &VectorcraftApp) -> Value {
+    serde_json::to_value(&app.session.embroidery_settings().expect("settings").settings).unwrap_or_default()
+}
+
+/// Field `key` of the open dialog, whichever it is (Document Setup's while the window is aside).
+fn dialog_field(app: &VectorcraftApp, key: &str) -> Option<Value> {
+    app.ui.dialog.as_ref().and_then(|d| d.fields.get(key).cloned())
+}
+
+/// Field `key` of the window, open again.
+fn window_field(app: &VectorcraftApp, key: &str) -> Option<Value> {
+    open_dialog(app).and_then(|d| d.fields.get(key).cloned())
+}
+
+/// Document Setup's OK, and the frame after it that brings the window back.
+fn setup_ok(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) {
+    crate::dialogs::confirm(app).expect("OK");
+    *time += 0.05;
+    frame(app, ctx, *time, vec![]);
+}
+
+/// Create with the window's fields as they are (Cmd/Ctrl+Enter), until the window has closed.
+fn create_now(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) {
+    *time += 0.05;
+    frame(app, ctx, *time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    until(app, ctx, time, |app| open_dialog(app).is_none());
+}
+
+/// Embroidery Settings… opens Document Setup showing what the window plans with, the window's own
+/// fabric among it; a fabric chosen there and confirmed with OK is the document's, the window lets
+/// go of its own and plans with the document's, and Create keeps it (the project owner's choice,
+/// 2026-11-15).
+#[test]
+fn a_fabric_chosen_in_document_setup_is_the_documents_after_create() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    choose(&mut app, &ctx, &mut time, "Fabric", "Denim or heavy twill");
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.fabric"), Some(json!("denim")), "Document Setup shows the window's fabric");
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!(window_field(&app, "fabric"), None, "the window's own fabric let go");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let fabric = app.session.embroidery_settings().expect("settings").settings.fabric.and_then(|f| f.preset);
+    assert_eq!(fabric.as_deref(), Some("fleece"));
+}
+
+/// A thread palette chosen in Document Setup through Embroidery Settings… and confirmed with OK is
+/// the document's and the window's: the window matches the threads to it, and Create keeps it.
+#[test]
+fn a_palette_chosen_in_document_setup_is_the_documents_after_create() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.palette"), Some(json!("jef")), "the window's palette shown");
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.palette".into(), json!("pec"));
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!(window_field(&app, "palette"), Some(json!("pec")), "the window matches to the document's palette");
+    until(&mut app, &ctx, &mut time, ready);
+    assert!(reply(&mut app)["colors"].as_array().unwrap().iter().filter(|c| c["sewn"] == true).all(|c| c["thread"]["palette"] == "pec"));
+    create_now(&mut app, &ctx, &mut time);
+    assert_eq!(document_settings_json(&app)["palette"], json!("pec"));
+}
+
+/// The fill angle and joining one thread's objects, shown in Document Setup as the window holds
+/// them, chosen there and confirmed with OK, are the document's after Create.
+#[test]
+fn the_fill_angle_and_joining_chosen_in_document_setup_are_the_documents_after_create() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "fillAngle", json!("acrossShape"));
+    set(&mut app, "joinSameColor", json!(false));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(
+        (dialog_field(&app, "embroidery.fillAngle"), dialog_field(&app, "embroidery.joinSameColor")),
+        (Some(json!("acrossShape")), Some(json!(false))),
+        "the window's shown"
+    );
+    let d = app.ui.dialog.as_mut().expect("Document Setup");
+    d.fields.insert("embroidery.fillAngle".into(), json!(45.0));
+    d.fields.insert("embroidery.joinSameColor".into(), json!(true));
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!((window_field(&app, "fillAngle"), window_field(&app, "joinSameColor")), (None, None), "the window's own let go");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let resolved = app.session.embroidery_settings().expect("settings").resolved;
+    assert_eq!((resolved.fill_angle.value, resolved.join_same_color.value), (json!(45.0), true));
+}
+
+/// Document Setup cancelled leaves the document and the window's own settings as they were: the
+/// window plans with its own fabric, palette, fill angle and joining still, and Create sets them.
+#[test]
+fn document_setup_cancelled_leaves_the_windows_own_settings() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let own = json!({"fabric": "denim", "palette": "pec", "fillAngle": "acrossShape", "joinSameColor": false});
+    for (k, v) in own.as_object().unwrap() {
+        set(&mut app, k, v.clone());
+    }
+    until(&mut app, &ctx, &mut time, ready);
+    let before = document_settings_json(&app);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    for (k, v) in own.as_object().unwrap() {
+        assert_eq!(window_field(&app, k).as_ref(), Some(v), "{k} kept");
+    }
+    assert_eq!(document_settings_json(&app), before, "the document as it was");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let s = app.session.embroidery_settings().expect("settings");
+    assert_eq!(s.settings.fabric.and_then(|f| f.preset).as_deref(), Some("denim"));
+    assert_eq!(document_settings_json(&app)["palette"], json!("pec"));
+}
+
+/// The document's own palette chosen back in Document Setup, over the window's, is the window's
+/// too: OK makes what Document Setup holds the document's, even where that changes nothing in the
+/// document.
+#[test]
+fn the_documents_own_palette_chosen_back_in_document_setup_is_the_windows_too() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "palette", json!("pec"));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.palette"), Some(json!("pec")), "the window's palette shown");
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.palette".into(), json!("jef"));
+    setup_ok(&mut app, &ctx, &mut time);
+    assert_eq!(window_field(&app, "palette"), Some(json!("jef")));
+}
+
+/// An OK given earlier to Document Setup opened from the menu leaves a later Cancel from the
+/// window's Embroidery Settings… a Cancel: the window still holds its own fabric, and Create sets
+/// it.
+#[test]
+fn an_earlier_document_setup_ok_leaves_a_later_cancel_a_cancel() {
+    use egui::accesskit::Role;
+    let mut app = app();
+    app.run("file.documentSetup", json!({})).expect("Document Setup from the menu");
+    crate::dialogs::confirm(&mut app).expect("OK");
+    let (mut app, ctx, mut time) = opened_with(app);
+    set(&mut app, STEP, json!(4));
+    choose(&mut app, &ctx, &mut time, "Fabric", "Denim or heavy twill");
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert_eq!(window_field(&app, "fabric"), Some(json!("denim")), "the window's own fabric kept");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    let fabric = app.session.embroidery_settings().expect("settings").settings.fabric.and_then(|f| f.preset);
+    assert_eq!(fabric.as_deref(), Some("denim"));
+}
+
+/// Another palette chosen in Document Setup and confirmed drops the threads the window had chosen
+/// of the old one, a colour's and the outlines', which the engine would refuse: the window's next
+/// run is made, and Create works on the new palette.
+#[test]
+fn another_palette_chosen_in_document_setup_drops_the_old_palettes_threads() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorChoices", json!([{"color": "#f08214", "thread": {"palette": "jef", "index": 5}}]));
+    set(&mut app, "colorOutlines", json!(true));
+    set(&mut app, "outlineThread", json!({"palette": "jef", "index": 2}));
+    until(&mut app, &ctx, &mut time, ready);
+    // The outlines' rows put the button below the part of the step in view.
+    press(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    assert_eq!(dialog_field(&app, "embroidery.palette"), Some(json!("jef")), "Document Setup open, the window's palette shown");
+    app.ui.dialog.as_mut().expect("Document Setup").fields.insert("embroidery.palette".into(), json!("pec"));
+    setup_ok(&mut app, &ctx, &mut time);
+    let threads = |app: &VectorcraftApp| (window_field(app, "outlineThread"), window_field(app, "colorChoices"));
+    assert_eq!(threads(&app), (None, None), "the old palette's threads gone");
+    until(&mut app, &ctx, &mut time, ready);
+    create_now(&mut app, &ctx, &mut time);
+    assert_eq!(document_settings_json(&app)["palette"], json!("pec"));
+}
+
+/// "Built-in values" chosen in the window over a preset the document has plans with no fabric, and
+/// Create unsets the document's.
+#[test]
+fn built_in_values_chosen_over_a_document_preset_unset_it_on_create() {
+    let mut app = app();
+    app.run("embroidery.setup", json!({"fabric": "denim"})).unwrap();
+    let (mut app, ctx, mut time) = opened_with(app);
+    set(&mut app, STEP, json!(4));
+    choose(&mut app, &ctx, &mut time, "Fabric", "Built-in values");
+    assert_eq!(window_field(&app, "fabric"), Some(json!("builtIn")));
+    until(&mut app, &ctx, &mut time, ready);
+    assert!(live_mut(&mut app).document_settings().is_some_and(|s| s.settings.fabric.is_none()), "planned with no fabric");
+    create_now(&mut app, &ctx, &mut time);
+    assert!(app.session.embroidery_settings().expect("settings").settings.fabric.is_none(), "the document's fabric unset");
+}
+
+/// After Document Setup's OK changed the document's fabric, the window's fabric row shows the
+/// document's as it now is.
+#[test]
+fn the_rows_show_the_documents_settings_after_document_setup_changed_them() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    choose(&mut app, &ctx, &mut time, "Fabric", "Fleece");
+    setup_ok(&mut app, &ctx, &mut time);
+    until(&mut app, &ctx, &mut time, ready);
+    let drawn = frame_texts(&mut app, &ctx, &mut time);
+    assert!(drawn.iter().any(|w| w == "Fleece"), "the fabric row: {drawn:?}");
+}
+
+/// The document switched while Document Setup is open over the window: the window doesn't wait to
+/// come back to a document no longer active; its runs stop and its settings are remembered for its
+/// image.
+#[test]
+fn a_document_switched_while_document_setup_is_open_closes_the_window() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    let (uid, image) = (live(&app).uid, live(&app).image);
+    set(&mut app, STEP, json!(4));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Embroidery Settings…", Role::Button);
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(app.embroidery.image_window.live.is_none(), "its runs stopped");
+    let remembered = app.embroidery.image_window.remembered.get(&(uid, image)).and_then(|f| f.get(STEP).cloned());
+    assert_eq!(remembered, Some(json!(4)), "its settings remembered");
+}
+
+/// The double-outline warning is the Stitches step's, where the outlines are set: a thin navy line
+/// across an orange band, sewn along its middle, with the colour outlines on beside it.
+#[test]
+fn the_double_outline_warning_is_the_stitches_steps() {
+    use crate::embroidery::marks::Mark;
+    let line = image::RgbaImage::from_fn(200, 100, |x, y| {
+        image::Rgba(match ((20..180).contains(&x), (49..51).contains(&y), (10..90).contains(&y)) {
+            (true, true, _) => [20, 40, 120, 255],
+            (true, _, true) => [240, 130, 20, 255],
+            _ => [255, 255, 255, 255],
+        })
+    });
+    let (mut app, ctx, mut time) = opened_with(app_with(line));
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    let warnings = reply(&mut app)["warnings"].clone();
+    assert!(warnings.as_array().unwrap().iter().any(|w| w["id"] == "outlinesBesideLines"), "{warnings}");
+    let notes = super::live_bar::current_notes(live_mut(&mut app), crate::i18n::Lang::EN);
+    let beside = notes.iter().find(|n| n.words.starts_with("The color outlines run beside")).expect("the warning's note");
+    assert!(beside.step == 4 && matches!(beside.mark, Mark::Warning), "{beside:?}");
+}
+
+/// How many of Choose Thread…'s first rows a test compares: those the list shows before it scrolls.
+const FIRST_ROWS: usize = 5;
+
+/// The outlines' Choose Thread… lists the palette's threads darkest first, by CIE L*, as the
+/// outlines take the darkest of a design's threads.
+#[test]
+fn the_outlines_thread_list_is_darkest_first() {
+    use egui::accesskit::Role;
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    set(&mut app, "colorOutlines", json!(true));
+    until(&mut app, &ctx, &mut time, ready);
+    click(&mut app, &ctx, &mut time, "Choose Thread…", Role::Button);
+    let nodes_now = nodes(&mut app, &ctx, &mut time);
+    let mut listed: Vec<&egui::accesskit::Node> =
+        nodes_now.iter().map(|(_, n)| n).filter(|n| n.role() == Role::Button && n.label().is_some_and(|l| l.contains("  JEF "))).collect();
+    listed.sort_by(|a, b| a.bounds().map_or(0.0, |r| r.y0).total_cmp(&b.bounds().map_or(0.0, |r| r.y0)));
+    let shown: Vec<usize> = listed.iter().take(FIRST_ROWS).filter_map(|n| n.label()?.rsplit(' ').next()?.parse().ok()).collect();
+    let darkest: Vec<usize> = vectorcraft_engine::cmd::embroidery::threads_darkest_first("jef").iter().take(FIRST_ROWS).map(|t| t.index).collect();
+    assert_eq!(shown, darkest);
+}
+
+/// A thread chosen for the outlines is of the palette it was chosen in: choosing another palette
+/// leaves it out with the colours' threads, so the run that follows isn't refused for it; the
+/// outlines then take the darkest thread of the new palette.
+#[test]
+fn another_palette_leaves_out_the_outlines_thread_chosen() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(2));
+    set(&mut app, "colorOutlines", json!(true));
+    set(&mut app, "outlineThread", json!({"palette": "jef", "index": 2}));
+    until(&mut app, &ctx, &mut time, ready);
+    click_named(&mut app, &ctx, &mut time, "Match to threads");
+    click_named(&mut app, &ctx, &mut time, "Brother (PES) · 61 threads");
+    assert_eq!(open_dialog(&app).and_then(|d| d.fields.get("outlineThread").cloned()), None, "left out");
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(reply(&mut app)["outlined"]["thread"]["palette"], json!("pec"));
+}
+
+/// A Create waiting for its run when Embroidery Settings… is pressed is let go: back from Document
+/// Setup, the window makes nothing until Create is asked again.
+#[test]
+fn embroidery_settings_lets_a_waiting_create_go() {
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, STEP, json!(4));
+    let steps = undo_steps(&app);
+    // Stepped aside in the frame Create was asked in (no frame between, which would make it).
+    live_mut(&mut app).create_waiting = true;
+    let fields = open_dialog(&app).map(|d| d.fields.clone()).unwrap_or_default();
+    super::step_aside(&mut app, &fields);
+    assert!(!live(&app).create_waiting, "let go");
+    crate::dialogs::cancel(&mut app);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    until(&mut app, &ctx, &mut time, ready);
+    for _ in 0..5 {
+        time += 0.05;
+        frame(&mut app, &ctx, time, vec![]);
+    }
+    assert!(open_dialog(&app).is_some() && undo_steps(&app) == steps, "nothing made");
 }

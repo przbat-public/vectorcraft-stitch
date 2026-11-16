@@ -8828,10 +8828,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	गणना हो रही है…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	चरण {count} में से {number}: {name}। {summary}। {time}
-embroidery	Smoothness: {value}	चिकनाई: {value}
-embroidery	Corners: {value}	कोने: {value}
-embroidery	Colors overlap by {value} mm	रंग {value} mm तक एक-दूसरे पर चढ़ते हैं
-embroidery	The stitches follow the document's embroidery settings.	स्टिच दस्तावेज़ की कढ़ाई सेटिंग्स के अनुसार हैं।
 @plural	{count} thread + background|{count} threads + background	{count} धागा + पृष्ठभूमि|{count} धागे + पृष्ठभूमि
 @plural	{count} area|{count} areas	{count} क्षेत्र|{count} क्षेत्र
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -8896,3 +8892,43 @@ embroidery	the background's color inside the design	डिज़ाइन के
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	सिलने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	बनाने को कुछ नहीं: हर क्षेत्र पृष्ठभूमि है। पृष्ठभूमि भी सिलें या कम क्रॉप करें।
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	चिकनाई
+embroidery	Corners	कोने
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	अधिक: कम बिंदुओं वाली अधिक चिकनी रूपरेखाएँ। कम: चित्र के किनारों के अधिक निकट।
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	अधिक: ज़्यादा मोड़ नुकीले कोनों के रूप में बने रहते हैं। कम: उनमें से ज़्यादा गोल हो जाते हैं।
+embroidery	Straighten nearly straight lines	लगभग सीधी रेखाओं को सीधा करें
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	हल्के मुड़े किनारे सीधी रेखाएँ बन जाते हैं, वृत्तों के हिस्से सच्चे चाप, और लगभग क्षैतिज या खड़ी रेखाएँ ठीक क्षैतिज या खड़ी।
+embroidery	Colors overlap by	रंगों का एक-दूसरे पर चढ़ाव
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	पहले सिला गया रंग अगले के नीचे तक जाता है, ताकि उनके बीच फ़ैब्रिक न दिखे।
+embroidery	Thin lines sewn along their middle below	बीच से सिली जाने वाली पतली रेखाएँ, चौड़ाई इससे कम
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	इससे संकरा हिस्सा अपने बीच से रनिंग लाइन के रूप में सिला जाता है। 0: कोई नहीं।
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	पतली रेखाएँ
+embroidery	Shapes: below {value}	शेप्स: {value} से कम
+embroidery	Set in the Shapes step.	शेप्स चरण में सेट होता है।
+embroidery	below {value}	{value} से कम
+embroidery	Fill angle	फ़िल का कोण
+embroidery	Fixed	निश्चित
+embroidery	Across the shape	आकृति के आर-पार
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	फ़िल की पंक्तियों की दिशा: पेज पर एक निश्चित कोण पर, या हर आकृति की लंबाई के आर-पार।
+embroidery	The fills' rows, counter-clockwise on the page.	फ़िल की पंक्तियाँ, पेज पर घड़ी की उलटी दिशा में।
+embroidery	From the background to the details. The Order tab changes it after Create.	पृष्ठभूमि से विवरणों तक। बनाने के बाद क्रम टैब इसे बदलता है।
+embroidery	Create sets these in the document's embroidery settings.	बनाने पर ये दस्तावेज़ की कढ़ाई सेटिंग्स में सेट हो जाते हैं।
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	रूपरेखाएँ
+embroidery	Color outlines (running stitch)	रंगों की रूपरेखाएँ (रनिंग स्टिच)
+embroidery	A running line along each edge between two colors, once, and round the design.	दो रंगों के बीच हर किनारे पर एक बार रनिंग लाइन, और डिज़ाइन के चारों ओर।
+embroidery	Design border (satin)	डिज़ाइन की किनारी (सैटिन)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	पूरे डिज़ाइन के चारों ओर, उसके छेदों के भी, उसके किनारे पर सैटिन की किनारी: डिज़ाइन किनारी की आधी चौड़ाई जितना बढ़ता है।
+embroidery	Border width	किनारी की चौड़ाई
+embroidery	Outlines' thread	रूपरेखाओं का धागा
+embroidery	{value} · darkest of the design	{value} · डिज़ाइन का सबसे गहरा
+embroidery	Back to the darkest thread	सबसे गहरे धागे पर लौटें
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	रंगों की रूपरेखाएँ: {count} रेखा, {length}|रंगों की रूपरेखाएँ: {count} रेखाएँ, {length}
+embroidery	Border: {length}	किनारी: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	रंगों की रूपरेखाएँ अपनी लंबाई के {share} हिस्से में चित्र की अपनी रेखाओं के साथ चलती हैं: वे रेखाएँ दो बार सिली जाती हैं। रेखाओं का रंग छोड़ दें, या रूपरेखाएँ बंद करें।
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	टाटामी, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	डॉक्यूमेंट सेटअप का कढ़ाई टैब खोलता है। डॉक्यूमेंट सेटअप बंद होने पर यह विंडो लौट आती है।

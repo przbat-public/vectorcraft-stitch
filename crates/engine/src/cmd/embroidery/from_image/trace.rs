@@ -83,7 +83,7 @@ pub(super) fn params(settings: &Settings, px_per_mm: f64, colors: u32, palette: 
         method: tr::Method::Abutting,
         ignore_white: false,
         ignore_color: None,
-        snap_curves_to_lines: false,
+        snap_curves_to_lines: settings.straight_lines,
         shapes: false,
         auto_grouping: false,
         gradients: false,

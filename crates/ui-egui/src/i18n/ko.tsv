@@ -7030,10 +7030,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	계산 중…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	{count}단계 중 {number}단계: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	매끄러움: {value}
-embroidery	Corners: {value}	모서리: {value}
-embroidery	Colors overlap by {value} mm	색이 {value} mm 겹칩니다
-embroidery	The stitches follow the document's embroidery settings.	스티치는 문서의 자수 설정을 따릅니다.
 @plural	{count} thread + background|{count} threads + background	실 {count}개 + 배경
 @plural	{count} area|{count} areas	영역 {count}개
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7098,3 +7094,43 @@ embroidery	the background's color inside the design	디자인 안의 배경색
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	수놓을 것이 없습니다. 모든 영역이 배경입니다. 배경도 수놓거나 덜 자르세요.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	만들 것이 없습니다. 모든 영역이 배경입니다. 배경도 수놓거나 덜 자르세요.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	매끄러움
+embroidery	Corners	모서리
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	높을수록 점이 적고 매끄러운 윤곽선이 되고, 낮을수록 그림의 가장자리에 더 가까워집니다.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	높을수록 더 많은 꺾임이 날카로운 모서리로 남고, 낮을수록 더 많이 둥글어집니다.
+embroidery	Straighten nearly straight lines	거의 곧은 선을 곧게 펴기
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	살짝 굽은 가장자리는 직선이 되고, 원의 일부는 정확한 호가 되며, 거의 수평이거나 수직인 선은 정확히 수평이나 수직이 됩니다.
+embroidery	Colors overlap by	색 겹침
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	먼저 수놓는 색이 다음 색 아래로 들어가, 색 사이로 원단이 보이지 않습니다.
+embroidery	Thin lines sewn along their middle below	가운데를 따라 수놓는 가는 선의 너비 상한
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	이보다 좁은 부분은 가운데를 따라 러닝 스티치 선으로 수놓습니다. 0: 없음.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	가는 선
+embroidery	Shapes: below {value}	모양: {value} 미만
+embroidery	Set in the Shapes step.	모양 단계에서 설정합니다.
+embroidery	below {value}	{value} 미만
+embroidery	Fill angle	칠 각도
+embroidery	Fixed	고정
+embroidery	Across the shape	모양을 가로질러
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	칠의 줄 방향: 페이지에서 고정된 각도, 또는 각 모양의 길이를 가로지르는 방향.
+embroidery	The fills' rows, counter-clockwise on the page.	칠의 줄, 페이지에서 시계 반대 방향.
+embroidery	From the background to the details. The Order tab changes it after Create.	배경에서 세부로. 만든 다음 순서 탭에서 바꿉니다.
+embroidery	Create sets these in the document's embroidery settings.	만들기를 하면 이 값들이 문서의 자수 설정이 됩니다.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	윤곽선
+embroidery	Color outlines (running stitch)	색 윤곽선(러닝 스티치)
+embroidery	A running line along each edge between two colors, once, and round the design.	두 색 사이의 각 가장자리를 따라 한 번씩, 그리고 디자인 둘레에 러닝 스티치 선을 수놓습니다.
+embroidery	Design border (satin)	디자인 테두리(새틴)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	디자인 전체(구멍 포함)의 가장자리를 따라 새틴 테두리를 수놓습니다. 디자인은 테두리 너비의 절반만큼 커집니다.
+embroidery	Border width	테두리 너비
+embroidery	Outlines' thread	윤곽선 실
+embroidery	{value} · darkest of the design	{value} · 디자인에서 가장 어두운 실
+embroidery	Back to the darkest thread	가장 어두운 실로 되돌리기
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	색 윤곽선: {count}줄, {length}
+embroidery	Border: {length}	테두리: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	색 윤곽선이 길이의 {share}에서 그림 자체의 선을 따라갑니다. 그 선은 두 번 수놓아집니다. 선의 색을 제외하거나 윤곽선을 끄세요.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	타타미, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	문서 설정의 자수 탭을 엽니다. 문서 설정을 닫으면 이 창이 다시 열립니다.

@@ -97,7 +97,7 @@ pub(crate) struct Rule {
 /// (running) stitches shorter than 1.5 mm (user manual, "Design Checker Tab", p. 38).
 const MELCO_CHECKER: &str = "http://www.melco-service.com/docs/DSv11_Manual.pdf";
 /// The widest satin column Melco's checker lets pass (millimetres).
-const SATIN_WIDEST: f64 = 10.0;
+pub(super) const SATIN_WIDEST: f64 = 10.0;
 /// The longest stitch it lets pass (millimetres).
 pub(super) const LONGEST_STITCH: f64 = 12.7;
 /// The shortest fill, satin and running (walk) stitches it lets pass (millimetres), checked on

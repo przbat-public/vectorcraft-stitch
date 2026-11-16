@@ -74,11 +74,11 @@ impl Runner for Driver {
     }
 }
 
-/// The request settings `params` (with the window's palette in them) make for image `image`, as the
-/// window asks the engine for a run.
+/// The request settings `params` (with the window's palette and document settings in them) make for
+/// image `image`, as the window asks the engine for a run.
 fn request_of(session: &Session, image: NodeId, params: &Value) -> vectorcraft_engine::Result<DigitizeRequest> {
     let palette = params.get(super::PALETTE).and_then(Value::as_str);
-    session.digitize_window_request(image, &super::settings_of(params), palette)
+    session.digitize_window_request(image, &super::settings_of(params), palette, &super::document_of(params))
 }
 
 /// How a result shown stands.
@@ -154,7 +154,8 @@ pub(crate) struct Schedule {
     /// When the result shown went out of date (the first change since it was fresh).
     changed_at: Option<f64>,
     failure: Option<String>,
-    /// How long the last change took to show whole (milliseconds), and which stages it made.
+    /// How long the last change took to show whole (milliseconds), and the stages it reached: those
+    /// it made, or, a value changed back being found kept, those from the first it changed on.
     pub(crate) updated: Option<(f64, Vec<DigitizeStage>)>,
     /// The stages the run under way made so far.
     made: Vec<DigitizeStage>,
@@ -269,11 +270,20 @@ impl Schedule {
                 let painted = self.shown.as_ref().and_then(|s| s.painted.clone());
                 let checked = self.shown.as_ref().and_then(|s| s.checked.clone());
                 self.shown = Some(Shown { request, outputs, whole: true, painted, checked });
-                self.running = None;
+                let from = self.running.take().and_then(|r| r.from);
                 if self.waiting.is_none() {
                     let made = std::mem::take(&mut self.made);
-                    if let Some(t) = self.changed_at.take() {
-                        self.updated = Some(((now - t) * MS_PER_SEC, made));
+                    // A value changed back is found kept, every stage of it (the pipeline keeps a
+                    // stage's newest outputs): the steps it reached were shown again from those,
+                    // made by none. A run that reached none leaves the last change's note.
+                    let reached = match (made.is_empty(), from) {
+                        (true, Some(first)) => DigitizeStage::ALL.iter().copied().skip_while(|s| *s != first).collect(),
+                        _ => made,
+                    };
+                    if let Some(t) = self.changed_at.take()
+                        && !reached.is_empty()
+                    {
+                        self.updated = Some(((now - t) * MS_PER_SEC, reached));
                     }
                 }
             }

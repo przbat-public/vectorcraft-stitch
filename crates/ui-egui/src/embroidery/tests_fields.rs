@@ -239,6 +239,52 @@ fn a_choice_grows_for_its_words_and_tips_them_when_cut() {
     assert!(tipped, "whole in the tooltip");
 }
 
+/// Read-only words cut short where the column is narrow are whole in their field's tooltip, as a
+/// choice's are.
+#[test]
+fn read_only_words_cut_short_are_whole_in_their_tooltip() {
+    use crate::embroidery::rows::{self, Columns, Field, Row};
+    const WORDS: &str = "Running stitch along the middle of every thin line";
+    let ctx = context();
+    let whole = |shapes: &[Shape]| shapes.iter().any(|s| matches!(s, Shape::Text(t) if t.galley.text() == WORDS && !t.galley.elided));
+    let drawn_in = |width: f32, time: f64, events: Vec<Event>| {
+        frame(&ctx, time, events, &mut |ui| {
+            ui.set_width(width);
+            let row = Row {
+                key: "thinLines",
+                label: "Thin lines",
+                name: "Thin lines",
+                tip: "",
+                field: Field::Words(WORDS),
+                own: false,
+                restore: None,
+                aside: Some("Shapes: below 1 mm".into()),
+                hint: None,
+                description: String::new(),
+                problem: None,
+            };
+            let cols = Columns::fit(ui, width, std::slice::from_ref(&row));
+            rows::show(ui, &cols, &row);
+        })
+        .0
+    };
+    let narrow = drawn_in(260.0, 0.0, vec![]);
+    assert!(!whole(&narrow), "cut in a narrow column");
+    let at = narrow
+        .iter()
+        .find_map(|s| match s {
+            Shape::Text(t) if t.galley.text() == WORDS => Some(t.visual_bounding_rect().center()),
+            _ => None,
+        })
+        .expect("its words");
+    let mut tipped = false;
+    for k in 0..30 {
+        let events = if k == 0 { vec![Event::PointerMoved(at)] } else { vec![] };
+        tipped |= whole(&drawn_in(260.0, 0.1 + 0.1 * f64::from(k), events));
+    }
+    assert!(tipped, "whole in the tooltip");
+}
+
 /// The wheel turned over a focused field steps it by its format's step: a line's notch up is a
 /// tenth of a millimetre.
 #[test]

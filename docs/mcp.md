@@ -8567,13 +8567,21 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `"#rrggbb"`), `mode` (`color`, `logo`, `grayscale`), `colors` (2 to the palette's threads, default 6),
   `colorChoices: [{color, thread?: {palette, index}, mergeInto?, job?: "auto"|"fill"|"lines"|"none"}]` (at most 256;
   `lines`: every area of the colour sewn along its middle, whatever its width),
-  `minArea` (mm², default 1), `smoothing` and `corners` (0 to 100) and `overlap` (mm, 0 to 2, default 0.4); the
-  reply's `table` gives each setting's step, unit, range, default and its source. The image is worked at a copy of at
+  `minArea` (mm², default 1), `smoothing` and `corners` (0 to 100), `straightLines` (true: nearly straight curves
+  traced as lines, those within a few degrees of level or upright exactly so; default false), `overlap` (mm, 0 to 2,
+  default 0.4), `thinLine` (mm, 0 to 3, default 1: how thin an area may be along its middle and be a line; 0: no
+  line), `colorOutlines` (true: a running line along every colour edge, each once, by the area sewn later, and round
+  the design; default false), `border` (true: a satin border round the design, its holes too, centred on its edge, so
+  that the design grows by half of it; default false; the colour outlines then leave the edge round the design to it),
+  `borderWidth` (mm, 1 to 10, default 3) and `outlineThread` (`{palette, index}`, a thread of the palette the colours
+  are matched to; default null: the darkest of the threads they are sewn in); the reply's `table` gives each setting's
+  step, unit, range, default and its source. The image is worked at a copy of at
   most 10 pixels a millimetre (fewer past 1,500 pixels a side, or where the image has fewer) and traced in its own
   colours; each colour gets a thread of the document's palette, chosen together (CIEDE2000, flagged past ΔE 10; two
   colours whose only thread within ΔE 10 is the same one are merged); the background is only what touches the
-  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than 1 mm along its middle, up to
-  √2 times its own width where its lines meet and no wider than 1 mm away from them, and at least 2 mm long stays), an island narrower than 4 mm is sewn over the area
+  image's edge. An area smaller than `minArea` joins its neighbour (a line narrower than `thinLine` along its middle, up
+  to √2 times its own width where its lines meet and no wider than `thinLine` away from them, and at least 2 mm long
+  stays), an island narrower than 4 mm is sewn over the area
   round it with no hole cut, and where two colours meet the one sewn first reaches `overlap` under the one sewn after,
   only along the edge they share. A line (and every area of a colour set to `lines`) is sewn along its centre line, a
   stroke as wide as it, round at its ends under 1 mm wide (butt at 1 mm or more, its ends half a thread short of the
@@ -8584,6 +8592,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
   its thread's own colour (a line, a stroke along its centre line), embroidery settings set only where a colour's job
   asks (`fill`: `narrowAsSatin` 0; `none`: not sewn) or a line's stroke is 1 mm wide or more (`stitch: "running"`);
+  the outlines asked for come last, each kind a block of its own in the outline thread, a stroke object a line,
+  nearest first, so that the needle lifts between them: "Color outlines" (drawn 0.4 mm wide, sewn as a running line),
+  "Border" (`borderWidth` wide, a satin);
   the image moves, with its id, to a new template layer below every layer, hidden and locked, scaled as the
   design is. One undo step "Digitize Image", the new group selected; Nearest Connection is not run. More than 10,000
   areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
@@ -8592,7 +8603,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   area, areaCount, share, sewnShare, mergedInto, choice}], unusedChoices, areaCount, offset, truncated, areas: [{area,
   at, color, thread, kind, sewn, size, widest, line, box, inside, sewnOver, joined, touches, grownUnder, outline,
   order}],
-  areaAt, doubledArea, traced, joined, leftOut, regions, stats, warnings, settings, table, timings}`: `stats` is what
+  areaAt, doubledArea, traced, joined, leftOut, regions, stats, outlined, warnings, settings, table, timings}`:
+  `outlined` is null without outlines, else `{colorOutlines: {lines, length} | null, border: {lines, length} | null,
+  thread: {palette, index, name, color}}` (`lines` how many separate lines, chained where they meet, an object each;
+  `length` in mm); `stats` is what
   `embroidery.stats {selectedOnly: true}` answers with the new group selected (null when nothing is made), a dry run's
   as Create's. `warnings` lists `{id, values, message}`: `id` names the warning for a window to word in its own
   language, `values` holds what that wording needs, and `message` says it in English: `coarse` {pxPerMm, fewerThan},
@@ -8601,7 +8615,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   {color, thread: {palette, index, name}}, `colorJoined` {color, minArea}, `specksJoined` {count, minArea},
   `bandsJoined` {count, maxWidth}, `specksLeftOut` {count, minArea}, `notLines` {color, count} (areas of a colour set
   to `lines` with no centre line to sew along, a dot or a blob shorter than it is wide, sewn as the shapes they are),
-  `shapesNotJoined` {count}, `nothingTraced` and
+  `shapesNotJoined` {count}, `outlinesBesideLines` {share} (the colour outlines run beside the image's own lines,
+  the areas sewn along their middle, along `share` % of their length or more, from 25 %: sewn twice there),
+  `nothingTraced` and
   `nothingToMake` (a dry run's; Create is refused instead). `unusedChoices` lists `{choice, reason}` for each choice
   that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
   names none, the background's aside, so the colours it took are sewn as their own). An area's `area` is its number in
@@ -8637,7 +8653,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   an SVG path in millimetres from the document's origin, to hundredths; a line's is its centre line, open, with no
   area. The image window runs its stages off its thread
   through a pipeline that keeps them between runs (`Session::digitize_pipeline`), and its Create
-  (`Session::apply_digitize_window`) is refused when the document changed meanwhile.
+  (`Session::apply_digitize_window`) is refused when the document changed meanwhile. The window's request carries the
+  document settings it changes, `embroidery.setup`'s `fabric`, `fillAngle` and `joinSameColor` (refused as that
+  command refuses them; no other setting): its objects are planned with them, and its Create makes them the
+  document's in the same undo step, with its palette.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

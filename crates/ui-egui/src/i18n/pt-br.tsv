@@ -7521,10 +7521,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Calculando…
 embroidery	{value} ms	{value} ms
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Etapa {number} de {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Suavidade: {value}
-embroidery	Corners: {value}	Cantos: {value}
-embroidery	Colors overlap by {value} mm	As cores se sobrepõem {value} mm
-embroidery	The stitches follow the document's embroidery settings.	Os pontos seguem as configurações de bordado do documento.
 @plural	{count} thread + background|{count} threads + background	{count} linha + fundo|{count} linhas + fundo
 @plural	{count} area|{count} areas	{count} área|{count} áreas
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7589,3 +7585,43 @@ embroidery	the background's color inside the design	a cor do fundo dentro do des
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Nada a bordar: toda área é o fundo. Borde o fundo ou recorte menos.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Nada a criar: toda área é o fundo. Borde o fundo ou recorte menos.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Suavidade
+embroidery	Corners	Cantos
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Mais alto: contornos mais suaves, com menos pontos. Mais baixo: mais perto das bordas da imagem.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Mais alto: mais curvas ficam como cantos vivos. Mais baixo: mais delas são arredondadas.
+embroidery	Straighten nearly straight lines	Endireitar linhas quase retas
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Bordas levemente curvas viram linhas retas, partes de círculos viram arcos exatos, e linhas quase horizontais ou verticais ficam exatamente horizontais ou verticais.
+embroidery	Colors overlap by	As cores se sobrepõem
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	A cor bordada primeiro passa por baixo da seguinte, para que o tecido não apareça entre elas.
+embroidery	Thin lines sewn along their middle below	Linhas finas bordadas pelo meio abaixo de
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Uma parte mais estreita é bordada como linha de ponto reto pelo meio. 0: nenhuma.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Linhas finas
+embroidery	Shapes: below {value}	Formas: abaixo de {value}
+embroidery	Set in the Shapes step.	Definido na etapa Formas.
+embroidery	below {value}	abaixo de {value}
+embroidery	Fill angle	Ângulo do preenchimento
+embroidery	Fixed	Fixo
+embroidery	Across the shape	Atravessando a forma
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	A direção das fileiras do preenchimento: num ângulo fixo na página, ou atravessando o comprimento de cada forma.
+embroidery	The fills' rows, counter-clockwise on the page.	As fileiras dos preenchimentos, no sentido anti-horário na página.
+embroidery	From the background to the details. The Order tab changes it after Create.	Do fundo para os detalhes. A guia Ordem a altera depois de Criar.
+embroidery	Create sets these in the document's embroidery settings.	Criar os define nas configurações de bordado do documento.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Contornos
+embroidery	Color outlines (running stitch)	Contornos das cores (ponto reto)
+embroidery	A running line along each edge between two colors, once, and round the design.	Uma linha de ponto reto ao longo de cada borda entre duas cores, uma vez, e ao redor do desenho.
+embroidery	Design border (satin)	Borda do desenho (cetim)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Uma borda de cetim ao redor de todo o desenho, também de seus furos, sobre a borda: o desenho cresce metade da largura da borda.
+embroidery	Border width	Largura da borda
+embroidery	Outlines' thread	Linha dos contornos
+embroidery	{value} · darkest of the design	{value} · a mais escura do desenho
+embroidery	Back to the darkest thread	Voltar à linha mais escura
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Contornos das cores: {count} linha, {length}|Contornos das cores: {count} linhas, {length}
+embroidery	Border: {length}	Borda: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Os contornos das cores correm junto às linhas próprias da imagem em {share} do seu comprimento: essas linhas são bordadas duas vezes. Deixe de fora a cor das linhas, ou desligue os contornos.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Tatami, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Abre a guia Bordado da Configuração do Documento. Esta janela volta quando a Configuração do Documento fecha.

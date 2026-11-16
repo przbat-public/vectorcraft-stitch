@@ -30,6 +30,8 @@ pub(super) enum Step {
     Colors,
     /// The shapes traced from it.
     Shapes,
+    /// How they are sewn: the outlines.
+    Stitches,
 }
 
 impl Step {
@@ -39,6 +41,7 @@ impl Step {
             Self::Image => "image",
             Self::Colors => "colors",
             Self::Shapes => "shapes",
+            Self::Stitches => "stitches",
         }
     }
 }
@@ -59,8 +62,12 @@ pub(super) enum Kind {
     Rect,
     /// `"corners"` (found where the image's corners agree), `"none"`, or a colour `"#rrggbb"`.
     Background,
+    /// On or off, `default` when left out.
+    Flag { default: bool },
     /// A list of choices for the image's colours ([`ColourChoice`]), at most [`MAX_COLOUR_CHOICES`].
     Choices,
+    /// A thread `{palette, index}` of the palette the colours are matched to, or null (unset).
+    Thread,
 }
 
 /// One setting.
@@ -208,8 +215,24 @@ pub(super) enum BackgroundSetting {
     Colour([u8; 3]),
 }
 
+/// How thin an area may be along its middle and be sewn as one running line there (`thinLine`,
+/// millimetres): from none (no area is a line) to 3 mm, past which one running line no longer reads
+/// as the band it sews. An estimate.
+pub(super) const THIN_LINE_RANGE_MM: (f64, f64) = (0.0, 3.0);
+
+/// How wide the satin border round the design is (millimetres), unless given: the project owner's
+/// choice (2026-11-12, „3 mm, do zmiany w oknie (polecam)”), between Brother's 3.0 mm and
+/// mySewnet's 4 mm (research note 06). It is centred on the design's edge, so the design grows by
+/// half of it all round.
+pub(super) const BORDER_WIDTH_MM: f64 = 3.0;
+
+/// The range of the border's width (millimetres): from the narrowest satin column the planner sews
+/// (`plan::SATIN_MIN_WIDTH`), so that it is always a satin, to the widest a satin sews well, as
+/// the checks hold it (Melco's design checker, 10 mm).
+pub(super) const BORDER_WIDTH_RANGE_MM: (f64, f64) = (vectorcraft_stitch::plan::SATIN_MIN_WIDTH, super::super::check::SATIN_WIDEST);
+
 /// Every setting, in the window's order.
-pub(super) const SETTINGS: [Setting; 12] = [
+pub(super) const SETTINGS: [Setting; 18] = [
     Setting {
         name: "width",
         key: "width",
@@ -276,11 +299,53 @@ pub(super) const SETTINGS: [Setting; 12] = [
         source: "upstream Image Trace's default Corners",
     },
     Setting {
+        name: "straightLines",
+        key: "straight_lines",
+        step: Step::Shapes,
+        kind: Kind::Flag { default: false },
+        source: "upstream Image Trace's Snap Curves to Lines, off by default",
+    },
+    Setting {
         name: "overlap",
         key: "overlap",
         step: Step::Shapes,
         kind: Kind::Number { unit: "mm", range: OVERLAP_RANGE_MM, default: Some(OVERLAP_MM) },
         source: "the project owner's choice (2026-11-01): one fill row, rounded to the formats' 0.1 mm",
+    },
+    Setting {
+        name: "thinLine",
+        key: "thin_line",
+        step: Step::Shapes,
+        kind: Kind::Number { unit: "mm", range: THIN_LINE_RANGE_MM, default: Some(super::rules::THIN_LINE_MM) },
+        source: "the narrowest satin column the planner sews (`plan::SATIN_MIN_WIDTH`, from Melco's design checker); 0: no area is sewn along its middle",
+    },
+    Setting {
+        name: "colorOutlines",
+        key: "color_outlines",
+        step: Step::Stitches,
+        kind: Kind::Flag { default: false },
+        source: "the project owner's choice (2026-11-11): a running line on every colour edge, each once, and round the design, off by default",
+    },
+    Setting {
+        name: "border",
+        key: "border",
+        step: Step::Stitches,
+        kind: Kind::Flag { default: false },
+        source: "the project owner's choice (2026-11-11): a satin border round the whole design, its holes too, off by default",
+    },
+    Setting {
+        name: "borderWidth",
+        key: "border_width",
+        step: Step::Stitches,
+        kind: Kind::Number { unit: "mm", range: BORDER_WIDTH_RANGE_MM, default: Some(BORDER_WIDTH_MM) },
+        source: "the project owner's choice (2026-11-12): 3 mm, between Brother's 3.0 and mySewnet's 4 mm; centred on the design's edge",
+    },
+    Setting {
+        name: "outlineThread",
+        key: "outline_thread",
+        step: Step::Stitches,
+        kind: Kind::Thread,
+        source: "the project owner's choice (2026-11-12): unset, the darkest of the threads the colours are matched to",
     },
 ];
 
@@ -348,8 +413,27 @@ pub(super) struct Settings {
     pub(super) min_area: f64,
     pub(super) smoothing: f64,
     pub(super) corners: f64,
+    /// Nearly straight curves traced as lines.
+    pub(super) straight_lines: bool,
     /// Millimetres.
     pub(super) overlap: f64,
+    /// How thin an area may be along its middle and be sewn as one running line there
+    /// (millimetres).
+    pub(super) thin_line: f64,
+    /// The outlines Create adds.
+    pub(super) outlines: OutlineSettings,
+}
+
+/// The outlines Create adds (`super::outlines`): a running line on every colour edge and round the
+/// design, a satin border round it, how wide the border is, and the thread both are sewn in.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct OutlineSettings {
+    pub(super) colour: bool,
+    pub(super) border: bool,
+    /// Millimetres.
+    pub(super) border_mm: f64,
+    /// `None`: the darkest of the threads the colours are matched to.
+    pub(super) thread: Option<PaletteThread>,
 }
 
 /// The row of setting `name`. Every name the settings read is in [`SETTINGS`] (a test holds it),
@@ -373,6 +457,10 @@ fn wants(setting: &Setting) -> String {
         Kind::Size => format!("[width, height] in mm, each above 0, at most {}", SIZE_RANGE_MM.1),
         Kind::Rect => "[x0, y0, x1, y1]: whole pixels of the image, x0 < x1 and y0 < y1".into(),
         Kind::Background => "\"corners\", \"none\" or a colour \"#rrggbb\"".into(),
+        Kind::Flag { .. } => "true or false".into(),
+        Kind::Thread => {
+            "{palette: \"pec\"|\"jef\", index}, a thread of the palette the colours are matched to, or null (the darkest of their threads)".into()
+        }
         Kind::Choices => format!(
             "a list of at most {MAX_COLOUR_CHOICES} choices {{color: \"#rrggbb\", thread?: {{palette, index}}, mergeInto?: \"#rrggbb\", job?: \"auto\"|\"fill\"|\"lines\"|\"none\"}}, mergeInto alone"
         ),
@@ -430,10 +518,7 @@ fn choice(v: &Value, s: &Setting, document: Palette) -> Result<ColourChoice> {
     let thread = match o.get("thread") {
         None | Some(Value::Null) => None,
         Some(t) => {
-            let palette = t.get("palette").and_then(Value::as_str).and_then(Palette::from_id);
-            let index = t.get("index").and_then(Value::as_u64).and_then(|i| usize::try_from(i).ok());
-            let chosen = palette.zip(index).and_then(|(p, i)| PaletteThread::new(p, i));
-            let chosen = chosen
+            let chosen = named_thread(t)
                 .ok_or_else(|| bad(C, format!("`colorChoices` {v}: `thread` is {{palette: \"pec\"|\"jef\", index}}, a thread of that palette")))?;
             if chosen.palette() != document {
                 return Err(bad(
@@ -463,6 +548,36 @@ fn choice(v: &Value, s: &Setting, document: Palette) -> Result<ColourChoice> {
     Ok(ColourChoice { color, thread, merge_into, job })
 }
 
+/// The thread `t` names as `{palette, index}`, when it is one of that palette's threads.
+fn named_thread(t: &Value) -> Option<PaletteThread> {
+    let palette = t.get("palette").and_then(Value::as_str).and_then(Palette::from_id);
+    let index = t.get("index").and_then(Value::as_u64).and_then(|i| usize::try_from(i).ok());
+    palette.zip(index).and_then(|(p, i)| PaletteThread::new(p, i))
+}
+
+/// The thread the outlines are sewn in, as `o` gives it (`outlineThread`): one of `palette`'s, the
+/// palette the colours are matched to; `None` when it is left out or null.
+fn outline_thread(o: &Map<String, Value>, palette: Palette) -> Result<Option<PaletteThread>> {
+    let s = row("outlineThread");
+    match o.get("outlineThread") {
+        None | Some(Value::Null) => Ok(None),
+        Some(t) => {
+            let chosen = named_thread(t).ok_or_else(|| refused(s, t))?;
+            if chosen.palette() != palette {
+                return Err(bad(
+                    C,
+                    format!(
+                        "`outlineThread` {t}: the thread is of the {} palette, the colours are matched to {}: choose one of its threads",
+                        chosen.palette().id(),
+                        palette.id()
+                    ),
+                ));
+            }
+            Ok(Some(chosen))
+        }
+    }
+}
+
 /// The choices for the image's colours `o` gives, for a document in `palette`'s threads.
 fn choices(o: &Map<String, Value>, palette: Palette) -> Result<Vec<ColourChoice>> {
     let s = row("colorChoices");
@@ -485,6 +600,16 @@ fn number(o: &Map<String, Value>, name: &str) -> Result<Option<f64>> {
     match o.get(name) {
         None | Some(Value::Null) => Ok(default),
         Some(v) => v.as_f64().filter(|x| x.is_finite() && (lo..=hi).contains(x)).map(Some).ok_or_else(|| refused(s, v)),
+    }
+}
+
+/// Setting `name` on or off, its default when left out.
+fn flag(o: &Map<String, Value>, name: &str) -> Result<bool> {
+    let s = row(name);
+    let Kind::Flag { default } = s.kind else { return Ok(false) };
+    match o.get(name) {
+        None | Some(Value::Null) => Ok(default),
+        Some(v) => v.as_bool().ok_or_else(|| refused(s, v)),
     }
 }
 
@@ -556,7 +681,15 @@ impl Settings {
             min_area: number(o, "minArea")?.unwrap_or(MIN_AREA_MM2),
             smoothing: number(o, "smoothing")?.unwrap_or(SMOOTHING),
             corners: number(o, "corners")?.unwrap_or(CORNERS),
+            straight_lines: flag(o, "straightLines")?,
             overlap: number(o, "overlap")?.unwrap_or(OVERLAP_MM),
+            thin_line: number(o, "thinLine")?.unwrap_or(super::rules::THIN_LINE_MM),
+            outlines: OutlineSettings {
+                colour: flag(o, "colorOutlines")?,
+                border: flag(o, "border")?,
+                border_mm: number(o, "borderWidth")?.unwrap_or(BORDER_WIDTH_MM),
+                thread: outline_thread(o, palette)?,
+            },
         })
     }
 
@@ -590,7 +723,13 @@ impl Settings {
             "minArea": self.min_area,
             "smoothing": self.smoothing,
             "corners": self.corners,
+            "straightLines": self.straight_lines,
             "overlap": self.overlap,
+            "thinLine": self.thin_line,
+            "colorOutlines": self.outlines.colour,
+            "border": self.outlines.border,
+            "borderWidth": self.outlines.border_mm,
+            "outlineThread": self.outlines.thread.map(|t| json!({"palette": t.palette().id(), "index": t.index()})),
         })
     }
 }
@@ -618,6 +757,8 @@ pub(super) fn table(palette: Palette) -> Value {
                     Kind::Rect => ("px", Value::Null, Value::Null),
                     Kind::Background => ("", json!(["corners", "none", "#rrggbb"]), json!("corners")),
                     Kind::Choices => ("", json!([0, MAX_COLOUR_CHOICES]), json!([])),
+                    Kind::Flag { default } => ("", json!([false, true]), json!(default)),
+                    Kind::Thread => ("", Value::Null, Value::Null),
                 };
                 json!({"name": s.name, "key": s.key, "step": s.step.id(), "unit": unit, "range": range, "default": default, "source": s.source})
             })

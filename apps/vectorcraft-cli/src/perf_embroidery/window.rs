@@ -7,7 +7,9 @@
 //!   after a first run: only the stages after the change are made;
 //! - a run with nothing changed: every stage found kept;
 //! - the badge drawn 1,500 pixels wide (the working copy's largest) in logo mode, its first run;
-//! - that badge's working copy painted in its threads' colours, as the Colours view shows it.
+//! - that badge's working copy painted in its threads' colours, as the Colours view shows it;
+//! - a fabric chosen in the Stitches step after a first run: the objects and their stitches made;
+//! - the colour outlines and the border turned on after a first run: the same, with the outlines.
 
 use std::time::Instant;
 
@@ -19,25 +21,29 @@ use super::digitizing::{BADGE_COLORS, badge_at, placed_badge};
 use super::{RUNS, err, middle};
 
 /// The rows' names, in order (at most 42 characters, the report's column).
-pub(super) const ROWS: [&str; 6] = [
+pub(super) const ROWS: [&str; 8] = [
     "window: first run, badge, to its plan",
     "window: a thread chosen, trace kept",
     "window: six colours to five",
     "window: nothing changed, all kept",
     "window: logo mode, 1,500 px badge",
     "window: painted raster, 1,500 px badge",
+    "window: a fabric chosen, objects on",
+    "window: outlines and border, objects on",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: [`BUDGET_TIMES`] what each measured,
 /// as the other rows', so that a regression of that size shows; the kept run's is 1 ms, the least
 /// the report's whole-millisecond column shows (it measured well under a hundredth of that).
-pub(super) const BUDGETS: [f64; 6] = [
+pub(super) const BUDGETS: [f64; 8] = [
     MEASURED_MS[0] * BUDGET_TIMES,
     MEASURED_MS[1] * BUDGET_TIMES,
     MEASURED_MS[2] * BUDGET_TIMES,
     KEPT_BUDGET_MS,
     MEASURED_MS[4] * BUDGET_TIMES,
     MEASURED_MS[5] * BUDGET_TIMES,
+    MEASURED_MS[6] * BUDGET_TIMES,
+    MEASURED_MS[7] * BUDGET_TIMES,
 ];
 
 /// How many times its measure a row's budget is: the embroidery rows' rule.
@@ -46,11 +52,14 @@ const BUDGET_TIMES: f64 = 2.5;
 /// The budget of a run that finds every stage kept (milliseconds).
 const KEPT_BUDGET_MS: f64 = 1.0;
 
-/// What the rows measured when they were added, 2026-11-11 (release, 12-core Apple Silicon, load
-/// about 4, the median of three; milliseconds): the badge's first run 228, a thread chosen 93.4,
-/// six colours to five 222, nothing changed 0.00 (not budgeted from it), the 1,500-pixel badge in
-/// logo mode 564, its painted raster 0.91.
-const MEASURED_MS: [f64; 6] = [228.0, 93.4, 222.0, 0.0, 564.0, 0.91];
+/// What the rows measured when they were added (release, 12-core Apple Silicon, the median of
+/// three; milliseconds): on 2026-11-11 at a load of about 4, the badge's first run 228, a thread
+/// chosen 93.4, six colours to five 222, nothing changed 0.00 (not budgeted from it), the
+/// 1,500-pixel badge in logo mode 564, its painted raster 0.91; on 2026-11-13 at a load of about
+/// 2.6, a fabric chosen 8.43 (the objects and their stitches made again) and the outlines and the
+/// border turned on 1.13 (the planning service the window shares already holds the areas' plans, so
+/// only the outline objects are planned, an object a line).
+const MEASURED_MS: [f64; 8] = [228.0, 93.4, 222.0, 0.0, 564.0, 0.91, 8.43, 1.13];
 
 /// The large badge's resolution (pixels a millimetre): 1,500 pixels over its 108 mm with its
 /// margins, the working copy's largest side.
@@ -59,10 +68,17 @@ const LARGE_PX_PER_MM: f64 = 1500.0 / 108.0;
 /// One of the badge's colours, given a thread of its own in the thread row: its navy.
 const NAVY: &str = "#1d2a6b";
 
-/// A request for the image `id` of `s` digitized with `params`.
+/// A request for the image `id` of `s` digitized with `params` (the document settings the window
+/// changes under `document`, as `embroidery.setup` takes them; none without it), the document's
+/// palette.
 fn request(s: &Session, id: NodeId, params: &Value) -> Result<vectorcraft_engine::cmd::embroidery::DigitizeRequest, String> {
-    s.digitize_window_request(id, params, None).map_err(err)
+    let mut settings = params.clone();
+    let document = settings.as_object_mut().and_then(|o| o.remove(DOCUMENT)).unwrap_or(Value::Null);
+    s.digitize_window_request(id, &settings, None, &document).map_err(err)
 }
+
+/// The key the rows give the window's document settings under, beside digitizing's own.
+const DOCUMENT: &str = "document";
 
 /// The image selected in `s`.
 fn image(s: &Session) -> Result<NodeId, String> {
@@ -126,5 +142,7 @@ pub(super) fn times() -> Result<Vec<f64>, String> {
         painted.push(t.elapsed().as_secs_f64() * 1000.0);
     }
     ms.push(middle(painted));
+    ms.push(timed(&s, &base, Some(&json!({"colors": BADGE_COLORS, DOCUMENT: {"fabric": "denim"}})))?);
+    ms.push(timed(&s, &base, Some(&json!({"colors": BADGE_COLORS, "colorOutlines": true, "border": true})))?);
     Ok(ms)
 }

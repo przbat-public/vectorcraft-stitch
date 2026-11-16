@@ -7049,10 +7049,6 @@ embroidery	{number} · {name}	{number} · {name}
 embroidery	Computing…	Обчислення…
 embroidery	{value} ms	{value} мс
 embroidery	Step {number} of {count}: {name}. {summary}. {time}	Крок {number} з {count}: {name}. {summary}. {time}
-embroidery	Smoothness: {value}	Згладжування: {value}
-embroidery	Corners: {value}	Кути: {value}
-embroidery	Colors overlap by {value} mm	Кольори перекриваються на {value} мм
-embroidery	The stitches follow the document's embroidery settings.	Стібки відповідають налаштуванням вишивки документа.
 @plural	{count} thread + background|{count} threads + background	{count} нитка + тло|{count} нитки + тло|{count} ниток + тло
 @plural	{count} area|{count} areas	{count} область|{count} області|{count} областей
 # VectorCraft Stitch: Digitize Image…'s Colors step: the mode, the number of colors, the palette, the color list and Choose Thread…, the smallest area (drafted with AI assistance from the English meaning, for review)
@@ -7117,3 +7113,43 @@ embroidery	the background's color inside the design	колір тла всере
 # VectorCraft Stitch: the image window's nothing to sew, said by its cause (drafted with AI assistance from the English meaning, for review)
 embroidery	Nothing to sew: every area is the background. Sew the background, or crop less.	Нічого вишивати: кожна область — тло. Вишийте й тло або обріжте менше.
 embroidery	Nothing to create: every area is the background. Sew the background, or crop less.	Нічого створювати: кожна область — тло. Вишийте й тло або обріжте менше.
+# VectorCraft Stitch: the image window's Shapes step (drafted with AI assistance from the English meaning, for review)
+embroidery	Smoothness	Згладжування
+embroidery	Corners	Кути
+embroidery	Higher: smoother outlines with fewer points. Lower: closer to the picture's edges.	Вище: гладші контури з меншою кількістю точок. Нижче: ближче до країв зображення.
+embroidery	Higher: more turns kept as sharp corners. Lower: more of them rounded.	Вище: більше зламів лишаються гострими кутами. Нижче: більше з них заокруглюються.
+embroidery	Straighten nearly straight lines	Випрямляти майже прямі лінії
+embroidery	Slightly curved edges become straight lines, parts of circles true arcs, and nearly level or upright lines exactly so.	Злегка вигнуті краї стають прямими лініями, частини кіл — справжніми дугами, а майже горизонтальні чи вертикальні лінії — точно горизонтальними чи вертикальними.
+embroidery	Colors overlap by	Кольори перекриваються на
+embroidery	The color sewn first reaches under the next, so no fabric shows between them.	Колір, що вишивається першим, заходить під наступний, щоб між ними не було видно тканини.
+embroidery	Thin lines sewn along their middle below	Тонкі лінії шиються посередині за ширини менше
+embroidery	A narrower part is sewn as a running line along its middle. 0: none.	Вужча частина вишивається лінією прямого стібка посередині. 0: жодна.
+# VectorCraft Stitch: the image window's Stitches step (drafted with AI assistance from the English meaning, for review)
+embroidery	Thin lines	Тонкі лінії
+embroidery	Shapes: below {value}	Фігури: менше {value}
+embroidery	Set in the Shapes step.	Задається на кроці «Фігури».
+embroidery	below {value}	менше {value}
+embroidery	Fill angle	Кут заливки
+embroidery	Fixed	Фіксований
+embroidery	Across the shape	Упоперек форми
+embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Напрямок рядів заливки: під фіксованим кутом на сторінці або впоперек довжини кожної форми.
+embroidery	The fills' rows, counter-clockwise on the page.	Ряди заливок, проти годинникової стрілки на сторінці.
+embroidery	From the background to the details. The Order tab changes it after Create.	Від тла до деталей. Вкладка «Порядок» змінює його після створення.
+embroidery	Create sets these in the document's embroidery settings.	Створення запише їх у налаштування вишивки документа.
+# VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
+embroidery	Outlines	Контури
+embroidery	Color outlines (running stitch)	Контури кольорів (прямий стібок)
+embroidery	A running line along each edge between two colors, once, and round the design.	Лінія прямого стібка вздовж кожного краю між двома кольорами, один раз, і навколо візерунка.
+embroidery	Design border (satin)	Облямівка візерунка (гладь)
+embroidery	A satin border round the whole design, its holes too, on its edge: the design grows by half its width.	Облямівка гладдю навколо всього візерунка, і навколо його отворів, по його краю: візерунок збільшується на половину ширини облямівки.
+embroidery	Border width	Ширина облямівки
+embroidery	Outlines' thread	Нитка контурів
+embroidery	{value} · darkest of the design	{value} · найтемніша у візерунку
+embroidery	Back to the darkest thread	Повернути найтемнішу нитку
+@plural	Color outlines: {count} line, {length}|Color outlines: {count} lines, {length}	Контури кольорів: {count} лінія, {length}|Контури кольорів: {count} лінії, {length}|Контури кольорів: {count} ліній, {length}
+embroidery	Border: {length}	Облямівка: {length}
+embroidery	The color outlines run beside the picture's own lines along {share} of their length: those lines are sewn twice. Leave the lines' color out, or the outlines off.	Контури кольорів ідуть уздовж власних ліній зображення на {share} своєї довжини: ці лінії вишиваються двічі. Вилучіть колір ліній або вимкніть контури.
+# VectorCraft Stitch: Image window, Stitches step: the rows' spacing rule, short enough for its field (drafted with AI assistance from the English meaning, for review)
+embroidery	Tatami, {value}	Татамі, {value}
+# VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
+embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Відкриває вкладку «Вишивка» в «Параметрах документа». Це вікно повернеться, коли «Параметри документа» буде закрито.

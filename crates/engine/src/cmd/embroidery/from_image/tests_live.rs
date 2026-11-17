@@ -9,6 +9,7 @@ use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_trace as tr;
 
 use super::live::{edited, live_digitizing, live_settings};
+use super::settings::MAX_AREA_CHANGES;
 use crate::Session;
 use crate::cmd::buildcmds::TRACE_NAME;
 
@@ -557,4 +558,154 @@ fn the_check_warns_of_a_live_object_scaled_since_it_was_digitized() {
     transformed(&mut s, live, Affine::scale_non_uniform(1.0, 0.8));
     let hit = check(&mut s)["examples"][0].clone();
     assert!(hit["note"] == json!("smaller") && (hit["value"].as_f64().unwrap() - 20.0).abs() < 0.01, "reduced: {hit}");
+}
+
+/// The command on a live object, given one setting, keeps the others it was made with, as the
+/// window does when it opens on it (the project owner's choice, 2026-11-17).
+#[test]
+fn the_command_on_a_live_object_keeps_the_settings_not_given() {
+    let (mut s, live, _) = live_made(json!({"colors": 3, "colorOutlines": true}));
+    let kept = |s: &Session| live_settings(&node(s, live)).and_then(|k| k.get("colorOutlines").cloned());
+    assert_eq!(kept(&s), Some(json!(true)), "made with outlines");
+    s.execute("embroidery.digitizeImage", &json!({"id": live.0, "live": true, "colors": 3})).unwrap();
+    assert_eq!(kept(&s), Some(json!(true)), "digitized again by the command, the outlines not given: kept");
+}
+
+/// A setting the request gives as `null` is the default, not the one the live object keeps; the
+/// others it keeps stay.
+#[test]
+fn a_setting_given_as_null_is_the_default_not_the_kept_one() {
+    let (mut s, live, _) = live_made(json!({"colors": 3, "colorOutlines": true, "smoothing": 30}));
+    s.execute("embroidery.digitizeImage", &json!({"id": live.0, "live": true, "colorOutlines": null})).unwrap();
+    let kept = live_settings(&node(&s, live)).expect("kept settings");
+    let read = |k: &str| kept.get(k).and_then(Value::as_f64);
+    assert_eq!(kept.get("colorOutlines"), Some(&json!(false)), "the default: {kept:?}");
+    assert_eq!((read("smoothing"), read("colors")), (Some(30.0), Some(3.0)), "the others kept: {kept:?}");
+}
+
+/// A change the live object keeps survives a run of the command given only the number of colours.
+#[test]
+fn a_kept_area_change_survives_a_run_given_only_the_colours() {
+    let changes = json!([{"at": [210.5, 100.5], "color": hex(NAVY), "kind": "fill", "angle": 45.0}]);
+    let (mut s, live, _) = live_made(json!({"colors": 3, "areaChanges": changes}));
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "live": true, "colors": 3})).unwrap();
+    assert_eq!(r["areaChanges"][0]["applies"], json!(true), "{}", r["areaChanges"]);
+    let kept = live_settings(&node(&s, live)).and_then(|k| k.get("areaChanges").cloned()).expect("kept changes");
+    assert_eq!(kept.as_array().map(Vec::len), Some(1), "{kept}");
+}
+
+/// A dry run on a live object, or on the image it holds, echoes the settings it keeps, so that an
+/// agent can read them, and warns of nothing about them.
+#[test]
+fn a_dry_run_on_a_live_object_echoes_the_settings_it_keeps() {
+    let (mut s, live, image) = live_made(json!({"colors": 3, "colorOutlines": true}));
+    for id in [live, image] {
+        let r = s.execute("embroidery.digitizeImage", &json!({"id": id.0, "dryRun": true})).unwrap();
+        assert_eq!((r["settings"]["colors"].clone(), r["settings"]["colorOutlines"].clone()), (json!(3), json!(true)), "{}", r["settings"]);
+        let warned = r["warnings"].as_array().into_iter().flatten().filter_map(|w| w["id"].as_str()).any(|w| w.starts_with("kept"));
+        assert!(!warned, "{}", r["warnings"]);
+    }
+}
+
+/// A live object made in another thread palette than the document's now: the command lets its
+/// threads go (a colour's, the outlines'), holds its number of colours to the palette's threads,
+/// keeps the rest of its settings, and says so.
+#[test]
+fn kept_threads_of_another_palette_are_let_go_and_said() {
+    let choices = json!([{"color": hex(ORANGE), "thread": {"palette": "jef", "index": 1}}]);
+    let changes = json!([{"at": [210.5, 100.5], "color": hex(NAVY), "kind": "fill", "angle": 45.0}]);
+    let made = json!({"colors": 70, "colorChoices": choices, "colorOutlines": true, "outlineThread": {"palette": "jef", "index": 2}, "areaChanges": changes});
+    let (mut s, live, _) = live_made(made);
+    s.execute("embroidery.setup", &json!({"palette": "pec"})).unwrap();
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "dryRun": true})).unwrap();
+    assert!(r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "keptThreadsLetGo"), "{}", r["warnings"]);
+    let pec = crate::cmd::embroidery::thread_palettes().into_iter().find(|(p, _)| *p == "pec").map(|(_, n)| n as u64);
+    let settings = &r["settings"];
+    assert_eq!((settings["outlineThread"].clone(), settings["colors"].as_u64()), (Value::Null, pec), "{settings}");
+    assert!(settings["colorChoices"].as_array().is_none_or(|c| c.iter().all(|c| c["thread"].is_null())), "{}", settings["colorChoices"]);
+    assert_eq!(
+        (settings["colorOutlines"].clone(), settings["areaChanges"].as_array().map(Vec::len)),
+        (json!(true), Some(1)),
+        "the rest kept: {settings}"
+    );
+}
+
+/// A live object whose kept settings a file holds as junk (changes of no shape, a colour count
+/// that is a word) digitizes again by the command with the settings given and the defaults, says
+/// why, and never panics.
+#[test]
+fn a_live_object_with_junk_kept_settings_is_said_and_never_panics() {
+    // Changes of no shape read one by one, and a thousand and one of them refused by their count.
+    for count in [3, MAX_AREA_CHANGES + 1] {
+        let (mut s, live, _) = live_made(json!({"colors": 3}));
+        let junk: Vec<Value> = (0..count).map(|i| json!({"at": [i, i], "color": "#zzzzzz", "kind": "both"})).collect();
+        keeping(&mut s, live, |m| {
+            m.insert("area_changes".into(), Value::Array(junk.clone()));
+            m.insert("colors".into(), json!("lots"));
+        });
+        let n = node(&s, live);
+        let _ = live_settings(&n);
+        let _ = edited(&n);
+        let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "live": true, "dryRun": true, "colors": 4})).unwrap();
+        let why = r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "keptSettingsRefused").and_then(|w| w["values"]["why"].as_str());
+        assert!(why.is_some_and(|w| w.contains("areaChanges") && !w.contains("invalid parameters")), "{count}: {}", r["warnings"]);
+        assert_eq!(r["settings"]["colors"], json!(4), "the request's");
+        assert!(r["settings"]["areaChanges"].as_array().is_none_or(Vec::is_empty), "the default: none");
+    }
+}
+
+/// The settings live object `live` keeps, changed by `change` (as a file edited by hand, or one of
+/// a newer version, would hold them).
+fn keeping(s: &mut Session, live: NodeId, change: impl Fn(&mut serde_json::Map<String, Value>)) {
+    s.edit("kept", |d, _| {
+        let n = d.node_mut(live).ok_or(crate::EngineError::NoNode(live))?;
+        let mut extras = n.extras_mut();
+        let dz = extras.embroidery.as_mut().and_then(|e| e.digitizing.as_mut()).ok_or(crate::EngineError::NoNode(live))?;
+        let mut m = (*dz.settings).clone();
+        change(&mut m);
+        dz.settings = m.into();
+        Ok(())
+    })
+    .unwrap();
+}
+
+/// Create without `live` on a live object makes its plain objects from the settings it keeps too.
+#[test]
+fn create_without_live_on_a_live_object_starts_from_its_kept_settings() {
+    let changes = json!([{"at": [210.5, 100.5], "color": hex(NAVY), "kind": "fill", "angle": 45.0}]);
+    let (mut s, live, _) = live_made(json!({"colors": 3, "colorOutlines": true, "areaChanges": changes}));
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "colors": 3})).unwrap();
+    assert_eq!(r["created"]["live"], json!(false));
+    assert_eq!((r["settings"]["colorOutlines"].clone(), r["areaChanges"][0]["applies"].clone()), (json!(true), json!(true)), "{}", r["settings"]);
+}
+
+/// A crop the live object keeps that lies outside its image (relinked since to a smaller picture)
+/// can't be used: said, the settings given and the defaults used; given `crop: null`, the rest of
+/// what it keeps is used.
+#[test]
+fn a_kept_crop_outside_its_image_is_said_and_null_takes_the_rest() {
+    let (mut s, live, _) = live_made(json!({"colors": 3, "colorOutlines": true}));
+    keeping(&mut s, live, |m| {
+        m.insert("crop".into(), json!([0, 0, 999, 999]));
+    });
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "dryRun": true})).unwrap();
+    let why = r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "keptSettingsRefused").and_then(|w| w["values"]["why"].as_str());
+    assert!(why.is_some_and(|w| w.contains("`crop`")), "{}", r["warnings"]);
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "dryRun": true, "crop": null})).unwrap();
+    assert!(r["warnings"].as_array().unwrap().iter().all(|w| w["id"] != "keptSettingsRefused"), "{}", r["warnings"]);
+    assert_eq!(r["settings"]["colorOutlines"], json!(true), "the rest kept");
+}
+
+/// Settings a live object keeps that this version has no setting for (a newer version's) are left
+/// out, and said.
+#[test]
+fn kept_settings_this_version_doesnt_know_are_said() {
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    keeping(&mut s, live, |m| {
+        m.insert("fill_pattern".into(), json!("waves"));
+    });
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "dryRun": true})).unwrap();
+    let said = r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "keptSettingsUnknown").map(|w| w["values"]["keys"].clone());
+    assert_eq!(said, Some(json!(["fill_pattern"])), "{}", r["warnings"]);
+    assert_eq!(r["settings"]["colors"], json!(3), "the rest kept");
 }

@@ -336,3 +336,44 @@ fn ui_dialog_set_keep_live_and_confirm_keep_a_live_object() {
     crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
     assert!(open_dialog(&app).expect("open again").fields.get("keep").is_none(), "not remembered");
 }
+
+/// The settings live object `id` keeps, as the window and the command take them.
+fn kept_settings(app: &VectorcraftApp, id: NodeId) -> serde_json::Map<String, Value> {
+    app.session.doc().unwrap().doc.node(id).and_then(vectorcraft_engine::cmd::embroidery::live_settings).expect("a live object")
+}
+
+/// Start Over on a live object's window, then Keep as Live Object, keeps none of the settings it
+/// had kept: the window's own runs start from its fields alone, never from what the live object
+/// keeps, so that no kept one comes back.
+#[test]
+fn start_over_then_keep_as_live_object_keeps_none_of_its_settings() {
+    let changes = json!([{"at": [100.5, 20.5], "color": ORANGE, "kind": "fill", "stitch": "none"}]);
+    let (app, id) = live_object(json!({"colors": 3, "areaChanges": changes, "colorOutlines": true}));
+    let (mut app, ctx, mut time) = opened_with(app);
+    assert_eq!(field(open_dialog(&app).unwrap(), "areaChanges")[0]["stitch"], json!("none"), "opened with its change");
+    super::start_over(&mut app);
+    until(&mut app, &ctx, &mut time, super::tests::ready);
+    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    let kept = kept_settings(&app, id);
+    assert!(kept.get("areaChanges").is_none_or(|c| c.as_array().is_some_and(Vec::is_empty)), "no change: {kept:?}");
+    assert_eq!(kept.get("colorOutlines"), Some(&json!(false)), "the default: {kept:?}");
+}
+
+/// Reset All on a live object's window, then Keep as Live Object, keeps none of the changes it had
+/// kept, and its other settings as they were.
+#[test]
+fn reset_all_then_keep_as_live_object_keeps_none_of_its_changes() {
+    let changes = json!([{"at": [100.5, 20.5], "color": ORANGE, "kind": "fill", "stitch": "none"}]);
+    let (app, id) = live_object(json!({"colors": 3, "areaChanges": changes, "colorOutlines": true}));
+    let (mut app, ctx, mut time) = opened_with(app);
+    super::tests::set(&mut app, super::STEP, json!(4));
+    press(&mut app, &ctx, &mut time, "Reset All", Role::Button);
+    assert_eq!(field(open_dialog(&app).unwrap(), "areaChanges"), Value::Null, "the changes reset");
+    until(&mut app, &ctx, &mut time, super::tests::ready);
+    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    let kept = kept_settings(&app, id);
+    assert!(kept.get("areaChanges").is_none_or(|c| c.as_array().is_some_and(Vec::is_empty)), "no change: {kept:?}");
+    assert_eq!((kept.get("colors"), kept.get("colorOutlines")), (Some(&json!(3)), Some(&json!(true))), "the rest as it was: {kept:?}");
+}

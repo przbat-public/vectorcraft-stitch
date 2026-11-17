@@ -31,7 +31,9 @@ impl Session {
     /// settings and `document`'s changes to them ([`DOCUMENT_SETTINGS`], as `embroidery.setup` takes
     /// them; null for none). Refused as the command refuses (no image, a locked one, a missing
     /// linked file, Global Edit on, a setting out of its range), and a document setting as
-    /// `embroidery.setup` refuses it.
+    /// `embroidery.setup` refuses it. Only the settings given, the defaults for the rest: never the
+    /// ones a live object keeps, which the command starts from, since the window's resets (Start
+    /// Over, Reset All, a ↺, Back to Auto) take a field out to mean its default.
     pub fn digitize_window_request(&self, id: NodeId, params: &Value, palette: Option<&str>, document: &Value) -> Result<WindowRequest> {
         let mut o = super::super::object(params, C)?.into_owned();
         o.insert("id".into(), Value::from(id.0));

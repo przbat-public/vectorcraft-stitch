@@ -24,8 +24,11 @@ use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind, TraceVie
 use vectorcraft_geom::Affine;
 use vectorcraft_stitch::MM_PER_PT;
 
+use vectorcraft_stitch::thread::Palette;
+
 use super::create::Made;
-use super::settings::{SETTINGS, Settings};
+use super::settings::{SETTINGS, Settings, most_colors};
+use super::warnings::Warning;
 use crate::cmd::buildcmds::TRACE_NAME;
 use crate::{EngineError, Result};
 
@@ -289,6 +292,84 @@ pub fn live_settings(n: &Node) -> Option<Map<String, Value>> {
         }
     }
     Some(out)
+}
+
+/// The settings `embroidery.digitizeImage` digitizes a live object with, as the window opens on it:
+/// those it keeps (`kept`, [`live_settings`]), the request's `o` over them (a setting `o` gives
+/// wins; one it gives as `null` is the default, not the kept one), the project owner's choice of
+/// 2026-11-17, „Brać zapisane (polecam)”. Kept settings the engine refuses, a crop lying outside the
+/// image's `pixels` (relinked since at another size) among them: their threads let go and the
+/// number of colours held to `palette`'s (made in another thread palette), else the request's own
+/// settings `given` with the defaults; and the warning that says which, if any, with what still
+/// blocks them.
+pub(super) fn with_kept(
+    o: &Map<String, Value>,
+    kept: Map<String, Value>,
+    palette: Palette,
+    pixels: (u32, u32),
+    given: Settings,
+) -> (Settings, Option<Warning>) {
+    let over = |kept: &Map<String, Value>| -> std::result::Result<Settings, String> {
+        let mut all = kept.clone();
+        for (k, v) in o {
+            if v.is_null() {
+                all.remove(k);
+            } else {
+                all.insert(k.clone(), v.clone());
+            }
+        }
+        // Said as what is wrong with them, not as the request's parameters.
+        let settings = Settings::from_params(&all, palette).map_err(|e| match e {
+            EngineError::BadParams { msg, .. } => msg,
+            e => e.to_string(),
+        })?;
+        let (iw, ih) = pixels;
+        match settings.crop {
+            Some(crop) if crop[2] > iw || crop[3] > ih => Err(format!("`crop` {crop:?} lies outside the image's {iw} × {ih} pixels")),
+            _ => Ok(settings),
+        }
+    };
+    if let Ok(settings) = over(&kept) {
+        return (settings, None);
+    }
+    let why = match over(&without_threads(kept, palette)) {
+        Ok(settings) => {
+            let message =
+                "the live object was made in another thread palette: its threads were let go and its colours matched to the document's palette again";
+            return (settings, Some(Warning::new("keptThreadsLetGo", json!({}), message)));
+        }
+        Err(why) => why,
+    };
+    let message = format!("the settings the live object keeps couldn't be used ({why}): the request's settings and the defaults were used");
+    (given, Some(Warning::new("keptSettingsRefused", json!({"why": why}), message)))
+}
+
+/// The keys of the settings live object `n` keeps that no setting of this version has (a newer
+/// version's): left out of what it is digitized with, and of what it keeps once made again.
+pub(super) fn unknown_kept(n: &Node) -> Vec<String> {
+    let Some(d) = live_digitizing(n) else { return Vec::new() };
+    d.settings.keys().filter(|k| !SETTINGS.iter().any(|s| s.key == k.as_str())).cloned().collect()
+}
+
+/// Kept settings `kept` with their threads let go (each colour choice's thread, the outlines'
+/// thread) and the number of colours held to `palette`'s most: as the window takes a live object
+/// made in another thread palette (the project owner's choice, 2026-11-15).
+fn without_threads(mut kept: Map<String, Value>, palette: Palette) -> Map<String, Value> {
+    kept.remove("outlineThread");
+    if let Some(Value::Array(choices)) = kept.get_mut("colorChoices") {
+        for c in choices.iter_mut() {
+            if let Some(c) = c.as_object_mut() {
+                c.remove("thread");
+            }
+        }
+        // A choice that only named a thread chooses nothing now.
+        choices.retain(|c| c.as_object().is_some_and(|c| c.keys().any(|k| k != "color")));
+    }
+    let most = u64::from(most_colors(palette));
+    if kept.get("colors").and_then(Value::as_u64).is_some_and(|n| n > most) {
+        kept.insert("colors".into(), json!(most));
+    }
+    kept
 }
 
 /// Create's plain design `made` in `doc` made a live object made with `settings`: in the design's

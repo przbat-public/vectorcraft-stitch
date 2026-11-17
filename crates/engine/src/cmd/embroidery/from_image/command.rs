@@ -437,6 +437,8 @@ struct DigitizeJob {
     live: bool,
     was: Option<Node>,
     edited: Option<bool>,
+    /// What the reply says of the settings the live object keeps, when they weren't all taken.
+    kept: Vec<Warning>,
 }
 
 /// What a run made ([`DigitizeJob::run`]), to apply to the document it was made of ([`apply`]):
@@ -472,7 +474,8 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
     let o = super::super::object(p, C)?;
     let st = s.doc()?;
     let palette = super::super::thread_palette(&st.doc);
-    let settings = Settings::from_params(&o, palette)?;
+    // The request's own settings, a refusal of them said as the request's.
+    let given = Settings::from_params(&o, palette)?;
     let dry_run = flag(&o, "dryRun")?;
     let listed = Listed {
         offset: count(&o, "offset", 0, usize::MAX)?,
@@ -485,7 +488,26 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
     let live = flag(&o, "live")?;
     let was = st.doc.node(target).filter(|n| super::live::live_digitizing(n).is_some()).cloned();
     let edited = was.as_ref().and_then(super::live::edited);
-    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run, live, was, edited })
+    // A live object (or the image it holds) starts from the settings it keeps, the request's over
+    // them, as the window opens on it; what of them isn't taken is said.
+    let mut kept = Vec::new();
+    let settings = match was.as_ref().and_then(super::live::live_settings) {
+        Some(k) => {
+            let (settings, said) = super::live::with_kept(&o, k, palette, (image.width, image.height), given);
+            kept.extend(said);
+            settings
+        }
+        None => given,
+    };
+    let unknown = was.as_ref().map(super::live::unknown_kept).unwrap_or_default();
+    if !unknown.is_empty() {
+        let message = format!(
+            "the live object keeps settings this version doesn't know ({}): they are left out, and a live object made again keeps them no longer",
+            unknown.join(", ")
+        );
+        kept.push(Warning::new("keptSettingsUnknown", json!({"keys": unknown}), message));
+    }
+    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run, live, was, edited, kept })
 }
 
 /// The image `o` names (or the one selected), with its file: refused as the command refuses it (no
@@ -512,11 +534,12 @@ impl DigitizeJob {
     /// that trace it, which a scope's cancel doesn't reach, as Image Trace's own run asks it, and
     /// stops the run when it answers `false`.
     fn run(&self, steps: &(dyn Fn(u64, u64) -> bool + Sync)) -> Result<DigitizeFound> {
-        let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run, live, was, edited } = self;
+        let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run, live, was, edited, kept } = self;
         let d = digitized(image, bytes, settings, *palette, steps)?;
         let started = clock();
         let mut doc = Document::clone(original);
         let mut warnings = d.warnings();
+        warnings.extend(kept.iter().cloned());
         let made = match create::made(&mut doc, *target, &d, *palette, settings)? {
             Some(m) if *live => {
                 let m = super::live::into_live(&mut doc, &m, was.clone(), settings)?;

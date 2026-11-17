@@ -8646,7 +8646,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `noArea` (nothing sewn there: the background, or past the crop), `otherKind` (its area is of the other kind now) or
   `notSewn` (its area's colour isn't sewn); an area's `change` is `{stitch?, angle?}`, what the changes that apply to
   it set (null when none). `edited` says whether the live object given as `id` was edited by hand since it was made
-  (its objects' fingerprint, taken in its image's frame, so that moving, turning or scaling it, its strokes scaled with it or kept as they were made, edits nothing; null
+  (its objects' fingerprint, taken in its image's frame, so that moving, turning, scaling or stretching it, its strokes scaled with it or kept as they were made, edits nothing; true, the safe side, for a picture slanted when it was digitized whose slant and size both changed since, its strokes kept, or one scaled once each way; null
   when it is no live object). An area's `area` is its number in
   this reply's sewing order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its
   colour. The rest, in full: `created` is the group made, the layer holding the image, and how many objects and colour

@@ -297,6 +297,31 @@ fn a_slanted_live_object_scaled_with_its_strokes_kept_edits_nothing() {
     assert_eq!(edited_now(&mut s, live), json!(false), "scaled, its strokes kept");
 }
 
+/// A live object turned and then stretched along the page with its strokes kept as they were made
+/// edits nothing, though the stretch slants its picture's sides, square when it was made; its line's
+/// weight set by hand then is an edit.
+#[test]
+fn a_turned_live_object_stretched_with_its_strokes_kept_edits_nothing() {
+    let (mut s, live, _) = live_made_of(&hole_and_line(), json!({"colors": 3}));
+    let stroked = |n: &Node| n.appearance.items.iter().any(|i| matches!(i, vectorcraft_doc::AppearanceItem::Stroke(_)));
+    let line = object_where(&s, live, stroked).expect("the line, a stroke");
+    s.edit("turn and stretch", |d, _| {
+        let n = d.node_mut(live).ok_or(crate::EngineError::NoNode(live))?;
+        n.transform(Affine::rotate(std::f64::consts::FRAC_PI_4), false);
+        n.transform(Affine::scale_non_uniform(2.0, 1.0), false);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(false), "turned, stretched, its strokes kept");
+    s.edit("weight", |d, _| {
+        let n = d.node_mut(line).ok_or(crate::EngineError::NoNode(line))?;
+        n.appearance.scale_strokes(2.0);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(true), "its weight doubled");
+}
+
 /// A set angle is read as the direction it gives: a live object made with angles of 270° and 180°
 /// (the same rows as −90° and −180°) and turned edits nothing.
 #[test]

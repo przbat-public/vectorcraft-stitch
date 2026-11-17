@@ -60,25 +60,34 @@ fn image_of(n: &Node) -> Option<(&Node, Affine)> {
     }
 }
 
+/// The slant between a picture's sides (the sine of the angle between them) when they are square to
+/// each other, as a placed picture's are.
+const SQUARE_SLANT: f64 = 1.0;
+
 /// Whether live object `n`'s objects were edited by hand since it was made: their fingerprint now
-/// against the one kept, their strokes' weights scaled with it or kept as made (scaled once with
-/// Scale Strokes & Effects on and once off, they are neither: read as an edit, the safe side);
-/// none kept: taken as edited. `None` when `n` is no live object. It walks
-/// all of its objects' points: ask it once, not every frame.
+/// against the one kept, their strokes' weights scaled with it or kept as made; none kept: taken as
+/// edited. `None` when `n` is no live object. Strokes kept as made are measured at the scale it was
+/// made at: its picture's sides' lengths then, from the size kept, and the slant between them as it
+/// is now (a move, a turn or a scale since keeps it) or square, as a placed picture's are (a turn
+/// and then a stretch along the page slants them). Read as an edit, the safe side: a picture slanted
+/// when it was made whose slant and size both changed since, its strokes kept; one scaled once with
+/// Scale Strokes & Effects on and once off, its strokes neither. It walks all of its objects'
+/// points, up to three times: ask it once, not every frame.
 pub fn edited(n: &Node) -> Option<bool> {
     let d = live_digitizing(n)?;
     let (_, xf) = image_of(n)?;
     let Some(kept) = d.fingerprint else { return Some(true) };
-    // Its strokes' weights scaled with it (Scale Strokes & Effects on) or kept as they were made
-    // (off, the default): neither is an edit.
-    let scaled = fingerprint(n, xf, xf.determinant().abs().sqrt());
-    // The scale it was made at: its sides' lengths then, from the size kept, and the slant between
-    // them as it is now (a move, a turn or a scale since keeps it).
+    let matches = |weight_px: f64| fingerprint(n, xf, weight_px) == Some(kept);
+    // Its strokes' weights scaled with it (Scale Strokes & Effects on): no edit.
+    if matches(xf.determinant().abs().sqrt()) {
+        return Some(false);
+    }
+    // Kept as they were made (off, the default): no edit either.
+    let Some([a, b]) = made_points_per_px(n) else { return Some(true) };
     let [m0, m1, m2, m3, _, _] = xf.as_coeffs();
     let sides = m0.hypot(m1) * m2.hypot(m3);
-    let slant = if sides > f64::EPSILON { (xf.determinant().abs() / sides).min(1.0) } else { 1.0 };
-    let as_made = made_points_per_px(n).and_then(|[a, b]| fingerprint(n, xf, (a * b * slant).sqrt()));
-    Some(scaled != Some(kept) && as_made != Some(kept))
+    let slant = if sides > f64::EPSILON { (xf.determinant().abs() / sides).min(SQUARE_SLANT) } else { SQUARE_SLANT };
+    Some(!(matches((a * b * slant).sqrt()) || (slant < SQUARE_SLANT && matches((a * b * SQUARE_SLANT).sqrt()))))
 }
 
 /// A fingerprint of live object `n`'s objects (all but its image) in the image's frame `xf`: each

@@ -7645,8 +7645,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} мм
 embroidery	Chosen for this area	Выбрано для этой области
 embroidery	Sewn along its middle as one running line	Вышивается по середине одной линией прямого стежка
-embroidery	No part wider than {width} mm: satin	Ни одна часть не шире {width} мм: гладь
+embroidery	No part wider than {width} mm	Ни одна часть не шире {width} мм
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Шире {width} мм: татами, более узкие части гладью
+embroidery	Wider than {width} mm: tatami	Шире {width} мм: татами
+embroidery	Its long parts as satin, the rest tatami	Длинные части гладью, остальное татами
+embroidery	Too short for satin	Слишком короткая для глади
+embroidery	Too short for satin: sewn as tatami	Слишком короткая для глади: шьётся татами
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Для глади нужна линия шириной не менее {least} мм: эта — {width} мм.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Гладь вышивает части шириной до {most} мм: эта область шириной {width} мм.
 @plural	about {count} stitch|about {count} stitches	примерно {count} стежок|примерно {count} стежка|примерно {count} стежков

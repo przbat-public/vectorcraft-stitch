@@ -7177,8 +7177,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Scelto per quest’area
 embroidery	Sewn along its middle as one running line	Ricamata lungo il centro come una sola linea a punto dritto
-embroidery	No part wider than {width} mm: satin	Nessuna parte più larga di {width} mm: raso
+embroidery	No part wider than {width} mm	Nessuna parte più larga di {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Più larga di {width} mm: tatami, le parti più strette in raso
+embroidery	Wider than {width} mm: tatami	Più larga di {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Le parti lunghe in raso, il resto tatami
+embroidery	Too short for satin	Troppo corta per il raso
+embroidery	Too short for satin: sewn as tatami	Troppo corta per il raso: ricamata in tatami
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Il raso richiede una linea larga almeno {least} mm: questa è di {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Il raso ricama parti fino a {most} mm: quest’area è larga {width} mm.
 @plural	about {count} stitch|about {count} stitches	circa {count} punto|circa {count} punti

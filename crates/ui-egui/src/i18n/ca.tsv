@@ -7537,8 +7537,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Triat per a aquesta àrea
 embroidery	Sewn along its middle as one running line	Es brodeja pel mig com una sola línia de punt endavant
-embroidery	No part wider than {width} mm: satin	Cap part més ampla de {width} mm: setí
+embroidery	No part wider than {width} mm	Cap part més ampla de {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Més ampla de {width} mm: tatami, les parts més estretes en setí
+embroidery	Wider than {width} mm: tatami	Més ampla de {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Les parts llargues en setí, la resta tatami
+embroidery	Too short for satin	Massa curta per al setí
+embroidery	Too short for satin: sewn as tatami	Massa curta per al setí: es cus en tatami
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	El setí necessita una línia d’almenys {least} mm d’amplada: aquesta fa {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	El setí brodeja parts de fins a {most} mm: aquesta àrea fa {width} mm d’amplada.
 @plural	about {count} stitch|about {count} stitches	aprox. {count} puntada|aprox. {count} puntades

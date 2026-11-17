@@ -7509,8 +7509,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Επιλέχθηκε για αυτή την περιοχή
 embroidery	Sewn along its middle as one running line	Κεντιέται στη μέση της ως μία γραμμή ευθείας βελονιάς
-embroidery	No part wider than {width} mm: satin	Κανένα τμήμα φαρδύτερο από {width} mm: σατέν
+embroidery	No part wider than {width} mm	Κανένα τμήμα φαρδύτερο από {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Φαρδύτερη από {width} mm: τατάμι, τα στενότερα τμήματα ως σατέν
+embroidery	Wider than {width} mm: tatami	Φαρδύτερη από {width} mm: τατάμι
+embroidery	Its long parts as satin, the rest tatami	Τα μακριά τμήματα ως σατέν, τα υπόλοιπα τατάμι
+embroidery	Too short for satin	Πολύ κοντή για σατέν
+embroidery	Too short for satin: sewn as tatami	Πολύ κοντή για σατέν: ράβεται τατάμι
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Το σατέν θέλει γραμμή πλάτους τουλάχιστον {least} mm: αυτή είναι {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Το σατέν κεντά τμήματα έως {most} mm: αυτή η περιοχή έχει πλάτος {width} mm.
 @plural	about {count} stitch|about {count} stitches	περίπου {count} βελονιά|περίπου {count} βελονιές

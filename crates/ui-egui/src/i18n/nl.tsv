@@ -7367,8 +7367,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Gekozen voor dit vlak
 embroidery	Sewn along its middle as one running line	Langs het midden geborduurd als één lijn rechte steek
-embroidery	No part wider than {width} mm: satin	Geen deel breder dan {width} mm: satijn
+embroidery	No part wider than {width} mm	Geen deel breder dan {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Breder dan {width} mm: tatami, de smallere delen als satijn
+embroidery	Wider than {width} mm: tatami	Breder dan {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	De lange delen als satijn, de rest tatami
+embroidery	Too short for satin	Te kort voor satijn
+embroidery	Too short for satin: sewn as tatami	Te kort voor satijn: genaaid als tatami
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satijn vraagt een lijn van minstens {least} mm breed: deze is {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satijn borduurt delen tot {most} mm: dit vlak is {width} mm breed.
 @plural	about {count} stitch|about {count} stitches	ongeveer {count} steek|ongeveer {count} steken

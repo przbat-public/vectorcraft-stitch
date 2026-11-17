@@ -23,7 +23,7 @@
 use egui::{Color32, Id, Pos2, Rect, RichText, Ui, vec2};
 use serde_json::{Map, Value, json};
 use vectorcraft_engine::cmd::embroidery::{
-    AreaFacts, AreaKey, DigitizeOutputs, DigitizeStage, MAX_AREA_CHANGES, SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM,
+    AreaFacts, AreaKey, DigitizeOutputs, DigitizeStage, MAX_AREA_CHANGES, SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM, SatinOffer, SatinParts,
 };
 use vectorcraft_geom::Point;
 
@@ -210,11 +210,17 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
         outputs.area_object(at.0, at.1).and_then(|id| outputs.query("embroidery.info", &json!({"ids": [id.0], "plan": true}))).and_then(Result::ok);
     let part = info.as_ref().map(|i| i[if facts.line { "stroke" } else { "fill" }].clone()).unwrap_or(Value::Null);
     let sewn = part["sewn"].as_str().unwrap_or_default();
+    // What the planner sews of it: a filled area whose every part the plan sews as a satin column
+    // is sewn as satin, though its object's stitch is tatami (the project owner's choices,
+    // 2026-11-17, „Pokazać satynę (polecam)” and „Z planu ściegów (polecam)”).
+    let parts = outputs.satin_parts(at.0, at.1, None);
     if stitch.is_none() && !sewn.is_empty() {
+        let sewn = if parts == Some(SatinParts::All) { "satin" } else { sewn };
         ui.label(RichText::new(vocabulary::auto(&vocabulary::sewn_as(sewn, part["rule"].as_str()))).color(t.text));
     }
-    if let Some(why) = reason(facts, stitch.as_deref(), &part, lang) {
-        ui.label(RichText::new(why).small().color(t.text_dim));
+    let why = reason(facts, stitch.as_deref(), &part, parts, lang);
+    if let Some(why) = &why {
+        ui.label(RichText::new(why.as_str()).small().color(t.text_dim));
     }
     ui.add_space(GAP);
     // At the most changes the engine takes, a stitch or an angle for an area no change applies to
@@ -223,7 +229,8 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
     let full = held >= MAX_AREA_CHANGES && applying_to(fields, outputs, key).is_empty();
     let most = numbers::count(lang, u64::try_from(MAX_AREA_CHANGES).unwrap_or(u64::MAX));
     let too_many = fill(crate::et!("That would be more than {count} area changes, the most a design takes."), &[("count", &most)]);
-    // The choices by the area's kind.
+    // The choices by the area's kind: Satin only where it sews satin.
+    let offer = outputs.satin_offer(at.0, at.1).unwrap_or(SatinOffer::Fits);
     let ids = if facts.line { LINE_CHOICES } else { FILL_CHOICES };
     let labels: Vec<String> = ids.iter().map(|id| vocabulary::stitch(id, facts.line)).collect();
     let shown = stitch.as_deref().unwrap_or("auto");
@@ -235,7 +242,7 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
             label,
             full: label,
             selected: *id == shown,
-            enabled: *id == shown || (!full && (*id != "satin" || facts.satin_fits())),
+            enabled: *id == shown || (!full && (*id != "satin" || offer == SatinOffer::Fits)),
         })
         .collect();
     if let Some(k) = crate::panels::embroidery::segments(ui, CHOICES_HEIGHT, CHOICES_TEXT, &items) {
@@ -245,8 +252,10 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
     if full {
         ui.label(RichText::new(too_many.as_str()).small().color(t.text_dim));
     }
-    if !facts.satin_fits() {
-        ui.label(RichText::new(satin_reason(facts, lang)).small().color(t.text_dim));
+    // Why Satin isn't offered, unless it is the area's choice already (its reason above says so) or
+    // the reason above says it in the same words (an area too short for satin, sewn by Auto).
+    if let Some(not) = satin_reason(facts, offer, lang).filter(|not| shown != "satin" && why.as_ref() != Some(not)) {
+        ui.label(RichText::new(not).small().color(t.text_dim));
     }
     // A filled area's rows.
     if !facts.line {
@@ -376,40 +385,55 @@ fn angle_row(
     }
 }
 
-/// Why Auto sews the area as it does, or that its stitch was chosen for it: built from its kind, its
-/// width and the document's narrow parts as satin (`part`'s, as `embroidery.info` resolves it),
-/// never from the engine's words.
-fn reason(facts: &AreaFacts, chosen: Option<&str>, part: &Value, lang: crate::i18n::Lang) -> Option<String> {
-    if chosen.is_some() {
+/// Why Auto sews the area as it does, or that its stitch was chosen for it: built from its kind,
+/// what the planner sews of it (`parts`), its width and the narrow parts as satin its object is
+/// planned with (`part`'s, as `embroidery.info` resolves it), never from the engine's words.
+fn reason(facts: &AreaFacts, chosen: Option<&str>, part: &Value, parts: Option<SatinParts>, lang: crate::i18n::Lang) -> Option<String> {
+    if let Some(chosen) = chosen {
+        // Satin chosen where the planner sews no satin column (kept from before Satin was offered
+        // only where it sews satin): it is sewn as tatami.
+        if chosen == "satin" && !facts.line && parts == Some(SatinParts::None) {
+            return Some(crate::et!("Too short for satin: sewn as tatami").to_string());
+        }
         return Some(crate::et!("Chosen for this area").to_string());
     }
     if facts.line {
         return Some(crate::et!("Sewn along its middle as one running line").to_string());
     }
-    let narrow = part["settings"]["narrowAsSatin"]["value"].as_f64().filter(|n| *n > 0.0)?;
+    let narrow = narrow_mm(part)?;
     let width = numbers::decimal(lang, narrow, MM_DECIMALS);
-    Some(if facts.widest_mm <= narrow {
-        fill(crate::et!("No part wider than {width} mm: satin"), &[("width", &width)])
-    } else {
-        fill(crate::et!("Wider than {width} mm: tatami, its narrower parts as satin"), &[("width", &width)])
+    let wider = facts.widest_mm > narrow;
+    Some(match parts? {
+        SatinParts::All => fill(crate::et!("No part wider than {width} mm"), &[("width", &width)]),
+        SatinParts::Some if wider => fill(crate::et!("Wider than {width} mm: tatami, its narrower parts as satin"), &[("width", &width)]),
+        SatinParts::Some => crate::et!("Its long parts as satin, the rest tatami").to_string(),
+        SatinParts::None if wider => fill(crate::et!("Wider than {width} mm: tatami"), &[("width", &width)]),
+        SatinParts::None => crate::et!("Too short for satin").to_string(),
     })
 }
 
-/// Why Satin isn't offered on the area: too wide a filled area, or too narrow a line.
-fn satin_reason(facts: &AreaFacts, lang: crate::i18n::Lang) -> String {
+/// The width up to which a filled area's parts are sewn as satin, as `embroidery.info` resolves it
+/// for the area's object (`part`, its fill); `None` when narrow parts aren't sewn as satin.
+fn narrow_mm(part: &Value) -> Option<f64> {
+    part["settings"]["narrowAsSatin"]["value"].as_f64().filter(|n| *n > 0.0)
+}
+
+/// Why Satin isn't offered on the area (`offer`): too wide a filled area, too narrow a line, or a
+/// filled area too short for a satin column (a dot, a small square); `None` where it is offered.
+fn satin_reason(facts: &AreaFacts, offer: SatinOffer, lang: crate::i18n::Lang) -> Option<String> {
     let mm = |v: f64| numbers::decimal(lang, v, MM_DECIMALS);
-    if facts.line {
-        let width = facts.line_width_mm.unwrap_or_default();
-        fill(
+    Some(match offer {
+        SatinOffer::Fits => return None,
+        SatinOffer::TooNarrow => fill(
             crate::et!("Satin needs a line at least {least} mm wide: this one is {width} mm."),
-            &[("least", &mm(SATIN_LINE_LEAST_MM)), ("width", &mm(width))],
-        )
-    } else {
-        fill(
+            &[("least", &mm(SATIN_LINE_LEAST_MM)), ("width", &mm(facts.line_width_mm.unwrap_or_default()))],
+        ),
+        SatinOffer::TooWide => fill(
             crate::et!("Satin sews parts up to {most} mm: this area is {width} mm wide."),
             &[("most", &mm(SATIN_AREA_MOST_MM)), ("width", &mm(facts.widest_mm))],
-        )
-    }
+        ),
+        SatinOffer::TooShort => crate::et!("Too short for satin").to_string(),
+    })
 }
 
 /// `rgb` written `#rrggbb`, as the engine takes a colour.
@@ -467,7 +491,7 @@ fn similar_of(
     angle: Option<f64>,
     of: SimilarOf,
 ) -> Similar {
-    let fits = |k: &AreaKey| outputs.find(k).and_then(|(x, y)| outputs.area_at(x, y)).is_some_and(|f| f.satin_fits());
+    let fits = |k: &AreaKey| outputs.find(k).and_then(|(x, y)| outputs.satin_offer(x, y)) == Some(SatinOffer::Fits);
     let keys: Vec<AreaKey> = outputs.similar(at.0, at.1).into_iter().filter(|k| stitch != Some("satin") || fits(k)).collect();
     // Past the most by themselves: not counted change by change.
     let room = keys.len() <= MAX_AREA_CHANGES && set_many(&mut fields.clone(), outputs, &keys, stitch, angle) <= MAX_AREA_CHANGES;

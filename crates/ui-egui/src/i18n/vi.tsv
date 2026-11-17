@@ -7158,8 +7158,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Đã chọn cho vùng này
 embroidery	Sewn along its middle as one running line	Thêu dọc giữa thành một đường mũi chạy
-embroidery	No part wider than {width} mm: satin	Không phần nào rộng hơn {width} mm: satin
+embroidery	No part wider than {width} mm	Không phần nào rộng hơn {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Rộng hơn {width} mm: tatami, các phần hẹp hơn thành satin
+embroidery	Wider than {width} mm: tatami	Rộng hơn {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Các phần dài thành satin, phần còn lại tatami
+embroidery	Too short for satin	Quá ngắn để may satin
+embroidery	Too short for satin: sewn as tatami	Quá ngắn để may satin: may tatami
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin cần đường rộng ít nhất {least} mm: đường này rộng {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin thêu các phần rộng tới {most} mm: vùng này rộng {width} mm.
 @plural	about {count} stitch|about {count} stitches	khoảng {count} mũi

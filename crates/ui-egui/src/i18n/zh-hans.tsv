@@ -7395,8 +7395,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	为此区域选择
 embroidery	Sewn along its middle as one running line	沿中线以一道平针缝制
-embroidery	No part wider than {width} mm: satin	没有宽于 {width} mm 的部分：缎纹
+embroidery	No part wider than {width} mm	没有宽于 {width} mm 的部分
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	宽于 {width} mm：榻榻米，较窄处用缎纹
+embroidery	Wider than {width} mm: tatami	宽于 {width} mm：榻榻米
+embroidery	Its long parts as satin, the rest tatami	较长处用缎纹，其余用榻榻米
+embroidery	Too short for satin	太短，无法用缎纹
+embroidery	Too short for satin: sewn as tatami	太短，无法用缎纹：以榻榻米绣制
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	缎纹需要至少 {least} mm 宽的线：这条为 {width} mm。
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	缎纹可绣宽至 {most} mm 的部分：此区域宽 {width} mm。
 @plural	about {count} stitch|about {count} stitches	约 {count} 针

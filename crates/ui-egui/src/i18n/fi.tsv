@@ -7592,8 +7592,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Valittu tälle alueelle
 embroidery	Sewn along its middle as one running line	Kirjotaan keskeltä yhtenä suorapistoviivana
-embroidery	No part wider than {width} mm: satin	Mikään osa ei ole yli {width} mm leveä: satiini
+embroidery	No part wider than {width} mm	Mikään osa ei ole yli {width} mm leveä
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Yli {width} mm leveä: tatami, kapeammat osat satiinina
+embroidery	Wider than {width} mm: tatami	Yli {width} mm leveä: tatami
+embroidery	Its long parts as satin, the rest tatami	Pitkät osat satiinina, loput tatamina
+embroidery	Too short for satin	Liian lyhyt satiinille
+embroidery	Too short for satin: sewn as tatami	Liian lyhyt satiinille: ommellaan tatamina
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satiini vaatii vähintään {least} mm leveän viivan: tämä on {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satiini kirjoo enintään {most} mm leveitä osia: tämä alue on {width} mm leveä.
 @plural	about {count} stitch|about {count} stitches	noin {count} pisto|noin {count} pistoa

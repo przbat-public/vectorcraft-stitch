@@ -238,7 +238,7 @@ fn settings_for(job: Job, change: Option<Applied>, satin_mm: f64) -> Option<Embr
 /// widest part `widest_mm` and the overlap `overlap_mm` it may grow by on either side, rounded up
 /// to a tenth of a millimetre, so that all of it is sewn as satin columns; at most the setting's
 /// most (`plan::NARROW_RANGE`, 12 mm), past which its wider parts stay tatami.
-fn satin_width(widest_mm: f64, overlap_mm: f64) -> f64 {
+pub(super) fn satin_width(widest_mm: f64, overlap_mm: f64) -> f64 {
     let (least, most) = vectorcraft_stitch::plan::NARROW_RANGE;
     let wanted = ((widest_mm + 2.0 * overlap_mm) * SATIN_STEPS_PER_MM).ceil() / SATIN_STEPS_PER_MM;
     if wanted.is_finite() { wanted.clamp(least, most) } else { most }

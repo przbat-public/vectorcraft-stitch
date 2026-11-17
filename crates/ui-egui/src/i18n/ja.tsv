@@ -7242,8 +7242,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	この領域用に選択
 embroidery	Sewn along its middle as one running line	中央に沿って1本のランニングステッチで縫う
-embroidery	No part wider than {width} mm: satin	{width} mmより広い部分なし: サテン
+embroidery	No part wider than {width} mm	{width} mmより広い部分なし
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mmより広い: タタミ、細い部分はサテン
+embroidery	Wider than {width} mm: tatami	{width} mmより広い: タタミ
+embroidery	Its long parts as satin, the rest tatami	長い部分はサテン、残りはタタミ
+embroidery	Too short for satin	サテンには短すぎる
+embroidery	Too short for satin: sewn as tatami	サテンには短すぎる: タタミで縫う
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	サテンには幅{least} mm以上の線が必要です。この線は{width} mmです。
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	サテンは幅{most} mmまでの部分を縫います。この領域の幅は{width} mmです。
 @plural	about {count} stitch|about {count} stitches	約{count}針

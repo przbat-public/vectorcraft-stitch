@@ -400,7 +400,7 @@ fn after(doc: &Document, ids: &[NodeId], which: fn(vectorcraft_doc::embroidery::
 }
 
 /// `n`'s path, document points: its own, or its compound path's members' together.
-fn path_of(n: &Node) -> BezPath {
+pub(super) fn path_of(n: &Node) -> BezPath {
     match &n.kind {
         NodeKind::Compound { children, .. } => {
             let mut bp = BezPath::new();

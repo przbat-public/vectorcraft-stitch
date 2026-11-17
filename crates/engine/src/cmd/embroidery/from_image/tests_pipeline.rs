@@ -591,7 +591,7 @@ fn satin_is_offered_by_the_shape_an_area_is_made_as() {
     });
     let (_, _, out) = run_of(&picture, json!({"colors": 2}));
     let square = out.area_at(45, 45).expect("the square");
-    assert!(square.widest_mm >= 12.9 && !square.satin_fits(), "{square:?}");
+    assert!(square.widest_mm >= 12.9 && !square.satin_width_fits(), "{square:?}");
 }
 
 /// Satin is offered by the shape as made beside centre lines too: a 10 mm bar between two 3 mm
@@ -609,7 +609,7 @@ fn satin_is_offered_by_the_shape_made_under_the_lines_beside_it() {
     });
     let (_, _, out) = run_of(&picture, json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "lines"}]}));
     let bar = out.area_at(100, 100).expect("the bar");
-    assert!(bar.widest_mm >= 12.9 && !bar.satin_fits(), "{bar:?}");
+    assert!(bar.widest_mm >= 12.9 && !bar.satin_width_fits(), "{bar:?}");
 }
 
 /// An island's own island that isn't sewn over it keeps its hole in the shape the area round them
@@ -630,7 +630,7 @@ fn an_islands_island_not_sewn_over_it_keeps_its_hole() {
     });
     let (_, _, out) = run_of(&picture, json!({"colors": 3}));
     let square = out.area_at(45, 45).expect("the square");
-    assert!(square.widest_mm < 8.0 && square.satin_fits(), "{square:?}");
+    assert!(square.widest_mm < 8.0 && square.satin_width_fits(), "{square:?}");
 }
 
 /// An area a change leaves out (Don't Sew) is sewn by no one: the window says so, gives it no
@@ -722,4 +722,44 @@ fn the_sewn_after_mask_covers_the_areas_sewn_later() {
         }
         assert_eq!(mask[(5 * w + 5) as usize], 0, "the background never");
     }
+}
+
+/// The picture of the shapes satin is judged on, at a tenth of a millimetre a pixel: a navy bar
+/// 21 × 3.5 mm, a red dot 4 mm across, a green square 5 mm a side, a purple stick 3 mm wide with a
+/// round head 15 mm across, and an orange square 15 mm a side, on white.
+fn satin_shapes() -> tr::Raster {
+    const RED: [u8; 4] = [200, 30, 30, 255];
+    const PURPLE: [u8; 4] = [120, 40, 140, 255];
+    let round = |x: u32, y: u32, (cx, cy): (f64, f64), r: f64| (f64::from(x) + 0.5 - cx).hypot(f64::from(y) + 0.5 - cy) <= r;
+    tr::Raster::from_fn(620, 400, |x, y| {
+        if inside(x, y, [20, 20, 230, 55]) {
+            NAVY
+        } else if round(x, y, (60.0, 150.0), 20.0) {
+            RED
+        } else if inside(x, y, [120, 130, 170, 180]) {
+            GREEN
+        } else if inside(x, y, [260, 135, 470, 165]) || round(x, y, (520.0, 150.0), 75.0) {
+            PURPLE
+        } else if inside(x, y, [20, 240, 170, 390]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    })
+}
+
+/// What the planner sews of an area with narrow parts as satin, and whether Satin is offered on it,
+/// come from the planner's own parting (a column at least twice as long as it is wide): a long bar
+/// is all satin and takes Satin; a 4 mm dot and a 5 mm square have no column, so are tatami and too
+/// short; a 3 mm stick with a 15 mm round head is satin and tatami; a 15 mm square is too wide.
+#[test]
+fn what_the_planner_sews_of_an_area_and_whether_satin_is_offered() {
+    use super::pipeline::{SatinOffer, SatinParts};
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6}));
+    let at = |x, y| (out.satin_parts(x, y, None), out.satin_offer(x, y));
+    assert_eq!(at(120, 37), (Some(SatinParts::All), Some(SatinOffer::Fits)), "the bar");
+    assert_eq!(at(60, 150), (Some(SatinParts::None), Some(SatinOffer::TooShort)), "the dot");
+    assert_eq!(at(145, 155), (Some(SatinParts::None), Some(SatinOffer::TooShort)), "the square");
+    assert_eq!(at(360, 150).0, Some(SatinParts::Some), "the stick with its head");
+    assert_eq!(at(95, 315).1, Some(SatinOffer::TooWide), "the wide square");
 }

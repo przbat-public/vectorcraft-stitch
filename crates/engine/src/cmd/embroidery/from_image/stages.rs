@@ -303,6 +303,8 @@ pub(super) fn lines_stage(image: &ImageOut, colours: &ColoursOut, settings: &Set
 pub(super) struct ShapesOut {
     pub(super) areas: Areas,
     pub(super) shapes: Shapes,
+    /// The overlap they were grown by, millimetres: what Create's satin width adds on either side.
+    pub(super) overlap: f64,
     /// What it warns of (areas path operations couldn't join or grow).
     pub(super) warnings: Vec<Warning>,
     pub(super) ms: Option<f64>,
@@ -342,7 +344,7 @@ pub(super) fn shapes_stage(image: &ImageOut, trace: &TraceOut, colours: &Colours
             format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed),
         ));
     }
-    Ok(ShapesOut { areas, shapes, warnings, ms: since(started) })
+    Ok(ShapesOut { areas, shapes, overlap: settings.overlap, warnings, ms: since(started) })
 }
 
 /// What digitizing made of an image, stage by stage: each stage's output, shared.

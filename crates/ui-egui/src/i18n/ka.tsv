@@ -7616,8 +7616,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} მმ
 embroidery	Chosen for this area	არჩეულია ამ არისთვის
 embroidery	Sewn along its middle as one running line	იქარგება შუაზე ერთი სწორი ნაკერის ხაზად
-embroidery	No part wider than {width} mm: satin	არცერთი ნაწილი არ არის {width} მმ-ზე განიერი: ატლასი
+embroidery	No part wider than {width} mm	არცერთი ნაწილი არ არის {width} მმ-ზე განიერი
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} მმ-ზე განიერი: ტატამი, ვიწრო ნაწილები ატლასად
+embroidery	Wider than {width} mm: tatami	{width} მმ-ზე განიერი: ტატამი
+embroidery	Its long parts as satin, the rest tatami	გრძელი ნაწილები ატლასად, დანარჩენი ტატამი
+embroidery	Too short for satin	ატლასისთვის ძალიან მოკლეა
+embroidery	Too short for satin: sewn as tatami	ატლასისთვის ძალიან მოკლეა: იკერება ტატამით
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	ატლასს სჭირდება მინიმუმ {least} მმ სიგანის ხაზი: ეს არის {width} მმ.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	ატლასი ქარგავს ნაწილებს {most} მმ-მდე: ამ არის სიგანეა {width} მმ.
 @plural	about {count} stitch|about {count} stitches	ნაკერები: დაახლ. {count}

@@ -7316,8 +7316,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Valgt til dette område
 embroidery	Sewn along its middle as one running line	Broderes langs midten som én linje forsting
-embroidery	No part wider than {width} mm: satin	Ingen del er bredere end {width} mm: satin
+embroidery	No part wider than {width} mm	Ingen del er bredere end {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Bredere end {width} mm: tatami, de smallere dele som satin
+embroidery	Wider than {width} mm: tatami	Bredere end {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	De lange dele som satin, resten tatami
+embroidery	Too short for satin	For kort til satin
+embroidery	Too short for satin: sewn as tatami	For kort til satin: sys som tatami
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin kræver en linje på mindst {least} mm: denne er {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin syr dele op til {most} mm: dette område er {width} mm bredt.
 @plural	about {count} stitch|about {count} stitches	ca. {count} sting|ca. {count} sting

@@ -7138,8 +7138,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height}mm
 embroidery	Chosen for this area	이 영역에 선택됨
 embroidery	Sewn along its middle as one running line	가운데를 따라 러닝 스티치 한 줄로 수놓음
-embroidery	No part wider than {width} mm: satin	{width}mm보다 넓은 부분 없음: 새틴
+embroidery	No part wider than {width} mm	{width}mm보다 넓은 부분 없음
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width}mm보다 넓음: 타타미, 좁은 부분은 새틴
+embroidery	Wider than {width} mm: tatami	{width}mm보다 넓음: 타타미
+embroidery	Its long parts as satin, the rest tatami	긴 부분은 새틴, 나머지는 타타미
+embroidery	Too short for satin	새틴에는 너무 짧음
+embroidery	Too short for satin: sewn as tatami	새틴에는 너무 짧음: 타타미로 박음
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	새틴은 너비가 {least}mm 이상인 선이 필요합니다. 이 선은 {width}mm입니다.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	새틴은 너비 {most}mm까지의 부분을 수놓습니다. 이 영역의 너비는 {width}mm입니다.
 @plural	about {count} stitch|about {count} stitches	약 {count}땀

@@ -7557,8 +7557,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Zvoleno pro tuto oblast
 embroidery	Sewn along its middle as one running line	Vyšívá se středem jako jedna čára rovného stehu
-embroidery	No part wider than {width} mm: satin	Žádná část není širší než {width} mm: satén
+embroidery	No part wider than {width} mm	Žádná část není širší než {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Širší než {width} mm: tatami, užší části jako satén
+embroidery	Wider than {width} mm: tatami	Širší než {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Dlouhé části jako satén, zbytek tatami
+embroidery	Too short for satin	Příliš krátká na satén
+embroidery	Too short for satin: sewn as tatami	Příliš krátká na satén: šije se tatami
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satén potřebuje čáru širokou aspoň {least} mm: tato má {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satén vyšívá části do {most} mm: tato oblast je široká {width} mm.
 @plural	about {count} stitch|about {count} stitches	asi {count} steh|asi {count} stehy|asi {count} stehů

@@ -7303,8 +7303,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} мм
 embroidery	Chosen for this area	Избрано за тази област
 embroidery	Sewn along its middle as one running line	Бродира се по средата си като една линия с прав бод
-embroidery	No part wider than {width} mm: satin	Няма част, по-широка от {width} мм: сатен
+embroidery	No part wider than {width} mm	Няма част, по-широка от {width} мм
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	По-широка от {width} мм: татами, по-тесните части като сатен
+embroidery	Wider than {width} mm: tatami	По-широка от {width} мм: татами
+embroidery	Its long parts as satin, the rest tatami	Дългите части като сатен, останалото татами
+embroidery	Too short for satin	Твърде къса за сатен
+embroidery	Too short for satin: sewn as tatami	Твърде къса за сатен: шие се татами
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Сатенът изисква линия, широка поне {least} мм: тази е {width} мм.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Сатенът бродира части до {most} мм: тази област е широка {width} мм.
 @plural	about {count} stitch|about {count} stitches	около {count} бод|около {count} бода

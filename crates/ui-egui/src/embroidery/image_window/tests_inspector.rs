@@ -77,6 +77,13 @@ fn says(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, words: &s
     nodes(app, ctx, time).iter().any(|(_, n)| n.value().is_some_and(|v| v.contains(words)) || n.label().is_some_and(|l| l.contains(words)))
 }
 
+/// How many of the window's texts hold `words`: a label's text run, a node of its own under it
+/// holding the same words, not counted apart.
+fn times_said(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, words: &str) -> usize {
+    let holds = |n: &egui::accesskit::Node| n.value().is_some_and(|v| v.contains(words)) || n.label().is_some_and(|l| l.contains(words));
+    nodes(app, ctx, time).iter().filter(|(_, n)| n.role() != Role::TextRun && holds(n)).count()
+}
+
 #[test]
 fn a_click_on_an_area_opens_its_inspector_and_one_on_the_background_closes_it() {
     let (mut app, ctx, mut time) = opened();
@@ -484,6 +491,91 @@ fn the_inspector_opens_on_another_area_scrolled_to_its_top() {
     }
     let (navy, popover) = (name(160, 45), popover.expect("the inspector drawn"));
     assert!(at(&texts, &navy).is_some_and(|r| r.top() >= popover.top()), "{navy} in sight at the popover's top {popover:?}");
+}
+
+/// The picture of the shapes satin is judged on, placed at its 72 ppi (a pixel 0.35 mm): a navy bar
+/// 21 × 3.5 mm and a navy square as large (8.8 mm a side), a red dot 4 mm across, a green square
+/// 5 mm a side, and a purple stick 3 mm wide with a round head 15 mm across, on white.
+fn satin_shapes() -> image::RgbaImage {
+    let round = |x: u32, y: u32, (cx, cy): (f64, f64), r: f64| (f64::from(x) + 0.5 - cx).hypot(f64::from(y) + 0.5 - cy) <= r;
+    image::RgbaImage::from_fn(200, 100, |x, y| {
+        let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
+        image::Rgba(if inside([10, 10, 70, 20]) || inside([170, 10, 195, 35]) {
+            [20, 40, 120, 255]
+        } else if round(x, y, (20.0, 60.0), 5.7) {
+            [200, 30, 30, 255]
+        } else if inside([40, 53, 54, 67]) {
+            [30, 140, 60, 255]
+        } else if inside([70, 56, 120, 65]) || round(x, y, (140.0, 60.0), 21.3) {
+            [120, 40, 140, 255]
+        } else {
+            [255, 255, 255, 255]
+        })
+    })
+}
+
+/// The inspector's Auto line and its reason say what the planner sews of the area: the long bar all
+/// as satin; the 4 mm dot and the 5 mm square, too short for a satin column, tatami (the reason said
+/// once, though it is also why Satin is greyed); the square wider than narrow parts as satin,
+/// tatami; the stick with its round head, tatami with its narrower parts as satin; with narrow parts
+/// as satin off, tatami.
+#[test]
+fn auto_says_what_the_planner_sews() {
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    let look = |app: &mut VectorcraftApp, time: &mut f64, (x, y): (u32, u32), auto: &str, why: &str, not: &str| {
+        click_at(app, &ctx, time, x, y);
+        assert!(says(app, &ctx, time, auto), "({x}, {y}): {auto}");
+        assert_eq!(times_said(app, &ctx, time, why), 1, "({x}, {y}): {why}, said once");
+        let other = if auto == "Auto: satin" { "Auto: tatami" } else { "Auto: satin" };
+        assert!(!says(app, &ctx, time, other), "({x}, {y}): not {other}");
+        assert!(!says(app, &ctx, time, not), "({x}, {y}): not {not}");
+        keyed(app, &ctx, time, Key::Escape, Modifiers::NONE);
+    };
+    look(&mut app, &mut time, (40, 15), "Auto: satin", "No part wider than ", "Too short for satin");
+    look(&mut app, &mut time, (20, 60), "Auto: tatami", "Too short for satin", "Wider than ");
+    look(&mut app, &mut time, (47, 60), "Auto: tatami", "Too short for satin", "Wider than ");
+    // The navy square as large, wider than 7 mm and too short for a column: tatami, no narrower part.
+    click_at(&mut app, &ctx, &mut time, 182, 22);
+    assert!(says(&mut app, &ctx, &mut time, "Auto: tatami") && says(&mut app, &ctx, &mut time, " mm: tatami"), "the wide square");
+    assert!(!says(&mut app, &ctx, &mut time, "its narrower parts as satin"), "the wide square has none");
+    keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    look(&mut app, &mut time, (95, 60), "Auto: tatami", "its narrower parts as satin", "Too short for satin");
+    // Navy's narrow parts sewn as tatami (a fill job): the bar is tatami, no reason of satin.
+    set(&mut app, "colorChoices", json!([{"color": "#142878", "job": "fill"}]));
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    assert!(says(&mut app, &ctx, &mut time, "Auto: tatami"), "narrow parts as satin off: tatami");
+    assert!(!says(&mut app, &ctx, &mut time, "Auto: satin") && !says(&mut app, &ctx, &mut time, "No part wider than "), "no satin said");
+}
+
+/// Satin is offered only where it sews satin: on the long bar; greyed, saying why, on the 4 mm dot
+/// and the 5 mm square, where the planner finds no satin column; Apply to Similar Areas with Satin
+/// on the bar leaves out the navy square as large, too short; and a Satin kept on the dot still
+/// shows chosen, its reason that it is sewn as tatami.
+#[test]
+fn satin_is_offered_only_where_it_sews_satin() {
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    let satin = |app: &mut VectorcraftApp, time: &mut f64| choices(app, &ctx, time).into_iter().find(|(w, _)| w == "Satin").map(|(_, on)| on);
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    assert_eq!(satin(&mut app, &mut time), Some(true), "the bar");
+    let similar = |app: &mut VectorcraftApp, time: &mut f64| nodes(app, &ctx, time).iter().any(|(_, n)| n.label() == Some("Apply to 1 Similar Area"));
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    assert!(similar(&mut app, &mut time), "with Tatami: the navy square as large");
+    press(&mut app, &ctx, &mut time, "Satin", Role::Tab);
+    assert!(!similar(&mut app, &mut time), "with Satin: none, the square too short");
+    keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    for (x, y) in [(20, 60), (47, 60)] {
+        click_at(&mut app, &ctx, &mut time, x, y);
+        assert_eq!(satin(&mut app, &mut time), Some(false), "({x}, {y}): greyed");
+        assert!(says(&mut app, &ctx, &mut time, "Too short for satin"), "({x}, {y}): why");
+        keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    }
+    // A Satin kept on the dot (a live object made before): chosen, sewn as tatami.
+    set(&mut app, "areaChanges", json!([{"at": [20.5, 60.5], "color": "#c81e1e", "kind": "fill", "stitch": "satin"}]));
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 20, 60);
+    assert_eq!(satin(&mut app, &mut time), Some(true), "kept: shown, chosen");
+    assert!(says(&mut app, &ctx, &mut time, "Too short for satin: sewn as tatami"), "its reason");
 }
 
 /// The number in sewing order of the area the preview's keyboard is on.

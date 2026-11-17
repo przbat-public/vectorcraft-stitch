@@ -8936,8 +8936,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	इस क्षेत्र के लिए चुना गया
 embroidery	Sewn along its middle as one running line	बीच से एक रनिंग स्टिच रेखा के रूप में सिली जाती है
-embroidery	No part wider than {width} mm: satin	कोई भाग {width} mm से चौड़ा नहीं: सैटिन
+embroidery	No part wider than {width} mm	कोई भाग {width} mm से चौड़ा नहीं
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm से चौड़ा: टाटामी, संकरे भाग सैटिन के रूप में
+embroidery	Wider than {width} mm: tatami	{width} mm से चौड़ा: टाटामी
+embroidery	Its long parts as satin, the rest tatami	लंबे भाग सैटिन के रूप में, बाकी टाटामी
+embroidery	Too short for satin	सैटिन के लिए बहुत छोटा
+embroidery	Too short for satin: sewn as tatami	सैटिन के लिए बहुत छोटा: टाटामी में सिला जाता है
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	सैटिन के लिए रेखा कम से कम {least} mm चौड़ी चाहिए: यह {width} mm है।
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	सैटिन {most} mm तक के भाग सिलता है: यह क्षेत्र {width} mm चौड़ा है।
 @plural	about {count} stitch|about {count} stitches	लगभग {count} स्टिच|लगभग {count} स्टिच

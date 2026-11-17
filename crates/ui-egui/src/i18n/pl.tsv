@@ -7412,8 +7412,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Wybrane dla tego obszaru
 embroidery	Sewn along its middle as one running line	Szyty środkiem jedną linią ściegu prostego
-embroidery	No part wider than {width} mm: satin	Żadna część nie jest szersza niż {width} mm: satyna
+embroidery	No part wider than {width} mm	Żadna część nie jest szersza niż {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Szerszy niż {width} mm: tatami, węższe części jako satyna
+embroidery	Wider than {width} mm: tatami	Szerszy niż {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Długie części jako satyna, reszta tatami
+embroidery	Too short for satin	Za krótki na satynę
+embroidery	Too short for satin: sewn as tatami	Za krótki na satynę: szyty tatami
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satyna wymaga linii o szerokości co najmniej {least} mm: ta ma {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satyna szyje części do {most} mm: ten obszar ma {width} mm szerokości.
 @plural	about {count} stitch|about {count} stitches	ok. {count} ścieg|ok. {count} ściegi|ok. {count} ściegów

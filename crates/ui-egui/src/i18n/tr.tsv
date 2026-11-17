@@ -7510,8 +7510,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Bu alan için seçildi
 embroidery	Sewn along its middle as one running line	Ortasından tek bir düz dikiş çizgisiyle dikilir
-embroidery	No part wider than {width} mm: satin	{width} mm'den geniş bölüm yok: saten
+embroidery	No part wider than {width} mm	{width} mm'den geniş bölüm yok
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm'den geniş: tatami, daha dar bölümleri saten
+embroidery	Wider than {width} mm: tatami	{width} mm'den geniş: tatami
+embroidery	Its long parts as satin, the rest tatami	Uzun bölümleri saten, kalanı tatami
+embroidery	Too short for satin	Saten için çok kısa
+embroidery	Too short for satin: sewn as tatami	Saten için çok kısa: tatami olarak dikilir
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Saten en az {least} mm genişliğinde bir çizgi ister: bu çizgi {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Saten en fazla {most} mm genişliğindeki bölümleri diker: bu alan {width} mm genişliğinde.
 @plural	about {count} stitch|about {count} stitches	yaklaşık {count} dikiş

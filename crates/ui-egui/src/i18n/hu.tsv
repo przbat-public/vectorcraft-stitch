@@ -7541,8 +7541,12 @@ embroidery	Opens the Embroidery tab of Document Setup. This window comes back wh
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
 embroidery	Chosen for this area	Ehhez a területhez választva
 embroidery	Sewn along its middle as one running line	A közepén egyetlen egyenes öltésű vonalként hímezve
-embroidery	No part wider than {width} mm: satin	Egyik része sem szélesebb {width} mm-nél: szatén
+embroidery	No part wider than {width} mm	Egyik része sem szélesebb {width} mm-nél
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Szélesebb {width} mm-nél: tatami, a keskenyebb részei szaténként
+embroidery	Wider than {width} mm: tatami	Szélesebb {width} mm-nél: tatami
+embroidery	Its long parts as satin, the rest tatami	A hosszú részei szaténként, a többi tatami
+embroidery	Too short for satin	Túl rövid a szaténhoz
+embroidery	Too short for satin: sewn as tatami	Túl rövid a szaténhoz: tatamival varrva
 embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	A szaténhoz legalább {least} mm széles vonal kell: ez {width} mm.
 embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	A szatén legfeljebb {most} mm-es részeket hímez: ez a terület {width} mm széles.
 @plural	about {count} stitch|about {count} stitches	kb. {count} öltés

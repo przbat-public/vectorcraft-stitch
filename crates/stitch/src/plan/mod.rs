@@ -71,6 +71,7 @@ pub use fill::MIN_AREA;
 pub use fill::TATAMI_UNDERLAY_MIN;
 #[cfg(test)]
 pub(crate) use fill::fill_with_columns;
+pub use fill::rest_sews;
 pub use joins::{JoinShape, Joined, Link, MAX_JOIN_EDGES, Role, apart, joined_cost, joins, move_cost, stitches_cost, thinned_to};
 pub use narrow::{Column, columns as narrow_columns, columns_until as narrow_columns_until};
 pub use runs::{Carried, join_cut, join_cut_carrying, lock_step};

@@ -13,11 +13,12 @@
 //! (`vectorcraft_doc::cancel`) stops a run between stages and within each; the stages it finished
 //! stay kept. Timing is the stages' own (none on the web, which has no clock).
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use serde_json::{Value, json};
 use vectorcraft_doc::embroidery::{EmbroiderySetup, ThreadPalette};
-use vectorcraft_doc::{Document, ImageObject, NodeId};
+use vectorcraft_doc::{Document, ImageObject, NodeId, NodeKind};
 use vectorcraft_render::lines::{LinePicture, LinePictureBuilder};
 use vectorcraft_stitch::thread::Palette;
 
@@ -507,11 +508,33 @@ pub const SATIN_AREA_MOST_MM: f64 = vectorcraft_stitch::plan::NARROW_RANGE.1;
 pub const SATIN_LINE_LEAST_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
 impl AreaFacts {
-    /// Whether Satin is offered on it: a filled area at most [`SATIN_AREA_MOST_MM`] wide at its
-    /// widest, a line at least [`SATIN_LINE_LEAST_MM`] wide (a line not found yet: not).
-    pub fn satin_fits(&self) -> bool {
+    /// Whether its widths let Satin be offered on it: a filled area at most [`SATIN_AREA_MOST_MM`]
+    /// wide at its widest, a line at least [`SATIN_LINE_LEAST_MM`] wide (a line not found yet: not).
+    /// Whether the planner then sews satin in it is [`Outputs::satin_offer`]'s to say.
+    pub fn satin_width_fits(&self) -> bool {
         if self.line { self.line_width_mm.is_some_and(|w| w >= SATIN_LINE_LEAST_MM) } else { self.widest_mm <= SATIN_AREA_MOST_MM }
     }
+}
+
+/// What the planner sews of a filled area with its narrow parts as satin ([`Outputs::satin_parts`]):
+/// no satin column, satin columns beside a tatami rest, or satin columns alone (the rest's slivers
+/// left out, as the planner leaves them).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SatinParts {
+    None,
+    Some,
+    All,
+}
+
+/// Whether Satin is offered on an area ([`Outputs::satin_offer`]), or why not: a filled area too
+/// wide, a line too narrow, or a filled area in which the planner sews no satin column at the width
+/// Create would give it (a compact one: a dot, a small square).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SatinOffer {
+    Fits,
+    TooWide,
+    TooNarrow,
+    TooShort,
 }
 
 /// What finds an area again after the settings change: a point inside it (its deepest, in the
@@ -563,7 +586,14 @@ pub struct Outputs {
     pub(super) plan: Option<Numbered<PlanOut>>,
     /// The palette the run matched threads to.
     palette: Option<Palette>,
+    /// What the planner sews of the run's areas with narrow parts as satin, by area and width (`None`:
+    /// as planned), as worked out once its stitches are planned ([`Outputs::satin_parts`]).
+    satin: Arc<SatinKept>,
 }
+
+/// What the planner sews of an area with narrow parts as satin, by the area's index and the width
+/// asked (its bits; `None`: as planned).
+type SatinKept = Mutex<HashMap<(usize, Option<u64>), SatinParts>>;
 
 /// The outputs are handed to the window's thread and back.
 const _: () = {
@@ -964,6 +994,68 @@ impl Outputs {
     /// command's own code from their plan, once the stitches are planned.
     pub fn query(&self, cmd: &str, params: &Value) -> Option<Result<Value>> {
         self.plan.as_ref()?.value.planned.as_ref().map(|(planner, _)| planner.query(cmd, params))
+    }
+
+    /// What the planner sews of the filled area under working pixel `(x, y)` with narrow parts as
+    /// satin up to `narrow` millimetres (`None`: the width its object is planned with): the planner's
+    /// own parting of the object made of it, its path in millimetres grown by its `expand`, as the
+    /// plan parts a fill (the project owner's choice, 2026-11-17, „Z planu ściegów (polecam)”).
+    /// `None` for a line, before its stitches are planned (its object's settings are the plan's),
+    /// with narrow parts as satin off, or when it can't be worked out. Kept for the run once worked
+    /// out.
+    pub fn satin_parts(&self, x: u32, y: u32, narrow: Option<f64>) -> Option<SatinParts> {
+        let a = self.lines.as_ref()?.value.areas.regions.at(x, y)? as usize;
+        let key = (a, narrow.map(f64::to_bits));
+        if let Some(kept) = self.satin.lock().ok().and_then(|m| m.get(&key).copied()) {
+            return Some(kept);
+        }
+        if self.area_at(x, y)?.line {
+            return None;
+        }
+        let id = self.area_object(x, y)?;
+        let info = self.query("embroidery.info", &json!({"ids": [id.0]}))?.ok()?;
+        let settings = &info["fill"]["settings"];
+        let narrow = narrow.or_else(|| settings["narrowAsSatin"]["value"].as_f64()).filter(|n| n.is_finite() && *n > 0.0)?;
+        let expand = settings["expand"]["value"].as_f64().filter(|e| e.is_finite()).unwrap_or(0.0);
+        let (doc, _) = self.made()?;
+        let node = doc.node(id)?;
+        let rule = match &node.kind {
+            NodeKind::Path { rule, .. } | NodeKind::Compound { rule, .. } => *rule,
+            _ => return None,
+        };
+        let shape = super::super::digitize::in_mm(&super::super::info::path_of(node));
+        let found = super::super::unit::satin_found(&shape, rule, expand, narrow).ok()?;
+        let parts = match found {
+            super::super::unit::SatinFound { columns: false, .. } => SatinParts::None,
+            super::super::unit::SatinFound { rest: true, .. } => SatinParts::Some,
+            super::super::unit::SatinFound { .. } => SatinParts::All,
+        };
+        if let Ok(mut kept) = self.satin.lock() {
+            kept.insert(key, parts);
+        }
+        Some(parts)
+    }
+
+    /// Whether Satin is offered on the area under working pixel `(x, y)`, or why not: a line at
+    /// least [`SATIN_LINE_LEAST_MM`] wide; a filled area at most [`SATIN_AREA_MOST_MM`] wide at its
+    /// widest in which the planner sews satin columns at the width Create would give it (its widest
+    /// and the overlap on either side), not a compact one (a dot, a small square), whose choice
+    /// would change nothing (the project owner's choice, 2026-11-17, „Tylko tam, gdzie zadziała
+    /// (polecam)”). Before the stitches are planned, by the widths alone. `None` where there is no
+    /// area. The one test the window offers Satin by, Apply to Similar Areas too.
+    pub fn satin_offer(&self, x: u32, y: u32) -> Option<SatinOffer> {
+        let facts = self.area_at(x, y)?;
+        if facts.line {
+            return Some(if facts.satin_width_fits() { SatinOffer::Fits } else { SatinOffer::TooNarrow });
+        }
+        if !facts.satin_width_fits() {
+            return Some(SatinOffer::TooWide);
+        }
+        let overlap = self.shapes.as_ref()?.value.overlap;
+        Some(match self.satin_parts(x, y, Some(create::satin_width(facts.widest_mm, overlap))) {
+            Some(SatinParts::None) => SatinOffer::TooShort,
+            _ => SatinOffer::Fits,
+        })
     }
 }
 

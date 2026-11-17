@@ -1100,11 +1100,6 @@ mod tests {
         assert_eq!(serde_json::to_value(&unread).unwrap(), json!({"trim_after": true}));
     }
 
-    /// A run's mark, cuts, stops and stop, and an object's Stop After and kept original, round-trip
-    /// as they were written; of another shape (a mark that isn't true or false, a list holding
-    /// something that isn't an index, an original without a frame of six numbers and a node), they
-    /// are kept as they were and read as unset, so nothing a newer version or another maker wrote is
-    /// lost.
     /// A live object's digitizing: its settings (whatever they hold, kept as written), its
     /// fingerprint and its size read; saved back as it was. One of another shape (not an object,
     /// settings that aren't one) is kept as it is, unread: the object is no live one here.
@@ -1148,6 +1143,11 @@ mod tests {
         assert_eq!(older.extra.get("digitizing"), Some(&digitizing), "kept unread by an older version");
     }
 
+    /// A run's mark, cuts, stops and stop, and an object's Stop After and kept original, round-trip
+    /// as they were written; of another shape (a mark that isn't true or false, a list holding
+    /// something that isn't an index, an original without a frame of six numbers and a node), they
+    /// are kept as they were and read as unset, so nothing a newer version or another maker wrote is
+    /// lost.
     #[test]
     fn marks_stops_and_originals_round_trip() {
         let original = json!({"frame": [1.0, 0.0, 0.0, 1.0, 10.0, -5.5], "node": {"id": 7, "kind": {"type": "path"}}, "fingerprint": "00000000deadbeef", "made": "x"});

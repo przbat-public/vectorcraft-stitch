@@ -10,8 +10,8 @@
 //! - that badge's working copy painted in its threads' colours, as the Colours view shows it;
 //! - a fabric chosen in the Stitches step after a first run: the objects and their stitches made;
 //! - the colour outlines and the border turned on after a first run: the same, with the outlines;
-//! - one area changed after a first run (left unsewn, as the inspector's Don't Sew changes it): the
-//!   objects and their stitches made again.
+//! - one area left unsewn after a first run (as the inspector's Don't Sew changes it): the stages
+//!   from the shapes on made again, so that what lies inside it keeps its hole.
 
 use std::time::Instant;
 
@@ -32,7 +32,7 @@ pub(super) const ROWS: [&str; 9] = [
     "window: painted raster, 1,500 px badge",
     "window: a fabric chosen, objects on",
     "window: outlines and border, objects on",
-    "window: an area changed, objects on",
+    "window: an area left unsewn, shapes on",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: [`BUDGET_TIMES`] what each measured,
@@ -62,9 +62,11 @@ const KEPT_BUDGET_MS: f64 = 1.0;
 /// 1,500-pixel badge in logo mode 564, its painted raster 0.91; on 2026-11-13 at a load of about
 /// 2.6, a fabric chosen 8.43 (the objects and their stitches made again) and the outlines and the
 /// border turned on 1.13 (the planning service the window shares already holds the areas' plans, so
-/// only the outline objects are planned, an object a line); on 2026-11-16 at a load of about 2.5, an
-/// area changed 4.21 (the objects made again, only the changed area's object planned again).
-const MEASURED_MS: [f64; 9] = [228.0, 93.4, 222.0, 0.0, 564.0, 0.91, 8.43, 1.13, 4.21];
+/// only the outline objects are planned, an object a line); on 2026-11-17 at a load of about 2.5, an
+/// area left unsewn 58.2 (the stages from the shapes on made again, as Don't Sew may leave a hole in
+/// what lies round the area; it measured 4.21 on 2026-11-16, when an area changed made the objects
+/// again alone).
+const MEASURED_MS: [f64; 9] = [228.0, 93.4, 222.0, 0.0, 564.0, 0.91, 8.43, 1.13, 58.2];
 
 /// The large badge's resolution (pixels a millimetre): 1,500 pixels over its 108 mm with its
 /// margins, the working copy's largest side.

@@ -15,8 +15,8 @@
 //! - logo mode to its result: within 1,000 ms;
 //! - the Stitches step's fabric chosen (denim) to its result, from the objects on: within 250 ms;
 //! - the colour outlines and the border turned on to their result: within 500 ms;
-//! - one area changed (the first in sewing order left unsewn, as the inspector's Don't Sew changes
-//!   it), the outlines on, to its result: within 250 ms;
+//! - one area left unsewn (the first in sewing order, as the inspector's Don't Sew changes it), the
+//!   outlines on, to its result, the stages from the shapes on made again: within 250 ms;
 //! - Compare's split dragged for 90 frames: nothing uploaded.
 //!
 //! The budgets are the plan's; the table of what was measured is printed.
@@ -41,13 +41,15 @@ const LARGE_COLOURS_STEP_BUDGET_MS: f64 = 500.0;
 const LARGE_PICTURE_PX: u32 = 1000;
 const LOGO_MODE_BUDGET_MS: f64 = 1000.0;
 /// A change of the Stitches step reruns the objects and their stitches alone: as quick as a step of
-/// the number of colours on a small picture, the window's other click (an estimate; measured before
-/// any code at 0.4 to 59 ms, the gate-0 note). The outlines add their geometry and the planner's
+/// the number of colours on a small picture, the window's other click (an estimate; measured at 0.4
+/// to 59 ms before any of the window's code was written). The outlines add their geometry and the planner's
 /// running lines and satin border: twice that (an estimate).
 const FABRIC_BUDGET_MS: f64 = 250.0;
 const OUTLINES_BUDGET_MS: f64 = 500.0;
-/// An area changed in the inspector reruns the objects and their stitches alone, as a fabric chosen
-/// does: the same budget (an estimate).
+/// An area left unsewn in the inspector (Don't Sew) runs the stages again from the shapes on, so
+/// that what lies inside it keeps its hole: more than a fabric chosen, which runs the objects and
+/// their stitches again alone, within the same budget all the same (an estimate, the measure
+/// recorded in `docs/embroidery.md`).
 const AREA_CHANGE_BUDGET_MS: f64 = FABRIC_BUDGET_MS;
 /// The window, points, and its pixels a point: a laptop's display.
 const WINDOW: [f32; 2] = [1440.0, 900.0];

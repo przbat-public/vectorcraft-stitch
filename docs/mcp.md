@@ -8599,8 +8599,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
   its thread's own colour (a line, a stroke along its centre line), embroidery settings set only where a colour's job
   asks (`fill`: `narrowAsSatin` 0; `none`: not sewn) or a line's stroke is 1 mm wide or more (`stitch: "running"`),
-  and as an area's changes ask (tatami: `narrowAsSatin` 0; satin: `narrowAsSatin` the area's widest part with the
-  overlap on either side, rounded up to tenths, at most 12; none: not sewn; an angle as the fill's angle; a line's
+  and as an area's changes ask (tatami: `narrowAsSatin` 0; satin: `narrowAsSatin` the widest part of the shape the
+  area is made as, with the islands it is made solid under and its shares of the centre lines beside it (its own is
+  `widest`), and the overlap on either side, rounded up to tenths, at most 12; none: not sewn; an angle as the fill's angle; a line's
   stitch on its stroke);
   the outlines asked for come last, each kind a block of its own in the outline thread, a stroke object a line,
   nearest first, so that the needle lifts between them: "Color outlines" (drawn 0.4 mm wide, sewn as a running line),
@@ -8611,7 +8612,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   image first in it, hidden, the colour blocks after it, its embroidery's `digitizing` holding the settings it was
   made with by their file keys (all but `width`, `height` and `fit`: its size is its image's as placed), a
   fingerprint of its objects and its size in millimetres; given as `id` with `live: true` it is digitized again in its
-  place keeping its id, and without `live` it becomes plain objects, its image back on a template layer.
+  place keeping its id, and without `live` it becomes plain objects, its image back on a template layer (where the
+  live object's place isn't sewn, its image left in that place, as an image's is); the image it holds, given as `id`,
+  stands for it.
   `imageTrace.make` and `makeAndExpand` refuse a live object ("change it in Digitize Image…"). One undo step "Digitize
   Image", the new group selected; Nearest Connection is not run. More than 10,000
   areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
@@ -8643,7 +8646,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `noArea` (nothing sewn there: the background, or past the crop), `otherKind` (its area is of the other kind now) or
   `notSewn` (its area's colour isn't sewn); an area's `change` is `{stitch?, angle?}`, what the changes that apply to
   it set (null when none). `edited` says whether the live object given as `id` was edited by hand since it was made
-  (its objects' fingerprint, taken in its image's frame, so that moving, turning or scaling it edits nothing; null
+  (its objects' fingerprint, taken in its image's frame, so that moving, turning or scaling it, its strokes scaled with it or kept as they were made, edits nothing; null
   when it is no live object). An area's `area` is its number in
   this reply's sewing order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its
   colour. The rest, in full: `created` is the group made, the layer holding the image, and how many objects and colour

@@ -9082,3 +9082,5 @@ embroidery	Don't Replace	Ersätt inte
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Det här dynamiska objektet gjordes i en annan trådpalett: dess färger matchas mot dokumentets palett igen.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Dynamiskt digitaliserade bilder skalade med mer än {value} % sedan de digitaliserades: digitalisera dem igen
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	ett dynamiskt broderiobjekt: ändra det i ”Digitalisera bild…” (Objekt › Bildkalkering)

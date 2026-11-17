@@ -7435,3 +7435,5 @@ embroidery	Don't Replace	不替换
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	此实时对象是用另一个线色板制作的：其颜色将重新匹配文档的色板。
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	数字化后缩放超过 {value}% 的实时数字化图像：请重新数字化
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	实时刺绣对象：请在“数字化图像…”中更改（对象 › 图像描摹）

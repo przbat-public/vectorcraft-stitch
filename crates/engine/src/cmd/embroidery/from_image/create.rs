@@ -82,15 +82,18 @@ const SATIN_MIN_WIDTH: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 pub(super) const NO_SATIN_MM: f64 = vectorcraft_stitch::plan::NARROW_RANGE.0;
 
 /// What Create made: the design's group, the layer holding the image (the new template layer, or
-/// the one it stayed on) and whether Create added it, the image's id, how many objects and colour
-/// blocks the design is, what its outlines came to, the object each area was made into (its place
-/// in the areas, the object's id), and whether the design is a live object (`super::live`).
+/// the one it stayed on) and whether Create added it, the image's id and the transform that places
+/// it as the design is scaled (an upstream Image Trace object left where its place isn't sewn keeps
+/// its own: a live object made of it takes a copy placed so), how many objects and colour blocks
+/// the design is, what its outlines came to, the object each area was made into (its place in the
+/// areas, the object's id), and whether the design is a live object (`super::live`).
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Made {
     pub(super) group: NodeId,
     pub(super) layer: NodeId,
     pub(super) added_layer: bool,
     pub(super) image: NodeId,
+    pub(super) image_xf: Affine,
     pub(super) objects: usize,
     pub(super) blocks: usize,
     pub(super) outlined: Option<Outlined>,
@@ -320,6 +323,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
     let mut made_of: Vec<(usize, NodeId)> = Vec::new();
     let src = doc.node(target).cloned().ok_or(EngineError::NoNode(target))?;
     let traced = matches!(src.kind, NodeKind::Group { .. }) && src.name.as_deref() == Some(TRACE_NAME);
+    let live_target = traced && super::live::live_digitizing(&src).is_some();
     let mut image = if traced { src.children().and_then(|c| c.first()).map(|c| (**c).clone()).ok_or(EngineError::NoNode(target))? } else { src };
     let NodeKind::Image(img) = &mut image.kind else {
         return Err(bad(C, "not an image: select an image, or an Image Trace object"));
@@ -402,7 +406,15 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         doc.insert(Some(layer), usize::MAX, group)?;
         let NodeKind::Image(scaled) = &image.kind else { return Err(bad(C, "not an image: select an image, or an Image Trace object")) };
         let xf = scaled.xf;
-        if let Some(NodeKind::Image(img)) = doc.node_mut(image.id).map(|n| &mut n.kind) {
+        if live_target {
+            // A live object becomes its image there, shown, as a picture to work over: its old
+            // objects go, so that showing its place later sews no second design.
+            let (parent, index, _) = doc.position(target).ok_or(EngineError::NoNode(target))?;
+            doc.remove(target)?;
+            doc.insert(parent, index, image.clone())?;
+        } else if !traced && let Some(NodeKind::Image(img)) = doc.node_mut(image.id).map(|n| &mut n.kind) {
+            // An image stays where it is, scaled as the design is; an upstream Image Trace object
+            // stays as it is, its source image too, so that it still lies under its result.
             img.xf = xf;
         }
         let image = image.id;
@@ -411,6 +423,7 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
             layer: below,
             added_layer: false,
             image,
+            image_xf: xf,
             objects,
             blocks: count,
             outlined,
@@ -432,6 +445,19 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         }
     }
     let image_id = image.id;
+    let NodeKind::Image(scaled) = &image.kind else { return Err(bad(C, "not an image: select an image, or an Image Trace object")) };
+    let image_xf = scaled.xf;
     doc.insert(Some(layer), 0, image)?;
-    Ok(Some(Made { group: id, layer, added_layer: true, image: image_id, objects, blocks: count, outlined, areas: made_of.into(), live: false }))
+    Ok(Some(Made {
+        group: id,
+        layer,
+        added_layer: true,
+        image: image_id,
+        image_xf,
+        objects,
+        blocks: count,
+        outlined,
+        areas: made_of.into(),
+        live: false,
+    }))
 }

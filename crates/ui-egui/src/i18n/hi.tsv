@@ -8976,3 +8976,5 @@ embroidery	Don't Replace	न बदलें
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	यह लाइव ऑब्जेक्ट किसी दूसरे धागा पैलेट में बना था: इसके रंग फिर से दस्तावेज़ के पैलेट से मिलाए जाते हैं।
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	डिजिटाइज़ होने के बाद {value}% से अधिक स्केल की गई लाइव डिजिटाइज़ इमेज: उन्हें फिर से डिजिटाइज़ करें
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	एक लाइव कढ़ाई ऑब्जेक्ट: इसे “इमेज डिजिटाइज़ करें…” में बदलें (ऑब्जेक्ट › इमेज ट्रेस)

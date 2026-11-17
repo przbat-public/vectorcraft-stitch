@@ -7178,3 +7178,5 @@ embroidery	Don't Replace	바꾸지 않음
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	이 라이브 개체는 다른 실 팔레트에서 만들어졌습니다. 색상을 문서의 팔레트에 다시 맞춥니다.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	디지타이징 후 {value}% 넘게 크기가 조정된 라이브 디지타이징 이미지: 다시 디지타이징하세요
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	라이브 자수 개체입니다. '이미지 디지타이징…'에서 변경하세요(개체 › 이미지 추적)

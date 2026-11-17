@@ -82,9 +82,14 @@ fn named(s: &Session, name: &str) -> usize {
     s.doc().unwrap().doc.layers.iter().map(|l| walk(l, name)).sum()
 }
 
-/// The live object made of the picture with `params` (and `live: true`), and its id.
+/// The live object made of the picture with `params` (and `live: true`), its id and its image's.
 fn live_made(params: Value) -> (Session, NodeId, NodeId) {
-    let (mut s, image) = placed(&picture());
+    live_made_of(&picture(), params)
+}
+
+/// The live object made of `raster` with `params` (and `live: true`), its id and its image's.
+fn live_made_of(raster: &tr::Raster, params: Value) -> (Session, NodeId, NodeId) {
+    let (mut s, image) = placed(raster);
     let mut p = params;
     p["live"] = json!(true);
     let r = s.execute("embroidery.digitizeImage", &p).unwrap();
@@ -94,7 +99,8 @@ fn live_made(params: Value) -> (Session, NodeId, NodeId) {
 
 #[test]
 fn keep_as_live_object_makes_an_image_trace_object_holding_the_image_first() {
-    let (s, live, image) = live_made(json!({"colors": 3}));
+    // A width given (the picture's own, 30 mm): kept by no live object, its size its image's.
+    let (s, live, image) = live_made(json!({"colors": 3, "width": 30.0}));
     let n = node(&s, live);
     assert_eq!(n.name.as_deref(), Some(TRACE_NAME), "named as Image Trace names its objects");
     assert!(n.extras().trace.as_deref().is_some(), "a trace value");
@@ -160,10 +166,196 @@ fn a_live_objects_hand_edits_are_found_and_moving_it_edits_nothing() {
     assert_eq!(plain.execute("embroidery.digitizeImage", &json!({"dryRun": true})).unwrap()["edited"], Value::Null, "an image: no live object");
 }
 
+/// An orange square holding a navy one too wide to be sewn over it (the orange made a compound path
+/// with a hole), and a navy line 0.6 mm wide (a stroke along its middle), on white.
+fn hole_and_line() -> tr::Raster {
+    tr::Raster::from_fn(300, 200, |x, y| {
+        if inside(x, y, [70, 70, 130, 130]) || inside(x, y, [220, 20, 226, 180]) {
+            NAVY
+        } else if inside(x, y, [20, 20, 180, 180]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    })
+}
+
+/// The first of live object `live`'s objects (its image aside, groups and compound paths
+/// included, in drawing order) that `wanted` takes.
+fn object_where(s: &Session, live: NodeId, wanted: impl Fn(&Node) -> bool) -> Option<NodeId> {
+    let n = node(s, live);
+    let mut stack: Vec<&Node> = n.children()?.iter().skip(1).rev().map(|c| c.as_ref()).collect();
+    while let Some(c) = stack.pop() {
+        if wanted(c) {
+            return Some(c.id);
+        }
+        stack.extend(c.children().into_iter().flatten().rev().map(|c| c.as_ref()));
+    }
+    None
+}
+
+/// Whether live object `live` reads as edited by hand, as its dry run says.
+fn edited_now(s: &mut Session, live: NodeId) -> Value {
+    s.execute("embroidery.digitizeImage", &json!({"id": live.0, "dryRun": true})).unwrap()["edited"].clone()
+}
+
+/// A compound path's own look and settings are its object's (Create paints an area with a hole,
+/// and sets its stitch, on its compound path): recolouring it, or setting its rows' angle, is an
+/// edit. The orange square is made with an angle of its own, so that the hand edit changes a
+/// setting it already has.
+#[test]
+fn a_compound_paths_look_and_settings_are_read_for_hand_edits() {
+    let changes = json!([{"at": [50.5, 50.5], "color": hex(ORANGE), "kind": "fill", "angle": 30.0}]);
+    for edit in ["recolour", "angle"] {
+        let (mut s, live, _) = live_made_of(&hole_and_line(), json!({"colors": 3, "areaChanges": changes.clone()}));
+        let compound = object_where(&s, live, |n| matches!(n.kind, NodeKind::Compound { .. })).expect("the orange square with its hole");
+        let angle = node(&s, compound).extras().embroidery.as_deref().and_then(|e| e.fill.as_deref()).and_then(|p| p.angle);
+        assert_eq!(angle, Some(30.0), "{edit}: made with its own angle");
+        assert_eq!(edited_now(&mut s, live), json!(false), "{edit}: as made");
+        if edit == "recolour" {
+            s.edit("recolour", |d, _| {
+                let o = d.node_mut(compound).ok_or(crate::EngineError::NoNode(compound))?;
+                let green = vectorcraft_color::Paint::solid(vectorcraft_color::Color::rgb8(0, 255, 0));
+                o.appearance = vectorcraft_doc::Appearance::basic(green, vectorcraft_color::Paint::None, 0.0).into();
+                Ok(())
+            })
+            .unwrap();
+        } else {
+            s.execute("embroidery.set", &json!({"ids": [compound.0], "part": "fill", "angle": 33})).unwrap();
+        }
+        assert_eq!(edited_now(&mut s, live), json!(true), "{edit}");
+    }
+}
+
+/// A path's handles are its shape: one drawn out of its anchor is an edit, though the anchor stays.
+#[test]
+fn a_handle_drawn_out_is_a_hand_edit() {
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    let path = object_where(&s, live, |n| n.path_data().is_some_and(|p| !p.subpaths.is_empty())).expect("a path");
+    s.edit("handle", |d, _| {
+        let data = d.node_mut(path).and_then(Node::path_data_mut).ok_or(crate::EngineError::NoNode(path))?;
+        if let Some(a) = data.subpaths.first_mut().and_then(|sp| sp.anchors.first_mut()) {
+            a.h_out = a.p + vectorcraft_geom::Vec2::new(2.0, 1.0);
+        }
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(true));
+}
+
+/// Scaled with its strokes (Scale Strokes & Effects) and turned, a live object's line keeps its
+/// weight in the image's frame, and its set angles turn with it: no edit. Its line's weight set by
+/// hand is one.
+#[test]
+fn a_live_object_scaled_with_its_strokes_edits_nothing() {
+    let changes = json!([{"at": [50.5, 50.5], "color": hex(ORANGE), "kind": "fill", "angle": 30.0}]);
+    let (mut s, live, _) = live_made_of(&hole_and_line(), json!({"colors": 3, "areaChanges": changes}));
+    let stroked = |n: &Node| n.appearance.items.iter().any(|i| matches!(i, vectorcraft_doc::AppearanceItem::Stroke(_)));
+    let line = object_where(&s, live, stroked).expect("the line, a stroke");
+    transformed(&mut s, live, Affine::rotate(0.3) * Affine::scale(1.5));
+    assert_eq!(edited_now(&mut s, live), json!(false), "scaled with its strokes, turned");
+    s.edit("weight", |d, _| {
+        let n = d.node_mut(line).ok_or(crate::EngineError::NoNode(line))?;
+        n.appearance.scale_strokes(2.0);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(true), "its weight doubled");
+}
+
+/// Scaled with its strokes kept as they were made (Scale Strokes & Effects off, the default), a live
+/// object's line keeps its weight as made: no edit either.
+#[test]
+fn a_live_object_scaled_with_its_strokes_kept_edits_nothing() {
+    let (mut s, live, _) = live_made_of(&hole_and_line(), json!({"colors": 3}));
+    let stroked = |n: &Node| n.appearance.items.iter().any(|i| matches!(i, vectorcraft_doc::AppearanceItem::Stroke(_)));
+    assert!(object_where(&s, live, stroked).is_some(), "the line, a stroke");
+    s.edit("scale", |d, _| {
+        d.node_mut(live).ok_or(crate::EngineError::NoNode(live))?.transform(Affine::scale(1.5), false);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(false), "scaled, its strokes kept");
+}
+
+/// A slanted picture's live object, scaled with its strokes kept as they were made, edits nothing:
+/// its scale as made takes the slant between its sides.
+#[test]
+fn a_slanted_live_object_scaled_with_its_strokes_kept_edits_nothing() {
+    let (mut s, image) = placed(&hole_and_line());
+    transformed(&mut s, image, Affine::skew(0.25, 0.0));
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": image.0, "live": true, "colors": 3})).unwrap();
+    let live = NodeId(r["created"]["group"].as_u64().unwrap());
+    let stroked = |n: &Node| n.appearance.items.iter().any(|i| matches!(i, vectorcraft_doc::AppearanceItem::Stroke(_)));
+    assert!(object_where(&s, live, stroked).is_some(), "the line, a stroke");
+    assert_eq!(edited_now(&mut s, live), json!(false), "as made");
+    s.edit("scale", |d, _| {
+        d.node_mut(live).ok_or(crate::EngineError::NoNode(live))?.transform(Affine::scale(1.5), false);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(false), "scaled, its strokes kept");
+}
+
+/// A set angle is read as the direction it gives: a live object made with angles of 270° and 180°
+/// (the same rows as −90° and −180°) and turned edits nothing.
+#[test]
+fn a_live_objects_angles_are_read_as_directions() {
+    for angle in [270.0, 180.0, -180.0] {
+        let changes = json!([{"at": [50.5, 50.5], "color": hex(ORANGE), "kind": "fill", "angle": angle}]);
+        let (mut s, live, _) = live_made_of(&hole_and_line(), json!({"colors": 3, "areaChanges": changes}));
+        transformed(&mut s, live, Affine::rotate(std::f64::consts::FRAC_PI_2));
+        assert_eq!(edited_now(&mut s, live), json!(false), "{angle}°, turned a quarter");
+    }
+}
+
+/// What changes what is sewn of an object, or how it shows, is a hand edit: one of its lines made a
+/// guide or a clipping path, an object's opacity set to 0 or its blending to Multiply, a compound
+/// path's fill rule set to Even-Odd, a colour block made a clip group.
+#[test]
+fn a_guide_a_fill_rule_a_clip_an_opacity_or_a_blend_set_is_a_hand_edit() {
+    for edit in ["guide", "clipping", "opacity", "blend", "rule", "clip"] {
+        let (mut s, live, _) = live_made_of(&hole_and_line(), json!({"colors": 3}));
+        let target = match edit {
+            "rule" => object_where(&s, live, |n| matches!(n.kind, NodeKind::Compound { .. })),
+            "clip" => node(&s, live).children().and_then(|c| c.get(1)).map(|b| b.id),
+            _ => object_where(&s, live, |n| matches!(n.kind, NodeKind::Path { .. })),
+        }
+        .expect("an object to edit");
+        s.edit(edit, |d, _| {
+            let n = d.node_mut(target).ok_or(crate::EngineError::NoNode(target))?;
+            match (edit, &mut n.kind) {
+                ("guide", NodeKind::Path { guide, .. }) => *guide = true,
+                ("clipping", NodeKind::Path { clipping, .. }) => *clipping = true,
+                ("rule", NodeKind::Compound { rule, .. }) => *rule = vectorcraft_geom::FillRule::EvenOdd,
+                ("clip", NodeKind::Group { clip, .. }) => *clip = true,
+                ("opacity", _) => n.opacity = 0.0,
+                ("blend", _) => n.blend = vectorcraft_color::BlendMode::Multiply,
+                _ => panic!("{edit}: not that kind of object"),
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(edited_now(&mut s, live), json!(true), "{edit}");
+    }
+}
+
+/// The image a live object holds stands for it: digitizing it digitizes the live object again (its
+/// id kept, no second live object made inside it), and its dry run says whether it was edited.
+#[test]
+fn a_live_objects_image_stands_for_it() {
+    let (mut s, live, image) = live_made(json!({"colors": 3}));
+    let dry = s.execute("embroidery.digitizeImage", &json!({"id": image.0, "dryRun": true})).unwrap();
+    assert_eq!(dry["edited"], json!(false), "the live object's: {}", dry["edited"]);
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": image.0, "live": true, "colors": 2})).unwrap();
+    assert_eq!(r["created"]["group"], json!(live.0), "the live object digitized again");
+    assert_eq!(named(&s, TRACE_NAME), 1, "one live object");
+}
+
 #[test]
 fn a_turned_live_object_keeps_each_changes_angle_to_the_art() {
     let changes = json!([{"at": [80.5, 100.5], "color": hex(ORANGE), "kind": "fill", "angle": 30.0}]);
-    let (mut s, live, _) = live_made(json!({"colors": 3, "areaChanges": changes}));
+    let (mut s, live, _) = live_made(json!({"colors": 3, "width": 30.0, "areaChanges": changes}));
     transformed(&mut s, live, Affine::rotate(std::f64::consts::FRAC_PI_2));
     let fields = live_settings(&node(&s, live)).expect("its settings");
     let angle = fields["areaChanges"][0]["angle"].as_f64().unwrap();
@@ -192,6 +384,60 @@ fn create_on_a_live_object_makes_plain_objects() {
     assert!(template.children().is_some_and(|c| c.iter().any(|c| c.id == image)), "its image on the template layer");
 }
 
+/// Create on a live object whose place isn't sewn (its layer hidden) makes the plain design on a
+/// layer above, and the live object becomes its image there, shown: no second design is left
+/// inside it to be sewn once the layer is shown.
+#[test]
+fn create_on_a_live_object_whose_place_isnt_sewn_leaves_its_image_there() {
+    let (mut s, live, image) = live_made(json!({"colors": 3}));
+    let layer = s.doc().unwrap().doc.layer_of(live).expect("its layer");
+    s.edit("hide", |d, _| {
+        d.node_mut(layer).ok_or(crate::EngineError::NoNode(layer))?.visible = false;
+        Ok(())
+    })
+    .unwrap();
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": live.0, "colors": 3})).unwrap();
+    assert_eq!(r["created"]["live"], json!(false));
+    let group = NodeId(r["created"]["group"].as_u64().unwrap());
+    assert_eq!(named(&s, TRACE_NAME), 0, "no live object left");
+    let d = &s.doc().unwrap().doc;
+    let left = d.node(image).expect("its image");
+    assert!(matches!(left.kind, NodeKind::Image(_)) && left.visible && d.layer_of(image) == Some(layer), "its image in its place, shown");
+    assert!(d.layer_of(group).is_some_and(|l| l != layer), "the design on another layer");
+}
+
+/// Keep as Live Object on an upstream Image Trace object whose place isn't sewn leaves that object
+/// whole, its source image first in it and placed as it was (its View, Expand and Release still
+/// work), though the design is made at another size; the live object holds a copy of the image,
+/// placed as the design is.
+#[test]
+fn keep_as_live_object_on_a_trace_whose_place_isnt_sewn_leaves_the_trace_whole() {
+    let (mut s, image) = placed(&picture());
+    let trace = NodeId(s.execute("imageTrace.make", &json!({"id": image.0})).unwrap()["id"].as_u64().unwrap());
+    let placed_xf = |s: &Session, id: NodeId| match &node(s, id).kind {
+        NodeKind::Image(i) => Some(i.xf),
+        _ => None,
+    };
+    let before = placed_xf(&s, image);
+    let layer = s.doc().unwrap().doc.layer_of(trace).expect("its layer");
+    s.edit("hide", |d, _| {
+        d.node_mut(layer).ok_or(crate::EngineError::NoNode(layer))?.visible = false;
+        Ok(())
+    })
+    .unwrap();
+    // Twice the width the picture is placed at (30 mm).
+    let r = s.execute("embroidery.digitizeImage", &json!({"id": trace.0, "live": true, "colors": 3, "width": 60.0})).unwrap();
+    let live = NodeId(r["created"]["group"].as_u64().unwrap());
+    let first = |id: NodeId| node(&s, id).children().and_then(|c| c.first()).map(|c| (c.id, matches!(c.kind, NodeKind::Image(_))));
+    assert_eq!(first(trace), Some((image, true)), "the trace object keeps its image first");
+    assert_eq!(placed_xf(&s, image), before, "placed as it was");
+    let copy = first(live).filter(|(id, is_image)| *is_image && *id != image).map(|(id, _)| id).expect("the live object a copy");
+    let size = live_digitizing(&node(&s, live)).and_then(|d| d.size).expect("its size");
+    assert!((size[0] - 60.0).abs() < 0.01, "the copy placed as the design is: {size:?}");
+    assert!(placed_xf(&s, copy) != before, "the copy scaled with the design");
+    s.execute("imageTrace.release", &json!({"ids": [trace.0]})).unwrap();
+}
+
 #[test]
 fn upstreams_view_expand_and_release_work_on_a_live_object() {
     let (mut s, live, image) = live_made(json!({"colors": 3}));
@@ -214,12 +460,16 @@ fn image_trace_refuses_a_live_embroidery_object() {
     }
     let e = crate::cmd::buildcmds::TraceRun::prepare(&s, "imageTrace.make", &json!({"id": live.0})).map(|_| ()).unwrap_err().to_string();
     assert!(e.contains("Digitize Image"), "the panel's run: {e}");
+    // Its image, which it holds first: the same.
+    let image = node(&s, live).children().and_then(|c| c.first()).map(|c| c.id).expect("its image");
+    let e = s.execute("imageTrace.make", &json!({"id": image.0})).unwrap_err().to_string();
+    assert!(e.contains("Digitize Image"), "its image: {e}");
 }
 
 /// The Check tab warns of a live object scaled more than ±10 % since it was digitized, by its
-/// image's size now against the size kept, along the side that changed most; turning it, or
-/// scaling it less, finds nothing, and digitizing it again at its new size settles it (the project
-/// owner's choice, 2026-11-16).
+/// image's transform now against the one rebuilt from the size kept, along the direction it changed
+/// most; turning it, or scaling it less, finds nothing, and digitizing it again at its new size
+/// settles it (the project owner's choice, 2026-11-16).
 #[test]
 fn the_check_warns_of_a_live_object_scaled_since_it_was_digitized() {
     let check = |s: &mut Session| {

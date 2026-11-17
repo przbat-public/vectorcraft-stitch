@@ -7549,3 +7549,5 @@ embroidery	Don't Replace	Χωρίς αντικατάσταση
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Αυτό το δυναμικό αντικείμενο δημιουργήθηκε σε άλλη παλέτα κλωστών: τα χρώματά του αντιστοιχίζονται ξανά στην παλέτα του εγγράφου.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Δυναμικές ψηφιοποιημένες εικόνες με κλιμάκωση πάνω από {value}% από την ψηφιοποίησή τους: ψηφιοποιήστε τις ξανά
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	δυναμικό αντικείμενο κεντήματος: αλλάξτε το στο «Ψηφιοποίηση εικόνας…» (Αντικείμενο › Ανίχνευση περιγραμμάτων εικόνας)

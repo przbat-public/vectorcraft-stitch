@@ -94,6 +94,7 @@ fn target(s: &Session, o: &Map<String, Value>) -> Result<(NodeId, ImageObject)> 
         },
         Some(v) => NodeId(v.as_u64().ok_or_else(|| bad(C, format!("`id` {v}: an object's id")))?),
     };
+    let id = digitizing_target(&st.doc, id);
     let n = st.doc.node(id).ok_or(EngineError::NoNode(id))?;
     let image = match &n.kind {
         NodeKind::Image(i) => Some((**i).clone()),
@@ -105,6 +106,23 @@ fn target(s: &Session, o: &Map<String, Value>) -> Result<(NodeId, ImageObject)> 
     };
     let image = image.ok_or_else(|| bad(C, "not an image: select an image, or an Image Trace object"))?;
     Ok((id, image))
+}
+
+/// What digitizing `id` of `doc` digitizes: the image an Image Trace object (a live object too) holds
+/// first stands for that object, as digitized alone its design would go inside the object, beside
+/// what the object makes; any other object for itself. The window opens on it by the same rule.
+pub fn digitizing_target(doc: &Document, id: NodeId) -> NodeId {
+    match doc.parent_of(id) {
+        Some(p) if doc.node(p).is_some_and(|g| traced_by(g, id)) => p,
+        _ => id,
+    }
+}
+
+/// Whether `g` is an Image Trace object holding image `id` first (its source image).
+fn traced_by(g: &Node, id: NodeId) -> bool {
+    matches!(g.kind, NodeKind::Group { .. })
+        && g.name.as_deref() == Some(TRACE_NAME)
+        && g.children().and_then(|c| c.first()).is_some_and(|c| c.id == id)
 }
 
 /// Refused unless image `id` may be replaced by a design: Global Edit off, and neither the image

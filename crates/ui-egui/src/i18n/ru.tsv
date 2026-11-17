@@ -7685,3 +7685,5 @@ embroidery	Don't Replace	Не заменять
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Этот динамический объект создан в другой палитре ниток: его цвета снова сопоставляются с палитрой документа.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Динамические оцифрованные изображения, масштабированные больше чем на {value} % после оцифровки: оцифруйте их заново
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	динамический объект вышивки: измените его в «Оцифровать изображение…» (Объект › Трассировка изображения)

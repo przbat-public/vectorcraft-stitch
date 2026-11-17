@@ -7550,3 +7550,5 @@ embroidery	Don't Replace	Değiştirme
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Bu dinamik nesne başka bir iplik paletinde yapıldı: renkleri yeniden belgenin paletiyle eşleştiriliyor.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Dijitalleştirildikten sonra %{value} üzerinde ölçeklenmiş dinamik dijitalleştirilmiş görüntüler: yeniden dijitalleştirin
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	dinamik bir nakış nesnesi: “Görüntüyü Dijitalleştir…” içinde değiştirin (Nesne › Görüntü İzleme)

@@ -294,6 +294,18 @@ fn the_palette_runs_convert_restore_and_nearest_connection_as_the_panel_does() {
     assert!(app.ui.status.starts_with("Nearest Connection · "), "{}", app.ui.status);
 }
 
+/// Image Trace's refusal of a live object of a digitized image is said in the language's own
+/// words, its menus named as they are there.
+#[test]
+fn image_traces_refusal_of_a_live_object_is_said_in_the_language() {
+    let pl = crate::i18n::Lang::from_code("pl").expect("Polish");
+    let said = format!("invalid parameters for `imageTrace.make`: {}", vectorcraft_engine::cmd::embroidery::LIVE_EMBROIDERY_REFUSED);
+    assert_eq!(
+        crate::i18n::message(pl, &said),
+        "nieprawidłowe parametry dla `imageTrace.make`: żywy obiekt haftu: zmień go w „Digitalizuj obraz…” (Obiekt › Obrys obrazu)"
+    );
+}
+
 /// Convert's and Restore's refusals and what they passed over are said with their reasons worded
 /// and counted, never as ids and codes; any other message is left as it is.
 #[test]

@@ -20,7 +20,7 @@ use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
 use vectorcraft_doc::embroidery::{Digitizing, turned_angle};
-use vectorcraft_doc::{Document, Node, NodeKind, TraceView};
+use vectorcraft_doc::{AppearanceItem, Document, Node, NodeId, NodeKind, TraceView};
 use vectorcraft_geom::Affine;
 use vectorcraft_stitch::MM_PER_PT;
 
@@ -40,6 +40,17 @@ pub fn live_digitizing(n: &Node) -> Option<&Digitizing> {
     traced.then(|| n.extras().embroidery.as_deref()?.digitizing.as_ref()).flatten()
 }
 
+/// The live object `id` of `doc` is, or holds as its image (its first child), when it is one or
+/// does: what Image Trace refuses either way.
+pub(crate) fn live_object_of(doc: &Document, id: NodeId) -> Option<NodeId> {
+    if doc.node(id).is_some_and(|n| live_digitizing(n).is_some()) {
+        return Some(id);
+    }
+    let parent = doc.parent_of(id)?;
+    let n = doc.node(parent)?;
+    (live_digitizing(n).is_some() && n.children()?.first().is_some_and(|c| c.id == id)).then_some(parent)
+}
+
 /// The source image of live object `n` (its first child) and that image's transform.
 fn image_of(n: &Node) -> Option<(&Node, Affine)> {
     let image = n.children()?.first()?;
@@ -50,62 +61,152 @@ fn image_of(n: &Node) -> Option<(&Node, Affine)> {
 }
 
 /// Whether live object `n`'s objects were edited by hand since it was made: their fingerprint now
-/// against the one kept (none kept: taken as edited). `None` when `n` is no live object. It walks
+/// against the one kept, their strokes' weights scaled with it or kept as made (scaled once with
+/// Scale Strokes & Effects on and once off, they are neither: read as an edit, the safe side);
+/// none kept: taken as edited. `None` when `n` is no live object. It walks
 /// all of its objects' points: ask it once, not every frame.
 pub fn edited(n: &Node) -> Option<bool> {
     let d = live_digitizing(n)?;
     let (_, xf) = image_of(n)?;
-    Some(d.fingerprint.is_none() || fingerprint(n, xf) != d.fingerprint)
+    let Some(kept) = d.fingerprint else { return Some(true) };
+    // Its strokes' weights scaled with it (Scale Strokes & Effects on) or kept as they were made
+    // (off, the default): neither is an edit.
+    let scaled = fingerprint(n, xf, xf.determinant().abs().sqrt());
+    // The scale it was made at: its sides' lengths then, from the size kept, and the slant between
+    // them as it is now (a move, a turn or a scale since keeps it).
+    let [m0, m1, m2, m3, _, _] = xf.as_coeffs();
+    let sides = m0.hypot(m1) * m2.hypot(m3);
+    let slant = if sides > f64::EPSILON { (xf.determinant().abs() / sides).min(1.0) } else { 1.0 };
+    let as_made = made_points_per_px(n).and_then(|[a, b]| fingerprint(n, xf, (a * b * slant).sqrt()));
+    Some(scaled != Some(kept) && as_made != Some(kept))
 }
 
-/// A fingerprint of live object `n`'s objects (all but its image) in the image's frame `xf`: their
-/// paths, colours, visibility and stitch, each point taken back through `xf` and rounded, so that
-/// moving, turning or scaling the object changes nothing and an edit does. FNV-1a, whose value is
-/// the same on every version and platform (as the manual stitches' fingerprint).
-fn fingerprint(n: &Node, xf: Affine) -> Option<u64> {
+/// A fingerprint of live object `n`'s objects (all but its image) in the image's frame `xf`: each
+/// object's kind and the flags that change what is sewn (a guide, a fill rule, a clipping path or
+/// clip group, a live shape), its visibility, opacity and blending, its own look (its fills and
+/// strokes, their effects, the object's effects) and embroidery settings, a compound path's and a
+/// group's included, and its paths' anchors with their handles and whether each is closed, each
+/// point and setting taken back through `xf` and rounded, a set angle read as the direction it
+/// gives; a stroke's weight divided by `weight_px` (points a pixel: the factor Scale Strokes &
+/// Effects scales it by is the square root of the transform's area factor). So moving, turning or
+/// scaling the object changes nothing and an edit does. FNV-1a over lengths of 64 bits, whose value
+/// is the same on every version and platform (as the manual stitches' fingerprint).
+fn fingerprint(n: &Node, xf: Affine, weight_px: f64) -> Option<u64> {
     use super::super::manual::{FINGERPRINT_STEP, FNV_OFFSET, FNV_PRIME};
-    if !(xf.determinant().is_finite() && xf.determinant().abs() > f64::EPSILON) {
+    let det = xf.determinant();
+    if !(det.is_finite() && det.abs() > f64::EPSILON && weight_px.is_finite() && weight_px > 0.0) {
         return None;
     }
     let back = xf.inverse();
+    let count = |n: usize| u64::try_from(n).unwrap_or(u64::MAX).to_le_bytes();
     let mut h = FNV_OFFSET;
     let mut eat = |bytes: &[u8]| {
         for b in bytes {
             h = (h ^ u64::from(*b)).wrapping_mul(FNV_PRIME);
         }
     };
-    let step = |v: f64| ((v / FINGERPRINT_STEP).round() as i64).to_le_bytes();
+    let rounded = |v: f64| (v / FINGERPRINT_STEP).round();
+    let step = |v: f64| (rounded(v) as i64).to_le_bytes();
     let mut stack: Vec<&Node> = n.children()?.iter().skip(1).map(|c| c.as_ref()).collect();
     stack.reverse();
     while let Some(c) = stack.pop() {
+        // What it is, and the flags that change what is sewn of it.
+        match &c.kind {
+            NodeKind::Path { rule, clipping, guide, live, .. } => {
+                eat(b"path");
+                eat(&[u8::from(*clipping), u8::from(*guide), u8::from(live.is_some())]);
+                eat(&serde_json::to_vec(rule).unwrap_or_default());
+            }
+            NodeKind::Compound { rule, .. } => {
+                eat(b"compound");
+                eat(&serde_json::to_vec(rule).unwrap_or_default());
+            }
+            NodeKind::Group { clip, .. } => {
+                eat(b"group");
+                eat(&[u8::from(*clip)]);
+            }
+            _ => eat(b"other"),
+        }
         eat(&[u8::from(c.visible)]);
+        eat(&c.opacity.to_bits().to_le_bytes());
+        eat(&serde_json::to_vec(&c.blend).unwrap_or_default());
+        // Every object's own look and stitch, before what it holds: Create paints an area with
+        // holes, and sets its stitch, on its compound path, whose members carry none, and the
+        // paint and settings commands write there too.
+        let mut items = c.appearance.items.clone();
+        for item in &mut items {
+            if let AppearanceItem::Stroke(stroke) = item {
+                stroke.width = rounded(stroke.width / weight_px) * FINGERPRINT_STEP;
+            }
+        }
+        eat(&serde_json::to_vec(&items).unwrap_or_default());
+        eat(&serde_json::to_vec(&c.appearance.effects).unwrap_or_default());
+        // Its embroidery settings, every one the Object tab and the sequence set (a stitch, an
+        // angle, entry and exit, Trim After…), taken back into the image's frame as its paths are
+        // (a transform and its inverse give them back), each number rounded.
+        let settings = c.extras().embroidery.as_deref().map(|e| {
+            let mut e = e.clone();
+            e.transform(back);
+            // A set angle as the direction it gives: 270° and −90°, 180° and −180° are one.
+            for part in [&mut e.fill, &mut e.stroke].into_iter().flatten() {
+                if let Some(a) = part.angle.as_mut() {
+                    *a = a.rem_euclid(FULL_TURN_DEG);
+                }
+            }
+            let mut v = serde_json::to_value(&e).unwrap_or_default();
+            rounded_numbers(&mut v, 0);
+            v
+        });
+        eat(&serde_json::to_vec(&settings).unwrap_or_default());
         if let Some(children) = c.children() {
-            eat(&children.len().to_le_bytes());
+            eat(&count(children.len()));
             stack.extend(children.iter().rev().map(|c| c.as_ref()));
             continue;
         }
-        let look = serde_json::to_vec(&c.appearance.items).unwrap_or_default();
-        eat(&look);
-        let stitch = c.extras().embroidery.as_deref().map(|e| {
-            let part = |p: &Option<Box<vectorcraft_doc::embroidery::PartSettings>>| {
-                p.as_deref().map(|p| (p.stitch.clone(), p.narrow_as_satin.map(f64::to_bits))).unwrap_or_default()
-            };
-            (part(&e.fill), part(&e.stroke))
-        });
-        eat(format!("{stitch:?}").as_bytes());
         if let Some(path) = c.path_data() {
-            eat(&path.subpaths.len().to_le_bytes());
+            eat(&count(path.subpaths.len()));
             for sp in &path.subpaths {
-                eat(&sp.anchors.len().to_le_bytes());
+                eat(&[u8::from(sp.closed)]);
+                eat(&count(sp.anchors.len()));
                 for a in &sp.anchors {
-                    let p = back * a.p;
-                    eat(&step(p.x));
-                    eat(&step(p.y));
+                    for q in [a.p, a.h_in, a.h_out] {
+                        let p = back * q;
+                        eat(&step(p.x));
+                        eat(&step(p.y));
+                    }
                 }
             }
         }
     }
     Some(h)
+}
+
+/// A full turn (degrees): what a set angle is read modulo in a fingerprint.
+const FULL_TURN_DEG: f64 = 360.0;
+
+/// How deep an object's settings are walked for the numbers a fingerprint rounds: far deeper than
+/// any real nesting (the JSON reader stops at 128 levels), a bound on the walk; what lies deeper is
+/// left as it is. An estimate.
+const MAX_SETTINGS_DEPTH: usize = 16;
+
+/// Each number in `v` rounded to [`FINGERPRINT_STEP`](super::super::manual::FINGERPRINT_STEP)
+/// steps, down to [`MAX_SETTINGS_DEPTH`] levels below `depth`, so that the last bits a transform and
+/// its inverse leave in an angle or a point change nothing.
+fn rounded_numbers(v: &mut Value, depth: usize) {
+    if depth > MAX_SETTINGS_DEPTH {
+        return;
+    }
+    match v {
+        Value::Number(n) => {
+            if let Some(f) = n.as_f64() {
+                // `as` saturates: a number past i64's range is held at its end, never a panic.
+                *v = json!((f / super::super::manual::FINGERPRINT_STEP).round() as i64);
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(|x| rounded_numbers(x, depth + 1)),
+        Value::Object(map) => map.values_mut().for_each(|x| rounded_numbers(x, depth + 1)),
+        _ => {}
+    }
 }
 
 /// The size an image of `width` × `height` pixels placed by `xf` has on the page, millimetres:
@@ -116,6 +217,16 @@ fn image_size_mm(width: u32, height: u32, xf: Affine) -> [f64; 2] {
     [side(width, m0, m1), side(height, m2, m3)]
 }
 
+/// The points a pixel of live object `n`'s image measured along each of its sides when it was
+/// digitized, rebuilt from the size kept (its sides square to each other, as a placed image's are);
+/// `None` when it keeps no size or a measure isn't a finite number above 0.
+fn made_points_per_px(n: &Node) -> Option<[f64; 2]> {
+    let made = live_digitizing(n)?.size?;
+    let NodeKind::Image(img) = &n.children()?.first()?.kind else { return None };
+    let then = [made[0] / (f64::from(img.width) * MM_PER_PT), made[1] / (f64::from(img.height) * MM_PER_PT)];
+    then.iter().all(|s| s.is_finite() && *s > 0.0).then_some(then)
+}
+
 /// How much live object `n` was scaled since it was digitized: the least and the most it stretches
 /// a length by, in any direction (`scale_factors`, as stitches sewn as they are are judged), its
 /// image's transform now against the one it had then. That one is rebuilt from the size kept, the
@@ -123,13 +234,8 @@ fn image_size_mm(width: u32, height: u32, xf: Affine) -> [f64; 2] {
 /// also had changes nothing (a picture skewed when it was digitized is judged as if it weren't).
 /// `None` when `n` is no live object, keeps no size, or a factor isn't a finite number.
 pub(crate) fn live_scale_since(n: &Node) -> Option<[f64; 2]> {
-    let made = live_digitizing(n)?.size?;
+    let then = made_points_per_px(n)?;
     let NodeKind::Image(img) = &n.children()?.first()?.kind else { return None };
-    // Points a pixel along each side then.
-    let then = [made[0] / (f64::from(img.width) * MM_PER_PT), made[1] / (f64::from(img.height) * MM_PER_PT)];
-    if !then.iter().all(|s| s.is_finite() && *s > 0.0) {
-        return None;
-    }
     let [m0, m1, m2, m3, _, _] = img.xf.as_coeffs();
     vectorcraft_doc::embroidery::scale_factors(Affine::new([m0 / then[0], m1 / then[0], m2 / then[1], m3 / then[1], 0.0, 0.0]))
 }
@@ -177,11 +283,29 @@ pub fn live_settings(n: &Node) -> Option<Map<String, Value>> {
 }
 
 /// Create's plain design `made` in `doc` made a live object made with `settings`: in the design's
-/// place, the image (with its id) first and hidden, the design's blocks after it; `was`, the live
-/// object digitized again (as it was before Create replaced it), keeps its id and what was set on
-/// it. The template layer Create added goes.
+/// place, the image first and hidden (with its id; a copy of one an upstream Image Trace object
+/// keeps, placed as the design is scaled), the design's blocks after it; `was`, the live object
+/// digitized again (as it was before Create replaced it), keeps its id and what was set on it. The
+/// template layer Create added goes.
 pub(super) fn into_live(doc: &mut Document, made: &Made, was: Option<Node>, settings: &Settings) -> Result<Made> {
-    let mut image = (*doc.remove(made.image)?).clone();
+    // The image Create left inside an upstream Image Trace object (its place isn't sewn) stays that
+    // object's source, so that its View, Expand and Release still work: the live object takes a copy.
+    let in_trace = doc.parent_of(made.image).and_then(|p| doc.node(p)).is_some_and(|g| {
+        matches!(g.kind, NodeKind::Group { .. })
+            && g.name.as_deref() == Some(TRACE_NAME)
+            && g.children().and_then(|c| c.first()).is_some_and(|c| c.id == made.image)
+    });
+    let mut image = if in_trace {
+        let mut copy = doc.node(made.image).cloned().ok_or(EngineError::NoNode(made.image))?;
+        copy.id = doc.alloc_id();
+        // Placed as the design is scaled, as Create would have placed the image itself.
+        if let NodeKind::Image(img) = &mut copy.kind {
+            img.xf = made.image_xf;
+        }
+        copy
+    } else {
+        (*doc.remove(made.image)?).clone()
+    };
     if made.added_layer {
         doc.remove(made.layer)?;
     }
@@ -192,8 +316,9 @@ pub(super) fn into_live(doc: &mut Document, made: &Made, was: Option<Node>, sett
     image.visible = false;
     let design = doc.node(made.group).cloned().ok_or(EngineError::NoNode(made.group))?;
     let blocks: Vec<Arc<Node>> = design.children().cloned().unwrap_or_default();
-    // Where the old live object still is (Create leaves an image where the design isn't sewn), it
-    // goes: the live object takes the design's place.
+    // Create replaced the old live object (in its place, or, where its place isn't sewn, by its
+    // image); should it still be in the document even so, it goes: the live object takes the
+    // design's place, and no second design is left behind.
     if let Some(old) = was.as_ref().filter(|old| doc.node(old.id).is_some()) {
         doc.remove(old.id)?;
     }
@@ -210,7 +335,7 @@ pub(super) fn into_live(doc: &mut Document, made: &Made, was: Option<Node>, sett
         *children = std::iter::once(Arc::new(image)).chain(blocks).collect();
     }
     let mut digitizing = Digitizing { settings: kept_settings(settings, xf).into(), fingerprint: None, size: Some(size), extra: Default::default() };
-    digitizing.fingerprint = fingerprint(&live, xf);
+    digitizing.fingerprint = fingerprint(&live, xf, xf.determinant().abs().sqrt());
     live.extras_mut().embroidery.get_or_insert_with(Default::default).digitizing = Some(digitizing);
     let id = live.id;
     let (parent, index, _) = doc.position(made.group).ok_or(EngineError::NoNode(made.group))?;

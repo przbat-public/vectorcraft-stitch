@@ -339,6 +339,51 @@ fn the_junk_tables_digitizing_cases_on_pictures() {
     assert!(more_lines, "no case sewed black as lines: {} line areas by the rules", line_areas(&by_rules));
 }
 
+/// The junk table's digitizing cases given a live object whose kept settings are junk (a file
+/// edited by hand), each as a dry run on it: never a panic, a refusal says why, and every answer
+/// warns that the kept settings weren't used, saying what blocks them. Kept first as a word for the
+/// number of colours and a change of no shape, then as the change alone, so that the change is read
+/// too (an answer the row gives changes of its own takes those).
+#[test]
+fn the_junk_tables_digitizing_cases_on_a_live_object_keeping_junk() {
+    let cases: Vec<Value> =
+        embroidery_common::junk::structured().into_iter().filter(|(c, _)| *c == "embroidery.digitizeImage").map(|(_, p)| p).collect();
+    for (colors, blocking) in [(json!("lots"), "colors"), (json!(3), "areaChanges")] {
+        let mut s = placed("logo.png", &logo(200, 100).encode_png()).unwrap();
+        let r = s.execute("embroidery.digitizeImage", &json!({"live": true, "colors": 3})).unwrap();
+        let live = vectorcraft_engine::doc::NodeId(r["created"]["group"].as_u64().unwrap());
+        s.edit("junk kept", |d, _| {
+            let n = d.node_mut(live).ok_or(EngineError::NoNode(live))?;
+            let mut extras = n.extras_mut();
+            let digitizing = extras.embroidery.as_mut().and_then(|e| e.digitizing.as_mut()).ok_or(EngineError::NoNode(live))?;
+            let mut settings = (*digitizing.settings).clone();
+            settings.insert("colors".into(), colors.clone());
+            settings.insert("area_changes".into(), json!([{"at": "here", "kind": [1]}]));
+            digitizing.settings = settings.into();
+            Ok(())
+        })
+        .unwrap();
+        for case in &cases {
+            let mut p = case.clone();
+            p["id"] = json!(live.0);
+            p["dryRun"] = json!(true);
+            match no_panic(s.execute("embroidery.digitizeImage", &p)) {
+                Ok(_) if blocking == "areaChanges" && case.get("areaChanges").is_some() => {}
+                Ok(r) => {
+                    let why =
+                        r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "keptSettingsRefused").and_then(|w| w["values"]["why"].as_str());
+                    assert!(
+                        why.is_some_and(|w| w.contains(blocking)),
+                        "{p}: says the kept settings weren't used, for `{blocking}`: {}",
+                        r["warnings"]
+                    );
+                }
+                Err(e) => assert!(e.to_string().len() > "embroidery.digitizeImage: ".len(), "{p}: a refusal says why: {e}"),
+            }
+        }
+    }
+}
+
 /// Whether reply `r` warns that the picture doesn't look like flat art.
 fn warns_of_gradients(r: &Value) -> bool {
     r["warnings"].as_array().unwrap().iter().any(|w| w["id"] == "notFlatArt" && w["message"].as_str().unwrap().contains("doesn't look like flat art"))

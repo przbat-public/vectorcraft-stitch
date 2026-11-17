@@ -560,6 +560,31 @@ fn the_check_warns_of_a_live_object_scaled_since_it_was_digitized() {
     assert!(hit["note"] == json!("smaller") && (hit["value"].as_f64().unwrap() - 20.0).abs() < 0.01, "reduced: {hit}");
 }
 
+/// Two of a live object's blocks swapped by hand (the sewing order changed), or one of its objects
+/// deleted, is a hand edit.
+#[test]
+fn reordering_or_deleting_a_live_objects_objects_is_a_hand_edit() {
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    assert_eq!(edited_now(&mut s, live), json!(false));
+    s.edit("swap", |d, _| {
+        let n = d.node_mut(live).ok_or(crate::EngineError::NoNode(live))?;
+        let c = n.children_mut().ok_or(crate::EngineError::NoNode(live))?;
+        assert!(c.len() >= 3, "the image and two blocks at least: {}", c.len());
+        c.swap(1, 2);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(true), "two blocks swapped");
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    let object = node(&s, live).children().and_then(|c| c.get(1)).and_then(|b| b.children().and_then(|c| c.first()).map(|o| o.id)).unwrap();
+    s.edit("delete", |d, _| {
+        d.remove(object)?;
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(true), "an object deleted");
+}
+
 /// The command on a live object, given one setting, keeps the others it was made with, as the
 /// window does when it opens on it (the project owner's choice, 2026-11-17).
 #[test]
@@ -708,4 +733,21 @@ fn kept_settings_this_version_doesnt_know_are_said() {
     let said = r["warnings"].as_array().unwrap().iter().find(|w| w["id"] == "keptSettingsUnknown").map(|w| w["values"]["keys"].clone());
     assert_eq!(said, Some(json!(["fill_pattern"])), "{}", r["warnings"]);
     assert_eq!(r["settings"]["colors"], json!(3), "the rest kept");
+}
+
+/// A live object keeping no fingerprint (a file of an older version, or one edited by hand) is
+/// taken as edited, the safe side, so that the window asks before replacing its objects.
+#[test]
+fn a_live_object_keeping_no_fingerprint_reads_as_edited() {
+    let (mut s, live, _) = live_made(json!({"colors": 3}));
+    assert_eq!(edited_now(&mut s, live), json!(false));
+    s.edit("no fingerprint", |d, _| {
+        let n = d.node_mut(live).ok_or(crate::EngineError::NoNode(live))?;
+        let mut extras = n.extras_mut();
+        let dz = extras.embroidery.as_mut().and_then(|e| e.digitizing.as_mut()).ok_or(crate::EngineError::NoNode(live))?;
+        dz.fingerprint = None;
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(edited_now(&mut s, live), json!(true));
 }

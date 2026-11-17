@@ -1120,11 +1120,13 @@ mod tests {
             assert!(read.digitizing.is_none(), "{other}: no live one");
             assert_eq!(serde_json::to_value(&read).unwrap(), other, "{other}: kept as it was");
         }
-        // A fingerprint or a size it can't read is kept, unread.
-        let odd = json!({"digitizing": {"settings": {}, "fingerprint": "beef", "size": [0.0, 5.0]}});
-        let read: Embroidery = serde_json::from_value(odd.clone()).unwrap();
-        assert_eq!(read.digitizing.as_ref().map(|d| (d.fingerprint, d.size)), Some((None, None)));
-        assert_eq!(serde_json::to_value(&read).unwrap(), odd);
+        // A fingerprint or a size it can't read is kept, unread: four digits, a sign and fifteen.
+        for fingerprint in ["beef", "+123456789abcdef"] {
+            let odd = json!({"digitizing": {"settings": {}, "fingerprint": fingerprint, "size": [0.0, 5.0]}});
+            let read: Embroidery = serde_json::from_value(odd.clone()).unwrap();
+            assert_eq!(read.digitizing.as_ref().map(|d| (d.fingerprint, d.size)), Some((None, None)), "{fingerprint}");
+            assert_eq!(serde_json::to_value(&read).unwrap(), odd, "{fingerprint}");
+        }
     }
 
     /// A live object's digitizing is in its source image's frame: no transform moves it, read

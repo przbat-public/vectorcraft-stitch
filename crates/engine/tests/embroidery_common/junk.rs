@@ -164,6 +164,32 @@ pub fn structured() -> Vec<(&'static str, Value)> {
         ("embroidery.digitizeImage", json!({"border": true, "borderWidth": f64::NAN, "outlineThread": [1], "colorOutlines": null})),
         // Accepted as it is read: both outlines, the widest border, the darkest thread.
         ("embroidery.digitizeImage", json!({"colorOutlines": true, "border": true, "borderWidth": 10, "outlineThread": null, "dryRun": true})),
+        // Changes to single areas of every wrong shape: refused, saying which.
+        ("embroidery.digitizeImage", json!({"areaChanges": 5, "dryRun": true})),
+        ("embroidery.digitizeImage", json!({"areaChanges": "all", "dryRun": true})),
+        ("embroidery.digitizeImage", json!({"areaChanges": {"at": [1, 1], "color": "#000000", "kind": "fill", "stitch": "none"}})),
+        ("embroidery.digitizeImage", json!({"areaChanges": [{"at": [1, 2, 3], "color": "#000000", "kind": "fill", "stitch": "none"}]})),
+        ("embroidery.digitizeImage", json!({"areaChanges": [{"at": [1, 1], "color": "black", "kind": "fill", "stitch": "none"}]})),
+        ("embroidery.digitizeImage", json!({"areaChanges": [{"at": [1, 1], "color": "#000000", "kind": "both", "stitch": "none"}]})),
+        ("embroidery.digitizeImage", json!({"areaChanges": [{"at": [1, 1], "color": "#000000", "kind": "fill", "angle": 1e308}]})),
+        ("embroidery.digitizeImage", json!({"areaChanges": too_many_changes(), "dryRun": true})),
+        (
+            "embroidery.digitizeImage",
+            json!({"areaChanges": [{"at": nested(NESTED_DEPTH), "color": nested(NESTED_DEPTH), "kind": "fill", "stitch": [nested(NESTED_DEPTH)]}]}),
+        ),
+        // Accepted as it is read: a change at a point, found or kept (one far past the image applies to
+        // no area: `noArea`), said in the reply.
+        ("embroidery.digitizeImage", json!({"areaChanges": [{"at": [1.5, 1.5], "color": "#000000", "kind": "fill", "angle": 30}], "dryRun": true})),
+        (
+            "embroidery.digitizeImage",
+            json!({"areaChanges": [{"at": [1e308, -1e308], "color": "#000000", "kind": "fill", "stitch": "none"}], "dryRun": true}),
+        ),
+        // A live object asked for wrongly: refused; or on an image, kept as one (a dry run makes
+        // nothing).
+        ("embroidery.digitizeImage", json!({"live": "yes", "dryRun": true})),
+        ("embroidery.digitizeImage", json!({"live": 1})),
+        ("embroidery.digitizeImage", json!({"id": 1, "live": true})),
+        ("embroidery.digitizeImage", json!({"live": true, "dryRun": true})),
         ("embroidery.copyFrom", json!({"source": "first", "ids": [1], "keys": ["angle", "angle"]})),
         ("embroidery.copyFrom", json!({"source": 1, "ids": too_many_ids()})),
         ("embroidery.copyFrom", json!({"source": u64::MAX, "part": "both"})),
@@ -222,4 +248,19 @@ fn zigzag(n: usize, depth: f64) -> Vec<[f64; 2]> {
     let mut points: Vec<[f64; 2]> = (0..n.saturating_sub(1)).map(|k| [k as f64 * ZIGZAG_STEP_MM, if k % 2 == 0 { 0.0 } else { depth }]).collect();
     points.push([0.0, -ZIGZAG_CLOSE_MM]);
     points
+}
+
+/// How deep [`nested`] arrays go in the junk params: far past any list a param holds.
+const NESTED_DEPTH: usize = 100;
+
+/// An array nested `depth` deep: `[[[…]]]`.
+fn nested(depth: usize) -> Value {
+    (0..depth).fold(json!([]), |inner, _| json!([inner]))
+}
+
+/// One area change more than the command takes: a change at each of a row of points.
+fn too_many_changes() -> Value {
+    (0..=vectorcraft_engine::cmd::embroidery::MAX_AREA_CHANGES)
+        .map(|i| json!({"at": [i, i], "color": "#000000", "kind": "fill", "stitch": "none"}))
+        .collect()
 }

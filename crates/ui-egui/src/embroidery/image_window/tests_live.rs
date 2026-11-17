@@ -377,3 +377,21 @@ fn reset_all_then_keep_as_live_object_keeps_none_of_its_changes() {
     assert!(kept.get("areaChanges").is_none_or(|c| c.as_array().is_some_and(Vec::is_empty)), "no change: {kept:?}");
     assert_eq!((kept.get("colors"), kept.get("colorOutlines")), (Some(&json!(3)), Some(&json!(true))), "the rest as it was: {kept:?}");
 }
+
+/// A live object keeping no fingerprint (a file of an older version, or one edited by hand) is taken
+/// as edited: Keep as Live Object on it asks before replacing its objects.
+#[test]
+fn a_live_object_keeping_no_fingerprint_is_asked_about() {
+    let (mut app, id) = live_object(json!({"colors": 3}));
+    app.session
+        .edit("no fingerprint", |d, _| {
+            let node = d.node_mut(id).expect("the live object");
+            let mut extras = node.extras_mut();
+            extras.embroidery.as_mut().and_then(|e| e.digitizing.as_mut()).expect("its digitizing").fingerprint = None;
+            Ok(())
+        })
+        .unwrap();
+    let (mut app, ctx, mut time) = opened_with(app);
+    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    assert!(asking(&app), "asked first");
+}

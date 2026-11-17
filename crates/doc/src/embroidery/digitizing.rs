@@ -41,8 +41,9 @@ impl Digitizing {
     pub(super) fn read(v: &Value) -> Option<Self> {
         let map = v.as_object()?;
         let settings = map.get(SETTINGS)?.as_object()?.clone();
-        let fingerprint =
-            map.get(FINGERPRINT).and_then(Value::as_str).filter(|f| f.len() == FINGERPRINT_DIGITS).and_then(|f| u64::from_str_radix(f, 16).ok());
+        // Digits only: `from_str_radix` would take a sign before fifteen of them.
+        let digits = |f: &&str| f.len() == FINGERPRINT_DIGITS && f.bytes().all(|b| b.is_ascii_hexdigit());
+        let fingerprint = map.get(FINGERPRINT).and_then(Value::as_str).filter(digits).and_then(|f| u64::from_str_radix(f, 16).ok());
         let size = map.get(SIZE).and_then(Value::as_array).filter(|s| s.len() == 2).and_then(|s| {
             let side = |i: usize| s.get(i).and_then(Value::as_f64).filter(|v| v.is_finite() && *v > 0.0);
             Some([side(0)?, side(1)?])

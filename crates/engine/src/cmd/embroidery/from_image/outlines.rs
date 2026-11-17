@@ -162,7 +162,8 @@ pub(super) fn outlined(d: &Digitized, with_silhouette: bool) -> Result<Outlines>
     let colours = d.colours();
     let lines = d.lines();
     let own_shapes = &d.shapes().own;
-    let sewn = |a: usize| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(super::colours::Colour::sewn);
+    // Sewn: by its colour, and no change to it alone leaving it out.
+    let sewn = |a: usize| areas.areas.get(a).is_some_and(|x| x.sewn(colours));
     let line = |a: usize| lines.get(a).is_some_and(Option::is_some);
     // Where each area lies in the sewing order.
     let mut place = vec![usize::MAX; areas.areas.len()];

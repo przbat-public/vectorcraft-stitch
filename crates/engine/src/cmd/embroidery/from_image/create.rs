@@ -129,16 +129,18 @@ const COLOUR_OUTLINES_NAME: &str = "Color outlines";
 const BORDER_NAME: &str = "Border";
 
 /// The thread outlines are sewn in, by its number in `palette`: `chosen`, else the darkest (the
-/// least CIE L*, the lower number first) of the threads `colours` are sewn in; `None` when none is.
-pub(super) fn outline_thread(chosen: Option<PaletteThread>, colours: &Colours, palette: Palette) -> Option<usize> {
+/// least CIE L*, the lower number first) of the threads `colours` are sewn in, a colour whose areas
+/// changes all leave out (`sewn_px`, the pixels each sews by its row) aside; `None` when none is.
+pub(super) fn outline_thread(chosen: Option<PaletteThread>, colours: &Colours, sewn_px: &[usize], palette: Palette) -> Option<usize> {
     if let Some(t) = chosen {
         return Some(t.index());
     }
     colours
         .rows
         .iter()
-        .filter(|r| r.sewn())
-        .filter_map(|r| r.thread.as_ref().map(|m| m.thread.index))
+        .enumerate()
+        .filter(|(i, r)| r.sewn() && sewn_px.get(*i).is_some_and(|&p| p > 0))
+        .filter_map(|(_, r)| r.thread.as_ref().map(|m| m.thread.index))
         .filter_map(|i| palette.get(i).map(|(rgb, _)| (i, vectorcraft_stitch::color::lab(rgb).l)))
         .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
         .map(|(i, _)| i)
@@ -179,7 +181,7 @@ fn add_outlines(
     if !asked.colour && !asked.border {
         return Ok(None);
     }
-    let Some(thread) = outline_thread(asked.thread, d.colours(), palette) else { return Ok(None) };
+    let Some(thread) = outline_thread(asked.thread, d.colours(), &d.sewn_pixels(), palette) else { return Ok(None) };
     let Some(([r, g, b], _)) = palette.get(thread) else { return Ok(None) };
     let color = Color::rgb8(r, g, b);
     let found = super::outlines::outlined(d, !asked.border)?;
@@ -361,7 +363,10 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
                 let mut n = shape_node(doc, shape.transformed(d.working().to_doc), None);
                 n.appearance =
                     Appearance { items: vec![AppearanceItem::Fill(FillLayer::new(Paint::solid(Color::rgb8(r, g, b))))], ..Default::default() }.into();
-                let widest_mm = d.areas().regions.areas.get(a).map_or(0.0, |s| s.widest_px / d.working().px_per_mm);
+                // Measured on the shape it is made as: the islands it is made solid under and its
+                // shares of the centre lines beside it in it (the shapes stage's).
+                let widest_px = d.shapes().widest_px.get(a).copied().or_else(|| d.areas().regions.areas.get(a).map(|s| s.widest_px));
+                let widest_mm = widest_px.unwrap_or(0.0) / d.working().px_per_mm;
                 if let Some(e) = settings_for(row.job, change, satin_width(widest_mm, settings.overlap)) {
                     n.extras_mut().embroidery = Some(Box::new(e));
                 }

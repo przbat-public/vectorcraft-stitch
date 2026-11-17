@@ -387,6 +387,29 @@ fn an_unsewn_island_keeps_its_hole() {
     assert!((area - 252.0).abs() < 0.5, "16 × 16 mm less the 2 × 2 mm dot: {area}");
 }
 
+/// An island a change to it alone leaves unsewn (Don't Sew) keeps its hole as one of a colour not
+/// sewn does: the 2 mm dot left out of the 16 mm square leaves 252 mm² sewn, nothing grown under it.
+#[test]
+fn an_island_left_unsewn_by_a_change_keeps_its_hole() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [90, 90, 110, 110]) {
+            NAVY
+        } else if inside(x, y, [20, 20, 180, 180]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let dont_sew = json!([{"at": [100.0, 100.0], "color": hex(NAVY), "kind": "fill", "stitch": "none"}]);
+    let r = dry(&mut s, json!({"colors": 2, "areaChanges": dont_sew}));
+    let (dot, _, _) = shape_of(&r, NAVY);
+    assert_eq!((&dot["sewn"], &dot["sewnOver"]), (&json!(false), &json!(false)), "{dot}");
+    let (orange, _, area) = shape_of(&r, ORANGE);
+    assert!((area - 252.0).abs() < 0.5, "16 × 16 mm less the 2 × 2 mm dot: {area}");
+    assert!(orange["grownUnder"].as_array().unwrap().is_empty(), "nothing grown under the dot: {orange}");
+}
+
 /// A dot inside a thin outline is sewn before the outline (a line, sewn after every fill, along its
 /// middle), so the outline covers nothing of it and the dot grows under it to the outline's
 /// middle: the outline 0.6 mm wide round a 3 mm dot is a loop round the band's middle, 3.6 mm a

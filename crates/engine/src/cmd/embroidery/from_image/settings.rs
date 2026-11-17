@@ -674,6 +674,8 @@ fn area_changes(o: &Map<String, Value>) -> Result<Vec<AreaChange>> {
     match o.get("areaChanges") {
         None | Some(Value::Null) => Ok(vec![]),
         Some(Value::Array(list)) if list.len() <= MAX_AREA_CHANGES => list.iter().map(area_change).collect(),
+        // Said by its count: the list itself may run to a hundred kilobytes.
+        Some(Value::Array(list)) => Err(bad(C, format!("`areaChanges`: {} changes; {}", list.len(), wants(s)))),
         Some(v) => Err(refused(s, v)),
     }
 }

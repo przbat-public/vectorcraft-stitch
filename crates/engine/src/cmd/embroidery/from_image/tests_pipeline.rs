@@ -176,12 +176,47 @@ fn a_change_reruns_its_stage_and_those_after() {
         (json!({"borderWidth": 5.0}), StageId::Objects),
         (json!({"outlineThread": {"palette": "jef", "index": 2}}), StageId::Objects),
         (json!({"areaChanges": [{"at": [30.0, 30.0], "color": hex(ORANGE), "kind": "fill", "stitch": "tatami"}]}), StageId::Objects),
+        // Don't Sew may leave a hole in what is round the area, and a stitch set after it may
+        // overrule it: from the shapes on, the centre lines kept.
+        (json!({"areaChanges": [{"at": [30.0, 30.0], "color": hex(ORANGE), "kind": "fill", "stitch": "none"}]}), StageId::Shapes),
+        (
+            json!({"areaChanges": [
+                {"at": [30.0, 30.0], "color": hex(ORANGE), "kind": "fill", "stitch": "none"},
+                {"at": [30.0, 30.0], "color": hex(ORANGE), "kind": "fill", "stitch": "tatami"},
+            ]}),
+            StageId::Shapes,
+        ),
     ];
     for (change, first) in cases {
         made(&s, &mut pipe, image, &base, None);
         let changed = with(&base, &change);
         assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &changed, None)), Some(first), "{change}: said before");
         assert_eq!(made(&s, &mut pipe, image, &changed, None), from(first), "{change}");
+    }
+    // From a Don't Sew to a stitch set after it on that area: no longer left out, from the shapes
+    // on; and back. A stitch before the first Don't Sew changed: from the objects on.
+    let change = |at: [f64; 2], c: [u8; 4], stitch: &str| json!({"at": at, "color": hex(c), "kind": "fill", "stitch": stitch});
+    let (p, q) = ([30.0, 30.0], [185.0, 100.0]);
+    let with_changes = |list: Value| with(&base, &json!({"areaChanges": list}));
+    let transitions = [
+        (json!([change(p, ORANGE, "none")]), json!([change(p, ORANGE, "none"), change(p, ORANGE, "tatami")]), StageId::Shapes),
+        (json!([change(p, ORANGE, "none"), change(p, ORANGE, "tatami")]), json!([change(p, ORANGE, "none")]), StageId::Shapes),
+        (
+            json!([change(p, ORANGE, "none"), change(q, GREEN, "none")]),
+            json!([change(p, ORANGE, "none"), change(q, GREEN, "tatami")]),
+            StageId::Shapes,
+        ),
+        (
+            json!([change(q, GREEN, "tatami"), change(p, ORANGE, "none")]),
+            json!([change(q, GREEN, "satin"), change(p, ORANGE, "none")]),
+            StageId::Objects,
+        ),
+    ];
+    // Said by the keys (the stages may be found kept from the cases above, each keeping its two
+    // newest outputs).
+    for (from_changes, to_changes, first) in transitions {
+        let (before, after) = (request(&s, &with_changes(from_changes.clone()), None), request(&s, &with_changes(to_changes.clone()), None));
+        assert_eq!(before.first_stage_changed(&after), Some(first), "{from_changes} → {to_changes}");
     }
     made(&s, &mut pipe, image, &base, None);
     assert_eq!(request(&s, &base, None).first_stage_changed(&request(&s, &base, Some("pec"))), Some(StageId::Colours));
@@ -521,6 +556,120 @@ fn the_sewing_place_names_the_areas_either_side() {
     // Each neighbour's key finds it.
     let (facts, key) = first.after.clone().unwrap();
     assert_eq!(out.find(&key).and_then(|(x, y)| out.area_at(x, y)).and_then(|f| f.number), facts.number);
+}
+
+/// The areas of a colour not sewn are left out of the keyboard's way and of the numbers: with the
+/// navy square not sewn, the first key is an orange square's, the two are numbered 1 and 2 of 2,
+/// the first with none before it, and the navy square has no place.
+#[test]
+fn navigation_skips_the_areas_of_colours_not_sewn() {
+    let (_, _, out) = run_of(&three_squares(), json!({"colors": 3, "colorChoices": [{"color": hex(NAVY), "job": "none"}]}));
+    let orange = |c: [u8; 3]| vectorcraft_stitch::color::delta_e_rgb(c, [ORANGE[0], ORANGE[1], ORANGE[2]]) < 1.0;
+    assert!(out.first_key().is_some_and(|k| orange(k.color)), "{:?}", out.first_key());
+    assert_eq!(out.sewing_place(150, 50), None, "the navy square isn't sewn");
+    let places: Vec<_> = [(50, 50), (250, 50)].into_iter().map(|(x, y)| out.sewing_place(x, y).unwrap()).collect();
+    assert!(places.iter().all(|p| p.of == 2), "{places:?}");
+    let first = places.iter().find(|p| p.number == 1).expect("one numbered 1");
+    assert!(first.before.is_none(), "{first:?}");
+    let mut numbers: Vec<_> = [(50, 50), (250, 50)].into_iter().filter_map(|(x, y)| out.area_at(x, y).and_then(|f| f.number)).collect();
+    numbers.sort_unstable();
+    assert_eq!(numbers, [1, 2]);
+}
+
+/// Satin is offered on a filled area by the shape it is made as: a 13 mm square with a 3 mm dot sewn
+/// over it is sewn solid, 13 mm wide, too wide for satin, though the ring round the dot is narrower.
+#[test]
+fn satin_is_offered_by_the_shape_an_area_is_made_as() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [85, 85, 115, 115]) {
+            NAVY
+        } else if inside(x, y, [35, 35, 165, 165]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let (_, _, out) = run_of(&picture, json!({"colors": 2}));
+    let square = out.area_at(45, 45).expect("the square");
+    assert!(square.widest_mm >= 12.9 && !square.satin_fits(), "{square:?}");
+}
+
+/// Satin is offered by the shape as made beside centre lines too: a 10 mm bar between two 3 mm
+/// stripes sewn as lines grows under half of each, about 13 mm, too wide for satin.
+#[test]
+fn satin_is_offered_by_the_shape_made_under_the_lines_beside_it() {
+    let picture = tr::Raster::from_fn(200, 230, |x, y| {
+        if inside(x, y, [20, 20, 180, 50]) || inside(x, y, [20, 150, 180, 180]) {
+            NAVY
+        } else if inside(x, y, [20, 50, 180, 150]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let (_, _, out) = run_of(&picture, json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "lines"}]}));
+    let bar = out.area_at(100, 100).expect("the bar");
+    assert!(bar.widest_mm >= 12.9 && !bar.satin_fits(), "{bar:?}");
+}
+
+/// An island's own island that isn't sewn over it keeps its hole in the shape the area round them
+/// is made as: a 13 mm square holding a thin navy ring (sewn over it) that holds a green dot (sewn
+/// before the ring, so not over it) is made with the dot's hole, about 6 mm at its widest.
+#[test]
+fn an_islands_island_not_sewn_over_it_keeps_its_hole() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [88, 88, 112, 112]) {
+            GREEN
+        } else if inside(x, y, [82, 82, 118, 118]) {
+            NAVY
+        } else if inside(x, y, [35, 35, 165, 165]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let (_, _, out) = run_of(&picture, json!({"colors": 3}));
+    let square = out.area_at(45, 45).expect("the square");
+    assert!(square.widest_mm < 8.0 && square.satin_fits(), "{square:?}");
+}
+
+/// An area a change leaves out (Don't Sew) is sewn by no one: the window says so, gives it no
+/// number or place, and the keyboard starts past it, though it was the first sewn; a click still
+/// finds it.
+#[test]
+fn an_area_left_out_by_a_change_is_not_sewn_in_the_window() {
+    let (_, _, plain) = run_of(&three_squares(), json!({"colors": 3}));
+    let first = plain.first_key().expect("the area sewn first");
+    let dont_sew = json!([{"at": first.at, "color": super::super::hex(first.color), "kind": "fill", "stitch": "none"}]);
+    let (_, _, out) = run_of(&three_squares(), json!({"colors": 3, "areaChanges": dont_sew}));
+    let (x, y) = out.find(&first).expect("found again");
+    let left = out.area_at(x, y).expect("the area left out");
+    assert!(!left.sewn && left.number.is_none(), "{left:?}");
+    assert_eq!(out.sewing_place(x, y), None, "no place");
+    let others: Vec<_> = [(50, 50), (150, 50), (250, 50)].into_iter().filter_map(|(x, y)| out.sewing_place(x, y)).collect();
+    assert!(others.len() == 2 && others.iter().all(|p| p.of == 2), "{others:?}");
+    let mut numbers: Vec<_> = [(50, 50), (150, 50), (250, 50)].into_iter().filter_map(|(x, y)| out.area_at(x, y).and_then(|f| f.number)).collect();
+    numbers.sort_unstable();
+    assert_eq!(numbers, [1, 2], "the others numbered 1 and 2");
+    assert!(out.first_key().is_some_and(|k| k.at != first.at), "the keyboard starts past it");
+    assert!(out.area_key(x, y).is_some(), "it keeps a key: a click finds it");
+    // Show in Sewing Order: it is sewn after nothing, and nothing is veiled for it.
+    assert!(out.sewn_after(x, y).is_none(), "no veil from it");
+    let next = out.first_key().and_then(|k| out.find(&k)).expect("the first area sewn");
+    let (w, _, mask) = out.sewn_after(next.0, next.1).expect("a veil from the first");
+    assert_eq!(mask.get((y * w + x) as usize), Some(&0), "the area left out isn't veiled as sewn after");
+}
+
+/// A thin area of a colour set to Fill is a fill in the window too: its key is a fill's, finds it
+/// again, and its facts and its alike areas read it so.
+#[test]
+fn a_fill_colours_thin_area_is_keyed_as_a_fill() {
+    let picture = tr::Raster::from_fn(300, 100, |x, y| if inside(x, y, [40, 20, 46, 80]) { NAVY } else { WHITE });
+    let (_, _, out) = run_of(&picture, json!({"colors": 2, "colorChoices": [{"color": hex(NAVY), "job": "fill"}]}));
+    let key = out.area_key(43, 50).expect("the line's key");
+    assert!(!key.line, "{key:?}");
+    let (x, y) = out.find(&key).expect("found again");
+    assert!(out.area_at(x, y).is_some_and(|f| !f.line), "a fill");
 }
 
 /// The object an area was made into is in the made document, painted with the area's thread.

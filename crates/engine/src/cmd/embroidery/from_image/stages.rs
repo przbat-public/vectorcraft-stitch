@@ -295,12 +295,13 @@ pub(super) fn lines_stage(image: &ImageOut, colours: &ColoursOut, settings: &Set
     let started = clock();
     inside::containers(&mut areas, rows, px_per_mm)?;
     let order = order::ordered(&areas.areas, &areas.regions, rows)?;
-    inside::sewn_over(&mut areas, rows, &order);
     Ok(LinesOut { areas, order, lines, warnings, centre_ms, order_ms: since(started) })
 }
 
-/// The shapes stage's output.
+/// The shapes stage's output: the areas as they are sewn (the lines stage's, with the areas a
+/// change leaves out and the islands sewn over the areas round them marked) and their shapes.
 pub(super) struct ShapesOut {
+    pub(super) areas: Areas,
     pub(super) shapes: Shapes,
     /// What it warns of (areas path operations couldn't join or grow).
     pub(super) warnings: Vec<Warning>,
@@ -312,9 +313,21 @@ pub(super) struct ShapesOut {
 pub(super) fn shapes_stage(image: &ImageOut, trace: &TraceOut, colours: &ColoursOut, lines: &LinesOut, settings: &Settings) -> Result<ShapesOut> {
     let started = clock();
     let px_per_mm = image.working.px_per_mm;
+    // The areas a change to them alone leaves unsewn (Don't Sew), the kinds final with the centre
+    // lines: from here on what lies inside them keeps its hole, nothing grows under them, no
+    // outline goes round them; and the islands sewn over the areas round them, which hang on it.
+    // Marked here, not with the centre lines, so that a Don't Sew keeps the lines, what lies
+    // inside what and the order, and runs the stages again from the shapes on.
+    let mut areas = lines.areas.clone();
+    let parts = super::changes::Parts { working: &image.working, areas: &lines.areas, colours: &colours.colours, lines: &lines.lines };
+    let left_out = super::changes::left_out(&settings.changes, &parts);
+    for (area, out) in areas.areas.iter_mut().zip(left_out) {
+        area.left_out = out;
+    }
+    inside::sewn_over(&mut areas, &colours.colours, &lines.order);
     let shapes = overlap::shaped(
         &trace.traced.paths,
-        &lines.areas,
+        &areas,
         &colours.colours,
         &lines.order,
         settings.overlap * px_per_mm,
@@ -329,7 +342,7 @@ pub(super) fn shapes_stage(image: &ImageOut, trace: &TraceOut, colours: &Colours
             format!("{} areas couldn't be joined or grown by path operations and are sewn as traced", shapes.failed),
         ));
     }
-    Ok(ShapesOut { shapes, warnings, ms: since(started) })
+    Ok(ShapesOut { areas, shapes, warnings, ms: since(started) })
 }
 
 /// What digitizing made of an image, stage by stage: each stage's output, shared.
@@ -369,9 +382,10 @@ impl Digitized {
         &self.colours_out.colours
     }
 
-    /// The areas, with what lies inside what.
+    /// The areas, with what lies inside what, those a change leaves out and the islands sewn over
+    /// the areas round them (the shapes stage's).
     pub(super) fn areas(&self) -> &Areas {
-        &self.lines_out.areas
+        &self.shapes_out.areas
     }
 
     /// The order the areas are sewn in.
@@ -387,6 +401,24 @@ impl Digitized {
     /// The shapes the areas are sewn as.
     pub(super) fn shapes(&self) -> &Shapes {
         &self.shapes_out.shapes
+    }
+
+    /// The pixels each colour sews, by its row: its own, less those of its areas a change leaves
+    /// out (Don't Sew), an area joined of colours sewn in one thread taken from each colour that
+    /// gave it pixels; none for the background or a colour not sewn.
+    pub(super) fn sewn_pixels(&self) -> Vec<usize> {
+        let colours = self.colours();
+        let mut px: Vec<usize> = colours.rows.iter().map(|r| if r.sewn() { r.pixels } else { 0 }).collect();
+        for a in self.areas().areas.iter().filter(|a| a.left_out) {
+            let own = [(a.row, a.pixels)];
+            let given: &[(usize, usize)] = if a.given.is_empty() { &own } else { &a.given };
+            for &(row, pixels) in given {
+                if let Some(p) = px.get_mut(row) {
+                    *p = p.saturating_sub(pixels);
+                }
+            }
+        }
+        px
     }
 
     /// What the stages warn of, in the order they warned; and that nothing was traced, last.

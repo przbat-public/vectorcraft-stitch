@@ -6,8 +6,8 @@
 //!    change's.
 //! 2. Else the nearest pixel within [`REACH_MM`] whose area's colour is: an edge that moved a
 //!    little.
-//! 3. Then the area must be of the kind the change was set on (filled, or a line sewn along its
-//!    middle), and its colour sewn.
+//! 3. Then the area must be of the kind the change was set on, as Create makes it (a filled shape,
+//!    or a line sewn along its middle: one with a centre line), and its colour sewn.
 //!
 //! Otherwise the change is kept, applying to nothing, with why: another colour lies at its point,
 //! nothing sewn does (the background, or past the crop), the area there is of the other kind, or its
@@ -17,14 +17,17 @@
 use vectorcraft_stitch::color::delta_e_rgb;
 use vectorcraft_stitch::thread::MISMATCH_DELTA_E;
 
-use super::rules::AreaKind;
+use super::centre::CentreLine;
+use super::colours::Colours;
+use super::rules::Areas;
 use super::settings::{AreaChange, AreaStitch};
 use super::stages::Digitized;
+use super::working::Working;
 
 /// How far round its point a change looks for an area of its colour (millimetres): the narrowest
 /// satin the planner sews (`plan::SATIN_MIN_WIDTH`), so that an edge moved a little, or a thin line
-/// clicked beside its middle, is still found. Research note 07's estimate; the gate 0 of the area
-/// inspector found it rescues a change rarely, the point being an area's deepest.
+/// clicked beside its middle, is still found. Research note 07's estimate; measured before the area
+/// inspector was built, it rescues a change rarely, the point being an area's deepest.
 pub(super) const REACH_MM: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
 /// Why a change applies to no area now.
@@ -68,9 +71,44 @@ pub(super) struct Applied {
     pub(super) angle: Option<f64>,
 }
 
+/// What a change is found again on: a run's working copy, its areas, their colours and the centre
+/// lines of those sewn along their middle (from the lines stage on).
+pub(super) struct Parts<'a> {
+    pub(super) working: &'a Working,
+    pub(super) areas: &'a Areas,
+    pub(super) colours: &'a Colours,
+    pub(super) lines: &'a [Option<CentreLine>],
+}
+
+impl<'a> Parts<'a> {
+    /// The parts of run `d`.
+    pub(super) fn of(d: &'a Digitized) -> Self {
+        Self { working: d.working(), areas: d.areas(), colours: d.colours(), lines: d.lines() }
+    }
+}
+
 /// Each of `changes` found again in run `d`, in their order.
 pub(super) fn found(changes: &[AreaChange], d: &Digitized) -> Vec<Found> {
-    changes.iter().map(|c| found_one(c, d)).collect()
+    found_in(changes, &Parts::of(d))
+}
+
+/// Each of `changes` found again on `parts`, in their order.
+pub(super) fn found_in(changes: &[AreaChange], parts: &Parts) -> Vec<Found> {
+    changes.iter().map(|c| found_one(c, parts)).collect()
+}
+
+/// Which of `parts`' areas `changes` leave unsewn (by their place): those whose stitch the changes
+/// found to them set to Don't Sew, the last that sets one winning, as Create takes them.
+pub(super) fn left_out(changes: &[AreaChange], parts: &Parts) -> Vec<bool> {
+    let found = found_in(changes, parts);
+    per_area(changes, &found, parts.areas.areas.len()).into_iter().map(|a| a.is_some_and(|a| a.stitch == Some(AreaStitch::None))).collect()
+}
+
+/// Whether area `a` is made a line sewn along its middle (a stroke along its centre line in
+/// `lines`), as Create makes it; a filled shape otherwise (a thin area of a colour set to Fill, or
+/// one with no centre line to sew along, included).
+pub(super) fn made_line(lines: &[Option<CentreLine>], a: usize) -> bool {
+    lines.get(a).is_some_and(Option::is_some)
 }
 
 /// What the changes found set each of a run's `areas` areas to (a later change wins where two set
@@ -91,10 +129,10 @@ pub(super) fn per_area(changes: &[AreaChange], found: &[Found], areas: usize) ->
     out
 }
 
-/// Change `c` found again in run `d`.
-fn found_one(c: &AreaChange, d: &Digitized) -> Found {
-    let areas = d.areas();
-    let rows = &d.colours().rows;
+/// Change `c` found again on `parts`.
+fn found_one(c: &AreaChange, parts: &Parts) -> Found {
+    let areas = parts.areas;
+    let rows = &parts.colours.rows;
     // The area `a`'s colour row, when it is no background.
     let row_of = |a: usize| areas.areas.get(a).and_then(|area| rows.get(area.row)).filter(|r| !r.background);
     let alike = |a: usize| row_of(a).is_some_and(|r| delta_e_rgb(r.color, c.color) <= MISMATCH_DELTA_E);
@@ -102,7 +140,7 @@ fn found_one(c: &AreaChange, d: &Digitized) -> Found {
         let (x, y) = (u32::try_from(x).ok()?, u32::try_from(y).ok()?);
         areas.regions.at(x, y).map(|l| l as usize).filter(|&a| row_of(a).is_some())
     };
-    let w = d.working();
+    let w = parts.working;
     let p = w.to_image.inverse() * c.at;
     if !(p.x.is_finite() && p.y.is_finite()) {
         return Found::Kept(KeptWhy::NoArea);
@@ -129,8 +167,8 @@ fn found_one(c: &AreaChange, d: &Digitized) -> Found {
     let Some(a) = area else {
         return Found::Kept(if under.is_some() { KeptWhy::OtherColor } else { KeptWhy::NoArea });
     };
-    let (Some(found), Some(row)) = (areas.areas.get(a), row_of(a)) else { return Found::Kept(KeptWhy::NoArea) };
-    if (found.kind == AreaKind::Line) != c.line {
+    let Some(row) = row_of(a) else { return Found::Kept(KeptWhy::NoArea) };
+    if made_line(parts.lines, a) != c.line {
         return Found::Kept(KeptWhy::OtherKind);
     }
     if !row.sewn() {

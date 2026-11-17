@@ -153,14 +153,16 @@ fn thread_json(palette: Palette, m: Match) -> Value {
     })
 }
 
-/// The colour list's rows as the reply gives them: the background's, and each colour with areas.
-fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f64) -> Vec<Value> {
-    let sewn_px: usize = colours.rows.iter().filter(|r| r.sewn()).map(|r| r.pixels).sum();
+/// The colour list's rows as the reply gives them: the background's, and each colour with areas;
+/// `sewn_px` the pixels each sews (by its row, `Digitized::sewn_pixels`).
+fn colors_json(colours: &Colours, sewn_px: &[usize], palette: Palette, px_per_mm2: f64, frame_px: f64) -> Vec<Value> {
+    let all_sewn: usize = sewn_px.iter().sum();
     colours
         .rows
         .iter()
-        .filter(|r| r.background || r.areas > 0)
-        .map(|r| {
+        .enumerate()
+        .filter(|(_, r)| r.background || r.areas > 0)
+        .map(|(i, r)| {
             let merged = r.merged_into.and_then(|j| colours.rows.get(j)).map(|t| super::super::hex(t.color));
             // Merged by sharing its only near thread, or because a person asked.
             let reason = match (&r.thread, &merged) {
@@ -182,7 +184,7 @@ fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f
                 "area": hundredths(r.pixels as f64 / px_per_mm2),
                 "areaCount": r.areas,
                 "share": hundredths(r.pixels as f64 / frame_px.max(1.0) * PERCENT),
-                "sewnShare": r.sewn().then(|| hundredths(r.pixels as f64 / sewn_px.max(1) as f64 * PERCENT)),
+                "sewnShare": r.sewn().then(|| hundredths(sewn_px.get(i).copied().unwrap_or(0) as f64 / all_sewn.max(1) as f64 * PERCENT)),
                 "mergedInto": merged,
                 "choice": r.choice,
             })
@@ -191,10 +193,18 @@ fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f
 }
 
 /// How many threads the colours sewn are sewn in: one thread once, however many colours it sews
-/// (two colours a person chose one thread for are one colour in the design).
-fn thread_count(colours: &Colours) -> usize {
-    let mut threads: Vec<usize> =
-        colours.rows.iter().filter(|r| r.sewn() && r.areas > 0).filter_map(|r| r.thread.as_ref()).map(|m| m.thread.index).collect();
+/// (two colours a person chose one thread for are one colour in the design); a colour whose areas
+/// changes all leave out (`sewn_px`, by its row) sews none.
+fn thread_count(colours: &Colours, sewn_px: &[usize]) -> usize {
+    let sews = |i: usize| sewn_px.get(i).is_some_and(|&p| p > 0);
+    let mut threads: Vec<usize> = colours
+        .rows
+        .iter()
+        .enumerate()
+        .filter(|(i, r)| r.sewn() && r.areas > 0 && sews(*i))
+        .filter_map(|(_, r)| r.thread.as_ref())
+        .map(|m| m.thread.index)
+        .collect();
     threads.sort_unstable();
     threads.dedup();
     threads.len()
@@ -284,7 +294,9 @@ fn areas_json(d: &Digitized, palette: Palette, listed: Listed, changed: &[Option
                 .iter()
                 .filter_map(|&(o, edge)| {
                     let o = o as usize;
-                    Some(json!({"area": number(o)?, "edge": hundredths(f64::from(edge) / px), "under": placed.under.contains(&o)}))
+                    // Sewn before it: an area a change leaves out isn't sewn at all.
+                    let under = placed.under.contains(&o) && d.areas().areas.get(o).is_some_and(|x| x.sewn(d.colours()));
+                    Some(json!({"area": number(o)?, "edge": hundredths(f64::from(edge) / px), "under": under}))
                 })
                 .collect();
             Some(json!({
@@ -292,8 +304,8 @@ fn areas_json(d: &Digitized, palette: Palette, listed: Listed, changed: &[Option
                 "at": [hundredths(at.x), hundredths(at.y)],
                 "color": super::super::hex(row.color),
                 "thread": row.thread.as_ref().map(|m| thread_json(palette, m.thread)),
-                "kind": area.kind.id(),
-                "sewn": row.sewn(),
+                "kind": if super::changes::made_line(d.lines(), a) { "line" } else { "fill" },
+                "sewn": area.sewn(d.colours()),
                 "size": {
                     "area": hundredths(area.pixels as f64 / (px * px)),
                     "width": hundredths((x1 - x0) / px),
@@ -315,9 +327,15 @@ fn areas_json(d: &Digitized, palette: Palette, listed: Listed, changed: &[Option
                 "grownUnder": d.shapes().grown_under.get(a).map_or(vec![], |g| g.iter().filter_map(|&b| number(b)).collect::<Vec<_>>()),
                 "outline": outline.map(|(svg, _)| svg),
                 "change": changed.get(a).copied().flatten().map(|c| applied_json(&c)),
+                // An area a change leaves out is taken as not sewn, and sewn after by none.
                 "order": {
-                    "taken": placed.taken.id(),
-                    "after": placed.after.iter().filter_map(|&(o, why)| Some(json!({"area": number(o)?, "because": why.id()}))).collect::<Vec<_>>(),
+                    "taken": if area.left_out { "notSewn" } else { placed.taken.id() },
+                    "after": placed
+                        .after
+                        .iter()
+                        .filter(|&&(o, _)| d.areas().areas.get(o).is_some_and(|x| x.sewn(d.colours())))
+                        .filter_map(|&(o, why)| Some(json!({"area": number(o)?, "because": why.id()})))
+                        .collect::<Vec<_>>(),
                 },
             }))
         })
@@ -629,8 +647,8 @@ pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
             "bounds": w.bounds_mm().map(hundredths),
             "background": background_json(d.found(), settings.background, d.background()),
         },
-        "colorCount": thread_count(d.colours()),
-        "colors": colors_json(d.colours(), palette, px_per_mm2, frame_px),
+        "colorCount": thread_count(d.colours(), &d.sewn_pixels()),
+        "colors": colors_json(d.colours(), &d.sewn_pixels(), palette, px_per_mm2, frame_px),
         "unusedChoices": unused,
         "areaChanges": change_states,
         "edited": edited,

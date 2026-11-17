@@ -76,7 +76,8 @@ fn an_area_change_out_of_shape_is_refused() {
     // At most as many changes as the table says.
     let most = usize::try_from(row()["range"][1].as_u64().expect("a most")).expect("a count");
     settings(json!({"areaChanges": vec![tatami(); most]})).expect("as many as the table says");
-    assert!(settings(json!({"areaChanges": vec![tatami(); most + 1]})).is_err(), "one more is refused");
+    let e = settings(json!({"areaChanges": vec![tatami(); most + 1]})).err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(e.contains(&format!("{} changes", most + 1)) && !e.contains("tatami"), "one more is refused, said by its count: {e}");
 }
 
 #[test]
@@ -182,6 +183,19 @@ fn a_change_set_on_a_fill_is_kept_on_a_line() {
     assert_eq!(found(&c, &d), vec![Found::Kept(KeptWhy::OtherKind), Found::Applies(line)]);
 }
 
+/// A thin area of a colour set to Fill is made a filled shape (no centre line), so a change is
+/// found on it as a fill's, and one set on a line is kept as of the other kind.
+#[test]
+fn a_fill_colours_thin_area_takes_a_fills_changes() {
+    let d = digitize(&picture(), &json!({"colorChoices": [{"color": hex(NAVY), "job": "fill"}]}));
+    let c = changes(json!([
+        {"at": [353.0, 100.5], "color": hex(NAVY), "kind": "fill", "stitch": "tatami"},
+        {"at": [353.0, 100.5], "color": hex(NAVY), "kind": "line", "stitch": "running"},
+    ]));
+    let thin = area(&d, 353, 100);
+    assert_eq!(found(&c, &d), vec![Found::Applies(thin), Found::Kept(KeptWhy::OtherKind)]);
+}
+
 #[test]
 fn a_change_on_a_colour_not_sewn_is_kept() {
     let d = digitize(&picture(), &json!({"colorChoices": [{"color": hex(ORANGE), "job": "none"}]}));
@@ -280,6 +294,167 @@ fn a_satin_width_covers_the_whole_area() {
     let group = NodeId(r["created"]["group"].as_u64().unwrap());
     let square = parts(&object_at(&d, group, 8.0, 10.0)).0.and_then(|p| p.narrow_as_satin);
     assert_eq!(square, Some(12.0), "a 12 mm square: at most 12 mm, its wider parts tatami");
+}
+
+/// Satin's width is measured on the shape the area is made as: a 10 mm square with a 3 mm dot sewn
+/// over it is sewn solid, so its satin covers the 10 mm and the overlap, not the ring round the dot.
+#[test]
+fn a_satin_width_is_measured_with_the_islands_sewn_over_it() {
+    let picture = tr::Raster::from_fn(200, 200, |x, y| {
+        if inside(x, y, [85, 85, 115, 115]) {
+            NAVY
+        } else if inside(x, y, [50, 50, 150, 150]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let changes = json!([{"at": [60.5, 60.5], "color": hex(ORANGE), "kind": "fill", "stitch": "satin"}]);
+    let r = s.execute("embroidery.digitizeImage", &json!({"colors": 2, "areaChanges": changes})).unwrap();
+    let d = s.doc().unwrap().doc.clone();
+    let group = NodeId(r["created"]["group"].as_u64().unwrap());
+    let square = parts(&object_at(&d, group, 6.0, 6.0)).0.and_then(|p| p.narrow_as_satin).expect("satin set");
+    assert!((10.0..=11.0).contains(&square), "the 10 mm square and its overlap, the dot filled in: {square}");
+}
+
+/// A satin width is the area's widest part and the default overlap (0.4 mm) on each side, rounded up
+/// to a tenth of a millimetre: the orange bar's, as the reply measures it.
+#[test]
+fn a_satin_width_is_the_widest_part_and_the_overlap_rounded_up() {
+    let mut s = placed(&picture());
+    let dry = s.execute("embroidery.digitizeImage", &json!({"dryRun": true})).unwrap();
+    let bar = dry["areas"].as_array().and_then(|a| a.iter().find(|a| a["at"][0].as_f64().is_some_and(|x| (300.0..320.0).contains(&x))).cloned());
+    let widest = bar.and_then(|b| b["widest"].as_f64()).expect("the bar's widest part");
+    let changes = json!([{"at": [310.5, 100.5], "color": hex(ORANGE), "kind": "fill", "stitch": "satin"}]);
+    let r = s.execute("embroidery.digitizeImage", &json!({"areaChanges": changes})).unwrap();
+    let d = s.doc().unwrap().doc.clone();
+    let group = NodeId(r["created"]["group"].as_u64().unwrap());
+    let satin = parts(&object_at(&d, group, 31.0, 10.0)).0.and_then(|p| p.narrow_as_satin).expect("satin set");
+    let wanted = ((widest + 2.0 * super::settings::OVERLAP_MM) * 10.0 - 1e-9).ceil() / 10.0;
+    assert!((satin - wanted).abs() < 1e-9, "{widest} mm and 0.4 mm a side, rounded up: {wanted}, not {satin}");
+}
+
+/// An orange bar 4 mm wide between two navy stripes 3 mm wide sewn as lines, on white: the bar
+/// grows under each stripe to its middle, so it is made about 7 mm wide.
+fn bar_between_lines(bar_px: u32) -> tr::Raster {
+    let bottom = 50 + bar_px;
+    tr::Raster::from_fn(200, bottom + 50, |x, y| {
+        if inside(x, y, [20, 20, 180, 50]) || inside(x, y, [20, bottom, 180, bottom + 30]) {
+            NAVY
+        } else if inside(x, y, [20, 50, 180, bottom]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    })
+}
+
+/// Satin's width covers how far an area reaches under the centre lines beside it, whatever the
+/// overlap: the 4 mm bar between two 3 mm stripes is made about 7.1 mm wide, so its satin is that
+/// and the overlap, not the 4 mm and the overlap.
+#[test]
+fn a_satin_width_covers_the_lines_an_area_grows_under() {
+    let mut s = placed(&bar_between_lines(40));
+    let lines = json!([{"color": hex(NAVY), "job": "lines"}]);
+    let changes = json!([{"at": [100.5, 70.5], "color": hex(ORANGE), "kind": "fill", "stitch": "satin"}]);
+    let r = s.execute("embroidery.digitizeImage", &json!({"colors": 2, "colorChoices": lines, "areaChanges": changes})).unwrap();
+    let d = s.doc().unwrap().doc.clone();
+    let group = NodeId(r["created"]["group"].as_u64().unwrap());
+    let bar = parts(&object_at(&d, group, 10.0, 7.0)).0.and_then(|p| p.narrow_as_satin).expect("satin set");
+    assert!(bar >= 7.0, "the bar as made, under half of each stripe: {bar}");
+    // With no overlap: the bands' half pixel past the middle on each side counted too (7.1 mm made).
+    let mut s = placed(&bar_between_lines(40));
+    let r = s.execute("embroidery.digitizeImage", &json!({"colors": 2, "overlap": 0.0, "colorChoices": lines, "areaChanges": changes})).unwrap();
+    let d = s.doc().unwrap().doc.clone();
+    let group = NodeId(r["created"]["group"].as_u64().unwrap());
+    let bar = parts(&object_at(&d, group, 10.0, 7.0)).0.and_then(|p| p.narrow_as_satin).expect("satin set");
+    assert!(bar >= 7.1 - 1e-9, "the bar as made with no overlap, 7.1 mm: {bar}");
+}
+
+/// A colour whose only area a change leaves out sews no thread: the reply counts the threads sewn
+/// without it, and the outlines' thread is the darkest of those sewn, not its own.
+#[test]
+fn a_colour_left_out_area_by_area_sews_no_thread() {
+    let picture = tr::Raster::from_fn(300, 200, |x, y| {
+        if inside(x, y, [20, 20, 140, 180]) {
+            ORANGE
+        } else if inside(x, y, [160, 50, 260, 150]) {
+            NAVY
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let dont_sew = json!([{"at": [210.5, 100.5], "color": hex(NAVY), "kind": "fill", "stitch": "none"}]);
+    let r = s.execute("embroidery.digitizeImage", &json!({"dryRun": true, "colors": 2, "colorOutlines": true, "areaChanges": dont_sew})).unwrap();
+    assert_eq!(r["colorCount"], json!(1), "the orange's thread alone");
+    let orange = r["colors"].as_array().and_then(|c| c.iter().find(|c| c["color"] == json!(hex(ORANGE)))).map(|c| c["thread"]["index"].clone());
+    assert_eq!(Some(r["outlined"]["thread"]["index"].clone()), orange, "the outlines in the orange's thread: {}", r["outlined"]);
+    let navy = r["colors"].as_array().and_then(|c| c.iter().find(|c| c["color"] == json!(hex(NAVY)))).map(|c| c["sewnShare"].clone());
+    assert_eq!(navy, Some(json!(0.0)), "none of the navy sewn");
+}
+
+/// A colour merged into another, its area joined with that one's, sews nothing once the joined
+/// area is left out: neither colour counts a thread, the merged one has no share sewn, and the
+/// outlines take the thread still sewn.
+#[test]
+fn colours_joined_into_one_area_left_out_sew_no_thread() {
+    const BLUE: [u8; 4] = [40, 60, 200, 255];
+    let picture = tr::Raster::from_fn(400, 200, |x, y| {
+        if inside(x, y, [20, 20, 120, 180]) {
+            NAVY
+        } else if inside(x, y, [120, 20, 220, 180]) {
+            BLUE
+        } else if inside(x, y, [260, 20, 380, 180]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let merged = json!([{"color": hex(BLUE), "mergeInto": hex(NAVY)}]);
+    let dont_sew = json!([{"at": [70.5, 100.5], "color": hex(NAVY), "kind": "fill", "stitch": "none"}]);
+    let r = s
+        .execute(
+            "embroidery.digitizeImage",
+            &json!({"dryRun": true, "colors": 3, "colorChoices": merged, "colorOutlines": true, "areaChanges": dont_sew}),
+        )
+        .unwrap();
+    assert_eq!(r["areaChanges"][0]["applies"], json!(true), "{}", r["areaChanges"]);
+    assert_eq!(r["colorCount"], json!(1), "the orange's thread alone");
+    let colour = |c: [u8; 4]| r["colors"].as_array().and_then(|l| l.iter().find(|x| x["color"] == json!(hex(c))).cloned()).unwrap_or(Value::Null);
+    assert_eq!(colour(BLUE)["sewnShare"], json!(0.0), "the merged colour: none sewn: {}", colour(BLUE));
+    assert_eq!(r["outlined"]["thread"]["index"], colour(ORANGE)["thread"]["index"], "the outlines in the orange's thread");
+}
+
+/// An area a change leaves out is sewn before none of the areas it touches, in the reply: the orange
+/// square, sewn before the navy one against it, is no longer "under" it once left out.
+#[test]
+fn an_area_left_out_is_sewn_before_none_it_touches() {
+    let picture = tr::Raster::from_fn(300, 200, |x, y| {
+        if inside(x, y, [20, 20, 160, 180]) {
+            ORANGE
+        } else if inside(x, y, [160, 50, 260, 150]) {
+            NAVY
+        } else {
+            WHITE
+        }
+    });
+    let mut s = placed(&picture);
+    let navy_under = |r: &Value| {
+        let navy = r["areas"].as_array().and_then(|a| a.iter().find(|a| a["color"] == json!(hex(NAVY))).cloned()).expect("the navy square");
+        navy["touches"].as_array().map(|t| t.iter().map(|t| t["under"].clone()).collect::<Vec<_>>()).unwrap_or_default()
+    };
+    let plain = s.execute("embroidery.digitizeImage", &json!({"dryRun": true, "colors": 2})).unwrap();
+    assert_eq!(navy_under(&plain), vec![json!(true)], "the orange sewn before it");
+    let dont_sew = json!([{"at": [80.5, 100.5], "color": hex(ORANGE), "kind": "fill", "stitch": "none"}]);
+    let r = s.execute("embroidery.digitizeImage", &json!({"dryRun": true, "colors": 2, "areaChanges": dont_sew})).unwrap();
+    assert_eq!(navy_under(&r), vec![json!(false)], "the orange left out: sewn before nothing");
+    // Its order: taken as not sewn, and the navy sewn after nothing for it.
+    let area = |c: [u8; 4]| r["areas"].as_array().and_then(|a| a.iter().find(|a| a["color"] == json!(hex(c))).cloned()).expect("an area");
+    assert_eq!(area(ORANGE)["order"]["taken"], json!("notSewn"));
+    assert_eq!(area(NAVY)["order"]["after"], json!([]), "{}", area(NAVY)["order"]);
 }
 
 /// The reply says which changes apply, and to which area by its number; each area lists what the

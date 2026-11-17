@@ -113,16 +113,6 @@ pub(super) enum AreaKind {
     Line,
 }
 
-impl AreaKind {
-    /// Its id in replies.
-    pub(super) fn id(self) -> &'static str {
-        match self {
-            Self::Fill => "fill",
-            Self::Line => "line",
-        }
-    }
-}
-
 /// An area to sew (or to leave unsewn): one traced path, or several joined.
 #[derive(Clone, Debug)]
 pub(super) struct Area {
@@ -138,6 +128,20 @@ pub(super) struct Area {
     pub(super) inside: Option<usize>,
     pub(super) narrow: bool,
     pub(super) sewn_over: bool,
+    /// A change to it alone (`areaChanges`, Don't Sew) leaves it unsewn though its colour is sewn
+    /// (`super::changes::left_out`, set by the shapes stage): what lies inside it keeps its hole,
+    /// nothing grows under it, no outline goes round it.
+    pub(super) left_out: bool,
+    /// The pixels each colour gave it (by its row), when it is joined of areas of colours sewn in
+    /// one thread (`joined_by_thread`); empty when all are its own row's.
+    pub(super) given: Vec<(usize, usize)>,
+}
+
+impl Area {
+    /// Whether it is sewn: its colour is (`Colour::sewn`), and no change to it alone leaves it out.
+    pub(super) fn sewn(&self, colours: &Colours) -> bool {
+        !self.left_out && colours.rows.get(self.row).is_some_and(super::colours::Colour::sewn)
+    }
 }
 
 /// The areas of a trace after the rules, and its region map with each pixel's area.
@@ -303,6 +307,8 @@ pub(super) fn applied(
                 inside: None,
                 narrow: false,
                 sewn_over: false,
+                left_out: false,
+                given: Vec::new(),
             });
         }
     }
@@ -429,7 +435,16 @@ pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result
             && let Some(slot) = place.get_mut(a)
         {
             *slot = Some(out.len());
-            out.push(Area { paths: Vec::new(), pixels: 0, inside: None, narrow: false, sewn_over: false, ..area.clone() });
+            out.push(Area {
+                paths: Vec::new(),
+                pixels: 0,
+                inside: None,
+                narrow: false,
+                sewn_over: false,
+                left_out: false,
+                given: Vec::new(),
+                ..area.clone()
+            });
         }
     }
     let mut best: Vec<Option<(bool, usize)>> = vec![None; out.len()];
@@ -439,6 +454,10 @@ pub(super) fn joined_by_thread(areas: Areas, colours: &Colours) -> crate::Result
         let (Some(group), Some(pick)) = (out.get_mut(g), best.get_mut(g)) else { continue };
         group.paths.extend(area.paths.iter().copied());
         group.pixels += area.pixels;
+        match group.given.iter_mut().find(|(row, _)| *row == area.row) {
+            Some((_, px)) => *px += area.pixels,
+            None => group.given.push((area.row, area.pixels)),
+        }
         if area.kind == AreaKind::Fill {
             group.kind = AreaKind::Fill;
         }

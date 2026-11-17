@@ -219,6 +219,16 @@ struct LinesSettings {
     thin_line: f64,
 }
 
+/// A change to a single area setting its stitch, as the shapes read it: what finds its area again,
+/// and whether it leaves that area out.
+#[derive(PartialEq)]
+struct StitchSet {
+    at: vectorcraft_geom::Point,
+    color: [u8; 3],
+    line: bool,
+    leaves_out: bool,
+}
+
 /// What the centre lines and the order read: the working copy, the colours and the request's
 /// [`LinesSettings`].
 #[derive(PartialEq)]
@@ -228,10 +238,14 @@ struct LinesKey {
     settings: LinesSettings,
 }
 
-/// What the shapes read of a request: the overlap.
+/// What the shapes read of a request: the overlap; and the changes to single areas that may leave
+/// one unsewn (Don't Sew), so that what lies inside it keeps its hole: those setting a stitch from
+/// the first Don't Sew on (one before it leaves nothing out, and a later change to its area
+/// overrules it).
 #[derive(PartialEq)]
 struct ShapesSettings {
     overlap: f64,
+    stitches: Vec<StitchSet>,
 }
 
 /// What the shapes read: the working copy, the trace, the colours, the lines and the request's
@@ -385,7 +399,9 @@ impl WindowRequest {
     }
 
     fn shapes_settings(&self) -> ShapesSettings {
-        ShapesSettings { overlap: self.settings.overlap }
+        let set = |c: &AreaChange| c.stitch.map(|s| StitchSet { at: c.at, color: c.color, line: c.line, leaves_out: s == AreaStitch::None });
+        let stitches = self.settings.changes.iter().filter_map(set).skip_while(|s| !s.leaves_out).collect();
+        ShapesSettings { overlap: self.settings.overlap, stitches }
     }
 
     fn objects_settings(&self) -> ObjectsSettings {
@@ -444,7 +460,7 @@ impl Place {
 /// An area as the window names and describes it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AreaFacts {
-    /// Its number in the sewing order, from 1 (`None`: not sewn).
+    /// Its number in the sewing order among the areas sewn, from 1 (`None`: not sewn).
     pub number: Option<usize>,
     /// The image's colour it is of.
     pub color: [u8; 3],
@@ -457,13 +473,16 @@ pub struct AreaFacts {
     pub area_mm2: f64,
     /// A line sewn along its middle, or a fill.
     pub line: bool,
-    /// Whether it is sewn (the background and a colour set not to be sewn aren't).
+    /// Whether it is sewn (the background, a colour set not to be sewn and, once the lines are
+    /// found, an area a change leaves out (Don't Sew) aren't).
     pub sewn: bool,
     /// Whether it is the background.
     pub background: bool,
     /// Where it lies in the design's box.
     pub place: Place,
-    /// Its widest part (millimetres): twice the distance from its deepest point to its edge.
+    /// Its widest part (millimetres): twice the distance from its deepest point to its edge, measured
+    /// on the shape it is made as once the shapes are done (the islands it is made solid under and
+    /// its shares of the centre lines beside it in it), on its own pixels until then.
     pub widest_mm: f64,
     /// How wide the line sewn along its middle is (millimetres; `None`: a filled area, or the
     /// lines aren't found yet).
@@ -519,8 +538,9 @@ pub enum ChangeState {
 }
 
 /// Two areas are alike for Apply to Similar Areas when they are of the same colour and kind and
-/// their sizes lie within this share of the larger: an estimate the area inspector's gate 0 found
-/// groups what a person calls alike (a fox's ears and eyes, a watermelon's seeds, a logo's letters).
+/// their sizes lie within this share of the larger: an estimate, checked before the inspector was
+/// built on the person's real designs and the test logos (2026-11-16), to group what a person calls
+/// alike (a fox's ears and eyes, a watermelon's seeds, a logo's letters).
 const SIMILAR_SHARE: f64 = 0.25;
 
 /// What a run has made so far, stage by stage: shared outputs, cheap to clone and to hand to
@@ -709,18 +729,23 @@ impl Outputs {
         let palette = self.palette?;
         let px_per_mm = self.px_per_mm()?;
         let lines = self.lines.as_ref().map(|l| &l.value);
-        let areas = lines.map_or(&c.areas, |l| &l.areas);
+        // The areas as they are sewn once the shapes are done (those a change leaves out marked).
+        let areas = self.shapes.as_ref().map(|s| &s.value.areas).or_else(|| lines.map(|l| &l.areas)).unwrap_or(&c.areas);
         let area = areas.areas.get(a)?;
         let row = c.colours.rows.get(area.row)?;
         let thread =
             row.thread.as_ref().filter(|_| !row.background).and_then(|m| palette.get(m.thread.index).map(|(rgb, name)| (m.thread.index, rgb, name)));
-        let sewn = row.sewn() && !row.background;
+        // Sewn: by its colour, and once the lines are found, no change to it alone leaving it out.
+        let sewn = !row.background && area.sewn(&c.colours);
         // Numbered in sewing order, and among the areas of its thread.
         let thread_of = |b: usize| areas.areas.get(b).and_then(|x| c.colours.rows.get(x.row)).and_then(|r| r.thread.as_ref()).map(|m| m.thread.index);
         let (mut number, mut own_number, mut box_of) = (None, None, None::<[u32; 4]>);
         if let Some(l) = lines {
+            // Numbered among the areas sewn (those of a colour not sewn come first in the order, and
+            // aren't; those a change leaves out aren't either).
+            let of_sewn = |b: usize| areas.areas.get(b).is_some_and(|x| x.sewn(&c.colours));
             let mut own = 0;
-            for (i, &b) in l.order.sewn.iter().enumerate() {
+            for (i, &b) in l.order.sewn.iter().filter(|&&b| of_sewn(b)).enumerate() {
                 if thread_of(b) == thread.map(|t| t.0) {
                     own += 1;
                 }
@@ -745,18 +770,21 @@ impl Outputs {
             own_number: own_number.filter(|_| sewn),
             thread_color: thread.map(|t| t.1),
             area_mm2: area.pixels as f64 / (px_per_mm * px_per_mm),
-            line: area.kind == AreaKind::Line,
+            // A line: sewn along its middle as Create makes it, once the centre lines are found.
+            line: lines.map_or(area.kind == AreaKind::Line, |l| super::changes::made_line(&l.lines, a)),
             sewn,
             background: row.background,
             place: Place::of(share(cx, x0, x1), share(cy, y0, y1)),
-            widest_mm: stats.widest_px / px_per_mm,
+            // Satin's measure: the shape it is made as, once the shapes are done.
+            widest_mm: self.shapes.as_ref().and_then(|s| s.value.shapes.widest_px.get(a).copied()).unwrap_or(stats.widest_px) / px_per_mm,
             line_width_mm,
             size_mm: ((bx1 - bx0) / px_per_mm, (by1 - by0) / px_per_mm),
         })
     }
 
     /// The key of the area under working pixel `(x, y)` (a point inside it, its colour and its
-    /// kind), once the image is digitized; `None` on the background.
+    /// kind), once the image is digitized; `None` on the background and on an area of a colour not
+    /// sewn, which a change never finds.
     pub fn area_key(&self, x: u32, y: u32) -> Option<AreaKey> {
         let d = self.digitized()?;
         key_of(&d, d.areas().regions.at(x, y)? as usize)
@@ -796,28 +824,30 @@ impl Outputs {
         let areas = d.areas();
         let Some(a) = areas.regions.at(x, y).map(|l| l as usize) else { return vec![] };
         let Some(this) = areas.areas.get(a) else { return vec![] };
-        let alike = |b: &Area| {
-            let (p, q) = (b.pixels as f64, this.pixels as f64);
-            b.row == this.row && b.kind == this.kind && (p - q).abs() <= SIMILAR_SHARE * p.max(q)
+        let line = |b: usize| super::changes::made_line(d.lines(), b);
+        let alike = |b: usize, x: &Area| {
+            let (p, q) = (x.pixels as f64, this.pixels as f64);
+            x.row == this.row && line(b) == line(a) && (p - q).abs() <= SIMILAR_SHARE * p.max(q)
         };
-        d.order().sewn.iter().filter(|&&b| b != a && areas.areas.get(b).is_some_and(alike)).filter_map(|&b| key_of(&d, b)).collect()
+        d.order().sewn.iter().filter(|&&b| b != a && areas.areas.get(b).is_some_and(|x| alike(b, x))).filter_map(|&b| key_of(&d, b)).collect()
     }
 
-    /// Where the area under working pixel `(x, y)` is sewn, once the order is found.
+    /// Where the area under working pixel `(x, y)` is sewn among the areas sewn, once the order is
+    /// found (`None` for an area not sewn: of a colour not sewn, or one a change leaves out).
     pub fn sewing_place(&self, x: u32, y: u32) -> Option<SewingPlace> {
         let d = self.digitized()?;
         let a = d.areas().regions.at(x, y)? as usize;
-        let sewn = &d.order().sewn;
+        let sewn: Vec<usize> = d.order().sewn.iter().copied().filter(|&b| d.areas().areas.get(b).is_some_and(|x| x.sewn(d.colours()))).collect();
         let i = sewn.iter().position(|&b| b == a)?;
         let facts = |j: Option<usize>| j.and_then(|j| sewn.get(j)).and_then(|&b| Some((self.facts(b)?, key_of(&d, b)?)));
         Some(SewingPlace { number: i + 1, of: sewn.len(), before: facts(i.checked_sub(1)), after: facts(i.checked_add(1)) })
     }
 
     /// The key of the area sewn first, once the order is found: where the keyboard starts in the
-    /// preview.
+    /// preview (an area a change leaves out is passed by, as one of a colour not sewn).
     pub fn first_key(&self) -> Option<AreaKey> {
         let d = self.digitized()?;
-        d.order().sewn.iter().find_map(|&a| key_of(&d, a))
+        d.order().sewn.iter().filter(|&&a| d.areas().areas.get(a).is_some_and(|x| x.sewn(d.colours()))).find_map(|&a| key_of(&d, a))
     }
 
     /// Which working pixels belong to an area sewn after the one under working pixel `(x, y)`: the
@@ -828,7 +858,9 @@ impl Outputs {
         let regions = &d.areas().regions;
         let a = regions.at(x, y)? as usize;
         let placed = &d.order().placed;
-        let index = |l: usize| placed.get(l).and_then(|p| p.index);
+        // Sewn: an area a change leaves out is sewn after nothing, nor is anything sewn after it.
+        let sewn = |l: usize| d.areas().areas.get(l).is_some_and(|x| x.sewn(d.colours()));
+        let index = |l: usize| placed.get(l).and_then(|p| p.index).filter(|_| sewn(l));
         let own = index(a)?;
         let mask = regions.labels.iter().map(|&l| u8::from(index(l as usize).is_some_and(|i| i > own))).collect();
         Some((regions.w, regions.h, mask))
@@ -1069,11 +1101,13 @@ fn plan_of(planning: &DetachedService, objects: &ObjectsOut) -> Result<PlanOut> 
 /// pixels, its colour and its kind; `None` for the background.
 fn key_of(d: &Digitized, a: usize) -> Option<AreaKey> {
     let area = d.areas().areas.get(a)?;
-    d.colours().rows.get(area.row).filter(|r| !r.background)?;
+    // An area of a colour not sewn has no key: a change to it is kept, never found
+    // (`KeptWhy::NotSewn`). One a change leaves out has: it can be changed back.
+    d.colours().rows.get(area.row).filter(|r| r.sewn())?;
     let (x, y) = d.areas().regions.areas.get(a)?.deepest;
     let at = d.working().to_image * vectorcraft_geom::Point::new(f64::from(x) + 0.5, f64::from(y) + 0.5);
     let color = d.colours().rows.get(area.row)?.color;
-    Some(AreaKey { at: [at.x, at.y], color, line: area.kind == AreaKind::Line })
+    Some(AreaKey { at: [at.x, at.y], color, line: super::changes::made_line(d.lines(), a) })
 }
 
 impl Outputs {

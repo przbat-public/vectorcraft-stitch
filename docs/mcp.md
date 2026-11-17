@@ -8614,7 +8614,14 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   fingerprint of its objects and its size in millimetres; given as `id` with `live: true` it is digitized again in its
   place keeping its id, and without `live` it becomes plain objects, its image back on a template layer (where the
   live object's place isn't sewn, its image left in that place, as an image's is); the image it holds, given as `id`,
-  stands for it.
+  stands for it. A live object given (or its image) starts from the settings it keeps, as the window opens on it, for
+  a dry run and Create alike: a setting the request gives wins, one given as `null` is the default, the rest are the
+  live object's own (the reply's `settings` says which were used). Kept settings the engine refuses (a newer
+  version's, a file edited by hand, a crop outside its image once relinked) are neither a failure nor dropped
+  silently: their threads are let go when it was made in another thread palette (warning `keptThreadsLetGo`), else
+  the settings given and the defaults are used (warning `keptSettingsRefused` {why}: what blocks them; giving it, or
+  `null` for it, takes the rest); kept keys this version has no setting for are left out (warning
+  `keptSettingsUnknown` {keys}).
   `imageTrace.make` and `makeAndExpand` refuse a live object ("change it in Digitize Image…"). One undo step "Digitize
   Image", the new group selected; Nearest Connection is not run. More than 10,000
   areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
@@ -8637,7 +8644,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   to `lines` with no centre line to sew along, a dot or a blob shorter than it is wide, sewn as the shapes they are),
   `shapesNotJoined` {count}, `outlinesBesideLines` {share} (the colour outlines run beside the image's own lines,
   the areas sewn along their middle, along `share` % of their length or more, from 25 %: sewn twice there),
-  `nothingTraced` and
+  `nothingTraced`, `keptThreadsLetGo`, `keptSettingsRefused` {why} and `keptSettingsUnknown` {keys} (a live object's
+  kept settings, above) and
   `nothingToMake` (a dry run's; Create is refused instead). `unusedChoices` lists `{choice, reason}` for each choice
   that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
   names none, the background's aside, so the colours it took are sewn as their own). `areaChanges` lists, for each

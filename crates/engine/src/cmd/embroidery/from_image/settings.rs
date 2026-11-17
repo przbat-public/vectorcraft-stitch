@@ -238,7 +238,7 @@ pub(super) const BORDER_WIDTH_RANGE_MM: (f64, f64) = (vectorcraft_stitch::plan::
 /// The most changes to single areas one call takes (`areaChanges`): far past what a person sets in
 /// one design (the test logos have 38 to 61 areas), and a bound on the work of finding them again,
 /// a look-up round each one's point a run. An estimate.
-pub(super) const MAX_AREA_CHANGES: usize = 1_000;
+pub const MAX_AREA_CHANGES: usize = 1_000;
 
 /// How a changed area is sewn ([`AreaChange::stitch`]): a filled area as tatami, as satin or not at
 /// all; a line (an area sewn along its middle) as a running stitch, as satin or not at all.

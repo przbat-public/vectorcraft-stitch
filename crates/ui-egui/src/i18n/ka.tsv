@@ -7658,3 +7658,5 @@ embroidery	This live object was made in another thread palette: its colors are m
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	დიგიტალიზაციის შემდეგ {value}%-ზე მეტით მასშტაბირებული დინამიკური დიგიტალიზებული სურათები: ხელახლა დიგიტალიზება
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	დინამიკური ნაქარგობის ობიექტი: შეცვალეთ „სურათის დიგიტალიზაცია…“-ში (ობიექტი › გამოსახულების ვექტორიზაცია)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	ეს იქნებოდა {count}-ზე მეტი ცვლილება არეებზე — მაქსიმუმი, რასაც დიზაინი იღებს.

@@ -6,9 +6,9 @@
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers};
 use serde_json::json;
-use vectorcraft_engine::cmd::embroidery::AreaFacts;
+use vectorcraft_engine::cmd::embroidery::{AreaFacts, AreaKey, DigitizeStage, MAX_AREA_CHANGES};
 
-use super::tests::{app_with, frame, key, live, nodes, open_dialog, opened_with, press, ready, reply, set, type_into, until, window_field};
+use super::tests::{app_with, click, frame, key, live, nodes, open_dialog, opened_with, press, ready, reply, set, type_into, until, window_field};
 use crate::VectorcraftApp;
 
 /// A picture placed at its 72 ppi (a pixel 0.35 mm): an orange square 35 × 28 mm, a navy bar
@@ -175,6 +175,104 @@ fn the_inspector_follows_its_area_through_a_recompute() {
     assert!(before.is_some() && inspected(&app).and_then(|f| f.thread_name) == before, "the navy bar still");
 }
 
+/// One frame of the inspector alone, open on `key` over `outputs`, a run under way (`running`) or
+/// not: the inspector as that frame leaves it.
+fn inspector_frame(
+    outputs: &vectorcraft_engine::cmd::embroidery::DigitizeOutputs,
+    key: AreaKey,
+    running: bool,
+) -> Option<super::inspector::Inspected> {
+    let ctx = egui::Context::default();
+    let mut inspected = Some(super::inspector::Inspected { key, order: false, similar_shown: false, similar: None });
+    let mut fields = serde_json::Map::new();
+    let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(1440.0, 900.0))), ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        egui::Popup::open_id(ui.ctx(), super::inspector::popup_id());
+        let pane = ui.max_rect();
+        super::inspector::show(ui, pane, &mut fields, &mut inspected, outputs, running, |p| egui::pos2(p.x as f32, p.y as f32));
+    });
+    out.textures_delta.clear();
+    inspected
+}
+
+/// A run shows its stages as they come, the areas found only once its shapes are done: the inspector
+/// waits, open, through a result shown so far without them while the run is under way, and is on
+/// its area once they are; a result left without them (a run that failed or was refused) closes it.
+#[test]
+fn the_inspector_waits_through_a_run_and_closes_on_a_result_left_without_shapes() {
+    let (app, _, _) = opened();
+    let whole = live(&app).schedule.shown.clone().expect("a result");
+    let key = whole.outputs.area_key(160, 45).expect("the navy bar's key");
+    // The result as a run shows it after its centre lines, before its shapes.
+    let mut so_far = None;
+    app.session
+        .digitize_pipeline()
+        .run(&whole.request, &|_, _| true, &mut |stage, out, _| {
+            if stage == DigitizeStage::Lines {
+                so_far = Some(out.clone());
+            }
+        })
+        .expect("a run");
+    let partial = so_far.expect("the outputs up to the centre lines");
+    assert!(inspector_frame(&partial, key.clone(), true).is_some(), "waiting, open, while the run is under way");
+    assert!(inspector_frame(&partial, key.clone(), false).is_none(), "a result left without shapes closes it");
+    assert!(inspector_frame(&whole.outputs, key, false).is_some_and(|i| i.similar.is_some()), "on its area with the shapes");
+}
+
+/// Through whole app frames: a result shown without shapes keeps the inspector while a change waits
+/// to run (a heavy one waits for the settings to rest), and closes it once nothing is under way.
+#[test]
+fn the_window_keeps_the_inspector_only_while_a_run_is_under_way() {
+    let (mut app, ctx, mut time) = opened();
+    click_at(&mut app, &ctx, &mut time, 160, 45);
+    assert!(live(&app).inspector.is_some(), "open on the navy bar");
+    let whole = live(&app).schedule.shown.clone().expect("a result");
+    let mut so_far = None;
+    app.session
+        .digitize_pipeline()
+        .run(&whole.request, &|_, _| true, &mut |stage, out, _| {
+            if stage == DigitizeStage::Lines {
+                so_far = Some(out.clone());
+            }
+        })
+        .expect("a run");
+    let partial = super::schedule::Shown { outputs: so_far.expect("the outputs up to the centre lines"), whole: false, ..whole.clone() };
+    // A heavy change waiting for the settings to rest: under way.
+    super::tests::live_mut(&mut app).schedule.time_stages(super::schedule::LIVE_PLAN_MS * 10.0);
+    set(&mut app, "smoothing", json!(30));
+    time += 0.01;
+    frame(&mut app, &ctx, time, vec![]);
+    super::tests::live_mut(&mut app).schedule.shown = Some(partial.clone());
+    time += 0.01;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(live(&app).schedule.busy() && live(&app).inspector.is_some(), "kept while the change waits");
+    // Nothing under way: the change taken back before it ran, the result left without shapes.
+    let (mut app, ctx, mut time) = opened();
+    click_at(&mut app, &ctx, &mut time, 160, 45);
+    assert!(!live(&app).schedule.busy(), "nothing under way");
+    super::tests::live_mut(&mut app).schedule.shown = Some(partial);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(live(&app).inspector.is_none(), "closed: no shapes are coming");
+}
+
+/// An angle typed into the inspector and left by a click on another area is the first area's: the
+/// inspector takes what was typed in it before it moves.
+#[test]
+fn an_angle_left_by_a_click_on_another_area_is_the_first_areas() {
+    let (mut app, ctx, mut time) = opened();
+    click_at(&mut app, &ctx, &mut time, 160, 45);
+    click(&mut app, &ctx, &mut time, "Angle", Role::TextInput);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::A, Modifiers::COMMAND), Event::Text("30".into())]);
+    click_at(&mut app, &ctx, &mut time, 150, 80);
+    assert!(inspected(&app).is_some_and(|f| f.line), "moved to the line");
+    let changes = window_field(&app, "areaChanges").expect("the angle set");
+    let all = changes.as_array().cloned().unwrap_or_default();
+    assert_eq!(all.len(), 1, "{changes}");
+    assert_eq!((&all[0]["angle"], &all[0]["kind"], &all[0]["color"]), (&json!(30.0), &json!("fill"), &json!("#142878")), "the bar's: {changes}");
+}
+
 /// A click on another area moves the inspector there (the line, which the bar's popover, lying to
 /// the bar's left, leaves uncovered).
 #[test]
@@ -222,6 +320,45 @@ fn apply_to_similar_areas_changes_each() {
     until(&mut app, &ctx, &mut time, ready);
     let r = reply(&mut app);
     assert!(r["areaChanges"].as_array().is_some_and(|s| s.iter().all(|s| s["applies"] == json!(true))), "{}", r["areaChanges"]);
+}
+
+/// A picture placed at its 72 ppi: two orange areas of about one size, one 9.9 mm wide, the other
+/// 13 mm, on white.
+fn narrow_and_wide() -> image::RgbaImage {
+    image::RgbaImage::from_fn(200, 100, |x, y| {
+        let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
+        image::Rgba(if inside([10, 8, 38, 93]) || inside([60, 18, 97, 83]) { [240, 130, 20, 255] } else { [255, 255, 255, 255] })
+    })
+}
+
+/// Apply to Similar Areas with Satin sets it only on the areas Satin is offered on: the wider of two
+/// alike orange areas isn't, so with Satin there is none to apply it to, with Tatami one.
+#[test]
+fn apply_to_similar_areas_with_satin_leaves_out_the_areas_too_wide() {
+    let (mut app, ctx, mut time) = opened_with(app_with(narrow_and_wide()));
+    click_at(&mut app, &ctx, &mut time, 24, 50);
+    let similar = |app: &mut VectorcraftApp, time: &mut f64| nodes(app, &ctx, time).iter().any(|(_, n)| n.label() == Some("Apply to 1 Similar Area"));
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    assert!(similar(&mut app, &mut time), "with Tatami: the wider one");
+    press(&mut app, &ctx, &mut time, "Satin", Role::Tab);
+    assert!(!similar(&mut app, &mut time), "with Satin: none");
+}
+
+/// Apply to Similar Areas never makes more changes than the engine takes: with the window holding
+/// all but one of the most, it is greyed out.
+#[test]
+fn apply_to_similar_areas_stops_at_the_most_changes() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    // Changes on the background, applying to none, one short of the most.
+    let kept: Vec<serde_json::Value> =
+        (0..MAX_AREA_CHANGES - 1).map(|i| json!({"at": [195.5, 95.5], "color": "#f08214", "kind": "fill", "angle": i % 90})).collect();
+    set(&mut app, "areaChanges", json!(kept));
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    assert_eq!(window_field(&app, "areaChanges").and_then(|c| c.as_array().map(Vec::len)), Some(MAX_AREA_CHANGES), "the most");
+    let button = nodes(&mut app, &ctx, &mut time).into_iter().find(|(_, n)| n.label() == Some("Apply to 1 Similar Area")).map(|(_, n)| n);
+    assert!(button.is_some_and(|n| n.is_disabled()), "greyed out");
 }
 
 /// While Apply to Similar Areas is hovered, the preview outlines the areas it would change.
@@ -328,6 +465,121 @@ fn cmd_z_undoes_a_setting_and_a_change_and_shift_redoes() {
     keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND | Modifiers::SHIFT);
     assert_eq!(window_field(&app, "colors"), Some(json!(3)), "redone");
     assert_eq!(app.session.doc().map(|d| d.history.undo.len()).ok(), document, "the document's undo untouched");
+}
+
+/// At the most changes the engine takes, an area no change applies to yet can't take one more: its
+/// stitch choices and its angle are greyed out, saying why, while one changed already keeps them.
+#[test]
+fn an_areas_own_choices_are_greyed_out_at_the_most_changes() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    let kept: Vec<serde_json::Value> =
+        (0..MAX_AREA_CHANGES - 1).map(|i| json!({"at": [195.5, 95.5], "color": "#f08214", "kind": "fill", "angle": i % 90})).collect();
+    set(&mut app, "areaChanges", json!(kept));
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    let own = choices(&mut app, &ctx, &mut time);
+    assert!(own.iter().filter(|(w, _)| w != "Satin").all(|(_, can)| *can), "its own change: every choice but Satin, too wide here: {own:?}");
+    let angle_open = |app: &mut VectorcraftApp, time: &mut f64| {
+        let found = nodes(app, &ctx, time);
+        super::tests::node(&found, "Angle", Role::TextInput).map(|n| !n.is_disabled())
+    };
+    assert_eq!(angle_open(&mut app, &mut time), Some(true), "its own change: its angle too");
+    click_at(&mut app, &ctx, &mut time, 150, 30);
+    let navy = choices(&mut app, &ctx, &mut time);
+    assert!(navy.iter().filter(|(w, _)| w != "Auto").all(|(_, can)| !*can), "one more change: greyed out: {navy:?}");
+    assert_eq!(angle_open(&mut app, &mut time), Some(false), "its angle greyed out too");
+    assert!(says(&mut app, &ctx, &mut time, "That would be more than"), "saying why");
+}
+
+/// A screen reader's click on the preview opens the inspector on the area the keyboard is on, as
+/// Enter does: the first area when it is on none.
+#[test]
+fn a_screen_readers_click_on_the_preview_opens_the_area_the_keyboard_is_on() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    let views = ["Colors", "Shapes", "Stitches", "Compare"];
+    let preview = nodes(&mut app, &ctx, &mut time)
+        .into_iter()
+        .find_map(|(_, n)| n.label().filter(|l| n.role() == Role::Image && views.contains(l)).map(str::to_string))
+        .expect("the preview");
+    press(&mut app, &ctx, &mut time, &preview, Role::Image);
+    assert_eq!(inspected(&app).and_then(|f| f.number), Some(1), "the first area");
+}
+
+/// A screen reader's click on the preview, moving the inspector to the area the keyboard is on,
+/// leaves an angle being typed with the area it was typed for, as a pointer's click does.
+#[test]
+fn an_angle_left_by_a_screen_readers_click_is_the_first_areas() {
+    let (mut app, ctx, mut time) = opened();
+    click_at(&mut app, &ctx, &mut time, 160, 45);
+    click(&mut app, &ctx, &mut time, "Angle", Role::TextInput);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::A, Modifiers::COMMAND), Event::Text("30".into())]);
+    let views = ["Colors", "Shapes", "Stitches", "Compare"];
+    let preview = nodes(&mut app, &ctx, &mut time)
+        .into_iter()
+        .find_map(|(_, n)| n.label().filter(|l| n.role() == Role::Image && views.contains(l)).map(str::to_string))
+        .expect("the preview");
+    press(&mut app, &ctx, &mut time, &preview, Role::Image);
+    let changes = window_field(&app, "areaChanges").and_then(|c| c.as_array().cloned()).unwrap_or_default();
+    assert!(
+        changes.iter().any(|c| c["angle"] == json!(30.0) && c["color"] == json!("#142878") && c["kind"] == json!("fill")),
+        "the bar's: {changes:?}"
+    );
+}
+
+/// Apply to Similar Areas sets the angle typed just before it, though the click that ends the
+/// typing lands in the same frame: the similar area and this one get the same.
+#[test]
+fn apply_to_similar_areas_takes_an_angle_typed_in_the_same_frame() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    type_into(&mut app, &ctx, &mut time, "Angle", "30");
+    click(&mut app, &ctx, &mut time, "Angle", Role::TextInput);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::A, Modifiers::COMMAND), Event::Text("45".into())]);
+    click(&mut app, &ctx, &mut time, "Apply to 1 Similar Area", Role::Button);
+    let changes = window_field(&app, "areaChanges").and_then(|c| c.as_array().cloned()).unwrap_or_default();
+    assert_eq!(changes.len(), 2, "{changes:?}");
+    assert!(changes.iter().all(|c| c["angle"] == json!(45.0)), "both at 45°: {changes:?}");
+}
+
+/// Cmd/Ctrl+Z undoes in the window while the preview has the keyboard (after a click on it), as it
+/// does while nothing has it: only a field being typed in keeps the keys for its own undo.
+#[test]
+fn cmd_z_undoes_while_the_preview_has_the_keyboard() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    let before = window_field(&app, "colors");
+    set(&mut app, "colors", json!(3));
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 190, 90);
+    assert!(live(&app).inspector.is_none() && ctx.memory(|m| m.focused().is_some()), "the preview has the keyboard");
+    keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND);
+    assert_eq!(window_field(&app, "colors"), before, "undone");
+}
+
+/// Undo brings back the background colour chosen before "Leave the background out" was unticked, as
+/// its tick does: ticked again after an undo, the colour chosen is left out, not the one found.
+#[test]
+fn cmd_z_keeps_the_background_chosen_from_the_picture() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    set(&mut app, super::STEP, json!(1));
+    let navy = json!("#142878");
+    set(&mut app, "background", navy.clone());
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    until(&mut app, &ctx, &mut time, ready);
+    let leave_out = "Leave the background out";
+    press(&mut app, &ctx, &mut time, leave_out, Role::CheckBox);
+    assert_eq!(window_field(&app, "background"), Some(json!("none")), "unticked: every colour sewn");
+    press(&mut app, &ctx, &mut time, leave_out, Role::CheckBox);
+    assert_eq!(window_field(&app, "background"), Some(navy.clone()), "ticked again: the navy");
+    keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND);
+    assert_eq!(window_field(&app, "background"), Some(json!("none")), "the tick undone");
+    press(&mut app, &ctx, &mut time, leave_out, Role::CheckBox);
+    assert_eq!(window_field(&app, "background"), Some(navy), "the colour chosen, not the one found");
 }
 
 /// The history survives Embroidery Settings…: a setting changed before the window stepped aside is

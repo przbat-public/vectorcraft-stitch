@@ -44,7 +44,7 @@ pub use from_image::{
     SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM, SewingPlace, StageId as DigitizeStage, WORKING_PX_PER_MM as DIGITIZE_WORKING_PX_PER_MM,
     WindowRequest as DigitizeRequest,
 };
-pub use from_image::{digitizing_target, live_digitizing, live_edited, live_settings};
+pub use from_image::{MAX_AREA_CHANGES, digitizing_target, live_digitizing, live_edited, live_settings};
 pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 
 /// Image Trace's refusal of a live object of a digitized image: tracing it again would lose its

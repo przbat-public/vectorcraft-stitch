@@ -8978,3 +8978,5 @@ embroidery	This live object was made in another thread palette: its colors are m
 embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	डिजिटाइज़ होने के बाद {value}% से अधिक स्केल की गई लाइव डिजिटाइज़ इमेज: उन्हें फिर से डिजिटाइज़ करें
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	एक लाइव कढ़ाई ऑब्जेक्ट: इसे “इमेज डिजिटाइज़ करें…” में बदलें (ऑब्जेक्ट › इमेज ट्रेस)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	इससे {count} से अधिक क्षेत्र बदलाव हो जाएँगे, जितने अधिकतम एक डिज़ाइन लेता है।

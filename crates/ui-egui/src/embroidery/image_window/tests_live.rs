@@ -2,7 +2,7 @@
 //! settings (its threads let go when the document's palette changed since; the defaults, said, when
 //! they can't be read), remembered angles turning with the image, the question before objects
 //! changed by hand are replaced (its arming, its keyboard and what screen readers hear), and agents
-//! keeping one with `ui.dialog.set {keep: "live"}`.
+//! keeping one with `ui.dialog.set {field: "keep", value: "live"}`.
 
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers, Rect, pos2, vec2};
@@ -131,6 +131,17 @@ fn the_window_opens_a_live_object_with_its_settings() {
     assert_eq!(field(open_dialog(&app).expect("open again"), "colors"), json!(4), "as it was left");
 }
 
+/// The window opened on the image a live object holds is the live object's: keyed on it, with the
+/// settings it was made with, as the command takes that image.
+#[test]
+fn the_window_opened_on_a_live_objects_image_is_the_live_objects() {
+    let (mut app, id) = live_object(json!({"colors": 3, "width": 30}));
+    let image = app.session.doc().ok().and_then(|st| st.doc.node(id).and_then(|n| n.children()?.first().map(|c| c.id))).expect("its image");
+    super::open(&mut app, Some(image));
+    let d = open_dialog(&app).expect("the window opens");
+    assert_eq!((field(d, "id").as_u64(), field(d, "colors").as_u64()), (Some(id.0), Some(3)), "{:?}", d.fields);
+}
+
 /// A live object made in another thread palette than the document's now opens with its settings,
 /// its threads let go (the colours matched to the document's palette again), and says so.
 #[test]
@@ -195,6 +206,36 @@ fn a_remembered_windows_angles_turn_with_its_image() {
     let off = (angle - 120.0).rem_euclid(180.0);
     assert!(!(0.01..=179.99).contains(&off), "turned with the image: {angle}");
     assert!(d.fields.get("__placed").is_none(), "no field of its own: {:?}", d.fields);
+}
+
+/// A window closed by another document becoming active remembers its image's placement as its own
+/// document has it: the image turned there after, the change's angle turns with it.
+#[test]
+fn a_window_left_for_another_document_remembers_its_images_placement() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    let image = selected(&app);
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    frame(&mut app, &ctx, 0.0, vec![]);
+    let changes = json!([{"at": [100.5, 20.5], "color": ORANGE, "kind": "fill", "angle": 30.0}]);
+    app.ui.dialog.as_mut().unwrap().fields.insert("areaChanges".into(), changes);
+    frame(&mut app, &ctx, 0.05, vec![]);
+    app.run("file.new", json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    frame(&mut app, &ctx, 0.1, vec![]);
+    frame(&mut app, &ctx, 0.15, vec![]);
+    assert!(open_dialog(&app).is_none() && app.embroidery.image_window.live.is_none(), "closed with its document");
+    assert!(app.session.set_active(0), "back to the first document");
+    app.session
+        .edit("turn", |d, _| {
+            d.node_mut(image).expect("the image").transform(Affine::rotate(std::f64::consts::FRAC_PI_2), true);
+            Ok(())
+        })
+        .unwrap();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    let d = open_dialog(&app).expect("open again");
+    let angle = field(d, "areaChanges")[0]["angle"].as_f64().expect("its angle");
+    let off = (angle - 120.0).rem_euclid(180.0);
+    assert!(!(0.01..=179.99).contains(&off), "turned with the image: {angle}");
 }
 
 /// Keep as Live Object or Create on a live object whose objects were changed by hand asks first, in
@@ -269,7 +310,7 @@ fn the_question_answers_neither_a_double_click_nor_a_held_key() {
     assert_eq!(undo_steps(&app), steps, "nothing made");
 }
 
-/// Agents keep a live object as they create: `ui.dialog.set {keep: "live"}` (taken though the
+/// Agents keep a live object as they create: `ui.dialog.set {field: "keep", value: "live"}` (taken though the
 /// window doesn't hold it yet, as every setting is), then `ui.dialog.confirm`; any other `keep` is
 /// refused at confirm, nothing made, and a window closed without Create doesn't remember it.
 #[test]

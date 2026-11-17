@@ -557,10 +557,10 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     {
         textured_quad(&painter, tex, q, Color32::WHITE);
     }
-    // Apply to Similar Areas hovered: the similar areas outlined.
-    if let Some((_, at)) = inspected.as_ref().filter(|(i, _)| i.similar_shown) {
-        for key in outputs.similar(at.0, at.1) {
-            if let Some(path) = outputs.find(&key).and_then(|(x, y)| outputs.outline_at(x, y)) {
+    // Apply to Similar Areas hovered: the areas it sets outlined, as the inspector worked them out.
+    if let Some((i, _)) = inspected.as_ref().filter(|(i, _)| i.similar_shown) {
+        for key in i.similar.iter().flat_map(|s| &s.keys) {
+            if let Some(path) = outputs.find(key).and_then(|(x, y)| outputs.outline_at(x, y)) {
                 outline(&painter, &path, xf);
             }
         }
@@ -581,20 +581,23 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
         }
     }
     // A click opens the inspector on the area clicked, in any view but the picture itself; on the
-    // background it closes it. The preview takes the keyboard.
+    // background it closes it. The preview takes the keyboard at once, and the inspector moves once
+    // it is drawn this frame for the area it was on, so that a value being typed in it is that
+    // area's. The pointer's click only: Enter or Space on the preview, which egui counts as a click
+    // too, opens the area the keyboard is on (below).
+    let clicked = resp.clicked_by(egui::PointerButton::Primary) && view != View::Original;
     if resp.clicked() {
         resp.request_focus();
-        if view != View::Original {
-            super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, under);
-        }
     }
     // The keyboard: `[` and `]` step through the areas in sewing order (the embroidery tool's keys),
     // Enter or Space opens the inspector on the area it is on.
+    let mut by_key = false;
     if resp.has_focus() {
         let (back, on, open) = ui.input_mut(|i| {
             let enter = i.consume_key(egui::Modifiers::NONE, egui::Key::Enter) || i.consume_key(egui::Modifiers::NONE, egui::Key::Space);
             (i.consume_key(egui::Modifiers::NONE, egui::Key::OpenBracket), i.consume_key(egui::Modifiers::NONE, egui::Key::CloseBracket), enter)
         });
+        by_key = open;
         if back || on {
             let from = live.preview.focused.as_ref().and_then(|k| outputs.find(k)).and_then(|(x, y)| outputs.sewing_place(x, y));
             let next = match from {
@@ -607,6 +610,17 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
         }
         if open && let Some(at) = live.preview.focused.as_ref().and_then(|k| outputs.find(k)) {
             super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, Some(at));
+        }
+    }
+    // A screen reader's click on the preview (neither the pointer's nor Enter's or Space's): as
+    // Enter, the inspector opens on the area the keyboard is on, the first area when it is on none;
+    // once the inspector is drawn, as a pointer's click, so that what was typed in it is its area's.
+    let mut read_at = None;
+    if resp.clicked() && !resp.clicked_by(egui::PointerButton::Primary) && !by_key && view != View::Original {
+        let key = live.preview.focused.clone().filter(|k| outputs.find(k).is_some()).or_else(|| outputs.first_key());
+        read_at = key.as_ref().and_then(|k| outputs.find(k));
+        if read_at.is_some() {
+            live.preview.focused = key;
         }
     }
     // The area the keyboard is on: outlined in the focus's colour and said, while the preview has
@@ -645,7 +659,13 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
         painter.galley(at.min + BADGE_PAD, galley, t.text);
     }
     foot_row(ui, foot, d, xf, view == View::Stitches || (view == View::Compare && View::of_step(step) == View::Stitches));
-    super::inspector::show(ui, pane, &mut d.fields, &mut live.inspector, outputs, |p| xf.to_screen(p));
+    let running = live.schedule.busy();
+    super::inspector::show(ui, pane, &mut d.fields, &mut live.inspector, outputs, running, |p| xf.to_screen(p));
+    if clicked {
+        super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, under);
+    } else if read_at.is_some() {
+        super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, read_at);
+    }
 }
 
 /// The Colors view's raster the thread painted for the colours shown, if any.

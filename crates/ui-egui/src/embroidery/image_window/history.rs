@@ -14,10 +14,14 @@ use serde_json::{Map, Value};
 /// How many steps the window's history keeps: the project owner's choice (2026-11-16).
 pub(crate) const MAX_UNDO_STEPS: usize = 100;
 
-/// Whether field `key` is one a step holds: the engine's settings, the palette and the document
-/// settings the window changes.
+/// Whether field `key` is one a step holds: the engine's settings, the palette, the document
+/// settings the window changes, and the background colour kept to come back when "Leave the
+/// background out" is ticked again (it changes with the background, in the same step).
 fn is_setting(key: &str) -> bool {
-    super::SETTING_FIELDS.contains(&key) || key == super::PALETTE || super::stitches_step::DOCUMENT_FIELDS.contains(&key)
+    super::SETTING_FIELDS.contains(&key)
+        || key == super::PALETTE
+        || super::stitches_step::DOCUMENT_FIELDS.contains(&key)
+        || key == super::image_step::CHOSEN_BACKGROUND
 }
 
 /// The settings `fields` hold.

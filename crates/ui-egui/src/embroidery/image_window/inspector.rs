@@ -22,7 +22,9 @@
 
 use egui::{Color32, Id, Pos2, Rect, RichText, Ui, vec2};
 use serde_json::{Map, Value, json};
-use vectorcraft_engine::cmd::embroidery::{AreaFacts, AreaKey, DigitizeOutputs, SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM};
+use vectorcraft_engine::cmd::embroidery::{
+    AreaFacts, AreaKey, DigitizeOutputs, DigitizeStage, MAX_AREA_CHANGES, SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM,
+};
 use vectorcraft_geom::Point;
 
 use crate::embroidery::text::fill;
@@ -56,14 +58,30 @@ const FILL_CHOICES: [&str; 4] = ["auto", "tatami", "satin", "none"];
 const LINE_CHOICES: [&str; 4] = ["auto", "running", "satin", "none"];
 
 /// The area the inspector is open on, by the key it follows its area with; whether it shows the
-/// area's place in the sewing order (the preview dimming what is sewn after it), and whether Apply
-/// to Similar Areas is hovered (the preview outlining them).
+/// area's place in the sewing order (the preview dimming what is sewn after it), whether Apply to
+/// Similar Areas is hovered (the preview outlining them), and the areas it would set, as last
+/// worked out.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Inspected {
     pub(crate) key: AreaKey,
     pub(crate) order: bool,
     pub(crate) similar_shown: bool,
+    pub(crate) similar: Option<Similar>,
 }
+
+/// The areas Apply to Similar Areas sets, and whether the engine takes the changes that makes, with
+/// what they were worked out of: worked out again only when that changes, not each frame (a design
+/// of a thousand alike dots would otherwise find every one of them a frame).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Similar {
+    of: SimilarOf,
+    pub(crate) keys: Vec<AreaKey>,
+    room: bool,
+}
+
+/// What [`Similar`] is worked out of: the result's shapes (their number), the area (its working
+/// pixel), its stitch and angle (the angle's bits), and the window's changes, as they were.
+type SimilarOf = (Option<u64>, (u32, u32), Option<String>, Option<u64>, Option<Value>);
 
 /// The popover's id in egui's memory, which holds one open popup at a time: another opened closes
 /// this one.
@@ -84,7 +102,7 @@ pub(crate) fn clicked(
         Some(key) => {
             // Under the key of a change already applying to it, so that its edits change that one.
             let key = applying(fields, outputs, &key).unwrap_or(key);
-            *inspector = Some(Inspected { key, order: false, similar_shown: false });
+            *inspector = Some(Inspected { key, order: false, similar_shown: false, similar: None });
             egui::Popup::open_id(ctx, popup_id());
         }
         None => close(ctx, inspector),
@@ -107,12 +125,23 @@ pub(crate) fn show(
     fields: &mut Map<String, Value>,
     inspector: &mut Option<Inspected>,
     outputs: &DigitizeOutputs,
+    running: bool,
     to_screen: impl Fn(Point) -> Pos2,
 ) {
     let ctx = ui.ctx().clone();
     let Some(mut open) = inspector.clone() else { return };
     if !egui::Popup::is_id_open(&ctx, popup_id()) || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         return close(&ctx, inspector);
+    }
+    // A run under way (`running`) shows its stages as they come, the areas only once its shapes are
+    // done: the inspector waits for them, drawn again then, rather than closing on its area not
+    // found yet. A result left without shapes (a run that failed, or was refused) closes it.
+    if outputs.number(DigitizeStage::Shapes).is_none() {
+        if !running {
+            return close(&ctx, inspector);
+        }
+        egui::Popup::open_id(&ctx, popup_id());
+        return;
     }
     let Some(at) = outputs.find(&open.key) else { return close(&ctx, inspector) };
     let Some(facts) = outputs.area_at(at.0, at.1) else { return close(&ctx, inspector) };
@@ -172,6 +201,12 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
         ui.label(RichText::new(why).small().color(t.text_dim));
     }
     ui.add_space(GAP);
+    // At the most changes the engine takes, a stitch or an angle for an area no change applies to
+    // yet would be one more: greyed out, saying why.
+    let held = fields.get(CHANGES).and_then(Value::as_array).map_or(0, Vec::len);
+    let full = held >= MAX_AREA_CHANGES && applying_to(fields, outputs, key).is_empty();
+    let most = numbers::count(lang, u64::try_from(MAX_AREA_CHANGES).unwrap_or(u64::MAX));
+    let too_many = fill(crate::et!("That would be more than {count} area changes, the most a design takes."), &[("count", &most)]);
     // The choices by the area's kind.
     let ids = if facts.line { LINE_CHOICES } else { FILL_CHOICES };
     let labels: Vec<String> = ids.iter().map(|id| vocabulary::stitch(id, facts.line)).collect();
@@ -184,19 +219,22 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
             label,
             full: label,
             selected: *id == shown,
-            enabled: *id != "satin" || facts.satin_fits() || shown == "satin",
+            enabled: *id == shown || (!full && (*id != "satin" || facts.satin_fits())),
         })
         .collect();
     if let Some(k) = crate::panels::embroidery::segments(ui, CHOICES_HEIGHT, CHOICES_TEXT, &items) {
         let chosen = ids.get(k).copied().filter(|id| *id != "auto");
         set(fields, outputs, key, chosen, angle);
     }
+    if full {
+        ui.label(RichText::new(too_many.as_str()).small().color(t.text_dim));
+    }
     if !facts.satin_fits() {
         ui.label(RichText::new(satin_reason(facts, lang)).small().color(t.text_dim));
     }
     // A filled area's rows.
     if !facts.line {
-        angle_row(ui, fields, outputs, key, stitch.as_deref(), angle, &part, lang);
+        ui.add_enabled_ui(!full, |ui| angle_row(ui, fields, outputs, key, stitch.as_deref(), angle, &part, lang));
     }
     // Its stitches as planned.
     if let Some(n) = part["sewing"]["stitches"].as_u64() {
@@ -205,20 +243,27 @@ fn body(ui: &mut Ui, fields: &mut Map<String, Value>, outputs: &DigitizeOutputs,
     }
     // The areas like it, and its place in the sewing order.
     ui.add_space(GAP);
-    let similar = outputs.similar(at.0, at.1);
+    // The stitch and angle as the choices above may have just set them (a typed angle is taken as
+    // the pointer leaves its field, in this frame).
+    let (stitch, angle) = current(fields, outputs, key);
+    let of = (outputs.number(DigitizeStage::Shapes), at, stitch.clone(), angle.map(f64::to_bits), fields.get(CHANGES).cloned());
+    if open.similar.as_ref().is_none_or(|s| s.of != of) {
+        open.similar = Some(similar_of(fields, outputs, at, stitch.as_deref(), angle, of));
+    }
+    let similar = open.similar.clone();
     open.similar_shown = false;
     ui.horizontal_wrapped(|ui| {
-        if !similar.is_empty() {
-            let n = u64::try_from(similar.len()).unwrap_or(u64::MAX);
+        if let Some(similar) = similar.filter(|s| !s.keys.is_empty()) {
+            let n = u64::try_from(similar.keys.len()).unwrap_or(u64::MAX);
             let words = crate::etn!(n, "Apply to {count} Similar Area", "Apply to {count} Similar Areas");
             let tip = crate::et!("Sets this area's stitch and angle on the areas of its color and kind about its size.");
-            let resp = ui.add_enabled(stitch.is_some() || angle.is_some(), egui::Button::new(words)).on_hover_text(tip);
+            // No more changes than the engine takes.
+            let resp = ui.add_enabled((stitch.is_some() || angle.is_some()) && similar.room, egui::Button::new(words)).on_hover_text(tip);
+            let resp = if similar.room { resp } else { resp.on_disabled_hover_text(too_many.as_str()) };
             // Outlined while the pointer is on it, greyed out too: which areas are alike.
             open.similar_shown = resp.contains_pointer();
             if resp.clicked() {
-                for k in &similar {
-                    set(fields, outputs, k, stitch.as_deref(), angle);
-                }
+                set_many(fields, outputs, &similar.keys, stitch.as_deref(), angle);
             }
         }
         let order =
@@ -395,23 +440,65 @@ fn current(fields: &Map<String, Value>, outputs: &DigitizeOutputs, key: &AreaKey
     })
 }
 
+/// The areas Apply to Similar Areas sets for the area under working pixel `at` with `stitch` and
+/// `angle` (for Satin, only those Satin is offered on, as their own inspectors offer it), and
+/// whether the engine takes the changes that makes, worked out of `of`.
+fn similar_of(
+    fields: &Map<String, Value>,
+    outputs: &DigitizeOutputs,
+    at: (u32, u32),
+    stitch: Option<&str>,
+    angle: Option<f64>,
+    of: SimilarOf,
+) -> Similar {
+    let fits = |k: &AreaKey| outputs.find(k).and_then(|(x, y)| outputs.area_at(x, y)).is_some_and(|f| f.satin_fits());
+    let keys: Vec<AreaKey> = outputs.similar(at.0, at.1).into_iter().filter(|k| stitch != Some("satin") || fits(k)).collect();
+    // Past the most by themselves: not counted change by change.
+    let room = keys.len() <= MAX_AREA_CHANGES && set_many(&mut fields.clone(), outputs, &keys, stitch, angle) <= MAX_AREA_CHANGES;
+    Similar { of, keys, room }
+}
+
+/// Each of `keys`' areas' stitch and angle set at once (Apply to Similar Areas): every change that
+/// applies to any of them replaced by one under each key, or by none when it sets neither, each
+/// area found once → how many changes `fields` then hold.
+fn set_many(fields: &mut Map<String, Value>, outputs: &DigitizeOutputs, keys: &[AreaKey], stitch: Option<&str>, angle: Option<f64>) -> usize {
+    let places: std::collections::HashSet<(u32, u32)> = keys.iter().filter_map(|k| outputs.find(k)).collect();
+    let applies = |c: &Map<String, Value>| key_of(c).is_some_and(|k| keys.contains(&k) || outputs.find(&k).is_some_and(|p| places.contains(&p)));
+    let mut all: Vec<Value> = changes(fields).into_iter().filter(|c| !applies(c)).map(Value::Object).collect();
+    if stitch.is_some() || angle.is_some() {
+        all.extend(keys.iter().map(|k| Value::Object(change(k, stitch, angle))));
+    }
+    let n = all.len();
+    if all.is_empty() {
+        fields.remove(CHANGES);
+    } else {
+        fields.insert(CHANGES.into(), Value::Array(all));
+    }
+    n
+}
+
+/// A change under `key` setting `stitch` and `angle`, as the engine takes it.
+fn change(key: &AreaKey, stitch: Option<&str>, angle: Option<f64>) -> Map<String, Value> {
+    let mut c = Map::new();
+    c.insert("at".into(), json!(key.at));
+    c.insert("color".into(), json!(hex(key.color)));
+    c.insert("kind".into(), json!(if key.line { "line" } else { "fill" }));
+    if let Some(s) = stitch {
+        c.insert("stitch".into(), json!(s));
+    }
+    if let Some(a) = angle {
+        c.insert("angle".into(), json!(a));
+    }
+    c
+}
+
 /// The area's stitch and angle set: every change that applies to it replaced by one under `key`, or
 /// by none when it sets neither.
 pub(crate) fn set(fields: &mut Map<String, Value>, outputs: &DigitizeOutputs, key: &AreaKey, stitch: Option<&str>, angle: Option<f64>) {
     let mine = applying_to(fields, outputs, key);
     let mut all: Vec<Value> = changes(fields).into_iter().filter(|c| !mine.contains(c)).map(Value::Object).collect();
     if stitch.is_some() || angle.is_some() {
-        let mut c = Map::new();
-        c.insert("at".into(), json!(key.at));
-        c.insert("color".into(), json!(hex(key.color)));
-        c.insert("kind".into(), json!(if key.line { "line" } else { "fill" }));
-        if let Some(s) = stitch {
-            c.insert("stitch".into(), json!(s));
-        }
-        if let Some(a) = angle {
-            c.insert("angle".into(), json!(a));
-        }
-        all.push(Value::Object(c));
+        all.push(Value::Object(change(key, stitch, angle)));
     }
     if all.is_empty() {
         fields.remove(CHANGES);

@@ -309,12 +309,15 @@ pub fn open(app: &mut VectorcraftApp, id: Option<NodeId>) {
         (None, [one]) => *one,
         _ => return app.status(crate::et!("Select one image to digitize it.")),
     };
+    // The image an Image Trace object (a live object too) holds stands for that object, as the
+    // command takes it: the window is that object's, its settings and its question about hand edits.
+    let picked = vectorcraft_engine::cmd::embroidery::digitizing_target(&st.doc, picked);
     // Refused as the command refuses (not an image, locked, a missing linked file).
     if let Err(e) = app.session.digitize_window_request(picked, &json!({}), None, &Value::Null) {
         return app.status(crate::i18n::msg(&e.to_string()));
     }
     let (fields, said) = match app.embroidery.image_window.remembered.get(&(uid, picked)).cloned() {
-        Some(fields) => (turned_since(fields, placed(app, picked)), None),
+        Some(fields) => (turned_since(fields, placed(app, uid, picked)), None),
         None => first_fields(app, uid, picked),
     };
     app.embroidery.image_window.live = None;
@@ -359,10 +362,11 @@ fn first_fields(app: &VectorcraftApp, uid: u64, id: NodeId) -> (Map<String, Valu
 /// The number of colours' field.
 const COLORS: &str = "colors";
 
-/// The transform image `id` is placed with: an image's own, or that of the image first in an
-/// Image Trace object or a live object.
-fn placed(app: &VectorcraftApp, id: NodeId) -> Option<Affine> {
-    let n = app.session.active()?.doc.node(id)?;
+/// The transform image `id` of document `uid` is placed with: an image's own, or that of the image
+/// first in an Image Trace object or a live object. Read in that document, which needn't be the
+/// active one (the window closes when another becomes active).
+fn placed(app: &VectorcraftApp, uid: u64, id: NodeId) -> Option<Affine> {
+    let n = app.session.documents().iter().find(|st| st.uid == uid)?.doc.node(id)?;
     let image = match &n.kind {
         NodeKind::Image(i) => i,
         _ => match &n.children()?.first()?.kind {
@@ -505,8 +509,9 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
         }
     }
     // Undo inside the window: Shift+Cmd/Ctrl+Z, then Cmd/Ctrl+Z (which egui matches with Shift
-    // too), unless a field being typed in takes the keys for its own undo.
-    if !ctx.egui_wants_keyboard_input()
+    // too), unless a field being typed in takes the keys for its own undo (a focused button or the
+    // preview doesn't).
+    if !ctx.text_edit_focused()
         && let Some(live) = app.embroidery.image_window.live.as_mut()
     {
         if ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND | Modifiers::SHIFT, Key::Z)) {
@@ -788,7 +793,7 @@ pub(crate) fn poll(app: &mut VectorcraftApp) {
         live.fields.remove(STATE);
         // An agent's `keep` was for that Create alone.
         live.fields.remove(KEEP);
-        live.fields.insert(PLACED.into(), json!(placed(app, live.image).map(|xf| xf.as_coeffs())));
+        live.fields.insert(PLACED.into(), json!(placed(app, live.uid, live.image).map(|xf| xf.as_coeffs())));
         app.embroidery.image_window.remembered.insert((live.uid, live.image), live.fields);
         if app.ui.status == crate::et!("Digitize Image: live preview") {
             app.status(String::new());

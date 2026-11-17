@@ -193,6 +193,39 @@ fn it_closes_as_cancel_when_its_document_is_no_longer_active() {
     assert!(app.embroidery.image_window.remembered.contains_key(&(uid, image)));
 }
 
+/// The settings a window was left with are its picture's: another picture placed after an Undo,
+/// which takes the same id in the document, opens with its own defaults; the first picture placed
+/// again by Redo continues where its window was left.
+#[test]
+fn a_picture_placed_after_an_undo_under_the_same_id_opens_with_its_own_settings() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    let first = app.session.doc().unwrap().selection.objects[0];
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    app.ui.dialog.as_mut().unwrap().fields.insert("colors".into(), json!(5));
+    frame(&mut app, &ctx, 0.0, vec![]);
+    frame(&mut app, &ctx, 0.05, vec![key(Key::Escape, Modifiers::NONE)]);
+    frame(&mut app, &ctx, 0.1, vec![]);
+    assert!(open_dialog(&app).is_none(), "closed, its settings remembered");
+    let colors = |app: &VectorcraftApp| open_dialog(app).and_then(|d| d.fields.get("colors").cloned());
+    // The placement undone and redone: the same picture, its window as it was left.
+    app.run("edit.undo", json!({})).unwrap();
+    app.run("edit.redo", json!({})).unwrap();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    assert_eq!(colors(&app), Some(json!(5)), "the same picture continues");
+    frame(&mut app, &ctx, 0.15, vec![key(Key::Escape, Modifiers::NONE)]);
+    frame(&mut app, &ctx, 0.2, vec![]);
+    // The placement undone, another picture placed in its place: the same id, not the same picture.
+    app.run("edit.undo", json!({})).unwrap();
+    let other = image::RgbaImage::from_fn(120, 80, |x, _| image::Rgba(if x < 60 { [20, 120, 40, 255] } else { [255, 255, 255, 255] }));
+    let mut png = Vec::new();
+    image::DynamicImage::ImageRgba8(other).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    app.run("file.place", json!({"name": "other.png", "dataBase64": vectorcraft_format::base64_encode(&png)})).unwrap();
+    assert_eq!(app.session.doc().unwrap().selection.objects.first(), Some(&first), "the same id");
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    assert_eq!(colors(&app), None, "its own defaults");
+}
+
 /// The window takes most of the app's window, never less than its smallest size where that fits,
 /// never more than the app's window; its regions lie inside it apart from each other.
 #[test]
@@ -1728,7 +1761,7 @@ fn a_document_switched_while_document_setup_is_open_closes_the_window() {
     time += 0.05;
     frame(&mut app, &ctx, time, vec![]);
     assert!(app.embroidery.image_window.live.is_none(), "its runs stopped");
-    let remembered = app.embroidery.image_window.remembered.get(&(uid, image)).and_then(|f| f.get(STEP).cloned());
+    let remembered = app.embroidery.image_window.remembered.get(&(uid, image)).and_then(|r| r.fields.get(STEP).cloned());
     assert_eq!(remembered, Some(json!(4)), "its settings remembered");
 }
 

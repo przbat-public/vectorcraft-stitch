@@ -16,8 +16,8 @@
 //!   Create).
 //! - **The question** before a live object's objects changed by hand are replaced takes the
 //!   buttons' place (one dialog at a time): its words, Don't Replace (which takes the keyboard) and
-//!   Replace; they answer only once the double-click time has passed with nothing held, and the
-//!   keyboard goes back to the button that asked when it is let go.
+//!   Replace; they answer only once the double-click time has passed with no mouse button, Enter or
+//!   Space held, and the keyboard goes back to the button that asked when it is let go.
 
 use egui::{Align, Color32, FontId, Layout, RichText, Sense, Stroke, Ui, pos2, vec2};
 use serde_json::Value;
@@ -324,7 +324,8 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<As
     let create_waiting = live.create_waiting;
     let announced = live.announced.clone();
     // The question's buttons answer only once it is armed (`Question::armed`), as of the frame
-    // before: it arms once the double-click time has passed with no key or button held.
+    // before: it arms once the double-click time has passed with no mouse button, Enter or Space
+    // held (what presses a button).
     let held = ui.input(|i| i.pointer.any_down() || i.key_down(egui::Key::Enter) || i.key_down(egui::Key::Space));
     let double_click = ui.ctx().options(|o| o.input_options.max_double_click_delay);
     let question = live.question.as_mut().map(|q| {

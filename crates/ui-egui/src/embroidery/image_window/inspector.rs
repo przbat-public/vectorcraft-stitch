@@ -59,14 +59,18 @@ const LINE_CHOICES: [&str; 4] = ["auto", "running", "satin", "none"];
 
 /// The area the inspector is open on, by the key it follows its area with; whether it shows the
 /// area's place in the sewing order (the preview dimming what is sewn after it), whether Apply to
-/// Similar Areas is hovered (the preview outlining them), and the areas it would set, as last
-/// worked out.
+/// Similar Areas is hovered (the preview outlining them), the areas it would set, as last worked
+/// out, and whether it was just opened on its area.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Inspected {
     pub(crate) key: AreaKey,
     pub(crate) order: bool,
     pub(crate) similar_shown: bool,
     pub(crate) similar: Option<Similar>,
+    /// Opened on its area by a click or the keyboard, not drawn yet: its body, when it scrolls,
+    /// starts at its top, the area's name in sight (◀ ▶ keep where it is scrolled, so that they stay
+    /// under the pointer).
+    pub(crate) fresh: bool,
 }
 
 /// The areas Apply to Similar Areas sets, and whether the engine takes the changes that makes, with
@@ -102,7 +106,7 @@ pub(crate) fn clicked(
         Some(key) => {
             // Under the key of a change already applying to it, so that its edits change that one.
             let key = applying(fields, outputs, &key).unwrap_or(key);
-            *inspector = Some(Inspected { key, order: false, similar_shown: false, similar: None });
+            *inspector = Some(Inspected { key, order: false, similar_shown: false, similar: None, fresh: true });
             egui::Popup::open_id(ctx, popup_id());
         }
         None => close(ctx, inspector),
@@ -152,11 +156,23 @@ pub(crate) fn show(
     let right = rect.right() + GAP;
     let left = if right + WIDTH <= pane.right() { right } else { rect.left() - GAP - WIDTH };
     egui::Area::new(popup_id()).order(egui::Order::Foreground).fixed_pos(Pos2::new(left, rect.top())).constrain_to(pane).show(&ctx, |ui| {
-        egui::Frame::popup(ui.style()).show(ui, |ui| {
+        let frame = egui::Frame::popup(ui.style());
+        // Taller than the pane (the window at its smallest, words that wrap more in a language), its
+        // body scrolls inside it rather than being cut off. Its height is the content's up to that
+        // room, whatever height it had the frame before (egui lays an area out in that), so that it
+        // grows when its content does: Show in Sewing Order's row.
+        let room = (pane.height() - frame.total_margin().sum().y).max(0.0);
+        let scroll = egui::ScrollArea::vertical().id_salt("digitize-area-inspector-body").max_height(room).min_scrolled_height(room);
+        // One scroll place for every area: opened on another, it starts at its top.
+        let scroll = if open.fresh { scroll.vertical_scroll_offset(0.0) } else { scroll };
+        frame.show(ui, |ui| {
             ui.set_width(WIDTH);
-            body(ui, fields, outputs, &mut open, at, &facts);
+            scroll.show(ui, |ui| {
+                body(ui, fields, outputs, &mut open, at, &facts);
+            });
         });
     });
+    open.fresh = false;
     *inspector = Some(open);
 }
 

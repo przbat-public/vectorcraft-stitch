@@ -162,6 +162,15 @@ fn changes_section(app: &VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     }
     let shown = app.embroidery.image_window.live.as_ref().and_then(|l| l.schedule.shown.as_ref());
     let states = shown.and_then(|s| s.outputs.change_states(&s.request)).unwrap_or_default();
+    // The changes the result shown was made with, whose states those are, by the area each is for:
+    // the list may have changed since (a change removed, or set again and moved to the end), so each
+    // row takes the state of the change for its own area, not that of the change in its place.
+    let mut made_with = std::collections::HashMap::new();
+    for (j, m) in shown.map(|s| s.request.changes()).unwrap_or_default().iter().enumerate() {
+        if let Some(area) = area_of(m) {
+            made_with.entry(area).or_insert(j);
+        }
+    }
     let degrees = fields::format(lang, "°", ANGLE_DECIMALS);
     let mut remove = None;
     for (i, c) in list.iter().enumerate() {
@@ -169,11 +178,12 @@ fn changes_section(app: &VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
         let what: Vec<String> =
             [c["stitch"].as_str().map(|s| vocabulary::stitch(s, line)), c["angle"].as_f64().map(|a| degrees.show(a))].into_iter().flatten().collect();
         let what = what.join(" · ");
+        let state = area_of(c).and_then(|area| made_with.get(&area)).and_then(|&j| states.get(j));
         ui.horizontal(|ui| {
             if rows::restore(ui, crate::et!("Remove this change"), crate::et!("Remove this change")).clicked() {
                 remove = Some(i);
             }
-            ui.vertical(|ui| match states.get(i) {
+            ui.vertical(|ui| match state {
                 Some(vectorcraft_engine::cmd::embroidery::AreaChangeState::Applies(facts)) => {
                     ui.label(egui::RichText::new(format!("{} · {what}", super::preview::area_name(facts))).color(t.text));
                 }
@@ -198,6 +208,14 @@ fn changes_section(app: &VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     if ui.button(crate::et!("Reset All")).clicked() {
         d.fields.remove(super::inspector::CHANGES);
     }
+}
+
+/// The area an area change, as the window keeps it and the reply echoes it, is for: its point (the
+/// numbers' bits), its colour in lower case and its kind, which find the area, whatever it sets.
+fn area_of(c: &Value) -> Option<([u64; 2], String, String)> {
+    let at = c.get("at")?.as_array()?;
+    let point = [at.first()?.as_f64()?.to_bits(), at.get(1)?.as_f64()?.to_bits()];
+    Some((point, c.get("color")?.as_str()?.to_ascii_lowercase(), c.get("kind")?.as_str()?.to_string()))
 }
 
 /// Why a change to an area applies to none, by the engine's id (`areaChanges[].why`); `line`: it was

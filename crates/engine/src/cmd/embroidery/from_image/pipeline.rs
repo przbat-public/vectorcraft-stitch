@@ -344,6 +344,12 @@ impl WindowRequest {
         self.settings.echo()
     }
 
+    /// Its changes to single areas as the reply echoes them, in their order: that of
+    /// [`Outputs::change_states`]' states.
+    pub fn changes(&self) -> Vec<Value> {
+        self.settings.changes.iter().map(super::settings::change_json).collect()
+    }
+
     /// The first stage a run of `new` makes after a run of this request: the first stage that
     /// reads something different of the two, by the keys the pipeline keeps its stages by (the
     /// stages after it read its output, so they are made again too); `None` when every stage reads

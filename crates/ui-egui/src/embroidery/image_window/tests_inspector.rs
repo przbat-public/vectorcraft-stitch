@@ -183,7 +183,7 @@ fn inspector_frame(
     running: bool,
 ) -> Option<super::inspector::Inspected> {
     let ctx = egui::Context::default();
-    let mut inspected = Some(super::inspector::Inspected { key, order: false, similar_shown: false, similar: None });
+    let mut inspected = Some(super::inspector::Inspected { key, order: false, similar_shown: false, similar: None, fresh: false });
     let mut fields = serde_json::Map::new();
     let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(1440.0, 900.0))), ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| {
@@ -388,6 +388,104 @@ fn show_in_sewing_order_says_its_place_and_steps_through() {
     assert!(live(&app).inspector.as_ref().is_some_and(|i| i.order), "still showing the order");
 }
 
+/// Show in Sewing Order turned on in an inspector already open grows it to hold its place row while
+/// the preview has room for it: the row isn't left scrolled out of sight.
+#[test]
+fn the_inspector_grows_to_hold_its_place_row() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    let height = |ctx: &egui::Context| ctx.memory(|m| m.area_rect(super::inspector::popup_id())).map(|r| r.height()).expect("the inspector drawn");
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    let before = height(&ctx);
+    press_named(&mut app, &ctx, &mut time, "Show in Sewing Order");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(height(&ctx) > before, "grown from {before} to hold its place row");
+}
+
+/// One frame of the inspector alone, held inside `pane`, over `outputs`, with `events` → the texts
+/// screen readers are given, with their boxes, and the inspector's box.
+fn inspector_in(
+    ctx: &egui::Context,
+    pane: egui::Rect,
+    outputs: &vectorcraft_engine::cmd::embroidery::DigitizeOutputs,
+    inspected: &mut Option<super::inspector::Inspected>,
+    time: f64,
+    events: Vec<Event>,
+) -> (Vec<(String, egui::Rect)>, Option<egui::Rect>) {
+    let screen = egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(1440.0, 900.0));
+    let raw = egui::RawInput { time: Some(time), screen_rect: Some(screen), events, ..Default::default() };
+    let mut fields = serde_json::Map::new();
+    let mut out = ctx.run_ui(raw, |ui| {
+        egui::Popup::open_id(ui.ctx(), super::inspector::popup_id());
+        super::inspector::show(ui, pane, &mut fields, inspected, outputs, false, |p| egui::pos2(p.x as f32, p.y as f32));
+    });
+    out.textures_delta.clear();
+    let nodes = out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default();
+    let texts = nodes
+        .into_iter()
+        .filter_map(|(_, n)| {
+            let text = n.value().or(n.label())?.to_string();
+            let b = n.bounds()?;
+            Some((text, egui::Rect::from_min_max(egui::pos2(b.x0 as f32, b.y0 as f32), egui::pos2(b.x1 as f32, b.y1 as f32))))
+        })
+        .collect();
+    (texts, ctx.memory(|m| m.area_rect(super::inspector::popup_id())))
+}
+
+/// A popover taller than the preview scrolls; opened on another area by a click, it starts at its
+/// top, the area's name in sight, wherever the one before was scrolled to.
+#[test]
+fn the_inspector_opens_on_another_area_scrolled_to_its_top() {
+    let (app, _, _) = opened();
+    let shown = live(&app).schedule.shown.clone().expect("a result");
+    let outputs = &shown.outputs;
+    let name = |x, y| super::preview::area_name(&outputs.area_at(x, y).expect("an area"));
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    ctx.enable_accesskit();
+    // A pane shorter than any popover: its body scrolls.
+    let pane = egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(1440.0, 160.0));
+    let fields = serde_json::Map::new();
+    let mut inspected = None;
+    let mut time = 0.0;
+    super::inspector::clicked(&ctx, &mut inspected, &fields, outputs, Some((60, 50)));
+    for _ in 0..3 {
+        time += 0.05;
+        inspector_in(&ctx, pane, outputs, &mut inspected, time, vec![]);
+    }
+    // The orange square's popover scrolled down, its name out of sight.
+    let (_, popover) = inspector_in(&ctx, pane, outputs, &mut inspected, time, vec![]);
+    let popover = popover.expect("the inspector drawn");
+    let wheel = Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Point,
+        delta: egui::vec2(0.0, -400.0),
+        phase: egui::TouchPhase::Move,
+        modifiers: Modifiers::NONE,
+        source: egui::MouseWheelSource::Unknown,
+    };
+    time += 0.05;
+    inspector_in(&ctx, pane, outputs, &mut inspected, time, vec![Event::PointerMoved(popover.center()), wheel]);
+    let mut texts = vec![];
+    for _ in 0..10 {
+        time += 0.05;
+        texts = inspector_in(&ctx, pane, outputs, &mut inspected, time, vec![]).0;
+    }
+    let orange = name(60, 50);
+    let at = |texts: &[(String, egui::Rect)], text: &str| texts.iter().find(|(t, _)| t == text).map(|(_, r)| *r);
+    assert!(at(&texts, &orange).is_some_and(|r| r.top() < popover.top()), "scrolled: {orange} above the popover {popover:?}");
+    // The navy bar's popover, opened by a click: at its top.
+    super::inspector::clicked(&ctx, &mut inspected, &fields, outputs, Some((160, 45)));
+    let (mut texts, mut popover) = (vec![], None);
+    for _ in 0..3 {
+        time += 0.05;
+        (texts, popover) = inspector_in(&ctx, pane, outputs, &mut inspected, time, vec![]);
+    }
+    let (navy, popover) = (name(160, 45), popover.expect("the inspector drawn"));
+    assert!(at(&texts, &navy).is_some_and(|r| r.top() >= popover.top()), "{navy} in sight at the popover's top {popover:?}");
+}
+
 /// The number in sewing order of the area the preview's keyboard is on.
 fn focused_number(app: &VectorcraftApp) -> Option<usize> {
     let l = live(app);
@@ -440,6 +538,30 @@ fn the_list_shows_each_change_and_removes_them() {
     press_named(&mut app, &ctx, &mut time, "Reset All");
     assert_eq!(window_field(&app, "areaChanges"), None, "every one removed");
     assert!(says(&mut app, &ctx, &mut time, "Click an area in the preview"), "how to make one");
+}
+
+/// While a newer list of changes waits to run, step 4 names each change's own area: the first of two
+/// removed (as its ↺ does), the second is named by its area, not by the area of the change that
+/// stood first in the list the result shown was made with.
+#[test]
+fn the_list_names_each_changes_own_area_while_a_newer_list_waits() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    set(&mut app, super::STEP, json!(4));
+    let orange = json!({"at": [30.5, 30.5], "color": "#f08214", "kind": "fill", "stitch": "tatami"});
+    let navy = json!({"at": [150.5, 30.5], "color": "#142878", "kind": "fill", "angle": 45.0});
+    set(&mut app, "areaChanges", json!([orange, navy]));
+    until(&mut app, &ctx, &mut time, ready);
+    let outputs = &live(&app).schedule.shown.as_ref().expect("a result").outputs;
+    let name = |x, y| super::preview::area_name(&outputs.area_at(x, y).expect("an area"));
+    let (orange_name, navy_name) = (name(30, 30), name(150, 30));
+    assert!(says(&mut app, &ctx, &mut time, &format!("{navy_name} · ")), "the navy square's change named");
+    // The newer list waits for the settings to rest, as a heavy change does.
+    super::tests::live_mut(&mut app).schedule.time_stages(super::schedule::LIVE_PLAN_MS * 10.0);
+    set(&mut app, "areaChanges", json!([navy]));
+    assert!(says(&mut app, &ctx, &mut time, &format!("{navy_name} · ")), "named by its own area");
+    assert!(!says(&mut app, &ctx, &mut time, &format!("{orange_name} · ")), "not by the removed change's area");
+    let shown = live(&app).schedule.shown.as_ref().map(|s| s.request.changes().len());
+    assert_eq!(shown, Some(2), "those frames showed the result of the two changes");
 }
 
 /// Cmd/Ctrl+Z undoes an area change and a setting in turn, Shift+Cmd/Ctrl+Z redoes; the document's

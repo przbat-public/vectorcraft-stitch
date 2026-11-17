@@ -16,8 +16,9 @@
 //!   changes, by the stitch preview's rules ([`schedule`]); each stage shows as soon as it is
 //!   done.
 //! - **Remembered for the session** (the owner's choice): Cancel, Escape or another document made
-//!   active close it keeping that image's settings; Digitize Image… on the same image continues;
-//!   Start Over goes back to the defaults. Create forgets them.
+//!   active close it keeping that image's settings; Digitize Image… on the same image continues (the
+//!   same picture: another given its id after an Undo starts from the defaults); Start Over goes
+//!   back to the defaults. Create forgets them.
 //! - **Create** applies the run shown when it is of the settings as they are (at once), else when
 //!   it is (the window says so); then the window closes, what was made selected. Enter only commits
 //!   the field typed in; Cmd/Ctrl+Enter is Create, the field being typed in committed first as
@@ -47,7 +48,7 @@ use std::collections::HashMap;
 
 use egui::{Key, Modifiers};
 use serde_json::{Map, Value, json};
-use vectorcraft_engine::doc::{NodeId, NodeKind};
+use vectorcraft_engine::doc::{Document, ImageObject, NodeId, NodeKind};
 use vectorcraft_geom::Affine;
 
 use self::schedule::{Freshness, PROGRESS_REPAINT_SECS, Runner, Schedule};
@@ -155,20 +156,30 @@ pub(crate) struct Question {
     pub(crate) making: Making,
     /// When it showed (the frame's clock, seconds).
     pub(crate) shown: f64,
-    /// Whether its buttons answer yet: only once the double-click time has passed with no key or
-    /// button held, so that neither the second click of a double-click on Create nor a held Enter
-    /// answers it.
+    /// Whether its buttons answer yet: only once the double-click time has passed with no mouse
+    /// button, Enter or Space held (what presses a button), so that neither the second click of a
+    /// double-click on Create nor a held Enter answers it.
     pub(crate) armed: bool,
     /// It has just shown: its safe answer, Don't Replace, takes the keyboard.
     pub(crate) focus: bool,
+}
+
+/// The settings a window closed without Create was left with, for the session, and the picture
+/// they are of.
+struct Remembered {
+    fields: Map<String, Value>,
+    /// Its image's pixels as its document held them: an object given the same id after an Undo, of
+    /// another picture, doesn't take them. Held weakly, so that no other pixels take their place
+    /// in memory while it is kept.
+    pixels: std::sync::Weak<Vec<u8>>,
 }
 
 /// The image window's state in the app: each image's settings as its window was left, and the
 /// window open.
 #[derive(Default)]
 pub struct State {
-    /// By document and image: the fields of a window closed without Create, for the session.
-    remembered: HashMap<(u64, NodeId), Map<String, Value>>,
+    /// By document and image: the settings of a window closed without Create, for the session.
+    remembered: HashMap<(u64, NodeId), Remembered>,
     pub(crate) live: Option<Live>,
     /// The window stepped aside for Document Setup (Embroidery Settings…): its document and image,
     /// to come back to when no dialog is open any more.
@@ -316,9 +327,16 @@ pub fn open(app: &mut VectorcraftApp, id: Option<NodeId>) {
     if let Err(e) = app.session.digitize_window_request(picked, &json!({}), None, &Value::Null) {
         return app.status(crate::i18n::msg(&e.to_string()));
     }
-    let (fields, said) = match app.embroidery.image_window.remembered.get(&(uid, picked)).cloned() {
+    // Its settings as its window was left, when they are of the picture it shows now.
+    let pixels = pixels_of(app, uid, picked);
+    let remembered = app.embroidery.image_window.remembered.get(&(uid, picked));
+    let of_it = remembered.filter(|r| pixels.as_ref().is_some_and(|p| std::ptr::eq(r.pixels.as_ptr(), std::sync::Arc::as_ptr(p))));
+    let (fields, said) = match of_it.map(|r| r.fields.clone()) {
         Some(fields) => (turned_since(fields, placed(app, uid, picked)), None),
-        None => first_fields(app, uid, picked),
+        None => {
+            app.embroidery.image_window.remembered.remove(&(uid, picked));
+            first_fields(app, uid, picked)
+        }
     };
     app.embroidery.image_window.live = None;
     app.ui.dialog = Some(Dialog::new(KIND, Value::Object(fields)));
@@ -366,7 +384,21 @@ const COLORS: &str = "colors";
 /// first in an Image Trace object or a live object. Read in that document, which needn't be the
 /// active one (the window closes when another becomes active).
 fn placed(app: &VectorcraftApp, uid: u64, id: NodeId) -> Option<Affine> {
-    let n = app.session.documents().iter().find(|st| st.uid == uid)?.doc.node(id)?;
+    picture_of(app, uid, id).map(|(_, image)| image.xf)
+}
+
+/// The pixels of the image a window on `id` of document `uid` digitizes, as that document holds
+/// them: what tells one picture from another given the same id.
+fn pixels_of(app: &VectorcraftApp, uid: u64, id: NodeId) -> Option<std::sync::Arc<Vec<u8>>> {
+    let (doc, image) = picture_of(app, uid, id)?;
+    doc.image_blob(image).map(|blob| blob.bytes.clone())
+}
+
+/// The image a window on `id` of document `uid` digitizes (it, or the one an Image Trace object
+/// holds first), and that document; `None` when either is gone.
+fn picture_of(app: &VectorcraftApp, uid: u64, id: NodeId) -> Option<(&Document, &ImageObject)> {
+    let doc: &Document = &app.session.documents().iter().find(|st| st.uid == uid)?.doc;
+    let n = doc.node(id)?;
     let image = match &n.kind {
         NodeKind::Image(i) => i,
         _ => match &n.children()?.first()?.kind {
@@ -374,7 +406,7 @@ fn placed(app: &VectorcraftApp, uid: u64, id: NodeId) -> Option<Affine> {
             _ => return None,
         },
     };
-    Some(image.xf)
+    Some((doc, image))
 }
 
 /// Remembered fields `fields`, their changes' angles turned with the image since the window was
@@ -794,7 +826,8 @@ pub(crate) fn poll(app: &mut VectorcraftApp) {
         // An agent's `keep` was for that Create alone.
         live.fields.remove(KEEP);
         live.fields.insert(PLACED.into(), json!(placed(app, live.uid, live.image).map(|xf| xf.as_coeffs())));
-        app.embroidery.image_window.remembered.insert((live.uid, live.image), live.fields);
+        let pixels = pixels_of(app, live.uid, live.image).map_or_else(std::sync::Weak::new, |p| std::sync::Arc::downgrade(&p));
+        app.embroidery.image_window.remembered.insert((live.uid, live.image), Remembered { fields: live.fields, pixels });
         if app.ui.status == crate::et!("Digitize Image: live preview") {
             app.status(String::new());
         }

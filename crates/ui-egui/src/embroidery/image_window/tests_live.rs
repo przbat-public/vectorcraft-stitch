@@ -279,7 +279,7 @@ fn replacing_hand_edits_is_asked_first() {
 
 /// The question answers neither the second click of a double-click on the button that asked (its
 /// Replace lies where Create was) nor a key held from asking: only once the double-click time has
-/// passed with nothing held. Cmd/Ctrl+Enter while it shows doesn't turn Keep as Live Object's
+/// passed with no mouse button, Enter or Space held. Cmd/Ctrl+Enter while it shows doesn't turn Keep as Live Object's
 /// question into Create's.
 #[test]
 fn the_question_answers_neither_a_double_click_nor_a_held_key() {

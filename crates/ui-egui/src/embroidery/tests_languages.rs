@@ -622,13 +622,14 @@ fn app_with_image_window() -> VectorcraftApp {
 }
 
 /// What the image window drew: its texts with their boxes, its screen-reader tree, the window's
-/// box, and the names it draws as they are.
-type WindowDrawn = (Vec<(String, Rect)>, Vec<Node>, Rect, Vec<String>);
+/// box, the names it draws as they are, and the area inspector's box with the preview pane's that
+/// holds it (when it is open).
+type WindowDrawn = (Vec<(String, Rect)>, Vec<Node>, Rect, Vec<String>, Option<(Rect, Rect)>);
 
 /// The image window in `lang` on a screen `screen` points large, step `step` open, once its result
-/// is in (with `inspect`, the area inspector open on the orange square's upper part) → its texts with
-/// their boxes, its screen-reader tree, the window's box, and the names it draws as they are (the
-/// picture's, the threads').
+/// is in (with `inspect`, the area inspector open on the orange square's upper part, Show in Sewing
+/// Order on) → its texts with their boxes, its screen-reader tree, the window's box, the names it
+/// draws as they are (the picture's, the threads'), and the inspector's box with the pane's.
 fn image_window(lang: Lang, screen: egui::Vec2, step: u64, inspect: bool) -> WindowDrawn {
     use crate::embroidery::image_window::STEP;
     crate::i18n::set_current(lang);
@@ -692,12 +693,14 @@ fn image_window(lang: Lang, screen: egui::Vec2, step: u64, inspect: bool) -> Win
         Rect::from_min_size(Pos2::ZERO, screen).center(),
         crate::embroidery::image_window::frame::size(Rect::from_min_size(Pos2::ZERO, screen)),
     );
+    let inspector = ctx.memory(|m| m.area_rect(crate::embroidery::image_window::inspector::popup_id()));
+    let pane = app.embroidery.image_window.live.as_ref().and_then(|l| l.preview.last_view).map(|(pane, _)| pane);
     crate::i18n::set_current(Lang::EN);
-    (texts, nodes, window, names)
+    (texts, nodes, window, names, inspector.zip(pane))
 }
 
 /// The area inspector opened on the orange square's upper part (the picture's pixel (100, 25)),
-/// unless it is open.
+/// Show in Sewing Order on (the popover at its tallest), unless it is open.
 fn open_inspector(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let fields = app.ui.dialog.as_ref().map(|d| d.fields.clone()).unwrap_or_default();
     let Some(live) = app.embroidery.image_window.live.as_mut() else { return };
@@ -708,6 +711,9 @@ fn open_inspector(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let (Some((iw, ih)), Some((ww, wh, _))) = (shown.outputs.image_px(), shown.outputs.working_rgba()) else { return };
     let at = (100 * ww / iw.max(1), 25 * wh / ih.max(1));
     crate::embroidery::image_window::inspector::clicked(ctx, &mut live.inspector, &fields, &shown.outputs, Some(at));
+    if let Some(open) = live.inspector.as_mut() {
+        open.order = true;
+    }
 }
 
 /// In every complete language, the image window, at its smallest (960 × 600 points: its compact
@@ -730,7 +736,7 @@ fn the_image_window_in_every_language() {
         let lang = Lang::from_code(info.code).unwrap();
         for [w, h] in SCREENS {
             for step in STEPS {
-                let (texts, nodes, window, names) = image_window(lang, vec2(w, h), step, false);
+                let (texts, nodes, window, names, _) = image_window(lang, vec2(w, h), step, false);
                 for (text, rect) in &texts {
                     if english.contains(&numbers_blanked(text)) {
                         assert!(may_be_english(info.source, text, &names), "{} at {w}, step {step}: {text:?} is drawn in English", info.code);
@@ -750,9 +756,10 @@ fn the_image_window_in_every_language() {
     }
 }
 
-/// In every complete language, the area inspector, open on the orange square's upper part, at the image
-/// window's smallest and on a laptop's display, draws no English the language's catalogue doesn't
-/// give, keeps its words inside the window, and names every control for screen readers.
+/// In every complete language, the area inspector, open on the orange square's upper part with Show
+/// in Sewing Order on (its tallest), at the image window's smallest and on a laptop's display, draws
+/// no English the language's catalogue doesn't give, keeps its words inside the window and itself
+/// inside the preview pane that holds it, and names every control for screen readers.
 #[test]
 fn the_area_inspector_in_every_language() {
     const SCREENS: [[f32; 2]; 2] = [[960.0, 600.0], [1440.0, 900.0]];
@@ -766,7 +773,9 @@ fn the_area_inspector_in_every_language() {
     for info in LANGUAGES.iter().filter(|l| l.complete_menus) {
         let lang = Lang::from_code(info.code).unwrap();
         for [w, h] in SCREENS {
-            let (texts, nodes, window, names) = image_window(lang, vec2(w, h), 4, true);
+            let (texts, nodes, window, names, inspector) = image_window(lang, vec2(w, h), 4, true);
+            let (inspector, pane) = inspector.expect("the inspector drawn in the preview");
+            assert!(pane.expand(0.5).contains_rect(inspector), "{} at {w}: the inspector {inspector:?} leaves the pane {pane:?}", info.code);
             for (text, rect) in &texts {
                 if english.contains(&numbers_blanked(text)) {
                     assert!(may_be_english(info.source, text, &names), "{} at {w}: {text:?} is drawn in English", info.code);

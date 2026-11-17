@@ -6,9 +6,11 @@
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers};
 use serde_json::json;
-use vectorcraft_engine::cmd::embroidery::{AreaFacts, AreaKey, DigitizeStage, MAX_AREA_CHANGES};
+use vectorcraft_engine::cmd::embroidery::{AreaFacts, AreaKey, DigitizePipeline, DigitizeStage, MAX_AREA_CHANGES, SatinOffer, SatinParts};
 
-use super::tests::{app_with, click, frame, key, live, nodes, open_dialog, opened_with, press, ready, reply, set, type_into, until, window_field};
+use super::tests::{
+    app_with, click, frame, key, live, live_mut, nodes, open_dialog, opened_with, press, ready, reply, set, type_into, until, window_field,
+};
 use crate::VectorcraftApp;
 
 /// A picture placed at its 72 ppi (a pixel 0.35 mm): an orange square 35 × 28 mm, a navy bar
@@ -196,7 +198,9 @@ fn inspector_frame(
     let mut out = ctx.run_ui(raw, |ui| {
         egui::Popup::open_id(ui.ctx(), super::inspector::popup_id());
         let pane = ui.max_rect();
-        super::inspector::show(ui, pane, &mut fields, &mut inspected, outputs, running, |p| egui::pos2(p.x as f32, p.y as f32));
+        super::inspector::show(ui, pane, &mut fields, &mut inspected, &mut super::answers::Answers::InLine, outputs, running, |p| {
+            egui::pos2(p.x as f32, p.y as f32)
+        });
     });
     out.textures_delta.clear();
     inspected
@@ -426,7 +430,9 @@ fn inspector_in(
     let mut fields = serde_json::Map::new();
     let mut out = ctx.run_ui(raw, |ui| {
         egui::Popup::open_id(ui.ctx(), super::inspector::popup_id());
-        super::inspector::show(ui, pane, &mut fields, inspected, outputs, false, |p| egui::pos2(p.x as f32, p.y as f32));
+        super::inspector::show(ui, pane, &mut fields, inspected, &mut super::answers::Answers::InLine, outputs, false, |p| {
+            egui::pos2(p.x as f32, p.y as f32)
+        });
     });
     out.textures_delta.clear();
     let nodes = out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default();
@@ -814,4 +820,189 @@ fn the_history_survives_embroidery_settings() {
     assert!(open_dialog(&app).is_some(), "the window back");
     keyed(&mut app, &ctx, &mut time, Key::Z, Modifiers::COMMAND);
     assert_eq!(window_field(&app, "colors"), before, "undone after coming back");
+}
+
+/// The picture of two stripes 40 mm long touching on white, placed at its 72 ppi (a pixel 0.35 mm): a
+/// red one 6.7 mm wide, the larger, so sewn first and grown by the overlap under a blue one 4.9 mm
+/// wide sewn after it.
+fn grown_stripes() -> image::RgbaImage {
+    image::RgbaImage::from_fn(80, 140, |x, y| {
+        let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
+        image::Rgba(if inside([20, 10, 39, 124]) {
+            [200, 30, 30, 255]
+        } else if inside([39, 10, 53, 124]) {
+            [30, 60, 200, 255]
+        } else {
+            [255, 255, 255, 255]
+        })
+    })
+}
+
+/// A stripe no wider than narrow parts as satin as traced, but grown past it by the overlap under
+/// the stripe sewn after it, is said too wide for that width, not too short, and Satin is offered
+/// on it (Create's width, with the overlap, sews it as satin).
+#[test]
+fn a_stripe_grown_by_the_overlap_is_said_wider_not_too_short() {
+    let (mut app, ctx, mut time) = opened_with(app_with(grown_stripes()));
+    {
+        let outputs = &live(&app).schedule.shown.as_ref().expect("a result").outputs;
+        assert_eq!(outputs.satin_parts(29, 60, None), Some(SatinParts::None), "no satin column as planned");
+        assert_eq!(outputs.satin_offer(29, 60), Some(SatinOffer::Fits), "one at Create's width");
+    }
+    click_at(&mut app, &ctx, &mut time, 29, 60);
+    assert!(says(&mut app, &ctx, &mut time, "Auto: tatami"));
+    assert_eq!(times_said(&mut app, &ctx, &mut time, "Wider than "), 1, "too wide as made");
+    assert!(!says(&mut app, &ctx, &mut time, "Too short for satin"), "not too short");
+    let satin = choices(&mut app, &ctx, &mut time).into_iter().find(|(w, _)| w == "Satin").map(|(_, on)| on);
+    assert_eq!(satin, Some(true), "Satin offered");
+}
+
+/// A Satin kept where Satin isn't offered (from before, or given by an agent) says why it isn't
+/// sewn as satin there, once: on the stick with its 15 mm head, too wide; on the navy line 0.7 mm
+/// wide, too narrow; neither "Too short for satin".
+#[test]
+fn a_satin_kept_where_it_isnt_offered_says_why() {
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    set(&mut app, "areaChanges", json!([{"at": [95.5, 60.5], "color": "#78288c", "kind": "fill", "stitch": "satin"}]));
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 95, 60);
+    assert_eq!(times_said(&mut app, &ctx, &mut time, "Satin sews parts up to "), 1, "the stick: too wide");
+    assert!(!says(&mut app, &ctx, &mut time, "Too short for satin"));
+    let (mut app, ctx, mut time) = opened();
+    set(&mut app, "areaChanges", json!([{"at": [151.5, 77.5], "color": "#142878", "kind": "line", "stitch": "satin"}]));
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 151, 77);
+    assert_eq!(times_said(&mut app, &ctx, &mut time, "Satin needs a line at least "), 1, "the line: too narrow");
+}
+
+/// Where there is a thread for them, the inspector works no satin answer out itself: it asks, the
+/// Auto line and its reason waiting; once the thread's answer is in, they show.
+#[test]
+fn the_inspector_asks_for_its_satin_answers_and_works_none_out_itself() {
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    let (answers, asks, answered) = super::answers::Answers::held();
+    live_mut(&mut app).answers = answers;
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    let kept = |app: &VectorcraftApp| live(app).schedule.shown.as_ref().map_or(0, |s| s.outputs.satin_kept_count());
+    assert!(!says(&mut app, &ctx, &mut time, "Auto: ") && !says(&mut app, &ctx, &mut time, "No part wider than "), "waiting");
+    assert_eq!(kept(&app), 0, "nothing worked out on the interface thread");
+    let ask = asks.try_recv().expect("asked");
+    assert_eq!(ask.areas().len(), 1, "its own area");
+    assert!(asks.try_recv().is_err(), "asked once");
+    super::answers::answer(&ask, &answered, &|| {});
+    assert!(says(&mut app, &ctx, &mut time, "Auto: satin") && says(&mut app, &ctx, &mut time, "No part wider than "), "once in");
+}
+
+/// Navy bars 21 × 3.5 mm on white, placed at its 72 ppi, `n` of them one under another: alike, each
+/// taking Satin.
+fn bars(n: u32) -> image::RgbaImage {
+    image::RgbaImage::from_fn(100, 25 * n + 10, |x, y| {
+        let bar = (0..n).any(|i| (10..70).contains(&x) && (10 + 25 * i..20 + 25 * i).contains(&y));
+        image::Rgba(if bar { [20, 40, 120, 255] } else { [255, 255, 255, 255] })
+    })
+}
+
+/// Apply to Similar Areas, as screen readers find it: its words, and whether it can be pressed;
+/// `None` where it isn't drawn.
+fn similar_button(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Option<(String, bool)> {
+    let nodes = nodes(app, ctx, time);
+    let (_, n) = nodes.iter().find(|(_, n)| n.label().is_some_and(|l| l.starts_with("Apply to ")))?;
+    Some((n.label().unwrap_or_default().to_string(), !n.is_disabled()))
+}
+
+/// With Satin, Apply to Similar Areas waits for whether Satin is offered on each alike area: greyed
+/// out while one's answer is in and the other's is asked of the thread, then set on both.
+#[test]
+fn apply_to_similar_areas_with_satin_waits_for_its_areas_answers() {
+    let (mut app, ctx, mut time) = opened_with(app_with(bars(3)));
+    let (answers, asks, answered) = super::answers::Answers::held();
+    live_mut(&mut app).answers = answers;
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    press(&mut app, &ctx, &mut time, "Satin", Role::Tab);
+    until(&mut app, &ctx, &mut time, ready);
+    let newest = std::iter::from_fn(|| asks.try_recv().ok()).last().expect("asked");
+    assert_eq!(newest.areas().len(), 3, "its own area and the other two bars");
+    // The second bar's answers in, as another ask would have left them; the third's not.
+    let outputs = live(&app).schedule.shown.as_ref().expect("a result").outputs.clone();
+    assert_eq!((outputs.satin_parts(40, 40, None), outputs.satin_offer(40, 40)), (Some(SatinParts::All), Some(SatinOffer::Fits)));
+    answered.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(similar_button(&mut app, &ctx, &mut time), Some(("Apply to 1 Similar Area".into(), false)), "waiting for the third");
+    super::answers::answer(&newest, &answered, &|| {});
+    assert_eq!(similar_button(&mut app, &ctx, &mut time), Some(("Apply to 2 Similar Areas".into(), true)), "both, once in");
+}
+
+/// A runner that hands over a job's stages up to its objects at once and its plan only once a test
+/// lets it, as a picture whose stitches take long to plan.
+struct PlanHeld(std::rc::Rc<std::cell::RefCell<Held>>);
+
+/// What [`PlanHeld`] holds: its pipeline, the steps to hand over, and the plan's held back.
+struct Held {
+    pipeline: DigitizePipeline,
+    done: Vec<super::worker::Done>,
+    plan: Vec<super::worker::Done>,
+}
+
+impl super::schedule::Runner for PlanHeld {
+    fn submit(&mut self, job: super::worker::Job) {
+        let mut held = self.0.borrow_mut();
+        let mut steps = Vec::new();
+        super::worker::run(&mut held.pipeline, &job, &mut |d| steps.push(d));
+        let plan =
+            steps.iter().position(|d| matches!(d.outcome, super::worker::Outcome::Stage { stage: DigitizeStage::Plan, .. })).unwrap_or(steps.len());
+        held.plan = steps.split_off(plan);
+        held.done.extend(steps);
+    }
+
+    fn poll(&mut self) -> Vec<super::worker::Done> {
+        std::mem::take(&mut self.0.borrow_mut().done)
+    }
+}
+
+/// Apply to Similar Areas with Satin, worked out while the result shown has its shapes but not yet
+/// its stitches' plan (nothing to tell whether Satin is offered on the other bar), is worked out
+/// again once the plan is in, and offered.
+#[test]
+fn apply_to_similar_areas_is_worked_out_again_once_the_plan_is_in() {
+    let (mut app, ctx, mut time) = opened_with(app_with(bars(2)));
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    let held = std::rc::Rc::new(std::cell::RefCell::new(Held { pipeline: app.session.digitize_pipeline(), done: vec![], plan: vec![] }));
+    live_mut(&mut app).runner = Box::new(PlanHeld(std::rc::Rc::clone(&held)));
+    press(&mut app, &ctx, &mut time, "Satin", Role::Tab);
+    until(&mut app, &ctx, &mut time, |_| !held.borrow().plan.is_empty());
+    until(&mut app, &ctx, &mut time, |app| live(app).schedule.shown.as_ref().is_some_and(|s| s.outputs.number(DigitizeStage::Plan).is_none()));
+    assert!(similar_button(&mut app, &ctx, &mut time).is_none_or(|(_, on)| !on), "not offered before the plan");
+    let plan = std::mem::take(&mut held.borrow_mut().plan);
+    held.borrow_mut().done.extend(plan);
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(similar_button(&mut app, &ctx, &mut time), Some(("Apply to 1 Similar Area".into(), true)), "offered once the plan is in");
+}
+
+/// A navy bar 60 mm long whose width wavers smoothly between 6.3 and 7.3 mm, at a tenth of a
+/// millimetre a pixel once the design is 70 mm wide: the planner sews it as one satin column, run
+/// on through the stretches wider than 7 mm (each shorter than twice the column's width).
+fn wavering_bar() -> image::RgbaImage {
+    image::RgbaImage::from_fn(700, 200, |x, y| {
+        let width = 68.0 + 5.0 * (std::f64::consts::TAU * f64::from(x) / 200.0).sin();
+        let bar = (20..620).contains(&x) && (100.0 - width / 2.0..100.0 + width / 2.0).contains(&(f64::from(y) + 0.5));
+        image::Rgba(if bar { [20, 40, 120, 255] } else { [255, 255, 255, 255] })
+    })
+}
+
+/// Every part a satin column though a stretch is wider than narrow parts as satin (the column runs
+/// on through it): "Auto: satin", and no reason saying that no part is wider.
+#[test]
+fn a_column_run_on_through_a_wider_stretch_is_given_no_false_reason() {
+    let (mut app, ctx, mut time) = opened_with(app_with(wavering_bar()));
+    set(&mut app, "width", json!(70.0));
+    until(&mut app, &ctx, &mut time, ready);
+    let at = {
+        let outputs = &live(&app).schedule.shown.as_ref().expect("a result").outputs;
+        let at = outputs.first_key().and_then(|k| outputs.find(&k)).expect("the bar");
+        assert_eq!(outputs.satin_parts(at.0, at.1, None), Some(SatinParts::All), "one column");
+        assert!(outputs.area_at(at.0, at.1).is_some_and(|f| f.widest_mm > 7.0), "a stretch wider than 7 mm");
+        at
+    };
+    click_at(&mut app, &ctx, &mut time, at.0, at.1);
+    assert!(says(&mut app, &ctx, &mut time, "Auto: satin"));
+    assert!(!says(&mut app, &ctx, &mut time, "No part wider than "), "no false reason");
 }

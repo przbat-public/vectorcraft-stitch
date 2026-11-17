@@ -761,5 +761,93 @@ fn what_the_planner_sews_of_an_area_and_whether_satin_is_offered() {
     assert_eq!(at(60, 150), (Some(SatinParts::None), Some(SatinOffer::TooShort)), "the dot");
     assert_eq!(at(145, 155), (Some(SatinParts::None), Some(SatinOffer::TooShort)), "the square");
     assert_eq!(at(360, 150).0, Some(SatinParts::Some), "the stick with its head");
-    assert_eq!(at(95, 315).1, Some(SatinOffer::TooWide), "the wide square");
+    let wide = at(95, 315).1;
+    assert!(matches!(wide, Some(SatinOffer::TooWide { width_mm }) if (width_mm - 15.0).abs() < 0.3), "the wide square: {wide:?}");
+}
+
+/// Two stripes 40 mm long touching on white, at a tenth of a millimetre a pixel: a red one 6.8 mm
+/// wide, the larger, so sewn first and grown by the overlap under a blue one 5 mm wide sewn after
+/// it.
+fn grown_stripe() -> tr::Raster {
+    const RED: [u8; 4] = [200, 30, 30, 255];
+    const BLUE: [u8; 4] = [30, 60, 200, 255];
+    tr::Raster::from_fn(300, 480, |x, y| {
+        if inside(x, y, [20, 40, 88, 440]) {
+            RED
+        } else if inside(x, y, [88, 40, 138, 440]) {
+            BLUE
+        } else {
+            WHITE
+        }
+    })
+}
+
+/// At a tenth of a millimetre a pixel, a long orange band 11.6 mm wide between two blue ones 5 mm
+/// wide: the largest, it is sewn first and grows by the overlap under both, past the 12 mm the
+/// planner parts satin at most; and an orange square 11.6 mm a side apart on white.
+fn capped_band() -> tr::Raster {
+    const BLUE: [u8; 4] = [30, 60, 200, 255];
+    tr::Raster::from_fn(520, 480, |x, y| {
+        if inside(x, y, [20, 40, 70, 440]) || inside(x, y, [186, 40, 236, 440]) {
+            BLUE
+        } else if inside(x, y, [70, 40, 186, 440]) || inside(x, y, [300, 40, 416, 156]) {
+            ORANGE
+        } else {
+            WHITE
+        }
+    })
+}
+
+/// An area grown by the overlap under the areas sewn after it is judged as it is made: a 6.8 mm
+/// stripe grown past 7 mm has no satin column at 7 mm (tatami for its width, not for its length)
+/// and has one at Create's width, so Satin is offered; a long band 11.6 mm wide grown past 12 mm on
+/// either side is too wide for Satin, said with its overlap, where a square as wide on white is too
+/// short.
+#[test]
+fn an_area_grown_by_the_overlap_is_judged_as_it_is_made() {
+    use super::pipeline::{SatinOffer, SatinParts};
+    let (_, _, out) = run_of(&grown_stripe(), json!({"colors": 3}));
+    assert_eq!(out.satin_parts(54, 240, None), Some(SatinParts::None), "the red stripe as planned");
+    assert_eq!(out.satin_offer(54, 240), Some(SatinOffer::Fits), "the red stripe");
+    assert!(out.satin_created_kept(54, 240).is_some_and(|p| p != SatinParts::None), "a column at Create's width");
+    let (_, _, out) = run_of(&capped_band(), json!({"colors": 3}));
+    let band = out.satin_offer(128, 240);
+    assert!(matches!(band, Some(SatinOffer::TooWide { width_mm }) if (width_mm - 12.4).abs() < 0.3), "the band: {band:?}");
+    assert_eq!(out.satin_offer(358, 98), Some(SatinOffer::TooShort), "the square");
+}
+
+/// The satin answers can be read without working them out, as the window's inspector reads them
+/// (its thread works them out): none before they are worked out, nor before the stitches are
+/// planned (nothing kept then); once worked out, kept for the run, a filled area with narrow parts
+/// as satin off keeping its none (not asked of the planner again); and an area as planned kept
+/// under its object's width too, so that with Satin chosen on it the offer's parting is that one.
+#[test]
+fn satin_answers_are_kept_and_read_without_working_them_out() {
+    use super::pipeline::{SatinOffer, SatinParts};
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6}));
+    let mut early = out.clone();
+    early.plan = None;
+    assert_eq!((early.satin_parts(120, 37, None), early.satin_offer(120, 37)), (None, None), "before the stitches are planned");
+    assert!(!early.satin_known(120, 37));
+    assert_eq!(out.satin_kept_count(), 0, "nothing kept before the plan");
+    assert_eq!((out.satin_parts_kept(120, 37, None), out.satin_offer_kept(120, 37)), (None, None), "not worked out yet");
+    assert!(!out.satin_known(120, 37));
+    assert_eq!(out.satin_parts(120, 37, None), Some(SatinParts::All));
+    assert!(!out.satin_known(120, 37), "whether Satin is offered not worked out yet");
+    assert_eq!(out.satin_offer(120, 37), Some(SatinOffer::Fits));
+    assert!(out.satin_known(120, 37));
+    assert_eq!((out.satin_parts_kept(120, 37, None), out.satin_offer_kept(120, 37)), (Some(SatinParts::All), Some(SatinOffer::Fits)));
+    // The bar's colour sewn as a fill: narrow parts as satin off, its none kept.
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6, "colorChoices": [{"color": "#142878", "job": "fill"}]}));
+    assert_eq!(out.satin_parts(120, 37, None), None);
+    assert_eq!(out.satin_kept_count(), 1, "its none kept");
+    assert_eq!(out.satin_parts(120, 37, None), None);
+    assert_eq!(out.satin_kept_count(), 1, "worked out once");
+    // Satin chosen on the bar: as planned is at Create's width, and the offer parts it no more.
+    let satin = json!([{"at": [125.0, 37.5], "color": "#142878", "kind": "fill", "stitch": "satin"}]);
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6, "areaChanges": satin}));
+    assert_eq!(out.satin_parts(120, 37, None), Some(SatinParts::All));
+    assert_eq!(out.satin_kept_count(), 2, "as planned, and at its object's width");
+    assert_eq!(out.satin_offer(120, 37), Some(SatinOffer::Fits));
+    assert_eq!(out.satin_kept_count(), 2, "the offer's parting the one kept");
 }

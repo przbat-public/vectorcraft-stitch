@@ -29,6 +29,7 @@
 //!   the Live bar (the project owner's choice, 2026-11-16, „Zastąpić, pytając najpierw (polecam)”).
 //!   Agents keep one with the field `keep: "live"` and `ui.dialog.confirm`, which never asks.
 
+mod answers;
 pub(crate) mod colour_list;
 mod colours_step;
 pub(crate) mod frame;
@@ -198,6 +199,9 @@ pub(crate) struct Live {
     pub(crate) colours: colour_list::State,
     /// The area the inspector is open on.
     pub(crate) inspector: Option<inspector::Inspected>,
+    /// Where the inspector's satin answers are worked out: off the interface thread where there can
+    /// be a thread.
+    pub(crate) answers: answers::Answers,
     /// Undo inside the window.
     pub(crate) history: history::History,
     /// The figures last shown: kept, dimmed, while a newer result is on its way or the settings
@@ -511,6 +515,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
             preview: preview::Preview::default(),
             colours: colour_list::State::default(),
             inspector: None,
+            answers: answers::Answers::new(ctx),
             history: history::History::default(),
             figures: None,
             announced: String::new(),

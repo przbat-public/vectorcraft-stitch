@@ -660,7 +660,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     }
     foot_row(ui, foot, d, xf, view == View::Stitches || (view == View::Compare && View::of_step(step) == View::Stitches));
     let running = live.schedule.busy();
-    super::inspector::show(ui, pane, &mut d.fields, &mut live.inspector, outputs, running, |p| xf.to_screen(p));
+    super::inspector::show(ui, pane, &mut d.fields, &mut live.inspector, &mut live.answers, outputs, running, |p| xf.to_screen(p));
     if clicked {
         super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, under);
     } else if read_at.is_some() {

@@ -7200,23 +7200,70 @@ proptest! {
 
 /// The embroidery formats read but never written: their samples are built from the rich
 /// document's exports ([`read_only_samples`]).
-const EMBROIDERY_READ_ONLY: [&str; 1] = ["sew"];
+const EMBROIDERY_READ_ONLY: [&str; 2] = ["sew", "hus"];
 
-/// The rich document as SEW (a SEW holding its JEF export's records), in [`EMBROIDERY_READ_ONLY`]'s
-/// order.
+/// A design's records as a HUS file holds them: moves in tenths of a millimetre, y upwards, a move
+/// longer than a byte holds split into jumps, a cut, a stop and a colour change each a record of
+/// their own, and the end.
+fn hus_records(p: &vectorcraft_stitch::Pattern) -> Vec<(u8, i8, i8)> {
+    use vectorcraft_stitch::{Command, quantize};
+    let mut out = Vec::new();
+    let (mut x, mut y) = (0i32, 0i32);
+    for (k, block) in p.blocks.iter().enumerate() {
+        if k > 0 {
+            out.push((0x84, 0, 0));
+        }
+        for s in &block.stitches {
+            let kind = match s.command {
+                Command::Stitch => 0x80,
+                Command::Jump => 0x81,
+                Command::Trim => {
+                    out.push((0x88, 0, 0));
+                    continue;
+                }
+                Command::Stop => {
+                    out.push((0x82, 0, 0));
+                    continue;
+                }
+                Command::ColorChange => {
+                    out.push((0x84, 0, 0));
+                    continue;
+                }
+            };
+            let (tx, ty) = (quantize(s.x), -quantize(s.y));
+            loop {
+                let (dx, dy) = ((tx - x).clamp(-127, 127), (ty - y).clamp(-127, 127));
+                (x, y) = (x + dx, y + dy);
+                let last = (x, y) == (tx, ty);
+                out.push((if last { kind } else { 0x81 }, dx as i8, dy as i8));
+                if last {
+                    break;
+                }
+            }
+        }
+    }
+    out.push((0x90, 0, 0));
+    out
+}
+
+/// The rich document as SEW (a SEW holding its JEF export's records) and as HUS (its DST export's
+/// design, compressed by the test kit), in [`EMBROIDERY_READ_ONLY`]'s order.
 fn read_only_samples() -> &'static [Vec<u8>] {
-    use vectorcraft_testkit::machine_files::sew_from_jef;
+    use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
     static SAMPLES: std::sync::OnceLock<Vec<Vec<u8>>> = std::sync::OnceLock::new();
     SAMPLES.get_or_init(|| {
         let exported = |f: &str| embroidery_samples()[EMBROIDERY.iter().position(|e| *e == f).unwrap()].clone();
-        vec![sew_from_jef(&exported("jef")).unwrap()]
+        let design = vectorcraft_stitch::format::Format::Dst.read(&exported("dst")).unwrap();
+        let colours: Vec<u16> = (0..design.blocks.len()).map(|k| (k % 29) as u16).collect();
+        vec![sew_from_jef(&exported("jef")).unwrap(), hus(&hus_records(&design), &colours, b"fuzz\0\0\0\0", &Lzh::default())]
     })
 }
 
 proptest! {
     #![proptest_config(config())]
 
-    /// SEW files damaged: bytes changed anywhere (counts included) and the file cut short.
+    /// SEW and HUS files damaged: bytes changed anywhere (counts and offsets included) and the
+    /// file cut short.
     #[test]
     fn mutated_read_only_embroidery_never_panics(which in 0usize..EMBROIDERY_READ_ONLY.len(), cut in 0usize..200_000, edits in prop::collection::vec((0usize..200_000, any::<u8>()), 0..24)) {
         let mut bytes = read_only_samples()[which].clone();
@@ -7229,12 +7276,27 @@ proptest! {
     }
 
     /// Random records behind each format's own header: SEW's records after its header and
-    /// pictures.
+    /// pictures, and HUS's three streams pointing into random bytes.
     #[test]
     fn random_read_only_embroidery_records_never_panic(which in 0usize..EMBROIDERY_READ_ONLY.len(), body in prop::collection::vec(any::<u8>(), 0..2048)) {
         let sample = &read_only_samples()[which];
-        let mut bytes = sample[..vectorcraft_testkit::machine_files::SEW_STITCHES_AT].to_vec();
-        bytes.extend(&body);
+        let bytes = match EMBROIDERY_READ_ONLY[which] {
+            "sew" => {
+                let mut b = sample[..vectorcraft_testkit::machine_files::SEW_STITCHES_AT].to_vec();
+                b.extend(&body);
+                b
+            }
+            _ => {
+                let first = sample.get(20..24).map_or(0, |w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]) as usize).min(sample.len());
+                let mut b = sample[..first].to_vec();
+                let third = body.len() / 3;
+                b.extend(&body);
+                for (k, at) in [first, first + third, first + 2 * third].into_iter().enumerate() {
+                    b[20 + 4 * k..24 + 4 * k].copy_from_slice(&(at as u32).to_le_bytes());
+                }
+                b
+            }
+        };
         survive_metafile("embroidery records", &format!("x.{}", EMBROIDERY_READ_ONLY[which]), &bytes)?;
     }
 }

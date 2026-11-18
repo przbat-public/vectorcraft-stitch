@@ -1,0 +1,312 @@
+//! Husqvarna Viking HUS: read, never written (the project owner's choice, 2026-11-18). The
+//! machines that need it are Husqvarna Viking's of the 1990s; their successors read VP3, which is
+//! written ([`super::vp3`]).
+//!
+//! The file is a 42-byte header, a colour list, then three compressed streams of one byte per
+//! record: the records' kinds, their x moves and their y moves. The header, little-endian: the
+//! magic (four bytes, [`MAGICS`]), the record count (u32), the colour count (u32), how far the
+//! design reaches right, up, left and down from where it starts (four i16, the last two negative),
+//! where each stream starts (three u32; the last runs to the end of the file), eight bytes the
+//! sources call a name or leave unexplained, and two bytes that are 0; then one u16 per colour.
+//! Each stream expands ([`super::lzh`]) to as many bytes as there are records. A move is a signed
+//! byte in tenths of a millimetre, y counting upwards.
+//!
+//! The kinds of record: 0x80 a stitch, 0x81 a jump, 0x84 a colour change (the next colour of the
+//! list), 0x90 the last stitch (Jason Weiler's page). Two more appear in the real files below, which
+//! no source names, both with no move: 0x88, before a jump or a design's first jump, is read as a
+//! cut (pyembroidery, run as an outside reader of those files, reads it as one too), and 0x82,
+//! between stitches and found in the appliqué and cutwork designs, as a stop (the machine stops,
+//! the thread kept, as an appliqué piece is laid down): a stop read where the file had none costs
+//! a pause at most, while one missed would sew an appliqué's next step with nothing laid down.
+//! 0x90 also ends a part of a design that a colour change and more records follow: it is no needle
+//! point, and the records after it are read (pyembroidery stops at it, and at 0x82). A record of
+//! another kind is a move with the needle up, so that what follows stays where the file puts it.
+//! Where a cut, a stop, a colour change or an end moves, it is made first and the move is a jump.
+//!
+//! The colours are numbers 0 to 29 of a chart no source publishes. Weiler names them, by
+//! experiment, all but number 16 ("???"); the colours shown for the names are estimates made here
+//! ([`COLOURS`]), the project owner's choice (2026-11-18): only a preview, as a design opened from
+//! a format without colours has, since an export to a palette's format matches them to its
+//! threads. A number with no name reads as a grey stand-in named after it.
+//!
+//! Checked on 6,944 real HUS files the project owner holds (used on their computer only, never
+//! committed): every one with a stitch opens (four files of alphabets hold only moves); the
+//! header's record and colour counts, extents and stream offsets
+//! are as above in all of them (the colour count is one more than the colour changes); and the y
+//! axis counts upwards: read so, the stitches of 2,576 of the 2,585 designs the files also hold as
+//! JEF, and of all 58 they hold as PES, overlap those copies' more than read the other way up (on a
+//! 48 × 48 grid over each design; the 9 others are nearly symmetrical top to bottom). Two files end
+//! before their last records: they read as far as they go.
+//!
+//! References: EduTechWiki, *Embroidery format HUS* (edutechwiki.unige.ch/en/
+//! Embroidery_format_HUS) and *Embroidery format* (…/Embroidery_format); KDE Community Wiki,
+//! *Husqvarna HUS* (community.kde.org/Projects/Liberty/File_Formats/Husqvarna_HUS); Jason Weiler,
+//! *HUS and VIP File Format Info* (jasonweiler.com/HUSandVIPFileFormatInfo.html; facts only, its
+//! text is all rights reserved); The National Archives, PRONOM fmt/2000 (the magic). pyembroidery
+//! 1.5.1 (MIT) served only as an outside reader; none of its code was read.
+
+use super::{MAX_POINTS, Reader, add, finish, lzh, mm};
+use crate::{Command, Error, Pattern, Result, Stitch, Thread};
+
+/// The first four bytes of a HUS file: 0x5B or 0x5D, then 0xAF, 0xFF or 0xFC, then 0xC8 0x00
+/// (PRONOM fmt/2000; the KDE wiki gives 5D FC and 5B AF, which every real file above starts with).
+pub(crate) const MAGICS: [&[u8]; 6] = [
+    &[0x5B, 0xAF, 0xC8, 0x00],
+    &[0x5B, 0xFF, 0xC8, 0x00],
+    &[0x5B, 0xFC, 0xC8, 0x00],
+    &[0x5D, 0xAF, 0xC8, 0x00],
+    &[0x5D, 0xFF, 0xC8, 0x00],
+    &[0x5D, 0xFC, 0xC8, 0x00],
+];
+/// The format's name in errors.
+const WHAT: &str = "HUS";
+/// The largest move one record holds, tenths of a millimetre: a signed byte's.
+pub(crate) const MAX_DELTA: i32 = 127;
+
+/// Where the header gives the record count and the colour count (u32 each).
+const RECORDS_AT: usize = 4;
+/// Where the header gives where the three streams start (u32 each).
+const STREAMS_AT: usize = 20;
+/// The header's eight bytes after the stream offsets: a name of ASCII digits in the real files
+/// ("001"), padded with NULs; read as the design's name.
+const NAME_AT: usize = 32;
+const NAME_LEN: usize = 8;
+/// Where the colour list starts, after the header: one u16 per colour.
+const COLOURS_AT: usize = 42;
+const COLOUR_BYTES: usize = 2;
+
+/// The kinds of record.
+const STITCH: u8 = 0x80;
+const JUMP: u8 = 0x81;
+const STOP: u8 = 0x82;
+const COLOR_CHANGE: u8 = 0x84;
+const TRIM: u8 = 0x88;
+
+/// The colours of HUS's chart, by number, with the names Weiler gives them (number 16 has none):
+/// each colour an sRGB estimate made for its name, not a measurement. The plain colours are bright
+/// thread shades; "Light" ones lie about half way to white, "Dark" ones about half way to black.
+pub(crate) const COLOURS: [Option<([u8; 3], &str)>; 30] = [
+    Some(([0x00, 0x00, 0x00], "Black")),
+    Some(([0x10, 0x40, 0xC0], "Blue")),
+    Some(([0x10, 0x90, 0x30], "Green")),
+    Some(([0xD0, 0x18, 0x18], "Red")),
+    Some(([0xB0, 0x28, 0xA0], "Magenta")),
+    Some(([0xF8, 0xD8, 0x00], "Yellow")),
+    Some(([0x80, 0x80, 0x80], "Gray")),
+    Some(([0x80, 0xB0, 0xE8], "Light Blue")),
+    Some(([0x88, 0xD0, 0x88], "Light Green")),
+    Some(([0xF8, 0x88, 0x10], "Orange")),
+    Some(([0xF0, 0x88, 0xB0], "Pink")),
+    Some(([0x88, 0x50, 0x20], "Brown")),
+    Some(([0xFF, 0xFF, 0xFF], "White")),
+    Some(([0x08, 0x20, 0x70], "Dark Blue")),
+    Some(([0x08, 0x50, 0x20], "Dark Green")),
+    Some(([0x80, 0x08, 0x08], "Dark Red")),
+    None,
+    Some(([0xF0, 0x80, 0x80], "Light Red")),
+    Some(([0x58, 0x18, 0x70], "Dark Purple")),
+    Some(([0xC8, 0x98, 0xE0], "Light Purple")),
+    Some(([0xB8, 0x98, 0x00], "Dark Yellow")),
+    Some(([0xFF, 0xF0, 0x98], "Light Yellow")),
+    Some(([0x50, 0x50, 0x50], "Dark Grey")),
+    Some(([0xC0, 0xC0, 0xC0], "Light Grey")),
+    Some(([0xC0, 0x58, 0x00], "Dark Orange")),
+    Some(([0xFF, 0xB8, 0x70], "Light Orange")),
+    Some(([0xC0, 0x38, 0x78], "Dark Pink")),
+    Some(([0xFF, 0xC0, 0xD8], "Light Pink")),
+    Some(([0x50, 0x2C, 0x10], "Dark Brown")),
+    Some(([0xB8, 0x88, 0x50], "Light Brown")),
+];
+/// The colour a number with no name in [`COLOURS`] reads in: a grey of its own, so that it isn't
+/// taken for a colour of the chart.
+const STAND_IN: [u8; 3] = [0xA0, 0xA0, 0xA0];
+
+/// The thread colour number `number` of the chart names: its name and estimated colour, or the
+/// grey stand-in named after the number ("Unknown thread 16").
+fn thread(number: u16) -> Thread {
+    match COLOURS.get(usize::from(number)).copied().flatten() {
+        Some((color, name)) => Thread::named(color, name),
+        None => Thread::named(STAND_IN, &format!("Unknown thread {number}")),
+    }
+}
+
+/// The error for a header whose counts or offsets point past the file.
+fn damaged_header(len: usize) -> Error {
+    Error::Format(format!("the HUS header is cut short or points past the file's {len} bytes"))
+}
+
+pub fn read(bytes: &[u8]) -> Result<Pattern> {
+    if !MAGICS.iter().any(|m| bytes.starts_with(m)) {
+        return Err(Error::Format("not a HUS file: it does not start with a HUS signature".into()));
+    }
+    let mut r = Reader::new(bytes);
+    r.seek(RECORDS_AT);
+    let (Some(count), Some(colours)) = (r.u32(), r.u32()) else { return Err(damaged_header(bytes.len())) };
+    r.seek(STREAMS_AT);
+    let (Some(kinds_at), Some(xs_at), Some(ys_at)) = (r.u32(), r.u32(), r.u32()) else { return Err(damaged_header(bytes.len())) };
+    let [kinds_at, xs_at, ys_at] = [kinds_at, xs_at, ys_at].map(|at| usize::try_from(at).unwrap_or(usize::MAX));
+    if !(COLOURS_AT <= kinds_at && kinds_at <= xs_at && xs_at <= ys_at && ys_at <= bytes.len()) {
+        return Err(damaged_header(bytes.len()));
+    }
+    let count = usize::try_from(count).unwrap_or(usize::MAX);
+    if count > MAX_POINTS {
+        return Err(Error::TooLarge(format!("the {what} file holds more than {MAX_POINTS} stitches, more than a design may have", what = WHAT)));
+    }
+    // The colours that fit before the first stream: a count past them is the file's claim.
+    let colours = usize::try_from(colours).unwrap_or(usize::MAX).min((kinds_at - COLOURS_AT) / COLOUR_BYTES);
+    r.seek(COLOURS_AT);
+    let threads: Vec<Thread> = (0..colours).filter_map(|_| r.take(COLOUR_BYTES)).map(|b| thread(u16::from_le_bytes([b[0], b[1]]))).collect();
+    let name: String = bytes
+        .get(NAME_AT..NAME_AT + NAME_LEN)
+        .unwrap_or_default()
+        .iter()
+        .take_while(|b| **b != 0)
+        .map(|&b| if b.is_ascii_graphic() || b == b' ' { char::from(b) } else { '_' })
+        .collect::<String>()
+        .trim()
+        .to_string();
+    let stream = |from: usize, to: usize| {
+        lzh::expand(bytes.get(from..to).unwrap_or_default(), count)
+            .map(|e| e.bytes)
+            .map_err(|_| Error::Format("the HUS file's compressed stitches are damaged".into()))
+    };
+    let (kinds, xs, ys) = (stream(kinds_at, xs_at)?, stream(xs_at, ys_at)?, stream(ys_at, bytes.len())?);
+    // A stream that ran out (a file cut short) ends the records there.
+    let mut points: Vec<Stitch> = Vec::new();
+    // Wide enough for any file: each record moves the needle at most 128 tenths.
+    let (mut x, mut y) = (0i64, 0i64);
+    for ((&kind, &dx), &dy) in kinds.iter().zip(&xs).zip(&ys) {
+        let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
+        let before = Stitch::new(mm(x), mm(y), Command::Stitch);
+        x += dx;
+        y -= dy;
+        let here = |command| Stitch::new(mm(x), mm(y), command);
+        let moved = dx != 0 || dy != 0;
+        match kind {
+            STITCH => add(&mut points, here(Command::Stitch), WHAT)?,
+            JUMP => add(&mut points, here(Command::Jump), WHAT)?,
+            STOP | COLOR_CHANGE | TRIM => {
+                let command = match kind {
+                    STOP => Command::Stop,
+                    COLOR_CHANGE => Command::ColorChange,
+                    _ => Command::Trim,
+                };
+                add(&mut points, Stitch { command, ..before }, WHAT)?;
+                if moved {
+                    add(&mut points, here(Command::Jump), WHAT)?;
+                }
+            }
+            // The end of the design or of a part of it, and kinds no source names: no needle point.
+            _ => {
+                if moved {
+                    add(&mut points, here(Command::Jump), WHAT)?;
+                }
+            }
+        }
+    }
+    if !points.iter().any(|s| s.command == Command::Stitch) {
+        return Err(Error::Format(format!("the {what} file has no stitch records", what = WHAT)));
+    }
+    Ok(finish(name, points, &threads))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::format::Format;
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+
+    const NAME: &[u8; 8] = b"007\0\0\0\0\0";
+
+    /// A design of two colours: a run of stitches with a cut and a jump inside, a stop between two
+    /// stitches, a colour change, more stitches, the end.
+    fn records() -> Vec<(u8, i8, i8)> {
+        let mut r = vec![(STITCH, 0, 0)];
+        r.extend((0..20).map(|i| (STITCH, 10, if i % 2 == 0 { 15 } else { -15 })));
+        r.extend([(TRIM, 0, 0), (JUMP, 100, 0), (JUMP, 100, 20), (STITCH, 0, 0), (STITCH, 5, 5), (STOP, 0, 0), (STITCH, 5, 5)]);
+        r.extend([(COLOR_CHANGE, 0, 0), (JUMP, -50, -50), (STITCH, 0, 0)]);
+        r.extend((0..10).map(|_| (STITCH, -10, 7)));
+        r.push((0x90, 0, 0));
+        r
+    }
+
+    /// The design reads as written: its needle points where the moves put them (y upwards in the
+    /// file, downwards here), its blocks in the colour list's threads, its cut and its stop, its
+    /// name; with or without copies in the streams, in one block or many.
+    #[test]
+    fn a_design_reads_as_written() {
+        for o in [Lzh::default(), Lzh { copies: false, block_tokens: 5 }] {
+            let p = read(&hus(&records(), &[3, 7], NAME, &o)).expect("reads");
+            assert_eq!(p.name, "007");
+            let [a, b] = p.blocks.as_slice() else { panic!("two blocks: {:?}", p.blocks.len()) };
+            assert_eq!((a.thread.name.as_str(), a.thread.color, b.thread.name.as_str()), ("Red", [0xD0, 0x18, 0x18], "Light Blue"));
+            assert_eq!(p.sewn(), 1 + 20 + 3 + 1 + 10);
+            assert_eq!(a.stitches.iter().filter(|s| s.command == Command::Trim).count(), 1);
+            assert_eq!(a.stitches.iter().filter(|s| s.command == Command::Stop).count(), 1);
+            // The first block's zigzag: up 1.5 mm in the file is up on the page too.
+            let sewn: Vec<&Stitch> = a.stitches.iter().filter(|s| s.command == Command::Stitch).collect();
+            assert!((sewn[1].y - sewn[0].y - -1.5).abs() < 1e-9 && (sewn[1].x - sewn[0].x - 1.0).abs() < 1e-9, "{:?} {:?}", sewn[0], sewn[1]);
+        }
+    }
+
+    /// A HUS opens by its magic whatever its name, every magic PRONOM gives; a VIP (90 01 in place
+    /// of C8 00) and other bytes are refused, saying so.
+    #[test]
+    fn a_hus_is_told_by_its_magic() {
+        let bytes = hus(&records(), &[3, 7], NAME, &Lzh::default());
+        for magic in MAGICS {
+            let mut b = bytes.clone();
+            b[..4].copy_from_slice(magic);
+            assert_eq!(Format::sniff(&b), Some(Format::Hus));
+            assert!(read(&b).is_ok());
+        }
+        let mut vip = bytes.clone();
+        vip[..4].copy_from_slice(&[0x5D, 0xFC, 0x90, 0x01]);
+        assert_eq!(Format::sniff(&vip), None);
+        assert!(read(&vip).unwrap_err().to_string().contains("not a HUS file"));
+    }
+
+    /// Colour numbers with no name, and past the chart, read as a grey stand-in named after the
+    /// number; a colour count past the list's room is the room; colour changes past the list take
+    /// the default threads.
+    #[test]
+    fn unknown_colours_read_as_stand_ins() {
+        let p = read(&hus(&records(), &[16, 300], NAME, &Lzh::default())).unwrap();
+        let names: Vec<&str> = p.blocks.iter().map(|b| b.thread.name.as_str()).collect();
+        assert_eq!(names, ["Unknown thread 16", "Unknown thread 300"]);
+        assert!(p.blocks.iter().all(|b| b.thread.color == STAND_IN));
+        let mut claims_more = hus(&records(), &[3, 7], NAME, &Lzh::default());
+        claims_more[8..12].copy_from_slice(&5000u32.to_le_bytes());
+        assert_eq!(read(&claims_more).unwrap(), read(&hus(&records(), &[3, 7], NAME, &Lzh::default())).unwrap());
+        let one = read(&hus(&records(), &[3], NAME, &Lzh::default())).unwrap();
+        assert_eq!(one.blocks.len(), 2);
+    }
+
+    /// A file cut short reads its records up to the cut (none past it); a header that points past
+    /// the file, a count past what a design may have and damaged streams are refused.
+    #[test]
+    fn cut_and_damaged_files() {
+        let whole = hus(&records(), &[3, 7], NAME, &Lzh::default());
+        let full = read(&whole).unwrap();
+        let mut seen_cut = false;
+        for cut in 60..whole.len() {
+            if let Ok(p) = read(&whole[..cut]) {
+                assert!(p.sewn() <= full.sewn(), "cut at {cut}");
+                seen_cut |= p.sewn() < full.sewn();
+            }
+        }
+        assert!(seen_cut, "a cut file reads as far as it goes");
+        let mut past = whole.clone();
+        past[28..32].copy_from_slice(&(whole.len() as u32 + 1).to_le_bytes());
+        assert!(read(&past).unwrap_err().to_string().contains("points past the file"));
+        let mut many = whole.clone();
+        many[4..8].copy_from_slice(&(MAX_POINTS as u32 + 1).to_le_bytes());
+        assert!(matches!(read(&many), Err(Error::TooLarge(_))));
+        let mut damaged = whole.clone();
+        let at = u32::from_le_bytes([whole[20], whole[21], whole[22], whole[23]]) as usize;
+        // The first block's 19-code table says it has 31 codes.
+        damaged[at + 2] = 0xFF;
+        assert!(read(&damaged).is_err());
+        assert!(read(&hus(&[(JUMP, 5, 5)], &[1], NAME, &Lzh::default())).unwrap_err().to_string().contains("no stitch records"));
+    }
+}

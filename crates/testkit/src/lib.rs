@@ -18,8 +18,8 @@
 //! - [`embroidery`] (VectorCraft Stitch): embroidery documents built by commands (shapes in thread
 //!   colours, the structures a stitch plan maps back to objects, a design opened from a machine
 //!   file).
-//! - [`machine_files`] (VectorCraft Stitch): machine files VectorCraft reads but never writes (SEW),
-//!   built from scratch.
+//! - [`machine_files`] (VectorCraft Stitch): machine files VectorCraft reads but never writes (HUS
+//!   with its compressed streams, SEW), built from scratch.
 //!
 //! This crate may only be used as a dev-dependency (enforced by `cargo xtask layers`).
 // Test support only (a dev-dependency of every crate that uses it): a failed setup or assertion

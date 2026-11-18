@@ -1,6 +1,6 @@
 //! The machine formats: DST, TAP and T01 (DST's records alone), EXP, PES (its PEC part), PEC on
-//! its own, JEF and VP3 — read and written here — and Janome's SEW, read but never written
-//! ([`Format::READ_ONLY`]).
+//! its own, JEF and VP3 — read and written here — and Janome's SEW and Husqvarna Viking's HUS, read
+//! but never written ([`Format::READ_ONLY`]).
 //!
 //! Files count coordinates in tenths of a millimetre; this crate counts millimetres. The y axis
 //! points up in DST, TAP, T01, EXP and JEF (a design's top is its largest y there) and down in PEC
@@ -14,8 +14,8 @@
 //! publicly) is summarised in each module. What they share, and what this module holds:
 //!
 //! - no colour names in DST, TAP, T01 and EXP: a design read from them gets [`crate::thread::DEFAULT`]'s
-//!   colours, one per block; PES and JEF (and SEW) number their threads in a maker's palette, and
-//!   VP3 gives each block's colour and name;
+//!   colours, one per block; PES and JEF (and SEW) number their threads in a maker's palette, HUS in
+//!   a chart of its own, and VP3 gives each block's colour and name;
 //! - no explicit trim in DST, TAP, T01, JEF or VP3: three small jumps that go nowhere in DST (and
 //!   in TAP and T01, which are its records), which a
 //!   machine reads as "cut", and three jumps of zero length in JEF (one is already a trim when
@@ -25,7 +25,9 @@
 
 pub(crate) mod dst;
 pub(crate) mod exp;
+pub(crate) mod hus;
 pub(crate) mod jef;
+pub(crate) mod lzh;
 pub(crate) mod pes;
 pub(crate) mod sew;
 pub(crate) mod tap;
@@ -88,6 +90,9 @@ pub enum Format {
     Vp3,
     /// Janome SEW, read only: Janome's older format, a header, preview pictures and JEF's records.
     Sew,
+    /// Husqvarna Viking HUS, read only: a header and three compressed streams (the records' kinds,
+    /// their x moves, their y moves).
+    Hus,
 }
 
 /// Where a format's files put the machine's origin, the needle's start: a corner of the design
@@ -167,7 +172,8 @@ pub enum Loss {
 }
 
 /// No losses: a format whose files hold nothing a reader leaves out (TAP, T01 and EXP have no
-/// header), or that is never written, so that nothing is lost by writing over a file of it (SEW).
+/// header), or that is never written, so that nothing is lost by writing over a file of it (SEW
+/// and HUS).
 fn no_losses(_: &[u8]) -> Vec<Loss> {
     Vec::new()
 }
@@ -286,6 +292,22 @@ const SEW: Spec = Spec {
     write: None,
     losses: no_losses,
 };
+/// Husqvarna Viking HUS, read only: three compressed streams ([`hus`]).
+const HUS: Spec = Spec {
+    id: "hus",
+    label: "Husqvarna Viking HUS",
+    extensions: &["hus"],
+    mime: "application/x-hus",
+    palette: None,
+    max_step: hus::MAX_DELTA,
+    max_size: MAX_TENTHS,
+    max_colors: None,
+    start: Start::Centre,
+    magic: &hus::MAGICS,
+    read: hus::read,
+    write: None,
+    losses: no_losses,
+};
 
 impl Format {
     /// Every format written (and read), as the export lists them: the formats the export and the
@@ -294,10 +316,10 @@ impl Format {
 
     /// The formats read but never written: their public descriptions leave out what a writer needs
     /// (the project owner's choice, 2026-11-18).
-    pub const READ_ONLY: [Self; 1] = [Self::Sew];
+    pub const READ_ONLY: [Self; 2] = [Self::Sew, Self::Hus];
 
     /// Every format read, as opening lists them: [`Self::ALL`], then [`Self::READ_ONLY`].
-    pub const READ: [Self; 9] = [Self::Dst, Self::Tap, Self::T01, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3, Self::Sew];
+    pub const READ: [Self; 10] = [Self::Dst, Self::Tap, Self::T01, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3, Self::Sew, Self::Hus];
 
     /// What the code knows about the format ([`Spec`]).
     pub const fn spec(self) -> &'static Spec {
@@ -311,6 +333,7 @@ impl Format {
             Self::Jef => &JEF,
             Self::Vp3 => &VP3,
             Self::Sew => &SEW,
+            Self::Hus => &HUS,
         }
     }
 
@@ -335,8 +358,8 @@ impl Format {
     }
 
     /// The thread palette the format numbers its threads in: Brother's for PES (its PEC part) and
-    /// PEC, Janome's for JEF and SEW; `None` for DST, TAP, T01 and EXP, which name no colours, and
-    /// for VP3, which writes each thread's own colour.
+    /// PEC, Janome's for JEF and SEW; `None` for DST, TAP, T01 and EXP, which name no colours, for
+    /// VP3, which writes each thread's own colour, and for HUS, whose chart is its own.
     pub fn palette(self) -> Option<thread::Palette> {
         self.spec().palette
     }
@@ -351,9 +374,9 @@ impl Format {
 
     /// The most colour blocks the format holds, `None` where its layout sets no limit: the PEC
     /// header (in PES and in PEC) counts them in a byte (255), VP3 in a 16-bit word (65,535), and
-    /// SEW's header lists 12; DST, TAP, T01, EXP and JEF have no such field (DST's header counts
-    /// colour changes in text a reader recomputes, TAP and T01 have no header, JEF counts them in a
-    /// 32-bit word).
+    /// SEW's header lists 12; DST, TAP, T01, EXP, JEF and HUS have no such field (DST's header counts
+    /// colour changes in text a reader recomputes, TAP and T01 have no header, JEF and HUS count them
+    /// in a 32-bit word).
     pub fn max_colors(self) -> Option<usize> {
         self.spec().max_colors
     }
@@ -369,7 +392,8 @@ impl Format {
         Self::ALL.into_iter().find(|f| f.id() == id)
     }
 
-    /// The format `id` names among every format read ([`Self::READ`]): those written, and `sew`.
+    /// The format `id` names among every format read ([`Self::READ`]): those written, and `sew`
+    /// and `hus`.
     pub fn readable(id: &str) -> Option<Self> {
         Self::READ.into_iter().find(|f| f.id() == id)
     }
@@ -380,8 +404,8 @@ impl Format {
         Self::READ.into_iter().find(|f| f.spec().extensions.contains(&e.as_str()))
     }
 
-    /// The format a file's first bytes announce, when they announce one: Brother's and VP3 files
-    /// carry a magic; DST, TAP, T01, EXP, JEF and SEW are recognised by their extension.
+    /// The format a file's first bytes announce, when they announce one: Brother's, VP3 and HUS
+    /// files carry a magic; DST, TAP, T01, EXP, JEF and SEW are recognised by their extension.
     pub fn sniff(bytes: &[u8]) -> Option<Self> {
         Self::READ.into_iter().find(|f| f.spec().magic.iter().any(|m| bytes.starts_with(m)))
     }
@@ -459,7 +483,7 @@ impl Format {
             Self::Pes | Self::Pec => pes::frame(pattern)?,
             Self::Jef => jef::frame(pattern)?,
             Self::Vp3 => vp3::frame(pattern)?,
-            Self::Sew => return Err(self.not_written()),
+            Self::Sew | Self::Hus => return Err(self.not_written()),
         }))
     }
 }
@@ -913,7 +937,8 @@ mod tests {
 
     /// Each format's spec is its own (its id names it back, its extension finds it), every format is
     /// in `READ` once, those written in `ALL` and the others in `READ_ONLY`, and the starts are the
-    /// ones the writers use: a corner, the centre in JEF and VP3 (and SEW, as JEF's files start).
+    /// ones the writers use: a corner, the centre in JEF and VP3 (and SEW and HUS, as their files
+    /// start).
     #[test]
     fn every_format_has_a_spec_of_its_own() {
         for f in Format::READ {
@@ -926,10 +951,11 @@ mod tests {
         }
         assert_eq!(Format::READ.len(), Format::ALL.len() + Format::READ_ONLY.len());
         let centred: Vec<Format> = Format::READ.into_iter().filter(|f| f.start() == Start::Centre).collect();
-        assert_eq!(centred, [Format::Jef, Format::Vp3, Format::Sew]);
+        assert_eq!(centred, [Format::Jef, Format::Vp3, Format::Sew, Format::Hus]);
         assert_eq!(Format::sniff(b"#PES0001"), Some(Format::Pes));
         assert_eq!(Format::sniff(b"#PEC0001"), Some(Format::Pec));
         assert_eq!(Format::sniff(vp3::MAGIC), Some(Format::Vp3));
+        assert_eq!(Format::sniff(&[0x5D, 0xFC, 0xC8, 0x00, 1, 2]), Some(Format::Hus));
         assert_eq!(Format::sniff(b"LA:"), None);
         assert_eq!(Format::from_extension(".SEW"), Some(Format::Sew));
     }
@@ -1005,6 +1031,10 @@ mod tests {
         refused(Format::Vp3, &vp3);
         // SEW: JEF's stitch records after its header.
         refused(Format::Sew, &vectorcraft_testkit::machine_files::sew(&[1], &[0x01u8, 0x00].repeat(n)));
+        // HUS: a header that counts more records than a design may have, refused before expanding.
+        let (_, mut hus) = read_only_files().pop().expect("a HUS");
+        hus[4..8].copy_from_slice(&u32::try_from(n).unwrap().to_le_bytes());
+        refused(Format::Hus, &hus);
     }
 
     /// A PEC file's first 520 bytes: the magic, a PEC header naming one colour, and a stitch
@@ -1061,11 +1091,15 @@ mod tests {
     }
 
     /// Files of the formats only read, built as their readers' modules describe them: a SEW holding
-    /// [`design`]'s JEF records.
+    /// [`design`]'s JEF records, a HUS of two colours with a cut, a stop and a jump.
     fn read_only_files() -> Vec<(Format, Vec<u8>)> {
-        use vectorcraft_testkit::machine_files::sew_from_jef;
+        use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
         let jef = Format::Jef.write(&design()).expect("writes");
-        vec![(Format::Sew, sew_from_jef(&jef).expect("a JEF header"))]
+        let mut records: Vec<(u8, i8, i8)> = (0..40).map(|i| (0x80, 9, if i % 2 == 0 { 20 } else { -20 })).collect();
+        records.extend([(0x88, 0, 0), (0x81, 120, -30), (0x80, 0, 0), (0x82, 0, 0), (0x80, 3, 3), (0x84, 0, 0), (0x81, -60, 60)]);
+        records.extend((0..30).map(|i| (0x80, -4, (i % 7) as i8)));
+        records.push((0x90, 0, 0));
+        vec![(Format::Sew, sew_from_jef(&jef).expect("a JEF header")), (Format::Hus, hus(&records, &[3, 12], b"design\0\0", &Lzh::default()))]
     }
 
     /// A small design with two threads, for the reader tests.
@@ -1195,7 +1229,7 @@ mod tests {
     fn no_reader_panics_on_hostile_input() {
         let mut designs: Vec<(Format, Vec<u8>)> = Format::ALL.iter().map(|f| (*f, f.write(&design()).expect("writes"))).collect();
         designs.extend(read_only_files());
-        let magics: [&[u8]; 5] = [b"#PES0001", b"#PEC0001", b"LA:", b"        ", vp3::MAGIC];
+        let magics: [&[u8]; 6] = [b"#PES0001", b"#PEC0001", b"LA:", b"        ", vp3::MAGIC, hus::MAGICS[0]];
         for len in [0usize, 1, 2, 3, 8, 12, 22, 42, 100, 511, 512, 513, 528, 532, 1000, 4096, sew::STITCHES_AT + 40] {
             for seed in 0..24u64 {
                 let bytes = noise(seed.wrapping_mul(0x9E37_79B9) + len as u64, len);

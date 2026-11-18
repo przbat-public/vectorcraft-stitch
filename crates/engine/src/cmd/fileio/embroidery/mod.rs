@@ -1,6 +1,6 @@
-//! Embroidery files: `document.open` reads a design's stitches as paths (also from Janome SEW files,
-//! which are never written), `document.export` stitches the document's art and writes a machine
-//! file (DST, TAP, T01, EXP, PES, PEC, JEF or VP3).
+//! Embroidery files: `document.open` reads a design's stitches as paths (also from Janome SEW and
+//! Husqvarna Viking HUS files, which are never written), `document.export` stitches the document's
+//! art and writes a machine file (DST, TAP, T01, EXP, PES, PEC, JEF or VP3).
 //!
 //! Reading draws each colour block as a group of thin lines in the thread's colour, so the design
 //! looks like it will sew, and can be measured, traced over or recoloured. Writing takes every
@@ -145,7 +145,7 @@ pub const OPTIONS: &[FormatOption] =
 
 /// The entry of `f` in the formats `document.open` and `document.export` know: as the stitch crate
 /// describes it ([`StitchFormat::spec`]), read, and written with the embroidery options when the
-/// stitch crate writes it (SEW is only read).
+/// stitch crate writes it (SEW and HUS are only read).
 pub(super) const fn format(f: StitchFormat) -> Format {
     let s = f.spec();
     let write = f.writes();
@@ -153,7 +153,8 @@ pub(super) const fn format(f: StitchFormat) -> Format {
     Format { id: s.id, label: s.label, extensions: s.extensions, mime: s.mime, read: true, write, raster: false, options }
 }
 
-/// Whether `id` names an embroidery format: one the stitch crate reads (and, but for SEW, writes).
+/// Whether `id` names an embroidery format: one the stitch crate reads (and, but for SEW and HUS,
+/// writes).
 pub(crate) fn is_format(id: &str) -> bool {
     StitchFormat::readable(id).is_some()
 }

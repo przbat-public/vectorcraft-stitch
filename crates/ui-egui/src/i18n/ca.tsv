@@ -6631,12 +6631,15 @@ breakText	Glyphs	Glifs
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	una forma té més dels {MAX_SHAPE_POINTS} punts que pot tenir una forma un cop les seves corbes es converteixen en segments: simplifica-la o divideix-la en formes més petites
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	una forma és a més de {MAX_COORD_MM} mm de l’origen o té una coordenada que no és un nombre: no es pot brodar
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	una forma necessitaria unes {n} puntades, més de les {MAX_STITCHES} que pot tenir una forma: fes servir una puntada més llarga, més espaiat o un disseny més petit
+@msg	not a HUS file: it does not start with a HUS signature	no és un fitxer HUS: no comença amb una signatura HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	no és un fitxer PES ni PEC: no comença amb #PES ni #PEC
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	no és un fitxer SEW: indica {colors} com a nombre de colors, però un fitxer SEW n’indica d’1 a {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	no és un fitxer VP3: no comença amb %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	no és un fitxer {what}: el seu registre {_1} no és un registre DST
 @msg	params must be an object	els paràmetres han de ser un objecte
 @msg	the EXP file has no stitch records	el fitxer EXP no té registres de puntades
+@msg	the HUS file's compressed stitches are damaged	les puntades comprimides del fitxer HUS estan malmeses
+@msg	the HUS header is cut short or points past the file's {len} bytes	la capçalera HUS està truncada o apunta més enllà dels {len} bytes del fitxer
 @msg	the JEF file has no stitch records	el fitxer JEF no té registres de puntades
 @msg	the JEF file is cut short: {len} bytes	el fitxer JEF està truncat: {len} bytes
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	la capçalera JEF apunta al byte {offset}, més enllà dels {_1} bytes del fitxer

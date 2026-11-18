@@ -5770,12 +5770,15 @@ theme	Appearance	Външен вид
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	формата има повече от {MAX_SHAPE_POINTS} точки, колкото може да има една форма, след като кривите ѝ се превърнат в отсечки: опростете я или я разделете на по-малки форми
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	форма е на повече от {MAX_COORD_MM} mm от началото или има координата, която не е число: не може да се бродира
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	формата би изисквала около {n} бода, повече от {MAX_STITCHES}, колкото може да има една форма: използвайте по-дълъг бод, по-голямо разстояние или по-малък дизайн
+@msg	not a HUS file: it does not start with a HUS signature	не е HUS файл: не започва с HUS сигнатура
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	не е PES или PEC файл: не започва с #PES или #PEC
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	не е SEW файл: посоченият в него брой цветове е {colors}, а SEW файлът посочва от 1 до {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	не е VP3 файл: не започва с %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	не е {what} файл: записът му {_1} не е DST запис
 @msg	params must be an object	параметрите трябва да са обект
 @msg	the EXP file has no stitch records	EXP файлът няма записи на бодове
+@msg	the HUS file's compressed stitches are damaged	компресираните данни за бодовете в HUS файла са повредени
+@msg	the HUS header is cut short or points past the file's {len} bytes	заглавката на HUS е съкратена или сочи след {len}-те байта на файла
 @msg	the JEF file has no stitch records	JEF файлът няма записи на бодове
 @msg	the JEF file is cut short: {len} bytes	JEF файлът е съкратен: {len} байта
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	заглавката на JEF сочи към байт {offset}, след {_1}-те байта на файла

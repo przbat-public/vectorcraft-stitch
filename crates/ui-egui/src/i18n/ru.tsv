@@ -5540,12 +5540,15 @@ lighting	Light	Свет
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	у фигуры больше {MAX_SHAPE_POINTS} точек, допустимых для одной фигуры, после того как её кривые превращены в отрезки: упростите её или разделите на фигуры поменьше
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	фигура лежит дальше {MAX_COORD_MM} мм от начала координат или имеет координату, которая не является числом: её нельзя вышить
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	фигуре понадобилось бы около {n} стежков, больше {MAX_STITCHES}, допустимых для одной фигуры: используйте более длинный стежок, больший шаг или меньший дизайн
+@msg	not a HUS file: it does not start with a HUS signature	это не файл HUS: он не начинается с сигнатуры HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	это не файл PES или PEC: он не начинается с #PES или #PEC
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	это не файл SEW: указанное в нём число цветов — {colors}, а в файле SEW оно от 1 до {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	это не файл VP3: он не начинается с %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	это не файл {what}: его запись {_1} не является записью DST
 @msg	params must be an object	параметры должны быть объектом
 @msg	the EXP file has no stitch records	в файле EXP нет записей стежков
+@msg	the HUS file's compressed stitches are damaged	сжатые данные стежков в файле HUS повреждены
+@msg	the HUS header is cut short or points past the file's {len} bytes	заголовок HUS обрезан или указывает за пределы {len} байт файла
 @msg	the JEF file has no stitch records	в файле JEF нет записей стежков
 @msg	the JEF file is cut short: {len} bytes	файл JEF обрезан: {len} байт
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	заголовок JEF указывает на байт {offset}, за пределами {_1} байт файла

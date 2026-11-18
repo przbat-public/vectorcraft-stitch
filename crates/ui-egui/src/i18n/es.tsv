@@ -5873,12 +5873,15 @@ mark-style	Japanese	Japonesas
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	una forma tiene más de los {MAX_SHAPE_POINTS} puntos que puede tener una forma una vez que sus curvas se convierten en segmentos: simplifíquela o divídala en formas más pequeñas
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	una forma está a más de {MAX_COORD_MM} mm del origen o tiene una coordenada que no es un número: no se puede bordar
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	una forma necesitaría unas {n} puntadas, más de las {MAX_STITCHES} que puede tener una forma: use una puntada más larga, más espaciado o un diseño más pequeño
+@msg	not a HUS file: it does not start with a HUS signature	no es un archivo HUS: no empieza con una firma HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	no es un archivo PES ni PEC: no empieza con #PES ni #PEC
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	no es un archivo SEW: indica {colors} como número de colores, pero un archivo SEW indica de 1 a {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	no es un archivo VP3: no empieza con %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	no es un archivo {what}: su registro {_1} no es un registro DST
 @msg	params must be an object	los parámetros deben ser un objeto
 @msg	the EXP file has no stitch records	el archivo EXP no tiene registros de puntadas
+@msg	the HUS file's compressed stitches are damaged	las puntadas comprimidas del archivo HUS están dañadas
+@msg	the HUS header is cut short or points past the file's {len} bytes	el encabezado HUS está truncado o apunta más allá de los {len} bytes del archivo
 @msg	the JEF file has no stitch records	el archivo JEF no tiene registros de puntadas
 @msg	the JEF file is cut short: {len} bytes	el archivo JEF está truncado: {len} bytes
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	el encabezado JEF apunta al byte {offset}, más allá de los {_1} bytes del archivo

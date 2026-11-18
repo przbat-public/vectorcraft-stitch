@@ -224,7 +224,32 @@ fn a_sew_opens_as_the_jef_it_holds() {
     s.execute("file.place", &json!({"name": "design.sew", "dataBase64": b64(&sew)})).expect("places");
 }
 
-/// The formats only read (SEW) are never written: `document.formats` lists them as readable
+/// A HUS opens by its name and by its first bytes, in its chart's colours, its cut and its stop
+/// kept: exported, the cut is a cut and the stop a change to the same thread.
+#[test]
+fn a_hus_opens_by_name_and_by_its_magic_bytes() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    let mut records: Vec<(u8, i8, i8)> = (0..30).map(|i| (0x80, 10, if i % 2 == 0 { 20 } else { -20 })).collect();
+    records.extend([(0x88, 0, 0), (0x81, 120, 0), (0x81, 120, 0), (0x80, 0, 0), (0x80, 10, 10), (0x82, 0, 0), (0x80, 10, 10), (0x80, 10, 0)]);
+    records.extend([(0x84, 0, 0), (0x81, -50, 60), (0x80, 0, 0)]);
+    records.extend((0..20).map(|i| (0x80, -8, (i % 5) as i8)));
+    records.push((0x90, 0, 0));
+    let bytes = hus(&records, &[3, 1], b"005\0\0\0\0\0", &Lzh::default());
+    let mut s = Session::new();
+    for name in ["design.hus", "design.bin"] {
+        let r = open(&mut s, name, &bytes).expect("opens");
+        assert_eq!(r["format"].as_str(), Some("hus"), "{name}");
+    }
+    let groups: Vec<String> =
+        s.doc().unwrap().doc.layers.iter().flat_map(|l| l.children().into_iter().flatten()).filter_map(|c| c.name.clone()).collect();
+    assert_eq!(groups, ["Red", "Blue"]);
+    let dst = plan(&export(&mut s, "dst", json!({})));
+    // The stop is a change to the same thread: three blocks; the cut a trim in the first.
+    assert_eq!(dst.blocks.len(), 3);
+    assert_eq!(dst.blocks[0].stitches.iter().filter(|s| s.command == vectorcraft_stitch::Command::Trim).count(), 1);
+}
+
+/// The formats only read (SEW, HUS) are never written: `document.formats` lists them as readable
 /// only, with no options; an export to one is refused, saying so; none is offered among the
 /// export's extensions or the embroidery check's formats.
 #[test]

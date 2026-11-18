@@ -5512,12 +5512,15 @@ effect	Soft	Weich
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	eine Form hat mehr als die {MAX_SHAPE_POINTS} Punkte, die eine Form haben darf, sobald ihre Kurven in Strecken zerlegt sind: vereinfachen Sie sie oder teilen Sie sie in kleinere Formen auf
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	eine Form liegt mehr als {MAX_COORD_MM} mm vom Ursprung entfernt oder hat eine Koordinate, die keine Zahl ist: sie kann nicht gestickt werden
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	eine Form bräuchte etwa {n} Stiche, mehr als die {MAX_STITCHES}, die eine Form haben darf: verwenden Sie einen längeren Stich, größeren Abstand oder ein kleineres Design
+@msg	not a HUS file: it does not start with a HUS signature	keine HUS-Datei: sie beginnt nicht mit einer HUS-Signatur
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	keine PES- oder PEC-Datei: sie beginnt nicht mit #PES oder #PEC
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	keine SEW-Datei: sie nennt {colors} als Anzahl der Farben, eine SEW-Datei aber 1 bis {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	keine VP3-Datei: sie beginnt nicht mit %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	keine {what}-Datei: ihr Datensatz {_1} ist kein DST-Datensatz
 @msg	params must be an object	die Parameter müssen ein Objekt sein
 @msg	the EXP file has no stitch records	die EXP-Datei hat keine Stichdatensätze
+@msg	the HUS file's compressed stitches are damaged	die komprimierten Stiche der HUS-Datei sind beschädigt
+@msg	the HUS header is cut short or points past the file's {len} bytes	der HUS-Kopf ist abgeschnitten oder zeigt hinter die {len} Bytes der Datei
 @msg	the JEF file has no stitch records	die JEF-Datei hat keine Stichdatensätze
 @msg	the JEF file is cut short: {len} bytes	die JEF-Datei ist abgeschnitten: {len} Bytes
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	der JEF-Kopf zeigt auf Byte {offset}, hinter den {_1} Bytes der Datei

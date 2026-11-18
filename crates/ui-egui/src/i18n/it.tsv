@@ -5546,12 +5546,15 @@ lighting	Light	Luce
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	una forma ha più dei {MAX_SHAPE_POINTS} vertici che una forma può avere una volta convertite le sue curve in segmenti: semplificala o dividila in forme più piccole
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	una forma si trova a più di {MAX_COORD_MM} mm dall’origine o ha una coordinata che non è un numero: non può essere ricamata
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	una forma richiederebbe circa {n} punti, più dei {MAX_STITCHES} che una forma può avere: usa un punto più lungo, una spaziatura maggiore o un disegno più piccolo
+@msg	not a HUS file: it does not start with a HUS signature	non è un file HUS: non inizia con una firma HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	non è un file PES o PEC: non inizia con #PES o #PEC
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	non è un file SEW: indica {colors} come numero di colori, mentre un file SEW ne indica da 1 a {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	non è un file VP3: non inizia con %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	non è un file {what}: il suo record {_1} non è un record DST
 @msg	params must be an object	i parametri devono essere un oggetto
 @msg	the EXP file has no stitch records	il file EXP non ha record di punti
+@msg	the HUS file's compressed stitches are damaged	i punti compressi del file HUS sono danneggiati
+@msg	the HUS header is cut short or points past the file's {len} bytes	l’intestazione HUS è troncata o punta oltre i {len} byte del file
 @msg	the JEF file has no stitch records	il file JEF non ha record di punti
 @msg	the JEF file is cut short: {len} bytes	il file JEF è troncato: {len} byte
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	l’intestazione JEF punta al byte {offset}, oltre i {_1} byte del file

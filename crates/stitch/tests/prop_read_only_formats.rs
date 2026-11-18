@@ -1,15 +1,101 @@
-//! The formats read but never written (VectorCraft Stitch), SEW: for any design the test kit's SEW
-//! builder holds, the reader finds the stitches its JEF records hold.
+//! The formats read but never written (VectorCraft Stitch), SEW and HUS: for any records the test
+//! kit's files hold (its HUS compressor, written for these tests, and its SEW builder), the reader
+//! finds the needle points where the records put them; for damaged and random bytes it gives a
+//! design or an error, never a panic, and quickly.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
 use vectorcraft_stitch::format::Format;
 use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
-use vectorcraft_testkit::machine_files::sew_from_jef;
+use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
+
+/// HUS's kinds of record (the reader's module): a stitch, a jump, a stop, a colour change, a cut,
+/// the end; and a kind no source names.
+const KINDS: [u8; 7] = [0x80, 0x81, 0x82, 0x84, 0x88, 0x90, 0x07];
+
+/// Records of any kind, moves of any size a byte holds, stitches the most of them.
+fn arb_records() -> impl Strategy<Value = Vec<(u8, i8, i8)>> {
+    let kind = prop_oneof![6 => Just(0x80u8), 4 => prop::sample::select(KINDS.to_vec())];
+    prop::collection::vec((kind, any::<i8>(), any::<i8>()), 1..400)
+}
+
+/// How the test kit compresses: with or without copies, in blocks of any size.
+fn arb_lzh() -> impl Strategy<Value = Lzh> {
+    (any::<bool>(), prop_oneof![Just(0usize), 1usize..64]).prop_map(|(copies, block_tokens)| Lzh { copies, block_tokens })
+}
+
+/// The needle points `records` put the needle down at (tenths of a millimetre, y downwards), from
+/// the first: what any reading of them must find.
+fn needle_points(records: &[(u8, i8, i8)]) -> Vec<(i64, i64)> {
+    let (mut x, mut y, mut out) = (0i64, 0i64, Vec::new());
+    for &(kind, dx, dy) in records {
+        x += i64::from(dx);
+        y -= i64::from(dy);
+        if kind == 0x80 {
+            out.push((x, y));
+        }
+    }
+    relative(out)
+}
+
+fn relative(points: Vec<(i64, i64)>) -> Vec<(i64, i64)> {
+    let first = points.first().copied().unwrap_or((0, 0));
+    points.into_iter().map(|(x, y)| (x - first.0, y - first.1)).collect()
+}
+
+fn read_needle_points(p: &Pattern) -> Vec<(i64, i64)> {
+    relative(p.points().filter(|s| s.command == Command::Stitch).map(|s| ((s.x * 10.0).round() as i64, (s.y * 10.0).round() as i64)).collect())
+}
 
 proptest! {
     #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(128))]
+
+    /// Any records, compressed any way the method allows, read as their needle points, a cut for
+    /// each cut and a stop for each stop; with no stitch, the file is refused.
+    #[test]
+    fn a_hus_reads_as_its_records(records in arb_records(), colours in prop::collection::vec(0u16..40, 0..6), o in arb_lzh()) {
+        let bytes = hus(&records, &colours, b"prop\0\0\0\0", &o);
+        let want = needle_points(&records);
+        match Format::Hus.read(&bytes) {
+            Ok(p) => {
+                prop_assert_eq!(read_needle_points(&p), want);
+                let count = |c: Command| p.points().filter(|s| s.command == c).count();
+                prop_assert_eq!(count(Command::Stop), records.iter().filter(|r| r.0 == 0x82).count());
+                prop_assert!(count(Command::Trim) <= records.iter().filter(|r| r.0 == 0x88).count());
+            }
+            Err(e) => prop_assert!(want.is_empty(), "{e}"),
+        }
+    }
+
+    /// A HUS with its streams cut, bytes changed anywhere, or random bytes behind its header gives
+    /// a design or an error, quickly; cut, it never finds needle points its records don't hold.
+    #[test]
+    fn a_damaged_hus_never_panics(records in arb_records(), o in arb_lzh(), cut in 0usize..5000, edits in prop::collection::vec((0usize..5000, any::<u8>()), 0..12), body in prop::collection::vec(any::<u8>(), 0..600)) {
+        let bytes = hus(&records, &[1, 2], b"prop\0\0\0\0", &o);
+        let started = std::time::Instant::now();
+        let mut damaged = bytes.clone();
+        for &(at, b) in &edits {
+            let n = damaged.len();
+            damaged[at % n] = b;
+        }
+        let _ = Format::Hus.read(&damaged);
+        let short = &bytes[..cut.min(bytes.len())];
+        if let Ok(p) = Format::Hus.read(short) {
+            let (got, all) = (read_needle_points(&p), needle_points(&records));
+            prop_assert!(all.starts_with(&got) || got.is_empty(), "a cut file finds only the needle points before the cut");
+        }
+        // Random streams: the header kept, its three streams pointing into random bytes.
+        let start = 42 + 2 * 2;
+        let mut random = bytes[..start].to_vec();
+        random.extend_from_slice(&body);
+        let third = body.len() / 3;
+        for (k, at) in [start, start + third, start + 2 * third].into_iter().enumerate() {
+            random[20 + 4 * k..24 + 4 * k].copy_from_slice(&(at as u32).to_le_bytes());
+        }
+        let _ = Format::Hus.read(&random);
+        prop_assert!(started.elapsed().as_secs() < 10);
+    }
 
     /// Any design written as JEF and held in a SEW (its records after SEW's header and pictures)
     /// reads as the JEF does: the same blocks, threads and stitches.

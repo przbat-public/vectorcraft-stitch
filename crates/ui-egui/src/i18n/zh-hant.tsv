@@ -5550,12 +5550,15 @@ lighting	Light	光源
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	某個形狀的曲線轉為線段後，點數超過單一形狀允許的 {MAX_SHAPE_POINTS} 個：請簡化該形狀或將其拆分為更小的形狀
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	某個形狀距原點超過 {MAX_COORD_MM} mm，或有不是數字的座標：無法刺繡
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	某個形狀約需 {n} 針，超過單一形狀允許的 {MAX_STITCHES} 針：請使用更長的針跡、更寬的間距或更小的圖案
+@msg	not a HUS file: it does not start with a HUS signature	不是 HUS 檔案：不以 HUS 簽章開頭
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	不是 PES 或 PEC 檔案：不以 #PES 或 #PEC 開頭
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	不是 SEW 檔案：指定了 {colors} 種顏色，而 SEW 檔案指定 1 到 {MAX_COLORS} 種
 @msg	not a VP3 file: it does not start with %vsm%	不是 VP3 檔案：不以 %vsm% 開頭
 @msg	not a {what} file: its record {_1} is not a DST record	不是 {what} 檔案：其第 {_1} 筆記錄不是 DST 記錄
 @msg	params must be an object	參數必須是物件
 @msg	the EXP file has no stitch records	EXP 檔案沒有針跡記錄
+@msg	the HUS file's compressed stitches are damaged	HUS 檔案的壓縮針跡資料已損毀
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS 檔頭被截斷，或指向的位置超出檔案的 {len} 位元組
 @msg	the JEF file has no stitch records	JEF 檔案沒有針跡記錄
 @msg	the JEF file is cut short: {len} bytes	JEF 檔案被截斷：{len} 位元組
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF 檔頭指向第 {offset} 位元組，超出檔案的 {_1} 位元組

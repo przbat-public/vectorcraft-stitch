@@ -6110,12 +6110,15 @@ axis	Y Axis	Y ekseni
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	bir şeklin eğrileri doğru parçalarına dönüştürüldüğünde bir şeklin alabileceği {MAX_SHAPE_POINTS} noktadan fazla noktası var: şekli basitleştirin veya daha küçük şekillere bölün
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	bir şekil başlangıç noktasından {MAX_COORD_MM} mm'den daha uzakta ya da sayı olmayan bir koordinatı var: dikilemez
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	bir şekil yaklaşık {n} dikiş gerektirir, bu bir şeklin alabileceği {MAX_STITCHES} dikişten fazla: daha uzun bir dikiş, daha geniş bir aralık veya daha küçük bir tasarım kullanın
+@msg	not a HUS file: it does not start with a HUS signature	HUS dosyası değil: bir HUS imzasıyla başlamıyor
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES veya PEC dosyası değil: #PES ya da #PEC ile başlamıyor
 @msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	SEW dosyası değil: {colors} renk belirtiyor, bir SEW dosyası ise 1 ile {MAX_COLORS} arasında renk belirtir
 @msg	not a VP3 file: it does not start with %vsm%	VP3 dosyası değil: %vsm% ile başlamıyor
 @msg	not a {what} file: its record {_1} is not a DST record	{what} dosyası değil: {_1} numaralı kaydı bir DST kaydı değil
 @msg	params must be an object	parametreler bir nesne olmalı
 @msg	the EXP file has no stitch records	EXP dosyasında dikiş kaydı yok
+@msg	the HUS file's compressed stitches are damaged	HUS dosyasının sıkıştırılmış dikişleri bozuk
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS başlığı eksik ya da dosyanın {len} baytının ötesine işaret ediyor
 @msg	the JEF file has no stitch records	JEF dosyasında dikiş kaydı yok
 @msg	the JEF file is cut short: {len} bytes	JEF dosyası eksik: {len} bayt
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF başlığı {offset}. bayta işaret ediyor, dosyanın {_1} baytının ötesine

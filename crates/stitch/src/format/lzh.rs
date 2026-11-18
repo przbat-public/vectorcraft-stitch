@@ -1,0 +1,399 @@
+//! Expanding the compressed streams of Husqvarna Viking HUS files ([`super::hus`]): LZSS with
+//! static Huffman codes, sent in blocks, the method the ARJ archiver's methods 1 to 3 use, with
+//! HUS's sizes.
+//!
+//! The method, as this module reads it. A stream is a series of tokens. A token up to 255 is that
+//! byte; a token from 256 to 509 copies 3 to 256 bytes from up to a kilobyte back in what the
+//! stream has made so far, its distance following as a code of its own; 510 ends the stream.
+//! Tokens come in blocks, each a 16-bit count of its tokens and three tables of codes, each sent
+//! as the length of each of its codes: a table of 19 codes that sends the token table's lengths,
+//! the token table (511 codes), and the distance table (15 codes). Codes are read most significant
+//! bit first; the shorter codes come first, and codes of one length go to the values in order (a
+//! canonical Huffman code), so a table is known from its lengths alone.
+//!
+//! - The 19-code table and the distance table: how many lengths follow (5 bits; 0 means a single
+//!   value, sent in the next 5 bits, which takes no bits to code), then each length in 3 bits, 7
+//!   meaning 7 and one more for each 1 bit after it, up to a 0 bit. In the 19-code table, 2 bits
+//!   after the third length say how many of the next lengths are 0.
+//! - The token table: how many lengths follow (9 bits; 0 means a single token, sent in the next 9
+//!   bits), then each length as a code of the 19-code table: 0 is one length 0, 1 is 3 to 18 of
+//!   them (4 more bits), 2 is 20 to 531 (9 more bits), and from 3, code k is the length k − 2.
+//! - A distance code d is 0 for d = 0, else 2^(d − 1) plus the d − 1 bits that follow it; the copy
+//!   starts that many bytes plus one back.
+//!
+//! The sources. The KDE Community Wiki (*Husqvarna HUS*) names the method, ARJ's decoder for
+//! methods 1 to 3, and gives HUS's sizes: a 1,024-byte window (DICSIZE, 10 bits), 511 token codes
+//! (NC; ARJ has 510), 19 codes for the lengths (NT) and 15 distance codes (NP), their counts in 5
+//! bits (TBIT, PBIT), the token count in 9 (CBIT), codes of up to 16 bits (CODE_BIT), copies of 3
+//! to 256 bytes (THRESHOLD, MAXMATCH). EduTechWiki (*Embroidery format HUS*) describes the stream
+//! the same way: tokens from 0 to 511 in blocks, each block a 16-bit token count and three tables
+//! sent as code lengths, built shortest first with ties to the lowest value, the first table
+//! sending the second's lengths with its small values standing for runs of zeros; a byte for a
+//! token up to 255, the end at 510, a copy from the 1,024-byte window for the others, its distance
+//! from the third table. The bit layout of the tables (the run of 1 bits for lengths of 7 and more,
+//! the 2 bits of zeros after the third length, the three codes for runs of zeros and their 4 and 9
+//! bits, the distance's extra bits) is the one of the method both pages name, which Haruhiko
+//! Okumura published as the public-domain ar002 (1990), and which LHA's lh5 and ARJ use.
+//!
+//! Neither page calls the method certain (EduTechWiki: "the belief is"), so it was checked on 6,944
+//! real HUS files the project owner holds (used on their computer only, never committed): every
+//! stream of every file expands to its stated length, with the end token next where the file is
+//! whole, every table is a complete code, and no copy reaches back further than 1,020 bytes.
+//!
+//! What a hostile stream can do here: it is read bit by bit, a table that isn't a complete code is
+//! refused (as ar002 refuses one), every length and count is checked before it is used, and each
+//! token makes at least one byte, so the work is bounded by the bytes asked for. A stream whose
+//! data runs out keeps the bytes made before it did: a file cut short reads as far as it goes.
+
+/// A stream that doesn't expand: a table that is no complete code, a value past a table's end, a
+/// copy from before the stream's start or further back than its window, a block of no tokens.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Damaged;
+
+/// What a stream expanded to: its bytes, and whether they are all it was asked for (`false` when
+/// its data ran out, or it ended, first: the bytes made before then).
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct Expanded {
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) whole: bool,
+}
+
+/// The window copies reach back into, bytes: a kilobyte (the KDE wiki's DICSIZE, 1024, and
+/// EduTechWiki's "lookup window").
+const WINDOW: usize = 1024;
+/// The token codes: the 256 bytes, the copies and the end (the KDE wiki's NC, 511).
+const TOKENS: usize = 511;
+/// The first token that copies bytes: tokens below it are bytes.
+const FIRST_COPY: usize = 256;
+/// The token that ends a stream (EduTechWiki: 510, "exit").
+const END: usize = 510;
+/// The fewest bytes a copy takes (the KDE wiki's THRESHOLD, 3): the first copy token copies 3
+/// bytes, the last before the end 256 (its MAXMATCH).
+const SHORTEST_COPY: usize = 3;
+/// The codes of the table that sends the token table's lengths (the KDE wiki's NT, 19), and the
+/// bits its count takes (TBIT, 5).
+const LENGTH_CODES: usize = 19;
+const LENGTH_COUNT_BITS: u32 = 5;
+/// The distance codes (the KDE wiki's NP, 15), and the bits their count takes (PBIT, 5).
+const DISTANCE_CODES: usize = 15;
+const DISTANCE_COUNT_BITS: u32 = 5;
+/// The bits the token table's count takes (the KDE wiki's CBIT, 9).
+const TOKEN_COUNT_BITS: u32 = 9;
+/// The bits a block's token count takes (EduTechWiki: a 16-bit count).
+const BLOCK_COUNT_BITS: u32 = 16;
+/// The longest code, bits (the KDE wiki's CODE_BIT, 16).
+const LONGEST_CODE: usize = 16;
+/// A length in the 19-code and the distance tables takes this many bits; at [`LONG_LENGTH`] it
+/// grows by one for each 1 bit after them, up to a 0 bit.
+const LENGTH_BITS: u32 = 3;
+const LONG_LENGTH: u32 = 7;
+/// After this many lengths of the 19-code table, [`ZEROS_AFTER_BITS`] bits say how many of the
+/// next lengths are 0.
+const ZEROS_AFTER: usize = 3;
+const ZEROS_AFTER_BITS: u32 = 2;
+/// The 19-code table's codes for runs of zero lengths in the token table: one zero; 3 to 18 zeros
+/// in [`SOME_ZEROS_BITS`] more bits; 20 to 531 zeros in [`MANY_ZEROS_BITS`] more bits. A code past
+/// them is a length, [`LENGTH_CODE_OFFSET`] less than the code.
+const ONE_ZERO: usize = 0;
+const SOME_ZEROS: usize = 1;
+const SOME_ZEROS_BITS: u32 = 4;
+const SOME_ZEROS_LEAST: usize = 3;
+const MANY_ZEROS: usize = 2;
+const MANY_ZEROS_BITS: u32 = 9;
+const MANY_ZEROS_LEAST: usize = 20;
+const LENGTH_CODE_OFFSET: usize = 2;
+
+/// The first `count` bytes `data`, one compressed stream, expands to: all of them
+/// ([`Expanded::whole`]), or those made before the stream's data ran out or it ended. Refused with
+/// [`Damaged`] when the stream is no stream of this method.
+pub(crate) fn expand(data: &[u8], count: usize) -> Result<Expanded, Damaged> {
+    let mut bits = Bits::new(data);
+    // At most a byte per token is asked for: the reader bounds `count` (a design's stitches).
+    let mut out: Vec<u8> = Vec::with_capacity(count);
+    let mut left_in_block: u32 = 0;
+    let mut tokens = Code::Only(0);
+    let mut distances = Code::Only(0);
+    while out.len() < count {
+        let made = out.len();
+        if left_in_block == 0 {
+            left_in_block = bits.read(BLOCK_COUNT_BITS);
+            let lengths = small_table(&mut bits, LENGTH_CODES, LENGTH_COUNT_BITS, Some(ZEROS_AFTER))?;
+            tokens = token_table(&mut bits, &lengths)?;
+            distances = small_table(&mut bits, DISTANCE_CODES, DISTANCE_COUNT_BITS, None)?;
+            if bits.ran_out {
+                return Ok(Expanded { bytes: out, whole: false });
+            }
+            if left_in_block == 0 {
+                return Err(Damaged);
+            }
+        }
+        left_in_block -= 1;
+        let token = tokens.decode(&mut bits)?;
+        if token == END {
+            return Ok(Expanded { bytes: out, whole: false });
+        }
+        match token.checked_sub(FIRST_COPY) {
+            None => out.push(u8::try_from(token).map_err(|_| Damaged)?),
+            Some(copy) => {
+                let length = copy + SHORTEST_COPY;
+                let code = distances.decode(&mut bits)?;
+                let distance = match u32::try_from(code).map_err(|_| Damaged)? {
+                    0 => 0,
+                    d => (1usize << (d - 1)) + bits.read(d - 1) as usize,
+                };
+                if distance >= WINDOW {
+                    return Err(Damaged);
+                }
+                let from = made.checked_sub(distance + 1).ok_or(Damaged)?;
+                for k in 0..length {
+                    if out.len() >= count {
+                        break;
+                    }
+                    // The copy may run into the bytes it makes: each is there when it is read.
+                    let byte = out.get(from + k).copied().ok_or(Damaged)?;
+                    out.push(byte);
+                }
+            }
+        }
+        if bits.ran_out {
+            out.truncate(made);
+            return Ok(Expanded { bytes: out, whole: false });
+        }
+    }
+    Ok(Expanded { bytes: out, whole: true })
+}
+
+/// A stream's bits, most significant first. Past its end it reads 0 bits and says so
+/// ([`Bits::ran_out`]): what is made from them isn't the file's.
+struct Bits<'a> {
+    data: &'a [u8],
+    at: usize,
+    byte: u8,
+    left: u32,
+    ran_out: bool,
+}
+
+impl<'a> Bits<'a> {
+    fn new(data: &'a [u8]) -> Self {
+        Self { data, at: 0, byte: 0, left: 0, ran_out: false }
+    }
+
+    fn bit(&mut self) -> u32 {
+        if self.left == 0 {
+            self.byte = match self.data.get(self.at) {
+                Some(b) => *b,
+                None => {
+                    self.ran_out = true;
+                    0
+                }
+            };
+            self.at = self.at.saturating_add(1);
+            self.left = u8::BITS;
+        }
+        self.left -= 1;
+        u32::from(self.byte >> self.left) & 1
+    }
+
+    /// The next `n` bits (at most 16 are asked for) as a number.
+    fn read(&mut self, n: u32) -> u32 {
+        (0..n).fold(0, |v, _| (v << 1) | self.bit())
+    }
+}
+
+/// One table's codes: a single value, sent with no bits, or values by the length of their codes.
+enum Code {
+    Only(usize),
+    Lengths {
+        /// How many codes each length has, by length (index 0 unused).
+        counts: [u16; LONGEST_CODE + 1],
+        /// The values with a code, shortest code first, values of one length in order.
+        values: Vec<u16>,
+    },
+}
+
+impl Code {
+    /// The code whose values have these code lengths (0: no code): refused unless every code of
+    /// the longest length is taken, as a canonical Huffman code's are.
+    fn of(lengths: &[u8]) -> Result<Self, Damaged> {
+        let mut counts = [0u16; LONGEST_CODE + 1];
+        for &l in lengths.iter().filter(|l| **l > 0) {
+            let slot = counts.get_mut(usize::from(l)).ok_or(Damaged)?;
+            *slot += 1;
+        }
+        // The codes still free at each length: 2 at length 1, twice what is left at the next.
+        let mut free: i64 = 1;
+        for &n in counts.iter().skip(1) {
+            free = free * 2 - i64::from(n);
+            if free < 0 {
+                return Err(Damaged);
+            }
+        }
+        if free != 0 {
+            return Err(Damaged);
+        }
+        let mut values: Vec<u16> =
+            (0..lengths.len()).filter(|&v| lengths.get(v).is_some_and(|l| *l > 0)).filter_map(|v| u16::try_from(v).ok()).collect();
+        values.sort_by_key(|&v| (lengths.get(usize::from(v)).copied().unwrap_or_default(), v));
+        Ok(Self::Lengths { counts, values })
+    }
+
+    /// The value the next code in `bits` stands for.
+    fn decode(&self, bits: &mut Bits) -> Result<usize, Damaged> {
+        let (counts, values) = match self {
+            Self::Only(v) => return Ok(*v),
+            Self::Lengths { counts, values } => (counts, values),
+        };
+        // The code read so far, the first code of its length, and where that length's values start.
+        let (mut code, mut first, mut index) = (0usize, 0usize, 0usize);
+        for &n in counts.iter().skip(1) {
+            code |= bits.bit() as usize;
+            let n = usize::from(n);
+            if code < first + n {
+                return values.get(index + code - first).map(|v| usize::from(*v)).ok_or(Damaged);
+            }
+            index += n;
+            first = (first + n) << 1;
+            code <<= 1;
+        }
+        Err(Damaged)
+    }
+}
+
+/// The 19-code table or the distance table: `codes` codes, their count in `count_bits` bits, and
+/// for the first the run of zero lengths after [`ZEROS_AFTER`] of them.
+fn small_table(bits: &mut Bits, codes: usize, count_bits: u32, zeros_after: Option<usize>) -> Result<Code, Damaged> {
+    let n = bits.read(count_bits) as usize;
+    if n == 0 {
+        let only = bits.read(count_bits) as usize;
+        return if only < codes { Ok(Code::Only(only)) } else { Err(Damaged) };
+    }
+    if n > codes {
+        return Err(Damaged);
+    }
+    let mut lengths = vec![0u8; codes];
+    let mut i = 0;
+    while i < n {
+        let mut length = bits.read(LENGTH_BITS);
+        if length == LONG_LENGTH {
+            while bits.bit() == 1 {
+                length += 1;
+                if length as usize > LONGEST_CODE {
+                    return Err(Damaged);
+                }
+            }
+        }
+        *lengths.get_mut(i).ok_or(Damaged)? = u8::try_from(length).map_err(|_| Damaged)?;
+        i += 1;
+        if Some(i) == zeros_after {
+            // These lengths stay 0.
+            i += bits.read(ZEROS_AFTER_BITS) as usize;
+        }
+    }
+    if i > codes {
+        return Err(Damaged);
+    }
+    Code::of(&lengths)
+}
+
+/// The token table, its lengths sent as codes of `lengths`, the 19-code table.
+fn token_table(bits: &mut Bits, lengths: &Code) -> Result<Code, Damaged> {
+    let n = bits.read(TOKEN_COUNT_BITS) as usize;
+    if n == 0 {
+        let only = bits.read(TOKEN_COUNT_BITS) as usize;
+        return if only < TOKENS { Ok(Code::Only(only)) } else { Err(Damaged) };
+    }
+    if n > TOKENS {
+        return Err(Damaged);
+    }
+    let mut table = vec![0u8; TOKENS];
+    let mut i = 0;
+    while i < n {
+        let zeros = match lengths.decode(bits)? {
+            ONE_ZERO => 1,
+            SOME_ZEROS => bits.read(SOME_ZEROS_BITS) as usize + SOME_ZEROS_LEAST,
+            MANY_ZEROS => bits.read(MANY_ZEROS_BITS) as usize + MANY_ZEROS_LEAST,
+            code => {
+                let length = code.checked_sub(LENGTH_CODE_OFFSET).ok_or(Damaged)?;
+                *table.get_mut(i).ok_or(Damaged)? = u8::try_from(length).map_err(|_| Damaged)?;
+                i += 1;
+                continue;
+            }
+        };
+        i += zeros;
+        if i > TOKENS {
+            return Err(Damaged);
+        }
+    }
+    Code::of(&table)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vectorcraft_testkit::machine_files::{Lzh, lzh};
+
+    /// Text and stitch-like bytes, and their extremes: nothing, one byte, a long run of one byte.
+    fn samples() -> Vec<Vec<u8>> {
+        let text = b"a stitch, a stitch, a stitch and a jump; a stitch, a stitch and a trim".repeat(9);
+        let deltas: Vec<u8> = (0..3000u32).map(|i| ((i * 37 % 23) as u8).wrapping_sub(11)).collect();
+        let kinds: Vec<u8> = (0..2500u32).map(|i| if i % 97 == 0 { 0x81 } else { 0x80 }).collect();
+        vec![text, deltas, kinds, vec![], vec![0x7F], vec![0x80; 5000], (0..=255u8).collect()]
+    }
+
+    /// Every stream written with or without copies, in one block or many, expands to its bytes,
+    /// whole, and to fewer when fewer are asked for.
+    #[test]
+    fn streams_expand_to_their_bytes() {
+        for data in samples() {
+            for o in [Lzh { copies: true, block_tokens: 0 }, Lzh { copies: false, block_tokens: 0 }, Lzh { copies: true, block_tokens: 7 }] {
+                let stream = lzh(&data, &o);
+                assert_eq!(expand(&stream, data.len()), Ok(Expanded { bytes: data.clone(), whole: true }), "{o:?}, {} bytes", data.len());
+                let half = data.len() / 2;
+                assert_eq!(expand(&stream, half).map(|e| e.bytes), Ok(data[..half].to_vec()));
+            }
+        }
+    }
+
+    /// A stream that ends before the bytes asked for, or whose data runs out, gives the bytes made
+    /// before then, not whole; one cut anywhere never makes bytes it doesn't hold.
+    #[test]
+    fn a_stream_cut_short_keeps_what_it_made() {
+        let data = samples().remove(1);
+        let stream = lzh(&data, &Lzh { copies: true, block_tokens: 300 });
+        let ended = expand(&stream, data.len() + 10).unwrap();
+        assert_eq!((ended.bytes.as_slice(), ended.whole), (data.as_slice(), false));
+        for cut in (0..stream.len()).step_by(3) {
+            if let Ok(e) = expand(&stream[..cut], data.len()) {
+                assert!(data.starts_with(&e.bytes), "cut at {cut}: only bytes the stream holds");
+                assert_eq!(e.whole, e.bytes.len() == data.len(), "cut at {cut}");
+            }
+        }
+    }
+
+    /// Tables that are no complete code, a block of no tokens, values past a table and copies from
+    /// before the start are refused; random bytes give a stream, a cut one or a refusal, never a
+    /// panic, quickly.
+    #[test]
+    fn damaged_streams_are_refused() {
+        // A block of 1 token whose 19-code table says it has 20 codes.
+        assert_eq!(expand(&[0x00, 0x01, 0b1010_0000, 0, 0, 0], 4), Err(Damaged));
+        // A block of no tokens, its tables single values of no bits.
+        assert_eq!(expand(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], 4), Err(Damaged));
+        let started = std::time::Instant::now();
+        let mut state = 0x9E37_79B9_7F4A_7C15u64;
+        for len in [1usize, 2, 7, 40, 300, 3000] {
+            for _ in 0..200 {
+                let bytes: Vec<u8> = (0..len)
+                    .map(|_| {
+                        state ^= state << 13;
+                        state ^= state >> 7;
+                        state ^= state << 17;
+                        (state >> 24) as u8
+                    })
+                    .collect();
+                let _ = expand(&bytes, 100_000);
+            }
+        }
+        assert!(started.elapsed().as_secs() < 20);
+    }
+}

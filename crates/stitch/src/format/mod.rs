@@ -97,6 +97,9 @@ pub enum Start {
     Centre,
 }
 
+/// A format's writer: a design to the bytes of its file.
+pub type Writer = fn(&Pattern) -> Result<Vec<u8>>;
+
 /// What the code knows about one format, in one place ([`Format::spec`]): adding a format is one
 /// of these, its module's reader and writer, and the arm that names it in [`Format::spec`], which
 /// fails to compile until it is there.
@@ -122,11 +125,12 @@ pub struct Spec {
     pub max_colors: Option<usize>,
     /// Where its files start the needle.
     pub start: Start,
-    /// The bytes its files start with, if they announce themselves ([`Format::sniff`]).
-    pub magic: Option<&'static [u8]>,
-    /// Its reader and writer.
+    /// The bytes its files start with when they announce themselves, any one of these
+    /// ([`Format::sniff`]); none for a format told by its extension alone.
+    pub magic: &'static [&'static [u8]],
+    /// Its reader, and its writer: optional, so that a format can be read and never written.
     pub read: fn(&[u8]) -> Result<Pattern>,
-    pub write: fn(&Pattern) -> Result<Vec<u8>>,
+    pub write: Option<Writer>,
     /// What a file of it holds that reading it leaves out ([`Format::losses`]).
     pub losses: fn(&[u8]) -> Vec<Loss>,
 }
@@ -175,9 +179,9 @@ const DST: Spec = Spec {
     max_size: dst::MAX_EXTENT,
     max_colors: None,
     start: Start::Corner,
-    magic: None,
+    magic: &[],
     read: dst::read,
-    write: dst::write,
+    write: Some(dst::write),
     losses: dst::losses,
 };
 /// Happy TAP: DST's records alone ([`tap`]).
@@ -187,7 +191,7 @@ const TAP: Spec = Spec {
     extensions: &["tap"],
     mime: "application/x-tap",
     read: tap::read,
-    write: tap::write,
+    write: Some(tap::write),
     losses: no_losses,
     // No header: only the coordinates' range bounds the design.
     max_size: MAX_TENTHS,
@@ -206,9 +210,9 @@ const EXP: Spec = Spec {
     max_size: MAX_TENTHS,
     max_colors: None,
     start: Start::Corner,
-    magic: None,
+    magic: &[],
     read: exp::read,
-    write: exp::write,
+    write: Some(exp::write),
     losses: no_losses,
 };
 /// Brother PES: a PES header and the PEC section ([`pes`]).
@@ -222,14 +226,14 @@ const PES: Spec = Spec {
     max_size: pes::MAX_SIZE,
     max_colors: Some(pes::MAX_COLORS),
     start: Start::Corner,
-    magic: Some(b"#PES"),
+    magic: &[b"#PES"],
     read: pes::read,
-    write: pes::write,
+    write: Some(pes::write),
     losses: pes::losses,
 };
 /// Brother PEC: the PEC section on its own ([`pes`]).
 const PEC: Spec =
-    Spec { id: "pec", label: "Brother PEC", extensions: &["pec"], mime: "application/x-pec", magic: Some(b"#PEC"), write: pes::write_pec, ..PES };
+    Spec { id: "pec", label: "Brother PEC", extensions: &["pec"], mime: "application/x-pec", magic: &[b"#PEC"], write: Some(pes::write_pec), ..PES };
 /// Janome JEF: a header and 2-byte records ([`jef`]).
 const JEF: Spec = Spec {
     id: "jef",
@@ -241,9 +245,9 @@ const JEF: Spec = Spec {
     max_size: MAX_TENTHS,
     max_colors: None,
     start: Start::Centre,
-    magic: None,
+    magic: &[],
     read: jef::read,
-    write: jef::write,
+    write: Some(jef::write),
     losses: jef::losses,
 };
 /// Husqvarna Viking and Pfaff VP3: nested packets ([`vp3`]).
@@ -257,9 +261,9 @@ const VP3: Spec = Spec {
     max_size: MAX_TENTHS,
     max_colors: Some(vp3::MAX_COLORS),
     start: Start::Centre,
-    magic: Some(vp3::MAGIC),
+    magic: &[vp3::MAGIC],
     read: vp3::read,
-    write: vp3::write,
+    write: Some(vp3::write),
     losses: vp3::losses,
 };
 
@@ -279,6 +283,11 @@ impl Format {
             Self::Jef => &JEF,
             Self::Vp3 => &VP3,
         }
+    }
+
+    /// Whether the format is written (every one here is).
+    pub const fn writes(self) -> bool {
+        self.spec().write.is_some()
     }
 
     /// The `format` parameter value.
@@ -338,7 +347,7 @@ impl Format {
     /// The format a file's first bytes announce, when they announce one: Brother's and VP3 files
     /// carry a magic string; DST, TAP, T01, EXP and JEF are recognised by their extension.
     pub fn sniff(bytes: &[u8]) -> Option<Self> {
-        Self::ALL.into_iter().find(|f| f.spec().magic.is_some_and(|m| bytes.starts_with(m)))
+        Self::ALL.into_iter().find(|f| f.spec().magic.iter().any(|m| bytes.starts_with(m)))
     }
 
     /// Read a design from `bytes`.
@@ -354,8 +363,9 @@ impl Format {
 
     /// Write `pattern` in this format: refused with [`Error::TooLarge`] when the design is wider or
     /// taller than the format can state ([`Spec::max_size`]), or its file would be larger than
-    /// [`MAX_FILE_BYTES`] (moves split into many records).
+    /// [`MAX_FILE_BYTES`] (moves split into many records), and for a format that isn't written.
     pub fn write(self, pattern: &Pattern) -> Result<Vec<u8>> {
+        let Some(write) = self.spec().write else { return Err(self.not_written()) };
         if pattern.is_empty() {
             return Err(Error::Format("the design has no stitches to write".into()));
         }
@@ -372,7 +382,12 @@ impl Format {
                 )));
             }
         }
-        (self.spec().write)(pattern)
+        write(pattern)
+    }
+
+    /// The error for writing a format that isn't written.
+    fn not_written(self) -> Error {
+        Error::Format(format!("{} files can be opened but not written (see document.formats)", self.label()))
     }
 }
 

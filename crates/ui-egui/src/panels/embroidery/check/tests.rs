@@ -646,3 +646,47 @@ fn the_cap_comes_after_the_thinning() {
     let spread: Vec<CanvasMark> = (0..MAX_DRAWN_MARKS * 2).map(|k| mark("layers", k, 50.0 * k as f64)).collect();
     assert_eq!(thinned(&spread, &crate::canvas::Xf::new(canvas, &view)).len(), MAX_DRAWN_MARKS);
 }
+
+/// A live object of a digitized image scaled since it was digitized: within 10 % the tab says the
+/// largest change; past it, it words the rule, its hit names the live object and how much larger,
+/// and Show selects it, the stitches of what it holds standing out.
+#[test]
+fn a_scaled_live_object_is_named_and_shown() {
+    let mut app = VectorcraftApp::new(Session::new(), Services::default());
+    app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
+    let picture =
+        image::RgbaImage::from_fn(200, 100, |x, _| image::Rgba(if (20..180).contains(&x) { [240, 130, 20, 255] } else { [255, 255, 255, 255] }));
+    let mut png = Vec::new();
+    image::DynamicImage::ImageRgba8(picture).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    app.run("file.place", json!({"name": "logo.png", "dataBase64": vectorcraft_format::base64_encode(&png)})).unwrap();
+    let made = app.run("embroidery.digitizeImage", json!({"live": true, "colors": 2})).unwrap();
+    let live = made["created"]["group"].as_u64().unwrap();
+    let scaled = |app: &mut VectorcraftApp, by: f64| {
+        app.session
+            .edit("scale", |d, _| {
+                d.node_mut(NodeId(live)).expect("the live object").transform(vectorcraft_geom::Affine::scale(by), true);
+                Ok(())
+            })
+            .unwrap();
+        check_reply(app, json!({"rules": ["liveObjectScaled"]}))
+    };
+    // Within 10 %: the largest change said.
+    let reply = scaled(&mut app, 1.05);
+    assert_eq!(found(&reply["rules"][0], Lang::EN), "Largest change: 5%");
+    // 50 % larger in all.
+    let reply = scaled(&mut app, 1.5 / 1.05);
+    let rule = &reply["rules"][0];
+    assert_eq!(title(rule, "Janome JEF", Lang::EN), "Live digitized images scaled by more than 10% since they were digitized: digitize them again");
+    let doc = app.session.doc().unwrap().doc.clone();
+    let shown = crate::panels::layers::shown_name(&app, doc.node(NodeId(live)).unwrap(), Lang::EN);
+    let line = hit_line(&app, Some(&doc), "liveObjectScaled", &rule["examples"][0], Lang::EN);
+    assert_eq!(line, Some(format!("{shown}: 50% larger")));
+    // Show selects it, and the stitches of what it holds stand out for a moment.
+    app.ui.embroidery_panel.tab = Tab::Check;
+    let ctx = egui::Context::default();
+    let (uid, shown) = shown_check(&mut app, &ctx);
+    show_findings(&mut app, uid, &shown, "liveObjectScaled", Some(0)).unwrap();
+    assert_eq!(app.session.doc().unwrap().selection.objects, vec![NodeId(live)], "Show selects it");
+    frame(&mut app, &ctx, 1.0);
+    assert!(app.embroidery.layer.emphasis().is_some_and(|u| !u.is_empty()), "its stitches stand out");
+}

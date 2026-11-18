@@ -12,7 +12,7 @@ use super::*;
 use crate::Services;
 
 /// An app with a picture placed and selected: an orange square with a navy bar, on white.
-fn app() -> VectorcraftApp {
+pub(super) fn app() -> VectorcraftApp {
     app_with(image::RgbaImage::from_fn(200, 100, |x, y| {
         image::Rgba(match ((20..180).contains(&x), (45..55).contains(&y), (10..90).contains(&y)) {
             (true, true, _) => [20, 40, 120, 255],
@@ -23,7 +23,7 @@ fn app() -> VectorcraftApp {
 }
 
 /// An app with `picture` placed and selected.
-fn app_with(picture: image::RgbaImage) -> VectorcraftApp {
+pub(super) fn app_with(picture: image::RgbaImage) -> VectorcraftApp {
     let mut app = VectorcraftApp::new(Session::new(), Services::default());
     app.run("file.new", json!({"width": 400, "height": 400, "artboards": 1})).unwrap();
     let mut png = Vec::new();
@@ -35,7 +35,7 @@ fn app_with(picture: image::RgbaImage) -> VectorcraftApp {
 
 /// One headless frame at `time` with `events`, as the app runs one: its logic (the fork's poll and
 /// the shortcuts among it) and the dialogs.
-fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) {
+pub(super) fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) {
     let raw = egui::RawInput {
         time: Some(time),
         screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(1440.0, 900.0))),
@@ -49,12 +49,12 @@ fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<E
     out.textures_delta.clear();
 }
 
-fn key(key: Key, modifiers: Modifiers) -> Event {
+pub(super) fn key(key: Key, modifiers: Modifiers) -> Event {
     Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers }
 }
 
 /// Frames until `done(app)`, time moving on, or a deadline generous for a busy machine.
-fn until(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, done: impl Fn(&VectorcraftApp) -> bool) {
+pub(super) fn until(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, done: impl Fn(&VectorcraftApp) -> bool) {
     let deadline = Instant::now() + Duration::from_secs(120);
     while !done(app) {
         assert!(Instant::now() < deadline, "the window never got there");
@@ -65,16 +65,16 @@ fn until(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, done: im
 
 /// Whether the window's result is of its settings as they are (the open dialog's: a test may have
 /// set one since the last frame), every stage done.
-fn ready(app: &VectorcraftApp) -> bool {
+pub(super) fn ready(app: &VectorcraftApp) -> bool {
     let (Some(l), Some(d)) = (app.embroidery.image_window.live.as_ref(), open_dialog(app)) else { return false };
     l.schedule.current(&params_of(&d.fields)).is_some()
 }
 
-fn open_dialog(app: &VectorcraftApp) -> Option<&Dialog> {
+pub(super) fn open_dialog(app: &VectorcraftApp) -> Option<&Dialog> {
     app.ui.dialog.as_ref().filter(|d| d.kind == KIND)
 }
 
-fn undo_steps(app: &VectorcraftApp) -> usize {
+pub(super) fn undo_steps(app: &VectorcraftApp) -> usize {
     app.session.doc().unwrap().history.undo.len()
 }
 
@@ -193,6 +193,39 @@ fn it_closes_as_cancel_when_its_document_is_no_longer_active() {
     assert!(app.embroidery.image_window.remembered.contains_key(&(uid, image)));
 }
 
+/// The settings a window was left with are its picture's: another picture placed after an Undo,
+/// which takes the same id in the document, opens with its own defaults; the first picture placed
+/// again by Redo continues where its window was left.
+#[test]
+fn a_picture_placed_after_an_undo_under_the_same_id_opens_with_its_own_settings() {
+    let ctx = egui::Context::default();
+    let mut app = app();
+    let first = app.session.doc().unwrap().selection.objects[0];
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    app.ui.dialog.as_mut().unwrap().fields.insert("colors".into(), json!(5));
+    frame(&mut app, &ctx, 0.0, vec![]);
+    frame(&mut app, &ctx, 0.05, vec![key(Key::Escape, Modifiers::NONE)]);
+    frame(&mut app, &ctx, 0.1, vec![]);
+    assert!(open_dialog(&app).is_none(), "closed, its settings remembered");
+    let colors = |app: &VectorcraftApp| open_dialog(app).and_then(|d| d.fields.get("colors").cloned());
+    // The placement undone and redone: the same picture, its window as it was left.
+    app.run("edit.undo", json!({})).unwrap();
+    app.run("edit.redo", json!({})).unwrap();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    assert_eq!(colors(&app), Some(json!(5)), "the same picture continues");
+    frame(&mut app, &ctx, 0.15, vec![key(Key::Escape, Modifiers::NONE)]);
+    frame(&mut app, &ctx, 0.2, vec![]);
+    // The placement undone, another picture placed in its place: the same id, not the same picture.
+    app.run("edit.undo", json!({})).unwrap();
+    let other = image::RgbaImage::from_fn(120, 80, |x, _| image::Rgba(if x < 60 { [20, 120, 40, 255] } else { [255, 255, 255, 255] }));
+    let mut png = Vec::new();
+    image::DynamicImage::ImageRgba8(other).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    app.run("file.place", json!({"name": "other.png", "dataBase64": vectorcraft_format::base64_encode(&png)})).unwrap();
+    assert_eq!(app.session.doc().unwrap().selection.objects.first(), Some(&first), "the same id");
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    assert_eq!(colors(&app), None, "its own defaults");
+}
+
 /// The window takes most of the app's window, never less than its smallest size where that fits,
 /// never more than the app's window; its regions lie inside it apart from each other.
 #[test]
@@ -270,17 +303,17 @@ fn its_state_is_said_in_its_fields() {
 }
 
 /// The window's live state.
-fn live(app: &VectorcraftApp) -> &Live {
+pub(super) fn live(app: &VectorcraftApp) -> &Live {
     app.embroidery.image_window.live.as_ref().expect("the window is live")
 }
 
 /// The window's live state, to change.
-fn live_mut(app: &mut VectorcraftApp) -> &mut Live {
+pub(super) fn live_mut(app: &mut VectorcraftApp) -> &mut Live {
     app.embroidery.image_window.live.as_mut().expect("the window is live")
 }
 
 /// Set field `key` of the open window.
-fn set(app: &mut VectorcraftApp, key: &str, value: Value) {
+pub(super) fn set(app: &mut VectorcraftApp, key: &str, value: Value) {
     app.ui.dialog.as_mut().expect("the window is open").fields.insert(key.into(), value);
 }
 
@@ -363,7 +396,7 @@ fn hovering_names_the_area_under_the_pointer() {
 }
 
 /// One frame with screen readers on (the context's) → its nodes.
-fn nodes(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Vec<(egui::accesskit::NodeId, egui::accesskit::Node)> {
+pub(super) fn nodes(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Vec<(egui::accesskit::NodeId, egui::accesskit::Node)> {
     *time += 0.05;
     let raw = egui::RawInput { time: Some(*time), screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(1440.0, 900.0))), ..Default::default() };
     let mut out = ctx.run_ui(raw, |ui| {
@@ -375,7 +408,7 @@ fn nodes(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Vec<(
 }
 
 /// The node screen readers call `name`, of `role`: named itself, or by a label beside it.
-fn node<'a>(
+pub(super) fn node<'a>(
     nodes: &'a [(egui::accesskit::NodeId, egui::accesskit::Node)],
     name: &str,
     role: egui::accesskit::Role,
@@ -384,7 +417,7 @@ fn node<'a>(
 }
 
 /// [`node`] with its id.
-fn node_with_id<'a>(
+pub(super) fn node_with_id<'a>(
     nodes: &'a [(egui::accesskit::NodeId, egui::accesskit::Node)],
     name: &str,
     role: egui::accesskit::Role,
@@ -395,14 +428,14 @@ fn node_with_id<'a>(
 }
 
 /// The centre of the control screen readers call `name`, of `role`.
-fn centre_of(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) -> egui::Pos2 {
+pub(super) fn centre_of(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) -> egui::Pos2 {
     let nodes = nodes(app, ctx, time);
     let b = node(&nodes, name, role).and_then(|n| n.bounds()).unwrap_or_else(|| panic!("no {role:?} {name}"));
     pos2(((b.x0 + b.x1) / 2.0) as f32, ((b.y0 + b.y1) / 2.0) as f32)
 }
 
 /// A click of the control screen readers call `name`, of `role`.
-fn click(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) {
+pub(super) fn click(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) {
     let at = centre_of(app, ctx, time, name, role);
     let button = |pressed| Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
     *time += 0.05;
@@ -413,7 +446,7 @@ fn click(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &s
 
 /// A screen reader's click of the control it calls `name`, of `role`: pressed wherever the control
 /// lies, below the part of the step in view too, where a pointer's click would miss it.
-fn press(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) {
+pub(super) fn press(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, role: egui::accesskit::Role) {
     use egui::accesskit::{Action, ActionRequest, TreeId};
     let nodes = nodes(app, ctx, time);
     let target_node = node_with_id(&nodes, name, role).map(|(id, _)| *id).unwrap_or_else(|| panic!("no {role:?} {name}"));
@@ -425,7 +458,7 @@ fn press(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &s
 }
 
 /// `text` typed into the field screen readers call `name`, over what it held, then Enter.
-fn type_into(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, text: &str) {
+pub(super) fn type_into(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &str, text: &str) {
     click(app, ctx, time, name, egui::accesskit::Role::TextInput);
     *time += 0.05;
     frame(app, ctx, *time, vec![key(Key::A, Modifiers::COMMAND), Event::Text(text.into())]);
@@ -436,12 +469,12 @@ fn type_into(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name
 }
 
 /// The window open on the test picture, its first result shown, screen readers on.
-fn opened() -> (VectorcraftApp, egui::Context, f64) {
+pub(super) fn opened() -> (VectorcraftApp, egui::Context, f64) {
     opened_with(app())
 }
 
 /// [`opened`] in `app`.
-fn opened_with(mut app: VectorcraftApp) -> (VectorcraftApp, egui::Context, f64) {
+pub(super) fn opened_with(mut app: VectorcraftApp) -> (VectorcraftApp, egui::Context, f64) {
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx);
     ctx.enable_accesskit();
@@ -452,7 +485,7 @@ fn opened_with(mut app: VectorcraftApp) -> (VectorcraftApp, egui::Context, f64) 
 }
 
 /// The reply of the result shown.
-fn reply(app: &mut VectorcraftApp) -> Value {
+pub(super) fn reply(app: &mut VectorcraftApp) -> Value {
     app.embroidery.image_window.live.as_mut().and_then(|l| l.reply().cloned()).expect("a result")
 }
 
@@ -822,7 +855,7 @@ fn create_refuses_a_run_made_of_an_earlier_document() {
     let steps = undo_steps(&app);
     let earlier = live(&app).schedule.shown.clone().expect("a result");
     app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 20, "height": 20})).unwrap();
-    assert!(app.session.apply_digitize_window(&earlier.request, &earlier.outputs).is_err(), "made of the earlier document");
+    assert!(app.session.apply_digitize_window(&earlier.request, &earlier.outputs, false).is_err(), "made of the earlier document");
     assert_eq!(undo_steps(&app), steps + 1, "nothing applied");
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
@@ -1501,7 +1534,7 @@ fn dialog_field(app: &VectorcraftApp, key: &str) -> Option<Value> {
 }
 
 /// Field `key` of the window, open again.
-fn window_field(app: &VectorcraftApp, key: &str) -> Option<Value> {
+pub(super) fn window_field(app: &VectorcraftApp, key: &str) -> Option<Value> {
     open_dialog(app).and_then(|d| d.fields.get(key).cloned())
 }
 
@@ -1728,7 +1761,7 @@ fn a_document_switched_while_document_setup_is_open_closes_the_window() {
     time += 0.05;
     frame(&mut app, &ctx, time, vec![]);
     assert!(app.embroidery.image_window.live.is_none(), "its runs stopped");
-    let remembered = app.embroidery.image_window.remembered.get(&(uid, image)).and_then(|f| f.get(STEP).cloned());
+    let remembered = app.embroidery.image_window.remembered.get(&(uid, image)).and_then(|r| r.fields.get(STEP).cloned());
     assert_eq!(remembered, Some(json!(4)), "its settings remembered");
 }
 

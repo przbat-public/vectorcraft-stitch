@@ -7238,3 +7238,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	タタミ、{value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	ドキュメント設定の刺繍タブを開きます。ドキュメント設定を閉じるとこのウィンドウに戻ります。
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	この領域用に選択
+embroidery	Sewn along its middle as one running line	中央に沿って1本のランニングステッチで縫う
+embroidery	No part wider than {width} mm	{width} mmより広い部分なし
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mmより広い: タタミ、細い部分はサテン
+embroidery	Wider than {width} mm: tatami	{width} mmより広い: タタミ
+embroidery	Its long parts as satin, the rest tatami	長い部分はサテン、残りはタタミ
+embroidery	Too short for satin	サテンには短すぎる
+embroidery	Too short for satin: sewn as tatami	サテンには短すぎる: タタミで縫う
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	サテンには幅{least} mm以上の線が必要です。この線は{width} mmです。
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	サテンは幅{most} mmまでの部分を縫います。この領域の幅は{width} mmです。
+@plural	about {count} stitch|about {count} stitches	約{count}針
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	似た{count}個の領域に適用
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	この領域のステッチと角度を、同じ色・種類でほぼ同じ大きさの領域に設定します。
+embroidery	Show in Sewing Order	縫い順で表示
+embroidery	Dims what is sewn after this area.	この領域の後に縫う部分を淡く表示します。
+embroidery	Sewn {number} of {of}, after {before}, before {after}	{of}中{number}番目に縫う（{before}の後、{after}の前）
+embroidery	Sewn {number} of {of}, before {after}	{of}中{number}番目に縫う（{after}の前）
+embroidery	Sewn {number} of {of}, after {before}	{of}中{number}番目に縫う（{before}の後）
+embroidery	Sewn {number} of {of}	{of}中{number}番目に縫う
+embroidery	Previous area in sewing order	縫い順で前の領域
+embroidery	Next area in sewing order	縫い順で次の領域
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	領域ごとの変更
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	プレビューで領域をクリックすると、ステッチや角度を変えたり、縫わないようにしたりできます。それ以外は自動のままです。
+embroidery	Remove this change	この変更を削除
+embroidery	Reset All	すべてリセット
+embroidery	Another color lies here now	ここには今は別の色があります
+embroidery	No area here now	ここには今は領域がありません
+embroidery	Its area is a line now	その領域は今は線です
+embroidery	Its area is filled now	その領域は今は塗りつぶしです
+embroidery	Its color isn't sewn	その色は縫いません
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	ライブオブジェクトとして保持
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	画像をそこから作成したオブジェクトと一緒に保持し、「画像をデジタイズ…」で再び変更できるようにします。
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	オブジェクトが手動で変更されています。もう一度デジタイズするとそれらの変更は置き換えられ、取り消しで元に戻せます。
+embroidery	Replace	置き換える
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	このライブオブジェクトの設定を読み取れませんでした。ウィンドウは既定値から始まります。
+embroidery	Edit in Digitize Image…	「画像をデジタイズ」で編集…
+embroidery	Live digitized image	ライブのデジタイズ画像
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	ライブオブジェクトを作成しました：{objects} ({threads})。「画像をデジタイズ…」で再び変更でき、取り消しで削除できます。
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	置き換えない
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	このライブオブジェクトは別の糸パレットで作成されました。色はドキュメントのパレットに改めて合わせられます。
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	デジタイズ後に {value}% を超えて拡大縮小されたライブのデジタイズ画像：もう一度デジタイズしてください
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	ライブの刺繍オブジェクトです。「画像をデジタイズ…」で変更してください（オブジェクト › 画像トレース）
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	1つのデザインで扱える領域ごとの変更は最大{count}件で、それを超えてしまいます。

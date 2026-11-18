@@ -7612,3 +7612,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	ტატამი, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	ხსნის დოკუმენტის პარამეტრების ნაქარგობის ჩანართს. ეს ფანჯარა დაბრუნდება, როცა დოკუმენტის პარამეტრები დაიხურება.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} მმ
+embroidery	Chosen for this area	არჩეულია ამ არისთვის
+embroidery	Sewn along its middle as one running line	იქარგება შუაზე ერთი სწორი ნაკერის ხაზად
+embroidery	No part wider than {width} mm	არცერთი ნაწილი არ არის {width} მმ-ზე განიერი
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} მმ-ზე განიერი: ტატამი, ვიწრო ნაწილები ატლასად
+embroidery	Wider than {width} mm: tatami	{width} მმ-ზე განიერი: ტატამი
+embroidery	Its long parts as satin, the rest tatami	გრძელი ნაწილები ატლასად, დანარჩენი ტატამი
+embroidery	Too short for satin	ატლასისთვის ძალიან მოკლეა
+embroidery	Too short for satin: sewn as tatami	ატლასისთვის ძალიან მოკლეა: იკერება ტატამით
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	ატლასს სჭირდება მინიმუმ {least} მმ სიგანის ხაზი: ეს არის {width} მმ.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	ატლასი ქარგავს ნაწილებს {most} მმ-მდე: ამ არის სიგანეა {width} მმ.
+@plural	about {count} stitch|about {count} stitches	ნაკერები: დაახლ. {count}
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	გამოყენება მსგავს არეებზე: {count}
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	ამ არის ნაკერსა და კუთხეს აყენებს იმავე ფერისა და სახის, დაახლოებით იმავე ზომის არეებზე.
+embroidery	Show in Sewing Order	კერვის რიგში ჩვენება
+embroidery	Dims what is sewn after this area.	აფერმკრთალებს იმას, რაც ამ არის შემდეგ იკერება.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	იკერება {number} / {of}, შემდეგ: {before}, მანამდე: {after}
+embroidery	Sewn {number} of {of}, before {after}	იკერება {number} / {of}, მანამდე: {after}
+embroidery	Sewn {number} of {of}, after {before}	იკერება {number} / {of}, შემდეგ: {before}
+embroidery	Sewn {number} of {of}	იკერება {number} / {of}
+embroidery	Previous area in sewing order	წინა არე კერვის რიგში
+embroidery	Next area in sewing order	შემდეგი არე კერვის რიგში
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	არეების ცვლილებები
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	დააწკაპუნეთ არეზე გადახედვაში, რომ შეცვალოთ მისი ნაკერი ან კუთხე, ან გამოტოვოთ ის. დანარჩენი ავტომატური რჩება.
+embroidery	Remove this change	ამ ცვლილების წაშლა
+embroidery	Reset All	ყველაფრის გადაყენება
+embroidery	Another color lies here now	აქ ახლა სხვა ფერია
+embroidery	No area here now	აქ ახლა არე არ არის
+embroidery	Its area is a line now	მისი არე ახლა ხაზია
+embroidery	Its area is filled now	მისი არე ახლა შევსებულია
+embroidery	Its color isn't sewn	მისი ფერი არ იქარგება
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	დინამიკურ ობიექტად შენახვა
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	ინახავს სურათს მისგან შექმნილ ობიექტებთან ერთად, რათა „სურათის დიგიტალიზაციამ…“ შეძლოს მათი ხელახლა შეცვლა.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	მისი ობიექტები ხელით შეიცვალა. ხელახლა დიგიტალიზაცია ამ ცვლილებებს ჩაანაცვლებს; დაბრუნება მათ აღადგენს.
+embroidery	Replace	ჩანაცვლება
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	ამ დინამიკური ობიექტის პარამეტრების წაკითხვა ვერ მოხერხდა: ფანჯარა ნაგულისხმევი მნიშვნელობებით იწყება.
+embroidery	Edit in Digitize Image…	„სურათის დიგიტალიზაციაში“ რედაქტირება…
+embroidery	Live digitized image	დინამიკური დიგიტალიზებული სურათი
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	შეიქმნა დინამიკური ობიექტი: {objects} ({threads}). „სურათის დიგიტალიზაცია…“ მას ხელახლა შეცვლის; დაბრუნება მას წაშლის.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	არ ჩაანაცვლო
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	ეს დინამიკური ობიექტი სხვა ძაფების პალიტრით შეიქმნა: მისი ფერები ხელახლა ესადაგება დოკუმენტის პალიტრას.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	დიგიტალიზაციის შემდეგ {value}%-ზე მეტით მასშტაბირებული დინამიკური დიგიტალიზებული სურათები: ხელახლა დიგიტალიზება
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	დინამიკური ნაქარგობის ობიექტი: შეცვალეთ „სურათის დიგიტალიზაცია…“-ში (ობიექტი › გამოსახულების ვექტორიზაცია)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	ეს იქნებოდა {count}-ზე მეტი ცვლილება არეებზე — მაქსიმუმი, რასაც დიზაინი იღებს.

@@ -7391,3 +7391,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	榻榻米，{value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	打开“文档设置”的“刺绣”选项卡。“文档设置”关闭后会回到此窗口。
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	为此区域选择
+embroidery	Sewn along its middle as one running line	沿中线以一道平针缝制
+embroidery	No part wider than {width} mm	没有宽于 {width} mm 的部分
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	宽于 {width} mm：榻榻米，较窄处用缎纹
+embroidery	Wider than {width} mm: tatami	宽于 {width} mm：榻榻米
+embroidery	Its long parts as satin, the rest tatami	较长处用缎纹，其余用榻榻米
+embroidery	Too short for satin	太短，无法用缎纹
+embroidery	Too short for satin: sewn as tatami	太短，无法用缎纹：以榻榻米绣制
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	缎纹需要至少 {least} mm 宽的线：这条为 {width} mm。
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	缎纹可绣宽至 {most} mm 的部分：此区域宽 {width} mm。
+@plural	about {count} stitch|about {count} stitches	约 {count} 针
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	应用到 {count} 个相似区域
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	将此区域的针法和角度设置到颜色、类型相同且大小相近的区域。
+embroidery	Show in Sewing Order	在刺绣顺序中显示
+embroidery	Dims what is sewn after this area.	淡化此区域之后绣制的部分。
+embroidery	Sewn {number} of {of}, after {before}, before {after}	第 {number}/{of} 个绣制，在 {before} 之后、{after} 之前
+embroidery	Sewn {number} of {of}, before {after}	第 {number}/{of} 个绣制，在 {after} 之前
+embroidery	Sewn {number} of {of}, after {before}	第 {number}/{of} 个绣制，在 {before} 之后
+embroidery	Sewn {number} of {of}	第 {number}/{of} 个绣制
+embroidery	Previous area in sewing order	刺绣顺序中的上一个区域
+embroidery	Next area in sewing order	刺绣顺序中的下一个区域
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	区域更改
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	在预览中单击某个区域，可更改其针法或角度，或将其略过。其余保持自动。
+embroidery	Remove this change	移除此更改
+embroidery	Reset All	全部重置
+embroidery	Another color lies here now	此处现在是另一种颜色
+embroidery	No area here now	此处现在没有区域
+embroidery	Its area is a line now	其区域现在是线条
+embroidery	Its area is filled now	其区域现在是填充
+embroidery	Its color isn't sewn	其颜色不缝制
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	保留为实时对象
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	将图像与由其生成的对象保存在一起，以便“数字化图像…”可以再次更改它们。
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	其对象已被手动更改。重新数字化会替换这些更改；撤销可将其恢复。
+embroidery	Replace	替换
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	无法读取此实时对象的设置：窗口从默认值开始。
+embroidery	Edit in Digitize Image…	在“数字化图像”中编辑…
+embroidery	Live digitized image	实时数字化图像
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	已创建实时对象：{objects}（{threads}）。“数字化图像…”可再次更改它；撤销可将其移除。
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	不替换
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	此实时对象是用另一个线色板制作的：其颜色将重新匹配文档的色板。
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	数字化后缩放超过 {value}% 的实时数字化图像：请重新数字化
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	实时刺绣对象：请在“数字化图像…”中更改（对象 › 图像描摹）
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	这会超过 {count} 项区域更改，一个设计最多只能有这么多。

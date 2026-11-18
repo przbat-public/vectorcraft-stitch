@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vectorcraft_geom::Point;
 
+mod digitizing;
 mod marks;
 mod mem;
 pub mod outline;
@@ -36,10 +37,11 @@ pub(crate) fn unkeep(kept: &mut Kept, key: &str) {
 /// file put there. Changed through [`Arc::make_mut`].
 pub type Kept = std::sync::Arc<serde_json::Map<String, serde_json::Value>>;
 
+pub use digitizing::Digitizing;
 pub use marks::{Mark, Placed, SAME_SPOT, shape_of};
 pub use part::{PartKey, PartKind, PartPoints, PartSettings, PartValue};
 pub use setup::{FabricPreset, FabricSettings, FabricValues, MachineSettings, StitchValues};
-pub use transform::scale_factors;
+pub use transform::{scale_factors, turned_angle};
 
 /// What machine embroidery makes of an object.
 ///
@@ -73,6 +75,9 @@ pub struct Embroidery {
     /// The object this one was converted from (Convert to Manual Stitches: a group of manual runs
     /// standing in for it), kept to be restored ([`Original`]). `None`: nothing to restore.
     pub original: Option<Original>,
+    /// What a live object of a digitized image was made with ([`Digitizing`]): an Image Trace
+    /// group that digitizing from an image keeps live. `None`: none.
+    pub digitizing: Option<Digitizing>,
     /// Keys this version doesn't know (written by a newer one), and known keys whose value this
     /// version can't read, kept as they are so that saving doesn't lose them.
     pub extra: Kept,
@@ -387,8 +392,15 @@ impl Embroidery {
     /// couldn't read as it was. Every field is named, so that one added and left out here fails to
     /// compile.
     fn nothing_set(&self) -> bool {
-        let Self { stitches, trim_after, stop_after, fill, stroke, original, extra, unread: _ } = self;
-        stitches.is_none() && !trim_after && !stop_after && fill.is_none() && stroke.is_none() && original.is_none() && extra.is_empty()
+        let Self { stitches, trim_after, stop_after, fill, stroke, original, digitizing, extra, unread: _ } = self;
+        stitches.is_none()
+            && !trim_after
+            && !stop_after
+            && fill.is_none()
+            && stroke.is_none()
+            && original.is_none()
+            && digitizing.is_none()
+            && extra.is_empty()
     }
 }
 
@@ -420,6 +432,7 @@ const STITCHES: &str = "stitches";
 const TRIM_AFTER: &str = "trim_after";
 const STOP_AFTER: &str = "stop_after";
 const ORIGINAL: &str = "original";
+const DIGITIZING: &str = "digitizing";
 const TRIM_BEFORE: &str = "trim_before";
 const DOUBLE_POINT: &str = "double_point";
 const MANUAL: &str = "manual";
@@ -629,7 +642,12 @@ impl From<serde_json::Value> for Embroidery {
                 if original.is_some() {
                     map.remove(ORIGINAL);
                 }
-                Self { stitches, trim_after, stop_after, fill, stroke, original, extra: map.into(), unread: None }
+                // So is a digitizing of another shape: the object is no live one here.
+                let digitizing = map.get(DIGITIZING).and_then(Digitizing::read);
+                if digitizing.is_some() {
+                    map.remove(DIGITIZING);
+                }
+                Self { stitches, trim_after, stop_after, fill, stroke, original, digitizing, extra: map.into(), unread: None }
             }
             serde_json::Value::Null => Self::default(),
             other => Self { unread: Some(other), ..Self::default() },
@@ -647,14 +665,15 @@ impl From<Embroidery> for serde_json::Value {
         {
             return unread;
         }
-        let Embroidery { stitches, trim_after, stop_after, fill, stroke, original, extra, unread: _ } = e;
+        let Embroidery { stitches, trim_after, stop_after, fill, stroke, original, digitizing, extra, unread: _ } = e;
         let run = stitches.map(|r| (STITCHES, serde_json::Value::from(r)));
         let cut = trim_after.then_some((TRIM_AFTER, serde_json::Value::Bool(true)));
         let stop = stop_after.then_some((STOP_AFTER, serde_json::Value::Bool(true)));
         let part = |kind: PartKind, p: Option<Box<PartSettings>>| p.filter(|p| !p.is_empty()).map(|p| (kind.id(), serde_json::Value::from(*p)));
         let parts = part(PartKind::Fill, fill).into_iter().chain(part(PartKind::Stroke, stroke));
         let original = original.map(|o| (ORIGINAL, serde_json::Value::from(o)));
-        with_kept(run.into_iter().chain(cut).chain(stop).chain(parts).chain(original), std::sync::Arc::unwrap_or_clone(extra))
+        let digitizing = digitizing.map(|d| (DIGITIZING, serde_json::Value::from(d)));
+        with_kept(run.into_iter().chain(cut).chain(stop).chain(parts).chain(original).chain(digitizing), std::sync::Arc::unwrap_or_clone(extra))
     }
 }
 
@@ -1079,6 +1098,51 @@ mod tests {
         let mut unread: Embroidery = serde_json::from_value(json!(5)).unwrap();
         unread.trim_after = true;
         assert_eq!(serde_json::to_value(&unread).unwrap(), json!({"trim_after": true}));
+    }
+
+    /// A live object's digitizing: its settings (whatever they hold, kept as written), its
+    /// fingerprint and its size read; saved back as it was. One of another shape (not an object,
+    /// settings that aren't one) is kept as it is, unread: the object is no live one here.
+    #[test]
+    fn digitizing_round_trips_and_one_of_another_shape_is_kept_unread() {
+        let settings =
+            json!({"colors": 4, "area_changes": [{"at": [12.5, 40.0], "color": "#f08214", "kind": "fill", "stitch": "tatami"}], "newer": [1, 2]});
+        let written =
+            json!({"digitizing": {"settings": settings, "fingerprint": "00000000deadbeef", "size": [98.0, 88.25], "by": "a newer version"}});
+        let read: Embroidery = serde_json::from_value(written.clone()).unwrap();
+        let d = read.digitizing.clone().expect("read");
+        assert_eq!((d.fingerprint, d.size, d.settings.get("colors").cloned()), (Some(0xdead_beef), Some([98.0, 88.25]), Some(json!(4))));
+        assert_eq!(d.extra.get("by"), Some(&json!("a newer version")), "a key it doesn't read kept");
+        assert_eq!(serde_json::to_value(&read).unwrap(), written, "saved back as written");
+        assert!(!read.is_empty());
+        for other in [json!({"digitizing": 5}), json!({"digitizing": {"settings": 3}}), json!({"digitizing": {"size": [1.0, 2.0]}})] {
+            let read: Embroidery = serde_json::from_value(other.clone()).unwrap();
+            assert!(read.digitizing.is_none(), "{other}: no live one");
+            assert_eq!(serde_json::to_value(&read).unwrap(), other, "{other}: kept as it was");
+        }
+        // A fingerprint or a size it can't read is kept, unread: four digits, a sign and fifteen.
+        for fingerprint in ["beef", "+123456789abcdef"] {
+            let odd = json!({"digitizing": {"settings": {}, "fingerprint": fingerprint, "size": [0.0, 5.0]}});
+            let read: Embroidery = serde_json::from_value(odd.clone()).unwrap();
+            assert_eq!(read.digitizing.as_ref().map(|d| (d.fingerprint, d.size)), Some((None, None)), "{fingerprint}");
+            assert_eq!(serde_json::to_value(&read).unwrap(), odd, "{fingerprint}");
+        }
+    }
+
+    /// A live object's digitizing is in its source image's frame: no transform moves it, read
+    /// here, nor kept unread by an older version (which moves only `points` members and frames in
+    /// what it keeps).
+    #[test]
+    fn no_transform_moves_a_digitizing() {
+        let digitizing = json!({"settings": {"area_changes": [{"at": [12.5, 40.0], "color": "#f08214", "kind": "fill", "angle": 30.0}], "crop": [0, 0, 10, 10]}, "size": [98.0, 88.0]});
+        let turned = vectorcraft_geom::Affine::rotate(1.0) * vectorcraft_geom::Affine::scale(2.0) * vectorcraft_geom::Affine::translate((5.0, 7.0));
+        let mut read: Embroidery = serde_json::from_value(json!({ "digitizing": digitizing.clone() })).unwrap();
+        read.transform(turned);
+        assert_eq!(serde_json::to_value(&read).unwrap()["digitizing"], digitizing, "read here");
+        let mut older = Embroidery::default();
+        std::sync::Arc::make_mut(&mut older.extra).insert("digitizing".into(), digitizing.clone());
+        older.transform(turned);
+        assert_eq!(older.extra.get("digitizing"), Some(&digitizing), "kept unread by an older version");
     }
 
     /// A run's mark, cuts, stops and stop, and an object's Stop After and kept original, round-trip

@@ -7134,3 +7134,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	타타미, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	문서 설정의 자수 탭을 엽니다. 문서 설정을 닫으면 이 창이 다시 열립니다.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height}mm
+embroidery	Chosen for this area	이 영역에 선택됨
+embroidery	Sewn along its middle as one running line	가운데를 따라 러닝 스티치 한 줄로 수놓음
+embroidery	No part wider than {width} mm	{width}mm보다 넓은 부분 없음
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width}mm보다 넓음: 타타미, 좁은 부분은 새틴
+embroidery	Wider than {width} mm: tatami	{width}mm보다 넓음: 타타미
+embroidery	Its long parts as satin, the rest tatami	긴 부분은 새틴, 나머지는 타타미
+embroidery	Too short for satin	새틴에는 너무 짧음
+embroidery	Too short for satin: sewn as tatami	새틴에는 너무 짧음: 타타미로 박음
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	새틴은 너비가 {least}mm 이상인 선이 필요합니다. 이 선은 {width}mm입니다.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	새틴은 너비 {most}mm까지의 부분을 수놓습니다. 이 영역의 너비는 {width}mm입니다.
+@plural	about {count} stitch|about {count} stitches	약 {count}땀
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	비슷한 영역 {count}개에 적용
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	이 영역의 스티치와 각도를 같은 색·종류이고 크기가 비슷한 영역에 설정합니다.
+embroidery	Show in Sewing Order	자수 순서에서 보기
+embroidery	Dims what is sewn after this area.	이 영역 다음에 수놓는 부분을 흐리게 표시합니다.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	{of}개 중 {number}번째로 수놓음({before} 다음, {after} 앞)
+embroidery	Sewn {number} of {of}, before {after}	{of}개 중 {number}번째로 수놓음({after} 앞)
+embroidery	Sewn {number} of {of}, after {before}	{of}개 중 {number}번째로 수놓음({before} 다음)
+embroidery	Sewn {number} of {of}	{of}개 중 {number}번째로 수놓음
+embroidery	Previous area in sewing order	자수 순서에서 이전 영역
+embroidery	Next area in sewing order	자수 순서에서 다음 영역
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	영역 변경
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	미리 보기에서 영역을 클릭하면 스티치나 각도를 바꾸거나 수놓지 않게 할 수 있습니다. 나머지는 자동으로 유지됩니다.
+embroidery	Remove this change	이 변경 제거
+embroidery	Reset All	모두 초기화
+embroidery	Another color lies here now	이제 여기에는 다른 색이 있습니다
+embroidery	No area here now	이제 여기에는 영역이 없습니다
+embroidery	Its area is a line now	해당 영역은 이제 선입니다
+embroidery	Its area is filled now	해당 영역은 이제 채움입니다
+embroidery	Its color isn't sewn	해당 색은 수놓지 않습니다
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	라이브 개체로 유지
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	이미지를 그것으로 만든 개체와 함께 유지하여 ‘이미지 디지타이징…’으로 다시 변경할 수 있게 합니다.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	개체가 직접 변경되었습니다. 다시 디지타이징하면 그 변경 내용이 대체되며, 실행 취소로 되돌릴 수 있습니다.
+embroidery	Replace	바꾸기
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	이 라이브 개체의 설정을 읽을 수 없습니다. 창이 기본값으로 시작합니다.
+embroidery	Edit in Digitize Image…	‘이미지 디지타이징’에서 편집…
+embroidery	Live digitized image	라이브 디지타이징 이미지
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	라이브 개체를 만들었습니다: {objects}({threads}). ‘이미지 디지타이징…’으로 다시 변경할 수 있고, 실행 취소로 제거할 수 있습니다.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	바꾸지 않음
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	이 라이브 개체는 다른 실 팔레트에서 만들어졌습니다. 색상을 문서의 팔레트에 다시 맞춥니다.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	디지타이징 후 {value}% 넘게 크기가 조정된 라이브 디지타이징 이미지: 다시 디지타이징하세요
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	라이브 자수 개체입니다. '이미지 디지타이징…'에서 변경하세요(개체 › 이미지 추적)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	디자인 하나에 허용되는 최대 {count}개의 영역 변경을 넘게 됩니다.

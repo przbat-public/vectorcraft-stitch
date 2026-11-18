@@ -7537,3 +7537,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Megnyitja a Dokumentumbeállítás Hímzés lapját. Ez az ablak visszatér, amikor a Dokumentumbeállítás bezárul.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Ehhez a területhez választva
+embroidery	Sewn along its middle as one running line	A közepén egyetlen egyenes öltésű vonalként hímezve
+embroidery	No part wider than {width} mm	Egyik része sem szélesebb {width} mm-nél
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Szélesebb {width} mm-nél: tatami, a keskenyebb részei szaténként
+embroidery	Wider than {width} mm: tatami	Szélesebb {width} mm-nél: tatami
+embroidery	Its long parts as satin, the rest tatami	A hosszú részei szaténként, a többi tatami
+embroidery	Too short for satin	Túl rövid a szaténhoz
+embroidery	Too short for satin: sewn as tatami	Túl rövid a szaténhoz: tatamival varrva
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	A szaténhoz legalább {least} mm széles vonal kell: ez {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	A szatén legfeljebb {most} mm-es részeket hímez: ez a terület {width} mm széles.
+@plural	about {count} stitch|about {count} stitches	kb. {count} öltés
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Alkalmazás {count} hasonló területre
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ennek a területnek az öltését és szögét beállítja az azonos színű és fajtájú, nagyjából azonos méretű területekre.
+embroidery	Show in Sewing Order	Megjelenítés a varrási sorrendben
+embroidery	Dims what is sewn after this area.	Halványítja azt, amit e terület után varr.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Varrás: {number}./{of}, {before} után, {after} előtt
+embroidery	Sewn {number} of {of}, before {after}	Varrás: {number}./{of}, {after} előtt
+embroidery	Sewn {number} of {of}, after {before}	Varrás: {number}./{of}, {before} után
+embroidery	Sewn {number} of {of}	Varrás: {number}./{of}
+embroidery	Previous area in sewing order	Előző terület a varrási sorrendben
+embroidery	Next area in sewing order	Következő terület a varrási sorrendben
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Területmódosítások
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Kattintson egy területre az előnézetben az öltése vagy szöge módosításához, vagy a kihagyásához. A többi automatikus marad.
+embroidery	Remove this change	A módosítás eltávolítása
+embroidery	Reset All	Összes visszaállítása
+embroidery	Another color lies here now	Itt most másik szín van
+embroidery	No area here now	Itt most nincs terület
+embroidery	Its area is a line now	A területe most vonal
+embroidery	Its area is filled now	A területe most kitöltött
+embroidery	Its color isn't sewn	A színe nincs kihímezve
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Megtartás dinamikus objektumként
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Megtartja a képet a belőle készült objektumokkal, hogy a „Kép digitalizálása…” újra módosíthassa őket.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Az objektumait kézzel módosították. Az újbóli digitalizálás felülírja ezeket a módosításokat; a Visszavonás visszahozza őket.
+embroidery	Replace	Csere
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Ennek a dinamikus objektumnak a beállításai nem olvashatók: az ablak az alapértékekkel indul.
+embroidery	Edit in Digitize Image…	Szerkesztés a „Kép digitalizálása” ablakban…
+embroidery	Live digitized image	Dinamikus digitalizált kép
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Létrejött egy dinamikus objektum: {objects} ({threads}). A „Kép digitalizálása…” újra módosítja; a Visszavonás eltávolítja.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Nincs csere
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Ez a dinamikus objektum egy másik cérnapalettában készült: a színei újra a dokumentum palettájához igazodnak.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	A digitalizálás óta több mint {value}%-kal átméretezett dinamikus digitalizált képek: digitalizálja őket újra
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	dinamikus hímzésobjektum: a „Kép digitalizálása…” paranccsal módosítsa (Objektum › Képvektorizálás)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Így több mint {count} területmódosítás lenne, ennyit fogad el legfeljebb egy minta.

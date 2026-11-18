@@ -1439,3 +1439,31 @@ fn restore_asks_after_edits_and_the_buttons_work_from_the_keyboard() {
     assert!(app.ui.dialog.is_none());
     assert_eq!(info(&mut app, &[a])["manual"], json!(null), "Restore put it back");
 }
+
+/// A live object of a digitized image: the tab says what it is and offers Edit in Digitize Image…,
+/// which opens the image window on it with the settings it was made with; a path offers nothing of
+/// the kind.
+#[test]
+fn the_object_tab_offers_edit_in_digitize_image_for_a_live_object() {
+    let ctx = context();
+    let (mut app, a, _) = app_with_art();
+    let picture =
+        image::RgbaImage::from_fn(200, 100, |x, _| image::Rgba(if (20..180).contains(&x) { [240, 130, 20, 255] } else { [255, 255, 255, 255] }));
+    let mut png = Vec::new();
+    image::DynamicImage::ImageRgba8(picture).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    app.run("file.place", json!({"name": "logo.png", "dataBase64": vectorcraft_format::base64_encode(&png)})).unwrap();
+    let made = app.run("embroidery.digitizeImage", json!({"live": true, "colors": 2})).unwrap();
+    let live = made["created"]["group"].as_u64().unwrap();
+    select(&mut app, &[live]);
+    let mut time = 0.0;
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(drawn.has("Live digitized image"), "{:?}", drawn.words);
+    time += 0.05;
+    frame_with_dialogs(&mut app, &ctx, time, vec![drawn.click("Edit in Digitize Image…")]);
+    let d = app.ui.dialog.as_ref().filter(|d| d.kind == crate::embroidery::image_window::KIND).expect("the window opens");
+    assert_eq!((d.fields["id"].as_u64(), d.fields["colors"].as_u64()), (Some(live), Some(2)), "on it, with its settings");
+    crate::dialogs::cancel(&mut app);
+    select(&mut app, &[a]);
+    let drawn = ready(&mut app, &ctx, &mut time);
+    assert!(drawn.nodes.iter().all(|(_, n)| n.label() != Some("Edit in Digitize Image…")), "only for a live object");
+}

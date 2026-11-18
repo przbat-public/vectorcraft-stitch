@@ -7505,3 +7505,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Τατάμι, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Ανοίγει την καρτέλα Κέντημα της Ρύθμισης εγγράφου. Αυτό το παράθυρο επιστρέφει όταν κλείσει η Ρύθμιση εγγράφου.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Επιλέχθηκε για αυτή την περιοχή
+embroidery	Sewn along its middle as one running line	Κεντιέται στη μέση της ως μία γραμμή ευθείας βελονιάς
+embroidery	No part wider than {width} mm	Κανένα τμήμα φαρδύτερο από {width} mm
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Φαρδύτερη από {width} mm: τατάμι, τα στενότερα τμήματα ως σατέν
+embroidery	Wider than {width} mm: tatami	Φαρδύτερη από {width} mm: τατάμι
+embroidery	Its long parts as satin, the rest tatami	Τα μακριά τμήματα ως σατέν, τα υπόλοιπα τατάμι
+embroidery	Too short for satin	Πολύ κοντή για σατέν
+embroidery	Too short for satin: sewn as tatami	Πολύ κοντή για σατέν: ράβεται τατάμι
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Το σατέν θέλει γραμμή πλάτους τουλάχιστον {least} mm: αυτή είναι {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Το σατέν κεντά τμήματα έως {most} mm: αυτή η περιοχή έχει πλάτος {width} mm.
+@plural	about {count} stitch|about {count} stitches	περίπου {count} βελονιά|περίπου {count} βελονιές
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Εφαρμογή σε {count} παρόμοια περιοχή|Εφαρμογή σε {count} παρόμοιες περιοχές
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ορίζει τη βελονιά και τη γωνία αυτής της περιοχής στις περιοχές ίδιου χρώματος και είδους και παρόμοιου μεγέθους.
+embroidery	Show in Sewing Order	Εμφάνιση στη σειρά ραφής
+embroidery	Dims what is sewn after this area.	Αχνίζει ό,τι ράβεται μετά από αυτή την περιοχή.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Ράβεται {number}η από {of}, μετά από {before}, πριν από {after}
+embroidery	Sewn {number} of {of}, before {after}	Ράβεται {number}η από {of}, πριν από {after}
+embroidery	Sewn {number} of {of}, after {before}	Ράβεται {number}η από {of}, μετά από {before}
+embroidery	Sewn {number} of {of}	Ράβεται {number}η από {of}
+embroidery	Previous area in sewing order	Προηγούμενη περιοχή στη σειρά ραφής
+embroidery	Next area in sewing order	Επόμενη περιοχή στη σειρά ραφής
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Αλλαγές περιοχών
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Κάντε κλικ σε μια περιοχή στην προεπισκόπηση για να αλλάξετε τη βελονιά ή τη γωνία της ή να την παραλείψετε. Τα υπόλοιπα μένουν αυτόματα.
+embroidery	Remove this change	Αφαίρεση αυτής της αλλαγής
+embroidery	Reset All	Επαναφορά όλων
+embroidery	Another color lies here now	Εδώ βρίσκεται τώρα άλλο χρώμα
+embroidery	No area here now	Εδώ δεν υπάρχει πλέον περιοχή
+embroidery	Its area is a line now	Η περιοχή της είναι τώρα γραμμή
+embroidery	Its area is filled now	Η περιοχή της είναι τώρα γεμάτη
+embroidery	Its color isn't sewn	Το χρώμα της δεν κεντιέται
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Διατήρηση ως δυναμικό αντικείμενο
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Διατηρεί την εικόνα μαζί με τα αντικείμενα που φτιάχτηκαν από αυτήν, ώστε η «Ψηφιοποίηση εικόνας…» να μπορεί να τα αλλάξει ξανά.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Τα αντικείμενά του άλλαξαν με το χέρι. Η εκ νέου ψηφιοποίηση αντικαθιστά αυτές τις αλλαγές· η Αναίρεση τις επαναφέρει.
+embroidery	Replace	Αντικατάσταση
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Δεν ήταν δυνατή η ανάγνωση των ρυθμίσεων αυτού του δυναμικού αντικειμένου: το παράθυρο ξεκινά από τις προεπιλογές.
+embroidery	Edit in Digitize Image…	Επεξεργασία στην «Ψηφιοποίηση εικόνας»…
+embroidery	Live digitized image	Δυναμική ψηφιοποιημένη εικόνα
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Δημιουργήθηκε δυναμικό αντικείμενο: {objects} ({threads}). Η «Ψηφιοποίηση εικόνας…» το αλλάζει ξανά· η Αναίρεση το αφαιρεί.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Χωρίς αντικατάσταση
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Αυτό το δυναμικό αντικείμενο δημιουργήθηκε σε άλλη παλέτα κλωστών: τα χρώματά του αντιστοιχίζονται ξανά στην παλέτα του εγγράφου.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Δυναμικές ψηφιοποιημένες εικόνες με κλιμάκωση πάνω από {value}% από την ψηφιοποίησή τους: ψηφιοποιήστε τις ξανά
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	δυναμικό αντικείμενο κεντήματος: αλλάξτε το στο «Ψηφιοποίηση εικόνας…» (Αντικείμενο › Ανίχνευση περιγραμμάτων εικόνας)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Θα ήταν περισσότερες από {count} αλλαγές περιοχών, όσες το πολύ δέχεται ένα σχέδιο.

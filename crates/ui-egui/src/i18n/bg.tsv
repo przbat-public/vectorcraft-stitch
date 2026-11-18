@@ -7299,3 +7299,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Татами, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Отваря раздела „Бродерия“ в „Настройка на документ“. Този прозорец се връща, когато „Настройка на документ“ се затвори.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} мм
+embroidery	Chosen for this area	Избрано за тази област
+embroidery	Sewn along its middle as one running line	Бродира се по средата си като една линия с прав бод
+embroidery	No part wider than {width} mm	Няма част, по-широка от {width} мм
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	По-широка от {width} мм: татами, по-тесните части като сатен
+embroidery	Wider than {width} mm: tatami	По-широка от {width} мм: татами
+embroidery	Its long parts as satin, the rest tatami	Дългите части като сатен, останалото татами
+embroidery	Too short for satin	Твърде къса за сатен
+embroidery	Too short for satin: sewn as tatami	Твърде къса за сатен: шие се татами
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Сатенът изисква линия, широка поне {least} мм: тази е {width} мм.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Сатенът бродира части до {most} мм: тази област е широка {width} мм.
+@plural	about {count} stitch|about {count} stitches	около {count} бод|около {count} бода
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Приложи към {count} подобна област|Приложи към {count} подобни области
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Задава бода и ъгъла на тази област на областите със същия цвят и вид и с близък размер.
+embroidery	Show in Sewing Order	Покажи в реда на шиене
+embroidery	Dims what is sewn after this area.	Затъмнява това, което се шие след тази област.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Шие се {number}. от {of}, след {before}, преди {after}
+embroidery	Sewn {number} of {of}, before {after}	Шие се {number}. от {of}, преди {after}
+embroidery	Sewn {number} of {of}, after {before}	Шие се {number}. от {of}, след {before}
+embroidery	Sewn {number} of {of}	Шие се {number}. от {of}
+embroidery	Previous area in sewing order	Предишна област в реда на шиене
+embroidery	Next area in sewing order	Следваща област в реда на шиене
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Промени на области
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Щракнете върху област в прегледа, за да смените бода или ъгъла ѝ или да я пропуснете. Останалото остава автоматично.
+embroidery	Remove this change	Премахни тази промяна
+embroidery	Reset All	Нулирай всичко
+embroidery	Another color lies here now	Сега тук лежи друг цвят
+embroidery	No area here now	Сега тук няма област
+embroidery	Its area is a line now	Областта ѝ сега е линия
+embroidery	Its area is filled now	Областта ѝ сега е запълнена
+embroidery	Its color isn't sewn	Цветът ѝ не се бродира
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Запази като динамичен обект
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Запазва изображението заедно с обектите, създадени от него, за да може „Дигитализиране на изображение…“ да ги промени отново.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Обектите му са променени ръчно. Повторното дигитализиране заменя тези промени; „Отмени“ ги връща.
+embroidery	Replace	Замени
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Настройките на този динамичен обект не могат да бъдат прочетени: прозорецът започва от стандартните.
+embroidery	Edit in Digitize Image…	Редактирай в „Дигитализиране на изображение“…
+embroidery	Live digitized image	Динамично дигитализирано изображение
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Създаден е динамичен обект: {objects} ({threads}). „Дигитализиране на изображение…“ го променя отново; „Отмени“ го премахва.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Не заменяй
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Този динамичен обект е създаден с друга палитра от конци: цветовете му се съпоставят отново с палитрата на документа.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Динамични дигитализирани изображения, мащабирани с над {value}%, откакто са дигитализирани: дигитализирайте ги отново
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	динамичен обект за бродерия: променете го в „Дигитализиране на изображение…“ (Обект › Трасиране на изображение)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Това биха били над {count} промени на области – най-многото, които приема един дизайн.

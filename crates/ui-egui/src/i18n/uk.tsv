@@ -7153,3 +7153,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Татамі, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Відкриває вкладку «Вишивка» в «Параметрах документа». Це вікно повернеться, коли «Параметри документа» буде закрито.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} мм
+embroidery	Chosen for this area	Вибрано для цієї області
+embroidery	Sewn along its middle as one running line	Вишивається посередині однією лінією прямого стібка
+embroidery	No part wider than {width} mm	Жодна частина не ширша за {width} мм
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Ширша за {width} мм: татамі, вужчі частини гладдю
+embroidery	Wider than {width} mm: tatami	Ширша за {width} мм: татамі
+embroidery	Its long parts as satin, the rest tatami	Довгі частини гладдю, решта татамі
+embroidery	Too short for satin	Закоротка для гладі
+embroidery	Too short for satin: sewn as tatami	Закоротка для гладі: шиється татамі
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Для гладі потрібна лінія завширшки щонайменше {least} мм: ця — {width} мм.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Гладь вишиває частини завширшки до {most} мм: ця область завширшки {width} мм.
+@plural	about {count} stitch|about {count} stitches	приблизно {count} стібок|приблизно {count} стібки|приблизно {count} стібків
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Застосувати до {count} схожої області|Застосувати до {count} схожих областей|Застосувати до {count} схожих областей
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Задає стібок і кут цієї області областям того самого кольору й виду приблизно того самого розміру.
+embroidery	Show in Sewing Order	Показати в порядку вишивання
+embroidery	Dims what is sewn after this area.	Приглушує те, що вишивається після цієї області.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Вишивається {number}-ю з {of}, після «{before}», перед «{after}»
+embroidery	Sewn {number} of {of}, before {after}	Вишивається {number}-ю з {of}, перед «{after}»
+embroidery	Sewn {number} of {of}, after {before}	Вишивається {number}-ю з {of}, після «{before}»
+embroidery	Sewn {number} of {of}	Вишивається {number}-ю з {of}
+embroidery	Previous area in sewing order	Попередня область у порядку вишивання
+embroidery	Next area in sewing order	Наступна область у порядку вишивання
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Зміни областей
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Клацніть область у перегляді, щоб змінити її стібок чи кут або пропустити її. Решта лишається автоматичною.
+embroidery	Remove this change	Вилучити цю зміну
+embroidery	Reset All	Скинути все
+embroidery	Another color lies here now	Тут тепер інший колір
+embroidery	No area here now	Тут тепер немає області
+embroidery	Its area is a line now	Її область тепер лінія
+embroidery	Its area is filled now	Її область тепер заливка
+embroidery	Its color isn't sewn	Її колір не вишивається
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Зберегти як динамічний об’єкт
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Зберігає зображення разом зі створеними з нього об’єктами, щоб «Оцифрувати зображення…» могло знову їх змінити.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Його об’єкти змінено вручну. Повторне оцифрування замінить ці зміни; «Скасувати» поверне їх.
+embroidery	Replace	Замінити
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Не вдалося прочитати налаштування цього динамічного об’єкта: вікно починає зі стандартних значень.
+embroidery	Edit in Digitize Image…	Змінити в «Оцифрувати зображення»…
+embroidery	Live digitized image	Динамічне оцифроване зображення
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Створено динамічний об’єкт: {objects} ({threads}). «Оцифрувати зображення…» знову його змінить; «Скасувати» його прибере.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Не замінювати
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Цей динамічний об’єкт створено в іншій палітрі ниток: його кольори знову зіставляються з палітрою документа.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Динамічні оцифровані зображення, масштабовані більш ніж на {value} % після оцифрування: оцифруйте їх знову
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	динамічний об’єкт вишивки: змініть його в «Оцифрувати зображення…» (Об’єкт › Трасування зображення)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Це було б понад {count} змін областей — найбільше, що приймає один дизайн.

@@ -53,7 +53,8 @@ impl Embroidery {
         if a == Affine::IDENTITY {
             return;
         }
-        let Self { stitches, trim_after: _, stop_after: _, fill, stroke, original, extra, unread: _ } = self;
+        // A live object's digitizing is in its source image's frame: no transform moves it.
+        let Self { stitches, trim_after: _, stop_after: _, fill, stroke, original, digitizing: _, extra, unread: _ } = self;
         for part in [fill, stroke].into_iter().flatten() {
             part.transform(a);
         }

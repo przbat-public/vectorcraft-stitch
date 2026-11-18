@@ -34,7 +34,7 @@ use vectorcraft_pathops::{BoolOp, Cap, Join, outline_stroke, try_boolean, try_un
 use super::centre::CentreLine;
 use super::colours::Colours;
 use super::order::Order;
-use super::regions::{NONE, Regions, nearest};
+use super::regions::{NONE, Regions, nearest, widest_of};
 use super::rules::Areas;
 use crate::Result;
 
@@ -86,6 +86,11 @@ pub(super) struct Shapes {
     pub(super) doubled_px: f64,
     /// How many shapes the path operations couldn't join or grow (each left as it was).
     pub(super) failed: usize,
+    /// Each area's widest part as it is made (working pixels), what satin's width is measured on:
+    /// its pixels with those of the islands it is made solid under and its shares of the centre
+    /// lines it grows under, measured as an area's own widest is (`super::regions::widest_of`); its
+    /// own widest where it is made as traced. The overlap along its other edges is satin's to add.
+    pub(super) widest_px: Vec<f64>,
 }
 
 /// The union of `paths`, refit to [`PRECISION_PX`]; `None` when the path operations refuse it.
@@ -333,7 +338,8 @@ pub(super) fn shaped(
 ) -> Result<Shapes> {
     let n = areas.areas.len();
     let line = |a: usize| lines.get(a).is_some_and(Option::is_some);
-    let sewn = |a: usize| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(super::colours::Colour::sewn);
+    // Sewn: by its colour, and no change to it alone leaving it out.
+    let sewn = |a: usize| areas.areas.get(a).is_some_and(|x| x.sewn(colours));
     let background = |a: usize| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(|r| r.background);
     let mut failed = 0usize;
     // Each area's own shape: its traced path, joined with those that joined it.
@@ -413,8 +419,8 @@ pub(super) fn shaped(
     // later strip there gives way to those it may overlap.
     let mut taken: Vec<Vec<(Rect, PathData)>> = vec![Vec::new(); n];
     let any_line = lines.iter().any(Option::is_some);
+    let shares = if any_line { line_shares(&areas.regions, &line, &|a| sewn(a) && !line(a), line_reach_px)? } else { Vec::new() };
     if overlap_px > 0.0 || any_line {
-        let shares = if any_line { line_shares(&areas.regions, &line, &|a| sewn(a) && !line(a), line_reach_px)? } else { Vec::new() };
         let map_w = areas.regions.w as usize;
         for &a in &order.sewn {
             vectorcraft_doc::cancel::check()?;
@@ -487,5 +493,91 @@ pub(super) fn shaped(
             }
         }
     }
-    Ok(Shapes { shapes, own, grown_under, doubled_px, failed })
+    // Measured on the lines each area was grown under, the union made (`grown_under`).
+    let widest_px = made_widest(areas, &over, &grown_under, &shares, &line)?;
+    Ok(Shapes { shapes, own, grown_under, doubled_px, failed, widest_px })
+}
+
+/// Each area's widest part as it is made (working pixels; [`Shapes::widest_px`]): `over` lists the
+/// islands each area is made solid under (each sewn over it, and in turn those sewn over them),
+/// `under` the areas each was grown under (the union made), `shares` each centre line's pixels by
+/// the area they go to, `line` which areas are lines; the half pixel a band reaches past its share
+/// added where an area takes any. An area made as traced keeps its own widest. A cancel stops it
+/// between areas.
+fn made_widest(
+    areas: &Areas,
+    over: &[Vec<usize>],
+    under: &[Vec<usize>],
+    shares: &[BTreeMap<usize, Vec<usize>>],
+    line: &dyn Fn(usize) -> bool,
+) -> Result<Vec<f64>> {
+    let regions = &areas.regions;
+    let (w, n) = (regions.w as usize, areas.areas.len());
+    // Which areas the shape being measured holds: one buffer for every area, each mark taken back
+    // after its measure, so that a picture of many areas costs no buffer an area.
+    let mut held = vec![false; n];
+    let mut out = Vec::with_capacity(n);
+    for a in 0..n {
+        let own = regions.areas.get(a).map_or(0.0, |s| s.widest_px);
+        let islands = over.get(a).is_some_and(|o| !o.is_empty());
+        // Its shares of the centre lines sewn after it.
+        let taken: Vec<&[usize]> = under
+            .get(a)
+            .into_iter()
+            .flatten()
+            .filter(|&&b| line(b))
+            .filter_map(|&b| shares.get(b).and_then(|s| s.get(&a)))
+            .map(Vec::as_slice)
+            .collect();
+        let Some(stats) = regions.areas.get(a).filter(|_| islands || !taken.is_empty()) else {
+            out.push(own);
+            continue;
+        };
+        vectorcraft_doc::cancel::check()?;
+        // The islands it is made solid under, as the shapes join them: each sewn over the one it
+        // lies in, from the area down.
+        if let Some(h) = held.get_mut(a) {
+            *h = true;
+        }
+        let mut marked = vec![a];
+        let mut next = 0;
+        while let Some(&x) = marked.get(next) {
+            next += 1;
+            for &k in over.get(x).into_iter().flatten() {
+                if let Some(h) = held.get_mut(k).filter(|h| !**h) {
+                    *h = true;
+                    marked.push(k);
+                }
+            }
+        }
+        // Its box, widened to the line pixels it takes.
+        let mut bbox = stats.bbox.map(|v| v as usize);
+        for &i in taken.iter().copied().flatten() {
+            let (x, y) = (i % w.max(1), i / w.max(1));
+            bbox = [bbox[0].min(x), bbox[1].min(y), bbox[2].max(x + 1), bbox[3].max(y + 1)];
+        }
+        let [x0, y0, x1, y1] = bbox;
+        let (bw, bh) = (x1.saturating_sub(x0), y1.saturating_sub(y0));
+        let mut mask: Vec<bool> = (0..bw * bh)
+            .map(|i| {
+                let label = regions.labels.get((y0 + i / bw.max(1)) * w + x0 + i % bw.max(1)).copied();
+                label.is_some_and(|l| held.get(l as usize).copied().unwrap_or(false))
+            })
+            .collect();
+        for &i in taken.iter().copied().flatten() {
+            let (x, y) = (i % w.max(1), i / w.max(1));
+            if let Some(m) = (x >= x0 && y >= y0).then(|| (y - y0) * bw + (x - x0)).and_then(|j| mask.get_mut(j)) {
+                *m = true;
+            }
+        }
+        for x in marked {
+            if let Some(h) = held.get_mut(x) {
+                *h = false;
+            }
+        }
+        // A band reaches half a pixel past its share on its line's side (`share_band`).
+        let past = if taken.is_empty() { 0.0 } else { 2.0 * PAST_MIDDLE_PX };
+        out.push(widest_of(&mask, bw, bh).max(own) + past);
+    }
+    Ok(out)
 }

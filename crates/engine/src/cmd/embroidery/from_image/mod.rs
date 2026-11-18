@@ -42,11 +42,13 @@
 
 mod background;
 mod centre;
+mod changes;
 mod colours;
 mod command;
 mod create;
 mod flat;
 mod inside;
+mod live;
 mod order;
 mod outlines;
 mod overlap;
@@ -61,7 +63,14 @@ mod window;
 mod working;
 
 pub(super) use command::digitize_image;
-pub use pipeline::{AreaFacts, Outputs, Pipeline, Place, StageId, WindowRequest};
+pub use command::digitizing_target;
+pub use live::{edited as live_edited, live_digitizing, live_settings};
+pub(crate) use live::{live_object_of, live_scale_since};
+pub use pipeline::{
+    AreaFacts, AreaKey, ChangeState, Outputs, Pipeline, Place, SATIN_AREA_MOST_MM, SATIN_LINE_LEAST_MM, SatinOffer, SatinParts, SewingPlace, StageId,
+    WindowRequest,
+};
+pub use settings::MAX_AREA_CHANGES;
 pub use working::WORKING_PX_PER_MM;
 
 #[cfg(test)]
@@ -69,11 +78,15 @@ mod tests;
 #[cfg(test)]
 mod tests_areas;
 #[cfg(test)]
+mod tests_changes;
+#[cfg(test)]
 mod tests_colours;
 #[cfg(test)]
 mod tests_create;
 #[cfg(test)]
 mod tests_lines;
+#[cfg(test)]
+mod tests_live;
 #[cfg(test)]
 mod tests_outlines;
 #[cfg(test)]

@@ -7588,3 +7588,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Avaa Asiakirjan asetusten Kirjonta-välilehden. Tämä ikkuna palaa, kun Asiakirjan asetukset suljetaan.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Valittu tälle alueelle
+embroidery	Sewn along its middle as one running line	Kirjotaan keskeltä yhtenä suorapistoviivana
+embroidery	No part wider than {width} mm	Mikään osa ei ole yli {width} mm leveä
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Yli {width} mm leveä: tatami, kapeammat osat satiinina
+embroidery	Wider than {width} mm: tatami	Yli {width} mm leveä: tatami
+embroidery	Its long parts as satin, the rest tatami	Pitkät osat satiinina, loput tatamina
+embroidery	Too short for satin	Liian lyhyt satiinille
+embroidery	Too short for satin: sewn as tatami	Liian lyhyt satiinille: ommellaan tatamina
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satiini vaatii vähintään {least} mm leveän viivan: tämä on {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satiini kirjoo enintään {most} mm leveitä osia: tämä alue on {width} mm leveä.
+@plural	about {count} stitch|about {count} stitches	noin {count} pisto|noin {count} pistoa
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Käytä {count} samankaltaiselle alueelle|Käytä {count} samankaltaiselle alueelle
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Asettaa tämän alueen piston ja kulman samanvärisille ja -tyyppisille, suunnilleen samankokoisille alueille.
+embroidery	Show in Sewing Order	Näytä ompelujärjestyksessä
+embroidery	Dims what is sewn after this area.	Himmentää sen, mikä ommellaan tämän alueen jälkeen.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Ommellaan {number}/{of}, jälkeen: {before}, ennen: {after}
+embroidery	Sewn {number} of {of}, before {after}	Ommellaan {number}/{of}, ennen: {after}
+embroidery	Sewn {number} of {of}, after {before}	Ommellaan {number}/{of}, jälkeen: {before}
+embroidery	Sewn {number} of {of}	Ommellaan {number}/{of}
+embroidery	Previous area in sewing order	Edellinen alue ompelujärjestyksessä
+embroidery	Next area in sewing order	Seuraava alue ompelujärjestyksessä
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Aluekohtaiset muutokset
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Napsauta esikatselussa aluetta muuttaaksesi sen pistoa tai kulmaa tai jättääksesi sen pois. Muu pysyy automaattisena.
+embroidery	Remove this change	Poista tämä muutos
+embroidery	Reset All	Palauta kaikki
+embroidery	Another color lies here now	Tässä on nyt toinen väri
+embroidery	No area here now	Tässä ei ole nyt aluetta
+embroidery	Its area is a line now	Sen alue on nyt viiva
+embroidery	Its area is filled now	Sen alue on nyt täytetty
+embroidery	Its color isn't sewn	Sen väriä ei kirjota
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Säilytä dynaamisena objektina
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Säilyttää kuvan siitä tehtyjen objektien kanssa, jotta Digitoi kuva… voi muuttaa niitä uudelleen.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Sen objekteja on muutettu käsin. Uudelleen digitointi korvaa nämä muutokset; Kumoa palauttaa ne.
+embroidery	Replace	Korvaa
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Tämän dynaamisen objektin asetuksia ei voitu lukea: ikkuna alkaa oletusarvoista.
+embroidery	Edit in Digitize Image…	Muokkaa Digitoi kuva -ikkunassa…
+embroidery	Live digitized image	Dynaaminen digitoitu kuva
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Luotiin dynaaminen objekti: {objects} ({threads}). Digitoi kuva… muuttaa sitä uudelleen; Kumoa poistaa sen.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Älä korvaa
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Tämä dynaaminen objekti tehtiin toisessa lankapaletissa: sen värit sovitetaan uudelleen asiakirjan palettiin.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Dynaamiset digitoidut kuvat, skaalattu yli {value} % digitoinnin jälkeen: digitoi ne uudelleen
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	dynaaminen kirjontaobjekti: muuta sitä kohdassa ”Digitoi kuva…” (Objekti › Kuvan jäljitys)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Siitä tulisi yli {count} aluekohtaista muutosta, enemmän kuin kuvio ottaa.

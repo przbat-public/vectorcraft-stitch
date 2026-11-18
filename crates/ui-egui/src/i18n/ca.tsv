@@ -7533,3 +7533,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Obre la pestanya Brodat de Configuració del document. Aquesta finestra torna quan es tanca Configuració del document.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Triat per a aquesta àrea
+embroidery	Sewn along its middle as one running line	Es brodeja pel mig com una sola línia de punt endavant
+embroidery	No part wider than {width} mm	Cap part més ampla de {width} mm
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Més ampla de {width} mm: tatami, les parts més estretes en setí
+embroidery	Wider than {width} mm: tatami	Més ampla de {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Les parts llargues en setí, la resta tatami
+embroidery	Too short for satin	Massa curta per al setí
+embroidery	Too short for satin: sewn as tatami	Massa curta per al setí: es cus en tatami
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	El setí necessita una línia d’almenys {least} mm d’amplada: aquesta fa {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	El setí brodeja parts de fins a {most} mm: aquesta àrea fa {width} mm d’amplada.
+@plural	about {count} stitch|about {count} stitches	aprox. {count} puntada|aprox. {count} puntades
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Aplica a {count} àrea semblant|Aplica a {count} àrees semblants
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Aplica el punt i l’angle d’aquesta àrea a les àrees del seu color i tipus i de mida semblant.
+embroidery	Show in Sewing Order	Mostra en l’ordre de cosit
+embroidery	Dims what is sewn after this area.	Atenua el que es cus després d’aquesta àrea.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Es cus en la posició {number} de {of}, després de {before}, abans de {after}
+embroidery	Sewn {number} of {of}, before {after}	Es cus en la posició {number} de {of}, abans de {after}
+embroidery	Sewn {number} of {of}, after {before}	Es cus en la posició {number} de {of}, després de {before}
+embroidery	Sewn {number} of {of}	Es cus en la posició {number} de {of}
+embroidery	Previous area in sewing order	Àrea anterior en l’ordre de cosit
+embroidery	Next area in sewing order	Àrea següent en l’ordre de cosit
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Canvis d’àrees
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Feu clic en una àrea de la previsualització per canviar-ne el punt o l’angle, o per ometre-la. La resta es manté automàtica.
+embroidery	Remove this change	Elimina aquest canvi
+embroidery	Reset All	Restableix-ho tot
+embroidery	Another color lies here now	Ara aquí hi ha un altre color
+embroidery	No area here now	Ara aquí no hi ha cap àrea
+embroidery	Its area is a line now	La seva àrea ara és una línia
+embroidery	Its area is filled now	La seva àrea ara és plena
+embroidery	Its color isn't sewn	El seu color no es brodeja
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Conserva com a objecte dinàmic
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Conserva la imatge amb els objectes que se n’han fet, perquè «Digitalitza la imatge…» els pugui tornar a canviar.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Els seus objectes s’han canviat a mà. Tornar-lo a digitalitzar substitueix aquests canvis; Desfés els recupera.
+embroidery	Replace	Substitueix
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	No s’han pogut llegir els paràmetres d’aquest objecte dinàmic: la finestra comença amb els valors per defecte.
+embroidery	Edit in Digitize Image…	Edita a «Digitalitza la imatge»…
+embroidery	Live digitized image	Imatge digitalitzada dinàmica
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	S’ha creat un objecte dinàmic: {objects} ({threads}). «Digitalitza la imatge…» el torna a canviar; Desfés el suprimeix.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	No substitueixis
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Aquest objecte dinàmic es va fer amb una altra paleta de fils: els seus colors es tornen a associar amb la paleta del document.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Imatges digitalitzades dinàmiques escalades més d’un {value} % des que es van digitalitzar: torneu-les a digitalitzar
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	un objecte de brodat dinàmic: canvieu-lo a «Digitalitza la imatge…» (Objecte › Traçat d’imatge)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Això serien més de {count} canvis d’àrees, el màxim que admet un disseny.

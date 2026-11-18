@@ -7154,3 +7154,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Mở thẻ Thêu của Thiết lập tài liệu. Cửa sổ này quay lại khi Thiết lập tài liệu đóng.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Đã chọn cho vùng này
+embroidery	Sewn along its middle as one running line	Thêu dọc giữa thành một đường mũi chạy
+embroidery	No part wider than {width} mm	Không phần nào rộng hơn {width} mm
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Rộng hơn {width} mm: tatami, các phần hẹp hơn thành satin
+embroidery	Wider than {width} mm: tatami	Rộng hơn {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Các phần dài thành satin, phần còn lại tatami
+embroidery	Too short for satin	Quá ngắn để may satin
+embroidery	Too short for satin: sewn as tatami	Quá ngắn để may satin: may tatami
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin cần đường rộng ít nhất {least} mm: đường này rộng {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin thêu các phần rộng tới {most} mm: vùng này rộng {width} mm.
+@plural	about {count} stitch|about {count} stitches	khoảng {count} mũi
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Áp dụng cho {count} vùng tương tự
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Đặt mũi và góc của vùng này cho các vùng cùng màu, cùng loại và có kích thước tương tự.
+embroidery	Show in Sewing Order	Hiện trong thứ tự thêu
+embroidery	Dims what is sewn after this area.	Làm mờ những gì được thêu sau vùng này.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Thêu thứ {number}/{of}, sau {before}, trước {after}
+embroidery	Sewn {number} of {of}, before {after}	Thêu thứ {number}/{of}, trước {after}
+embroidery	Sewn {number} of {of}, after {before}	Thêu thứ {number}/{of}, sau {before}
+embroidery	Sewn {number} of {of}	Thêu thứ {number}/{of}
+embroidery	Previous area in sewing order	Vùng trước trong thứ tự thêu
+embroidery	Next area in sewing order	Vùng tiếp theo trong thứ tự thêu
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Thay đổi vùng
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Nhấp vào một vùng trong bản xem trước để đổi mũi hoặc góc của nó, hoặc bỏ qua nó. Phần còn lại vẫn tự động.
+embroidery	Remove this change	Xóa thay đổi này
+embroidery	Reset All	Đặt lại tất cả
+embroidery	Another color lies here now	Giờ đây ở đây là màu khác
+embroidery	No area here now	Giờ đây ở đây không có vùng nào
+embroidery	Its area is a line now	Vùng của nó giờ là một đường
+embroidery	Its area is filled now	Vùng của nó giờ được tô
+embroidery	Its color isn't sewn	Màu của nó không được thêu
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Giữ làm đối tượng động
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Giữ hình ảnh cùng các đối tượng tạo từ nó, để “Số hóa hình ảnh…” có thể thay đổi chúng lần nữa.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Các đối tượng của nó đã được thay đổi thủ công. Số hóa lại sẽ thay thế những thay đổi đó; Hoàn tác sẽ khôi phục chúng.
+embroidery	Replace	Thay thế
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Không đọc được cài đặt của đối tượng động này: cửa sổ bắt đầu từ giá trị mặc định.
+embroidery	Edit in Digitize Image…	Sửa trong “Số hóa hình ảnh”…
+embroidery	Live digitized image	Hình ảnh số hóa động
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Đã tạo đối tượng động: {objects} ({threads}). “Số hóa hình ảnh…” sẽ thay đổi nó lần nữa; Hoàn tác sẽ gỡ bỏ nó.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Không thay thế
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Đối tượng động này được tạo bằng một bảng chỉ khác: màu của nó được ghép lại với bảng màu của tài liệu.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Hình ảnh số hóa động bị đổi tỷ lệ hơn {value}% kể từ khi số hóa: hãy số hóa lại
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	một đối tượng thêu động: hãy thay đổi nó trong “Số hóa hình ảnh…” (Đối tượng › Vector hóa ảnh)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Như vậy sẽ vượt quá {count} thay đổi vùng, mức tối đa một mẫu nhận.

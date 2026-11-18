@@ -70,7 +70,7 @@ pub const SHOW_MIN_BOX_MM: f64 = 10.0;
 
 /// The rules this version words itself, in the engine's order: any other the engine lists shows
 /// its own English title.
-pub const WORDED: [&str; 17] = [
+pub const WORDED: [&str; 18] = [
     "satinTooWide",
     "stitchTooLong",
     "formatStep",
@@ -83,6 +83,7 @@ pub const WORDED: [&str; 17] = [
     "layers",
     "pointMissed",
     "stitchesScaled",
+    "liveObjectScaled",
     "threadMismatch",
     "notSewn",
     "formatColors",
@@ -184,6 +185,7 @@ pub fn title(rule: &Value, format: &str, lang: Lang) -> String {
         ("layers", true) => crate::et!("{value} or more layers of stitches on one spot"),
         ("pointMissed", true) => crate::et!("Entry or exit points missed by more than {value} mm"),
         ("stitchesScaled", true) => crate::et!("Manual stitches or stitches from a file scaled by more than {value}%"),
+        ("liveObjectScaled", true) => crate::et!("Live digitized images scaled by more than {value}% since they were digitized: digitize them again"),
         ("threadMismatch", true) => crate::et!("Threads unlike the art's color (over {value})"),
         ("notSewn", _) if hits == 0 => crate::et!("Everything is sewn"),
         ("notSewn", _) => crate::et!("Art that isn't sewn"),
@@ -239,7 +241,7 @@ pub fn found(rule: &Value, lang: Lang) -> String {
             "layers" => crate::et!("At most {value} on one spot"),
             "threadMismatch" => crate::et!("Largest difference: {value}"),
             "pointMissed" => crate::et!("Largest miss: {value} mm"),
-            "stitchesScaled" => crate::et!("Largest change: {value}%"),
+            "stitchesScaled" | "liveObjectScaled" => crate::et!("Largest change: {value}%"),
             _ => crate::et!("No findings"),
         };
         let value = if id == "threadMismatch" { delta_e(&value) } else { value };
@@ -262,7 +264,8 @@ pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, h
     let value = measure(lang, &hit["value"]).unwrap_or_default();
     let record = hit["record"].as_u64().map(|n| numbers::count(lang, n)).unwrap_or_default();
     let name = || {
-        let object = hit["id"].as_u64()?;
+        // The object a hit is about: its unit's, or the one it names (a live object's).
+        let object = hit["id"].as_u64().or_else(|| hit_objects(hit).first().copied())?;
         let shown = doc.and_then(|d| d.node(NodeId(object))).map(|n| crate::panels::layers::shown_name(app, n, lang));
         Some(shown.unwrap_or_else(|| format!("#{object}")))
     };
@@ -279,7 +282,7 @@ pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, h
             let point = if hit["note"] == "exit" { crate::et!("Exit") } else { crate::et!("Entry") };
             fill(crate::et!("{name}, {point}: {value} mm"), &[("name", &name()?), ("point", point), ("value", &value)])
         }
-        "stitchesScaled" => {
+        "stitchesScaled" | "liveObjectScaled" => {
             let template = if hit["note"] == "smaller" { crate::et!("{name}: {value}% smaller") } else { crate::et!("{name}: {value}% larger") };
             fill(template, &[("name", &name()?), ("value", &value)])
         }
@@ -526,7 +529,17 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui, shown: Shown) {
         if now - since < SHOW_EMPHASIS_SECS {
             if let Some(planned) = app.embroidery.preview.shown(shown.uid).map(|s| &s.planned) {
                 if f.units.as_ref().is_none_or(|(g, _)| *g != planned.generation) {
-                    let objects: HashSet<u64> = f.objects.iter().copied().collect();
+                    let mut objects: HashSet<u64> = f.objects.iter().copied().collect();
+                    // A group shown (a live object a hit names) stands out by what it holds.
+                    if let Ok(st) = app.session.doc() {
+                        let mut inside: Vec<&vectorcraft_doc::Node> = f.objects.iter().filter_map(|o| st.doc.node(NodeId(*o))).collect();
+                        while let Some(n) = inside.pop() {
+                            for c in n.children().into_iter().flatten() {
+                                objects.insert(c.id.0);
+                                inside.push(c.as_ref());
+                            }
+                        }
+                    }
                     let units = planned
                         .plan
                         .units

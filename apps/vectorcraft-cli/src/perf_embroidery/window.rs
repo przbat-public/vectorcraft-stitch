@@ -9,7 +9,9 @@
 //! - the badge drawn 1,500 pixels wide (the working copy's largest) in logo mode, its first run;
 //! - that badge's working copy painted in its threads' colours, as the Colours view shows it;
 //! - a fabric chosen in the Stitches step after a first run: the objects and their stitches made;
-//! - the colour outlines and the border turned on after a first run: the same, with the outlines.
+//! - the colour outlines and the border turned on after a first run: the same, with the outlines;
+//! - one area left unsewn after a first run (as the inspector's Don't Sew changes it): the stages
+//!   from the shapes on made again, so that what lies inside it keeps its hole.
 
 use std::time::Instant;
 
@@ -21,7 +23,7 @@ use super::digitizing::{BADGE_COLORS, badge_at, placed_badge};
 use super::{RUNS, err, middle};
 
 /// The rows' names, in order (at most 42 characters, the report's column).
-pub(super) const ROWS: [&str; 8] = [
+pub(super) const ROWS: [&str; 9] = [
     "window: first run, badge, to its plan",
     "window: a thread chosen, trace kept",
     "window: six colours to five",
@@ -30,12 +32,13 @@ pub(super) const ROWS: [&str; 8] = [
     "window: painted raster, 1,500 px badge",
     "window: a fabric chosen, objects on",
     "window: outlines and border, objects on",
+    "window: an area left unsewn, shapes on",
 ];
 
 /// Each row's budget, milliseconds, in the order of [`ROWS`]: [`BUDGET_TIMES`] what each measured,
 /// as the other rows', so that a regression of that size shows; the kept run's is 1 ms, the least
 /// the report's whole-millisecond column shows (it measured well under a hundredth of that).
-pub(super) const BUDGETS: [f64; 8] = [
+pub(super) const BUDGETS: [f64; 9] = [
     MEASURED_MS[0] * BUDGET_TIMES,
     MEASURED_MS[1] * BUDGET_TIMES,
     MEASURED_MS[2] * BUDGET_TIMES,
@@ -44,6 +47,7 @@ pub(super) const BUDGETS: [f64; 8] = [
     MEASURED_MS[5] * BUDGET_TIMES,
     MEASURED_MS[6] * BUDGET_TIMES,
     MEASURED_MS[7] * BUDGET_TIMES,
+    MEASURED_MS[8] * BUDGET_TIMES,
 ];
 
 /// How many times its measure a row's budget is: the embroidery rows' rule.
@@ -58,8 +62,11 @@ const KEPT_BUDGET_MS: f64 = 1.0;
 /// 1,500-pixel badge in logo mode 564, its painted raster 0.91; on 2026-11-13 at a load of about
 /// 2.6, a fabric chosen 8.43 (the objects and their stitches made again) and the outlines and the
 /// border turned on 1.13 (the planning service the window shares already holds the areas' plans, so
-/// only the outline objects are planned, an object a line).
-const MEASURED_MS: [f64; 8] = [228.0, 93.4, 222.0, 0.0, 564.0, 0.91, 8.43, 1.13];
+/// only the outline objects are planned, an object a line); on 2026-11-17 at a load of about 2.5, an
+/// area left unsewn 58.2 (the stages from the shapes on made again, as Don't Sew may leave a hole in
+/// what lies round the area; it measured 4.21 on 2026-11-16, when an area changed made the objects
+/// again alone).
+const MEASURED_MS: [f64; 9] = [228.0, 93.4, 222.0, 0.0, 564.0, 0.91, 8.43, 1.13, 58.2];
 
 /// The large badge's resolution (pixels a millimetre): 1,500 pixels over its 108 mm with its
 /// margins, the working copy's largest side.
@@ -144,5 +151,19 @@ pub(super) fn times() -> Result<Vec<f64>, String> {
     ms.push(middle(painted));
     ms.push(timed(&s, &base, Some(&json!({"colors": BADGE_COLORS, DOCUMENT: {"fabric": "denim"}})))?);
     ms.push(timed(&s, &base, Some(&json!({"colors": BADGE_COLORS, "colorOutlines": true, "border": true})))?);
+    ms.push(timed(&s, &base, Some(&area_changed(&s, &base)?))?);
     Ok(ms)
+}
+
+/// `base` with one area change: the badge's first area in sewing order left unsewn, kept by its
+/// point, colour and kind as the inspector writes it.
+fn area_changed(s: &Session, base: &Value) -> Result<Value, String> {
+    let id = image(s)?;
+    let out = s.digitize_pipeline().run(&request(s, id, base)?, &|_, _| true, &mut |_, _, _| {}).map_err(err)?;
+    let key = out.first_key().ok_or("perf: the badge has no area")?;
+    let [r, g, b] = key.color;
+    let change = json!({"at": key.at, "color": format!("#{r:02x}{g:02x}{b:02x}"), "kind": if key.line { "line" } else { "fill" }, "stitch": "none"});
+    let mut changed = base.as_object().cloned().ok_or("perf: the settings aren't an object")?;
+    changed.insert("areaChanges".into(), json!([change]));
+    Ok(Value::Object(changed))
 }

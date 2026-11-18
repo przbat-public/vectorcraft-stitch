@@ -252,7 +252,8 @@ fn a_colours_job_decides_whether_its_lines_are_centre_lines() {
     // the mismatch line of it.
     assert!(areas_of(&r, NAVY).is_empty() || areas_of(&r, NAVY).iter().all(|a| a["line"].is_null()), "{}", r["areas"]);
     let line_of = |r: &Value| r["areas"].as_array().unwrap().iter().find(|a| a["kind"] == json!("line")).cloned();
-    assert!(line_of(&r).is_some_and(|a| a["line"].is_null()), "a Fill colour's line is no centre line: {}", r["areas"]);
+    let listed = r["areas"].as_array().unwrap();
+    assert!(line_of(&r).is_none() && listed.iter().all(|a| a["line"].is_null()), "a Fill colour's line is made a fill: {}", r["areas"]);
     let created = digitize(&mut s, fill, false)["created"].clone();
     let filled = made(&s, &created);
     assert!(filled[0].appearance.items.iter().any(|i| matches!(i, vectorcraft_doc::AppearanceItem::Fill(_))));

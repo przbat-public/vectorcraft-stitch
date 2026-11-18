@@ -17,7 +17,11 @@
 //! inherit: `fill` sets its fill's narrowAsSatin to none (tatami, its narrow parts too), `none` sets
 //! its fill (a centre line's stroke) not to be sewn, and a centre line's stroke as wide as a satin
 //! column (a thin line widened where its lines meet, or any line of a colour sewn as `lines`) is
-//! set to a running line. Everything else stays unset (Auto, following the document's fabric).
+//! set to a running line. A change to the area (`areaChanges`, found again by `super::changes`)
+//! sets its own over that: a filled area as tatami (narrowAsSatin none), as satin (narrowAsSatin
+//! its widest part with the overlap it may grow by, at most 12 mm) or not sewn, its rows at an
+//! angle; a line as a running stitch, as satin or not sewn. Everything else stays unset (Auto,
+//! following the document's fabric).
 //!
 //! The outlines asked for (`super::outlines`) come last, each kind in a block of its own, in the
 //! outline thread (the one chosen, else the darkest of the threads the colours are sewn in): the
@@ -47,9 +51,10 @@ use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::{Palette, PaletteThread};
 
 use super::super::digitize::{printed, shows};
+use super::changes::Applied;
 use super::colours::Colours;
 use super::outlines::Chain;
-use super::settings::{C, Job, OutlineSettings};
+use super::settings::{AreaStitch, C, Job, OutlineSettings, Settings};
 use super::stages::Digitized;
 use crate::cmd::bad;
 use crate::cmd::buildcmds::TRACE_NAME;
@@ -62,6 +67,13 @@ pub(super) const NOT_SEWN: &str = "none";
 /// The stitch id of a part sewn as a running line ([`super::super::resolve::Stitch::IDS`]).
 pub(super) const RUNNING: &str = "running";
 
+/// The stitch id of a part sewn as satin ([`super::super::resolve::Stitch::IDS`]).
+pub(super) const SATIN: &str = "satin";
+
+/// How finely the satin width of an area changed to satin is set: in tenths of a millimetre, as
+/// the Object tab's narrow-parts-as-satin field takes it (one decimal), rounded up.
+const SATIN_STEPS_PER_MM: f64 = 10.0;
+
 /// How wide a stroke the planner sews as a satin column by default (millimetres).
 const SATIN_MIN_WIDTH: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 
@@ -70,15 +82,23 @@ const SATIN_MIN_WIDTH: f64 = vectorcraft_stitch::plan::SATIN_MIN_WIDTH;
 pub(super) const NO_SATIN_MM: f64 = vectorcraft_stitch::plan::NARROW_RANGE.0;
 
 /// What Create made: the design's group, the layer holding the image (the new template layer, or
-/// the one it stayed on), how many objects and colour blocks the design is, and what its outlines
-/// came to.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// the one it stayed on) and whether Create added it, the image's id and the transform that places
+/// it as the design is scaled (an upstream Image Trace object left where its place isn't sewn keeps
+/// its own: a live object made of it takes a copy placed so), how many objects and colour blocks
+/// the design is, what its outlines came to, the object each area was made into (its place in the
+/// areas, the object's id), and whether the design is a live object (`super::live`).
+#[derive(Clone, Debug, PartialEq)]
 pub(super) struct Made {
     pub(super) group: NodeId,
     pub(super) layer: NodeId,
+    pub(super) added_layer: bool,
+    pub(super) image: NodeId,
+    pub(super) image_xf: Affine,
     pub(super) objects: usize,
     pub(super) blocks: usize,
     pub(super) outlined: Option<Outlined>,
+    pub(super) areas: Arc<[(usize, NodeId)]>,
+    pub(super) live: bool,
 }
 
 /// The lines of one kind of outline, each an object: how many, and how long (millimetres).
@@ -112,16 +132,18 @@ const COLOUR_OUTLINES_NAME: &str = "Color outlines";
 const BORDER_NAME: &str = "Border";
 
 /// The thread outlines are sewn in, by its number in `palette`: `chosen`, else the darkest (the
-/// least CIE L*, the lower number first) of the threads `colours` are sewn in; `None` when none is.
-pub(super) fn outline_thread(chosen: Option<PaletteThread>, colours: &Colours, palette: Palette) -> Option<usize> {
+/// least CIE L*, the lower number first) of the threads `colours` are sewn in, a colour whose areas
+/// changes all leave out (`sewn_px`, the pixels each sews by its row) aside; `None` when none is.
+pub(super) fn outline_thread(chosen: Option<PaletteThread>, colours: &Colours, sewn_px: &[usize], palette: Palette) -> Option<usize> {
     if let Some(t) = chosen {
         return Some(t.index());
     }
     colours
         .rows
         .iter()
-        .filter(|r| r.sewn())
-        .filter_map(|r| r.thread.as_ref().map(|m| m.thread.index))
+        .enumerate()
+        .filter(|(i, r)| r.sewn() && sewn_px.get(*i).is_some_and(|&p| p > 0))
+        .filter_map(|(_, r)| r.thread.as_ref().map(|m| m.thread.index))
         .filter_map(|i| palette.get(i).map(|(rgb, _)| (i, vectorcraft_stitch::color::lab(rgb).l)))
         .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
         .map(|(i, _)| i)
@@ -162,7 +184,7 @@ fn add_outlines(
     if !asked.colour && !asked.border {
         return Ok(None);
     }
-    let Some(thread) = outline_thread(asked.thread, d.colours(), palette) else { return Ok(None) };
+    let Some(thread) = outline_thread(asked.thread, d.colours(), &d.sewn_pixels(), palette) else { return Ok(None) };
     let Some(([r, g, b], _)) = palette.get(thread) else { return Ok(None) };
     let color = Color::rgb8(r, g, b);
     let found = super::outlines::outlined(d, !asked.border)?;
@@ -188,28 +210,57 @@ fn add_outlines(
     Ok(Some(out))
 }
 
-/// The settings an area of a colour sewn as `job` is given: none for Auto, nor for an area of a
-/// colour sewn as Lines that has no centre line (a dot, which thins to no piece: sewn as the area
-/// it is).
-fn settings_for(job: Job) -> Option<Embroidery> {
-    let fill = match job {
-        Job::Auto | Job::Lines => return None,
+/// The settings a filled area of a colour sewn as `job` is given, with `change` (the area's own
+/// stitch and angle) over them: none for Auto with no change, nor for an area of a colour sewn as
+/// Lines that has no centre line (a dot, which thins to no piece: sewn as the area it is); satin
+/// sets narrow parts as satin to `satin_mm` ([`satin_width`]).
+fn settings_for(job: Job, change: Option<Applied>, satin_mm: f64) -> Option<Embroidery> {
+    let mut fill = match job {
+        Job::Auto | Job::Lines => PartSettings::default(),
         Job::Fill => PartSettings { narrow_as_satin: Some(NO_SATIN_MM), ..Default::default() },
         Job::None => PartSettings { stitch: Some(NOT_SEWN.into()), ..Default::default() },
     };
-    Some(Embroidery { fill: Some(Box::new(fill)), ..Default::default() })
+    if let Some(c) = change {
+        match c.stitch {
+            Some(AreaStitch::Tatami) => fill.narrow_as_satin = Some(NO_SATIN_MM),
+            Some(AreaStitch::Satin) => fill.narrow_as_satin = Some(satin_mm),
+            Some(AreaStitch::None) => fill.stitch = Some(NOT_SEWN.into()),
+            Some(AreaStitch::Running) | None => {}
+        }
+        if let Some(angle) = c.angle {
+            fill.angle = Some(angle);
+        }
+    }
+    (fill != PartSettings::default()).then(|| Embroidery { fill: Some(Box::new(fill)), ..Default::default() })
+}
+
+/// How wide narrow parts as satin is set on a filled area changed to satin (millimetres): its
+/// widest part `widest_mm` and the overlap `overlap_mm` it may grow by on either side, rounded up
+/// to a tenth of a millimetre, so that all of it is sewn as satin columns; at most the setting's
+/// most (`plan::NARROW_RANGE`, 12 mm), past which its wider parts stay tatami.
+pub(super) fn satin_width(widest_mm: f64, overlap_mm: f64) -> f64 {
+    let (least, most) = vectorcraft_stitch::plan::NARROW_RANGE;
+    let wanted = ((widest_mm + 2.0 * overlap_mm) * SATIN_STEPS_PER_MM).ceil() / SATIN_STEPS_PER_MM;
+    if wanted.is_finite() { wanted.clamp(least, most) } else { most }
 }
 
 /// The settings a centre line's stroke `width_pt` points wide, of a colour sewn as `job`, is given:
-/// not sewn for `none`; a running line where the stroke is as wide as a satin column
-/// (`plan::SATIN_MIN_WIDTH`, which the planner sews a stroke that wide as by default: a thin line
-/// whose junctions widen it, or any of a colour sewn as Lines); none for a narrower one, which the
-/// planner sews as a running line.
-fn line_settings_for(job: Job, width_pt: f64) -> Option<Embroidery> {
-    let stitch = match job {
-        Job::None => NOT_SEWN,
-        Job::Auto | Job::Lines if vectorcraft_stitch::pt_to_mm(width_pt) >= SATIN_MIN_WIDTH => RUNNING,
-        Job::Auto | Job::Lines | Job::Fill => return None,
+/// the stitch `change` asks (a running line, satin, or not sewn); else not sewn for `none`; a
+/// running line where the stroke is as wide as a satin column (`plan::SATIN_MIN_WIDTH`, which the
+/// planner sews a stroke that wide as by default: a thin line whose junctions widen it, or any of a
+/// colour sewn as Lines); none for a narrower one, which the planner sews as a running line.
+fn line_settings_for(job: Job, width_pt: f64, change: Option<Applied>) -> Option<Embroidery> {
+    let asked = match change.and_then(|c| c.stitch) {
+        Some(AreaStitch::Running) => Some(RUNNING),
+        Some(AreaStitch::Satin) => Some(SATIN),
+        Some(AreaStitch::None) => Some(NOT_SEWN),
+        Some(AreaStitch::Tatami) | None => None,
+    };
+    let stitch = match (asked, job) {
+        (Some(stitch), _) => stitch,
+        (None, Job::None) => NOT_SEWN,
+        (None, Job::Auto | Job::Lines) if vectorcraft_stitch::pt_to_mm(width_pt) >= SATIN_MIN_WIDTH => RUNNING,
+        (None, Job::Auto | Job::Lines | Job::Fill) => return None,
     };
     Some(Embroidery { stroke: Some(Box::new(PartSettings { stitch: Some(stitch.into()), ..Default::default() })), ..Default::default() })
 }
@@ -265,9 +316,14 @@ fn ordinary_layer_above(doc: &Document, below: NodeId) -> Option<NodeId> {
 /// The objects digitizing made of `target` (an image, or an Image Trace object) as `d` says, in
 /// `palette`'s threads, with the outlines `outlines` asks for, made in `doc` (this module's rules);
 /// `None`, and `doc` to be dropped, when there is nothing to make (every area is the background's).
-pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: Palette, outlines: OutlineSettings) -> Result<Option<Made>> {
+pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: Palette, settings: &Settings) -> Result<Option<Made>> {
+    let outlines = settings.outlines;
+    let found = super::changes::found(&settings.changes, d);
+    let changed = super::changes::per_area(&settings.changes, &found, d.areas().areas.len());
+    let mut made_of: Vec<(usize, NodeId)> = Vec::new();
     let src = doc.node(target).cloned().ok_or(EngineError::NoNode(target))?;
     let traced = matches!(src.kind, NodeKind::Group { .. }) && src.name.as_deref() == Some(TRACE_NAME);
+    let live_target = traced && super::live::live_digitizing(&src).is_some();
     let mut image = if traced { src.children().and_then(|c| c.first()).map(|c| (**c).clone()).ok_or(EngineError::NoNode(target))? } else { src };
     let NodeKind::Image(img) = &mut image.kind else {
         return Err(bad(C, "not an image: select an image, or an Image Trace object"));
@@ -297,11 +353,12 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         }
         let thread = row.thread.as_ref().map(|m| m.thread.index);
         let [r, g, b] = thread.and_then(|i| palette.get(i)).map_or(row.color, |(rgb, _)| rgb);
+        let change = changed.get(a).copied().flatten();
         let n = match d.lines().get(a).and_then(Option::as_ref) {
             Some(line) => {
                 let width = line_width(line, d.working().px_per_mm);
                 let mut n = line_node(doc, line, d.working().to_doc, width, Color::rgb8(r, g, b));
-                if let Some(e) = line_settings_for(row.job, width) {
+                if let Some(e) = line_settings_for(row.job, width, change) {
                     n.extras_mut().embroidery = Some(Box::new(e));
                 }
                 n
@@ -310,13 +367,18 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
                 let mut n = shape_node(doc, shape.transformed(d.working().to_doc), None);
                 n.appearance =
                     Appearance { items: vec![AppearanceItem::Fill(FillLayer::new(Paint::solid(Color::rgb8(r, g, b))))], ..Default::default() }.into();
-                if let Some(e) = settings_for(row.job) {
+                // Measured on the shape it is made as: the islands it is made solid under and its
+                // shares of the centre lines beside it in it (the shapes stage's).
+                let widest_px = d.shapes().widest_px.get(a).copied().or_else(|| d.areas().regions.areas.get(a).map(|s| s.widest_px));
+                let widest_mm = widest_px.unwrap_or(0.0) / d.working().px_per_mm;
+                if let Some(e) = settings_for(row.job, change, satin_width(widest_mm, settings.overlap)) {
                     n.extras_mut().embroidery = Some(Box::new(e));
                 }
                 n
             }
         };
         objects += 1;
+        made_of.push((a, n.id));
         match blocks.last_mut() {
             Some((t, sewn, list)) if *t == thread && *sewn == row.sewn() => list.push(Arc::new(n)),
             _ => blocks.push((thread, row.sewn(), vec![Arc::new(n)])),
@@ -344,10 +406,30 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
         doc.insert(Some(layer), usize::MAX, group)?;
         let NodeKind::Image(scaled) = &image.kind else { return Err(bad(C, "not an image: select an image, or an Image Trace object")) };
         let xf = scaled.xf;
-        if let Some(NodeKind::Image(img)) = doc.node_mut(image.id).map(|n| &mut n.kind) {
+        if live_target {
+            // A live object becomes its image there, shown, as a picture to work over: its old
+            // objects go, so that showing its place later sews no second design.
+            let (parent, index, _) = doc.position(target).ok_or(EngineError::NoNode(target))?;
+            doc.remove(target)?;
+            doc.insert(parent, index, image.clone())?;
+        } else if !traced && let Some(NodeKind::Image(img)) = doc.node_mut(image.id).map(|n| &mut n.kind) {
+            // An image stays where it is, scaled as the design is; an upstream Image Trace object
+            // stays as it is, its source image too, so that it still lies under its result.
             img.xf = xf;
         }
-        return Ok(Some(Made { group: id, layer: below, objects, blocks: count, outlined }));
+        let image = image.id;
+        return Ok(Some(Made {
+            group: id,
+            layer: below,
+            added_layer: false,
+            image,
+            image_xf: xf,
+            objects,
+            blocks: count,
+            outlined,
+            areas: made_of.into(),
+            live: false,
+        }));
     }
     let (parent, index, _) = doc.position(target).ok_or(EngineError::NoNode(target))?;
     doc.remove(target)?;
@@ -362,6 +444,20 @@ pub(super) fn made(doc: &mut Document, target: NodeId, d: &Digitized, palette: P
             *template = true;
         }
     }
+    let image_id = image.id;
+    let NodeKind::Image(scaled) = &image.kind else { return Err(bad(C, "not an image: select an image, or an Image Trace object")) };
+    let image_xf = scaled.xf;
     doc.insert(Some(layer), 0, image)?;
-    Ok(Some(Made { group: id, layer, objects, blocks: count, outlined }))
+    Ok(Some(Made {
+        group: id,
+        layer,
+        added_layer: true,
+        image: image_id,
+        image_xf,
+        objects,
+        blocks: count,
+        outlined,
+        areas: made_of.into(),
+        live: false,
+    }))
 }

@@ -7312,3 +7312,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Åbner fanen Broderi i Dokumentopsætning. Dette vindue kommer tilbage, når Dokumentopsætning lukkes.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Valgt til dette område
+embroidery	Sewn along its middle as one running line	Broderes langs midten som én linje forsting
+embroidery	No part wider than {width} mm	Ingen del er bredere end {width} mm
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Bredere end {width} mm: tatami, de smallere dele som satin
+embroidery	Wider than {width} mm: tatami	Bredere end {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	De lange dele som satin, resten tatami
+embroidery	Too short for satin	For kort til satin
+embroidery	Too short for satin: sewn as tatami	For kort til satin: sys som tatami
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin kræver en linje på mindst {least} mm: denne er {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin syr dele op til {most} mm: dette område er {width} mm bredt.
+@plural	about {count} stitch|about {count} stitches	ca. {count} sting|ca. {count} sting
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Anvend på {count} lignende område|Anvend på {count} lignende områder
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Giver områder i samme farve og slags og omtrent samme størrelse dette områdes sting og vinkel.
+embroidery	Show in Sewing Order	Vis i syrækkefølgen
+embroidery	Dims what is sewn after this area.	Dæmper det, der sys efter dette område.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Sys som nr. {number} af {of}, efter {before}, før {after}
+embroidery	Sewn {number} of {of}, before {after}	Sys som nr. {number} af {of}, før {after}
+embroidery	Sewn {number} of {of}, after {before}	Sys som nr. {number} af {of}, efter {before}
+embroidery	Sewn {number} of {of}	Sys som nr. {number} af {of}
+embroidery	Previous area in sewing order	Forrige område i syrækkefølgen
+embroidery	Next area in sewing order	Næste område i syrækkefølgen
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Ændringer af områder
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Klik på et område i forhåndsvisningen for at ændre dets sting eller vinkel eller udelade det. Resten forbliver automatisk.
+embroidery	Remove this change	Fjern denne ændring
+embroidery	Reset All	Nulstil alle
+embroidery	Another color lies here now	Her ligger nu en anden farve
+embroidery	No area here now	Her er nu intet område
+embroidery	Its area is a line now	Dets område er nu en linje
+embroidery	Its area is filled now	Dets område er nu udfyldt
+embroidery	Its color isn't sewn	Dets farve broderes ikke
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Behold som dynamisk objekt
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Beholder billedet sammen med de objekter, der er lavet af det, så “Digitaliser billede…” kan ændre dem igen.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Dets objekter er ændret manuelt. Digitaliseres det igen, erstattes disse ændringer; Fortryd bringer dem tilbage.
+embroidery	Replace	Erstat
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Dette dynamiske objekts indstillinger kunne ikke læses: vinduet starter fra standardindstillingerne.
+embroidery	Edit in Digitize Image…	Rediger i “Digitaliser billede”…
+embroidery	Live digitized image	Dynamisk digitaliseret billede
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Oprettede et dynamisk objekt: {objects} ({threads}). “Digitaliser billede…” ændrer det igen; Fortryd fjerner det.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Erstat ikke
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Dette dynamiske objekt blev lavet i en anden trådpalet: dets farver matches igen med dokumentets palet.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Dynamisk digitaliserede billeder skaleret med mere end {value} %, siden de blev digitaliseret: digitaliser dem igen
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	et dynamisk broderiobjekt: ændr det i “Digitaliser billede…” (Objekt › Billedsporing)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Det ville blive mere end {count} ændringer af områder, det højeste et design tager.

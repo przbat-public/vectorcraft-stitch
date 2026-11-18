@@ -1107,7 +1107,7 @@ impl<'a> Digitizer<'a> {
 /// twice as wide along its outlines, round at the corners, or what is left of it without that
 /// band. A subpath that encloses no area (sewn as a line) is left as it is. Unchanged when `e`
 /// is 0. Also whether it left nothing (a negative `expand`).
-fn expanded(area: &BezPath, rule: FillRule, e: f64) -> (BezPath, FillRule, bool) {
+pub(super) fn expanded(area: &BezPath, rule: FillRule, e: f64) -> (BezPath, FillRule, bool) {
     if e.abs() < SAME_POINT {
         return (area.clone(), rule, false);
     }

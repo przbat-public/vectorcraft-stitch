@@ -24,10 +24,11 @@ proptest! {
         prop_assert_eq!(twice, once);
     }
 
-    /// A run's marks (its cuts, stops and exact needle points, its record of transforms, its flags)
-    /// and an object's original and Stop After, as a newer version might write them: mostly in the
-    /// forms this version reads, which random JSON seldom reaches (a frame is six numbers), and
-    /// sometimes not. The file opens and saves back as the first property says.
+    /// A run's marks (its cuts, stops and exact needle points, its record of transforms, its flags),
+    /// an object's original and Stop After, and a live object's digitizing, as a newer version might
+    /// write them: mostly in the forms this version reads, which random JSON seldom reaches (a
+    /// frame is six numbers), and sometimes not. The file opens and saves back as the first property
+    /// says.
     #[test]
     fn marks_and_originals_open_and_save_back(written in arb_marks()) {
         let (kept, once, twice) = saved_once_and_twice(&written);
@@ -152,8 +153,22 @@ fn arb_marks() -> impl Strategy<Value = Value> {
     let fingerprint = prop_oneof!["[0-9a-fA-F]{16}".prop_map(Value::from), "[0-9a-f]{0,20}".prop_map(Value::from), o(Value::Null)];
     let original = (prop::option::of(arb_frame()), prop::option::of(node), prop::option::of(fingerprint), prop::option::of(o(Value::from("kept"))))
         .prop_map(|(frame, node, fingerprint, by)| object([("frame", frame), ("node", node), ("fingerprint", fingerprint), ("by", by)]));
-    (prop::option::of(run), prop::option::of(original), prop::option::of(arb_flag()))
-        .prop_map(|(run, original, stop_after)| object([("stitches", run), ("original", original), ("stop_after", stop_after)]))
+    // A live object's digitizing: its settings (kept as written), its fingerprint and size, each
+    // mostly in the form this version reads.
+    let settings = prop_oneof![
+        6 => o(serde_json::json!({"colors": 4, "area_changes": [{"at": [1.5, 2.0], "color": "#ff0000", "kind": "fill", "stitch": "tatami"}]})),
+        1 => o(serde_json::json!(3)),
+    ];
+    let side = prop_oneof![6 => (1u32..500).prop_map(|v| Value::from(f64::from(v) / 4.0)), 1 => o(Value::from(0.0)), 1 => o(Value::from("big"))];
+    let size = prop_oneof![6 => (side.clone(), side).prop_map(|(w, h)| Value::Array(vec![w, h])), 1 => o(serde_json::json!([1.0]))];
+    let fingerprint = prop_oneof!["[0-9a-fA-F]{16}".prop_map(Value::from), "[0-9a-f]{0,20}".prop_map(Value::from)];
+    let digitizing = (prop::option::of(settings), prop::option::of(fingerprint), prop::option::of(size), prop::option::of(o(Value::from("kept"))))
+        .prop_map(|(settings, fingerprint, size, by)| object([("settings", settings), ("fingerprint", fingerprint), ("size", size), ("by", by)]));
+    (prop::option::of(run), prop::option::of(original), prop::option::of(arb_flag()), prop::option::of(digitizing)).prop_map(
+        |(run, original, stop_after, digitizing)| {
+            object([("stitches", run), ("original", original), ("stop_after", stop_after), ("digitizing", digitizing)])
+        },
+    )
 }
 
 /// The node of id `id` in a saved file's JSON.
@@ -195,6 +210,9 @@ fn as_saved(v: &Value) -> Value {
             }
             ("original", Value::Object(o)) if original_as_saved(o).is_some() => {
                 out.insert(k.clone(), original_as_saved(o).unwrap_or_default());
+            }
+            ("digitizing", Value::Object(d)) if digitizing_as_saved(d).is_some() => {
+                out.insert(k.clone(), digitizing_as_saved(d).unwrap_or_default());
             }
             ("fill" | "stroke", Value::Object(part)) => {
                 if let Some(part) = part_as_saved(part) {
@@ -273,6 +291,30 @@ fn original_as_saved(o: &serde_json::Map<String, Value>) -> Option<Value> {
     let fingerprint = o.get("fingerprint").and_then(Value::as_str).filter(|f| f.len() == 16).and_then(|f| u64::from_str_radix(f, 16).ok());
     if let Some(f) = fingerprint {
         out.insert("fingerprint".into(), Value::from(format!("{f:016x}")));
+    }
+    Some(Value::Object(out))
+}
+
+/// A live object's digitizing as it is saved again, when it is one this version reads (its settings
+/// an object): its fingerprint in lower case when it is sixteen hexadecimal digits, its size as
+/// floats when it is two finite numbers above 0, the rest as written.
+fn digitizing_as_saved(d: &serde_json::Map<String, Value>) -> Option<Value> {
+    d.get("settings").filter(|s| s.is_object())?;
+    let mut out = d.clone();
+    let fingerprint = d.get("fingerprint").and_then(Value::as_str).filter(|f| f.len() == 16).and_then(|f| u64::from_str_radix(f, 16).ok());
+    if let Some(f) = fingerprint {
+        out.insert("fingerprint".into(), Value::from(format!("{f:016x}")));
+    }
+    let side = |i: usize| {
+        d.get("size")
+            .and_then(Value::as_array)
+            .filter(|s| s.len() == 2)
+            .and_then(|s| s.get(i))
+            .and_then(Value::as_f64)
+            .filter(|v| v.is_finite() && *v > 0.0)
+    };
+    if let (Some(w), Some(h)) = (side(0), side(1)) {
+        out.insert("size".into(), serde_json::json!([w, h]));
     }
     Some(Value::Object(out))
 }

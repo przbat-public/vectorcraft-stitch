@@ -49,6 +49,11 @@ pub(crate) enum Asked {
     Cancel,
     StartOver,
     Create,
+    /// Keep as Live Object.
+    KeepLive,
+    /// The question before objects changed by hand are replaced, answered: Replace, or its Cancel.
+    Replace,
+    KeepEdits,
 }
 
 /// The window's size in an app whose content area is `content`: its share of it, at least

@@ -590,6 +590,10 @@ fn prepare(s: &Session, c: &str, p: &Value) -> Result<Prepared> {
             })
             .ok_or_else(|| bad(c, "select an image (or an Image Trace group)"))?
     };
+    // VectorCraft Stitch: a live object of a digitized image is Digitize Image's (FORK.md › hooks).
+    if crate::cmd::embroidery::live_object_of(&s.doc()?.doc, target).is_some() {
+        return Err(bad(c, crate::cmd::embroidery::LIVE_EMBROIDERY_REFUSED));
+    }
     if by_color && s.doc()?.doc.node(target).is_some_and(vectorcraft_render::effects::has_pathfinder) {
         return Err(bad(c, LIVE_PATHFINDER_BY_COLOR));
     }

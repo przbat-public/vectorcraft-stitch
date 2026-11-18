@@ -12,12 +12,13 @@
 use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::{Document, ImageObject, NodeId, NodeKind};
+use vectorcraft_doc::{Document, ImageObject, Node, NodeId, NodeKind};
 use vectorcraft_geom::Point;
 use vectorcraft_stitch::MM_PER_PT;
 use vectorcraft_stitch::thread::{Match, MatchReason, Palette, mismatched, shown_delta_e};
 
 use super::background::Background;
+use super::changes::{self, Applied, Found};
 use super::colours::Colours;
 use super::create::{self, Made, Outlined};
 use super::rules;
@@ -93,6 +94,7 @@ fn target(s: &Session, o: &Map<String, Value>) -> Result<(NodeId, ImageObject)> 
         },
         Some(v) => NodeId(v.as_u64().ok_or_else(|| bad(C, format!("`id` {v}: an object's id")))?),
     };
+    let id = digitizing_target(&st.doc, id);
     let n = st.doc.node(id).ok_or(EngineError::NoNode(id))?;
     let image = match &n.kind {
         NodeKind::Image(i) => Some((**i).clone()),
@@ -104,6 +106,23 @@ fn target(s: &Session, o: &Map<String, Value>) -> Result<(NodeId, ImageObject)> 
     };
     let image = image.ok_or_else(|| bad(C, "not an image: select an image, or an Image Trace object"))?;
     Ok((id, image))
+}
+
+/// What digitizing `id` of `doc` digitizes: the image an Image Trace object (a live object too) holds
+/// first stands for that object, as digitized alone its design would go inside the object, beside
+/// what the object makes; any other object for itself. The window opens on it by the same rule.
+pub fn digitizing_target(doc: &Document, id: NodeId) -> NodeId {
+    match doc.parent_of(id) {
+        Some(p) if doc.node(p).is_some_and(|g| traced_by(g, id)) => p,
+        _ => id,
+    }
+}
+
+/// Whether `g` is an Image Trace object holding image `id` first (its source image).
+fn traced_by(g: &Node, id: NodeId) -> bool {
+    matches!(g.kind, NodeKind::Group { .. })
+        && g.name.as_deref() == Some(TRACE_NAME)
+        && g.children().and_then(|c| c.first()).is_some_and(|c| c.id == id)
 }
 
 /// Refused unless image `id` may be replaced by a design: Global Edit off, and neither the image
@@ -152,14 +171,16 @@ fn thread_json(palette: Palette, m: Match) -> Value {
     })
 }
 
-/// The colour list's rows as the reply gives them: the background's, and each colour with areas.
-fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f64) -> Vec<Value> {
-    let sewn_px: usize = colours.rows.iter().filter(|r| r.sewn()).map(|r| r.pixels).sum();
+/// The colour list's rows as the reply gives them: the background's, and each colour with areas;
+/// `sewn_px` the pixels each sews (by its row, `Digitized::sewn_pixels`).
+fn colors_json(colours: &Colours, sewn_px: &[usize], palette: Palette, px_per_mm2: f64, frame_px: f64) -> Vec<Value> {
+    let all_sewn: usize = sewn_px.iter().sum();
     colours
         .rows
         .iter()
-        .filter(|r| r.background || r.areas > 0)
-        .map(|r| {
+        .enumerate()
+        .filter(|(_, r)| r.background || r.areas > 0)
+        .map(|(i, r)| {
             let merged = r.merged_into.and_then(|j| colours.rows.get(j)).map(|t| super::super::hex(t.color));
             // Merged by sharing its only near thread, or because a person asked.
             let reason = match (&r.thread, &merged) {
@@ -181,7 +202,7 @@ fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f
                 "area": hundredths(r.pixels as f64 / px_per_mm2),
                 "areaCount": r.areas,
                 "share": hundredths(r.pixels as f64 / frame_px.max(1.0) * PERCENT),
-                "sewnShare": r.sewn().then(|| hundredths(r.pixels as f64 / sewn_px.max(1) as f64 * PERCENT)),
+                "sewnShare": r.sewn().then(|| hundredths(sewn_px.get(i).copied().unwrap_or(0) as f64 / all_sewn.max(1) as f64 * PERCENT)),
                 "mergedInto": merged,
                 "choice": r.choice,
             })
@@ -190,10 +211,18 @@ fn colors_json(colours: &Colours, palette: Palette, px_per_mm2: f64, frame_px: f
 }
 
 /// How many threads the colours sewn are sewn in: one thread once, however many colours it sews
-/// (two colours a person chose one thread for are one colour in the design).
-fn thread_count(colours: &Colours) -> usize {
-    let mut threads: Vec<usize> =
-        colours.rows.iter().filter(|r| r.sewn() && r.areas > 0).filter_map(|r| r.thread.as_ref()).map(|m| m.thread.index).collect();
+/// (two colours a person chose one thread for are one colour in the design); a colour whose areas
+/// changes all leave out (`sewn_px`, by its row) sews none.
+fn thread_count(colours: &Colours, sewn_px: &[usize]) -> usize {
+    let sews = |i: usize| sewn_px.get(i).is_some_and(|&p| p > 0);
+    let mut threads: Vec<usize> = colours
+        .rows
+        .iter()
+        .enumerate()
+        .filter(|(i, r)| r.sewn() && r.areas > 0 && sews(*i))
+        .filter_map(|(_, r)| r.thread.as_ref())
+        .map(|m| m.thread.index)
+        .collect();
     threads.sort_unstable();
     threads.dedup();
     threads.len()
@@ -244,7 +273,8 @@ fn outline_of(d: &Digitized, a: usize) -> Option<(String, usize)> {
 /// The areas `offset` to `offset + limit` in sewing order, as the reply lists them, with their
 /// outlines when `outlines` asks: then at most [`MAX_OUTLINE_ELEMENTS`] path elements of them, the
 /// list ending at the area that would pass it (the first one listed whatever it has).
-fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outlines: bool) -> Vec<Value> {
+fn areas_json(d: &Digitized, palette: Palette, listed: Listed, changed: &[Option<Applied>]) -> Vec<Value> {
+    let Listed { offset, limit, outlines, .. } = listed;
     let w = d.working();
     let px = w.px_per_mm;
     let number = |a: usize| d.order().placed.get(a).and_then(|p| p.index).map(|i| i + 1);
@@ -282,7 +312,9 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 .iter()
                 .filter_map(|&(o, edge)| {
                     let o = o as usize;
-                    Some(json!({"area": number(o)?, "edge": hundredths(f64::from(edge) / px), "under": placed.under.contains(&o)}))
+                    // Sewn before it: an area a change leaves out isn't sewn at all.
+                    let under = placed.under.contains(&o) && d.areas().areas.get(o).is_some_and(|x| x.sewn(d.colours()));
+                    Some(json!({"area": number(o)?, "edge": hundredths(f64::from(edge) / px), "under": under}))
                 })
                 .collect();
             Some(json!({
@@ -290,8 +322,8 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 "at": [hundredths(at.x), hundredths(at.y)],
                 "color": super::super::hex(row.color),
                 "thread": row.thread.as_ref().map(|m| thread_json(palette, m.thread)),
-                "kind": area.kind.id(),
-                "sewn": row.sewn(),
+                "kind": if super::changes::made_line(d.lines(), a) { "line" } else { "fill" },
+                "sewn": area.sewn(d.colours()),
                 "size": {
                     "area": hundredths(area.pixels as f64 / (px * px)),
                     "width": hundredths((x1 - x0) / px),
@@ -312,13 +344,32 @@ fn areas_json(d: &Digitized, palette: Palette, offset: usize, limit: usize, outl
                 "touches": touches,
                 "grownUnder": d.shapes().grown_under.get(a).map_or(vec![], |g| g.iter().filter_map(|&b| number(b)).collect::<Vec<_>>()),
                 "outline": outline.map(|(svg, _)| svg),
+                "change": changed.get(a).copied().flatten().map(|c| applied_json(&c)),
+                // An area a change leaves out is taken as not sewn, and sewn after by none.
                 "order": {
-                    "taken": placed.taken.id(),
-                    "after": placed.after.iter().filter_map(|&(o, why)| Some(json!({"area": number(o)?, "because": why.id()}))).collect::<Vec<_>>(),
+                    "taken": if area.left_out { "notSewn" } else { placed.taken.id() },
+                    "after": placed
+                        .after
+                        .iter()
+                        .filter(|&&(o, _)| d.areas().areas.get(o).is_some_and(|x| x.sewn(d.colours())))
+                        .filter_map(|&(o, why)| Some(json!({"area": number(o)?, "because": why.id()})))
+                        .collect::<Vec<_>>(),
                 },
             }))
         })
         .collect()
+}
+
+/// A change applied to an area, as a reply lists it: the stitch and the angle it sets.
+fn applied_json(c: &Applied) -> Value {
+    let mut o = Map::new();
+    if let Some(s) = c.stitch {
+        o.insert("stitch".into(), json!(s.id()));
+    }
+    if let Some(a) = c.angle {
+        o.insert("angle".into(), json!(a));
+    }
+    Value::Object(o)
 }
 
 /// The region map as a reply gives it: each working pixel's area by its number in sewing order (0
@@ -381,6 +432,13 @@ struct DigitizeJob {
     palette: Palette,
     listed: Listed,
     dry_run: bool,
+    /// Create keeps a live object (`live`); the live object digitized again, as it was; whether its
+    /// objects were edited by hand since it was made.
+    live: bool,
+    was: Option<Node>,
+    edited: Option<bool>,
+    /// What the reply says of the settings the live object keeps, when they weren't all taken.
+    kept: Vec<Warning>,
 }
 
 /// What a run made ([`DigitizeJob::run`]), to apply to the document it was made of ([`apply`]):
@@ -416,7 +474,8 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
     let o = super::super::object(p, C)?;
     let st = s.doc()?;
     let palette = super::super::thread_palette(&st.doc);
-    let settings = Settings::from_params(&o, palette)?;
+    // The request's own settings, a refusal of them said as the request's.
+    let given = Settings::from_params(&o, palette)?;
     let dry_run = flag(&o, "dryRun")?;
     let listed = Listed {
         offset: count(&o, "offset", 0, usize::MAX)?,
@@ -426,7 +485,29 @@ fn prepare(s: &Session, p: &Value) -> Result<DigitizeJob> {
         at: point(&o)?,
     };
     let (target, image, bytes) = image_of(s, &o)?;
-    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run })
+    let live = flag(&o, "live")?;
+    let was = st.doc.node(target).filter(|n| super::live::live_digitizing(n).is_some()).cloned();
+    let edited = was.as_ref().and_then(super::live::edited);
+    // A live object (or the image it holds) starts from the settings it keeps, the request's over
+    // them, as the window opens on it; what of them isn't taken is said.
+    let mut kept = Vec::new();
+    let settings = match was.as_ref().and_then(super::live::live_settings) {
+        Some(k) => {
+            let (settings, said) = super::live::with_kept(&o, k, palette, (image.width, image.height), given);
+            kept.extend(said);
+            settings
+        }
+        None => given,
+    };
+    let unknown = was.as_ref().map(super::live::unknown_kept).unwrap_or_default();
+    if !unknown.is_empty() {
+        let message = format!(
+            "the live object keeps settings this version doesn't know ({}): they are left out, and a live object made again keeps them no longer",
+            unknown.join(", ")
+        );
+        kept.push(Warning::new("keptSettingsUnknown", json!({"keys": unknown}), message));
+    }
+    Ok(DigitizeJob { uid: st.uid, original: st.doc.clone(), target, image, bytes, settings, palette, listed, dry_run, live, was, edited, kept })
 }
 
 /// The image `o` names (or the one selected), with its file: refused as the command refuses it (no
@@ -453,12 +534,17 @@ impl DigitizeJob {
     /// that trace it, which a scope's cancel doesn't reach, as Image Trace's own run asks it, and
     /// stops the run when it answers `false`.
     fn run(&self, steps: &(dyn Fn(u64, u64) -> bool + Sync)) -> Result<DigitizeFound> {
-        let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run } = self;
+        let Self { uid, original, target, image, bytes, settings, palette, listed, dry_run, live, was, edited, kept } = self;
         let d = digitized(image, bytes, settings, *palette, steps)?;
         let started = clock();
         let mut doc = Document::clone(original);
         let mut warnings = d.warnings();
-        let made = match create::made(&mut doc, *target, &d, *palette, settings.outlines)? {
+        warnings.extend(kept.iter().cloned());
+        let made = match create::made(&mut doc, *target, &d, *palette, settings)? {
+            Some(m) if *live => {
+                let m = super::live::into_live(&mut doc, &m, was.clone(), settings)?;
+                Some((doc, m))
+            }
             Some(m) => Some((doc, m)),
             None if *dry_run => {
                 warnings.push(Warning::new("nothingToMake", json!({}), NOTHING_TO_MAKE));
@@ -484,6 +570,7 @@ impl DigitizeJob {
             warnings,
             made_ms: [objects_ms, stitches_ms],
             outlined: made.as_ref().and_then(|(_, m)| m.outlined),
+            edited: *edited,
         };
         let reply = reply_json(&d, of);
         Ok(DigitizeFound { uid: *uid, original: original.clone(), made, reply, dry_run: *dry_run })
@@ -507,6 +594,9 @@ pub(super) struct ReplyOf<'a> {
     pub(super) made_ms: [Option<f64>; 2],
     /// What the outlines Create adds came to (`None`: none asked, or nothing made).
     pub(super) outlined: Option<Outlined>,
+    /// Whether the live object digitized again was edited by hand since it was made (`None`: it is
+    /// no live object).
+    pub(super) edited: Option<bool>,
 }
 
 /// The share of the colour outlines' length beside the image's own lines (the areas sewn along
@@ -529,12 +619,22 @@ fn outlined_json(o: &Outlined, palette: Palette) -> Value {
 /// The command's reply for what `d` made (`created` null: [`apply`] fills it in).
 pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
     let timings = d.timings();
-    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms], outlined } = of;
+    let ReplyOf { id, settings, palette, listed, dry_run, stats, mut warnings, made_ms: [objects_ms, stitches_ms], outlined, edited } = of;
     let w = d.working();
     let px_per_mm2 = w.px_per_mm * w.px_per_mm;
     let frame_px = f64::from(w.raster.width) * f64::from(w.raster.height);
     let unused: Vec<Value> = d.colours().unused.iter().map(|&(i, why)| json!({"choice": i, "reason": why})).collect();
-    let areas = areas_json(d, palette, listed.offset, listed.limit, listed.outlines);
+    let found = changes::found(&settings.changes, d);
+    let changed = changes::per_area(&settings.changes, &found, d.areas().areas.len());
+    let number = |a: usize| d.order().placed.get(a).and_then(|p| p.index).map(|i| i + 1);
+    let change_states: Vec<Value> = found
+        .iter()
+        .map(|f| match *f {
+            Found::Applies(a) => json!({"applies": true, "area": number(a), "why": null}),
+            Found::Kept(why) => json!({"applies": false, "area": null, "why": why.id()}),
+        })
+        .collect();
+    let areas = areas_json(d, palette, listed, &changed);
     let area_count = d.order().sewn.len();
     let specks = d.areas().joined.saturating_sub(d.areas().bands);
     if specks > 0 {
@@ -588,9 +688,11 @@ pub(super) fn reply_json(d: &Digitized, of: ReplyOf) -> Value {
             "bounds": w.bounds_mm().map(hundredths),
             "background": background_json(d.found(), settings.background, d.background()),
         },
-        "colorCount": thread_count(d.colours()),
-        "colors": colors_json(d.colours(), palette, px_per_mm2, frame_px),
+        "colorCount": thread_count(d.colours(), &d.sewn_pixels()),
+        "colors": colors_json(d.colours(), &d.sewn_pixels(), palette, px_per_mm2, frame_px),
         "unusedChoices": unused,
+        "areaChanges": change_states,
+        "edited": edited,
         "areaCount": area_count,
         "offset": listed.offset,
         "truncated": listed.offset.saturating_add(areas.len()) < area_count,
@@ -619,20 +721,20 @@ fn apply(s: &mut Session, found: DigitizeFound) -> Result<Value> {
         return Ok(reply);
     }
     let Some((doc, made)) = made else { return Err(bad(C, NOTHING_TO_MAKE)) };
-    put_in_place(s, uid, &original, doc, made)?;
-    reply["created"] = created_json(made);
+    put_in_place(s, uid, &original, doc, made.group)?;
+    reply["created"] = created_json(&made);
     Ok(reply)
 }
 
 /// The reply's `created`: what Create made.
-pub(super) fn created_json(made: Made) -> Value {
-    json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks})
+pub(super) fn created_json(made: &Made) -> Value {
+    json!({"group": made.group.0, "layer": made.layer.0, "objects": made.objects, "blocks": made.blocks, "live": made.live})
 }
 
-/// `doc`, with the objects `made`, put in place of document `uid` as one undo step "Digitize Image"
-/// (the new group selected): refused when the document isn't `original` any more (it was made of
-/// an earlier one, so nothing is applied), or while Global Edit is on.
-pub(super) fn put_in_place(s: &mut Session, uid: u64, original: &Arc<Document>, doc: Document, made: Made) -> Result<()> {
+/// `doc`, with the objects made in `group`, put in place of document `uid` as one undo step
+/// "Digitize Image" (the new group selected): refused when the document isn't `original` any more
+/// (it was made of an earlier one, so nothing is applied), or while Global Edit is on.
+pub(super) fn put_in_place(s: &mut Session, uid: u64, original: &Arc<Document>, doc: Document, group: NodeId) -> Result<()> {
     let st = s.doc()?;
     if st.uid != uid || !Arc::ptr_eq(&st.doc, original) {
         return Err(bad(C, "the document changed while the image was digitized: nothing was made"));
@@ -642,7 +744,7 @@ pub(super) fn put_in_place(s: &mut Session, uid: u64, original: &Arc<Document>, 
     }
     s.edit(LABEL, |d, sel| {
         *d = doc;
-        sel.set([made.group]);
+        sel.set([group]);
         Ok(())
     })?;
     Ok(())

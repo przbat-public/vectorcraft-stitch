@@ -103,6 +103,19 @@ fn two_squares_sew_their_shared_edge_once() {
     assert!(l.len() == 2 && (l[0] - 300.0).abs() < NEAR_PX && (l[1] - 600.0).abs() < NEAR_PX, "{l:?}");
 }
 
+/// An area a change leaves out (Don't Sew) gets no colour outline of its own, as one of a colour not
+/// sewn: with the navy square left out, only the orange's outline is sewn, and the edge they share
+/// once, by the orange.
+#[test]
+fn an_area_left_out_by_a_change_has_no_outline() {
+    let dont_sew = json!([{"at": [210.5, 100.5], "color": "#142878", "kind": "fill", "stitch": "none"}]);
+    let d = digitize(&two_squares(), &json!({"colors": 2, "areaChanges": dont_sew}));
+    let not_sewn = digitize(&two_squares(), &json!({"colors": 2, "colorChoices": [{"color": "#142878", "job": "none"}]}));
+    let (left, unsewn) = (outlined(&d, true).unwrap(), outlined(&not_sewn, true).unwrap());
+    assert!((left.colour_px() - unsewn.colour_px()).abs() < NEAR_PX, "as a colour not sewn: {} against {}", left.colour_px(), unsewn.colour_px());
+    assert!((left.colour_px() - 900.0).abs() > NEAR_PX, "not the navy's own: {}", left.colour_px());
+}
+
 /// The colour outlines are as long as half of every area's outline and the silhouette together:
 /// each edge between two areas is sewn once of the two areas' outlines that run along it, each
 /// edge of the silhouette once of one.

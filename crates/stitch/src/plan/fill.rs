@@ -475,6 +475,13 @@ fn inner_point(area: Area<'_>) -> Option<Point> {
     Some(axes.point((a + b) / 2.0, t))
 }
 
+/// Whether a shape's rest (the shape without its narrow columns, cut out by the caller, as
+/// [`fill_with_columns`] takes it) is sewn at all: a piece of it at least [`MIN_PIECE`]; a smaller
+/// one is a sliver left out ([`pieces`]).
+pub fn rest_sews(rest: &BezPath) -> bool {
+    !pieces(&closed_subpaths(rest)).is_empty()
+}
+
 /// The pieces of a shape's rest (`subs`, from path operations): each outline wound as the largest
 /// one with the outlines wound the other way inside it (its holes), the smallest that holds them.
 /// A piece smaller than [`MIN_PIECE`] is left out: a sliver where a column's end meets the outline.

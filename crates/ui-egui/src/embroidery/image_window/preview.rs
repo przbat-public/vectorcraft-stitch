@@ -33,6 +33,10 @@ use crate::embroidery::text::fill;
 use crate::state::Dialog;
 use crate::theme::Tokens;
 
+/// How strongly Show in Sewing Order veils what is sewn after the area inspected: the fabric's
+/// colour at 80 % over it, so that it shows faintly (an estimate).
+const SEWN_AFTER_VEIL: u8 = 204;
+
 /// The preview's views, by their ids in the dialog's `view` field.
 pub(crate) const VIEWS: [&str; 5] = ["original", "colors", "shapes", "stitches", "compare"];
 
@@ -122,6 +126,8 @@ const PERCENT: f64 = 100.0;
 pub(crate) struct Preview {
     original: Option<(u64, TextureHandle)>,
     painted: Option<(u64, TextureHandle)>,
+    /// Show in Sewing Order's veil, by what it was made for.
+    sewn_after: Option<(VeilKey, TextureHandle)>,
     /// The Shapes view's lines of the shapes shown (by their number), and their colours.
     outlines: Option<(u64, Arc<LinePicture>, Vec<[u8; 3]>)>,
     /// The Shapes and the Stitches views as last drawn, each by what it was drawn of.
@@ -132,11 +138,17 @@ pub(crate) struct Preview {
     pan: Vec2,
     /// The area under the pointer, as last found.
     pub(crate) hovered: Option<AreaFacts>,
+    /// The area the keyboard is on (`[` and `]` step through the areas in sewing order), by its key.
+    pub(crate) focused: Option<vectorcraft_engine::cmd::embroidery::AreaKey>,
     /// The picture's pane and the design's view on it, as last drawn.
     pub(crate) last_view: Option<(Rect, ViewXf)>,
     /// How many textures it has uploaded (the tests count them).
     pub(crate) uploads: u64,
 }
+
+/// What Show in Sewing Order's veil is made for: the lines' output (its number) and the area's
+/// working pixel.
+type VeilKey = (u64, (u32, u32));
 
 /// What a drawing of lines is of: which output (its number), the image's size in pixels, and the
 /// view (the scale and the offset, as bits).
@@ -285,6 +297,21 @@ impl Preview {
             self.uploads += 1;
         }
         self.original.as_ref().map(|(_, t)| t.id())
+    }
+
+    /// Show in Sewing Order's veil for the area under working pixel `at`: the fabric's colour
+    /// `fabric` over what is sewn after it, at [`SEWN_AFTER_VEIL`]; uploaded once an area and order.
+    fn sewn_after(&mut self, ctx: &egui::Context, outputs: &DigitizeOutputs, at: (u32, u32), fabric: [u8; 3]) -> Option<egui::TextureId> {
+        let key = (outputs.number(DigitizeStage::Lines)?, at);
+        if self.sewn_after.as_ref().is_none_or(|(k, _)| *k != key) {
+            let (w, h, mask) = outputs.sewn_after(at.0, at.1)?;
+            let [r, g, b] = fabric;
+            let rgba: Vec<u8> = mask.iter().flat_map(|&m| if m == 0 { [0, 0, 0, 0] } else { [r, g, b, SEWN_AFTER_VEIL] }).collect();
+            let img = egui::ColorImage::from_rgba_unmultiplied([w as usize, h as usize], &rgba);
+            self.sewn_after = Some((key, ctx.load_texture("digitize-sewn-after", img, egui::TextureOptions::NEAREST)));
+            self.uploads += 1;
+        }
+        self.sewn_after.as_ref().map(|(_, t)| t.id())
     }
 
     /// The Colors view's texture for `outputs`: the raster `painted` on the thread when it is of
@@ -523,18 +550,96 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     } else {
         draw(&mut live.preview, &painter, view);
     }
+    // Show in Sewing Order: what is sewn after the area inspected veiled in the fabric's colour.
+    let inspected = live.inspector.as_ref().and_then(|i| outputs.find(&i.key).map(|at| (i.clone(), at)));
+    if let Some((_, at)) = inspected.as_ref().filter(|(i, _)| i.order)
+        && let (Some(tex), Some(q)) = (live.preview.sewn_after(&ctx, outputs, *at, fabric), working_quad(outputs, xf))
+    {
+        textured_quad(&painter, tex, q, Color32::WHITE);
+    }
+    // Apply to Similar Areas hovered: the areas it sets outlined, as the inspector worked them out.
+    if let Some((i, _)) = inspected.as_ref().filter(|(i, _)| i.similar_shown) {
+        for key in i.similar.iter().flat_map(|s| &s.keys) {
+            if let Some(path) = outputs.find(key).and_then(|(x, y)| outputs.outline_at(x, y)) {
+                outline(&painter, &path, xf);
+            }
+        }
+    }
     // The area under the pointer, outlined two-tone and named.
     live.preview.hovered = None;
+    let mut under = None;
     if let Some(at) = resp.hover_pos() {
         let doc_pt = xf.to_doc(at);
         let working = outputs.working_to_doc().map(|a| a.inverse() * doc_pt);
         if let Some(p) = working.filter(|p| p.x >= 0.0 && p.y >= 0.0 && p.x.is_finite() && p.y.is_finite()) {
             let (x, y) = (p.x.floor() as u32, p.y.floor() as u32);
             live.preview.hovered = outputs.area_at(x, y);
+            under = Some((x, y));
             if let Some(path) = outputs.outline_at(x, y) {
                 outline(&painter, &path, xf);
             }
         }
+    }
+    // A click opens the inspector on the area clicked, in any view but the picture itself; on the
+    // background it closes it. The preview takes the keyboard at once, and the inspector moves once
+    // it is drawn this frame for the area it was on, so that a value being typed in it is that
+    // area's. The pointer's click only: Enter or Space on the preview, which egui counts as a click
+    // too, opens the area the keyboard is on (below).
+    let clicked = resp.clicked_by(egui::PointerButton::Primary) && view != View::Original;
+    if resp.clicked() {
+        resp.request_focus();
+    }
+    // The keyboard: `[` and `]` step through the areas in sewing order (the embroidery tool's keys),
+    // Enter or Space opens the inspector on the area it is on.
+    let mut by_key = false;
+    if resp.has_focus() {
+        let (back, on, open) = ui.input_mut(|i| {
+            let enter = i.consume_key(egui::Modifiers::NONE, egui::Key::Enter) || i.consume_key(egui::Modifiers::NONE, egui::Key::Space);
+            (i.consume_key(egui::Modifiers::NONE, egui::Key::OpenBracket), i.consume_key(egui::Modifiers::NONE, egui::Key::CloseBracket), enter)
+        });
+        by_key = open;
+        if back || on {
+            let from = live.preview.focused.as_ref().and_then(|k| outputs.find(k)).and_then(|(x, y)| outputs.sewing_place(x, y));
+            let next = match from {
+                Some(place) => if on { place.after } else { place.before }.map(|(_, k)| k),
+                None => outputs.first_key(),
+            };
+            if next.is_some() {
+                live.preview.focused = next;
+            }
+        }
+        if open && let Some(at) = live.preview.focused.as_ref().and_then(|k| outputs.find(k)) {
+            super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, Some(at));
+        }
+    }
+    // A screen reader's click on the preview (neither the pointer's nor Enter's or Space's): as
+    // Enter, the inspector opens on the area the keyboard is on, the first area when it is on none;
+    // once the inspector is drawn, as a pointer's click, so that what was typed in it is its area's.
+    let mut read_at = None;
+    if resp.clicked() && !resp.clicked_by(egui::PointerButton::Primary) && !by_key && view != View::Original {
+        let key = live.preview.focused.clone().filter(|k| outputs.find(k).is_some()).or_else(|| outputs.first_key());
+        read_at = key.as_ref().and_then(|k| outputs.find(k));
+        if read_at.is_some() {
+            live.preview.focused = key;
+        }
+    }
+    // The area the keyboard is on: outlined in the focus's colour and said, while the preview has
+    // the keyboard.
+    let focused = live.preview.focused.as_ref().filter(|_| resp.has_focus()).and_then(|k| outputs.find(k));
+    if let Some((x, y)) = focused {
+        if let Some(path) = outputs.outline_at(x, y) {
+            let colour = crate::embroidery::marks::readable(t.accent, &[t.panel_darker], t.dark);
+            outline_in(&painter, &path, xf, egui::Stroke::new(FOCUS_OUTLINE_WIDTH, colour));
+        }
+        if let Some(facts) = outputs.area_at(x, y) {
+            let words = area_line(&facts);
+            ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(words.clone()));
+        }
+    }
+    crate::embroidery::rows::focus_ring(ui, &resp, pane, t.panel_darker);
+    // The area inspected, outlined as the hovered one is.
+    if let Some(path) = inspected.and_then(|(_, (x, y))| outputs.outline_at(x, y)) {
+        outline(&painter, &path, xf);
     }
     if let Some(facts) = &live.preview.hovered {
         let words = area_line(facts);
@@ -554,6 +659,13 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
         painter.galley(at.min + BADGE_PAD, galley, t.text);
     }
     foot_row(ui, foot, d, xf, view == View::Stitches || (view == View::Compare && View::of_step(step) == View::Stitches));
+    let running = live.schedule.busy();
+    super::inspector::show(ui, pane, &mut d.fields, &mut live.inspector, &mut live.answers, outputs, running, |p| xf.to_screen(p));
+    if clicked {
+        super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, under);
+    } else if read_at.is_some() {
+        super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, read_at);
+    }
 }
 
 /// The Colors view's raster the thread painted for the colours shown, if any.
@@ -561,8 +673,18 @@ fn live_painted(shown: &super::schedule::Shown) -> Option<&Arc<Painted>> {
     shown.painted.as_ref()
 }
 
-/// The hovered area's outline `path` (document points) drawn two-tone at `xf`.
-fn outline(painter: &egui::Painter, path: &vectorcraft_geom::BezPath, xf: ViewXf) {
+/// The width of the keyboard's area's outline (points): the fields' focus ring's.
+const FOCUS_OUTLINE_WIDTH: f32 = 2.0;
+
+/// `path` (document points) drawn at `xf` in `stroke`.
+fn outline_in(painter: &egui::Painter, path: &vectorcraft_geom::BezPath, xf: ViewXf, stroke: Stroke) {
+    for l in screen_lines(path, xf) {
+        painter.add(Shape::line(l, stroke));
+    }
+}
+
+/// `path` (document points) at `xf` as lines on screen, a curve flattened to [`HOVER_FLATTEN_PT`].
+fn screen_lines(path: &vectorcraft_geom::BezPath, xf: ViewXf) -> Vec<Vec<Pos2>> {
     let mut lines: Vec<Vec<Pos2>> = Vec::new();
     vectorcraft_geom::kurbo::flatten(path, HOVER_FLATTEN_PT / xf.scale.max(f64::MIN_POSITIVE), |el| match el {
         vectorcraft_geom::kurbo::PathEl::MoveTo(p) => lines.push(vec![xf.to_screen(p)]),
@@ -580,6 +702,12 @@ fn outline(painter: &egui::Painter, path: &vectorcraft_geom::BezPath, xf: ViewXf
         }
         _ => {}
     });
+    lines
+}
+
+/// The hovered area's outline `path` (document points) drawn two-tone at `xf`.
+fn outline(painter: &egui::Painter, path: &vectorcraft_geom::BezPath, xf: ViewXf) {
+    let lines = screen_lines(path, xf);
     for (width, colour) in [(OUTLINE_DARK_WIDTH, OUTLINE_DARK), (OUTLINE_LIGHT_WIDTH, OUTLINE_LIGHT)] {
         for l in &lines {
             painter.add(Shape::line(l.clone(), Stroke::new(width, colour)));

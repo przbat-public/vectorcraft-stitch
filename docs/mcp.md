@@ -8559,7 +8559,7 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   selection after it. One undo step; nothing restored is an error. It answers `{restored: [id], restoredCount, edited: [id], editedCount,
   skippedCount, skipped: [{id, reason}]}` (and `dryRun: true` with a dry run). Convert and Restore wait while Global
   Edit is on ("not while Global Edit is on: stop Global Edit first").
-- `embroidery.digitizeImage {id?, dryRun?, offset?, limit?, regions?, outlines?, at?, …settings}` digitizes an image
+- `embroidery.digitizeImage {id?, dryRun?, live?, offset?, limit?, regions?, outlines?, at?, …settings}` digitizes an image
   (`id`, an image or an Image Trace object, whose source image it reads; default: the one object selected) into
   embroidery objects, every size threshold in millimetres (`embroidery.md` › Digitizing from an image). The settings:
   `width`, `height` or `fit: [w, h]` (mm; default: the image as placed), `crop: [x0, y0, x1, y1]` (the image's own
@@ -8574,8 +8574,15 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   the design; default false), `border` (true: a satin border round the design, its holes too, centred on its edge, so
   that the design grows by half of it; default false; the colour outlines then leave the edge round the design to it),
   `borderWidth` (mm, 1 to 10, default 3) and `outlineThread` (`{palette, index}`, a thread of the palette the colours
-  are matched to; default null: the darkest of the threads they are sewn in); the reply's `table` gives each setting's
-  step, unit, range, default and its source. The image is worked at a copy of at
+  are matched to; default null: the darkest of the threads they are sewn in) and `areaChanges: [{at, color, kind,
+  stitch?, angle?}]` (at most 1,000, the window's inspector's changes to single areas: `at` a point inside the area in
+  the image's own pixels, its deepest as `areas[].at` gives it, `color` the area's, `kind` `"fill"` or `"line"`,
+  `stitch` `"tatami"`, `"satin"` or `"none"` for a filled area and `"running"`, `"satin"` or `"none"` for a line,
+  `angle` a filled area's rows in degrees counter-clockwise on the page, −360 to 360; each found again in every run:
+  the area under its point when that area's colour is within ΔE 10 of its colour, else the nearest of its colour
+  within 1 mm, of the kind it is for and of a colour sewn; else kept, applying to nothing; a later change wins where
+  two set the same of one area); the reply's `table` gives each setting's step, unit, range, default and its
+  source. The image is worked at a copy of at
   most 10 pixels a millimetre (fewer past 1,500 pixels a side, or where the image has fewer) and traced in its own
   colours; each colour gets a thread of the document's palette, chosen together (CIEDE2000, flagged past ΔE 10; two
   colours whose only thread within ΔE 10 is the same one are merged); the background is only what touches the
@@ -8591,18 +8598,38 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   creates the objects: one group in the image's place (named as the image is), in it a group for each colour block in
   sewing order named after its thread as its swatch is (`"PEC 12 Orange"`), in each one object per area painted with
   its thread's own colour (a line, a stroke along its centre line), embroidery settings set only where a colour's job
-  asks (`fill`: `narrowAsSatin` 0; `none`: not sewn) or a line's stroke is 1 mm wide or more (`stitch: "running"`);
+  asks (`fill`: `narrowAsSatin` 0; `none`: not sewn) or a line's stroke is 1 mm wide or more (`stitch: "running"`),
+  and as an area's changes ask (tatami: `narrowAsSatin` 0; satin: `narrowAsSatin` the widest part of the shape the
+  area is made as, with the islands it is made solid under and its shares of the centre lines beside it (its own is
+  `widest`), and the overlap on either side, rounded up to tenths, at most 12; none: not sewn; an angle as the fill's angle; a line's
+  stitch on its stroke);
   the outlines asked for come last, each kind a block of its own in the outline thread, a stroke object a line,
   nearest first, so that the needle lifts between them: "Color outlines" (drawn 0.4 mm wide, sewn as a running line),
   "Border" (`borderWidth` wide, a satin);
   the image moves, with its id, to a new template layer below every layer, hidden and locked, scaled as the
-  design is. One undo step "Digitize Image", the new group selected; Nearest Connection is not run. More than 10,000
+  design is. With `live: true` Create keeps a live object instead: an Image Trace object as upstream makes its own (a
+  group named "Image Trace" with a trace value, so that `imageTrace.setView`, `expand` and `release` act on it), the
+  image first in it, hidden, the colour blocks after it, its embroidery's `digitizing` holding the settings it was
+  made with by their file keys (all but `width`, `height` and `fit`: its size is its image's as placed), a
+  fingerprint of its objects and its size in millimetres; given as `id` with `live: true` it is digitized again in its
+  place keeping its id, and without `live` it becomes plain objects, its image back on a template layer (where the
+  live object's place isn't sewn, its image left in that place, as an image's is); the image it holds, given as `id`,
+  stands for it. A live object given (or its image) starts from the settings it keeps, as the window opens on it, for
+  a dry run and Create alike: a setting the request gives wins, one given as `null` is the default, the rest are the
+  live object's own (the reply's `settings` says which were used). Kept settings the engine refuses (a newer
+  version's, a file edited by hand, a crop outside its image once relinked) are neither a failure nor dropped
+  silently: their threads are let go when it was made in another thread palette (warning `keptThreadsLetGo`), else
+  the settings given and the defaults are used (warning `keptSettingsRefused` {why}: what blocks them; giving it, or
+  `null` for it, takes the rest); kept keys this version has no setting for are left out (warning
+  `keptSettingsUnknown` {keys}).
+  `imageTrace.make` and `makeAndExpand` refuse a live object ("change it in Digitize Image…"). One undo step "Digitize
+  Image", the new group selected; Nearest Connection is not run. More than 10,000
   areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
-  {group, layer, objects, blocks} (null for a dry run), image: {id, pixels, decoded, crop, worked, pxPerMm, limitedBy,
+  {group, layer, objects, blocks, live} (null for a dry run), edited, image: {id, pixels, decoded, crop, worked, pxPerMm, limitedBy,
   size, scale, bounds, background}, colorCount, colors: [{color, background, sewn, job, thread, reason, alternatives,
-  area, areaCount, share, sewnShare, mergedInto, choice}], unusedChoices, areaCount, offset, truncated, areas: [{area,
-  at, color, thread, kind, sewn, size, widest, line, box, inside, sewnOver, joined, touches, grownUnder, outline,
-  order}],
+  area, areaCount, share, sewnShare, mergedInto, choice}], unusedChoices, areaChanges, areaCount, offset, truncated,
+  areas: [{area, at, color, thread, kind, sewn, size, widest, line, box, inside, sewnOver, joined, touches,
+  grownUnder, outline, order, change}],
   areaAt, doubledArea, traced, joined, leftOut, regions, stats, outlined, warnings, settings, table, timings}`:
   `outlined` is null without outlines, else `{colorOutlines: {lines, length} | null, border: {lines, length} | null,
   thread: {palette, index, name, color}}` (`lines` how many separate lines, chained where they meet, an object each;
@@ -8617,10 +8644,18 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   to `lines` with no centre line to sew along, a dot or a blob shorter than it is wide, sewn as the shapes they are),
   `shapesNotJoined` {count}, `outlinesBesideLines` {share} (the colour outlines run beside the image's own lines,
   the areas sewn along their middle, along `share` % of their length or more, from 25 %: sewn twice there),
-  `nothingTraced` and
+  `nothingTraced`, `keptThreadsLetGo`, `keptSettingsRefused` {why} and `keptSettingsUnknown` {keys} (a live object's
+  kept settings, above) and
   `nothingToMake` (a dry run's; Create is refused instead). `unusedChoices` lists `{choice, reason}` for each choice
   that did nothing: `noSuchColor` (no colour of the image within ΔE 10 of it) or `noMergeTarget` (its `mergeInto`
-  names none, the background's aside, so the colours it took are sewn as their own). An area's `area` is its number in
+  names none, the background's aside, so the colours it took are sewn as their own). `areaChanges` lists, for each
+  change in its order, `{applies, area, why}`: whether it applies, the area's number it applies to (null when kept),
+  and why it applies to none: `otherColor` (another colour lies at its point, none of its colour within 1 mm),
+  `noArea` (nothing sewn there: the background, or past the crop), `otherKind` (its area is of the other kind now) or
+  `notSewn` (its area's colour isn't sewn); an area's `change` is `{stitch?, angle?}`, what the changes that apply to
+  it set (null when none). `edited` says whether the live object given as `id` was edited by hand since it was made
+  (its objects' fingerprint, taken in its image's frame, so that moving, turning, scaling or stretching it, its strokes scaled with it or kept as they were made, edits nothing; true, the safe side, for a picture slanted when it was digitized whose slant and size both changed since, its strokes kept, or one scaled once each way; null
+  when it is no live object). An area's `area` is its number in
   this reply's sewing order only; its key is `at` (the point deepest inside it, in the image's own pixels) with its
   colour. The rest, in full: `created` is the group made, the layer holding the image, and how many objects and colour
   blocks; `image.pixels` is the image's own size, `decoded` what was read of it (smaller only past 64 megapixels),
@@ -8656,7 +8691,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   (`Session::apply_digitize_window`) is refused when the document changed meanwhile. The window's request carries the
   document settings it changes, `embroidery.setup`'s `fabric`, `fillAngle` and `joinSameColor` (refused as that
   command refuses them; no other setting): its objects are planned with them, and its Create makes them the
-  document's in the same undo step, with its palette.
+  document's in the same undo step, with its palette. In the app the window is a dialog: `ui.dialog.set` sets its
+  fields (the settings by their names, `areaChanges` too) and `ui.dialog.confirm` is Create, or Keep as Live Object
+  with the field `keep: "live"` (any other `keep` refused); it never asks about hand edits, which the window asks
+  people about.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is
@@ -8876,7 +8914,10 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   point set (`at`), where the needle goes in or comes out instead (`from`), the miss (`value`) and which (`note`:
   `entry` or `exit`); a `stitchesScaled` hit (a warning: a run sewn as its points are, manual or a file's, scaled
   since it was converted or opened by more than 10 % either way) the change in percent along the direction it changed
-  most (`value`) and which way (`note`: `larger` or `smaller`); and
+  most (`value`) and which way (`note`: `larger` or `smaller`); a `liveObjectScaled` hit (a warning: a live object of
+  a digitized image scaled by more than 10 % either way since it was digitized, its image's transform now against
+  the one it had then; one in a symbol's art isn't judged) the live object (`objects`; its `id` is null), the change
+  in percent along the direction it changed most (`value`) and which way (`note`); and
   `notChecked` names each item by `id`. `format` (one of the eight embroidery formats; default: the format of the document's
   thread palette) sets the format limits checked and the threads judged: those the format writes (a PES of a
   document in Janome's palette writes Brother's threads, matched to the art's colours), named in `palette`; `rules`

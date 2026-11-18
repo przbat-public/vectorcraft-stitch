@@ -7312,3 +7312,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Membuka tab Bordir di Pengaturan dokumen. Jendela ini kembali saat Pengaturan dokumen ditutup.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Dipilih untuk area ini
+embroidery	Sewn along its middle as one running line	Dijahit di tengahnya sebagai satu garis jahitan lurus
+embroidery	No part wider than {width} mm	Tidak ada bagian yang lebih lebar dari {width} mm
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Lebih lebar dari {width} mm: tatami, bagian yang lebih sempit sebagai satin
+embroidery	Wider than {width} mm: tatami	Lebih lebar dari {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Bagian yang panjang sebagai satin, sisanya tatami
+embroidery	Too short for satin	Terlalu pendek untuk satin
+embroidery	Too short for satin: sewn as tatami	Terlalu pendek untuk satin: dijahit tatami
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin memerlukan garis selebar paling sedikit {least} mm: garis ini {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin menjahit bagian hingga {most} mm: area ini selebar {width} mm.
+@plural	about {count} stitch|about {count} stitches	sekitar {count} jahitan
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Terapkan ke {count} area serupa
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Menerapkan jahitan dan sudut area ini ke area dengan warna dan jenis yang sama serta ukuran yang mirip.
+embroidery	Show in Sewing Order	Tampilkan dalam urutan jahit
+embroidery	Dims what is sewn after this area.	Meredupkan yang dijahit setelah area ini.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Dijahit ke-{number} dari {of}, setelah {before}, sebelum {after}
+embroidery	Sewn {number} of {of}, before {after}	Dijahit ke-{number} dari {of}, sebelum {after}
+embroidery	Sewn {number} of {of}, after {before}	Dijahit ke-{number} dari {of}, setelah {before}
+embroidery	Sewn {number} of {of}	Dijahit ke-{number} dari {of}
+embroidery	Previous area in sewing order	Area sebelumnya dalam urutan jahit
+embroidery	Next area in sewing order	Area berikutnya dalam urutan jahit
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Perubahan area
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Klik area di pratinjau untuk mengubah jahitan atau sudutnya, atau untuk melewatinya. Sisanya tetap otomatis.
+embroidery	Remove this change	Hapus perubahan ini
+embroidery	Reset All	Atur ulang semua
+embroidery	Another color lies here now	Sekarang ada warna lain di sini
+embroidery	No area here now	Sekarang tidak ada area di sini
+embroidery	Its area is a line now	Areanya sekarang berupa garis
+embroidery	Its area is filled now	Areanya sekarang terisi
+embroidery	Its color isn't sewn	Warnanya tidak dibordir
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Simpan sebagai objek dinamis
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Menyimpan gambar bersama objek yang dibuat darinya, agar “Digitalkan gambar…” dapat mengubahnya lagi.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Objeknya diubah secara manual. Mendigitalkannya lagi akan mengganti perubahan itu; Urungkan mengembalikannya.
+embroidery	Replace	Ganti
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Pengaturan objek dinamis ini tidak dapat dibaca: jendela dimulai dari nilai default.
+embroidery	Edit in Digitize Image…	Edit di “Digitalkan gambar”…
+embroidery	Live digitized image	Gambar terdigitalkan dinamis
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Objek dinamis dibuat: {objects} ({threads}). “Digitalkan gambar…” mengubahnya lagi; Urungkan menghapusnya.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Jangan ganti
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Objek dinamis ini dibuat dengan palet benang lain: warnanya dicocokkan lagi dengan palet dokumen.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Gambar terdigitalkan dinamis yang diskalakan lebih dari {value}% sejak didigitalkan: digitalkan lagi
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	objek bordir dinamis: ubah di “Digitalkan gambar…” (Objek › Image Trace)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	Itu akan menjadi lebih dari {count} perubahan area, batas yang diterima satu desain.

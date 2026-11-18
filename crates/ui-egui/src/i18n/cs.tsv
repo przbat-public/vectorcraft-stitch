@@ -7553,3 +7553,55 @@ embroidery	The color outlines run beside the picture's own lines along {share} o
 embroidery	Tatami, {value}	Tatami, {value}
 # VectorCraft Stitch: Image window, Stitches step: Embroidery Settings…'s tooltip, naming what closes (drafted with AI assistance from the English meaning, for review)
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otevře kartu Výšivka v Nastavení dokumentu. Toto okno se vrátí, až se Nastavení dokumentu zavře.
+# VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
+embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
+embroidery	Chosen for this area	Zvoleno pro tuto oblast
+embroidery	Sewn along its middle as one running line	Vyšívá se středem jako jedna čára rovného stehu
+embroidery	No part wider than {width} mm	Žádná část není širší než {width} mm
+embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Širší než {width} mm: tatami, užší části jako satén
+embroidery	Wider than {width} mm: tatami	Širší než {width} mm: tatami
+embroidery	Its long parts as satin, the rest tatami	Dlouhé části jako satén, zbytek tatami
+embroidery	Too short for satin	Příliš krátká na satén
+embroidery	Too short for satin: sewn as tatami	Příliš krátká na satén: šije se tatami
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satén potřebuje čáru širokou aspoň {least} mm: tato má {width} mm.
+embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satén vyšívá části do {most} mm: tato oblast je široká {width} mm.
+@plural	about {count} stitch|about {count} stitches	asi {count} steh|asi {count} stehy|asi {count} stehů
+# VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
+@plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Použít na {count} podobnou oblast|Použít na {count} podobné oblasti|Použít na {count} podobných oblastí
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Nastaví steh a úhel této oblasti oblastem stejné barvy a druhu a podobné velikosti.
+embroidery	Show in Sewing Order	Zobrazit v pořadí šití
+embroidery	Dims what is sewn after this area.	Ztlumí to, co se šije po této oblasti.
+embroidery	Sewn {number} of {of}, after {before}, before {after}	Šije se {number}. z {of}, po {before}, před {after}
+embroidery	Sewn {number} of {of}, before {after}	Šije se {number}. z {of}, před {after}
+embroidery	Sewn {number} of {of}, after {before}	Šije se {number}. z {of}, po {before}
+embroidery	Sewn {number} of {of}	Šije se {number}. z {of}
+embroidery	Previous area in sewing order	Předchozí oblast v pořadí šití
+embroidery	Next area in sewing order	Další oblast v pořadí šití
+# VectorCraft Stitch: Image window, Stitches step: the list of area changes, why one applies to none, Reset All (drafted with AI assistance from the English meaning, for review)
+embroidery	Area changes	Změny oblastí
+embroidery	Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic.	Klepnutím na oblast v náhledu změníte její steh nebo úhel, nebo ji vynecháte. Zbytek zůstává automatický.
+embroidery	Remove this change	Odebrat tuto změnu
+embroidery	Reset All	Obnovit vše
+embroidery	Another color lies here now	Nyní tu leží jiná barva
+embroidery	No area here now	Nyní tu není žádná oblast
+embroidery	Its area is a line now	Jeho oblast je nyní čára
+embroidery	Its area is filled now	Jeho oblast je nyní vyplněná
+embroidery	Its color isn't sewn	Jeho barva se nevyšívá
+# VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
+embroidery	Keep as Live Object	Ponechat jako živý objekt
+embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Ponechá obrázek s objekty z něj vytvořenými, aby je „Digitalizovat obrázek…“ mohl znovu změnit.
+embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Jeho objekty byly ručně změněny. Opětovná digitalizace tyto změny nahradí; příkaz Zpět je vrátí.
+embroidery	Replace	Nahradit
+embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Nastavení tohoto živého objektu nelze přečíst: okno začíná s výchozími hodnotami.
+embroidery	Edit in Digitize Image…	Upravit v „Digitalizovat obrázek“…
+embroidery	Live digitized image	Živý digitalizovaný obrázek
+embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Vytvořen živý objekt: {objects} ({threads}). „Digitalizovat obrázek…“ ho znovu změní; odstraníte ho příkazem Zpět.
+# VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
+embroidery	Don't Replace	Nenahrazovat
+embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Tento živý objekt vznikl v jiné paletě nití: jeho barvy se znovu přiřadí k paletě dokumentu.
+# VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
+embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Živé digitalizované obrázky se změnou velikosti o víc než {value} % od digitalizace: digitalizujte je znovu
+# VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
+@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	živý objekt výšivky: změňte ho v „Digitalizovat obrázek…“ (Objekt › Vektorizace obrazu)
+# VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
+embroidery	That would be more than {count} area changes, the most a design takes.	To by bylo víc než {count} změn oblastí, nejvíc, kolik návrh přijme.

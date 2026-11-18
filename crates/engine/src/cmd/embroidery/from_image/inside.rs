@@ -203,9 +203,10 @@ pub(super) fn containers(areas: &mut Areas, colours: &Colours, px_per_mm: f64) -
 }
 
 /// Which islands are sewn on top of their containers in sewing order `order` (this module's rule):
-/// narrow, both sewn by their colours' final jobs, the island after its container.
+/// narrow, both sewn (by their colours' final jobs, and no change to one alone leaving it out), the
+/// island after its container.
 pub(super) fn sewn_over(areas: &mut Areas, colours: &Colours, order: &Order) {
-    let sewn = |a: usize, areas: &Areas| areas.areas.get(a).and_then(|x| colours.rows.get(x.row)).is_some_and(super::colours::Colour::sewn);
+    let sewn = |a: usize, areas: &Areas| areas.areas.get(a).is_some_and(|x| x.sewn(colours));
     let index = |a: usize| order.placed.get(a).and_then(|p| p.index);
     let over: Vec<bool> = (0..areas.areas.len())
         .map(|a| {

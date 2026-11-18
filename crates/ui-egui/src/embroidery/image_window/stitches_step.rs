@@ -139,6 +139,94 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let tip = crate::et!("Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.");
     if ui.button(label).on_hover_text(tip).clicked() {
         super::step_aside(app, &d.fields);
+        return;
+    }
+    changes_section(app, ui, d);
+}
+
+/// Decimals an area change's angle is listed with: a tenth of a degree, as the inspector shows it.
+const ANGLE_DECIMALS: usize = 1;
+
+/// Step 4's list of the changes to single areas (the inspector's): a row each, what it sets and the
+/// area it applies to, or why it applies to none (it is kept, applying again when its area comes
+/// back: the project owner's choice, 2026-11-16, „Zachować i pokazać (polecam)”), ↺ removing it;
+/// Reset All; how to make one when there is none.
+fn changes_section(app: &VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
+    let t = Tokens::get(ui.ctx());
+    let lang = crate::i18n::current();
+    let list = d.fields.get(super::inspector::CHANGES).and_then(Value::as_array).cloned().unwrap_or_default();
+    rows::heading(ui, crate::et!("Area changes"));
+    if list.is_empty() {
+        note(ui, crate::et!("Click an area in the preview to change its stitch or its angle, or to leave it out. The rest stays automatic."));
+        return;
+    }
+    let shown = app.embroidery.image_window.live.as_ref().and_then(|l| l.schedule.shown.as_ref());
+    let states = shown.and_then(|s| s.outputs.change_states(&s.request)).unwrap_or_default();
+    // The changes the result shown was made with, whose states those are, by the area each is for:
+    // the list may have changed since (a change removed, or set again and moved to the end), so each
+    // row takes the state of the change for its own area, not that of the change in its place.
+    let mut made_with = std::collections::HashMap::new();
+    for (j, m) in shown.map(|s| s.request.changes()).unwrap_or_default().iter().enumerate() {
+        if let Some(area) = area_of(m) {
+            made_with.entry(area).or_insert(j);
+        }
+    }
+    let degrees = fields::format(lang, "°", ANGLE_DECIMALS);
+    let mut remove = None;
+    for (i, c) in list.iter().enumerate() {
+        let line = c["kind"] == "line";
+        let what: Vec<String> =
+            [c["stitch"].as_str().map(|s| vocabulary::stitch(s, line)), c["angle"].as_f64().map(|a| degrees.show(a))].into_iter().flatten().collect();
+        let what = what.join(" · ");
+        let state = area_of(c).and_then(|area| made_with.get(&area)).and_then(|&j| states.get(j));
+        ui.horizontal(|ui| {
+            if rows::restore(ui, crate::et!("Remove this change"), crate::et!("Remove this change")).clicked() {
+                remove = Some(i);
+            }
+            ui.vertical(|ui| match state {
+                Some(vectorcraft_engine::cmd::embroidery::AreaChangeState::Applies(facts)) => {
+                    ui.label(egui::RichText::new(format!("{} · {what}", super::preview::area_name(facts))).color(t.text));
+                }
+                Some(vectorcraft_engine::cmd::embroidery::AreaChangeState::Kept(why)) => {
+                    ui.label(egui::RichText::new(&what).color(t.text_dim));
+                    ui.label(egui::RichText::new(kept_words(why, line)).small().color(t.text_dim));
+                }
+                None => {
+                    ui.label(egui::RichText::new(&what).color(t.text_dim));
+                }
+            });
+        });
+    }
+    if let Some(i) = remove {
+        let kept: Vec<Value> = list.iter().enumerate().filter(|(j, _)| *j != i).map(|(_, c)| c.clone()).collect();
+        if kept.is_empty() {
+            d.fields.remove(super::inspector::CHANGES);
+        } else {
+            d.fields.insert(super::inspector::CHANGES.into(), Value::Array(kept));
+        }
+    }
+    if ui.button(crate::et!("Reset All")).clicked() {
+        d.fields.remove(super::inspector::CHANGES);
+    }
+}
+
+/// The area an area change, as the window keeps it and the reply echoes it, is for: its point (the
+/// numbers' bits), its colour in lower case and its kind, which find the area, whatever it sets.
+fn area_of(c: &Value) -> Option<([u64; 2], String, String)> {
+    let at = c.get("at")?.as_array()?;
+    let point = [at.first()?.as_f64()?.to_bits(), at.get(1)?.as_f64()?.to_bits()];
+    Some((point, c.get("color")?.as_str()?.to_ascii_lowercase(), c.get("kind")?.as_str()?.to_string()))
+}
+
+/// Why a change to an area applies to none, by the engine's id (`areaChanges[].why`); `line`: it was
+/// set on a line.
+fn kept_words(why: &str, line: bool) -> &'static str {
+    match why {
+        "otherColor" => crate::et!("Another color lies here now"),
+        "otherKind" if line => crate::et!("Its area is filled now"),
+        "otherKind" => crate::et!("Its area is a line now"),
+        "notSewn" => crate::et!("Its color isn't sewn"),
+        _ => crate::et!("No area here now"),
     }
 }
 

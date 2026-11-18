@@ -182,6 +182,27 @@ pub(crate) fn parted(shape: &BezPath, rule: FillRule, narrow: f64) -> Result<Par
     Ok(Parted { found, cut })
 }
 
+/// What the planner makes of a fill's narrow parts at a width ([`satin_found`]): whether it sews any
+/// of them as satin columns, and whether its rest (what isn't a column) is sewn at all, beyond the
+/// slivers the planner leaves out.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct SatinFound {
+    pub(crate) columns: bool,
+    pub(crate) rest: bool,
+}
+
+/// What the planner makes of filled area `shape` (millimetres, its object's path, `rule`) grown by
+/// its `expand` and parted with narrow parts as satin up to `narrow` millimetres, as the plan parts
+/// a fill ([`super::digitize::expanded`], [`parted`]). An error when it is cancelled, or the shape
+/// has more points than one may have.
+pub(crate) fn satin_found(shape: &BezPath, rule: FillRule, expand: f64, narrow: f64) -> Result<SatinFound, PlanError> {
+    let (grown, rule, _) = super::digitize::expanded(shape, rule, expand);
+    let parts = parted(&grown, rule, narrow)?;
+    let columns = parts.found.iter().any(plan::Column::is_satin);
+    let rest = parts.cut.as_ref().is_none_or(|(rest, _)| plan::rest_sews(rest));
+    Ok(SatinFound { columns, rest })
+}
+
 /// What [`parted`] finds: the narrow parts, and the rest and the area travelled in (`None` with no
 /// narrow part).
 #[derive(Debug)]

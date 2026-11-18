@@ -195,11 +195,11 @@ fn run_look(art: [u8; 3]) -> Appearance {
 /// nanometres), far below anything sewn, coarse enough that the rounding of transforms composed and
 /// undone (the original's frame) never moves a needle point to the next step but where it lies on
 /// the edge between two. An estimate.
-const FINGERPRINT_STEP: f64 = 1e-4;
+pub(crate) const FINGERPRINT_STEP: f64 = 1e-4;
 /// FNV-1a's 64-bit offset basis and prime (Fowler, Noll and Vo's published constants): a hash whose
 /// value never changes between versions or platforms, so a fingerprint a file keeps stays true.
-const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
-const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
+pub(crate) const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
+pub(crate) const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
 
 /// The fingerprint of the stitches of `group` (a converted object), its needle points taken back
 /// to where they were converted by `frame` (its original's), with each run's cuts and stops: what

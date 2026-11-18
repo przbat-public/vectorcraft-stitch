@@ -26,7 +26,7 @@ fn line(steps: &[f64]) -> Vec<(f64, f64)> {
 /// How many hits rule `id` finds in `plan`, checked for `format`.
 fn hits(plan: &DesignPlan, id: &str, format: Format) -> u64 {
     let rules = vec![check::rule(id).unwrap()];
-    let v = check::check(plan, &Ask { rules, format, limit: check::LIMIT });
+    let v = check::check(plan, &Ask { rules, format, limit: check::LIMIT, live: Vec::new() });
     v["rules"][0]["hits"].as_u64().unwrap()
 }
 
@@ -71,7 +71,7 @@ fn each_stitch_length_rule_fires_past_its_threshold() {
     let hit = |steps: &[f64]| {
         let v = check::check(
             &one(Style::Running, steps),
-            &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT },
+            &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT, live: Vec::new() },
         );
         v["rules"][0]["examples"][0].clone()
     };
@@ -113,7 +113,8 @@ fn melcos_length_rules_look_at_each_objects_settings() {
         planned(1, Some(set(Style::Fill, 2.0)), RED, &points, None),
         planned(2, Some(set(Style::Fill, 1.0)), [30, 30, 200], &points, None),
     ]);
-    let v = check::check(&two, &Ask { rules: vec![check::rule("fillStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    let v =
+        check::check(&two, &Ask { rules: vec![check::rule("fillStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT, live: Vec::new() });
     assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["objects"]), (&json!(2), &json!([1, 2])));
     assert_eq!((&v["rules"][0]["examples"][0]["value"], &v["rules"][0]["examples"][1]["value"]), (&json!(2.0), &json!(1.0)));
     // A literal run: none of the three, however short its stitches.
@@ -193,7 +194,8 @@ fn a_mismatched_thread_and_art_left_out_fire() {
     let mut two = plan(vec![unit(1, Style::Running, RED, &line(&[3.0]), None), unit(2, Style::Running, RED, &[(5.0, 0.0), (8.0, 0.0)], None)]);
     assert_eq!(two.blocks.len(), 1);
     two.blocks[0].thread.delta_e = 12.0;
-    let v = check::check(&two, &Ask { rules: vec![check::rule("threadMismatch").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    let v =
+        check::check(&two, &Ask { rules: vec![check::rule("threadMismatch").unwrap()], format: Format::Dst, limit: check::LIMIT, live: Vec::new() });
     assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["objects"]), (&json!(1), &json!([1, 2])));
     assert_eq!(hits(&p, "notSewn", Format::Dst), 0);
     p.warnings = vec!["type is not stitched".into(), "images are not stitched".into()];
@@ -211,7 +213,8 @@ fn a_unit_that_adds_no_record_is_hit_without_a_number() {
     let satin = Some(Params::for_style(Style::Satin));
     let p = plan(vec![planned(1, None, RED, &line(&[3.0]), None), planned(2, satin, RED, &[(3.0, 0.0)], Some([0.5, 0.5]))]);
     assert!(p.numbers(1).unwrap().is_empty(), "the second unit adds no record");
-    let v = check::check(&p, &Ask { rules: vec![check::rule("satinStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    let v =
+        check::check(&p, &Ask { rules: vec![check::rule("satinStitchShort").unwrap()], format: Format::Dst, limit: check::LIMIT, live: Vec::new() });
     assert_eq!((&v["rules"][0]["hits"], &v["rules"][0]["examples"][0]["record"]), (&json!(1), &json!(null)), "{v}");
 }
 
@@ -366,7 +369,7 @@ fn a_narrow_part_sewn_as_a_running_line_is_no_short_satin() {
 #[test]
 fn the_format_step_note_is_what_the_writer_writes() {
     let p = one(Style::Running, &[3.0, 30.0, 3.0]);
-    let v = check::check(&p, &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    let v = check::check(&p, &Ask { rules: vec![check::rule("formatStep").unwrap()], format: Format::Dst, limit: check::LIMIT, live: Vec::new() });
     assert_eq!(v["rules"][0]["examples"][0]["note"], json!("written as 3 stitches"));
     let written = Format::Dst.read(&Format::Dst.write(&p.to_pattern()).unwrap()).unwrap();
     // Four needle points become six: the 30 mm stitch's two more on the way.
@@ -439,7 +442,8 @@ fn what_is_not_sewn_names_its_objects_and_a_thread_hit_its_thread() {
     // A mismatched thread's hit: its block and its thread.
     let mut p = one(Style::Running, &[3.0]);
     p.blocks[0].thread.delta_e = 12.0;
-    let v = check::check(&p, &Ask { rules: vec![check::rule("threadMismatch").unwrap()], format: Format::Dst, limit: check::LIMIT });
+    let v =
+        check::check(&p, &Ask { rules: vec![check::rule("threadMismatch").unwrap()], format: Format::Dst, limit: check::LIMIT, live: Vec::new() });
     let hit = &v["rules"][0]["examples"][0];
     assert_eq!(hit["block"], json!(1));
     assert_eq!(hit["thread"]["deltaE"], json!(12.0), "{hit}");

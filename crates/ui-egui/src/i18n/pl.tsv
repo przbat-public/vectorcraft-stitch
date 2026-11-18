@@ -5786,6 +5786,7 @@ mark-style	Japanese	Japońskie
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	kształt leży dalej niż {MAX_COORD_MM} mm od początku układu lub ma współrzędną, która nie jest liczbą: nie można go wyhaftować
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	kształt wymagałby około {n} ściegów, więcej niż {MAX_STITCHES}, ile może mieć jeden kształt: użyj dłuższego ściegu, większego odstępu lub mniejszego wzoru
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	to nie jest plik PES ani PEC: nie zaczyna się od #PES ani #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	to nie jest plik SEW: podaje {colors} jako liczbę kolorów, a plik SEW podaje od 1 do {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	to nie jest plik VP3: nie zaczyna się od %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	to nie jest plik {what}: jego rekord {_1} nie jest rekordem DST
 @msg	params must be an object	parametry muszą być obiektem

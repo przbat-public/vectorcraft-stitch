@@ -1,5 +1,6 @@
 //! The machine formats: DST, TAP and T01 (DST's records alone), EXP, PES (its PEC part), PEC on
-//! its own, JEF and VP3 — read and written here.
+//! its own, JEF and VP3 — read and written here — and Janome's SEW, read but never written
+//! ([`Format::READ_ONLY`]).
 //!
 //! Files count coordinates in tenths of a millimetre; this crate counts millimetres. The y axis
 //! points up in DST, TAP, T01, EXP and JEF (a design's top is its largest y there) and down in PEC
@@ -13,8 +14,8 @@
 //! publicly) is summarised in each module. What they share, and what this module holds:
 //!
 //! - no colour names in DST, TAP, T01 and EXP: a design read from them gets [`crate::thread::DEFAULT`]'s
-//!   colours, one per block; PES and JEF number their threads in a maker's palette, and VP3 gives
-//!   each block's colour and name;
+//!   colours, one per block; PES and JEF (and SEW) number their threads in a maker's palette, and
+//!   VP3 gives each block's colour and name;
 //! - no explicit trim in DST, TAP, T01, JEF or VP3: three small jumps that go nowhere in DST (and
 //!   in TAP and T01, which are its records), which a
 //!   machine reads as "cut", and three jumps of zero length in JEF (one is already a trim when
@@ -26,6 +27,7 @@ pub(crate) mod dst;
 pub(crate) mod exp;
 pub(crate) mod jef;
 pub(crate) mod pes;
+pub(crate) mod sew;
 pub(crate) mod tap;
 pub(crate) mod vp3;
 
@@ -84,6 +86,8 @@ pub enum Format {
     /// Husqvarna Viking and Pfaff VP3: nested packets, a thread record (colour, name, brand) in
     /// each colour block.
     Vp3,
+    /// Janome SEW, read only: Janome's older format, a header, preview pictures and JEF's records.
+    Sew,
 }
 
 /// Where a format's files put the machine's origin, the needle's start: a corner of the design
@@ -128,7 +132,7 @@ pub struct Spec {
     /// The bytes its files start with when they announce themselves, any one of these
     /// ([`Format::sniff`]); none for a format told by its extension alone.
     pub magic: &'static [&'static [u8]],
-    /// Its reader, and its writer: optional, so that a format can be read and never written.
+    /// Its reader, and its writer: none for the formats only read ([`Format::READ_ONLY`]).
     pub read: fn(&[u8]) -> Result<Pattern>,
     pub write: Option<Writer>,
     /// What a file of it holds that reading it leaves out ([`Format::losses`]).
@@ -163,7 +167,7 @@ pub enum Loss {
 }
 
 /// No losses: a format whose files hold nothing a reader leaves out (TAP, T01 and EXP have no
-/// header).
+/// header), or that is never written, so that nothing is lost by writing over a file of it (SEW).
 fn no_losses(_: &[u8]) -> Vec<Loss> {
     Vec::new()
 }
@@ -266,10 +270,34 @@ const VP3: Spec = Spec {
     write: Some(vp3::write),
     losses: vp3::losses,
 };
+/// Janome SEW, read only: JEF's records after a header and pictures ([`sew`]).
+const SEW: Spec = Spec {
+    id: "sew",
+    label: "Janome SEW",
+    extensions: &["sew"],
+    mime: "application/x-sew",
+    palette: Some(thread::Palette::Jef),
+    max_step: jef::MAX_DELTA,
+    max_size: MAX_TENTHS,
+    max_colors: Some(sew::MAX_COLORS),
+    start: Start::Centre,
+    magic: &[],
+    read: sew::read,
+    write: None,
+    losses: no_losses,
+};
 
 impl Format {
-    /// Every format, as menus list them.
+    /// Every format written (and read), as the export lists them: the formats the export and the
+    /// embroidery commands' `format` take.
     pub const ALL: [Self; 8] = [Self::Dst, Self::Tap, Self::T01, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3];
+
+    /// The formats read but never written: their public descriptions leave out what a writer needs
+    /// (the project owner's choice, 2026-11-18).
+    pub const READ_ONLY: [Self; 1] = [Self::Sew];
+
+    /// Every format read, as opening lists them: [`Self::ALL`], then [`Self::READ_ONLY`].
+    pub const READ: [Self; 9] = [Self::Dst, Self::Tap, Self::T01, Self::Exp, Self::Pes, Self::Pec, Self::Jef, Self::Vp3, Self::Sew];
 
     /// What the code knows about the format ([`Spec`]).
     pub const fn spec(self) -> &'static Spec {
@@ -282,10 +310,11 @@ impl Format {
             Self::Pec => &PEC,
             Self::Jef => &JEF,
             Self::Vp3 => &VP3,
+            Self::Sew => &SEW,
         }
     }
 
-    /// Whether the format is written (every one here is).
+    /// Whether the format is written: false for those only read ([`Self::READ_ONLY`]).
     pub const fn writes(self) -> bool {
         self.spec().write.is_some()
     }
@@ -306,8 +335,8 @@ impl Format {
     }
 
     /// The thread palette the format numbers its threads in: Brother's for PES (its PEC part) and
-    /// PEC, Janome's for JEF; `None` for DST, TAP, T01 and EXP, which name no colours, and for VP3,
-    /// which writes each thread's own colour.
+    /// PEC, Janome's for JEF and SEW; `None` for DST, TAP, T01 and EXP, which name no colours, and
+    /// for VP3, which writes each thread's own colour.
     pub fn palette(self) -> Option<thread::Palette> {
         self.spec().palette
     }
@@ -321,9 +350,10 @@ impl Format {
     }
 
     /// The most colour blocks the format holds, `None` where its layout sets no limit: the PEC
-    /// header (in PES and in PEC) counts them in a byte (255), VP3 in a 16-bit word (65,535); DST,
-    /// TAP, T01, EXP and JEF have no such field (DST's header counts colour changes in text a reader
-    /// recomputes, TAP and T01 have no header, JEF counts them in a 32-bit word).
+    /// header (in PES and in PEC) counts them in a byte (255), VP3 in a 16-bit word (65,535), and
+    /// SEW's header lists 12; DST, TAP, T01, EXP and JEF have no such field (DST's header counts
+    /// colour changes in text a reader recomputes, TAP and T01 have no header, JEF counts them in a
+    /// 32-bit word).
     pub fn max_colors(self) -> Option<usize> {
         self.spec().max_colors
     }
@@ -333,21 +363,27 @@ impl Format {
         self.spec().start
     }
 
-    /// The format `id` names (`dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef`, `vp3`).
+    /// The written format `id` names (`dst`, `tap`, `t01`, `exp`, `pes`, `pec`, `jef`, `vp3`): one
+    /// a design can be written in; [`Self::readable`] finds those only read too.
     pub fn from_id(id: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|f| f.id() == id)
     }
 
-    /// The format a file named `extension` has, in any case.
+    /// The format `id` names among every format read ([`Self::READ`]): those written, and `sew`.
+    pub fn readable(id: &str) -> Option<Self> {
+        Self::READ.into_iter().find(|f| f.id() == id)
+    }
+
+    /// The format a file named `extension` has, in any case, among every format read.
     pub fn from_extension(extension: &str) -> Option<Self> {
         let e = extension.trim_start_matches('.').to_ascii_lowercase();
-        Self::ALL.into_iter().find(|f| f.spec().extensions.contains(&e.as_str()))
+        Self::READ.into_iter().find(|f| f.spec().extensions.contains(&e.as_str()))
     }
 
     /// The format a file's first bytes announce, when they announce one: Brother's and VP3 files
-    /// carry a magic string; DST, TAP, T01, EXP and JEF are recognised by their extension.
+    /// carry a magic; DST, TAP, T01, EXP, JEF and SEW are recognised by their extension.
     pub fn sniff(bytes: &[u8]) -> Option<Self> {
-        Self::ALL.into_iter().find(|f| f.spec().magic.iter().any(|m| bytes.starts_with(m)))
+        Self::READ.into_iter().find(|f| f.spec().magic.iter().any(|m| bytes.starts_with(m)))
     }
 
     /// Read a design from `bytes`.
@@ -363,7 +399,7 @@ impl Format {
 
     /// Write `pattern` in this format: refused with [`Error::TooLarge`] when the design is wider or
     /// taller than the format can state ([`Spec::max_size`]), or its file would be larger than
-    /// [`MAX_FILE_BYTES`] (moves split into many records), and for a format that isn't written.
+    /// [`MAX_FILE_BYTES`] (moves split into many records), and for a format only read.
     pub fn write(self, pattern: &Pattern) -> Result<Vec<u8>> {
         let Some(write) = self.spec().write else { return Err(self.not_written()) };
         if pattern.is_empty() {
@@ -385,7 +421,7 @@ impl Format {
         write(pattern)
     }
 
-    /// The error for writing a format that isn't written.
+    /// The error for writing a format only read ([`Self::READ_ONLY`]).
     fn not_written(self) -> Error {
         Error::Format(format!("{} files can be opened but not written (see document.formats)", self.label()))
     }
@@ -415,7 +451,7 @@ impl Grid {
 impl Format {
     /// The grid this format's writer counts `pattern`'s points on: the frame each writer makes (from
     /// where the design starts, or its corner, for DST, TAP, T01, EXP, PES and PEC; from its centre
-    /// for JEF and VP3).
+    /// for JEF and VP3). Refused for a format only read, which has no writer.
     pub fn grid(self, pattern: &Pattern) -> Result<Grid> {
         Ok(Grid(match self {
             Self::Dst | Self::Tap | Self::T01 => dst::frame(pattern)?,
@@ -423,6 +459,7 @@ impl Format {
             Self::Pes | Self::Pec => pes::frame(pattern)?,
             Self::Jef => jef::frame(pattern)?,
             Self::Vp3 => vp3::frame(pattern)?,
+            Self::Sew => return Err(self.not_written()),
         }))
     }
 }
@@ -875,20 +912,38 @@ mod tests {
     }
 
     /// Each format's spec is its own (its id names it back, its extension finds it), every format is
-    /// in `ALL` once, and the starts are the ones the writers use: a corner, the centre in JEF and VP3.
+    /// in `READ` once, those written in `ALL` and the others in `READ_ONLY`, and the starts are the
+    /// ones the writers use: a corner, the centre in JEF and VP3 (and SEW, as JEF's files start).
     #[test]
     fn every_format_has_a_spec_of_its_own() {
-        for f in Format::ALL {
-            assert_eq!(Format::from_id(f.id()), Some(f));
+        for f in Format::READ {
+            assert_eq!(Format::readable(f.id()), Some(f));
             assert_eq!(Format::from_extension(f.extension()), Some(f));
-            assert_eq!(Format::ALL.iter().filter(|g| **g == f).count(), 1, "{f:?}");
+            assert_eq!(Format::READ.iter().filter(|g| **g == f).count(), 1, "{f:?}");
+            assert_eq!(f.writes(), Format::ALL.contains(&f), "{f:?}");
+            assert_eq!(Format::from_id(f.id()), f.writes().then_some(f), "{f:?}: from_id finds the formats written");
+            assert_ne!(Format::ALL.contains(&f), Format::READ_ONLY.contains(&f), "{f:?}");
         }
-        let centred: Vec<Format> = Format::ALL.into_iter().filter(|f| f.start() == Start::Centre).collect();
-        assert_eq!(centred, [Format::Jef, Format::Vp3]);
+        assert_eq!(Format::READ.len(), Format::ALL.len() + Format::READ_ONLY.len());
+        let centred: Vec<Format> = Format::READ.into_iter().filter(|f| f.start() == Start::Centre).collect();
+        assert_eq!(centred, [Format::Jef, Format::Vp3, Format::Sew]);
         assert_eq!(Format::sniff(b"#PES0001"), Some(Format::Pes));
         assert_eq!(Format::sniff(b"#PEC0001"), Some(Format::Pec));
         assert_eq!(Format::sniff(vp3::MAGIC), Some(Format::Vp3));
         assert_eq!(Format::sniff(b"LA:"), None);
+        assert_eq!(Format::from_extension(".SEW"), Some(Format::Sew));
+    }
+
+    /// A format only read writes nothing and has no grid to count a design on, saying so; nor do
+    /// its files hold anything that reading them loses by being written over.
+    #[test]
+    fn a_format_only_read_is_not_written() {
+        for f in Format::READ_ONLY {
+            let e = f.write(&design()).unwrap_err().to_string();
+            assert!(e.contains("can be opened but not written"), "{f:?}: {e}");
+            assert!(f.grid(&design()).is_err(), "{f:?}");
+            assert_eq!(f.losses(b"anything"), [], "{f:?}");
+        }
     }
 
     /// A design whose moves split into a great many records (stitches 150 m apart) is refused by
@@ -948,6 +1003,8 @@ mod tests {
         let block_len = (vp3.len() - (block + 7)) as u32;
         vp3[block + 3..block + 7].copy_from_slice(&block_len.to_be_bytes());
         refused(Format::Vp3, &vp3);
+        // SEW: JEF's stitch records after its header.
+        refused(Format::Sew, &vectorcraft_testkit::machine_files::sew(&[1], &[0x01u8, 0x00].repeat(n)));
     }
 
     /// A PEC file's first 520 bytes: the magic, a PEC header naming one colour, and a stitch
@@ -1001,6 +1058,14 @@ mod tests {
                 assert!(sx.abs() <= 121 && sy.abs() <= 121, "{sx},{sy}");
             }
         }
+    }
+
+    /// Files of the formats only read, built as their readers' modules describe them: a SEW holding
+    /// [`design`]'s JEF records.
+    fn read_only_files() -> Vec<(Format, Vec<u8>)> {
+        use vectorcraft_testkit::machine_files::sew_from_jef;
+        let jef = Format::Jef.write(&design()).expect("writes");
+        vec![(Format::Sew, sew_from_jef(&jef).expect("a JEF header"))]
     }
 
     /// A small design with two threads, for the reader tests.
@@ -1128,27 +1193,27 @@ mod tests {
     /// damaged bytes, and never panic.
     #[test]
     fn no_reader_panics_on_hostile_input() {
-        let designs: Vec<Vec<u8>> = Format::ALL.iter().map(|f| f.write(&design()).expect("writes")).collect();
+        let mut designs: Vec<(Format, Vec<u8>)> = Format::ALL.iter().map(|f| (*f, f.write(&design()).expect("writes"))).collect();
+        designs.extend(read_only_files());
         let magics: [&[u8]; 5] = [b"#PES0001", b"#PEC0001", b"LA:", b"        ", vp3::MAGIC];
-        for len in [0usize, 1, 2, 3, 8, 12, 22, 100, 511, 512, 513, 528, 532, 1000, 4096] {
+        for len in [0usize, 1, 2, 3, 8, 12, 22, 42, 100, 511, 512, 513, 528, 532, 1000, 4096, sew::STITCHES_AT + 40] {
             for seed in 0..24u64 {
                 let bytes = noise(seed.wrapping_mul(0x9E37_79B9) + len as u64, len);
-                for f in Format::ALL {
+                for f in Format::READ {
                     let _ = f.read(&bytes);
                 }
                 // The same bytes behind each format's magic, which takes the deeper paths.
                 for magic in magics {
                     let mut with_magic = magic.to_vec();
                     with_magic.extend_from_slice(&bytes);
-                    for f in Format::ALL {
+                    for f in Format::READ {
                         let _ = f.read(&with_magic);
                     }
                 }
             }
         }
         // Every prefix of a valid file, and single bytes flipped: an error or a design, not a panic.
-        for (i, f) in Format::ALL.iter().enumerate() {
-            let bytes = designs.get(i).expect("a design per format");
+        for (f, bytes) in &designs {
             for n in (0..bytes.len()).step_by(7) {
                 let _ = f.read(&bytes[..n]);
             }

@@ -193,6 +193,58 @@ fn a_vp3_keeps_the_arts_colours_and_opens_by_its_magic_bytes() {
     assert!(strokes.contains(&red), "{strokes:?}");
 }
 
+/// A SEW holding a JEF's records opens as that JEF does: the same groups, runs and needle points,
+/// in Janome's palette; placed, it comes in too. A design opened from it exports as any design does
+/// (here as DST, with the JEF's needle points).
+#[test]
+fn a_sew_opens_as_the_jef_it_holds() {
+    let mut s = art();
+    let jef = export(&mut s, "jef", json!({}));
+    let sew = vectorcraft_testkit::machine_files::sew_from_jef(&jef).unwrap();
+    let mut from_jef = Session::new();
+    open(&mut from_jef, "design.jef", &jef).unwrap();
+    let mut from_sew = Session::new();
+    let r = open(&mut from_sew, "design.sew", &sew).unwrap();
+    assert_eq!(r["format"].as_str(), Some("sew"));
+    let palette = from_sew.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id());
+    assert_eq!(palette, Some("jef"));
+    let leaves = |s: &Session| {
+        let mut v: Vec<(Option<String>, String)> = Vec::new();
+        s.doc().unwrap().doc.walk(|n| {
+            if n.children().is_none() {
+                v.push((n.name.clone(), format!("{:?} {:?}", n.appearance.stroke().map(|st| &st.paint), n.kind)));
+            }
+        });
+        v
+    };
+    assert_eq!(leaves(&from_sew), leaves(&from_jef));
+    let (dst_of_sew, dst_of_jef) = (export(&mut from_sew, "dst", json!({})), export(&mut from_jef, "dst", json!({})));
+    assert_eq!(sewn(&plan(&dst_of_sew)), sewn(&plan(&dst_of_jef)));
+    s.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
+    s.execute("file.place", &json!({"name": "design.sew", "dataBase64": b64(&sew)})).expect("places");
+}
+
+/// The formats only read (SEW) are never written: `document.formats` lists them as readable
+/// only, with no options; an export to one is refused, saying so; none is offered among the
+/// export's extensions or the embroidery check's formats.
+#[test]
+fn formats_only_read_are_not_written() {
+    let mut s = art();
+    let r = s.execute("document.formats", &json!({})).unwrap();
+    let ids = |k: &str| r[k].as_array().unwrap().iter().filter_map(|v| v.as_str().map(str::to_string)).collect::<Vec<_>>();
+    assert!(!Format::READ_ONLY.is_empty());
+    for id in Format::READ_ONLY.map(Format::id) {
+        assert!(ids("readable").contains(&id.to_string()) && !ids("writable").contains(&id.to_string()), "{id}");
+        let f = r["formats"].as_array().unwrap().iter().find(|f| f["id"] == id).unwrap();
+        assert_eq!(f["options"], json!({}), "{id}");
+        let e = s.execute("document.export", &json!({"format": id})).unwrap_err().to_string();
+        assert!(e.contains("can be opened but not written"), "{id}: {e}");
+        assert!(!export_extensions().contains(&id), "{id}");
+        assert!(!crate::cmd::embroidery::check_formats().iter().any(|(f, _)| *f == id), "{id}");
+        assert!(OPEN_EXTS.contains(&id) && PLACE_EXTS.contains(&id) && UNASSOCIATED_EXTS.contains(&id), "{id}");
+    }
+}
+
 /// Each block's needle points (where the needle goes down) and the trims, as a reader decodes
 /// them: what a machine sews.
 fn sewn(p: &vectorcraft_stitch::Pattern) -> Vec<(Vec<(i32, i32)>, usize)> {

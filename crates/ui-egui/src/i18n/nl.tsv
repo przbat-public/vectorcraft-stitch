@@ -5811,6 +5811,7 @@ swatch	Bright Violet	Felviolet
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	een vorm ligt meer dan {MAX_COORD_MM} mm van de oorsprong of heeft een coördinaat die geen getal is: hij kan niet worden geborduurd
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	een vorm zou ongeveer {n} steken nodig hebben, meer dan de {MAX_STITCHES} die één vorm mag hebben: gebruik een langere steek, meer tussenruimte of een kleiner ontwerp
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	geen PES- of PEC-bestand: het begint niet met #PES of #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	geen SEW-bestand: het vermeldt {colors} kleuren, en een SEW-bestand vermeldt er 1 tot {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	geen VP3-bestand: het begint niet met %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	geen {what}-bestand: record {_1} is geen DST-record
 @msg	params must be an object	de parameters moeten een object zijn

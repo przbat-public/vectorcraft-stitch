@@ -5955,6 +5955,7 @@ swatch	Yellow Green	Gulgrön
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en form ligger mer än {MAX_COORD_MM} mm från origo eller har en koordinat som inte är ett tal: den kan inte broderas
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en form skulle behöva omkring {n} stygn, fler än de {MAX_STITCHES} en form får ha: använd ett längre stygn, större avstånd eller ett mindre mönster
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	inte en PES- eller PEC-fil: den börjar inte med #PES eller #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	inte en SEW-fil: den anger {colors} färger, och en SEW-fil anger 1 till {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	inte en VP3-fil: den börjar inte med %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	inte en {what}-fil: dess post {_1} är inte en DST-post
 @msg	params must be an object	parametrarna måste vara ett objekt

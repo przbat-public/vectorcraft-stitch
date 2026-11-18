@@ -7198,6 +7198,47 @@ proptest! {
     }
 }
 
+/// The embroidery formats read but never written: their samples are built from the rich
+/// document's exports ([`read_only_samples`]).
+const EMBROIDERY_READ_ONLY: [&str; 1] = ["sew"];
+
+/// The rich document as SEW (a SEW holding its JEF export's records), in [`EMBROIDERY_READ_ONLY`]'s
+/// order.
+fn read_only_samples() -> &'static [Vec<u8>] {
+    use vectorcraft_testkit::machine_files::sew_from_jef;
+    static SAMPLES: std::sync::OnceLock<Vec<Vec<u8>>> = std::sync::OnceLock::new();
+    SAMPLES.get_or_init(|| {
+        let exported = |f: &str| embroidery_samples()[EMBROIDERY.iter().position(|e| *e == f).unwrap()].clone();
+        vec![sew_from_jef(&exported("jef")).unwrap()]
+    })
+}
+
+proptest! {
+    #![proptest_config(config())]
+
+    /// SEW files damaged: bytes changed anywhere (counts included) and the file cut short.
+    #[test]
+    fn mutated_read_only_embroidery_never_panics(which in 0usize..EMBROIDERY_READ_ONLY.len(), cut in 0usize..200_000, edits in prop::collection::vec((0usize..200_000, any::<u8>()), 0..24)) {
+        let mut bytes = read_only_samples()[which].clone();
+        let n = bytes.len();
+        for &(at, b) in &edits {
+            bytes[at % n] = b;
+        }
+        bytes.truncate(cut.max(1));
+        survive_metafile("mutated embroidery", &format!("x.{}", EMBROIDERY_READ_ONLY[which]), &bytes)?;
+    }
+
+    /// Random records behind each format's own header: SEW's records after its header and
+    /// pictures.
+    #[test]
+    fn random_read_only_embroidery_records_never_panic(which in 0usize..EMBROIDERY_READ_ONLY.len(), body in prop::collection::vec(any::<u8>(), 0..2048)) {
+        let sample = &read_only_samples()[which];
+        let mut bytes = sample[..vectorcraft_testkit::machine_files::SEW_STITCHES_AT].to_vec();
+        bytes.extend(&body);
+        survive_metafile("embroidery records", &format!("x.{}", EMBROIDERY_READ_ONLY[which]), &bytes)?;
+    }
+}
+
 // VectorCraft Stitch: designs with stops, from the fork's fixed seed.
 proptest! {
     #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(64))]

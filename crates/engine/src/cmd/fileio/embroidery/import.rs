@@ -56,7 +56,7 @@ fn loss_note(loss: Loss) -> &'static str {
 /// Read a design into a document: one group per thread, each run of stitches a thin line. The
 /// notes say what reading it left out ([`LOSS_NOTES`]).
 pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Vec<String>)> {
-    let format = StitchFormat::from_id(f.id).ok_or_else(|| bad("document.open", format!("{} is not an embroidery format", f.label)))?;
+    let format = StitchFormat::readable(f.id).ok_or_else(|| bad("document.open", format!("{} is not an embroidery format", f.label)))?;
     let pattern = format.read(bytes).map_err(err)?;
     let b = pattern.bounds().ok_or_else(|| err("the file has no stitches"))?;
     // Points per millimetre.

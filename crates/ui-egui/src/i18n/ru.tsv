@@ -5541,6 +5541,7 @@ lighting	Light	Свет
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	фигура лежит дальше {MAX_COORD_MM} мм от начала координат или имеет координату, которая не является числом: её нельзя вышить
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	фигуре понадобилось бы около {n} стежков, больше {MAX_STITCHES}, допустимых для одной фигуры: используйте более длинный стежок, больший шаг или меньший дизайн
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	это не файл PES или PEC: он не начинается с #PES или #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	это не файл SEW: указанное в нём число цветов — {colors}, а в файле SEW оно от 1 до {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	это не файл VP3: он не начинается с %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	это не файл {what}: его запись {_1} не является записью DST
 @msg	params must be an object	параметры должны быть объектом

@@ -5933,6 +5933,7 @@ mark-style	Japanese	Japonské
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	tvar leží dál než {MAX_COORD_MM} mm od počátku nebo má souřadnici, která není číslo: nelze jej vyšít
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	tvar by potřeboval asi {n} stehů, víc než {MAX_STITCHES}, které smí mít jeden tvar: použijte delší steh, větší rozestup nebo menší návrh
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	není to soubor PES ani PEC: nezačíná #PES ani #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	není to soubor SEW: uvádí počet barev {colors}, ale soubor SEW jich uvádí 1 až {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	není to soubor VP3: nezačíná %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	není to soubor {what}: jeho záznam {_1} není záznam DST
 @msg	params must be an object	parametry musí být objekt

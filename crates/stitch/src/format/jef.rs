@@ -238,8 +238,9 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     Ok(finish(String::new(), points, &threads))
 }
 
-/// The points of the JEF records in `bytes` from byte `at`: up to the end record, an unknown
-/// command or the file's end. `what` names the format in the errors.
+/// The points of the JEF records in `bytes` from byte `at` (SEW files hold the same records,
+/// [`super::sew`]): up to the end record, an unknown command or the file's end. `what` names the
+/// format in the errors.
 pub(crate) fn read_records(bytes: &[u8], at: usize, what: &str) -> Result<Vec<Stitch>> {
     let mut r = Reader::new(bytes);
     r.seek(at);

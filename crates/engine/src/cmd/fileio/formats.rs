@@ -517,6 +517,8 @@ pub const FORMATS: &[Format] = &[
     super::embroidery::format(vectorcraft_stitch::format::Format::Pec),
     super::embroidery::format(vectorcraft_stitch::format::Format::Jef),
     super::embroidery::format(vectorcraft_stitch::format::Format::Vp3),
+    // An embroidery format read but never written: a design opened from it is exported in another.
+    super::embroidery::format(vectorcraft_stitch::format::Format::Sew),
 ];
 
 /// Every extension `document.open` reads (the "All readable files" filter of open dialogs).
@@ -575,6 +577,7 @@ pub const OPEN_EXTS: &[&str] = &[
     "pec",
     "jef",
     "vp3",
+    "sew",
 ];
 
 /// Extensions in [`OPEN_EXTS`] the packaging declares no type for: Photoshop documents belong to
@@ -585,7 +588,7 @@ pub const OPEN_EXTS: &[&str] = &[
 /// type (shared-mime-info's) also covers `.epsf`, so file managers offer VectorCraft for it.
 pub const UNASSOCIATED_EXTS: &[&str] = &[
     "psd", "pdd", "psb", "epsf", "ps", "pns", "dib", "rle", "tga", "vda", "icb", "vst", "pcx", "pxr", "jpf", "jpx", "jp2", "j2k", "j2c", "jpc",
-    "heic", "heif", "jxl", "dst", "tap", "t01", "exp", "pes", "pec", "jef", "vp3",
+    "heic", "heif", "jxl", "dst", "tap", "t01", "exp", "pes", "pec", "jef", "vp3", "sew",
 ];
 
 /// The extension that picks each writable format when exporting (the format's first; PNG-8 shares
@@ -673,6 +676,7 @@ pub const PLACE_EXTS: &[&str] = &[
     "pec",
     "jef",
     "vp3",
+    "sew",
     "txt",
     "rtf",
     "docx",

@@ -5508,6 +5508,7 @@ lighting	Light	광원
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	도형이 원점에서 {MAX_COORD_MM}mm보다 멀리 있거나 숫자가 아닌 좌표가 있습니다: 자수할 수 없습니다
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	도형에 약 {n}땀이 필요하며, 한 도형에 허용되는 {MAX_STITCHES}땀을 넘습니다: 땀을 길게, 간격을 넓게, 또는 디자인을 작게 하세요
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES 또는 PEC 파일이 아닙니다: #PES 또는 #PEC로 시작하지 않습니다
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	SEW 파일이 아닙니다: 색이 {colors}가지로 지정되어 있지만, SEW 파일의 색은 1~{MAX_COLORS}가지입니다
 @msg	not a VP3 file: it does not start with %vsm%	VP3 파일이 아닙니다: %vsm%로 시작하지 않습니다
 @msg	not a {what} file: its record {_1} is not a DST record	{what} 파일이 아닙니다: 레코드 {_1}이(가) DST 레코드가 아닙니다
 @msg	params must be an object	매개변수는 객체여야 합니다

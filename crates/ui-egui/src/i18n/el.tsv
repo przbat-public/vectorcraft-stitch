@@ -5884,6 +5884,7 @@ effect	Points	Σημεία
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	ένα σχήμα βρίσκεται πάνω από {MAX_COORD_MM} mm από την αρχή ή έχει συντεταγμένη που δεν είναι αριθμός: δεν μπορεί να κεντηθεί
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	ένα σχήμα θα χρειαζόταν περίπου {n} βελονιές, περισσότερες από τις {MAX_STITCHES} που επιτρέπονται σε ένα σχήμα: χρησιμοποιήστε μακρύτερη βελονιά, μεγαλύτερη απόσταση ή μικρότερο σχέδιο
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	δεν είναι αρχείο PES ή PEC: δεν ξεκινά με #PES ή #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	δεν είναι αρχείο SEW: ο αριθμός χρωμάτων που δηλώνει είναι {colors}, ενώ ένα αρχείο SEW δηλώνει από 1 έως {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	δεν είναι αρχείο VP3: δεν ξεκινά με %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	δεν είναι αρχείο {what}: η εγγραφή του {_1} δεν είναι εγγραφή DST
 @msg	params must be an object	οι παράμετροι πρέπει να είναι αντικείμενο

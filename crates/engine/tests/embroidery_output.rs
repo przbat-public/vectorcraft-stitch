@@ -1142,8 +1142,9 @@ fn threads_apart(format: Format, bytes: &[u8]) -> Option<(Vec<u8>, Vec<u32>)> {
             (header + PEC_COLOR_COUNT + 1, count, 1)
         }
         Format::Jef => (JEF_THREADS, word(JEF_COLOR_COUNT), WORD),
-        // VP3 writes each block's colour itself, not a number: its whole hash pins it.
-        Format::Dst | Format::Tap | Format::T01 | Format::Exp | Format::Vp3 => return None,
+        // VP3 writes each block's colour itself, not a number: its whole hash pins it. SEW is never
+        // written.
+        Format::Dst | Format::Tap | Format::T01 | Format::Exp | Format::Vp3 | Format::Sew => return None,
     };
     let mut blanked = bytes.to_vec();
     let mut numbers = Vec::with_capacity(count);

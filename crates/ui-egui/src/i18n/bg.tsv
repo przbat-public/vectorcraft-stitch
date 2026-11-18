@@ -5771,6 +5771,7 @@ theme	Appearance	Външен вид
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	форма е на повече от {MAX_COORD_MM} mm от началото или има координата, която не е число: не може да се бродира
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	формата би изисквала около {n} бода, повече от {MAX_STITCHES}, колкото може да има една форма: използвайте по-дълъг бод, по-голямо разстояние или по-малък дизайн
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	не е PES или PEC файл: не започва с #PES или #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	не е SEW файл: посоченият в него брой цветове е {colors}, а SEW файлът посочва от 1 до {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	не е VP3 файл: не започва с %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	не е {what} файл: записът му {_1} не е DST запис
 @msg	params must be an object	параметрите трябва да са обект

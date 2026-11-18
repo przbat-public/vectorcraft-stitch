@@ -6463,6 +6463,7 @@ shape	Open	Otvoren
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	oblik leži više od {MAX_COORD_MM} mm od ishodišta ili ima koordinatu koja nije broj: ne može se vesti
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	oblik bi trebao oko {n} bodova, više od {MAX_STITCHES} koliko jedan oblik smije imati: koristite duži bod, veći razmak ili manji dizajn
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	nije PES ni PEC datoteka: ne počinje s #PES ni #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	nije SEW datoteka: broj boja naveden u njoj je {colors}, a SEW datoteka navodi od 1 do {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	nije VP3 datoteka: ne počinje s %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	nije {what} datoteka: njen zapis {_1} nije DST zapis
 @msg	params must be an object	parametri moraju biti objekat

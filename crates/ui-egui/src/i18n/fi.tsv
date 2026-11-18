@@ -5896,6 +5896,7 @@ mark-style	Japanese	Japanilainen
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	muoto on yli {MAX_COORD_MM} mm:n päässä origosta tai sillä on koordinaatti, joka ei ole luku: sitä ei voi kirjoa
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	muoto tarvitsisi noin {n} pistoa, enemmän kuin muodolle sallitut {MAX_STITCHES}: käytä pidempää pistoa, suurempaa väliä tai pienempää mallia
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ei PES- eikä PEC-tiedosto: se ei ala #PES tai #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	ei SEW-tiedosto: se ilmoittaa {colors} väriä, mutta SEW-tiedosto ilmoittaa 1–{MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	ei VP3-tiedosto: se ei ala %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	ei {what}-tiedosto: sen tietue {_1} ei ole DST-tietue
 @msg	params must be an object	parametrien on oltava objekti

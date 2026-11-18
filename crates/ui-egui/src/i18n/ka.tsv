@@ -5813,6 +5813,7 @@ imageTrace	Outline	კონტური
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	ფიგურა სათავიდან {MAX_COORD_MM} მმ-ზე მეტით არის დაშორებული ან აქვს კოორდინატი, რომელიც რიცხვი არ არის: მისი ამოქარგვა შეუძლებელია
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	ფიგურას დასჭირდება დაახლოებით {n} ნაკერი, მეტი, ვიდრე ერთ ფიგურას დაშვებული {MAX_STITCHES}: გამოიყენეთ უფრო გრძელი ნაკერი, უფრო დიდი დაშორება ან უფრო პატარა დიზაინი
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ეს არ არის PES ან PEC ფაილი: არ იწყება #PES-ით ან #PEC-ით
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	ეს არ არის SEW ფაილი: {colors} ფერს ასახელებს, SEW ფაილი კი 1-დან {MAX_COLORS}-მდე ფერს ასახელებს
 @msg	not a VP3 file: it does not start with %vsm%	ეს არ არის VP3 ფაილი: არ იწყება %vsm%-ით
 @msg	not a {what} file: its record {_1} is not a DST record	ეს არ არის {what} ფაილი: მისი ჩანაწერი {_1} არ არის DST ჩანაწერი
 @msg	params must be an object	პარამეტრები ობიექტი უნდა იყოს

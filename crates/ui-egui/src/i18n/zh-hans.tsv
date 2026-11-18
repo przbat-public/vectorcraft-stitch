@@ -5770,6 +5770,7 @@ lighting	Light	光源
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	某个形状距原点超过 {MAX_COORD_MM} mm，或有不是数字的坐标：无法刺绣
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	某个形状约需 {n} 针，超过单个形状允许的 {MAX_STITCHES} 针：请使用更长的针迹、更宽的间距或更小的图案
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	不是 PES 或 PEC 文件：不以 #PES 或 #PEC 开头
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	不是 SEW 文件：指定了 {colors} 种颜色，而 SEW 文件指定 1 到 {MAX_COLORS} 种
 @msg	not a VP3 file: it does not start with %vsm%	不是 VP3 文件：不以 %vsm% 开头
 @msg	not a {what} file: its record {_1} is not a DST record	不是 {what} 文件：其第 {_1} 条记录不是 DST 记录
 @msg	params must be an object	参数必须是对象

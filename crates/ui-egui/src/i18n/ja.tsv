@@ -5590,6 +5590,7 @@ lighting	Light	ライト
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	図形が原点から {MAX_COORD_MM} mm より離れているか、数値でない座標を持っています: 刺繍できません
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	図形に約 {n} 針が必要で、1 つの図形に許される {MAX_STITCHES} 針を超えます: 針目を長く、間隔を広く、またはデザインを小さくしてください
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES または PEC ファイルではありません: #PES または #PEC で始まっていません
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	SEW ファイルではありません: {colors} 色が指定されていますが、SEW ファイルの色は 1～{MAX_COLORS} 色です
 @msg	not a VP3 file: it does not start with %vsm%	VP3 ファイルではありません: %vsm% で始まっていません
 @msg	not a {what} file: its record {_1} is not a DST record	{what} ファイルではありません: レコード {_1} が DST のレコードではありません
 @msg	params must be an object	パラメーターはオブジェクトである必要があります

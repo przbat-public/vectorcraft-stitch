@@ -1,6 +1,6 @@
-//! Embroidery files: `document.open` reads a design's stitches as paths, `document.export`
-//! stitches the document's art and writes a machine file (DST, TAP, T01, EXP, PES, PEC, JEF or
-//! VP3).
+//! Embroidery files: `document.open` reads a design's stitches as paths (also from Janome SEW files,
+//! which are never written), `document.export` stitches the document's art and writes a machine
+//! file (DST, TAP, T01, EXP, PES, PEC, JEF or VP3).
 //!
 //! Reading draws each colour block as a group of thin lines in the thread's colour, so the design
 //! looks like it will sew, and can be measured, traced over or recoloured. Writing takes every
@@ -144,15 +144,18 @@ pub const OPTIONS: &[FormatOption] =
     &[STITCH, SPACING, LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, WEIGHT, UNDERLAY, JUMP, TRIM, MIN_STITCH, SPLIT];
 
 /// The entry of `f` in the formats `document.open` and `document.export` know: as the stitch crate
-/// describes it ([`StitchFormat::spec`]), read and written, with the embroidery options.
+/// describes it ([`StitchFormat::spec`]), read, and written with the embroidery options when the
+/// stitch crate writes it (SEW is only read).
 pub(super) const fn format(f: StitchFormat) -> Format {
     let s = f.spec();
-    Format { id: s.id, label: s.label, extensions: s.extensions, mime: s.mime, read: true, write: true, raster: false, options: OPTIONS }
+    let write = f.writes();
+    let options = if write { OPTIONS } else { &[] };
+    Format { id: s.id, label: s.label, extensions: s.extensions, mime: s.mime, read: true, write, raster: false, options }
 }
 
-/// Whether `id` names an embroidery format: one the stitch crate reads and writes.
+/// Whether `id` names an embroidery format: one the stitch crate reads (and, but for SEW, writes).
 pub(crate) fn is_format(id: &str) -> bool {
-    StitchFormat::from_id(id).is_some()
+    StitchFormat::readable(id).is_some()
 }
 
 /// `file.formatOptions`' value of an option of format `id`: for an embroidery format, unset
@@ -182,7 +185,10 @@ pub(crate) const STOPS_WRITTEN: &str = "each stop is written as a change to the 
 /// Write a machine file from the document's visible art: its stitch plan, as the format writes it.
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
-    let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
+    let format = StitchFormat::readable(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
+    if !format.writes() {
+        return Err(bad(C, format!("{} files can be opened but not written (see document.formats)", f.label)));
+    }
     let plan = service::plan_afresh(doc, &opts).map_err(PlanError::error)?;
     if plan.is_empty() {
         // What was left out says why, when something was. The document's, not the parameters'.

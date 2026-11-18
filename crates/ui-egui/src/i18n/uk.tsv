@@ -5527,6 +5527,7 @@ lighting	Light	Світло
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	фігура лежить далі ніж {MAX_COORD_MM} мм від початку координат або має координату, що не є числом: її не можна вишити
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	фігурі знадобилося б близько {n} стібків, більше за {MAX_STITCHES}, дозволених одній фігурі: використайте довший стібок, більший крок або менший дизайн
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	це не файл PES чи PEC: він не починається з #PES чи #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	це не файл SEW: вказана в ньому кількість кольорів — {colors}, а файл SEW вказує від 1 до {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	це не файл VP3: він не починається з %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	це не файл {what}: його запис {_1} не є записом DST
 @msg	params must be an object	параметри мають бути об’єктом

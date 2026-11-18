@@ -5760,6 +5760,7 @@ swatch	Bright Violet	Violet cerah
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	sebuah bentuk berada lebih dari {MAX_COORD_MM} mm dari titik asal atau memiliki koordinat yang bukan angka: tidak dapat dibordir
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	sebuah bentuk akan memerlukan sekitar {n} jahitan, lebih dari {MAX_STITCHES} yang boleh dimiliki satu bentuk: gunakan jahitan lebih panjang, jarak lebih lebar, atau desain lebih kecil
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	bukan file PES atau PEC: tidak diawali #PES atau #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	bukan file SEW: file ini menyebutkan {colors} warna, sedangkan file SEW menyebutkan 1 hingga {MAX_COLORS} warna
 @msg	not a VP3 file: it does not start with %vsm%	bukan file VP3: tidak diawali %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	bukan file {what}: rekamannya {_1} bukan rekaman DST
 @msg	params must be an object	parameter harus berupa objek

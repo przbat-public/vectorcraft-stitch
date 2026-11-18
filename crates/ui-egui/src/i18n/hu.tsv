@@ -5916,6 +5916,7 @@ imageTrace	Outline	Körvonal
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	egy alakzat több mint {MAX_COORD_MM} mm-re van az origótól, vagy olyan koordinátája van, amely nem szám: nem hímezhető
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	egy alakzathoz körülbelül {n} öltés kellene, több, mint az egy alakzatnak megengedett {MAX_STITCHES}: használjon hosszabb öltést, nagyobb sortávolságot vagy kisebb mintát
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	nem PES- vagy PEC-fájl: nem #PES vagy #PEC kezdetű
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	nem SEW-fájl: {colors} színt ad meg, egy SEW-fájl pedig 1–{MAX_COLORS} színt ad meg
 @msg	not a VP3 file: it does not start with %vsm%	nem VP3-fájl: nem %vsm% kezdetű
 @msg	not a {what} file: its record {_1} is not a DST record	nem {what}-fájl: a(z) {_1}. rekordja nem DST-rekord
 @msg	params must be an object	a paramétereknek objektumnak kell lenniük

@@ -5760,6 +5760,7 @@ swatch	Bright Violet	Kraftig violet
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en figur ligger mere end {MAX_COORD_MM} mm fra origo eller har en koordinat, der ikke er et tal: den kan ikke broderes
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en figur ville kræve omkring {n} sting, flere end de {MAX_STITCHES}, en figur må have: brug et længere sting, større afstand eller et mindre design
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ikke en PES- eller PEC-fil: den begynder ikke med #PES eller #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	ikke en SEW-fil: den angiver {colors} farver, og en SEW-fil angiver 1 til {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	ikke en VP3-fil: den begynder ikke med %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	ikke en {what}-fil: dens post {_1} er ikke en DST-post
 @msg	params must be an object	parametrene skal være et objekt

@@ -6632,6 +6632,7 @@ breakText	Glyphs	Glifs
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	una forma és a més de {MAX_COORD_MM} mm de l’origen o té una coordenada que no és un nombre: no es pot brodar
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	una forma necessitaria unes {n} puntades, més de les {MAX_STITCHES} que pot tenir una forma: fes servir una puntada més llarga, més espaiat o un disseny més petit
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	no és un fitxer PES ni PEC: no comença amb #PES ni #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	no és un fitxer SEW: indica {colors} com a nombre de colors, però un fitxer SEW n’indica d’1 a {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	no és un fitxer VP3: no comença amb %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	no és un fitxer {what}: el seu registre {_1} no és un registre DST
 @msg	params must be an object	els paràmetres han de ser un objecte

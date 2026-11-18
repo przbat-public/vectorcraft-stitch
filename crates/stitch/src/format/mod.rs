@@ -169,11 +169,15 @@ pub enum Loss {
     TwistedThreads,
     /// A VP3 file's several designs: read, and so written, as one.
     Designs,
+    /// A SEW's preview pictures and the two tables of its header that reading leaves out (values
+    /// nobody explains, stitch counts per colour): no file written from the design holds them, and
+    /// SEW is never written.
+    SewPictures,
 }
 
 /// No losses: a format whose files hold nothing a reader leaves out (TAP, T01 and EXP have no
-/// header), or that is never written, so that nothing is lost by writing over a file of it (SEW
-/// and HUS).
+/// header; HUS's header holds its counts, extents and stream offsets, which the records give
+/// again, and its name, which is read).
 fn no_losses(_: &[u8]) -> Vec<Loss> {
     Vec::new()
 }
@@ -290,7 +294,7 @@ const SEW: Spec = Spec {
     magic: &[],
     read: sew::read,
     write: None,
-    losses: no_losses,
+    losses: sew::losses,
 };
 /// Husqvarna Viking HUS, read only: three compressed streams ([`hus`]).
 const HUS: Spec = Spec {
@@ -960,16 +964,22 @@ mod tests {
         assert_eq!(Format::from_extension(".SEW"), Some(Format::Sew));
     }
 
-    /// A format only read writes nothing and has no grid to count a design on, saying so; nor do
-    /// its files hold anything that reading them loses by being written over.
+    /// A format only read writes nothing and has no grid to count a design on, saying so; a SEW
+    /// whose pictures and tables aren't blank says that reading it leaves them out, a HUS nothing.
     #[test]
     fn a_format_only_read_is_not_written() {
         for f in Format::READ_ONLY {
             let e = f.write(&design()).unwrap_err().to_string();
             assert!(e.contains("can be opened but not written"), "{f:?}: {e}");
             assert!(f.grid(&design()).is_err(), "{f:?}");
-            assert_eq!(f.losses(b"anything"), [], "{f:?}");
         }
+        for (f, bytes) in read_only_files() {
+            assert_eq!(f.losses(&bytes), [], "{f:?}: the test kit's files hold nothing reading leaves out");
+        }
+        let (_, mut sew) = read_only_files().remove(0);
+        sew[sew::STITCHES_AT - 1] = 1;
+        assert_eq!(Format::Sew.losses(&sew), [Loss::SewPictures]);
+        assert_eq!(Format::Sew.losses(b"short"), []);
     }
 
     /// A design whose moves split into a great many records (stitches 150 m apart) is refused by

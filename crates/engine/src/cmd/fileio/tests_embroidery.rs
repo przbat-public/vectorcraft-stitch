@@ -386,6 +386,40 @@ fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
     std::fs::remove_dir_all(d).ok();
 }
 
+/// Opening a SEW whose preview pictures or header tables aren't blank says that reading it leaves
+/// things out, and writing another format over that file is then refused unless the loss is
+/// acknowledged, as for a PES; a SEW whose pictures are blank opens saying nothing.
+#[test]
+fn writing_over_an_opened_sew_asks_first() {
+    let d = std::env::temp_dir().join(format!("vc-embroidery-sew-loss-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let mut s = art();
+    let blank = vectorcraft_testkit::machine_files::sew_from_jef(&export(&mut s, "jef", json!({}))).unwrap();
+    let mut drawn = blank.clone();
+    // A byte of the first picture, after the header's tables.
+    drawn[0x4A + 2] = 0xFF;
+    let note = super::embroidery::LOSS_NOTES[7];
+    for (name, file, lost) in [("blank.sew", &blank, false), ("drawn.sew", &drawn, true)] {
+        let path = d.join(name);
+        std::fs::write(&path, file).unwrap();
+        let path = path.to_string_lossy().to_string();
+        let mut s = Session::new();
+        let r = s.execute("document.open", &json!({"path": path})).unwrap();
+        assert_eq!(warnings(&r).contains(&note.to_string()), lost, "{name}: {r}");
+        let over = s.execute("document.export", &json!({"path": path, "format": "dst"}));
+        if lost {
+            let e = over.unwrap_err().to_string();
+            assert!(e.contains("left things out") && e.contains(note), "{name}: {e}");
+            assert_eq!(&std::fs::read(&path).unwrap(), file, "{name}: untouched");
+            s.execute("document.export", &json!({"path": path, "format": "dst", "acknowledgeLoss": true})).unwrap();
+            assert_ne!(&std::fs::read(&path).unwrap(), file, "{name}");
+        } else {
+            over.unwrap();
+        }
+    }
+    std::fs::remove_dir_all(d).ok();
+}
+
 /// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.
 fn start(p: &vectorcraft_stitch::Pattern) -> (i32, i32) {
     use vectorcraft_stitch::quantize;

@@ -48,6 +48,8 @@ fn loss_note(loss: Loss) -> &'static str {
         Loss::DstFields => 4,
         Loss::TwistedThreads => 5,
         Loss::Designs => 6,
+        // A SEW's pictures and header tables: what this version doesn't read, said as such.
+        Loss::SewPictures => 7,
         _ => 7,
     };
     LOSS_NOTES.get(k).copied().unwrap_or_default()

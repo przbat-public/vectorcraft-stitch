@@ -15,10 +15,11 @@
 //! threads by number, and its stitches are signed x, y pairs with `0x80` starting a command.
 //!
 //! What reading takes: the colour count, the thread numbers and the records, read as JEF's are
-//! ([`super::jef::read_records`]: a move that goes nowhere is a cut). The pictures and the counts
-//! are left: a design opened from SEW is written in another format, never as SEW. A colour count
-//! of 0 or above 12 is no SEW's, and refused. A thread number past Janome's chart reads as a
-//! stand-in named after it, as in JEF.
+//! ([`super::jef::read_records`]: a move that goes nowhere is a cut). The pictures and the two
+//! tables are left, and opening a file whose pictures or tables aren't blank says so ([`losses`]),
+//! so that writing another format over it asks first: a design opened from SEW is written in
+//! another format, never as SEW. A colour count of 0 or above 12 is no SEW's, and refused. A
+//! thread number past Janome's chart reads as a stand-in named after it, as in JEF.
 //!
 //! No SEW file has been read here: the description rests on the files the KDE wiki's author saw,
 //! and the tests on files built from it. pyembroidery 1.5.1 (MIT), run as an outside reader, reads
@@ -28,7 +29,7 @@
 //! File_Formats/Janome_Embroidery_Format, its SEW section); EduTechWiki, *Embroidery format*
 //! (edutechwiki.unige.ch/en/Embroidery_format) and *Embroidery format JEF* (…/Embroidery_format_JEF).
 
-use super::{Reader, finish, jef};
+use super::{Loss, Reader, finish, jef};
 use crate::thread::{self, Palette};
 use crate::{Error, Pattern, Result, Thread};
 
@@ -38,8 +39,18 @@ const WHAT: &str = "SEW";
 pub(crate) const MAX_COLORS: usize = 12;
 /// Where the thread numbers start, after the colour count (u16 each).
 const THREADS_AT: usize = 2;
+/// Where the header's two other tables start, after the twelve thread numbers: then the pictures,
+/// up to the stitch records. Reading leaves all of it out.
+const TABLES_AT: usize = THREADS_AT + MAX_COLORS * 2;
 /// Where the stitch records start, after the header and the pictures (the KDE wiki: 0x1D78).
 pub(crate) const STITCHES_AT: usize = 0x1D78;
+
+/// What a SEW holds that reading it leaves out: its pictures and two tables, when any byte of them
+/// isn't 0 (the test kit's files leave them blank; real files draw their pictures).
+pub(crate) fn losses(bytes: &[u8]) -> Vec<Loss> {
+    let drawn = bytes.get(TABLES_AT..STITCHES_AT).is_some_and(|b| b.iter().any(|v| *v != 0));
+    if drawn { vec![Loss::SewPictures] } else { Vec::new() }
+}
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut r = Reader::new(bytes);
@@ -117,6 +128,17 @@ mod tests {
         assert_eq!(names[1], "Unknown thread 0");
         assert_eq!(p.blocks[2].thread, thread::default_thread(2));
         assert!(read(&sew(&[200], &records)).unwrap().blocks[0].thread.name.contains("200"));
+        // Twelve colours, as many as the header lists, are read: the twelfth block in the twelfth
+        // number's thread.
+        let twelve: Vec<u16> = (1..=12).collect();
+        let mut changes = vec![0x0A, 0x05];
+        for _ in 1..twelve.len() {
+            changes.extend([0x80, 0x01, 0x00, 0x00, 0x0A, 0x05]);
+        }
+        changes.extend([0x80, 0x10]);
+        let p = read(&sew(&twelve, &changes)).unwrap();
+        assert_eq!(p.blocks.len(), 12);
+        assert_eq!(Some(&p.blocks[11].thread), Palette::Jef.thread(12).as_ref());
     }
 
     /// A colour count no SEW has, a file that ends before its records and records that hold no

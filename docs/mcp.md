@@ -8465,7 +8465,9 @@ The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp
 each with its earlier meaning: `stitchAngle` counts clockwise as seen, the planner's angle, so `stitchAngle` 30 is `angle`
 150. Until 2026-10-24 `angle` counted clockwise too; it now counts counter-clockwise on the page, as every angle in
 VectorCraft: a value recorded before is `180 − old`),
-and `document.open` reads such a file back as art, one group per thread. A value outside an option's range (each
+and `document.open` reads such a file back as art, one group per thread (as it does Janome `sew` and Husqvarna Viking
+`hus` files, which are read only: `document.formats` lists them as readable, not writable, and an export to them is
+refused). A value outside an option's range (each
 description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
 `options`. A design that would need too many stitches, one a format can't hold (more colours than it numbers, a size
 past its header) and a document with nothing to stitch are errors of the design, not "invalid parameters": changing the

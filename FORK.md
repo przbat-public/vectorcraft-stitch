@@ -19,7 +19,8 @@ Illustrator-parity scores (Practicalities, last item).
 2. The terms (needle point, stitch, record, jump, trim, tie, block, unit, satin, tatami,
    underlay, pull compensation, palette, ΔE) are explained at the top of `docs/embroidery.md` ›
    Terms; what is verified is in its Validation section.
-3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/TAP/T01/EXP/PES/PEC/JEF/VP3,
+3. Code: `crates/stitch` (L3: `plan/` stitch planning, `format/` DST/TAP/T01/EXP/PES/PEC/JEF/VP3 and,
+   read only, SEW and HUS,
    `thread.rs` palettes, `color.rs` the colour difference), `crates/engine/src/cmd/embroidery/`
    (the embroidery commands and the digitizer) and `crates/engine/src/cmd/fileio/embroidery/`
    (opening and exporting machine files).
@@ -268,8 +269,11 @@ stitches fast, is tried before anything is built on it.
    PR, the 2026-11-15 row).
 
 **Alongside, at any time:** new machine formats (done: Husqvarna Viking and Pfaff VP3, read and
-written with each block's own colour, Brother PEC on its own, Happy TAP and Wilcom T01; next: HUS,
-Singer's XXX, Barudan's U01 and SEW; see Adding a machine format below); real thread
+written with each block's own colour, Brother PEC on its own, Happy TAP and Wilcom T01; Janome SEW
+and Husqvarna Viking HUS, read only (the 2026-11-18 rows); next, each once a fuller public
+description, a real file or a machine settles what its only description leaves open: Barudan's U01
+(its records' byte order, its header's size) and Singer's XXX (its header's length, its colour
+list); see Adding a machine format below); real thread
 colours in PES (the plan now carries each block's thread); more real designs (the corpus has
 nineteen, all from one project: eleven PES, one also JEF, with their artwork, and eight VP3, seven
 also PES; add real DST and EXP files, lettering and larger designs, and test on a machine); a
@@ -315,6 +319,13 @@ order, so that nothing is left half done:
 5. Docs: `docs/embroidery.md` (The formats, Validation), `docs/file-format-parity.md` (its row and
    counts), `docs/mcp.md`, and the ROADMAP's progress log.
 
+A format only read (SEW and HUS): its row has no writer (`write: None`) and it is listed in
+`Format::READ_ONLY`, not `Format::ALL`, so `Format::from_id`, the export, the Check tab and the
+commands' `format` never take it (`Format::readable` finds it for opening); the engine lists it in
+`FORMATS` as read and not written, with no options, and in `OPEN_EXTS`, `PLACE_EXTS` and
+`UNASSOCIATED_EXTS`, not in the export's param docs; its tests build its files in the test kit
+(`crates/testkit/src/machine_files.rs`), and it has no pinned exports.
+
 ## Decisions register
 
 Every decision the project owner made for the fork, and the rules that follow from them, in one
@@ -327,7 +338,7 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-10-18 | `vectorcraft-stitch` is a separate layer-3 crate whose only workspace dependency is `vectorcraft-geom`: nothing that knows about the document goes in it | the planner and the formats stay testable on their own and usable by the sibling apps | stitch code inside the engine | `cargo xtask layers` |
 | 2026-10-18 | Only what would print is sewn: hidden objects, hidden fills and strokes, guides, template and non-printing layers are skipped; clip groups cut fills exactly and strokes to the stitch | a machine file is a print of the art | sewing everything drawn | `Digitizer::kind` (`cmd/embroidery/digitize.rs`); `fileio/tests_embroidery.rs`, `embroidery/tests.rs` |
 | 2026-10-18 | An opened design is written back unchanged: its lines are literal stitch runs (`doc::embroidery::StitchRun`), sewn as they are | a machine file opened and saved again must not be re-digitized | planning stitches from the opened lines | `Digitizer::literal`; `embroidery_corpus.rs` (`real_machine_files_are_written_back_unchanged`) |
-| 2026-10-18 | `.dst .tap .t01 .exp .pes .pec .jef .vp3` are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register as their default app | embroidery software owns these files on a user's machine | registering as their app | `cmd/fileio/mod.rs`; `fileio/tests.rs` |
+| 2026-10-18 | `.dst .tap .t01 .exp .pes .pec .jef .vp3` (and `.sew .hus`, read only, since 2026-11-18) are in `UNASSOCIATED_EXTS`: VectorCraft doesn't register as their default app | embroidery software owns these files on a user's machine | registering as their app | `cmd/fileio/mod.rs`; `fileio/tests.rs` |
 | 2026-10-18 | JEF files start the needle at the design's centre, DST, TAP, T01, EXP, PES and PEC files at a corner (VP3, added 2026-10-22, at the centre) | Janome sews around the hoop's centre and real VP3 files start there; the others' decodings start at a corner | one convention for every format | each writer's frame (`format::Frame`); `jef.rs` and `vp3.rs` tests |
 | 2026-10-18 | Untrusted input is capped: 4 million stitches a shape, 2 million a design, counts read from files bounded, every reader fuzzed | a crash or an exhausted memory loses unsaved work | trusting files and parameters | `plan::try_stitches`, `digitize.rs`; `import_fuzz.rs`, `no_reader_panics_on_hostile_input` |
 | 2026-10-18 | The thread is cut only where a jump is longer than `trimLength` (10 mm) or an object asks for it (`embroidery.setTrimAfter`); longer jumps are tied off and in | machines and people cut short jumps themselves; fewer cuts sew faster | cutting every jump past `jumpLength` | `plan::TRIM`, `Sequence::add`; `a_move_of_exactly_the_trim_length_is_not_cut` |
@@ -549,6 +560,10 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-11-17 | The inspector's Auto line and its reason say what the planner sews of the area: its own parting of the area's object (its path grown by its `expand`, at the narrow parts as satin it is planned with): "Auto: satin" with "No part wider than {width} mm" where every part is a satin column (the rest's slivers aside); "Auto: tatami" with its narrower parts as satin where it has both; "Auto: tatami" where it has no column, saying why: wider than the setting, or too short for satin (a dot, a small square: the planner sews a column only at least twice as long as it is wide); with narrow parts as satin off, tatami. Wider or not is of the area as it is made: grown by the overlap under the areas sewn after it, an area no wider as traced with no column at the setting but one at Create's width is wider, not too short; every part a satin column though a stretch is wider (the column runs on through it), no reason is said. Worked out off the interface thread, the line and its reason showing once the answer is in | the project owner's choices („Pokazać satynę (polecam)”, then „Z planu ściegów (polecam)”): "Auto: tatami" above "…: satin" read as a contradiction; the width rule first chosen (no part wider than the setting) said satin for compact areas the planner sews as tatami | the object's own stitch, tatami, whatever is sewn; the width rule | `image_window/inspector.rs` (`reason`), `image_window/answers.rs`, `from_image/pipeline.rs` (`Outputs::satin_parts`), `unit.rs` (`satin_found`) |
 | 2026-11-17 | Satin is offered on a filled area at most 12 mm wide (the 2026-11-16 row) only where it sews satin: the planner finds a satin column in it at the width Create would give it (its widest and the overlap on either side); there it is greyed, "Too short for satin", or too wide where the overlap it grows by takes it past 12 mm (its object, shrunk by the overlap, has a column at 12 mm); a Satin kept where Satin isn't offered (a live object made before, or an agent's: the command still takes a Satin change on any area) still shows chosen, its reason why it isn't sewn as satin there; Apply to Similar Areas with Satin leaves such areas out, once whether Satin is offered on each is in; the one test is `Outputs::satin_offer`, by the widths alone until its answer is in | the project owner's choice („Tylko tam, gdzie zadziała (polecam)”): on a dot or a small square the choice changed nothing | offering it by width alone; sewing small dots as satin (the planner's own work, later) | `from_image/pipeline.rs` (`Outputs::satin_offer`), `image_window/inspector.rs` |
 | 2026-11-16 | Choices of the session that built the inspector and the live object, for the owner's review: an area's key is its deepest pixel, not the pixel clicked (measured on 406 areas: all found again at their point after the smoothing, logo mode or a larger size changed; some kept unused when colours merge or small areas go); an area's angle is a fixed angle or Auto (objects have no "across the shape" of their own); similar areas are of the same colour and kind, their sizes within a quarter (an estimate); the window's history holds its settings, not its view, step or zoom; `[` and `]` step through the areas, the arrows don't pan; a renamed live object is a plain group, as upstream's own trace objects are; a live object keeps no width or height, as its size is its image's; its fingerprint covers each object's look and every embroidery setting (an angle, entry and exit set by hand too), taken back into its image's frame, so that moving, turning, scaling or stretching it edits nothing; the question before hand edits are replaced answers "Don't Replace" and "Replace" (the window's × is "Cancel" to screen readers), its safe answer taking the keyboard, neither answering before the double-click time has passed with no mouse button, Enter or Space held; a live object made in another thread palette reopens with its threads let go; the Check tab judges a live object's scale by its image's transform now against the one rebuilt from the size kept, and leaves out one in a symbol's art (its instances can't be digitized again); Polish names it „żywy obiekt”, the mockup's word. And from the reviews of the branch: an area left out by Don't Sew is unsewn as a colour not sewn is (its hole in what lies round it, no outline round it, no number or place in the window, `[` and `]` passing it; a click reaches it, and step 4's list holds its change, ↺ taking it back); an area's kind, its satin width and whether Satin is offered are read as Create makes it (a line only with a centre line; the width with the islands it is made solid under and its shares of the centre lines beside it); a colour whose areas changes all leave out sews no thread, nor gives the outlines theirs; Apply to Similar Areas, and an area's own choices, stop at the most changes the engine takes, and with Satin it leaves out the areas Satin isn't offered on; a live object's fingerprint takes its strokes' weights scaled with it or kept as made, and its set angles as directions; its image stands for it, in the window too; Create on a live object whose place isn't sewn leaves its image there, its old objects gone; an upstream trace object there is left whole, Keep as Live Object taking a copy of its image. And from a check of the PR's description against the code: a live object turned and then stretched along the page, its strokes kept, edits nothing (a picture slanted when it was digitized whose slant and size both changed since, its strokes kept, or one scaled once with Scale Strokes & Effects on and once off, reads as edited, the safe side); the inspector scrolls inside the preview when it is taller, opened on an area at its top; the window's settings are remembered for their picture (its pixels as the document holds them), not its id alone | house rule 9: none hard to undo | each one's alternative, in the PR's description | the PR's description; `docs/image-digitizing-words.md` |
+| 2026-11-18 | Janome SEW and Husqvarna Viking HUS are read but never written; Barudan U01 and Singer XXX are left for later | the project owner's choices after a study of the public descriptions („Tylko otwieranie (polecam)” for SEW and HUS, „Później (polecam)” for U01 and XXX): SEW's and HUS's descriptions say what a reader needs, not all a writer does (SEW's header tables nobody explains and its preview pictures; HUS's compression known as a belief, a writer no machine's software checked), and their machines are old (Janome's and Husqvarna Viking's later ones read JEF and VP3, written here); U01's only description contradicts itself on its records' byte order and its header's size, and its machines read DST; XXX's leaves out its header's length and its colour list's layout, which only pyembroidery's output would show | writing SEW or HUS; U01 read only, its doubts settled by pyembroidery (whose author wrote its description); XXX from pyembroidery's files (learning the format from another program's output, not checking against it) | `Format::READ_ONLY`, `format/sew.rs`, `format/hus.rs`, `format/lzh.rs`; `a_format_only_read_is_not_written`, `formats_only_read_are_not_written` |
+| 2026-11-18 | HUS's colours are estimates made here for the names Jason Weiler gives the chart's numbers (by experiment); number 16, which has none, reads as a grey stand-in named after it | the project owner's choice („Nasze przybliżenia nazw (polecam)”): no source publishes the chart's colours, and they are only a preview, matched to a palette's threads on export | pyembroidery's HUS colours (a second exception to the clean-room rule); no colours, as DST | `hus::COLOURS`; `unknown_colours_read_as_stand_ins` |
+| 2026-11-18 | Real files the project owner holds may be read on their computer to check a reader: never committed, published or named in public text; software among them is never run, listed or opened | the owner offered their HUS and SEW files (an external drive): 6,944 HUS files, taken out of their archives into a scratch folder, checked the HUS reader and its readings (there was no SEW file); the embroidery programs beside them were left untouched, as the clean-room rule asks | — | `format/hus.rs`'s and `docs/embroidery.md`'s accounts of the check |
+| 2026-11-18 | Choices of the session that read HUS, for the owner's review: a record of kind 0x88 is read as a cut, 0x82 as a stop, 0x90 as the end of the design or of a part of it (the records after it read), a kind no source names as a move with the needle up; a file cut short reads as far as its data goes; the header's eight bytes read as the design's name; the tests' HUS files written by a compressor in the test kit (test code, no export) | the real files show each: 0x88 has no move and comes before a jump, and pyembroidery reads it as a cut too; 0x82 has no move, comes between stitches and is found in the appliqué and cutwork designs, and a stop read where there was none costs a pause while one missed sews an appliqué's next step on nothing; 39 files go on after a 0x90 with a colour change and more records, which the header counts; two files end early, and pyembroidery reads one of them on into data the file doesn't hold | ignoring 0x88 and 0x82; stopping at 0x82 or at the first 0x90, as pyembroidery does | `format/hus.rs`; `a_design_reads_as_written`, `cut_and_damaged_files`, `prop_read_only_formats.rs` |
 
 ## Clean-room for embroidery
 
@@ -559,9 +574,16 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   [EXP](https://edutechwiki.unige.ch/en/Embroidery_format_EXP),
   [PES](https://edutechwiki.unige.ch/en/Embroidery_format_PES),
   [PEC](https://edutechwiki.unige.ch/en/Embroidery_format_PEC),
-  [JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF) and
+  [JEF](https://edutechwiki.unige.ch/en/Embroidery_format_JEF),
   [VP3](https://edutechwiki.unige.ch/en/Embroidery_format_VP3) (with the KDE Community Wiki's
-  [VP3 page](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff), CC BY-SA 4.0).
+  [VP3 page](https://community.kde.org/Projects/Liberty/File_Formats/Viking_Pfaff), CC BY-SA 4.0)
+  and [HUS](https://edutechwiki.unige.ch/en/Embroidery_format_HUS) (with the KDE wiki's
+  [HUS page](https://community.kde.org/Projects/Liberty/File_Formats/Husqvarna_HUS) and Jason
+  Weiler's), and the KDE wiki's
+  [Janome page](https://community.kde.org/Projects/Liberty/File_Formats/Janome_Embroidery_Format)
+  for SEW. EduTechWiki's pages on HUS, XXX and U?? and its overview's encoding table were written
+  by pyembroidery's author: for those formats pyembroidery is no second source, only a check that
+  we read the page as its author meant.
 - **Behaviour of professional software:** public help pages, such as
   [Wilcom EmbroideryStudio's online help](https://docs.wilcom.com/embroiderystudio/28/en/index.htm),
   may be read and cited by URL for concepts and indicative values. Don't copy their text or tables,
@@ -579,7 +601,9 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
 - **Never read GPL implementations:** Ink/Stitch, Embroidermodder/libembroidery and similar.
   Ink/Stitch's *user documentation* may be read.
 - No test files made with commercial embroidery software in the repository. Write test inputs from
-  scratch in code.
+  scratch in code. Files the project owner holds may be read on their computer to check a reader,
+  never committed, published or named in public text, and software among them is never run or
+  inspected (the 2026-11-18 row).
 - **Real designs for testing** come from public projects whose licence allows it, made with open
   tools (today: the Emoji Embroidery Project, CC BY-SA 4.0 as its mirror's index says, digitized
   with Ink/Stitch; two radish designs' artwork licences are unverified). They are

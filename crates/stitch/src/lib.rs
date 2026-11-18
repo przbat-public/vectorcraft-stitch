@@ -3,12 +3,13 @@
 //! A design is a [`Pattern`]: colour blocks ([`Block`]) of [`Stitch`] points in needle order, one
 //! thread each. Coordinates are millimetres with y pointing down, like the document's own points
 //! (1/72 in; [`pt_to_mm`] and [`mm_to_pt`] convert). The machine formats count in 0.1 mm, DST,
-//! TAP, T01, EXP and JEF with y pointing up, PEC's and VP3's stitches with y pointing down: each
+//! TAP, T01, EXP, JEF, SEW and HUS with y pointing up, PEC's and VP3's stitches with y pointing down: each
 //! writer converts as it writes and each reader converts back, so a file keeps its shape when it is
 //! read and written again.
 //!
 //! - [`plan`]: how a path becomes stitches — running, satin and tatami fill, underlay and trims.
-//! - [`format`]: the machine formats (DST, TAP, T01, EXP, PES, PEC, JEF, VP3), read and written.
+//! - [`format`]: the machine formats (DST, TAP, T01, EXP, PES, PEC, JEF, VP3), read and written, and
+//!   Janome SEW and Husqvarna Viking HUS, read only.
 //! - [`thread`]: the thread palettes the formats name their colours from.
 //! - [`fabric`]: the fabric presets, each value with what it rests on.
 //! - [`color`]: colours in CIE L*a*b* and the CIEDE2000 difference, which matching a colour to a

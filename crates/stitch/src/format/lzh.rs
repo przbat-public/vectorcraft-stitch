@@ -110,33 +110,49 @@ pub(crate) fn expand(data: &[u8], count: usize) -> Result<Expanded, Damaged> {
     let mut bits = Bits::new(data);
     // At most a byte per token is asked for: the reader bounds `count` (a design's stitches).
     let mut out: Vec<u8> = Vec::with_capacity(count);
+    let mut made = 0;
+    let read = tokens_into(&mut bits, &mut out, &mut made, count);
+    // Past the data's end the bits read are zeros, not the file's: what they make, and a table or
+    // a copy they make no sense of, is the stream cut short, and the bytes made before them stay.
+    if bits.ran_out {
+        out.truncate(made);
+        return Ok(Expanded { bytes: out, whole: false });
+    }
+    read.map(|whole| Expanded { bytes: out, whole })
+}
+
+/// Expand the tokens of `bits` into `out`, up to `count` bytes: `true` when they are all made,
+/// `false` at the end token or where the data ran out. `made` is how many bytes `out` held before
+/// the block or token being read, so that the bytes made from bits past the data's end can go.
+fn tokens_into(bits: &mut Bits, out: &mut Vec<u8>, made: &mut usize, count: usize) -> Result<bool, Damaged> {
     let mut left_in_block: u32 = 0;
     let mut tokens = Code::Only(0);
     let mut distances = Code::Only(0);
     while out.len() < count {
-        let made = out.len();
+        if bits.ran_out {
+            return Ok(false);
+        }
+        *made = out.len();
         if left_in_block == 0 {
             left_in_block = bits.read(BLOCK_COUNT_BITS);
-            let lengths = small_table(&mut bits, LENGTH_CODES, LENGTH_COUNT_BITS, Some(ZEROS_AFTER))?;
-            tokens = token_table(&mut bits, &lengths)?;
-            distances = small_table(&mut bits, DISTANCE_CODES, DISTANCE_COUNT_BITS, None)?;
-            if bits.ran_out {
-                return Ok(Expanded { bytes: out, whole: false });
-            }
-            if left_in_block == 0 {
+            let lengths = small_table(bits, LENGTH_CODES, LENGTH_COUNT_BITS, Some(ZEROS_AFTER))?;
+            tokens = token_table(bits, &lengths)?;
+            distances = small_table(bits, DISTANCE_CODES, DISTANCE_COUNT_BITS, None)?;
+            if left_in_block == 0 && !bits.ran_out {
                 return Err(Damaged);
             }
+            continue;
         }
         left_in_block -= 1;
-        let token = tokens.decode(&mut bits)?;
+        let token = tokens.decode(bits)?;
         if token == END {
-            return Ok(Expanded { bytes: out, whole: false });
+            return Ok(false);
         }
         match token.checked_sub(FIRST_COPY) {
             None => out.push(u8::try_from(token).map_err(|_| Damaged)?),
             Some(copy) => {
                 let length = copy + SHORTEST_COPY;
-                let code = distances.decode(&mut bits)?;
+                let code = distances.decode(bits)?;
                 let distance = match u32::try_from(code).map_err(|_| Damaged)? {
                     0 => 0,
                     d => (1usize << (d - 1)) + bits.read(d - 1) as usize,
@@ -144,7 +160,7 @@ pub(crate) fn expand(data: &[u8], count: usize) -> Result<Expanded, Damaged> {
                 if distance >= WINDOW {
                     return Err(Damaged);
                 }
-                let from = made.checked_sub(distance + 1).ok_or(Damaged)?;
+                let from = out.len().checked_sub(distance + 1).ok_or(Damaged)?;
                 for k in 0..length {
                     if out.len() >= count {
                         break;
@@ -155,12 +171,8 @@ pub(crate) fn expand(data: &[u8], count: usize) -> Result<Expanded, Damaged> {
                 }
             }
         }
-        if bits.ran_out {
-            out.truncate(made);
-            return Ok(Expanded { bytes: out, whole: false });
-        }
     }
-    Ok(Expanded { bytes: out, whole: true })
+    Ok(true)
 }
 
 /// A stream's bits, most significant first. Past its end it reads 0 bits and says so
@@ -333,11 +345,21 @@ mod tests {
     use vectorcraft_testkit::machine_files::{Lzh, lzh};
 
     /// Text and stitch-like bytes, and their extremes: nothing, one byte, a long run of one byte.
+    /// The third is skewed so that its tokens' code lengths run from 3 to 10 bits, their counts
+    /// doubling: the 19-code table then sends lengths of 7 and more, in their long form.
     fn samples() -> Vec<Vec<u8>> {
         let text = b"a stitch, a stitch, a stitch and a jump; a stitch, a stitch and a trim".repeat(9);
         let deltas: Vec<u8> = (0..3000u32).map(|i| ((i * 37 % 23) as u8).wrapping_sub(11)).collect();
+        let mut skewed: Vec<u8> = Vec::new();
+        let mut value = 0u8;
+        for length in 3..=10u32 {
+            for _ in 0..1u32 << (length - 3) {
+                skewed.extend(std::iter::repeat_n(value, 1 << (10 - length)));
+                value = value.wrapping_add(1);
+            }
+        }
         let kinds: Vec<u8> = (0..2500u32).map(|i| if i % 97 == 0 { 0x81 } else { 0x80 }).collect();
-        vec![text, deltas, kinds, vec![], vec![0x7F], vec![0x80; 5000], (0..=255u8).collect()]
+        vec![text, deltas, skewed, kinds, vec![], vec![0x7F], vec![0x80; 5000], (0..=255u8).collect()]
     }
 
     /// Every stream written with or without copies, in one block or many, expands to its bytes,
@@ -354,31 +376,49 @@ mod tests {
         }
     }
 
-    /// A stream that ends before the bytes asked for, or whose data runs out, gives the bytes made
-    /// before then, not whole; one cut anywhere never makes bytes it doesn't hold.
+    /// A stream that ends before the bytes asked for gives the bytes made, not whole; cut anywhere,
+    /// inside a block's tables or a copy too, it gives the bytes made before the cut, never fewer
+    /// for a later cut, and never a byte the stream doesn't hold.
     #[test]
     fn a_stream_cut_short_keeps_what_it_made() {
         let data = samples().remove(1);
-        let stream = lzh(&data, &Lzh { copies: true, block_tokens: 300 });
-        let ended = expand(&stream, data.len() + 10).unwrap();
+        let ended = expand(&lzh(&data, &Lzh { copies: true, block_tokens: 300 }), data.len() + 10).unwrap();
         assert_eq!((ended.bytes.as_slice(), ended.whole), (data.as_slice(), false));
-        for cut in (0..stream.len()).step_by(3) {
-            if let Ok(e) = expand(&stream[..cut], data.len()) {
-                assert!(data.starts_with(&e.bytes), "cut at {cut}: only bytes the stream holds");
-                assert_eq!(e.whole, e.bytes.len() == data.len(), "cut at {cut}");
+        for o in [Lzh { copies: true, block_tokens: 300 }, Lzh { copies: false, block_tokens: 50 }, Lzh { copies: true, block_tokens: 7 }] {
+            let stream = lzh(&data, &o);
+            let mut before = 0;
+            for cut in 0..=stream.len() {
+                let e = expand(&stream[..cut], data.len()).unwrap_or_else(|_| panic!("{o:?}: cut at {cut} refused"));
+                assert!(data.starts_with(&e.bytes), "{o:?}: cut at {cut}: only bytes the stream holds");
+                assert!(e.bytes.len() >= before, "{o:?}: cut at {cut}: {} bytes, {before} before", e.bytes.len());
+                assert_eq!(e.whole, e.bytes.len() == data.len(), "{o:?}: cut at {cut}");
+                before = e.bytes.len();
             }
+            assert_eq!(before, data.len(), "{o:?}: whole at the end");
         }
     }
 
-    /// Tables that are no complete code, a block of no tokens, values past a table and copies from
-    /// before the start are refused; random bytes give a stream, a cut one or a refusal, never a
-    /// panic, quickly.
+    /// A table that counts more codes than it has, one that is no complete code (too few codes or
+    /// too many), a block of no tokens, a copy from before the start and one further back than the
+    /// window are refused; random bytes give a stream, a cut one or a refusal, never a panic,
+    /// quickly.
     #[test]
     fn damaged_streams_are_refused() {
         // A block of 1 token whose 19-code table says it has 20 codes.
         assert_eq!(expand(&[0x00, 0x01, 0b1010_0000, 0, 0, 0], 4), Err(Damaged));
         // A block of no tokens, its tables single values of no bits.
         assert_eq!(expand(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], 4), Err(Damaged));
+        // A block of one token, the byte 'A' (tables of a single value, no bits a token), whose
+        // distance table, never used, has one code of 1 bit (too few) or three (too many).
+        assert_eq!(expand(&[0x00, 0x01, 0x00, 0x00, 0x04, 0x10, 0x90], 1), Err(Damaged));
+        assert_eq!(expand(&[0x00, 0x01, 0x00, 0x00, 0x04, 0x11, 0x92, 0x40], 1), Err(Damaged));
+        // The byte 'A', then a block of one copy of 3 bytes: from one byte back it expands, from
+        // two bytes back it would start before the stream.
+        let copy = |code: u8| [0x00, 0x01, 0x00, 0x00, 0x04, 0x10, 0x00, 0x00, 0x04, 0x00, 0x00, 0x40, 0x00, code << 4];
+        assert_eq!(expand(&copy(0), 4), Ok(Expanded { bytes: b"AAAA".to_vec(), whole: true }));
+        assert_eq!(expand(&copy(1), 4), Err(Damaged));
+        // 1,025 bytes 'A', then a copy 1,025 bytes back: further than the window.
+        assert_eq!(expand(&[0x04, 0x01, 0x00, 0x00, 0x04, 0x10, 0x00, 0x00, 0x04, 0x00, 0x00, 0x40, 0x00, 0xB0, 0x00], 1030), Err(Damaged));
         let started = std::time::Instant::now();
         let mut state = 0x9E37_79B9_7F4A_7C15u64;
         for len in [1usize, 2, 7, 40, 300, 3000] {

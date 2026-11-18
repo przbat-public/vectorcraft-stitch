@@ -152,10 +152,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     if count > MAX_POINTS {
         return Err(Error::TooLarge(format!("the {what} file holds more than {MAX_POINTS} stitches, more than a design may have", what = WHAT)));
     }
-    // The colours that fit before the first stream: a count past them is the file's claim.
-    let colours = usize::try_from(colours).unwrap_or(usize::MAX).min((kinds_at - COLOURS_AT) / COLOUR_BYTES);
-    r.seek(COLOURS_AT);
-    let threads: Vec<Thread> = (0..colours).filter_map(|_| r.take(COLOUR_BYTES)).map(|b| thread(u16::from_le_bytes([b[0], b[1]]))).collect();
+    let colours = usize::try_from(colours).unwrap_or(usize::MAX);
     let name: String = bytes
         .get(NAME_AT..NAME_AT + NAME_LEN)
         .unwrap_or_default()
@@ -207,7 +204,19 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     if !points.iter().any(|s| s.command == Command::Stitch) {
         return Err(Error::Format(format!("the {what} file has no stitch records", what = WHAT)));
     }
+    let threads = threads(bytes.get(COLOURS_AT..kinds_at).unwrap_or_default(), colours, &points);
     Ok(finish(name, points, &threads))
+}
+
+/// The threads the blocks of `points` take from the colour list `list` (a u16 per colour, in the
+/// room before the first stream), of which the header claims `claimed`: the first block's and one
+/// per colour change, as [`finish`] gives them out (real files list exactly that many). Made from
+/// the list's room alone, a hostile count would make a thread, its name on the heap too, for every
+/// two bytes of the file.
+fn threads(list: &[u8], claimed: usize, points: &[Stitch]) -> Vec<Thread> {
+    let changes = points.iter().filter(|s| s.command == Command::ColorChange).count();
+    let (numbers, _) = list.as_chunks::<COLOUR_BYTES>();
+    numbers.iter().take(claimed.min(changes.saturating_add(1))).map(|b| thread(u16::from_le_bytes(*b))).collect()
 }
 
 #[cfg(test)]
@@ -267,35 +276,106 @@ mod tests {
     }
 
     /// Colour numbers with no name, and past the chart, read as a grey stand-in named after the
-    /// number; a colour count past the list's room is the room; colour changes past the list take
-    /// the default threads.
+    /// number; a colour count past the list's room is the room (the blocks past the list take the
+    /// default threads, not the streams' bytes); colour changes past the list take the default
+    /// threads.
     #[test]
     fn unknown_colours_read_as_stand_ins() {
         let p = read(&hus(&records(), &[16, 300], NAME, &Lzh::default())).unwrap();
         let names: Vec<&str> = p.blocks.iter().map(|b| b.thread.name.as_str()).collect();
         assert_eq!(names, ["Unknown thread 16", "Unknown thread 300"]);
         assert!(p.blocks.iter().all(|b| b.thread.color == STAND_IN));
-        let mut claims_more = hus(&records(), &[3, 7], NAME, &Lzh::default());
-        claims_more[8..12].copy_from_slice(&5000u32.to_le_bytes());
-        assert_eq!(read(&claims_more).unwrap(), read(&hus(&records(), &[3, 7], NAME, &Lzh::default())).unwrap());
+        let mut three = records();
+        let end = three.pop();
+        three.extend([(COLOR_CHANGE, 0, 0), (STITCH, 5, 5), (STITCH, 5, 5)]);
+        three.extend(end);
+        let mut claims_more = hus(&three, &[3, 7], NAME, &Lzh::default());
+        claims_more[8..12].copy_from_slice(&u32::MAX.to_le_bytes());
+        let read_more = read(&claims_more).unwrap();
+        assert_eq!(read_more.blocks.len(), 3);
+        assert_eq!(read_more.blocks[2].thread, crate::thread::default_thread(2));
+        assert_eq!(read_more, read(&hus(&three, &[3, 7], NAME, &Lzh::default())).unwrap());
         let one = read(&hus(&records(), &[3], NAME, &Lzh::default())).unwrap();
         assert_eq!(one.blocks.len(), 2);
+        assert_eq!(one.blocks[1].thread, crate::thread::default_thread(1));
     }
 
-    /// A file cut short reads its records up to the cut (none past it); a header that points past
-    /// the file, a count past what a design may have and damaged streams are refused.
+    /// However many colours the header claims and the list holds, the threads made are the ones
+    /// the blocks take: the first block's and one per colour change.
+    #[test]
+    fn a_long_colour_list_makes_only_the_threads_used() {
+        let list = vec![0u8; COLOUR_BYTES * 100_000];
+        let points = [Stitch::new(0.0, 0.0, Command::Stitch), Stitch::new(0.0, 0.0, Command::ColorChange), Stitch::new(1.0, 0.0, Command::Stitch)];
+        assert_eq!(threads(&list, usize::MAX, &points).len(), 2);
+        assert_eq!(threads(&list, 1, &points).len(), 1);
+        assert_eq!(threads(&list[..COLOUR_BYTES], usize::MAX, &points).len(), 1);
+    }
+
+    /// A move on a cut, a stop or an end is made after it, with the needle up, and a jump is a
+    /// point of its own: each point read where the records put it.
+    #[test]
+    fn moves_are_read_where_the_records_put_them() {
+        let records = [
+            (STITCH, 0, 0),
+            (STITCH, 10, 0),
+            (JUMP, 100, 0),
+            (STITCH, 10, 0),
+            (TRIM, 30, 0),
+            (STITCH, 0, 0),
+            (STOP, 0, 20),
+            (STITCH, 0, 0),
+            (0x90, 50, 0),
+            (STITCH, 0, 0),
+        ];
+        let p = read(&hus(&records, &[1], NAME, &Lzh::default())).unwrap();
+        let first = p.points().next().unwrap();
+        let got: Vec<(Command, f64, f64)> = p.points().map(|s| (s.command, s.x - first.x, s.y - first.y)).collect();
+        use Command::{Jump as J, Stitch as S, Stop as P, Trim as T};
+        let want = [
+            (S, 0.0, 0.0),
+            (S, 1.0, 0.0),
+            (J, 11.0, 0.0),
+            (S, 12.0, 0.0),
+            (T, 12.0, 0.0),
+            (J, 15.0, 0.0),
+            (S, 15.0, 0.0),
+            (P, 15.0, 0.0),
+            (J, 15.0, -2.0),
+            (S, 15.0, -2.0),
+            (J, 20.0, -2.0),
+            (S, 20.0, -2.0),
+        ];
+        assert_eq!(got.len(), want.len(), "{got:?}");
+        for (g, w) in got.iter().zip(want) {
+            assert!(g.0 == w.0 && (g.1 - w.1).abs() < 1e-9 && (g.2 - w.2).abs() < 1e-9, "{got:?}");
+        }
+    }
+
+    /// A file cut anywhere in its last stream, inside a block's tables or a copy too, reads its
+    /// records up to the cut, never fewer for a later cut and none past it (or, cut before its
+    /// first stitch, says it has none); a header that points past the file, a count past what a
+    /// design may have and damaged streams are refused.
     #[test]
     fn cut_and_damaged_files() {
-        let whole = hus(&records(), &[3, 7], NAME, &Lzh::default());
-        let full = read(&whole).unwrap();
-        let mut seen_cut = false;
-        for cut in 60..whole.len() {
-            if let Ok(p) = read(&whole[..cut]) {
-                assert!(p.sewn() <= full.sewn(), "cut at {cut}");
-                seen_cut |= p.sewn() < full.sewn();
+        for o in [Lzh::default(), Lzh { copies: false, block_tokens: 5 }, Lzh { copies: true, block_tokens: 3 }] {
+            let whole = hus(&records(), &[3, 7], NAME, &o);
+            let full = read(&whole).unwrap();
+            let ys_at = u32::from_le_bytes([whole[28], whole[29], whole[30], whole[31]]) as usize;
+            let mut before = 0;
+            for cut in ys_at..=whole.len() {
+                let sewn = match read(&whole[..cut]) {
+                    Ok(p) => p.sewn(),
+                    Err(e) => {
+                        assert!(e.to_string().contains("no stitch records"), "{o:?}: cut at {cut}: {e}");
+                        0
+                    }
+                };
+                assert!(sewn >= before && sewn <= full.sewn(), "{o:?}: cut at {cut}: {sewn} needle points, {before} before");
+                before = sewn;
             }
+            assert_eq!(before, full.sewn(), "{o:?}");
         }
-        assert!(seen_cut, "a cut file reads as far as it goes");
+        let whole = hus(&records(), &[3, 7], NAME, &Lzh::default());
         let mut past = whole.clone();
         past[28..32].copy_from_slice(&(whole.len() as u32 + 1).to_le_bytes());
         assert!(read(&past).unwrap_err().to_string().contains("points past the file"));

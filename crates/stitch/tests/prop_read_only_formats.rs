@@ -1,7 +1,7 @@
 //! The formats read but never written (VectorCraft Stitch), SEW and HUS: for any records the test
 //! kit's files hold (its HUS compressor, written for these tests, and its SEW builder), the reader
-//! finds the needle points where the records put them; for damaged and random bytes it gives a
-//! design or an error, never a panic, and quickly.
+//! finds the needle points where the records put them, run by run; for damaged, cut and random
+//! bytes it gives a design or an error, never a panic, and quickly.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -20,13 +20,59 @@ fn arb_records() -> impl Strategy<Value = Vec<(u8, i8, i8)>> {
     prop::collection::vec((kind, any::<i8>(), any::<i8>()), 1..400)
 }
 
-/// How the test kit compresses: with or without copies, in blocks of any size.
+/// How the test kit compresses: with or without copies, in blocks of 1 to 63 tokens or one for
+/// the whole stream.
 fn arb_lzh() -> impl Strategy<Value = Lzh> {
     (any::<bool>(), prop_oneof![Just(0usize), 1usize..64]).prop_map(|(copies, block_tokens)| Lzh { copies, block_tokens })
 }
 
+/// The needle points `records` put the needle down at, in runs sewn without lifting the needle (a
+/// run ends at a jump, a stop, a colour change, a cut, and a record of another kind that moves
+/// the needle), in tenths of a millimetre with y downwards, from the first needle point: what any
+/// reading of them must find.
+fn runs_of_records(records: &[(u8, i8, i8)]) -> Vec<Vec<(i64, i64)>> {
+    let (mut x, mut y, mut runs, mut run) = (0i64, 0i64, Vec::new(), Vec::new());
+    for &(kind, dx, dy) in records {
+        x += i64::from(dx);
+        y -= i64::from(dy);
+        match kind {
+            0x80 => run.push((x, y)),
+            0x81 | 0x82 | 0x84 | 0x88 => runs.push(std::mem::take(&mut run)),
+            _ if dx != 0 || dy != 0 => runs.push(std::mem::take(&mut run)),
+            _ => {}
+        }
+    }
+    runs.push(run);
+    relative_runs(runs)
+}
+
+/// A design's needle points in runs: a block's stitches split at every point that isn't a stitch,
+/// as opening a file draws them, in tenths of a millimetre, from the first needle point.
+fn runs_read(p: &Pattern) -> Vec<Vec<(i64, i64)>> {
+    let mut runs = Vec::new();
+    for block in &p.blocks {
+        let mut run = Vec::new();
+        for s in &block.stitches {
+            if s.command == Command::Stitch {
+                run.push(((s.x * 10.0).round() as i64, (s.y * 10.0).round() as i64));
+            } else {
+                runs.push(std::mem::take(&mut run));
+            }
+        }
+        runs.push(run);
+    }
+    relative_runs(runs)
+}
+
+/// `runs` without the empty ones, from the first needle point.
+fn relative_runs(runs: Vec<Vec<(i64, i64)>>) -> Vec<Vec<(i64, i64)>> {
+    let runs: Vec<Vec<(i64, i64)>> = runs.into_iter().filter(|r| !r.is_empty()).collect();
+    let first = runs.first().and_then(|r| r.first()).copied().unwrap_or((0, 0));
+    runs.into_iter().map(|r| r.into_iter().map(|(x, y)| (x - first.0, y - first.1)).collect()).collect()
+}
+
 /// The needle points `records` put the needle down at (tenths of a millimetre, y downwards), from
-/// the first: what any reading of them must find.
+/// the first.
 fn needle_points(records: &[(u8, i8, i8)]) -> Vec<(i64, i64)> {
     let (mut x, mut y, mut out) = (0i64, 0i64, Vec::new());
     for &(kind, dx, dy) in records {
@@ -51,15 +97,19 @@ fn read_needle_points(p: &Pattern) -> Vec<(i64, i64)> {
 proptest! {
     #![proptest_config(vectorcraft_testkit::embroidery::proptest_config(128))]
 
-    /// Any records, compressed any way the method allows, read as their needle points, a cut for
-    /// each cut and a stop for each stop; with no stitch, the file is refused.
+    /// Any records, compressed as the test kit compresses (with or without copies, in blocks of 1
+    /// to 63 tokens or one), read as their needle points run by run, a stop for each stop and no
+    /// more cuts than they hold (two cuts in a row read as one); with no stitch, the file is
+    /// refused.
     #[test]
     fn a_hus_reads_as_its_records(records in arb_records(), colours in prop::collection::vec(0u16..40, 0..6), o in arb_lzh()) {
         let bytes = hus(&records, &colours, b"prop\0\0\0\0", &o);
         let want = needle_points(&records);
         match Format::Hus.read(&bytes) {
             Ok(p) => {
+                prop_assert!(!want.is_empty());
                 prop_assert_eq!(read_needle_points(&p), want);
+                prop_assert_eq!(runs_read(&p), runs_of_records(&records));
                 let count = |c: Command| p.points().filter(|s| s.command == c).count();
                 prop_assert_eq!(count(Command::Stop), records.iter().filter(|r| r.0 == 0x82).count());
                 prop_assert!(count(Command::Trim) <= records.iter().filter(|r| r.0 == 0x88).count());
@@ -69,7 +119,8 @@ proptest! {
     }
 
     /// A HUS with its streams cut, bytes changed anywhere, or random bytes behind its header gives
-    /// a design or an error, quickly; cut, it never finds needle points its records don't hold.
+    /// a design or an error, quickly; cut, it finds only needle points its records hold, the first
+    /// ones.
     #[test]
     fn a_damaged_hus_never_panics(records in arb_records(), o in arb_lzh(), cut in 0usize..5000, edits in prop::collection::vec((0usize..5000, any::<u8>()), 0..12), body in prop::collection::vec(any::<u8>(), 0..600)) {
         let bytes = hus(&records, &[1, 2], b"prop\0\0\0\0", &o);

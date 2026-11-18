@@ -208,8 +208,9 @@ impl Original {
         let frame = map.get(FRAME).and_then(frame)?;
         let node = map.get(NODE).filter(|n| n.is_object())?;
         let node: std::sync::Arc<str> = serde_json::to_string(node).ok()?.into();
-        let fingerprint =
-            map.get(FINGERPRINT).and_then(|f| f.as_str()).filter(|f| f.len() == FINGERPRINT_DIGITS).and_then(|f| u64::from_str_radix(f, 16).ok());
+        // Digits only: `from_str_radix` would take a sign before fifteen of them.
+        let digits = |f: &&str| f.len() == FINGERPRINT_DIGITS && f.bytes().all(|b| b.is_ascii_hexdigit());
+        let fingerprint = map.get(FINGERPRINT).and_then(|f| f.as_str()).filter(digits).and_then(|f| u64::from_str_radix(f, 16).ok());
         // The keys read are taken out; the node isn't copied as a tree.
         let read = |k: &str| k == FRAME || k == NODE || (k == FINGERPRINT && fingerprint.is_some());
         let extra: serde_json::Map<String, serde_json::Value> = map.iter().filter(|(k, _)| !read(k)).map(|(k, v)| (k.clone(), v.clone())).collect();
@@ -1205,6 +1206,20 @@ mod tests {
             serde_json::from_value(json!({"original": {"frame": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], "node": {}, "fingerprint": "beef"}})).unwrap();
         let o = short.original.unwrap();
         assert_eq!((o.fingerprint, o.extra.get("fingerprint")), (None, Some(&json!("beef"))), "a fingerprint unread is kept");
+    }
+
+    /// An original's fingerprint is read only when it is sixteen hexadecimal digits, as a live
+    /// object's is: a sign before fifteen of them (which `u64::from_str_radix` takes) is kept as
+    /// it was, unread, and saved back unchanged rather than as the number's sixteen digits.
+    #[test]
+    fn an_originals_fingerprint_with_a_sign_is_kept_unread() {
+        for fingerprint in ["+123456789abcdef", "-123456789abcdef", " 123456789abcdef"] {
+            let written = json!({"original": {"frame": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], "node": {}, "fingerprint": fingerprint}});
+            let read: Embroidery = serde_json::from_value(written.clone()).unwrap();
+            let o = read.original.as_ref().expect("an original");
+            assert_eq!((o.fingerprint, o.extra.get("fingerprint")), (None, Some(&json!(fingerprint))), "{fingerprint}");
+            assert_eq!(serde_json::to_value(&read).unwrap(), written, "{fingerprint}: saved back as written");
+        }
     }
 
     /// A run a file saved before runs were marked (no `manual`), and one a machine file opened, is a

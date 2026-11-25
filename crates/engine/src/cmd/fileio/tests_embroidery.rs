@@ -396,8 +396,9 @@ fn writing_over_an_opened_sew_asks_first() {
     let mut s = art();
     let blank = vectorcraft_testkit::machine_files::sew_from_jef(&export(&mut s, "jef", json!({}))).unwrap();
     let mut drawn = blank.clone();
-    // A byte of the first picture, after the header's tables.
-    drawn[0x4A + 2] = 0xFF;
+    // A byte of the first picture's bits (after the header's tables, past its width and height).
+    use vectorcraft_testkit::machine_files::{SEW_PICTURE_BITS_AT, SEW_PICTURES_AT};
+    drawn[SEW_PICTURES_AT + SEW_PICTURE_BITS_AT] = 0xFF;
     let note = super::embroidery::LOSS_NOTES[7];
     for (name, file, lost) in [("blank.sew", &blank, false), ("drawn.sew", &drawn, true)] {
         let path = d.join(name);

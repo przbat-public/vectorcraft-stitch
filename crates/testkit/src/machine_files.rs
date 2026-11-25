@@ -19,10 +19,49 @@ const LONGEST_COPY: usize = 256;
 const LENGTH_CODES: usize = 19;
 const DISTANCE_CODES: usize = 15;
 const LONGEST_CODE: usize = 16;
-/// The most tokens one block holds: its count is 16 bits.
-const MOST_IN_A_BLOCK: usize = 65_535;
+/// The bits the counts take (`format/lzh.rs`: the KDE wiki's TBIT, PBIT and CBIT, and EduTechWiki's
+/// 16-bit block count): the 19-code table's, the distance table's, the token table's, a block's
+/// tokens.
+const LENGTH_COUNT_BITS: u32 = 5;
+const DISTANCE_COUNT_BITS: u32 = 5;
+const TOKEN_COUNT_BITS: u32 = 9;
+const BLOCK_COUNT_BITS: u32 = 16;
+/// The most tokens one block holds: the most its count says.
+const MOST_IN_A_BLOCK: usize = (1 << BLOCK_COUNT_BITS) - 1;
+/// A length in the 19-code and the distance tables takes [`LENGTH_BITS`] bits; from
+/// [`LONG_LENGTH`] (all of them 1) on, a 1 bit more for each length past it, then a 0 bit
+/// (`format/lzh.rs`).
+const LENGTH_BITS: u32 = 3;
+const LONG_LENGTH: u32 = 7;
+/// After this many lengths of the 19-code table, [`ZEROS_AFTER_BITS`] bits say how many of the
+/// next lengths are 0 (`format/lzh.rs`).
+const ZEROS_AFTER: usize = 3;
+const ZEROS_AFTER_BITS: u32 = 2;
+/// The 19-code table's codes for runs of zero lengths in the token table (`format/lzh.rs`): one
+/// zero; 3 to 18 zeros in [`SOME_ZEROS_BITS`] more bits; 20 or more in [`MANY_ZEROS_BITS`] more
+/// bits. A code past them is a length, [`LENGTH_CODE_OFFSET`] less than the code.
+const ONE_ZERO: usize = 0;
+const SOME_ZEROS: usize = 1;
+const SOME_ZEROS_BITS: u32 = 4;
+const SOME_ZEROS_LEAST: usize = 3;
+const MANY_ZEROS: usize = 2;
+const MANY_ZEROS_BITS: u32 = 9;
+const MANY_ZEROS_LEAST: usize = 20;
+const LENGTH_CODE_OFFSET: usize = 2;
+/// The most zeros one code of [`SOME_ZEROS`] says: the least, and the most its bits add.
+const SOME_ZEROS_MOST: usize = SOME_ZEROS_LEAST + (1 << SOME_ZEROS_BITS) - 1;
 /// How many earlier places with the same three bytes a copy is looked for at: enough for tests.
 const CANDIDATES: usize = 64;
+
+/// A HUS file's header (`format/hus.rs`, from the KDE wiki's *Husqvarna HUS*): its first four
+/// bytes (one of the magics PRONOM gives), then from [`HUS_RECORDS_AT`] the record count and the
+/// colour count (u32 each), the four extents (i16 each), where the three streams start (u32 each),
+/// the name (8 bytes) and two zero bytes; the colour list from [`HUS_COLOURS_AT`], u16 each.
+const HUS_MAGIC: [u8; 4] = [0x5B, 0xAF, 0xC8, 0x00];
+const HUS_RECORDS_AT: usize = 4;
+const HUS_COLOURS_AT: usize = 42;
+const HUS_COLOUR_BYTES: usize = 2;
+const HUS_ZERO_BYTES: [u8; 2] = [0, 0];
 
 /// How [`lzh`] compresses: with copies or bytes only, and the most tokens a block takes (0: as many
 /// as a block holds).
@@ -66,14 +105,15 @@ pub fn lzh(data: &[u8], o: &Lzh) -> Vec<u8> {
         }
         let token_lengths = lengths(&token_freq);
         let distance_lengths = lengths(&distance_freq);
-        w.put(16, block.len() as u32);
+        w.put(BLOCK_COUNT_BITS, block.len() as u32);
         match only(&token_freq) {
-            // One token: the length table is a single value too, and nothing sends lengths.
+            // One token: the 19-code table is a single value (a count of 0, then the value, 0),
+            // and so is the token table (a count of 0, then the token); nothing sends lengths.
             Some(t) => {
-                w.put(5, 0);
-                w.put(5, 0);
-                w.put(9, 0);
-                w.put(9, t as u32);
+                w.put(LENGTH_COUNT_BITS, 0);
+                w.put(LENGTH_COUNT_BITS, 0);
+                w.put(TOKEN_COUNT_BITS, 0);
+                w.put(TOKEN_COUNT_BITS, t as u32);
             }
             None => {
                 let sent = token_lengths_sent(&token_lengths);
@@ -82,17 +122,17 @@ pub fn lzh(data: &[u8], o: &Lzh) -> Vec<u8> {
                     freq[*code] += 1;
                 }
                 let length_lengths = lengths(&freq);
-                small_table(&mut w, &freq, &length_lengths, 5, Some(3));
+                small_table(&mut w, &freq, &length_lengths, LENGTH_COUNT_BITS, Some(ZEROS_AFTER));
                 let length_codes = codes(&length_lengths);
                 let n = token_lengths.iter().rposition(|l| *l > 0).map_or(0, |i| i + 1);
-                w.put(9, n as u32);
+                w.put(TOKEN_COUNT_BITS, n as u32);
                 for (code, extra, extra_bits) in sent {
                     put_code(&mut w, &length_codes, &length_lengths, code);
                     w.put(extra_bits, extra);
                 }
             }
         }
-        small_table(&mut w, &distance_freq, &distance_lengths, 5, None);
+        small_table(&mut w, &distance_freq, &distance_lengths, DISTANCE_COUNT_BITS, None);
         let (token_codes, distance_codes) = (codes(&token_lengths), codes(&distance_lengths));
         for t in block {
             match t {
@@ -127,9 +167,11 @@ pub fn hus(records: &[(u8, i8, i8)], colours: &[u16], name: &[u8; 8], o: &Lzh) -
         y += i32::from(r.2);
         extents = [extents[0].max(x), extents[1].max(y), extents[2].min(x), extents[3].min(y)];
     }
-    let first = 42 + 2 * colours.len();
+    let first = HUS_COLOURS_AT + HUS_COLOUR_BYTES * colours.len();
     let offsets = [first, first + streams[0].len(), first + streams[0].len() + streams[1].len()];
-    let mut out = vec![0x5B, 0xAF, 0xC8, 0x00];
+    let mut out = HUS_MAGIC.to_vec();
+    // The counts follow the magic, where the reader looks for them.
+    debug_assert_eq!(out.len(), HUS_RECORDS_AT);
     out.extend_from_slice(&(records.len() as u32).to_le_bytes());
     out.extend_from_slice(&(colours.len() as u32).to_le_bytes());
     for e in extents {
@@ -139,7 +181,10 @@ pub fn hus(records: &[(u8, i8, i8)], colours: &[u16], name: &[u8; 8], o: &Lzh) -
         out.extend_from_slice(&(at as u32).to_le_bytes());
     }
     out.extend_from_slice(name);
-    out.extend_from_slice(&[0, 0]);
+    out.extend_from_slice(&HUS_ZERO_BYTES);
+    // The stream offsets above count from HUS_COLOURS_AT: the header must end there, or they point
+    // at the wrong bytes.
+    debug_assert_eq!(out.len(), HUS_COLOURS_AT);
     for c in colours {
         out.extend_from_slice(&c.to_le_bytes());
     }
@@ -152,26 +197,50 @@ pub fn hus(records: &[(u8, i8, i8)], colours: &[u16], name: &[u8; 8], o: &Lzh) -
 /// Where a SEW file's stitch records start, after its header and previews (the KDE Community
 /// Wiki's *Janome Embroidery Format*: offset 0x1D78).
 pub const SEW_STITCHES_AT: usize = 0x1D78;
+/// Where a SEW file's first preview picture starts, after its header (the KDE Community Wiki:
+/// offset 0x4A, a picture of 48 × 32 in one colour).
+pub const SEW_PICTURES_AT: usize = 0x4A;
+/// Where a SEW picture's bits start, after its width in bytes and its height, one byte each (the
+/// KDE Community Wiki's Bitmap table).
+pub const SEW_PICTURE_BITS_AT: usize = 2;
+/// The most colours a SEW's header lists: its table holds twelve thread numbers (the KDE Community
+/// Wiki).
+pub const SEW_MAX_COLOURS: usize = 12;
+/// A SEW header's numbers, the colour count first (at 0), then the thread numbers from
+/// [`SEW_THREADS_AT`]: u16 each, little endian (the KDE Community Wiki).
+const SEW_NUMBER_BYTES: usize = 2;
+const SEW_THREADS_AT: usize = SEW_NUMBER_BYTES;
+
+/// A JEF header's words (EduTechWiki's *Embroidery format JEF*, as `format/jef.rs` writes them):
+/// u32 each, little endian; where the stitch records start (at 0), the colour count at
+/// [`JEF_COLOURS_AT`], and one thread number per colour from [`JEF_THREADS_AT`], after the fixed
+/// header.
+const JEF_WORD: usize = 4;
+const JEF_STITCHES_OFFSET_AT: usize = 0;
+const JEF_COLOURS_AT: usize = 24;
+const JEF_THREADS_AT: usize = 0x74;
 
 /// A SEW file: the colour count and `colours` (thread numbers of Janome's JEF palette, as many as
-/// given, the table padded with zeros to its 12), blank previews, then `records`, JEF's stitch
-/// records, from [`SEW_STITCHES_AT`].
+/// given, the table padded with zeros to its [`SEW_MAX_COLOURS`]), blank previews, then
+/// `records`, JEF's stitch records, from [`SEW_STITCHES_AT`].
 pub fn sew(colours: &[u16], records: &[u8]) -> Vec<u8> {
     let mut out = vec![0u8; SEW_STITCHES_AT];
-    out[..2].copy_from_slice(&(colours.len() as u16).to_le_bytes());
-    for (k, c) in colours.iter().take(12).enumerate() {
-        out[2 + 2 * k..4 + 2 * k].copy_from_slice(&c.to_le_bytes());
+    out[..SEW_NUMBER_BYTES].copy_from_slice(&(colours.len() as u16).to_le_bytes());
+    for (k, c) in colours.iter().take(SEW_MAX_COLOURS).enumerate() {
+        let at = SEW_THREADS_AT + SEW_NUMBER_BYTES * k;
+        out[at..at + SEW_NUMBER_BYTES].copy_from_slice(&c.to_le_bytes());
     }
     out.extend_from_slice(records);
     out
 }
 
-/// A SEW file holding a JEF file's records and its first 12 thread numbers (`None` for bytes that
-/// aren't a JEF header).
+/// A SEW file holding a JEF file's records and its first [`SEW_MAX_COLOURS`] thread numbers
+/// (`None` for bytes that aren't a JEF header).
 pub fn sew_from_jef(jef: &[u8]) -> Option<Vec<u8>> {
-    let word = |at: usize| jef.get(at..at + 4).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]));
-    let (start, count) = (word(0)? as usize, word(24)? as usize);
-    let colours: Vec<u16> = (0..count.min(12)).map(|k| word(116 + 4 * k).map(|n| n as u16)).collect::<Option<_>>()?;
+    let word = |at: usize| jef.get(at..at + JEF_WORD).map(|w| u32::from_le_bytes([w[0], w[1], w[2], w[3]]));
+    let (start, count) = (word(JEF_STITCHES_OFFSET_AT)? as usize, word(JEF_COLOURS_AT)? as usize);
+    let threads = (0..count.min(SEW_MAX_COLOURS)).map(|k| word(JEF_THREADS_AT + JEF_WORD * k).map(|n| n as u16));
+    let colours: Vec<u16> = threads.collect::<Option<_>>()?;
     Some(sew(&colours, jef.get(start..)?))
 }
 
@@ -179,12 +248,12 @@ pub fn sew_from_jef(jef: &[u8]) -> Option<Vec<u8>> {
 /// holds (when `copies`), else the byte.
 fn tokens(data: &[u8], copies: bool) -> Vec<Token> {
     let mut out = Vec::new();
-    let mut seen: std::collections::HashMap<[u8; 3], Vec<usize>> = std::collections::HashMap::new();
+    let mut seen: std::collections::HashMap<[u8; SHORTEST_COPY], Vec<usize>> = std::collections::HashMap::new();
     let mut i = 0;
     while i < data.len() {
         let mut best: Option<(usize, usize)> = None;
         if copies && i + SHORTEST_COPY <= data.len() {
-            let key = [data[i], data[i + 1], data[i + 2]];
+            let key = copy_key(data, i);
             for &from in seen.get(&key).map(|v| v.as_slice()).unwrap_or_default().iter().rev().take(CANDIDATES) {
                 if i - from > WINDOW {
                     break;
@@ -207,12 +276,18 @@ fn tokens(data: &[u8], copies: bool) -> Vec<Token> {
         };
         for k in i..(i + step) {
             if k + SHORTEST_COPY <= data.len() {
-                seen.entry([data[k], data[k + 1], data[k + 2]]).or_default().push(k);
+                seen.entry(copy_key(data, k)).or_default().push(k);
             }
         }
         i += step;
     }
     out
+}
+
+/// The shortest copy's bytes at `at`, under which the places that start with them are kept (the
+/// caller checks that they are in `data`).
+fn copy_key(data: &[u8], at: usize) -> [u8; SHORTEST_COPY] {
+    std::array::from_fn(|k| data[at + k])
 }
 
 /// A copy's distance (bytes back, less one) as its code and extra bits: (code, extra, how many).
@@ -312,18 +387,21 @@ fn small_table(w: &mut BitWriter, freq: &[u64], lengths: &[u8], count_bits: u32,
     let mut i = 0;
     while i < n {
         let k = u32::from(lengths[i]);
-        if k <= 6 {
-            w.put(3, k);
+        if k < LONG_LENGTH {
+            w.put(LENGTH_BITS, k);
         } else {
-            w.put(k - 3, (1 << (k - 3)) - 2);
+            // LONG_LENGTH's bits, all 1, a 1 bit for each length past it, then a 0 bit.
+            let bits = LENGTH_BITS + (k - LONG_LENGTH) + 1;
+            w.put(bits, (1 << bits) - 2);
         }
         i += 1;
         if Some(i) == zeros_after {
+            let most = (1 << ZEROS_AFTER_BITS) - 1;
             let mut zeros = 0;
-            while zeros < 3 && i + zeros < n && lengths[i + zeros] == 0 {
+            while zeros < most && i + zeros < n && lengths[i + zeros] == 0 {
                 zeros += 1;
             }
-            w.put(2, zeros as u32);
+            w.put(ZEROS_AFTER_BITS, zeros as u32);
             i += zeros;
         }
     }
@@ -337,19 +415,22 @@ fn token_lengths_sent(lengths: &[u8]) -> Vec<(usize, u32, u32)> {
     let mut i = 0;
     while i < n {
         if lengths[i] > 0 {
-            out.push((usize::from(lengths[i]) + 2, 0, 0));
+            out.push((usize::from(lengths[i]) + LENGTH_CODE_OFFSET, 0, 0));
             i += 1;
             continue;
         }
         let run = lengths[i..n].iter().take_while(|l| **l == 0).count();
-        match run {
-            1 | 2 => out.extend(std::iter::repeat_n((0, 0, 0), run)),
-            3..=18 => out.push((1, run as u32 - 3, 4)),
-            19 => {
-                out.push((0, 0, 0));
-                out.push((1, 15, 4));
-            }
-            _ => out.push((2, run as u32 - 20, 9)),
+        if run < SOME_ZEROS_LEAST {
+            out.extend(std::iter::repeat_n((ONE_ZERO, 0, 0), run));
+        } else if run <= SOME_ZEROS_MOST {
+            out.push((SOME_ZEROS, (run - SOME_ZEROS_LEAST) as u32, SOME_ZEROS_BITS));
+        } else if run < MANY_ZEROS_LEAST {
+            // One more zero than a short run holds, too few for a long one: one zero, then the
+            // most a short run holds.
+            out.push((ONE_ZERO, 0, 0));
+            out.push((SOME_ZEROS, (SOME_ZEROS_MOST - SOME_ZEROS_LEAST) as u32, SOME_ZEROS_BITS));
+        } else {
+            out.push((MANY_ZEROS, (run - MANY_ZEROS_LEAST) as u32, MANY_ZEROS_BITS));
         }
         i += run;
     }
@@ -369,7 +450,7 @@ impl BitWriter {
         for k in (0..n).rev() {
             self.byte = (self.byte << 1) | ((v >> k) & 1) as u8;
             self.used += 1;
-            if self.used == 8 {
+            if self.used == u8::BITS {
                 self.out.push(self.byte);
                 (self.byte, self.used) = (0, 0);
             }
@@ -378,7 +459,7 @@ impl BitWriter {
 
     fn finish(mut self) -> Vec<u8> {
         if self.used > 0 {
-            self.out.push(self.byte << (8 - self.used));
+            self.out.push(self.byte << (u8::BITS - self.used));
         }
         self.out
     }

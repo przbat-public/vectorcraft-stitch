@@ -2,6 +2,7 @@
 //! Stitch): Husqvarna Viking HUS ([`hus`]), whose streams this module compresses itself ([`lzh`]),
 //! and Janome SEW ([`sew`]). The layouts are the ones the stitch crate's readers cite
 //! (`format/hus.rs`, `format/lzh.rs`, `format/sew.rs`); no file made by other software is used.
+//! [`within`] runs the readers' tests of cut files under a time limit ([`CUT_CASES_LIMIT`]).
 //!
 //! The HUS compressor writes what the reader's method reads: tokens in blocks, each block's three
 //! tables sent as code lengths. It is a test fixture, not a writer the app offers: it finds copies
@@ -275,6 +276,32 @@ pub fn sew_from_jef(jef: &[u8]) -> Option<Vec<u8>> {
     let threads = (0..count.min(SEW_MAX_COLOURS)).map(|k| word(JEF_THREADS_AT + JEF_WORD * k).map(|n| n as u16));
     let colours: Vec<u16> = threads.collect::<Option<_>>()?;
     Some(sew(&colours, jef.get(start..)?))
+}
+
+/// How long the readers' tests of files cut at every byte may take: they take seconds in a debug
+/// build (estimated), so a minute leaves room for a busy machine, while a reader that goes round on
+/// the zero bits read past a cut fails then, not when CI stops the job hours later.
+pub const CUT_CASES_LIMIT: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// Run `cases` on a thread of their own, failing if they take longer than `limit`. A failure in
+/// `cases` fails the caller with its own message; cases still running at the limit are left to
+/// end with the test process.
+pub fn within(limit: std::time::Duration, cases: impl FnOnce() + Send + 'static) {
+    let (done, finished) = std::sync::mpsc::channel();
+    let thread = std::thread::spawn(move || {
+        cases();
+        // The waiting side may have given up at the limit: there is no one to tell then.
+        let _ = done.send(());
+    });
+    match finished.recv_timeout(limit) {
+        // Done, or failed: a failed thread drops its sender without sending.
+        Ok(()) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+            if let Err(failure) = thread.join() {
+                std::panic::resume_unwind(failure);
+            }
+        }
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => panic!("still running after {limit:?}"),
+    }
 }
 
 /// `data` as bytes and copies: at each place, the longest copy of at least three bytes the window

@@ -375,7 +375,7 @@ fn token_table(bits: &mut Bits, lengths: &Code) -> Result<Code, Damaged> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_testkit::machine_files::{Lzh, lzh, lzh_blocks};
+    use vectorcraft_testkit::machine_files::{CUT_CASES_LIMIT, Lzh, lzh, lzh_blocks, within};
 
     /// Text and stitch-like bytes, and their extremes: nothing, one byte, a long run of one byte.
     /// The third is skewed so that its tokens' code lengths run from 3 to 10 bits, their counts
@@ -412,9 +412,14 @@ mod tests {
     /// A stream that ends before the bytes asked for gives the bytes made, not whole; cut anywhere,
     /// inside a block's tables or a copy too, it gives a start of the stream's bytes, never fewer
     /// for a later cut and never a byte the stream doesn't hold, and cut in a later block's count
-    /// or tables, exactly the bytes of the blocks before it.
+    /// or tables, exactly the bytes of the blocks before it. The cuts run under a time limit, so an
+    /// expander that goes round on the zero bits read past a cut fails here.
     #[test]
     fn a_stream_cut_short_keeps_what_it_made() {
+        within(CUT_CASES_LIMIT, cut_short_cases);
+    }
+
+    fn cut_short_cases() {
         let data = samples().remove(1);
         let ended = expand(&lzh(&data, &Lzh { copies: true, block_tokens: 300 }), data.len() + 10).unwrap();
         assert_eq!((ended.bytes.as_slice(), ended.whole), (data.as_slice(), false));
@@ -546,22 +551,30 @@ mod tests {
         assert_eq!(expand(&stream, 10), Ok(Expanded { bytes: b"AAAAB".to_vec(), whole: false }), "the end token");
     }
 
-    /// A length of 16 bits, the longest code, is read in a table: a 19-code table of 17 codes, one
-    /// of each length from 1 to 15 and two of 16, the long ones in their long form.
+    /// A code of 16 bits, the longest, is read in a table and decoded: a 19-code table of 17 codes,
+    /// one of each length from 1 to 15 and two of 16, the long ones in their long form, sends the
+    /// token table's lengths, its 16-bit code (the value 15) the longest of them, 13, in a complete
+    /// code of 14 tokens, one of each length from 1 to 12 and two of 13 ('A' to 'M' and the end).
     #[test]
     fn a_code_of_sixteen_bits_is_read() {
         let stream = bits(concat!(
-            "0000000000000010 ",                         // a block of 2 tokens
-            "10001 ",                                    // 19-code table: 17 lengths
-            "011 100 001 00 010 101 110 ",               // 3 4 1, no zeros after the third, 2 5 6: '0' 2, '10' 3
-            "1110 11110 111110 1111110 11111110 ",       // 7 to 11
-            "111111110 1111111110 11111111110 ",         // 12 to 14
-            "111111111110 1111111111110 1111111111110 ", // 15, 16 and 16
-            "111111111 0 000101101 10 0 110101000 10 ",  // token table: 65 zeros, 1, 444 zeros, 1: 'A' '0', the end '1'
-            "00000 00000 ",                              // distance table: a single value
-            "0 1",                                       // 'A', the end
+            "0000000000000011 ",                                      // a block of 3 tokens
+            "10001 ",                                                 // 19-code table: 17 lengths
+            "011 100 001 00 010 101 110 ",                            // 3 4 1, no zeros after the third, 2 5 6: '0' 2, '10' 3, '11110' 4
+            "1110 11110 111110 1111110 11111110 ",                    // 7 to 11
+            "111111110 1111111110 11111111110 ",                      // 12 to 14
+            "111111111110 1111111111110 1111111111110 ",              // 15, 16 and 16: '1111111111111110' 15
+            "111111111 0 000101101 ",                                 // token table: 511 lengths; 20 + 45 zeros: tokens 0 to 64
+            "10 11110 111110 1111110 11111110 111111110 1111111110 ", // codes 3 to 9, lengths 1 to 7: 'A' to 'G'
+            "11111111110 111111111110 1111111111110 11111111111110 ", // codes 10 to 13, lengths 8 to 11: 'H' to 'K'
+            "111111111111110 1111111111111110 ",                      // code 14, length 12: 'L'; code 15 (16 bits), length 13: 'M'
+            "0 110011100 ",                                           // 20 + 412 zeros: 78 to 509
+            "1111111111111110 ",                                      // code 15 (16 bits), length 13: token 510, the end
+            "00000 00000 ",                                           // distance table: a single value
+            "0 1111111111110 1111111111111",                          // 'A', 'M', the end
         ));
-        assert_eq!(expand(&stream, 4), Ok(Expanded { bytes: b"A".to_vec(), whole: false }));
+        assert_eq!(expand(&stream, 2), Ok(Expanded { bytes: b"AM".to_vec(), whole: true }));
+        assert_eq!(expand(&stream, 4), Ok(Expanded { bytes: b"AM".to_vec(), whole: false }), "the end token");
     }
 
     /// The token table's single value, and a run of zero lengths, past its 511 codes are refused.
@@ -575,5 +588,29 @@ mod tests {
         // then 20 + 511 zeros, past its 511 lengths.
         let zeros = bits("0000000000000001 00100 000 000 001 00 001 000000011 1 1 0 111111111");
         assert_eq!(expand(&zeros, 10), Err(Damaged));
+    }
+
+    /// A table past its limits is refused, though its stream goes on (a reader taking the table
+    /// would expand the stream, as it does the same stream within them): a distance table counting
+    /// 16 lengths, one more than its codes, and a 19-code table whose complete code reaches 17 bits,
+    /// one more than the longest code.
+    #[test]
+    fn a_table_past_its_limits_is_refused() {
+        let just_a = Ok(Expanded { bytes: b"A".to_vec(), whole: true });
+        // A block of 1 token; the 19-code table the single value 0; the token table the single
+        // token 65, 'A'; then the distance table.
+        let distances = |table: &str| bits(&format!("0000000000000001 00000 00000 000000000 001000001 {table}"));
+        // 16 lengths of 4, a complete code of 16; 15, one of 3 and 14 of 4, a complete code of 15.
+        assert_eq!(expand(&distances(&format!("10000 {}", "100 ".repeat(16))), 1), Err(Damaged));
+        assert_eq!(expand(&distances(&format!("01111 011 {}", "100 ".repeat(14))), 1), just_a);
+        // A block of 1 token; the 19-code table; the token table the single token 'A'; the
+        // distance table the single value 0.
+        let lengths = |table: &str| bits(&format!("0000000000000001 {table} 000000000 001000001 00000 00000"));
+        // 18 lengths, one of each from 1 to 16 and two of 17, the long ones in their long form (no
+        // zeros after the third): a complete code, as 17 lengths, 1 to 15 and two of 16, are.
+        let one_to_six = "001 010 011 00 100 101 110";
+        let seven_to_sixteen = "1110 11110 111110 1111110 11111110 111111110 1111111110 11111111110 111111111110 1111111111110";
+        assert_eq!(expand(&lengths(&format!("10010 {one_to_six} {seven_to_sixteen} 11111111111110 11111111111110")), 1), Err(Damaged));
+        assert_eq!(expand(&lengths(&format!("10001 {one_to_six} {seven_to_sixteen} 1111111111110")), 1), just_a);
     }
 }

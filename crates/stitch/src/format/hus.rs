@@ -283,7 +283,7 @@ fn threads(list: &[u8], claimed: usize, points: &[Stitch]) -> Vec<Thread> {
 mod tests {
     use super::*;
     use crate::format::Format;
-    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    use vectorcraft_testkit::machine_files::{CUT_CASES_LIMIT, Lzh, hus, within};
 
     const NAME: &[u8; 8] = b"007\0\0\0\0\0";
 
@@ -461,9 +461,14 @@ mod tests {
     /// first stitch, says it has none), and a cut short of the whole reads part of the design,
     /// saying that the file ends early, as one whose header counts more records than its streams
     /// hold does, and a whole file doesn't; a header that points past the file, a count past what
-    /// a design may have and damaged streams are refused.
+    /// a design may have and damaged streams are refused. The cuts run under a time limit, so a
+    /// reader that goes round on the zero bits read past a cut fails here.
     #[test]
     fn cut_and_damaged_files() {
+        within(CUT_CASES_LIMIT, cut_and_damaged_cases);
+    }
+
+    fn cut_and_damaged_cases() {
         for o in [Lzh::default(), Lzh { copies: false, block_tokens: 5 }, Lzh { copies: true, block_tokens: 3 }] {
             let whole = hus(&records(), &[3, 7], NAME, &o);
             let full = read(&whole).unwrap();

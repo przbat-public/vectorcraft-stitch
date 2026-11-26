@@ -224,9 +224,9 @@ fn a_sew_opens_as_the_jef_it_holds() {
     s.execute("file.place", &json!({"name": "design.sew", "dataBase64": b64(&sew)})).expect("places");
 }
 
-/// A HUS opens by its name and by its first bytes, in its chart's colours, its cut and its stop
-/// kept: exported, the cut is a cut and the stop a change to the same thread; placed, it comes in
-/// too.
+/// A HUS opens by its name and by its first bytes, in its chart's colours and with no thread
+/// palette of its own, its cut and its stop kept: exported, the cut is a cut and the stop a change
+/// to the same thread; placed, it comes in too.
 #[test]
 fn a_hus_opens_by_name_and_by_its_magic_bytes() {
     use vectorcraft_testkit::machine_files::{Lzh, hus};
@@ -244,6 +244,8 @@ fn a_hus_opens_by_name_and_by_its_magic_bytes() {
     let groups: Vec<String> =
         s.doc().unwrap().doc.layers.iter().flat_map(|l| l.children().into_iter().flatten()).filter_map(|c| c.name.clone()).collect();
     assert_eq!(groups, ["Red", "Blue"]);
+    let palette = s.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id());
+    assert_eq!(palette, None, "HUS's chart is its own");
     let dst = plan(&export(&mut s, "dst", json!({})));
     // The stop is a change to the same thread: three blocks; the cut a trim in the first.
     assert_eq!(dst.blocks.len(), 3);
@@ -499,6 +501,21 @@ fn a_hus_or_sew_cut_short_says_so() {
         assert_eq!(std::fs::read(&path).unwrap(), cut, "{name}: untouched");
     }
     std::fs::remove_dir_all(d).ok();
+}
+
+/// The export's own refusal of a format only read, which every export path's first check
+/// (`writable_format`) makes before it: called past that check, it refuses HUS and SEW before
+/// planning anything, so a document with nothing to sew gets that refusal, not one for having
+/// nothing to sew.
+#[test]
+fn the_export_refuses_a_format_only_read_itself() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    for id in ["hus", "sew"] {
+        let f = super::formats::format(id).unwrap();
+        let e = super::embroidery::encode(&s.doc().unwrap().doc, f, &json!({})).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(e.contains(&format!("{} files can be opened but not written", f.label)), "{id}: {e}");
+    }
 }
 
 /// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.

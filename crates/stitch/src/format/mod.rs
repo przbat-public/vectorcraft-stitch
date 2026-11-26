@@ -991,12 +991,13 @@ mod tests {
             assert!(f.read(cut).is_ok(), "{f:?}");
             assert_eq!(f.losses(cut), [Loss::EndsEarly], "{f:?}: cut short");
         }
-        // A SEW's last picture byte, and the first of the table nobody explains (8, a value the
-        // KDE wiki saw there, at the offset the wiki gives, not the reader's), are left out; twelve
-        // thread numbers are read, so a SEW that lists twelve, its tables and pictures blank, loses
-        // nothing.
+        // A SEW's last picture byte, the first of the table nobody explains (8, a value the KDE
+        // wiki saw there) and the first of its stitch counts, at the offsets the wiki gives, not
+        // the reader's, are left out; twelve thread numbers are read, so a SEW that lists twelve,
+        // its tables and pictures blank, loses nothing.
         let (_, blank) = read_only_files().remove(0);
-        for at in [sew::STITCHES_AT - 1, vectorcraft_testkit::machine_files::SEW_TABLES_AT] {
+        use vectorcraft_testkit::machine_files::{SEW_COUNTS_AT, SEW_TABLES_AT};
+        for at in [sew::STITCHES_AT - 1, SEW_TABLES_AT, SEW_COUNTS_AT] {
             let mut drawn = blank.clone();
             drawn[at] = 8;
             assert_eq!(Format::Sew.losses(&drawn), [Loss::SewPictures], "a byte at {at}");

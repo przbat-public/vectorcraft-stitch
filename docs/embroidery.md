@@ -1654,7 +1654,7 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
 
 ## Validation
 
-- `crates/stitch`: 328 unit tests, 19 property tests, three tests of the cases they found, a
+- `crates/stitch`: 329 unit tests, 19 property tests, three tests of the cases they found, a
   golden comparison and a check of real files (`tests/prop_plan.rs`,
   `tests/prop_joins.rs`, `tests/prop_threads.rs`, `tests/prop_read_only_formats.rs`,
   `tests/golden_no_exit.rs`, `tests/real_files.rs`; counted 2026-11-26) — CIEDE2000 matches the 34 published test
@@ -1797,7 +1797,7 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   parameters allow (this found the zigzag fault fixed above: a 50 mm zigzag with corners 0.5 mm
   apart was one 50 mm stitch): without pull compensation to the bound it always had, and with it
   longer by its reach at most.
-- `crates/engine`: 686 tests (63 through the files' commands and the export's options,
+- `crates/engine`: 687 tests (64 through the files' commands and the export's options,
   `cmd/fileio/tests_embroidery.rs` and `cmd/fileio/embroidery/mod.rs`; 623 on the stitch plan, the
   walk, threads, settings, statistics, sewing order, checks, the planning service, manual stitches
   and needle points, the embroidery tool and digitizing from an image, `cmd/embroidery/`) and 75
@@ -1842,7 +1842,8 @@ the warnings, naming the objects (art beside a run in a group is still expanded 
   is written back unchanged in every format (and again after a second round), with the cuts at
   its blocks' ends, converts between formats with the same needle points, ignores the style
   options and survives the native format, `document.formats` lists all eight, and SEW and HUS as
-  read and not written (an export to them refused), a SEW opens as the JEF it holds and a HUS by
+  read and not written (an export to them refused, by the export's own check too when called past
+  the first), a SEW opens as the JEF it holds and a HUS by
   its name and by its magic bytes, each placed too, neighbouring blocks of one thread in either
   opening as one group with a stop between, and a block that sews nothing (a HUS's last colour
   change that moves) making no group and no stop, writing another format over an opened SEW or

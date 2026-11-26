@@ -541,6 +541,50 @@ mod tests {
         assert_eq!(threads, [thread(3), crate::thread::default_thread(1)]);
     }
 
+    /// The chart's names by number as Weiler's page gives them, its two columns (0x00 to 0x0F
+    /// beside 0x10 to 0x1D) read again here number by number, apart from [`COLOURS`], so that a
+    /// row taken from the other column fails; his "Magenta (Purple)" is shortened, and his 0x10,
+    /// "???", reads as a stand-in.
+    #[test]
+    fn the_colour_names_are_weilers_by_number() {
+        let weiler = [
+            (0x00, "Black"),
+            (0x01, "Blue"),
+            (0x02, "Green"),
+            (0x03, "Red"),
+            (0x04, "Magenta"),
+            (0x05, "Yellow"),
+            (0x06, "Gray"),
+            (0x07, "Light Blue"),
+            (0x08, "Light Green"),
+            (0x09, "Orange"),
+            (0x0A, "Pink"),
+            (0x0B, "Brown"),
+            (0x0C, "White"),
+            (0x0D, "Dark Blue"),
+            (0x0E, "Dark Green"),
+            (0x0F, "Dark Red"),
+            (0x11, "Light Red"),
+            (0x12, "Dark Purple"),
+            (0x13, "Light Purple"),
+            (0x14, "Dark Yellow"),
+            (0x15, "Light Yellow"),
+            (0x16, "Dark Grey"),
+            (0x17, "Light Grey"),
+            (0x18, "Dark Orange"),
+            (0x19, "Light Orange"),
+            (0x1A, "Dark Pink"),
+            (0x1B, "Light Pink"),
+            (0x1C, "Dark Brown"),
+            (0x1D, "Light Brown"),
+        ];
+        for (number, name) in weiler {
+            assert_eq!(thread(number).name, name, "{number:#04x}");
+        }
+        assert_eq!(thread(0x10).name, "Unknown thread 16");
+        assert_eq!(COLOURS.iter().flatten().count(), weiler.len());
+    }
+
     /// The header's name keeps printable ASCII and spaces, any other byte read as `_`, up to the
     /// first NUL, its spaces at the ends trimmed.
     #[test]

@@ -227,6 +227,9 @@ pub const SEW_STITCHES_AT: usize = 0x1D78;
 /// table of 12 values nobody explains, then the stitch counts per colour from 0x32 (the KDE
 /// Community Wiki: offset 0x1A).
 pub const SEW_TABLES_AT: usize = 0x1A;
+/// Where a SEW header's second table, its twelve stitch counts per colour, starts (the KDE
+/// Community Wiki: offset 0x32).
+pub const SEW_COUNTS_AT: usize = 0x32;
 /// Where a SEW file's first preview picture starts, after its header (the KDE Community Wiki:
 /// offset 0x4A, a picture of 48 × 32 in one colour).
 pub const SEW_PICTURES_AT: usize = 0x4A;

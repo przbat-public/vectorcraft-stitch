@@ -10,16 +10,21 @@
 //! of 24 × 22 per colour, a 64 × 48 one, one of 64 × 48 per colour, and an outline of the design of
 //! any size, each its width in bytes, its height and its bits. The stitch records start at the
 //! fixed offset 0x1D78 and are JEF's: two signed bytes, x and y in tenths of a millimetre with y
-//! upwards, `0x80` starting a command (a colour change to the list's next thread, a move with the
-//! needle up, the end). EduTechWiki's format overview says the same in a line: SEW names its
-//! threads by number, and its stitches are signed x, y pairs with `0x80` starting a command.
+//! upwards, `0x80` starting a command (a colour change, a move with the needle up, the end).
+//! EduTechWiki's format overview says the same in a line: SEW names its threads by number, and
+//! its stitches are signed x, y pairs with `0x80` starting a command.
 //!
 //! What reading takes: the colour count, the thread numbers and the records, read as JEF's are
-//! ([`super::jef::read_records`]: a move that goes nowhere is a cut). The pictures and the two
-//! tables are left, and opening a file whose pictures or tables aren't blank says so ([`losses`]),
-//! so that writing another format over it asks first: a design opened from SEW is written in
-//! another format, never as SEW. A colour count of 0 or above 12 is no SEW's, and refused. A
-//! thread number past Janome's chart reads as a stand-in named after it, as in JEF.
+//! ([`super::jef::read_records`]: a move that goes nowhere is a cut). Threads go to blocks as in
+//! JEF: each block of records between colour changes takes the list's next thread, so colour
+//! changes in a row take one thread and one before the first record takes none; a block of moves
+//! alone, with no stitch, takes its thread too, and opening a design leaves such a block out, so
+//! its thread isn't seen (the project owner's choice, 2026-11-26; HUS's rule that every colour
+//! change moves on one colour is HUS's alone). The pictures and the two tables are left, and
+//! opening a file whose pictures or tables aren't blank says so ([`losses`]). Writing another
+//! format over any opened SEW asks first, since a design opened from SEW is written in another
+//! format, never as SEW. A colour count of 0 or above 12 is no SEW's, and refused. A thread number
+//! past Janome's chart reads as a stand-in named after it, as in JEF.
 //!
 //! No SEW file has been read here: the description rests on the files the KDE wiki's author saw,
 //! and the tests on files built from it. pyembroidery 1.5.1 (MIT), run as an outside reader, reads
@@ -146,6 +151,27 @@ mod tests {
         let p = read(&sew(&twelve, &changes)).unwrap();
         assert_eq!(p.blocks.len(), 12);
         assert_eq!(Some(&p.blocks[11].thread), Palette::Jef.thread(12).as_ref());
+    }
+
+    /// Threads go to blocks, as in JEF: colour changes in a row take one thread, so the stitches
+    /// after two of them are in the second; a colour change before the first record takes none,
+    /// and one after a block of moves alone takes the next (the moves have the first).
+    #[test]
+    fn colour_changes_in_a_row_take_one_thread() {
+        let in_a_row = [0x0A, 0x05, 0x80, 0x01, 0x00, 0x00, 0x80, 0x01, 0x00, 0x00, 0x0A, 0x05, 0x80, 0x10];
+        let p = read(&sew(&[1, 2, 3], &in_a_row)).unwrap();
+        let threads: Vec<Option<Thread>> = p.blocks.iter().map(|b| Some(b.thread.clone())).collect();
+        assert_eq!(threads, [Palette::Jef.thread(1), Palette::Jef.thread(2)]);
+        let first = [0x80, 0x01, 0x00, 0x00, 0x0A, 0x05, 0x0A, 0x05, 0x80, 0x10];
+        let p = read(&sew(&[1, 2, 3], &first)).unwrap();
+        let threads: Vec<Option<Thread>> = p.blocks.iter().map(|b| Some(b.thread.clone())).collect();
+        assert_eq!(threads, [Palette::Jef.thread(1)]);
+        // A move with the needle up, then a colour change: the move is a block of the first thread.
+        let moved = [0x80, 0x02, 0x05, 0x05, 0x80, 0x01, 0x00, 0x00, 0x0A, 0x05, 0x0A, 0x05, 0x80, 0x10];
+        let p = read(&sew(&[1, 2, 3], &moved)).unwrap();
+        let blocks: Vec<(Vec<Command>, Option<Thread>)> =
+            p.blocks.iter().map(|b| (b.stitches.iter().map(|s| s.command).collect(), Some(b.thread.clone()))).collect();
+        assert_eq!(blocks, [(vec![Command::Jump], Palette::Jef.thread(1)), (vec![Command::Stitch; 2], Palette::Jef.thread(2))]);
     }
 
     /// A colour count no SEW has, a file that ends before its records and records that hold no

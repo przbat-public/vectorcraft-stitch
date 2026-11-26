@@ -10,7 +10,8 @@
 //! of 24 × 22 per colour, a 64 × 48 one, one of 64 × 48 per colour, and an outline of the design of
 //! any size, each its width in bytes, its height and its bits. The stitch records start at the
 //! fixed offset 0x1D78 and are JEF's: two signed bytes, x and y in tenths of a millimetre with y
-//! upwards, `0x80` starting a command (a colour change, a move with the needle up, the end).
+//! upwards, `0x80` starting a command: a colour change (in the wiki's table of commands, "change to
+//! next thread in list", read as JEF's: by block, below), a move with the needle up, the end.
 //! EduTechWiki's format overview says the same in a line: SEW names its threads by number, and
 //! its stitches are signed x, y pairs with `0x80` starting a command.
 //!

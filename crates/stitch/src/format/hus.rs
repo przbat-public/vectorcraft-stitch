@@ -48,9 +48,9 @@
 //! References: EduTechWiki, *Embroidery format HUS* (edutechwiki.unige.ch/en/
 //! Embroidery_format_HUS) and *Embroidery format* (…/Embroidery_format); KDE Community Wiki,
 //! *Husqvarna HUS* (community.kde.org/Projects/Liberty/File_Formats/Husqvarna_HUS); Jason Weiler,
-//! *HUS and VIP File Format Info* (jasonweiler.com/HUSandVIPFileFormatInfo.html; facts only, its
-//! text is all rights reserved); The National Archives, PRONOM fmt/2000 (the magic). pyembroidery
-//! 1.5.1 (MIT) served only as an outside reader; none of its code was read.
+//! *HUS and VIP Embroidery File Formats* (jasonweiler.com/HUSandVIPFileFormatInfo.html; facts only,
+//! its text is all rights reserved); The National Archives, PRONOM fmt/2000 (the magic).
+//! pyembroidery 1.5.1 (MIT) served only as an outside reader; none of its code was read.
 
 use super::{Loss, MAX_POINTS, Reader, add, finish, lzh, mm};
 use crate::{Command, Error, Pattern, Result, Stitch, Thread};

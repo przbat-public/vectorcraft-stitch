@@ -1,6 +1,6 @@
 //! Janome SEW: read, never written (the project owner's choice, 2026-11-18). The format of
-//! Janome's older machines (Memory Craft 5700, 8000 and 9000, Elna and Kenmore ones), which JEF
-//! replaced ([`super::jef`], written).
+//! Janome's older home machines, and of Elna's and Kenmore's (EduTechWiki's format overview names
+//! the three makers), which JEF replaced ([`super::jef`], written).
 //!
 //! The KDE Community Wiki (*Janome Embroidery Format*) describes SEW from the files it saw: little
 //! endian, a header, preview pictures, then JEF's stitch records. The header is the colour count

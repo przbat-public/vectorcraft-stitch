@@ -36,12 +36,14 @@
 //!
 //! Checked on 6,944 real HUS files the project owner holds (used on their computer only, never
 //! committed): every one with a stitch opens (four files of alphabets hold only moves); the
-//! header's record and colour counts, extents and stream offsets
-//! are as above in all of them (the colour count is one more than the colour changes); and the y
-//! axis counts upwards: read so, the stitches of 2,576 of the 2,585 designs the files also hold as
-//! JEF, and of all 58 they hold as PES, overlap those copies' more than read the other way up (on a
-//! 48 × 48 grid over each design; the 9 others are nearly symmetrical top to bottom). Two files end
-//! before their last records: they read as far as they go.
+//! header's record and colour counts, extents and stream offsets are as above in all of them (the
+//! colour count is one more than the colour changes); and the y axis counts upwards: read so, the
+//! stitches of 2,576 of the 2,585 designs the files also hold as JEF, and of all 58 they hold as
+//! PES, overlap those copies' more than read the other way up (on a 48 × 48 grid over each design;
+//! the 9 others are nearly symmetrical top to bottom). Weiler's header notes give HUS's +Y extent
+//! as DST's −Y and its −Y as DST's +Y, which would put y counting down; the files settle it the
+//! other way, as DST and JEF count it. Two files end before their last records: they read as far
+//! as they go, saying that they end early ([`losses`]).
 //!
 //! References: EduTechWiki, *Embroidery format HUS* (edutechwiki.unige.ch/en/
 //! Embroidery_format_HUS) and *Embroidery format* (…/Embroidery_format); KDE Community Wiki,
@@ -88,8 +90,10 @@ const COLOR_CHANGE: u8 = 0x84;
 const TRIM: u8 = 0x88;
 
 /// The colours of HUS's chart, by number, with the names Weiler gives them (number 16 has none):
-/// each colour an sRGB estimate made for its name, not a measurement. The plain colours are bright
-/// thread shades; "Light" ones lie about half way to white, "Dark" ones about half way to black.
+/// each colour an sRGB shade chosen for its name, an estimate, not a measurement. The plain colours
+/// are bright thread shades; the "Light" ones lie toward white and the "Dark" ones toward black,
+/// most about half way, while Dark Yellow, Dark Orange, Dark Pink and Light Brown stay nearer their
+/// plain colours, as gold, rust, rose and tan threads do.
 pub(crate) const COLOURS: [Option<([u8; 3], &str)>; 30] = [
     Some(([0x00, 0x00, 0x00], "Black")),
     Some(([0x10, 0x40, 0xC0], "Blue")),
@@ -219,6 +223,8 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
         let before = Stitch::new(mm(x), mm(y), Command::Stitch);
         x += dx;
+        // y counts upwards in the file, as the real files above show (against Weiler's header
+        // notes), and downwards here.
         y -= dy;
         let here = |command| Stitch::new(mm(x), mm(y), command);
         let moved = dx != 0 || dy != 0;

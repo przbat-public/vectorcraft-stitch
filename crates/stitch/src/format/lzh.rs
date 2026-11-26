@@ -1,6 +1,6 @@
 //! Expanding the compressed streams of Husqvarna Viking HUS files ([`super::hus`]): LZSS with
-//! static Huffman codes, sent in blocks, the method the ARJ archiver's methods 1 to 3 use, with
-//! HUS's sizes.
+//! static Huffman codes, sent in blocks, the method of Haruhiko Okumura's ar002, which LHA's lh5
+//! uses and the KDE wiki takes for the ARJ archiver's methods 1 to 3, with HUS's sizes.
 //!
 //! The method, as this module reads it. A stream is a series of tokens. A token up to 255 is that
 //! byte; a token from 256 to 509 copies 3 to 256 bytes from up to a kilobyte back in what the
@@ -21,33 +21,56 @@
 //! - A distance code d is 0 for d = 0, else 2^(d − 1) plus the d − 1 bits that follow it; the copy
 //!   starts that many bytes plus one back.
 //!
-//! The sources. The KDE Community Wiki (*Husqvarna HUS*) names the method, ARJ's decoder for
-//! methods 1 to 3, and gives HUS's sizes: a 1,024-byte window (DICSIZE, 10 bits), 511 token codes
-//! (NC; ARJ has 510), 19 codes for the lengths (NT) and 15 distance codes (NP), their counts in 5
-//! bits (TBIT, PBIT), the token count in 9 (CBIT), codes of up to 16 bits (CODE_BIT), copies of 3
-//! to 256 bytes (THRESHOLD, MAXMATCH). EduTechWiki (*Embroidery format HUS*) describes the stream
-//! the same way: tokens from 0 to 511 in blocks, each block a 16-bit token count and three tables
-//! sent as code lengths, built shortest first with ties to the lowest value, the first table
-//! sending the second's lengths with its small values standing for runs of zeros; a byte for a
-//! token up to 255, the end at 510, a copy from the 1,024-byte window for the others, its distance
-//! from the third table. The bit layout of the tables (the run of 1 bits for lengths of 7 and more,
-//! the 2 bits of zeros after the third length, the three codes for runs of zeros and their 4 and 9
-//! bits, the distance's extra bits) is the one of the method both pages name, which Haruhiko
-//! Okumura published as the public-domain ar002 (1990), and which LHA's lh5 and ARJ use.
+//! The sources. The KDE Community Wiki (*Husqvarna HUS*,
+//! <https://community.kde.org/Projects/Liberty/File_Formats/Husqvarna_HUS>) says the compression
+//! "does seem to use" ARJ's decoder for its methods 1 to 3, and gives HUS's sizes: a 1,024-byte
+//! window (DICSIZE, 10 bits), 511 token codes (NC), 19 codes for the lengths (NT) and 15 distance
+//! codes (NP), their counts in 5 bits (TBIT, PBIT), the token count in 9 (CBIT), codes of up to 16
+//! bits (CODE_BIT), copies of 3 to 256 bytes (THRESHOLD, MAXMATCH). EduTechWiki's *Embroidery
+//! format HUS* (<https://edutechwiki.unige.ch/en/Embroidery_format_HUS>) has the compression from
+//! a library of Greenleaf's, who licensed it from ARJ's author, and its table of 511 where ARJ's
+//! is of 510; it describes the stream in prose: 9-bit tokens in blocks, each block a 16-bit token
+//! count and three tables sent as code lengths, built shortest first with ties to the lowest value,
+//! the first table sending the second's lengths with its small values standing for runs of zeros;
+//! a byte for a token up to 255, the end at 510, a copy from the 1,024-byte window for the others,
+//! its distance from the third table. Its format overview (*Embroidery format*,
+//! <https://edutechwiki.unige.ch/en/Embroidery_format>) gives the library as a belief, and Jason
+//! Weiler's page (<http://www.jasonweiler.com/HUSandVIPFileFormatInfo.html>) as a fact: Greenleaf's
+//! ArchiveLib, in its mode AL_GREENLEAF_LEVEL_4 (proprietary; nothing of it, nor of any port of it,
+//! was read). Neither wiki gives the tables' bit layout, and the HUS page has the first table's
+//! values above 3 stand for the length 3 less, where this module reads the value k as the length
+//! k − 2, as every stream of the real files below expands.
 //!
-//! Neither page calls the method certain (EduTechWiki: "the belief is"), so it was checked on 6,944
-//! real HUS files the project owner holds (used on their computer only, never committed): every
-//! stream expands to its stated length with the end token next, but in the two files that end
-//! before their last records, where a stream stops short of it; every table is a complete code,
-//! and no copy reaches back further than 1,020 bytes.
+//! The bit layout (the run of 1 bits for lengths of 7 and more, the 2 bits of zeros after the third
+//! length, the three codes for runs of zeros and their 4 and 9 bits, the value k as the length
+//! k − 2, the distance's extra bits) is the method's as it was known when this module was written,
+//! checked on those files. On 2026-11-26 it was confirmed against the source of ar002, the program
+//! in which Haruhiko Okumura published the method in 1990 and which he released to the public
+//! domain, as its README says (<https://okumuralab.org/~okumura/compression/ar002/>, a later
+//! revision of it on his own site; the LHa for UNIX manual says so too,
+//! <https://manpages.opensuse.org/Leap-15.6/lha/lha.1.en.html>): every rule above is ar002's. It
+//! was read and is cited by the project owner's leave (FORK.md › Clean-room for embroidery); none
+//! of its code is copied, and this module is built its own way (it decodes canonical codes from
+//! their counts by length, where ar002 looks codes up in tables). ar002 writes its files as LHA's
+//! lh5; that ARJ's methods use the same layout rests on the KDE wiki. HUS's sizes are the wikis',
+//! not ar002's, and the files bear them out: a 1,024-byte window (ar002's is 8,192), 511 token
+//! codes whose last ends the stream (ar002 has 510 and no end), 15 distance codes counted in 5
+//! bits (ar002: 14, counted in 4).
+//!
+//! Checked on 6,944 real HUS files the project owner holds (used on their computer only, never
+//! committed): every stream expands to its stated length with the end token next, but in the two
+//! files that end before their last records, where a stream stops short of it; every table is a
+//! complete code, and no copy reaches back further than 1,020 bytes.
 //!
 //! What a hostile stream can do here: it is read bit by bit, a table that isn't a complete code is
-//! refused (as ar002 refuses one), every length and count is checked before it is used, and each
-//! token makes at least one byte, so the work is bounded by the bytes asked for. A stream whose
-//! data runs out keeps the bytes made before it did, wherever in the stream the cut falls (what the
-//! zero bits read past the end make, or make no sense of, is the cut): a HUS file cut in its last
-//! stream reads as far as it goes, and one cut earlier is refused by its header, whose stream
-//! offsets then point past its end.
+//! refused (ar002 checks this more loosely: it passes a table of no codes, some over-full ones and
+//! lengths past 16, and doesn't check counts, values or runs of zeros past a table, which this
+//! module refuses), every length and count is checked before it is used, and each token makes at
+//! least one byte, so the work is bounded by the bytes asked for. A stream whose data runs out
+//! keeps the bytes made before it did, wherever in the stream the cut falls (what the zero bits
+//! read past the end make, or make no sense of, is the cut): a HUS file cut in its last stream
+//! reads as far as it goes, and one cut earlier is refused by its header, whose stream offsets then
+//! point past its end.
 
 /// A stream that doesn't expand: a table that is no complete code, a value past a table's end, a
 /// copy from before the stream's start or further back than its window, a block of no tokens.
@@ -78,7 +101,8 @@ const SHORTEST_COPY: usize = 3;
 /// bits its count takes (TBIT, 5).
 const LENGTH_CODES: usize = 19;
 const LENGTH_COUNT_BITS: u32 = 5;
-/// The distance codes (the KDE wiki's NP, 15), and the bits their count takes (PBIT, 5).
+/// The distance codes (the KDE wiki's NP, 15), and the bits their count takes (PBIT, 5; ar002's,
+/// for its 14 distance codes, is 4: the real files take 5).
 const DISTANCE_CODES: usize = 15;
 const DISTANCE_COUNT_BITS: u32 = 5;
 /// The bits the token table's count takes (the KDE wiki's CBIT, 9).
@@ -88,7 +112,7 @@ const BLOCK_COUNT_BITS: u32 = 16;
 /// The longest code, bits (the KDE wiki's CODE_BIT, 16).
 const LONGEST_CODE: usize = 16;
 /// A length in the 19-code and the distance tables takes this many bits; at [`LONG_LENGTH`] it
-/// grows by one for each 1 bit after them, up to a 0 bit.
+/// grows by one for each 1 bit after them, up to a 0 bit (ar002's layout, as the next three).
 const LENGTH_BITS: u32 = 3;
 const LONG_LENGTH: u32 = 7;
 /// After this many lengths of the 19-code table, [`ZEROS_AFTER_BITS`] bits say how many of the
@@ -97,7 +121,8 @@ const ZEROS_AFTER: usize = 3;
 const ZEROS_AFTER_BITS: u32 = 2;
 /// The 19-code table's codes for runs of zero lengths in the token table: one zero; 3 to 18 zeros
 /// in [`SOME_ZEROS_BITS`] more bits; 20 to 531 zeros in [`MANY_ZEROS_BITS`] more bits. A code past
-/// them is a length, [`LENGTH_CODE_OFFSET`] less than the code.
+/// them is a length, [`LENGTH_CODE_OFFSET`] less than the code (ar002's layout; EduTechWiki's HUS
+/// page has 3 less, which the real files refute).
 const ONE_ZERO: usize = 0;
 const SOME_ZEROS: usize = 1;
 const SOME_ZEROS_BITS: u32 = 4;

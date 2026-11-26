@@ -199,6 +199,9 @@ pub(crate) const STOPS_WRITTEN: &str = "each stop is written as a change to the 
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
     let format = StitchFormat::readable(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
+    // A backstop: every export path refuses a format only read before it gets here
+    // (`writable_format`), and `Format::write` refuses it too; this keeps a new caller from
+    // planning a whole design only to fail at the end.
     if !format.writes() {
         return Err(bad(C, format!("{} files can be opened but not written (see document.formats)", f.label)));
     }

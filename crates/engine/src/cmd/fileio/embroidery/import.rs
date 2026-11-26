@@ -25,8 +25,8 @@ const MAX_RUNS: usize = 100_000;
 
 /// What reading a machine file left out, as opening it says it, one note each (in this order):
 /// a file written from the document lacks it, so writing over the file asks first
-/// ([`super::is_loss`]). The last is said for what a newer stitch crate reports and this list
-/// doesn't name yet.
+/// ([`super::is_loss`]). The last is said for a SEW's pictures and header tables, and for what a
+/// newer stitch crate reports and this list doesn't name yet.
 pub const LOSS_NOTES: [&str; 8] = [
     "the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone",
     "the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones",
@@ -87,11 +87,12 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     }
     let mut layer = Node::layer(doc.alloc_id(), "Embroidery", LayerColor::Preset(0));
     let mut groups: Vec<Arc<Node>> = Vec::new();
-    // Neighbouring blocks in the same thread are one block with a stop between: no format has a
-    // stop of its own, so a stop is written as a change to the same thread, and read back as one
-    // (in PES, PEC, JEF and VP3, which name their threads; DST, TAP, T01 and EXP name none, so their
-    // blocks' default threads always differ). Kept as a stop, it survives a change of palette, where
-    // two blocks would be matched to two threads.
+    // Neighbouring blocks in the same thread are one block with a stop between: no format written
+    // has a stop of its own (HUS, only read, has a record read as one, 0x82, kept by [`runs`]), so
+    // a stop is written as a change to the same thread, and read back as one (in PES, PEC, JEF and
+    // VP3, which name their threads, as SEW and HUS do; DST, TAP, T01 and EXP name none, so their
+    // blocks' default threads always differ). Kept as a stop, it survives a change of palette,
+    // where two blocks would be matched to two threads.
     let mut same: Vec<Vec<&Block>> = Vec::new();
     for block in &pattern.blocks {
         match same.last_mut() {
@@ -178,10 +179,6 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     Ok((doc, notes))
 }
 
-/// The stitches of one block cut into runs at every lift of the needle (a jump, a trim, a stop),
-/// each with whether the thread was cut before it and, for the block's last run, after it, and
-/// whether the machine stops after it (a stop a reader gives: none does, a stop being a change to
-/// the same thread in every format).
 /// One run of a block as a file sews it ([`runs`]): its needle points, and the cut before it, the
 /// cut after it and the stop after it.
 struct FileRun {
@@ -191,6 +188,10 @@ struct FileRun {
     stopped: bool,
 }
 
+/// The stitches of one block cut into runs at every lift of the needle (a jump, a trim, a stop),
+/// each with whether the thread was cut before it and, for the block's last run, after it, and
+/// whether the machine stops after it (a stop a reader gives: only HUS's does, a stop being a
+/// change to the same thread in every other format).
 fn runs(block: &Block) -> Vec<FileRun> {
     let mut out: Vec<FileRun> = Vec::new();
     let mut cur: Vec<Stitch> = Vec::new();

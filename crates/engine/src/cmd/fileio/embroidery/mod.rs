@@ -179,8 +179,8 @@ pub(crate) fn options(p: &Value) -> Result<Options> {
     }
 }
 
-/// The export's note when it writes a stop: no format has one, so it is a change to the same
-/// thread, which machines take differently (`docs/embroidery.md` › The formats).
+/// The export's note when it writes a stop: no format written has one, so it is a change to the
+/// same thread, which machines take differently (`docs/embroidery.md` › The formats).
 pub(crate) const STOPS_WRITTEN: &str = "each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change";
 
 /// Write a machine file from the document's visible art: its stitch plan, as the format writes it.

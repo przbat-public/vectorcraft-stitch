@@ -181,7 +181,9 @@ pub struct ThreadRecord {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Block {
     pub thread: Thread,
-    /// Needle order. The block's first point is stitched, never jumped to.
+    /// Needle order. A block read from a file may start with what brings the needle to its first
+    /// stitch (a jump, or a cut and a jump), the first block too, and one may hold no stitch at
+    /// all (a HUS's last colour change that moves leaves a block of its jump alone).
     pub stitches: Vec<Stitch>,
 }
 

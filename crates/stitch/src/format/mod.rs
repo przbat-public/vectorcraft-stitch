@@ -110,8 +110,10 @@ pub enum Start {
 pub type Writer = fn(&Pattern) -> Result<Vec<u8>>;
 
 /// What the code knows about one format, in one place ([`Format::spec`]): adding a format is one
-/// of these, its module's reader and writer, and the arm that names it in [`Format::spec`], which
-/// fails to compile until it is there.
+/// of these, its module's reader and writer, the arm that names it in [`Format::spec`], which
+/// fails to compile until it is there, and its place in [`Format::ALL`] or [`Format::READ_ONLY`]
+/// and in [`Format::READ`] (`every_format_has_a_spec_of_its_own` checks that the three lists
+/// agree).
 #[derive(Clone, Copy, Debug)]
 pub struct Spec {
     /// The `format` parameter value.
@@ -607,10 +609,11 @@ pub(crate) trait Emitter {
 }
 
 /// The stretches a block's stitches are written as: cut at each stop (or thread change) that has a
-/// needle point of the block before it, since the last cut, and one after it. No format has a stop
-/// of its own (EduTechWiki gives DST's, EXP's and JEF's stop the bytes of their colour change, and
-/// PEC and VP3 document none), so a stop is written as a change to the same thread: each stretch is
-/// written as a block of the block's thread. A stop or thread change anywhere else (before the
+/// needle point of the block before it, since the last cut, and one after it. No format written has
+/// a stop of its own (EduTechWiki gives DST's, EXP's and JEF's stop the bytes of their colour
+/// change, and PEC and VP3 document none; HUS, only read, has a record read as one: 0x82, which
+/// no source names), so a stop is written as a change to the same thread: each stretch is written
+/// as a block of the block's thread. A stop or thread change anywhere else (before the
 /// block's first needle point, after its last, right after another) is written as nothing: the
 /// thread change before the next block, or the design's end, already stops a machine there.
 ///
@@ -824,7 +827,8 @@ pub fn steps(dx: i32, dy: i32, max: i32) -> impl Iterator<Item = (i32, i32)> {
     (1..=n).map(move |i| (at(dx, i) - at(dx, i - 1), at(dy, i) - at(dy, i - 1)))
 }
 
-/// A design built from what a reader decoded, one block per colour change.
+/// A design built from what a reader decoded: a block of the points between two colour changes
+/// that hold any, so colour changes in a row make no block.
 ///
 /// `threads` are the block threads the format names (PEC's and JEF's palette indices); a format
 /// that names none passes none, and the blocks get [`thread::default_thread`].

@@ -22,12 +22,17 @@
 //! point, and the records after it are read (pyembroidery stops at it, and at 0x82). A record of
 //! another kind is a move with the needle up, so that what follows stays where the file puts it.
 //! Where a cut, a stop, a colour change or an end moves, it is made first and the move is a jump.
+//! Every colour change moves on one colour of the list, whether it moves the needle or anything is
+//! sewn after it, so two in a row pass over two colours (the project owner's choice, 2026-11-26:
+//! every real file below lists one more colour than its colour changes; `threads`).
 //!
 //! The colours are numbers 0 to 29 of a chart no source publishes. Weiler names them, by
 //! experiment, all but number 16 ("???"); the colours shown for the names are estimates made here
-//! ([`COLOURS`]), the project owner's choice (2026-11-18): only a preview, as a design opened from
-//! a format without colours has, since an export to a palette's format matches them to its
-//! threads. A number with no name reads as a grey stand-in named after it.
+//! ([`COLOURS`]), the project owner's choice (2026-11-18, kept on 2026-11-26 knowing that a VP3
+//! export writes them). They stand in as the colours of a design opened from a format without
+//! colours do: an export to PES, PEC or JEF matches them to that palette's threads by the plan's
+//! rule, and one to VP3 writes them as its threads' colours, as it writes every block's art colour.
+//! A number with no name reads as a grey stand-in named after it.
 //!
 //! Checked on 6,944 real HUS files the project owner holds (used on their computer only, never
 //! committed): every one with a stitch opens (four files of alphabets hold only moves); the

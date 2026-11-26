@@ -8523,10 +8523,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
 - `embroidery.setStopAfter {on?, ids?}` asks for the machine to stop after each object (Stop After, as for an appliqué
   piece to be laid down), after its cut when it has one; with `on: false` for no stop, a run's own included; left out,
   `on` toggles. It answers `{on, changed}` and refuses and passes over as `embroidery.setTrimAfter` does. No machine
-  format has a stop of its own: a stop is written as a change to the same thread (PES, PEC and JEF list the block's
-  thread again in their headers), only between two needle points of one block; one at a thread change or at the
-  design's end is that change, and nothing more is written. Opening a PES, PEC, JEF or VP3 file, a change to the same
-  thread reads back as a stop.
+  format written has a stop of its own: a stop is written as a change to the same thread (PES, PEC and JEF list the
+  block's thread again in their headers), only between two needle points of one block; one at a thread change or at
+  the design's end is that change, and nothing more is written. Opening a file of a format that names its threads
+  (PES, PEC, JEF, VP3, SEW or HUS), a change to the same thread reads back as a stop; a HUS file's 0x82 record, which
+  no source names, also reads as one.
 - `embroidery.convertToManual {ids?, …embroidery options}` converts each object given (else selected; a group or a layer
   stands for the objects in it, each converted on its own, and a compound path's member for its compound path, which
   the plan sews as one object) to manual stitches: its stitches frozen as the plan sews them

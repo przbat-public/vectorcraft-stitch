@@ -37,13 +37,17 @@
 //!
 //! Neither page calls the method certain (EduTechWiki: "the belief is"), so it was checked on 6,944
 //! real HUS files the project owner holds (used on their computer only, never committed): every
-//! stream of every file expands to its stated length, with the end token next where the file is
-//! whole, every table is a complete code, and no copy reaches back further than 1,020 bytes.
+//! stream expands to its stated length with the end token next, but in the two files that end
+//! before their last records, where a stream stops short of it; every table is a complete code,
+//! and no copy reaches back further than 1,020 bytes.
 //!
 //! What a hostile stream can do here: it is read bit by bit, a table that isn't a complete code is
 //! refused (as ar002 refuses one), every length and count is checked before it is used, and each
 //! token makes at least one byte, so the work is bounded by the bytes asked for. A stream whose
-//! data runs out keeps the bytes made before it did: a file cut short reads as far as it goes.
+//! data runs out keeps the bytes made before it did, wherever in the stream the cut falls (what the
+//! zero bits read past the end make, or make no sense of, is the cut): a HUS file cut in its last
+//! stream reads as far as it goes, and one cut earlier is refused by its header, whose stream
+//! offsets then point past its end.
 
 /// A stream that doesn't expand: a table that is no complete code, a value past a table's end, a
 /// copy from before the stream's start or further back than its window, a block of no tokens.

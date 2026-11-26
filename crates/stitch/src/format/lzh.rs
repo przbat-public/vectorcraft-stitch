@@ -454,4 +454,97 @@ mod tests {
         }
         assert!(started.elapsed().as_secs() < 20);
     }
+
+    /// A stream written by hand as `0` and `1` (spaces only part its fields), most significant bit
+    /// first, the last byte padded with 0 bits: its bits are the layout as the module's doc gives
+    /// it, written apart from the module's constants and the test kit's compressor.
+    fn bits(s: &str) -> Vec<u8> {
+        let ones: Vec<bool> = s
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .map(|c| match c {
+                '0' => false,
+                '1' => true,
+                other => panic!("not a bit: {other}"),
+            })
+            .collect();
+        let width = u8::BITS as usize;
+        ones.chunks(width).map(|c| c.iter().enumerate().fold(0u8, |b, (k, &one)| b | (u8::from(one) << (width - 1 - k)))).collect()
+    }
+
+    /// Streams written by hand expand as the layout says: the 19-code table's lengths and the
+    /// 2-bit count after its third (no zeros in the first stream, one in the second, which leaves
+    /// code 3 out: read its value wrong, or not at all, and the stream is refused), the token
+    /// table's lengths sent as its codes (runs of 20 and more zeros, and code k for the length
+    /// k − 2), a distance table that counts all 15 of its lengths, bytes, a copy from one byte back
+    /// and the end.
+    #[test]
+    fn a_stream_written_by_hand_expands() {
+        let stream = bits(concat!(
+            "0000000000000011 ",                                                  // a block of 3 tokens
+            "00101 000 000 001 00 010 010 ", // 19-code table: 5 lengths, 0 0 1, no zeros, 2 2: '0' 2, '10' 3, '11' 4
+            "111111111 ",                    // token table: 511 lengths
+            "0 000101101 ",                  // 20 + 45 zeros: tokens 0 to 64
+            "10 ",                           // code 3, length 1: token 65, 'A'
+            "0 010101010 ",                  // 20 + 170 zeros: 66 to 255
+            "11 ",                           // code 4, length 2: token 256, a copy of 3 bytes
+            "0 011101001 ",                  // 20 + 233 zeros: 257 to 509
+            "11 ",                           // code 4, length 2: token 510, the end
+            "01111 001 001 000 000 000 000 000 000 000 000 000 000 000 000 000 ", // distance table: 15 lengths
+            "0 ",                            // 'A'
+            "10 0 ",                         // a copy of 3, distance code 0: from one byte back
+            "11",                            // the end
+        ));
+        assert_eq!(expand(&stream, 4), Ok(Expanded { bytes: b"AAAA".to_vec(), whole: true }));
+        assert_eq!(expand(&stream, 10), Ok(Expanded { bytes: b"AAAA".to_vec(), whole: false }), "the end token");
+        let stream = bits(concat!(
+            "0000000000000100 ",                                                  // a block of 4 tokens
+            "00101 000 000 001 01 001 ", // 19-code table: 5 lengths, 0 0 1, one zero (code 3), 1: '0' 2, '1' 4
+            "111111111 ",                // token table: 511 lengths
+            "0 000101101 ",              // 20 + 45 zeros: tokens 0 to 64
+            "1 1 ",                      // code 4, length 2: tokens 65 and 66, 'A' and 'B'
+            "0 010101001 ",              // 20 + 169 zeros: 67 to 255
+            "1 ",                        // code 4, length 2: token 256, a copy of 3 bytes
+            "0 011101001 ",              // 20 + 233 zeros: 257 to 509
+            "1 ",                        // code 4, length 2: token 510, the end
+            "01111 001 001 000 000 000 000 000 000 000 000 000 000 000 000 000 ", // distance table: 15 lengths
+            "00 ",                       // 'A'
+            "10 0 ",                     // a copy of 3, distance code 0: from one byte back
+            "01 ",                       // 'B'
+            "11",                        // the end
+        ));
+        assert_eq!(expand(&stream, 5), Ok(Expanded { bytes: b"AAAAB".to_vec(), whole: true }));
+        assert_eq!(expand(&stream, 10), Ok(Expanded { bytes: b"AAAAB".to_vec(), whole: false }), "the end token");
+    }
+
+    /// A length of 16 bits, the longest code, is read in a table: a 19-code table of 17 codes, one
+    /// of each length from 1 to 15 and two of 16, the long ones in their long form.
+    #[test]
+    fn a_code_of_sixteen_bits_is_read() {
+        let stream = bits(concat!(
+            "0000000000000010 ",                         // a block of 2 tokens
+            "10001 ",                                    // 19-code table: 17 lengths
+            "011 100 001 00 010 101 110 ",               // 3 4 1, no zeros after the third, 2 5 6: '0' 2, '10' 3
+            "1110 11110 111110 1111110 11111110 ",       // 7 to 11
+            "111111110 1111111110 11111111110 ",         // 12 to 14
+            "111111111110 1111111111110 1111111111110 ", // 15, 16 and 16
+            "111111111 0 000101101 10 0 110101000 10 ",  // token table: 65 zeros, 1, 444 zeros, 1: 'A' '0', the end '1'
+            "00000 00000 ",                              // distance table: a single value
+            "0 1",                                       // 'A', the end
+        ));
+        assert_eq!(expand(&stream, 4), Ok(Expanded { bytes: b"A".to_vec(), whole: false }));
+    }
+
+    /// The token table's single value, and a run of zero lengths, past its 511 codes are refused.
+    /// Each stream ends there, so that a reader taking them would read on into no data and keep
+    /// nothing rather than refuse the stream.
+    #[test]
+    fn a_table_past_its_values_is_refused() {
+        // A block of 1 token; the 19-code table the single value 0; the token table token 511.
+        assert_eq!(expand(&bits("0000000000000001 00000 00000 000000000 111111111"), 10), Err(Damaged));
+        // A block of 1 token; the 19-code table: '0' 2, '1' 3; the token table: two lengths of 1,
+        // then 20 + 511 zeros, past its 511 lengths.
+        let zeros = bits("0000000000000001 00100 000 000 001 00 001 000000011 1 1 0 111111111");
+        assert_eq!(expand(&zeros, 10), Err(Damaged));
+    }
 }

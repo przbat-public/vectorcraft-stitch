@@ -95,9 +95,13 @@ pub(in super::super) fn import(bytes: &[u8], f: &Format) -> Result<(Document, Ve
     // a stop is written as a change to the same thread, and read back as one (in PES, PEC, JEF and
     // VP3, which name their threads, as SEW and HUS do; DST, TAP, T01 and EXP name none, so their
     // blocks' default threads always differ). Kept as a stop, it survives a change of palette,
-    // where two blocks would be matched to two threads.
+    // where two blocks would be matched to two threads. A block that sews nothing (the jump alone
+    // that a HUS's last colour change leaves when it moves the needle, or a colour change's jump
+    // before another colour change) draws nothing and is left out: it makes no group, and the block
+    // before it doesn't stop for it, while the blocks round it, in one thread, are one block with
+    // the stop between that its colour changes make.
     let mut same: Vec<Vec<&Block>> = Vec::new();
-    for block in &pattern.blocks {
+    for block in pattern.blocks.iter().filter(|b| b.stitches.iter().any(|s| s.command == Command::Stitch)) {
         match same.last_mut() {
             Some(last) if last.last().is_some_and(|b| b.thread == block.thread) => last.push(block),
             _ => same.push(vec![block]),

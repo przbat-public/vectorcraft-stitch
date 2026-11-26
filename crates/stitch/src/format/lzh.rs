@@ -65,12 +65,13 @@
 //! What a hostile stream can do here: it is read bit by bit, a table that isn't a complete code is
 //! refused (ar002 checks this more loosely: it passes a table of no codes, some over-full ones and
 //! lengths past 16, and doesn't check counts, values or runs of zeros past a table, which this
-//! module refuses), every length and count is checked before it is used, and each token makes at
-//! least one byte, so the work is bounded by the bytes asked for. A stream whose data runs out
-//! keeps the bytes made before it did, wherever in the stream the cut falls (what the zero bits
-//! read past the end make, or make no sense of, is the cut): a HUS file cut in its last stream
-//! reads as far as it goes, and one cut earlier is refused by its header, whose stream offsets then
-//! point past its end.
+//! module refuses), every length and count is checked before it is used, each token makes at least
+//! one byte, and a block of no tokens ends the stream (as cut short past the data's end, where
+//! every block reads as one, else as damaged), so the work is bounded by the bytes asked for. A
+//! stream whose data runs out keeps the bytes made before it did, wherever in the stream the cut
+//! falls (what the zero bits read past the end make, or make no sense of, is the cut): a HUS file
+//! cut in its last stream reads as far as it goes, and one cut earlier is refused by its header,
+//! whose stream offsets then point past its end.
 
 /// A stream that doesn't expand: a table that is no complete code, a value past a table's end, a
 /// copy from before the stream's start or further back than its window, a block of no tokens.
@@ -167,8 +168,11 @@ fn tokens_into(bits: &mut Bits, out: &mut Vec<u8>, made: &mut usize, count: usiz
             let lengths = small_table(bits, LENGTH_CODES, LENGTH_COUNT_BITS, Some(ZEROS_AFTER))?;
             tokens = token_table(bits, &lengths)?;
             distances = small_table(bits, DISTANCE_CODES, DISTANCE_COUNT_BITS, None)?;
-            if left_in_block == 0 && !bits.ran_out {
-                return Err(Damaged);
+            // A block of no tokens ends the stream: as cut short where the data ran out, else as
+            // damaged. Past the data's end every block reads as one of no tokens, so the
+            // expansion can't go round on them, whatever stops it above.
+            if left_in_block == 0 {
+                return if bits.ran_out { Ok(false) } else { Err(Damaged) };
             }
             continue;
         }

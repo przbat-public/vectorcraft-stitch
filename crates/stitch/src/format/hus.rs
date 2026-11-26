@@ -312,16 +312,21 @@ mod tests {
         }
     }
 
-    /// A HUS opens by its magic whatever its name, every magic PRONOM gives; a VIP (90 01 in place
-    /// of C8 00) and other bytes are refused, saying so.
+    /// A HUS opens by its magic whatever its name, under each of the six PRONOM gives,
+    /// (5B|5D)(AF|FF|FC) C8 00, built here from that pattern rather than taken from [`MAGICS`],
+    /// which holds those six and no other; a VIP (90 01 in place of C8 00) and other bytes are
+    /// refused, saying so.
     #[test]
     fn a_hus_is_told_by_its_magic() {
+        let pronom: Vec<[u8; 4]> = [0x5B, 0x5D].into_iter().flat_map(|a| [0xAF, 0xFF, 0xFC].map(|b| [a, b, 0xC8, 0x00])).collect();
+        assert_eq!(MAGICS.len(), pronom.len());
+        assert!(pronom.iter().all(|p| MAGICS.contains(&p.as_slice())), "{MAGICS:02X?}");
         let bytes = hus(&records(), &[3, 7], NAME, &Lzh::default());
-        for magic in MAGICS {
+        for magic in &pronom {
             let mut b = bytes.clone();
             b[..4].copy_from_slice(magic);
-            assert_eq!(Format::sniff(&b), Some(Format::Hus));
-            assert!(read(&b).is_ok());
+            assert_eq!(Format::sniff(&b), Some(Format::Hus), "{magic:02X?}");
+            assert!(read(&b).is_ok(), "{magic:02X?}");
         }
         let mut vip = bytes.clone();
         vip[..4].copy_from_slice(&[0x5D, 0xFC, 0x90, 0x01]);
@@ -486,6 +491,14 @@ mod tests {
         let mut past = whole.clone();
         past[28..32].copy_from_slice(&(whole.len() as u32 + 1).to_le_bytes());
         assert!(read(&past).unwrap_err().to_string().contains("points past the file"));
+        // The first stream starting inside the header, and the last two the other way round.
+        let mut inside = whole.clone();
+        inside[STREAMS_AT..STREAMS_AT + 4].copy_from_slice(&(COLOURS_AT as u32 - 1).to_le_bytes());
+        assert!(read(&inside).unwrap_err().to_string().contains("points past the file"));
+        let mut swapped = whole.clone();
+        swapped[STREAMS_AT + 4..STREAMS_AT + 8].copy_from_slice(&whole[STREAMS_AT + 8..STREAMS_AT + 12]);
+        swapped[STREAMS_AT + 8..STREAMS_AT + 12].copy_from_slice(&whole[STREAMS_AT + 4..STREAMS_AT + 8]);
+        assert!(read(&swapped).unwrap_err().to_string().contains("points past the file"));
         let mut many = whole.clone();
         many[4..8].copy_from_slice(&(MAX_POINTS as u32 + 1).to_le_bytes());
         assert!(matches!(read(&many), Err(Error::TooLarge(_))));
@@ -495,5 +508,38 @@ mod tests {
         damaged[at + 2] = 0xFF;
         assert!(read(&damaged).is_err());
         assert!(read(&hus(&[(JUMP, 5, 5)], &[1], NAME, &Lzh::default())).unwrap_err().to_string().contains("no stitch records"));
+    }
+
+    /// The kinds of record are the numbers Weiler gives, written here as numbers, not as this
+    /// module's names for them: 0x80 a stitch, 0x81 a jump (a point of its own, even where it
+    /// doesn't move the needle), 0x84 a colour change, 0x90 the end, which is no point.
+    #[test]
+    fn the_kinds_are_weilers_numbers() {
+        let records = [(0x80, 0, 0), (0x80, 10, 0), (0x81, 0, 0), (0x80, 10, 0), (0x84, 0, 0), (0x80, 10, 0), (0x90, 0, 0)];
+        let p = read(&hus(&records, &[3, 7], NAME, &Lzh::default())).unwrap();
+        let commands: Vec<Vec<Command>> = p.blocks.iter().map(|b| b.stitches.iter().map(|s| s.command).collect()).collect();
+        use Command::{Jump as J, Stitch as S};
+        assert_eq!(commands, [vec![S, S, J, S], vec![S]]);
+    }
+
+    /// The header's colour count caps the list as reading takes it: of a list of three numbers
+    /// the header claims one, so the second block takes a default thread, not the list's second.
+    #[test]
+    fn the_headers_colour_count_caps_the_list() {
+        /// Where the header gives the colour count: after the record count, a u32 each.
+        const COLOUR_COUNT_AT: usize = RECORDS_AT + 4;
+        let records = [(STITCH, 0, 0), (STITCH, 5, 0), (COLOR_CHANGE, 0, 0), (STITCH, 5, 0)];
+        let mut bytes = hus(&records, &[3, 7, 1], NAME, &Lzh::default());
+        bytes[COLOUR_COUNT_AT..COLOUR_COUNT_AT + 4].copy_from_slice(&1u32.to_le_bytes());
+        let threads: Vec<Thread> = read(&bytes).unwrap().blocks.iter().map(|b| b.thread.clone()).collect();
+        assert_eq!(threads, [thread(3), crate::thread::default_thread(1)]);
+    }
+
+    /// The header's name keeps printable ASCII and spaces, any other byte read as `_`, up to the
+    /// first NUL, its spaces at the ends trimmed.
+    #[test]
+    fn the_name_keeps_printable_ascii() {
+        let name = [b'A', 0x0A, 0xE9, 0x1B, b' ', b' ', 0, 0];
+        assert_eq!(read(&hus(&records(), &[3], &name, &Lzh::default())).unwrap().name, "A___");
     }
 }

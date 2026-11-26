@@ -904,12 +904,13 @@ mod tests_stops;
 mod tests {
     use super::*;
 
-    /// PES and PEC number Brother's threads and JEF Janome's, as their readers name them; DST, TAP,
-    /// T01, EXP and VP3 number none.
+    /// PES and PEC number Brother's threads, and JEF and SEW Janome's, as their readers name them;
+    /// DST, TAP, T01, EXP and VP3 number none, nor does HUS, whose chart is its own.
     #[test]
     fn each_format_numbers_its_palettes_threads() {
         let (pec, jef) = (Some(thread::Palette::Pec), Some(thread::Palette::Jef));
         assert_eq!(Format::ALL.map(Format::palette), [None, None, None, None, pec, pec, jef, None]);
+        assert_eq!(Format::READ_ONLY.map(Format::palette), [jef, None]);
         let mut pattern = Pattern::default();
         let stitches = [(0.0, 0.0), (5.0, 0.0), (5.0, 5.0)].map(|(x, y)| Stitch::new(x, y, Command::Stitch)).to_vec();
         pattern.blocks.push(Block { thread: Thread::rgb([0x12, 0x34, 0x56]), stitches });

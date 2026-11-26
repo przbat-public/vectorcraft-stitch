@@ -294,9 +294,9 @@ pub(crate) fn records_cut(bytes: &[u8], at: usize) -> bool {
             continue;
         }
         match b1 {
-            // A colour change's two bytes and a jump's move.
+            // The command's second record: a colour change's two bytes, a jump's move.
             COLOR_CHANGE | JUMP => {
-                if r.take(2).is_none() {
+                if r.take(RECORD_BYTES).is_none() {
                     return true;
                 }
             }

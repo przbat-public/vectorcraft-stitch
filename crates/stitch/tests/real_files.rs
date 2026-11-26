@@ -57,6 +57,8 @@ fn real_hus_and_sew_files_open() {
             }
         }
     }
+    // In order of their paths, so that a file a failure numbers can be found again.
+    files.sort_by(|(_, a), (_, b)| a.cmp(b));
     let (mut hus, mut sew) = (Counts::default(), Counts::default());
     let mut refused = Vec::new();
     for (k, (format, path)) in files.iter().enumerate() {
@@ -71,8 +73,8 @@ fn real_hus_and_sew_files_open() {
                 }
             }
             Err(e) if e.to_string().contains("no stitch records") => counts.no_stitch += 1,
-            // The file's place in the walk, not its name.
-            Err(e) => refused.push(format!("file {k} ({format:?}): {e}")),
+            // The file's number among them sorted by path, not its name.
+            Err(e) => refused.push(format!("file {k}, counted from 0 in path order ({format:?}): {e}")),
         }
     }
     eprintln!("HUS: {hus:?}\nSEW: {sew:?}");

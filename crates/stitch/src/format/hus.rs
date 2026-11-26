@@ -50,7 +50,7 @@
 //! text is all rights reserved); The National Archives, PRONOM fmt/2000 (the magic). pyembroidery
 //! 1.5.1 (MIT) served only as an outside reader; none of its code was read.
 
-use super::{MAX_POINTS, Reader, add, finish, lzh, mm};
+use super::{Loss, MAX_POINTS, Reader, add, finish, lzh, mm};
 use crate::{Command, Error, Pattern, Result, Stitch, Thread};
 
 /// The first four bytes of a HUS file: 0x5B or 0x5D, then 0xAF, 0xFF or 0xFC, then 0xC8 0x00
@@ -140,7 +140,28 @@ fn damaged_header(len: usize) -> Error {
     Error::Format(format!("the HUS header is cut short or points past the file's {len} bytes"))
 }
 
-pub fn read(bytes: &[u8]) -> Result<Pattern> {
+/// A HUS file's header, as far as reading it takes, and its three streams expanded.
+struct Streams {
+    /// The colours the header claims.
+    colours: usize,
+    /// Where the first stream starts: the colour list ends there.
+    kinds_at: usize,
+    name: String,
+    kinds: lzh::Expanded,
+    xs: lzh::Expanded,
+    ys: lzh::Expanded,
+}
+
+impl Streams {
+    /// Whether every stream made the records the header counts: not in a file cut short, nor in
+    /// one whose stream ends first.
+    fn whole(&self) -> bool {
+        self.kinds.whole && self.xs.whole && self.ys.whole
+    }
+}
+
+/// The HUS file `bytes`'s header, checked, and its streams expanded.
+fn streams(bytes: &[u8]) -> Result<Streams> {
     if !MAGICS.iter().any(|m| bytes.starts_with(m)) {
         return Err(Error::Format("not a HUS file: it does not start with a HUS signature".into()));
     }
@@ -169,15 +190,32 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         .to_string();
     let stream = |from: usize, to: usize| {
         lzh::expand(bytes.get(from..to).unwrap_or_default(), count)
-            .map(|e| e.bytes)
             .map_err(|_| Error::Format("the HUS file's compressed stitches are damaged".into()))
     };
     let (kinds, xs, ys) = (stream(kinds_at, xs_at)?, stream(xs_at, ys_at)?, stream(ys_at, bytes.len())?);
+    Ok(Streams { colours, kinds_at, name, kinds, xs, ys })
+}
+
+/// What a HUS holds that reading it leaves out: nothing of its header (its counts, extents and
+/// stream offsets the records give again; its name is read). But a file whose streams stop short
+/// of the records its header counts, as a file cut short does, is said to end early, so that it
+/// isn't taken for whole and writing over it asks first (the project owner's choice, 2026-11-26).
+/// The streams are expanded again for it: a file is opened once, and expanding is linear in its
+/// records.
+pub(crate) fn losses(bytes: &[u8]) -> Vec<Loss> {
+    match streams(bytes) {
+        Ok(s) if !s.whole() => vec![Loss::EndsEarly],
+        _ => Vec::new(),
+    }
+}
+
+pub fn read(bytes: &[u8]) -> Result<Pattern> {
+    let Streams { colours, kinds_at, name, kinds, xs, ys } = streams(bytes)?;
     // A stream that ran out (a file cut short) ends the records there.
     let mut points: Vec<Stitch> = Vec::new();
     // Wide enough for any file: each record moves the needle at most 128 tenths.
     let (mut x, mut y) = (0i64, 0i64);
-    for ((&kind, &dx), &dy) in kinds.iter().zip(&xs).zip(&ys) {
+    for ((&kind, &dx), &dy) in kinds.bytes.iter().zip(&xs.bytes).zip(&ys.bytes) {
         let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
         let before = Stitch::new(mm(x), mm(y), Command::Stitch);
         x += dx;
@@ -409,14 +447,16 @@ mod tests {
 
     /// A file cut anywhere in its last stream, inside a block's tables or a copy too, reads its
     /// records up to the cut, never fewer for a later cut and none past it (or, cut before its
-    /// first stitch, says it has none), and a cut short of the whole reads part of the design; a
-    /// header that points past the file, a count past what a design may have and damaged streams
-    /// are refused.
+    /// first stitch, says it has none), and a cut short of the whole reads part of the design,
+    /// saying that the file ends early, as one whose header counts more records than its streams
+    /// hold does, and a whole file doesn't; a header that points past the file, a count past what
+    /// a design may have and damaged streams are refused.
     #[test]
     fn cut_and_damaged_files() {
         for o in [Lzh::default(), Lzh { copies: false, block_tokens: 5 }, Lzh { copies: true, block_tokens: 3 }] {
             let whole = hus(&records(), &[3, 7], NAME, &o);
             let full = read(&whole).unwrap();
+            assert_eq!(losses(&whole), [], "{o:?}: a whole file");
             let ys_at = u32::from_le_bytes([whole[28], whole[29], whole[30], whole[31]]) as usize;
             let (mut before, mut part) = (0, false);
             for cut in ys_at..=whole.len() {
@@ -428,11 +468,19 @@ mod tests {
                     }
                 };
                 assert!(sewn >= before && sewn <= full.sewn(), "{o:?}: cut at {cut}: {sewn} needle points, {before} before");
-                part |= sewn > 0 && sewn < full.sewn();
+                if sewn > 0 && sewn < full.sewn() {
+                    part = true;
+                    assert_eq!(losses(&whole[..cut]), [Loss::EndsEarly], "{o:?}: cut at {cut}, part of the design read");
+                }
                 before = sewn;
             }
             assert_eq!(before, full.sewn(), "{o:?}");
             assert!(part, "{o:?}: a file cut short reads part of the design");
+            let mut counts_more = whole.clone();
+            let count = u32::from_le_bytes([whole[4], whole[5], whole[6], whole[7]]);
+            counts_more[4..8].copy_from_slice(&(count + 1).to_le_bytes());
+            assert_eq!(read(&counts_more).unwrap(), full, "{o:?}: the records its streams hold");
+            assert_eq!(losses(&counts_more), [Loss::EndsEarly], "{o:?}: streams that end before the records counted");
         }
         let whole = hus(&records(), &[3, 7], NAME, &Lzh::default());
         let mut past = whole.clone();

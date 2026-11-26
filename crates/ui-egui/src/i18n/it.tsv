@@ -5535,6 +5535,7 @@ lighting	Light	Luce
 embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft non può riscrivere questo file così com’è ({what}), quindi sostituirlo significa perderlo per sempre. Salva con un altro nome per conservarlo.
 @msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} è il file da cui è stato letto questo documento, e VectorCraft non può riscriverlo così com’è ({what}): sovrascriverlo significherebbe perderlo per sempre. Scrivi invece un altro file, oppure passa acknowledgeLoss: true per sostituirlo comunque
 @msg	the file's own format, which VectorCraft reads but doesn't write	il formato proprio del file, che VectorCraft legge ma non scrive
+@msg	the file ends early: the design may be incomplete	il file finisce prima del previsto: il disegno potrebbe essere incompleto
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basato su VectorCraft del team ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono (OFL). Icone: Lucide (ISC) + VectorCraft.

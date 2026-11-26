@@ -175,11 +175,15 @@ pub enum Loss {
     /// nobody explains, stitch counts per colour): no file written from the design holds them, and
     /// SEW is never written.
     SewPictures,
+    /// A file that ends before its records do (a HUS whose streams stop short of the records its
+    /// header counts, a SEW whose records run out before their end record), as a file cut short
+    /// does: read as far as it goes, the design perhaps without its end. Said so that it isn't
+    /// taken for whole, and so that writing over the file asks first.
+    EndsEarly,
 }
 
 /// No losses: a format whose files hold nothing a reader leaves out (TAP, T01 and EXP have no
-/// header; HUS's header holds its counts, extents and stream offsets, which the records give
-/// again, and its name, which is read).
+/// header).
 fn no_losses(_: &[u8]) -> Vec<Loss> {
     Vec::new()
 }
@@ -312,7 +316,7 @@ const HUS: Spec = Spec {
     magic: &hus::MAGICS,
     read: hus::read,
     write: None,
-    losses: no_losses,
+    losses: hus::losses,
 };
 
 impl Format {
@@ -422,7 +426,9 @@ impl Format {
     }
 
     /// What `bytes`, a file of this format, holds that [`Format::read`] leaves out, each once: what a
-    /// file written from the design read lacks. None for a file that doesn't read.
+    /// file written from the design read lacks. Meant for a file that reads, as the importer asks
+    /// only then: for one `read` refuses, a format may still name what its bytes seem to hold (a
+    /// header's fields, a stream or records that end early).
     pub fn losses(self, bytes: &[u8]) -> Vec<Loss> {
         (self.spec().losses)(bytes)
     }
@@ -969,7 +975,8 @@ mod tests {
     }
 
     /// A format only read writes nothing and has no grid to count a design on, saying so; a SEW
-    /// whose pictures and tables aren't blank says that reading it leaves them out, a HUS nothing.
+    /// whose pictures and tables aren't blank says that reading it leaves them out, a HUS nothing;
+    /// either, cut short, says that it ends early.
     #[test]
     fn a_format_only_read_is_not_written() {
         for f in Format::READ_ONLY {
@@ -979,6 +986,10 @@ mod tests {
         }
         for (f, bytes) in read_only_files() {
             assert_eq!(f.losses(&bytes), [], "{f:?}: the test kit's files hold nothing reading leaves out");
+            // The last bytes: a SEW's end record and a stitch's half, a HUS's last tokens.
+            let cut = &bytes[..bytes.len() - 3];
+            assert!(f.read(cut).is_ok(), "{f:?}");
+            assert_eq!(f.losses(cut), [Loss::EndsEarly], "{f:?}: cut short");
         }
         // A SEW's last picture byte, and the first of the table nobody explains (8, a value the
         // KDE wiki saw there, at the offset the wiki gives, not the reader's), are left out; twelve

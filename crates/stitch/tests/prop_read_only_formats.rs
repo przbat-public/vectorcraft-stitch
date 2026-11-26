@@ -1,12 +1,13 @@
 //! The formats read but never written (VectorCraft Stitch), SEW and HUS: for any records the test
 //! kit's files hold (its HUS compressor, written for these tests, and its SEW builder), the reader
-//! finds the needle points where the records put them, run by run; for damaged, cut and random HUS
-//! bytes it gives a design or an error, never a panic, and quickly.
+//! finds the needle points where the records put them, run by run, and a whole file leaves nothing
+//! out; for damaged, cut and random HUS bytes it gives a design or an error, never a panic, and
+//! quickly, and a file cut short says it ends early.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
-use vectorcraft_stitch::format::Format;
+use vectorcraft_stitch::format::{Format, Loss};
 use vectorcraft_stitch::{Block, Command, Pattern, Stitch, Thread};
 use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
 
@@ -102,8 +103,8 @@ proptest! {
 
     /// Any records, compressed as the test kit compresses (with or without copies, in blocks of 1
     /// to 63 tokens or one), read as their needle points run by run, a stop for each stop and no
-    /// more cuts than they hold (two cuts in a row read as one); with no stitch, the file is
-    /// refused.
+    /// more cuts than they hold (two cuts in a row read as one), the file leaving nothing out; with
+    /// no stitch, the file is refused.
     #[test]
     fn a_hus_reads_as_its_records(records in arb_records(), colours in prop::collection::vec(0u16..40, 0..6), o in arb_lzh()) {
         let bytes = hus(&records, &colours, b"prop\0\0\0\0", &o);
@@ -116,6 +117,7 @@ proptest! {
                 let count = |c: Command| p.points().filter(|s| s.command == c).count();
                 prop_assert_eq!(count(Command::Stop), records.iter().filter(|r| r.0 == 0x82).count());
                 prop_assert!(count(Command::Trim) <= records.iter().filter(|r| r.0 == 0x88).count());
+                prop_assert_eq!(Format::Hus.losses(&bytes), []);
             }
             Err(e) => prop_assert!(want.is_empty(), "{e}"),
         }
@@ -123,7 +125,7 @@ proptest! {
 
     /// A HUS with its streams cut, bytes changed anywhere, or random bytes behind its header gives
     /// a design or an error, quickly; cut, it finds only needle points its records hold, the first
-    /// ones.
+    /// ones, and missing some, says that it ends early.
     #[test]
     fn a_damaged_hus_never_panics(records in arb_records(), o in arb_lzh(), cut in 0usize..5000, edits in prop::collection::vec((0usize..5000, any::<u8>()), 0..12), body in prop::collection::vec(any::<u8>(), 0..600)) {
         let bytes = hus(&records, &[1, 2], b"prop\0\0\0\0", &o);
@@ -133,11 +135,14 @@ proptest! {
             let n = damaged.len();
             damaged[at % n] = b;
         }
-        let _ = Format::Hus.read(&damaged);
+        let _ = (Format::Hus.read(&damaged), Format::Hus.losses(&damaged));
         let short = &bytes[..cut.min(bytes.len())];
         if let Ok(p) = Format::Hus.read(short) {
             let (got, all) = (read_needle_points(&p), needle_points(&records));
             prop_assert!(all.starts_with(&got) || got.is_empty(), "a cut file finds only the needle points before the cut");
+            if got.len() < all.len() {
+                prop_assert_eq!(Format::Hus.losses(short), [Loss::EndsEarly]);
+            }
         }
         // Random streams: the header kept, its three streams pointing into random bytes.
         let start = 42 + 2 * 2;
@@ -147,12 +152,13 @@ proptest! {
         for (k, at) in [start, start + third, start + 2 * third].into_iter().enumerate() {
             random[20 + 4 * k..24 + 4 * k].copy_from_slice(&(at as u32).to_le_bytes());
         }
-        let _ = Format::Hus.read(&random);
+        let _ = (Format::Hus.read(&random), Format::Hus.losses(&random));
         prop_assert!(started.elapsed().as_secs() < 10);
     }
 
     /// Any design written as JEF and held in a SEW (its records after SEW's header and pictures)
-    /// reads as the JEF does: the same blocks, threads and stitches.
+    /// reads as the JEF does: the same blocks, threads and stitches, the file leaving nothing out;
+    /// its last byte cut off, it says that it ends early.
     #[test]
     fn a_sew_reads_as_the_jef_it_holds(blocks in prop::collection::vec((any::<[u8; 3]>(), prop::collection::vec((-60i32..60, -60i32..60, 0u8..10), 1..40)), 1..12)) {
         let mut p = Pattern::default();
@@ -167,5 +173,7 @@ proptest! {
         let Ok(jef) = Format::Jef.write(&p) else { return Ok(()) };
         let sew = sew_from_jef(&jef).unwrap();
         prop_assert_eq!(Format::Sew.read(&sew).unwrap(), Format::Jef.read(&jef).unwrap());
+        prop_assert_eq!(Format::Sew.losses(&sew), []);
+        prop_assert_eq!(Format::Sew.losses(&sew[..sew.len() - 1]), [Loss::EndsEarly]);
     }
 }

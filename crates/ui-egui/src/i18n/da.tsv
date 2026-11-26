@@ -5747,6 +5747,7 @@ swatch	Bright Violet	Kraftig violet
 embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft kan ikke skrive denne fil igen, som den er ({what}), så hvis du erstatter den, går den tabt for altid. Gem under et andet navn for at beholde den.
 @msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} er den fil, dette dokument blev læst fra, og VectorCraft kan ikke skrive den igen, som den er ({what}): hvis du overskriver den, går den tabt for altid. Skriv til en anden fil i stedet, eller angiv acknowledgeLoss: true for at erstatte den alligevel
 @msg	the file's own format, which VectorCraft reads but doesn't write	filens eget format, som VectorCraft læser, men ikke skriver
+@msg	the file ends early: the design may be incomplete	filen slutter for tidligt: designet er måske ufuldstændigt
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Baseret på VectorCraft fra ArtCraft-teamet. MIT OR Apache-2.0. Skrifttyper: Source Sans 3, Inter, JetBrains Mono (OFL). Ikoner: Lucide (ISC) + VectorCraft.

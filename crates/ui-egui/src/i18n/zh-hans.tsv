@@ -5757,6 +5757,7 @@ lighting	Light	光源
 embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft 无法按原样再次写入此文件（{what}），因此替换该文件会使其永久丢失。要保留它，请以其他名称存储。
 @msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	此文档读取自 {target}，而 VectorCraft 无法按原样再次写入该文件（{what}）：覆盖该文件会使其永久丢失。请改为写入其他文件；如仍要替换该文件，请传入 acknowledgeLoss: true
 @msg	the file's own format, which VectorCraft reads but doesn't write	文件本身的格式，VectorCraft 能读取但不能写入
+@msg	the file ends early: the design may be incomplete	文件提前结束：图案可能不完整
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基于 ArtCraft 团队的 VectorCraft。MIT OR Apache-2.0。字体：Source Sans 3、Inter、JetBrains Mono (OFL)。图标：Lucide (ISC) + VectorCraft。

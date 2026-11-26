@@ -5516,6 +5516,7 @@ theme	Appearance	Giao diện
 embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft không thể ghi lại tệp này nguyên trạng ({what}), nên thay thế sẽ mất tệp vĩnh viễn. Hãy lưu với tên khác để giữ lại.
 @msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} là tệp mà tài liệu này được đọc từ đó, và VectorCraft không thể ghi lại tệp này nguyên trạng ({what}): ghi đè lên tệp sẽ mất nó vĩnh viễn. Thay vào đó, hãy ghi vào tệp khác, hoặc truyền acknowledgeLoss: true để vẫn thay thế tệp
 @msg	the file's own format, which VectorCraft reads but doesn't write	định dạng riêng của tệp, định dạng mà VectorCraft đọc được nhưng không ghi
+@msg	the file ends early: the design may be incomplete	tệp kết thúc sớm: thiết kế có thể chưa đầy đủ
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Dựa trên VectorCraft của nhóm ArtCraft. MIT OR Apache-2.0. Phông chữ: Source Sans 3, Inter, JetBrains Mono (OFL). Biểu tượng: Lucide (ISC) + VectorCraft.

@@ -281,6 +281,31 @@ pub(crate) fn read_records(bytes: &[u8], at: usize, what: &str) -> Result<Vec<St
     Ok(points)
 }
 
+/// Whether the JEF records in `bytes` from byte `at` run out before their end record, as in a
+/// file cut short inside them ([`read_records`] reads up to the cut). A SEW says so on opening
+/// ([`super::sew::losses`]); JEF's own reader doesn't. An unknown command, where reading stops, is
+/// no cut.
+pub(crate) fn records_cut(bytes: &[u8], at: usize) -> bool {
+    let mut r = Reader::new(bytes);
+    r.seek(at);
+    while let Some(b0) = r.u8() {
+        let Some(b1) = r.u8() else { return true };
+        if b0 != CONTROL {
+            continue;
+        }
+        match b1 {
+            // A colour change's two bytes and a jump's move.
+            COLOR_CHANGE | JUMP => {
+                if r.take(2).is_none() {
+                    return true;
+                }
+            }
+            _ => return false,
+        }
+    }
+    true
+}
+
 fn short(len: usize) -> Error {
     Error::Format(format!("the JEF file is cut short: {len} bytes"))
 }

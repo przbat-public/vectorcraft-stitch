@@ -5529,6 +5529,7 @@ lighting	Light	Свет
 embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft не может снова записать этот файл в текущем виде ({what}), поэтому после замены файл будет потерян навсегда. Чтобы сохранить его, сохраните документ под другим именем.
 @msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} — файл, из которого прочитан этот документ, и VectorCraft не может снова записать его в текущем виде ({what}): при перезаписи он был бы потерян навсегда. Вместо этого запишите в другой файл или передайте acknowledgeLoss: true, чтобы всё равно заменить его
 @msg	the file's own format, which VectorCraft reads but doesn't write	собственный формат файла, который VectorCraft читает, но не записывает
+@msg	the file ends early: the design may be incomplete	файл обрывается раньше времени: дизайн может быть неполным
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Основано на VectorCraft от команды ArtCraft. MIT OR Apache-2.0. Шрифты: Source Sans 3, Inter, JetBrains Mono (OFL). Значки: Lucide (ISC) + VectorCraft.

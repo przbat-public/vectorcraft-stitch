@@ -465,6 +465,42 @@ fn writing_over_an_opened_hus_asks_first() {
     std::fs::remove_dir_all(d).ok();
 }
 
+/// A HUS cut short in its last stream, or a SEW cut inside its records, opens as far as it goes,
+/// saying that the file ends early, and writing over the file then names that too; a whole one
+/// opens without it (the project owner's choice, 2026-11-26).
+#[test]
+fn a_hus_or_sew_cut_short_says_so() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
+    let note = super::embroidery::LOSS_NOTES[8];
+    // y moves that don't repeat soon, so that the last stream's tokens run to its end: moves that
+    // alternate pack into a few tokens after the stream's tables, and a cut of 3 bytes takes them
+    // all, leaving no record to read.
+    let records: Vec<(u8, i8, i8)> = (0..200).map(|i| (0x80, 10, ((i * 37) % 23) as i8 - 11)).chain([(0x90, 0, 0)]).collect();
+    let whole_hus = hus(&records, &[3], b"cut\0\0\0\0\0", &Lzh::default());
+    let mut s = art();
+    let whole_sew = sew_from_jef(&export(&mut s, "jef", json!({}))).unwrap();
+    let d = std::env::temp_dir().join(format!("vc-embroidery-cut-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    for (name, whole) in [("design.hus", &whole_hus), ("design.sew", &whole_sew)] {
+        let mut s = Session::new();
+        let r = open(&mut s, name, whole).unwrap();
+        assert!(!warnings(&r).contains(&note.to_string()), "{name}: whole: {r}");
+        // A stitch's last byte and the end record, or the last stream's last tokens.
+        let cut = &whole[..whole.len() - 3];
+        let r = open(&mut s, name, cut).expect("a file cut short opens");
+        assert_eq!(warnings(&r), [note], "{name}: {r}");
+        let path = d.join(name);
+        std::fs::write(&path, cut).unwrap();
+        let path = path.to_string_lossy().to_string();
+        let mut s = Session::new();
+        s.execute("document.open", &json!({"path": path})).unwrap();
+        let e = s.execute("document.export", &json!({"path": path, "format": "dst"})).unwrap_err().to_string();
+        assert!(e.contains(note), "{name}: {e}");
+        assert_eq!(std::fs::read(&path).unwrap(), cut, "{name}: untouched");
+    }
+    std::fs::remove_dir_all(d).ok();
+}
+
 /// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.
 fn start(p: &vectorcraft_stitch::Pattern) -> (i32, i32) {
     use vectorcraft_stitch::quantize;

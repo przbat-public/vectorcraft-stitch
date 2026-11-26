@@ -48,10 +48,14 @@ const TABLES_AT: usize = THREADS_AT + MAX_COLORS * NUMBER_BYTES;
 pub(crate) const STITCHES_AT: usize = 0x1D78;
 
 /// What a SEW holds that reading it leaves out: its pictures and two tables, when any byte of them
-/// isn't 0 (the test kit's files leave them blank; real files draw their pictures).
+/// isn't 0 (the test kit's files leave them blank; real files draw their pictures). And a file
+/// whose records run out before their end record, as a file cut short inside them does, is said
+/// to end early, so that it isn't taken for whole and writing over it asks first (the project
+/// owner's choice, 2026-11-26; a JEF, whose records are the same, says nothing of it).
 pub(crate) fn losses(bytes: &[u8]) -> Vec<Loss> {
     let drawn = bytes.get(TABLES_AT..STITCHES_AT).is_some_and(|b| b.iter().any(|v| *v != 0));
-    if drawn { vec![Loss::SewPictures] } else { Vec::new() }
+    let cut = bytes.len() > STITCHES_AT && jef::records_cut(bytes, STITCHES_AT);
+    [(drawn, Loss::SewPictures), (cut, Loss::EndsEarly)].into_iter().filter_map(|(has, loss)| has.then_some(loss)).collect()
 }
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
@@ -145,7 +149,9 @@ mod tests {
     }
 
     /// A colour count no SEW has, a file that ends before its records and records that hold no
-    /// stitch are refused, saying so; a file cut inside its records reads as far as it goes.
+    /// stitch are refused, saying so; a file cut inside its records reads as far as it goes and
+    /// says it ends early, wherever in a record the cut falls, and a file whose records reach
+    /// their end, or stop at a command no source gives, doesn't.
     #[test]
     fn what_is_no_sew_is_refused() {
         let records = [0x0A, 0x05, 0x0A, 0x05, 0x80, 0x10];
@@ -158,7 +164,17 @@ mod tests {
         assert!(read(&[]).is_err());
         assert!(read(&sew(&[1], &[0x80, 0x10])).unwrap_err().to_string().contains("no stitch records"));
         let long: Vec<u8> = [0x0Au8, 0x05].repeat(50);
-        let whole = read(&sew(&[1], &long)).unwrap().sewn();
+        let ended = [long.as_slice(), &[0x80, 0x10]].concat();
+        let whole = read(&sew(&[1], &ended)).unwrap().sewn();
+        assert_eq!(losses(&sew(&[1], &ended)), []);
         assert_eq!(read(&sew(&[1], &long[..40])).unwrap().sewn(), whole - 30);
+        // Cut between records, inside one, inside a colour change's bytes and a jump's move, and
+        // with no end record at all.
+        let change = [0x0A, 0x05, 0x80, 0x01, 0x00, 0x00, 0x0A, 0x05, 0x80, 0x02, 0x05, 0x05, 0x0A, 0x05, 0x80, 0x10];
+        for cut in [&long[..40], &long[..41], &change[..5], &change[..11], long.as_slice()] {
+            assert_eq!(losses(&sew(&[1, 2], cut)), [Loss::EndsEarly], "{cut:02X?}");
+        }
+        assert_eq!(losses(&sew(&[1, 2], &change)), []);
+        assert_eq!(losses(&sew(&[1], &[0x0A, 0x05, 0x80, 0x7F, 0x0A])), [], "a command no source gives, where reading stops");
     }
 }

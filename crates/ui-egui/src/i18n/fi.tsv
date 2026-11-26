@@ -5883,6 +5883,7 @@ mark-style	Japanese	Japanilainen
 embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft ei osaa kirjoittaa tätä tiedostoa uudelleen sellaisenaan ({what}), joten korvaaminen hävittää sen pysyvästi. Säilytä se tallentamalla toisella nimellä.
 @msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} on tiedosto, josta tämä asiakirja luettiin, eikä VectorCraft osaa kirjoittaa sitä uudelleen sellaisenaan ({what}): sen yli kirjoittaminen hävittäisi sen pysyvästi. Kirjoita sen sijaan toiseen tiedostoon tai anna acknowledgeLoss: true korvataksesi sen silti
 @msg	the file's own format, which VectorCraft reads but doesn't write	tiedoston oma muoto, jota VectorCraft lukee, mutta ei kirjoita
+@msg	the file ends early: the design may be incomplete	tiedosto päättyy ennenaikaisesti: malli voi olla vajaa
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Perustuu ArtCraft-tiimin VectorCraftiin. MIT OR Apache-2.0. Fontit: Source Sans 3, Inter, JetBrains Mono (OFL). Kuvakkeet: Lucide (ISC) + VectorCraft.

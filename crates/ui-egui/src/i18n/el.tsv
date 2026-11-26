@@ -5871,6 +5871,7 @@ effect	Points	Σημεία
 embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	Το VectorCraft δεν μπορεί να γράψει ξανά αυτό το αρχείο όπως είναι ({what}). Αν το αντικαταστήσετε, θα χαθεί οριστικά. Αποθηκεύστε με άλλο όνομα για να το διατηρήσετε.
 @msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	το {target} είναι το αρχείο από το οποίο διαβάστηκε αυτό το έγγραφο, και το VectorCraft δεν μπορεί να το γράψει ξανά όπως είναι ({what}): αν γράψετε πάνω του, θα χαθεί οριστικά. Γράψτε σε άλλο αρχείο ή περάστε acknowledgeLoss: true για να το αντικαταστήσετε παρ’ όλα αυτά
 @msg	the file's own format, which VectorCraft reads but doesn't write	η ίδια η μορφή του αρχείου, την οποία το VectorCraft διαβάζει αλλά δεν γράφει
+@msg	the file ends early: the design may be incomplete	το αρχείο τελειώνει πρόωρα: το σχέδιο μπορεί να είναι ελλιπές
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Βασίζεται στο VectorCraft της ομάδας ArtCraft. MIT ή Apache-2.0. Γραμματοσειρές: Source Sans 3, Inter, JetBrains Mono (OFL). Εικονίδια: Lucide (ISC) + VectorCraft.

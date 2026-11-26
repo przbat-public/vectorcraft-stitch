@@ -6100,6 +6100,9 @@ axis	Y Axis	Y ekseni
 @msg	threads that twist several colours are read in their first colour	birkaç rengin büküldüğü iplikler ilk renkleriyle okunur
 @msg	the file's several designs are read as one	dosyadaki birden çok tasarım tek bir tasarım olarak okunur
 @msg	the file holds things this version doesn't read	dosya bu sürümün okumadığı öğeler içeriyor
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft bu dosyayı olduğu gibi yeniden yazamaz ({what}), bu nedenle onu değiştirirseniz tamamen kaybolur. Saklamak için başka bir adla kaydedin.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target}, bu belgenin okunduğu dosyadır ve VectorCraft onu olduğu gibi yeniden yazamaz ({what}): üzerine yazılırsa tamamen kaybolur. Bunun yerine başka bir dosya yazın veya yine de değiştirmek için acknowledgeLoss: true geçirin
+@msg	the file's own format, which VectorCraft reads but doesn't write	dosyanın kendi biçimi, VectorCraft'ın okuduğu ama yazmadığı bir biçim
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft ekibinin VectorCraft'ına dayanır. MIT VEYA Apache-2.0. Yazı Tipleri: Source Sans 3, Inter, JetBrains Mono (OFL). Simgeler: Lucide (ISC) + VectorCraft.
 @msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC en fazla {MAX_COLORS} renk taşır (her durma bir renk sayılır), {colors} değil
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 en fazla {MAX_COLORS} renk bloğu tutar

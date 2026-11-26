@@ -5912,6 +5912,9 @@ theme	Appearance	Apparence
 @msg	threads that twist several colours are read in their first colour	les fils qui torsadent plusieurs couleurs sont lus dans leur première couleur
 @msg	the file's several designs are read as one	les différents motifs du fichier sont lus comme un seul
 @msg	the file holds things this version doesn't read	le fichier contient des éléments que cette version ne lit pas
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft ne sait pas réécrire ce fichier tel quel ({what}) : le remplacer revient à le perdre définitivement. Enregistrez sous un autre nom pour le conserver.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} est le fichier à partir duquel ce document a été lu, et VectorCraft ne sait pas le réécrire tel quel ({what}) : l’écraser reviendrait à le perdre définitivement. Écrivez plutôt un autre fichier, ou transmettez acknowledgeLoss: true pour le remplacer malgré tout
+@msg	the file's own format, which VectorCraft reads but doesn't write	le format propre du fichier, que VectorCraft lit mais n’écrit pas
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basé sur VectorCraft de l’équipe ArtCraft. MIT OR Apache-2.0. Polices : Source Sans 3, Inter, JetBrains Mono (OFL). Icônes : Lucide (ISC) + VectorCraft.

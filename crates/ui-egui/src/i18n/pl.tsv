@@ -5771,6 +5771,9 @@ mark-style	Japanese	Japońskie
 @msg	threads that twist several colours are read in their first colour	nici skręcone z kilku kolorów są wczytywane w pierwszym kolorze
 @msg	the file's several designs are read as one	kilka wzorów z pliku jest wczytywanych jako jeden
 @msg	the file holds things this version doesn't read	plik zawiera elementy, których ta wersja nie odczytuje
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft nie potrafi ponownie zapisać tego pliku w obecnej postaci ({what}), więc zastąpienie pliku oznacza jego bezpowrotną utratę. Zapisz pod inną nazwą, aby go zachować.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} to plik, z którego wczytano ten dokument, a VectorCraft nie potrafi go ponownie zapisać w obecnej postaci ({what}): nadpisanie go oznaczałoby jego bezpowrotną utratę. Zamiast tego zapisz do innego pliku albo przekaż acknowledgeLoss: true, aby go mimo to zastąpić
+@msg	the file's own format, which VectorCraft reads but doesn't write	własny format pliku, który VectorCraft odczytuje, ale którego nie zapisuje
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Na podstawie VectorCraft zespołu ArtCraft. MIT LUB Apache-2.0. Czcionki: Source Sans 3, Inter, JetBrains Mono (OFL). Ikony: Lucide (ISC) + VectorCraft.

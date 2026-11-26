@@ -6621,6 +6621,9 @@ breakText	Glyphs	Glifs
 @msg	threads that twist several colours are read in their first colour	els fils que torcen diversos colors es llegeixen en el primer color
 @msg	the file's several designs are read as one	els diversos dissenys del fitxer es llegeixen com un de sol
 @msg	the file holds things this version doesn't read	el fitxer conté coses que aquesta versió no llegeix
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft no pot tornar a escriure aquest fitxer tal com és ({what}), de manera que substituir-lo vol dir perdre’l per sempre. Desa’l amb un altre nom per conservar-lo.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} és el fitxer des del qual es va llegir aquest document, i VectorCraft no el pot tornar a escriure tal com és ({what}): sobreescriure’l voldria dir perdre’l per sempre. Escriu un altre fitxer en lloc d’aquest, o passa acknowledgeLoss: true per substituir-lo igualment
+@msg	the file's own format, which VectorCraft reads but doesn't write	el format propi del fitxer, que VectorCraft llegeix però no escriu
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basat en VectorCraft de l’equip d’ArtCraft. MIT OR Apache-2.0. Tipus de lletra: Source Sans 3, Inter, JetBrains Mono (OFL). Icones: Lucide (ISC) + VectorCraft.
 @msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC admet com a màxim {MAX_COLORS} colors (cada aturada compta com un), no {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 admet com a màxim {MAX_COLORS} blocs de color

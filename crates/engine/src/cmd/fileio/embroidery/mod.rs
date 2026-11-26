@@ -45,6 +45,18 @@ pub(super) fn is_loss(note: &str) -> bool {
     LOSS_NOTES.contains(&note)
 }
 
+/// Why writing over a file of a format VectorCraft reads but doesn't write (SEW, HUS) asks first,
+/// whatever opening it said: a file written over it can't be made one of that format again (the
+/// project owner's choice, 2026-11-26). Not said on opening, which may leave nothing out: the
+/// question and the refusal name it first among what writing over the file loses, in words of
+/// their own (VectorCraft can't write the file again as it is), not as something reading left out.
+pub const NOT_WRITTEN_NOTE: &str = "the file's own format, which VectorCraft reads but doesn't write";
+
+/// [`NOT_WRITTEN_NOTE`] for a file of the format `id` opened, when VectorCraft only reads it.
+pub(super) fn not_written_loss(id: &str) -> Option<&'static str> {
+    StitchFormat::readable(id).filter(|f| !f.writes()).map(|_| NOT_WRITTEN_NOTE)
+}
+
 const C: &str = "document.export";
 
 const STITCH: FormatOption = FormatOption {

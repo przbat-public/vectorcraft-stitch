@@ -5536,6 +5536,9 @@ lighting	Light	光源
 @msg	threads that twist several colours are read in their first colour	由多種顏色撚成的繡線以其第一種顏色讀取
 @msg	the file's several designs are read as one	檔案中的多個圖案會當作一個讀取
 @msg	the file holds things this version doesn't read	此檔案包含此版本不讀取的內容
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft 無法按原樣再次寫入此檔案（{what}），因此取代該檔案會使其永久遺失。若要保留，請以其他名稱儲存。
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	此文件讀取自 {target}，而 VectorCraft 無法按原樣再次寫入該檔案（{what}）：覆寫該檔案會使其永久遺失。請改為寫入其他檔案；若仍要取代該檔案，請傳入 acknowledgeLoss: true
+@msg	the file's own format, which VectorCraft reads but doesn't write	檔案本身的格式，VectorCraft 能讀取但無法寫入
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基於 ArtCraft 團隊的 VectorCraft。MIT OR Apache-2.0。字體：Source Sans 3、Inter、JetBrains Mono (OFL)。圖示：Lucide (ISC) + VectorCraft。

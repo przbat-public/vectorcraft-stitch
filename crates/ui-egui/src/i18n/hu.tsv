@@ -5900,6 +5900,9 @@ imageTrace	Outline	Körvonal
 @msg	threads that twist several colours are read in their first colour	a több színt összesodró szálak az első színükben olvasódnak be
 @msg	the file's several designs are read as one	a fájl több mintája egyként olvasódik be
 @msg	the file holds things this version doesn't read	a fájl olyan dolgokat tartalmaz, amelyeket ez a verzió nem olvas
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	A VectorCraft nem tudja újra kiírni ezt a fájlt úgy, ahogy van ({what}), ezért a felülírásával végleg elvész. A megtartásához mentsd más néven.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	ebből a fájlból olvasódott be ez a dokumentum: {target}; a VectorCraft nem tudja újra kiírni a fájlt úgy, ahogy van ({what}), ezért a felülírásával végleg elveszne. Írj inkább egy másik fájlba, vagy add meg az acknowledgeLoss: true értéket, hogy mégis felülírd
+@msg	the file's own format, which VectorCraft reads but doesn't write	a fájl saját formátuma, amelyet a VectorCraft olvas, de nem ír
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono (OFL). Ikonok: Lucide (ISC) + VectorCraft.

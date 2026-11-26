@@ -622,7 +622,7 @@ fn open_loaded(s: &mut Session, loaded: Loaded, links: Resolved, path: Option<St
     let Loaded { mut doc, format, warnings, restored, converted, native_pdf_compatible, .. } = loaded.with_grid_prefs(&s.prefs);
     // EPS now has an ordinary Save path. Its preview, partial-program and damaged-editing
     // fallbacks must ask before overwriting the richer source they could not fully read.
-    let losses: Vec<String> = warnings
+    let mut losses: Vec<String> = warnings
         .iter()
         .filter(|w| {
             is_loss(w)
@@ -633,6 +633,12 @@ fn open_loaded(s: &mut Session, loaded: Loaded, links: Resolved, path: Option<St
         })
         .cloned()
         .collect();
+    // A file of an embroidery format VectorCraft only reads (SEW, HUS) can't be written back, so
+    // writing another format over it asks first, whatever opening it said (the project owner's
+    // choice, 2026-11-26). Named first: above all, writing over the file loses its format.
+    if let Some(note) = super::embroidery::not_written_loss(format.id) {
+        losses.insert(0, note.to_string());
+    }
     let source_path = path.clone().filter(|_| !losses.is_empty());
     // A template (saved by Save as Template, or an .ait/.vctemplate file) opens as a new untitled
     // document.
@@ -951,11 +957,22 @@ fn is_loss(note: &str) -> bool {
 }
 
 /// Writing the file `target` for document `st`: not over the file `st` was read from when reading
-/// it left something out (hidden text, art or layers), unless `p` has `acknowledgeLoss: true`.
-/// Another name keeps the original file, with all it has.
+/// it left something out (hidden text, art or layers), or when VectorCraft can't write that file
+/// again as it is (a SEW's or HUS's own format, which isn't written), unless `p` has
+/// `acknowledgeLoss: true`. Another name keeps the original file, with all it has.
 pub(crate) fn check_not_lossy_overwrite(st: &crate::DocState, target: &str, p: &Value, cmd: &str) -> Result<()> {
     let Some(losses) = overwrite_losses(st, target, p) else { return Ok(()) };
     let what = losses_summary(losses);
+    // VectorCraft Stitch: a file of a format VectorCraft reads but doesn't write (SEW, HUS) can't
+    // be written again as it is, whatever reading it left out (often nothing), and is said so.
+    if losses.iter().any(|n| n == super::embroidery::NOT_WRITTEN_NOTE) {
+        return Err(bad(
+            cmd,
+            format!(
+                "{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway"
+            ),
+        ));
+    }
     Err(bad(
         cmd,
         format!(

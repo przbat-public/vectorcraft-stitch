@@ -5859,6 +5859,9 @@ mark-style	Japanese	Japonesas
 @msg	threads that twist several colours are read in their first colour	los hilos que retuercen varios colores se leen en su primer color
 @msg	the file's several designs are read as one	los varios diseños del archivo se leen como uno
 @msg	the file holds things this version doesn't read	el archivo contiene cosas que esta versión no lee
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft no puede volver a escribir este archivo tal como está ({what}), así que reemplazarlo supone perderlo para siempre. Guárdelo con otro nombre para conservarlo.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} es el archivo desde el que se leyó este documento, y VectorCraft no puede volver a escribirlo tal como está ({what}): sobrescribirlo supondría perderlo para siempre. Escribe otro archivo en lugar de este, o pasa acknowledgeLoss: true para reemplazarlo de todos modos
+@msg	the file's own format, which VectorCraft reads but doesn't write	el formato propio del archivo, que VectorCraft lee pero no escribe
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Basado en VectorCraft del equipo de ArtCraft. MIT OR Apache-2.0. Fuentes: Source Sans 3, Inter, JetBrains Mono (OFL). Iconos: Lucide (ISC) + VectorCraft.

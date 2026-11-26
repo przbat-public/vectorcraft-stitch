@@ -389,9 +389,25 @@ fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
     std::fs::remove_dir_all(d).ok();
 }
 
+/// An export of the opened file `path` in its own format (a format only read) over itself, of the
+/// document or of a selection: refused for the format, never told to acknowledge a loss, which
+/// couldn't help; the file is left as it was.
+fn own_format_refused(s: &mut Session, path: &str) {
+    let before = std::fs::read(path).unwrap();
+    // The design selected, so that Export Selection is offered and reaches its check of the format.
+    s.execute("select.all", &json!({})).unwrap();
+    for command in ["document.export", "document.exportSelection"] {
+        let e = s.execute(command, &json!({"path": path})).unwrap_err().to_string();
+        assert!(e.contains("can be opened but not written") && !e.contains("acknowledgeLoss"), "{command}: {e}");
+    }
+    assert_eq!(std::fs::read(path).unwrap(), before, "untouched");
+}
+
 /// Opening a SEW whose preview pictures or header tables aren't blank says that reading it leaves
-/// things out, and writing another format over that file is then refused unless the loss is
-/// acknowledged, as for a PES; a SEW whose pictures and tables are blank opens saying nothing.
+/// things out, and one whose pictures and tables are blank opens saying nothing; writing another
+/// format over either file is refused unless the loss is acknowledged, as for a PES, since SEW is
+/// never written (the project owner's choice, 2026-11-26), the refusal saying so in words of its
+/// own, the format first; exported in its own format over itself, it is refused for that format.
 #[test]
 fn writing_over_an_opened_sew_asks_first() {
     let d = std::env::temp_dir().join(format!("vc-embroidery-sew-loss-{}", std::process::id()));
@@ -403,24 +419,49 @@ fn writing_over_an_opened_sew_asks_first() {
     use vectorcraft_testkit::machine_files::{SEW_PICTURE_BITS_AT, SEW_PICTURES_AT};
     drawn[SEW_PICTURES_AT + SEW_PICTURE_BITS_AT] = 0xFF;
     let note = super::embroidery::LOSS_NOTES[7];
-    for (name, file, lost) in [("blank.sew", &blank, false), ("drawn.sew", &drawn, true)] {
+    for (name, file, drawn) in [("blank.sew", &blank, false), ("drawn.sew", &drawn, true)] {
         let path = d.join(name);
         std::fs::write(&path, file).unwrap();
         let path = path.to_string_lossy().to_string();
         let mut s = Session::new();
         let r = s.execute("document.open", &json!({"path": path})).unwrap();
-        assert_eq!(warnings(&r).contains(&note.to_string()), lost, "{name}: {r}");
-        let over = s.execute("document.export", &json!({"path": path, "format": "dst"}));
-        if lost {
-            let e = over.unwrap_err().to_string();
-            assert!(e.contains("left things out") && e.contains(note), "{name}: {e}");
-            assert_eq!(&std::fs::read(&path).unwrap(), file, "{name}: untouched");
-            s.execute("document.export", &json!({"path": path, "format": "dst", "acknowledgeLoss": true})).unwrap();
-            assert_ne!(&std::fs::read(&path).unwrap(), file, "{name}");
-        } else {
-            over.unwrap();
-        }
+        assert_eq!(warnings(&r), if drawn { vec![note.to_string()] } else { vec![] }, "{name}: {r}");
+        let e = s.execute("document.export", &json!({"path": path, "format": "dst"})).unwrap_err().to_string();
+        assert!(e.contains(&format!("VectorCraft can't write it again as it is (“{}”", super::embroidery::NOT_WRITTEN_NOTE)), "{name}: {e}");
+        assert_eq!(e.contains(note), drawn, "{name}: {e}");
+        assert_eq!(&std::fs::read(&path).unwrap(), file, "{name}: untouched");
+        own_format_refused(&mut s, &path);
+        s.execute("document.export", &json!({"path": path, "format": "dst", "acknowledgeLoss": true})).unwrap();
+        assert_ne!(&std::fs::read(&path).unwrap(), file, "{name}");
     }
+    std::fs::remove_dir_all(d).ok();
+}
+
+/// An opened HUS says nothing on opening (its header holds nothing its records don't give), but
+/// HUS is never written, so writing another format over the file is refused unless the loss is
+/// acknowledged, the refusal saying why in words of its own, and the file is left as it was;
+/// another file is written without asking (the project owner's choice, 2026-11-26).
+#[test]
+fn writing_over_an_opened_hus_asks_first() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    let d = std::env::temp_dir().join(format!("vc-embroidery-hus-over-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let records: Vec<(u8, i8, i8)> = (0..20).map(|i| (0x80, 10, if i % 2 == 0 { 20 } else { -20 })).chain([(0x90, 0, 0)]).collect();
+    let bytes = hus(&records, &[3], b"over\0\0\0\0", &Lzh::default());
+    let path = d.join("design.hus");
+    std::fs::write(&path, &bytes).unwrap();
+    let (path, other) = (path.to_string_lossy().to_string(), d.join("design.jef").to_string_lossy().to_string());
+    let mut s = Session::new();
+    let r = s.execute("document.open", &json!({"path": path})).unwrap();
+    assert_eq!(warnings(&r), Vec::<String>::new(), "{r}");
+    s.execute("document.export", &json!({"path": other, "format": "jef"})).expect("another file isn't asked about");
+    let e = s.execute("document.export", &json!({"path": path, "format": "jef"})).unwrap_err().to_string();
+    assert!(e.contains(&format!("VectorCraft can't write it again as it is (“{}”)", super::embroidery::NOT_WRITTEN_NOTE)), "{e}");
+    assert!(!e.contains("left things out"), "opening left nothing out: {e}");
+    assert_eq!(std::fs::read(&path).unwrap(), bytes, "untouched");
+    own_format_refused(&mut s, &path);
+    s.execute("document.export", &json!({"path": path, "format": "jef", "acknowledgeLoss": true})).unwrap();
+    assert_ne!(std::fs::read(&path).unwrap(), bytes);
     std::fs::remove_dir_all(d).ok();
 }
 

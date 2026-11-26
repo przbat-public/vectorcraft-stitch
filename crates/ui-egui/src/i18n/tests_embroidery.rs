@@ -246,16 +246,17 @@ fn embroidery_stroke_path_warning_is_translated() {
     assert!(untranslated.is_empty(), "untranslated:\n{}", untranslated.join("\n"));
 }
 
-/// What opening a machine file says it left out (which makes writing over the file ask first) is
-/// translated whole in every language.
+/// What opening a machine file says it left out (which makes writing over the file ask first), and
+/// why writing over a file of a format only read asks first, are translated whole in every
+/// language.
 #[test]
 fn embroidery_open_losses_are_translated() {
     // Phrases of the English notes no other language shares.
-    let english = ["kept", "written as", "are read", "doesn't read", "this document", "nearest thread", "stitches"];
+    let english = ["kept", "written as", "are read", "doesn't read", "doesn't write", "own format", "this document", "nearest thread", "stitches"];
     let mut untranslated = Vec::new();
     for info in LANGUAGES.iter().filter(|l| l.code != "en") {
         let lang = Lang::from_code(info.code).unwrap();
-        for note in vectorcraft_engine::EMBROIDERY_LOSS_NOTES {
+        for note in vectorcraft_engine::EMBROIDERY_LOSS_NOTES.into_iter().chain([vectorcraft_engine::EMBROIDERY_NOT_WRITTEN_NOTE]) {
             let shown = message(lang, note);
             if shown == note || english.iter().any(|w| shown.contains(*w)) {
                 untranslated.push(format!("{}: {shown}", info.code));
@@ -263,6 +264,33 @@ fn embroidery_open_losses_are_translated() {
         }
     }
     assert!(untranslated.is_empty(), "untranslated notes:\n{}", untranslated.join("\n"));
+}
+
+/// The engine's refusal to write another format over an opened HUS, which scripts and AI tools
+/// meet (the interface asks instead), is shown in every language, the path as it is.
+#[test]
+fn the_refusal_to_write_over_a_format_only_read_is_translated() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    let d = std::env::temp_dir().join(format!("vc-i18n-hus-over-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let records: Vec<(u8, i8, i8)> = (0..20).map(|i| (0x80, 10, if i % 2 == 0 { 20 } else { -20 })).chain([(0x90, 0, 0)]).collect();
+    let path = d.join("design.hus");
+    std::fs::write(&path, hus(&records, &[3], b"refusal\0", &Lzh::default())).unwrap();
+    let path = path.to_string_lossy().to_string();
+    let mut s = vectorcraft_engine::Session::new();
+    s.execute("document.open", &serde_json::json!({"path": path})).unwrap();
+    let refusal = s.execute("document.export", &serde_json::json!({"path": path, "format": "jef"})).unwrap_err().to_string();
+    std::fs::remove_dir_all(&d).ok();
+    // Phrases of the English refusal no other language shares.
+    let english = ["is the file this document was read from", "write it again", "Write another file", "for good"];
+    let mut untranslated = Vec::new();
+    for info in LANGUAGES.iter().filter(|l| l.code != "en") {
+        let shown = message(Lang::from_code(info.code).unwrap(), &refusal);
+        if shown == refusal || !shown.contains(&path) || english.iter().any(|w| shown.contains(*w)) {
+            untranslated.push(format!("{}: {shown}", info.code));
+        }
+    }
+    assert!(untranslated.is_empty(), "untranslated:\n{}", untranslated.join("\n"));
 }
 
 /// The machine-file errors (the stitch crate's open and export errors, the embroidery import's and

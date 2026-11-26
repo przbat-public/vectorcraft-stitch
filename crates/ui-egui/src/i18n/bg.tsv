@@ -5755,6 +5755,9 @@ theme	Appearance	Външен вид
 @msg	threads that twist several colours are read in their first colour	конци, които усукват няколко цвята, се четат в първия си цвят
 @msg	the file's several designs are read as one	няколкото дизайна във файла се четат като един
 @msg	the file holds things this version doesn't read	файлът съдържа неща, които тази версия не чете
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft не може да запише този файл отново в сегашния му вид ({what}), така че замяната му го губи завинаги. Запазете под друго име, за да го запазите.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} е файлът, от който беше прочетен този документ, и VectorCraft не може да го запише отново в сегашния му вид ({what}): ако бъде презаписан, ще бъде загубен завинаги. Вместо това запишете в друг файл или подайте acknowledgeLoss: true, за да го замените въпреки това
+@msg	the file's own format, which VectorCraft reads but doesn't write	собственият формат на файла, който VectorCraft чете, но не записва
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Базирано на VectorCraft от екипа на ArtCraft. MIT ИЛИ Apache-2.0. Шрифтове: Source Sans 3, Inter, JetBrains Mono (OFL). Икони: Lucide (ISC) + VectorCraft.

@@ -6452,6 +6452,9 @@ shape	Open	Otvoren
 @msg	threads that twist several colours are read in their first colour	konci koji uvijaju više boja čitaju se u svojoj prvoj boji
 @msg	the file's several designs are read as one	više dizajna iz datoteke čita se kao jedan
 @msg	the file holds things this version doesn't read	datoteka sadrži stvari koje ova verzija ne čita
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft ne može ponovo zapisati ovu datoteku onakvu kakva jeste ({what}), pa se zamjenom ona trajno gubi. Sačuvajte pod drugim nazivom da je zadržite.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} je datoteka iz koje je ovaj dokument pročitan i koju VectorCraft ne može ponovo zapisati onakvu kakva jeste ({what}): njenim prepisivanjem bi se trajno izgubila. Umjesto toga zapišite u drugu datoteku ili proslijedite acknowledgeLoss: true da je ipak zamijenite
+@msg	the file's own format, which VectorCraft reads but doesn't write	vlastiti format datoteke, koji VectorCraft čita, ali ne zapisuje
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Zasnovano na VectorCraftu tima ArtCraft. MIT OR Apache-2.0. Fontovi: Source Sans 3, Inter, JetBrains Mono (OFL). Ikone: Lucide (ISC) + VectorCraft.
 @msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC nosi najviše {MAX_COLORS} boja (svako zaustavljanje se broji kao jedna), a ne {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 sadrži najviše {MAX_COLORS} blokova boja

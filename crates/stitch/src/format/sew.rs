@@ -23,9 +23,9 @@
 //! its thread isn't seen (the project owner's choice, 2026-11-26; HUS's rule that every colour
 //! change moves on one colour is HUS's alone). The pictures and the two tables are left, and
 //! opening a file whose pictures or tables aren't blank says so ([`losses`]). Writing another
-//! format over any opened SEW asks first, since a design opened from SEW is written in another
-//! format, never as SEW. A colour count of 0 or above 12 is no SEW's, and refused. A thread number
-//! past Janome's chart reads as a stand-in named after it, as in JEF.
+//! format over any opened SEW asks first where writing is checked, since a design opened from SEW
+//! is written in another format, never as SEW. A colour count of 0 or above 12 is no SEW's, and
+//! refused. A thread number past Janome's chart reads as a stand-in named after it, as in JEF.
 //!
 //! No SEW file has been read here: the description rests on the files the KDE wiki's author saw,
 //! and the tests on files built from it. pyembroidery 1.5.1 (MIT), run as an outside reader, reads
@@ -56,8 +56,9 @@ pub(crate) const STITCHES_AT: usize = 0x1D78;
 /// What a SEW holds that reading it leaves out: its pictures and two tables, when any byte of them
 /// isn't 0 (the test kit's files leave them blank; real files draw their pictures). And a file
 /// whose records run out before their end record, as a file cut short inside them does, is said
-/// to end early, so that it isn't taken for whole and writing over it asks first (the project
-/// owner's choice, 2026-11-26; a JEF, whose records are the same, says nothing of it).
+/// to end early, so that it isn't taken for whole and writing over it asks first where writing is
+/// checked (the project owner's choice, 2026-11-26; a JEF, whose records are the same, says
+/// nothing of it).
 pub(crate) fn losses(bytes: &[u8]) -> Vec<Loss> {
     let drawn = bytes.get(TABLES_AT..STITCHES_AT).is_some_and(|b| b.iter().any(|v| *v != 0));
     let cut = bytes.len() > STITCHES_AT && jef::records_cut(bytes, STITCHES_AT);

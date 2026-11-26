@@ -21,9 +21,10 @@
 //! thread), `minStitch` (mm) and `splitLength` (mm: a longer satin stitch is split). A value
 //! outside its range is refused.
 //!
-//! The parts: [`import`] (a design read as art, with notes of what reading it left out, which
-//! make writing over the file ask first: [`is_loss`]) and [`encode`] (the export: its options, and
-//! the stitches `cmd::embroidery` plans from the document's art, written in the format).
+//! The parts: [`import`] (a design read as art, with notes of what reading it left out, which make
+//! writing over the file ask first where writing is checked: [`is_loss`]) and [`encode`] (the
+//! export: its options, and the stitches `cmd::embroidery` plans from the document's art, written
+//! in the format).
 
 mod import;
 
@@ -40,13 +41,14 @@ pub use import::LOSS_NOTES;
 pub(super) use import::import;
 
 /// Whether `note`, said when a file was opened, says that reading a machine file left something
-/// out ([`LOSS_NOTES`]): writing over that file then asks first.
+/// out ([`LOSS_NOTES`]): writing over that file then asks first where writing is checked.
 pub(super) fn is_loss(note: &str) -> bool {
     LOSS_NOTES.contains(&note)
 }
 
-/// Why writing over a file of a format VectorCraft reads but doesn't write (SEW, HUS) asks first,
-/// whatever opening it said: a file written over it can't be made one of that format again (the
+/// Why writing over a file of a format VectorCraft reads but doesn't write (SEW, HUS) asks first
+/// where writing is checked (docs/embroidery.md › Which ways of writing check), whatever opening
+/// it said: a file written over it can't be made one of that format again (the
 /// project owner's choice, 2026-11-26). Not said on opening, which may leave nothing out: the
 /// question and the refusal name it first among what writing over the file loses, in words of
 /// their own (VectorCraft can't write the file again as it is), not as something reading left out.

@@ -24,10 +24,10 @@ const MARGIN: f64 = 5.0;
 const MAX_RUNS: usize = 100_000;
 
 /// What reading a machine file left out, as opening it says it, one note each (in this order):
-/// a file written from the document lacks it, so writing over the file asks first
-/// ([`super::is_loss`]). The eighth is said for a SEW's pictures and header tables, and for what a
-/// newer stitch crate reports and this list doesn't name yet; the last for a HUS or SEW that ends
-/// before its records do, read as far as it goes (the project owner's choice, 2026-11-26).
+/// a file written from the document lacks it, so writing over the file asks first where writing is
+/// checked ([`super::is_loss`]). The eighth is said for a SEW's pictures and header tables, and for
+/// what a newer stitch crate reports and this list doesn't name yet; the last for a HUS or SEW that
+/// ends before its records do, read as far as it goes (the project owner's choice, 2026-11-26).
 pub const LOSS_NOTES: [&str; 9] = [
     "the PES file's own section, which PE-Design edits, isn't kept: a PES written from this document holds its stitches alone",
     "the file's preview pictures aren't kept: a PES or PEC written from this document has blank ones",

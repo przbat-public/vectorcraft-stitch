@@ -96,7 +96,7 @@ pub struct DocState {
     /// The file this document was read from, and what reading it left out (hidden text, art or
     /// layers it could not read; for an embroidery format only read, the file's own format):
     /// writing the document over that file would lose those for good, so an export or save to it
-    /// asks first ([`cmd::fileio::check_not_lossy_overwrite`]). Not saved.
+    /// that checks asks first ([`cmd::fileio::check_not_lossy_overwrite`]). Not saved.
     pub imported_from: Option<String>,
     pub import_losses: Vec<String>,
     /// The file its links' stored relative paths name places from: the file the document was read

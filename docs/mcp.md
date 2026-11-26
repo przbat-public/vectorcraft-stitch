@@ -8468,8 +8468,11 @@ VectorCraft: a value recorded before is `180 − old`),
 and `document.open` reads such a file back as art, one group per thread (as it does Janome `sew` and Husqvarna Viking
 `hus` files, which are read only: `document.formats` lists them as readable, not writable, an export to them is
 refused, and an export written over the file an opened one came from is refused until `acknowledgeLoss: true` is
-passed, as VectorCraft can't write that file again as it is, and one in the file's own format over itself is refused for
-that format; a HUS cut in its last stream, or a SEW cut inside its records, opens as far as it goes, its warnings
+passed, as VectorCraft can't write that file again as it is (`document.export`, `document.exportEps`,
+`document.exportDxf` and `document.exportPdf` always; with no app, `document.exportSelection`,
+`document.exportForOffice` and `file.print` given a path too, which the app writes itself and doesn't ask about yet;
+`document.exportForWeb`, `document.exportForScreens`, `assets.export` and the exports of other kinds of file check
+nowhere: [embroidery.md](embroidery.md) › Which ways of writing check), and one in the file's own format over itself is refused for that format; a HUS cut in its last stream, or a SEW cut inside its records, opens as far as it goes, its warnings
 saying that the file ends early, and one cut earlier is refused). A value outside an option's range (each
 description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
 `options`. A design that would need too many stitches, one a format can't hold (more colours than it numbers, a size

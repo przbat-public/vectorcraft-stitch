@@ -178,7 +178,7 @@ pub enum Loss {
     /// A file that ends before its records do (a HUS whose streams stop short of the records its
     /// header counts, a SEW whose records run out before their end record), as a file cut short
     /// does: read as far as it goes, the design perhaps without its end. Said so that it isn't
-    /// taken for whole, and so that writing over the file asks first.
+    /// taken for whole, and so that writing over the file asks first where writing is checked.
     EndsEarly,
 }
 

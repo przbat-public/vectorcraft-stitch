@@ -203,7 +203,8 @@ fn streams(bytes: &[u8]) -> Result<Streams> {
 /// What a HUS holds that reading it leaves out: nothing of its header (its counts, extents and
 /// stream offsets the records give again; its name is read). But a file whose streams stop short
 /// of the records its header counts, as a file cut short does, is said to end early, so that it
-/// isn't taken for whole and writing over it asks first (the project owner's choice, 2026-11-26).
+/// isn't taken for whole and writing over it asks first where writing is checked (the project
+/// owner's choice, 2026-11-26).
 /// The streams are expanded again for it: a file is opened once, and expanding is linear in its
 /// records.
 pub(crate) fn losses(bytes: &[u8]) -> Vec<Loss> {

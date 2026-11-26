@@ -246,9 +246,8 @@ fn embroidery_stroke_path_warning_is_translated() {
     assert!(untranslated.is_empty(), "untranslated:\n{}", untranslated.join("\n"));
 }
 
-/// What opening a machine file says it left out (which makes writing over the file ask first), and
-/// why writing over a file of a format only read asks first, are translated whole in every
-/// language.
+/// What opening a machine file says it left out, and the note that a format is only read (both
+/// shown when writing over the file asks first), are translated whole in every language.
 #[test]
 fn embroidery_open_losses_are_translated() {
     // Phrases of the English notes no other language shares.
@@ -267,7 +266,8 @@ fn embroidery_open_losses_are_translated() {
 }
 
 /// The engine's refusal to write another format over an opened HUS, which scripts and AI tools
-/// meet (the interface asks instead), is shown in every language, the path as it is.
+/// meet (the interface asks instead where writing is checked), is shown in every language, the
+/// path as it is.
 #[test]
 fn the_refusal_to_write_over_a_format_only_read_is_translated() {
     use vectorcraft_testkit::machine_files::{Lzh, hus};

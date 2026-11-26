@@ -355,7 +355,7 @@ fn an_opened_designs_thread_records_and_label_are_written_back() {
 }
 
 /// Opening a machine file says what reading it left out (a PES's own section, PE-Design's), and
-/// writing over that file is then refused unless the loss is acknowledged; a file this app wrote
+/// an export over that file is then refused unless the loss is acknowledged; a file this app wrote
 /// leaves nothing out and is written over without asking.
 #[test]
 fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
@@ -405,11 +405,12 @@ fn own_format_refused(s: &mut Session, path: &str) {
     assert_eq!(std::fs::read(path).unwrap(), before, "untouched");
 }
 
-/// Opening a SEW whose preview pictures or header tables aren't blank says that reading it leaves
-/// things out, and one whose pictures and tables are blank opens saying nothing; writing another
-/// format over either file is refused unless the loss is acknowledged, as for a PES, since SEW is
-/// never written (the project owner's choice, 2026-11-26), the refusal saying so in words of its
-/// own, the format first; exported in its own format over itself, it is refused for that format.
+/// Opening a SEW whose first preview picture isn't blank says that reading it leaves things out
+/// (its header tables are tested in the stitch crate), and one whose pictures and tables are blank
+/// opens saying nothing; an export of another format over either file is refused unless the loss is
+/// acknowledged, as for a PES, since SEW is never written (the project owner's choice, 2026-11-26),
+/// the refusal saying so in words of its own, the format first; exported in its own format over
+/// itself, it is refused for that format.
 #[test]
 fn writing_over_an_opened_sew_asks_first() {
     let d = std::env::temp_dir().join(format!("vc-embroidery-sew-loss-{}", std::process::id()));
@@ -440,8 +441,8 @@ fn writing_over_an_opened_sew_asks_first() {
 }
 
 /// An opened HUS says nothing on opening (its header holds nothing its records don't give), but
-/// HUS is never written, so writing another format over the file is refused unless the loss is
-/// acknowledged, the refusal saying why in words of its own, and the file is left as it was;
+/// HUS is never written, so an export of another format over the file is refused unless the loss
+/// is acknowledged, the refusal saying why in words of its own, and the file is left as it was;
 /// another file is written without asking (the project owner's choice, 2026-11-26).
 #[test]
 fn writing_over_an_opened_hus_asks_first() {
@@ -468,7 +469,7 @@ fn writing_over_an_opened_hus_asks_first() {
 }
 
 /// A HUS cut short in its last stream, or a SEW cut inside its records, opens as far as it goes,
-/// saying that the file ends early, and writing over the file then names that too; a whole one
+/// saying that the file ends early, and an export over the file then names that too; a whole one
 /// opens without it (the project owner's choice, 2026-11-26).
 #[test]
 fn a_hus_or_sew_cut_short_says_so() {

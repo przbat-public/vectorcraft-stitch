@@ -322,9 +322,9 @@ fn passed_over_objects_are_said_with_their_reasons_in_words() {
     );
 }
 
-/// Writing another format over an opened HUS, a format VectorCraft reads but doesn't write, asks
-/// in words of its own, never as what opening left out (it left nothing out), and shows the note
-/// in the interface's language; Cancel leaves the file as it was.
+/// Export As writing another format over an opened HUS, a format VectorCraft reads but doesn't
+/// write, asks in words of its own, never as what opening left out (it left nothing out), and
+/// shows the note in the interface's language; nothing is written while the question waits.
 #[test]
 fn replacing_an_opened_hus_asks_in_words_of_its_own() {
     use vectorcraft_testkit::machine_files::{Lzh, hus};

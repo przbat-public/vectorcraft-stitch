@@ -634,8 +634,9 @@ fn open_loaded(s: &mut Session, loaded: Loaded, links: Resolved, path: Option<St
         .cloned()
         .collect();
     // A file of an embroidery format VectorCraft only reads (SEW, HUS) can't be written back, so
-    // writing another format over it asks first, whatever opening it said (the project owner's
-    // choice, 2026-11-26). Named first: above all, writing over the file loses its format.
+    // writing another format over it asks first, or is refused, where writing is checked, whatever
+    // opening it said (the project owner's choice, 2026-11-26; docs/embroidery.md › Which ways of
+    // writing check). Named first: above all, writing over the file loses its format.
     if let Some(note) = super::embroidery::not_written_loss(format.id) {
         losses.insert(0, note.to_string());
     }

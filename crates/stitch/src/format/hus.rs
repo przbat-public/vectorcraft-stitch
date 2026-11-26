@@ -208,15 +208,26 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     Ok(finish(name, points, &threads))
 }
 
-/// The threads the blocks of `points` take from the colour list `list` (a u16 per colour, in the
-/// room before the first stream), of which the header claims `claimed`: the first block's and one
-/// per colour change, as [`finish`] gives them out (real files list exactly that many). Made from
-/// the list's room alone, a hostile count would make a thread, its name on the heap too, for every
-/// two bytes of the file.
+/// The threads of the blocks of `points`, in order, from the colour list `list` (a u16 per colour,
+/// in the room before the first stream), of which the header claims `claimed`. Every colour change
+/// moves on one colour of the list, whether it moves the needle or anything is sewn after it (the
+/// project owner's choice, 2026-11-26: Weiler has a colour change move on to the list's next
+/// colour, and real files list one more colour than their colour changes), so a block takes the
+/// colour its colour changes come to, and colour changes in a row pass over a colour each.
+/// [`finish`] makes a block of the points between two colour changes that hold any (joining jumps
+/// in a row never leaves one empty), so a thread is made for each of those, up to the first the
+/// list has no colour for: the blocks from there take the default threads, in their order. Made
+/// from the list's room alone, a hostile count would make a thread, its name on the heap too, for
+/// every two bytes of the file.
 fn threads(list: &[u8], claimed: usize, points: &[Stitch]) -> Vec<Thread> {
-    let changes = points.iter().filter(|s| s.command == Command::ColorChange).count();
     let (numbers, _) = list.as_chunks::<COLOUR_BYTES>();
-    numbers.iter().take(claimed.min(changes.saturating_add(1))).map(|b| thread(u16::from_le_bytes(*b))).collect()
+    points
+        .split(|s| s.command == Command::ColorChange)
+        .enumerate()
+        .filter(|(_, run)| !run.is_empty())
+        .map_while(|(changes, _)| numbers.get(changes).filter(|_| changes < claimed))
+        .map(|b| thread(u16::from_le_bytes(*b)))
+        .collect()
 }
 
 #[cfg(test)]
@@ -301,18 +312,49 @@ mod tests {
     }
 
     /// However many colours the header claims and the list holds, the threads made are the ones
-    /// the blocks take: the first block's and one per colour change.
+    /// the blocks take: one per block, and colour changes in a row, before the first point or
+    /// after the last make none of their own.
     #[test]
     fn a_long_colour_list_makes_only_the_threads_used() {
         let list = vec![0u8; COLOUR_BYTES * 100_000];
-        let points = [Stitch::new(0.0, 0.0, Command::Stitch), Stitch::new(0.0, 0.0, Command::ColorChange), Stitch::new(1.0, 0.0, Command::Stitch)];
+        let (s, change) = (Stitch::new(0.0, 0.0, Command::Stitch), Stitch::new(0.0, 0.0, Command::ColorChange));
+        let points = [s, change, Stitch::new(1.0, 0.0, Command::Stitch)];
         assert_eq!(threads(&list, usize::MAX, &points).len(), 2);
         assert_eq!(threads(&list, 1, &points).len(), 1);
         assert_eq!(threads(&list[..COLOUR_BYTES], usize::MAX, &points).len(), 1);
+        for (points, blocks) in [(vec![s, change, change, change, s], 2), (vec![change, s, change], 1), (vec![s], 1)] {
+            assert_eq!(threads(&list, usize::MAX, &points).len(), blocks, "{points:?}");
+            assert_eq!(finish(String::new(), points, &[]).blocks.len(), blocks, "as finish makes them");
+        }
     }
 
-    /// A move on a cut, a stop or an end is made after it, with the needle up, and a jump is a
-    /// point of its own: each point read where the records put it.
+    /// Every colour change moves on one colour of the list, whether it moves the needle or not and
+    /// whether anything is sewn after it: two in a row pass over two colours, one before the first
+    /// stitch over the first; one after the last point takes nothing, and one at the end that moves
+    /// the needle takes the next colour for its move, a block of that jump alone.
+    #[test]
+    fn every_colour_change_moves_on_one_colour() {
+        let colours = [3, 7, 1];
+        let last = |records: &[(u8, i8, i8)]| read(&hus(records, &colours, NAME, &Lzh::default())).unwrap().blocks.last().map(|b| b.thread.clone());
+        let in_a_row_moving = [(STITCH, 0, 0), (COLOR_CHANGE, 5, 0), (COLOR_CHANGE, 0, 0), (STITCH, 0, 0)];
+        let in_a_row_still = [(STITCH, 0, 0), (COLOR_CHANGE, 0, 0), (COLOR_CHANGE, 0, 0), (STITCH, 0, 0)];
+        assert_eq!(last(&in_a_row_moving), Some(thread(1)));
+        assert_eq!(last(&in_a_row_still), Some(thread(1)));
+        let first_change = read(&hus(&[(COLOR_CHANGE, 0, 0), (STITCH, 0, 0), (STITCH, 5, 0)], &colours, NAME, &Lzh::default())).unwrap();
+        assert_eq!(first_change.blocks.iter().map(|b| b.thread.clone()).collect::<Vec<_>>(), [thread(7)]);
+        let change_last = read(&hus(&[(STITCH, 0, 0), (STITCH, 5, 0), (COLOR_CHANGE, 0, 0)], &colours, NAME, &Lzh::default())).unwrap();
+        assert_eq!(change_last.blocks.iter().map(|b| b.thread.clone()).collect::<Vec<_>>(), [thread(3)]);
+        let moving_last = read(&hus(&[(STITCH, 0, 0), (STITCH, 5, 0), (COLOR_CHANGE, 5, 0)], &colours, NAME, &Lzh::default())).unwrap();
+        assert_eq!(moving_last.blocks.iter().map(|b| b.thread.clone()).collect::<Vec<_>>(), [thread(3), thread(7)]);
+        assert_eq!(moving_last.blocks[1].stitches.iter().map(|s| s.command).collect::<Vec<_>>(), [Command::Jump]);
+        // Past the list, the default threads, by block.
+        let past = read(&hus(&in_a_row_still, &colours[..2], NAME, &Lzh::default())).unwrap();
+        assert_eq!(past.blocks.iter().map(|b| b.thread.clone()).collect::<Vec<_>>(), [thread(3), crate::thread::default_thread(1)]);
+    }
+
+    /// A move on a cut, a stop, an end or a colour change is made after it, with the needle up (the
+    /// next block starting with it after a colour change), an end that doesn't move adds nothing,
+    /// and a jump is a point of its own: each point read where the records put it.
     #[test]
     fn moves_are_read_where_the_records_put_them() {
         let records = [
@@ -326,8 +368,14 @@ mod tests {
             (STITCH, 0, 0),
             (0x90, 50, 0),
             (STITCH, 0, 0),
+            (0x90, 0, 0),
+            (STITCH, 10, 0),
+            (COLOR_CHANGE, 0, -30),
+            (STITCH, 0, 0),
         ];
-        let p = read(&hus(&records, &[1], NAME, &Lzh::default())).unwrap();
+        let p = read(&hus(&records, &[1, 2], NAME, &Lzh::default())).unwrap();
+        assert_eq!(p.blocks.len(), 2);
+        assert_eq!(p.blocks[1].stitches.first().map(|s| s.command), Some(Command::Jump), "the colour change's move starts the next block");
         let first = p.points().next().unwrap();
         let got: Vec<(Command, f64, f64)> = p.points().map(|s| (s.command, s.x - first.x, s.y - first.y)).collect();
         use Command::{Jump as J, Stitch as S, Stop as P, Trim as T};
@@ -344,6 +392,9 @@ mod tests {
             (S, 15.0, -2.0),
             (J, 20.0, -2.0),
             (S, 20.0, -2.0),
+            (S, 21.0, -2.0),
+            (J, 21.0, 1.0),
+            (S, 21.0, 1.0),
         ];
         assert_eq!(got.len(), want.len(), "{got:?}");
         for (g, w) in got.iter().zip(want) {
@@ -353,15 +404,16 @@ mod tests {
 
     /// A file cut anywhere in its last stream, inside a block's tables or a copy too, reads its
     /// records up to the cut, never fewer for a later cut and none past it (or, cut before its
-    /// first stitch, says it has none); a header that points past the file, a count past what a
-    /// design may have and damaged streams are refused.
+    /// first stitch, says it has none), and a cut short of the whole reads part of the design; a
+    /// header that points past the file, a count past what a design may have and damaged streams
+    /// are refused.
     #[test]
     fn cut_and_damaged_files() {
         for o in [Lzh::default(), Lzh { copies: false, block_tokens: 5 }, Lzh { copies: true, block_tokens: 3 }] {
             let whole = hus(&records(), &[3, 7], NAME, &o);
             let full = read(&whole).unwrap();
             let ys_at = u32::from_le_bytes([whole[28], whole[29], whole[30], whole[31]]) as usize;
-            let mut before = 0;
+            let (mut before, mut part) = (0, false);
             for cut in ys_at..=whole.len() {
                 let sewn = match read(&whole[..cut]) {
                     Ok(p) => p.sewn(),
@@ -371,9 +423,11 @@ mod tests {
                     }
                 };
                 assert!(sewn >= before && sewn <= full.sewn(), "{o:?}: cut at {cut}: {sewn} needle points, {before} before");
+                part |= sewn > 0 && sewn < full.sewn();
                 before = sewn;
             }
             assert_eq!(before, full.sewn(), "{o:?}");
+            assert!(part, "{o:?}: a file cut short reads part of the design");
         }
         let whole = hus(&records(), &[3, 7], NAME, &Lzh::default());
         let mut past = whole.clone();

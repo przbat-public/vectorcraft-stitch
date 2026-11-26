@@ -225,7 +225,8 @@ fn a_sew_opens_as_the_jef_it_holds() {
 }
 
 /// A HUS opens by its name and by its first bytes, in its chart's colours, its cut and its stop
-/// kept: exported, the cut is a cut and the stop a change to the same thread.
+/// kept: exported, the cut is a cut and the stop a change to the same thread; placed, it comes in
+/// too.
 #[test]
 fn a_hus_opens_by_name_and_by_its_magic_bytes() {
     use vectorcraft_testkit::machine_files::{Lzh, hus};
@@ -247,6 +248,8 @@ fn a_hus_opens_by_name_and_by_its_magic_bytes() {
     // The stop is a change to the same thread: three blocks; the cut a trim in the first.
     assert_eq!(dst.blocks.len(), 3);
     assert_eq!(dst.blocks[0].stitches.iter().filter(|s| s.command == vectorcraft_stitch::Command::Trim).count(), 1);
+    s.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
+    s.execute("file.place", &json!({"name": "design.hus", "dataBase64": b64(&bytes)})).expect("places");
 }
 
 /// The formats only read (SEW, HUS) are never written: `document.formats` lists them as readable
@@ -388,7 +391,7 @@ fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
 
 /// Opening a SEW whose preview pictures or header tables aren't blank says that reading it leaves
 /// things out, and writing another format over that file is then refused unless the loss is
-/// acknowledged, as for a PES; a SEW whose pictures are blank opens saying nothing.
+/// acknowledged, as for a PES; a SEW whose pictures and tables are blank opens saying nothing.
 #[test]
 fn writing_over_an_opened_sew_asks_first() {
     let d = std::env::temp_dir().join(format!("vc-embroidery-sew-loss-{}", std::process::id()));

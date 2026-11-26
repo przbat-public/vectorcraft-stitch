@@ -86,11 +86,36 @@ enum Token {
 /// `data` as one HUS stream: its tokens, then the end token, in blocks of at most
 /// [`Lzh::block_tokens`].
 pub fn lzh(data: &[u8], o: &Lzh) -> Vec<u8> {
+    lzh_blocks(data, o).0
+}
+
+/// Where one block of a stream [`lzh_blocks`] writes starts: the bit its 16-bit token count starts
+/// at, the bit its tokens start at (after its three tables), and how many of the data's bytes the
+/// blocks before it make.
+#[derive(Clone, Copy, Debug)]
+pub struct BlockStart {
+    pub at: usize,
+    pub tokens_at: usize,
+    pub made: usize,
+}
+
+/// [`lzh`], with where each block starts ([`BlockStart`]).
+pub fn lzh_blocks(data: &[u8], o: &Lzh) -> (Vec<u8>, Vec<BlockStart>) {
     let mut tokens = tokens(data, o.copies);
     tokens.push(Token::End);
     let per_block = if o.block_tokens == 0 { MOST_IN_A_BLOCK } else { o.block_tokens.min(MOST_IN_A_BLOCK) };
     let mut w = BitWriter::default();
+    let (mut starts, mut made) = (Vec::new(), 0);
     for block in tokens.chunks(per_block) {
+        let (at, made_before) = (w.bits(), made);
+        made += block
+            .iter()
+            .map(|t| match t {
+                Token::Byte(_) => 1,
+                Token::Copy { length, .. } => *length,
+                Token::End => 0,
+            })
+            .sum::<usize>();
         let mut token_freq = vec![0u64; TOKENS];
         let mut distance_freq = vec![0u64; DISTANCE_CODES];
         for t in block {
@@ -133,6 +158,7 @@ pub fn lzh(data: &[u8], o: &Lzh) -> Vec<u8> {
             }
         }
         small_table(&mut w, &distance_freq, &distance_lengths, DISTANCE_COUNT_BITS, None);
+        starts.push(BlockStart { at, tokens_at: w.bits(), made: made_before });
         let (token_codes, distance_codes) = (codes(&token_lengths), codes(&distance_lengths));
         for t in block {
             match t {
@@ -147,7 +173,7 @@ pub fn lzh(data: &[u8], o: &Lzh) -> Vec<u8> {
             }
         }
     }
-    w.finish()
+    (w.finish(), starts)
 }
 
 /// A HUS file: the header (its magic, the counts, the extents, where the streams start, `name` and
@@ -197,6 +223,10 @@ pub fn hus(records: &[(u8, i8, i8)], colours: &[u16], name: &[u8; 8], o: &Lzh) -
 /// Where a SEW file's stitch records start, after its header and previews (the KDE Community
 /// Wiki's *Janome Embroidery Format*: offset 0x1D78).
 pub const SEW_STITCHES_AT: usize = 0x1D78;
+/// Where a SEW header's two tables start, after the colour count and the twelve thread numbers: the
+/// table of 12 values nobody explains, then the stitch counts per colour from 0x32 (the KDE
+/// Community Wiki: offset 0x1A).
+pub const SEW_TABLES_AT: usize = 0x1A;
 /// Where a SEW file's first preview picture starts, after its header (the KDE Community Wiki:
 /// offset 0x4A, a picture of 48 × 32 in one colour).
 pub const SEW_PICTURES_AT: usize = 0x4A;
@@ -455,6 +485,11 @@ impl BitWriter {
                 (self.byte, self.used) = (0, 0);
             }
         }
+    }
+
+    /// The bits written so far.
+    fn bits(&self) -> usize {
+        self.out.len() * u8::BITS as usize + self.used as usize
     }
 
     fn finish(mut self) -> Vec<u8> {

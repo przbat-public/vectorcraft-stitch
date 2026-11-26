@@ -1,6 +1,6 @@
 //! The formats read but never written (VectorCraft Stitch), SEW and HUS: for any records the test
 //! kit's files hold (its HUS compressor, written for these tests, and its SEW builder), the reader
-//! finds the needle points where the records put them, run by run; for damaged, cut and random
+//! finds the needle points where the records put them, run by run; for damaged, cut and random HUS
 //! bytes it gives a design or an error, never a panic, and quickly.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -14,10 +14,13 @@ use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
 /// the end; and a kind no source names.
 const KINDS: [u8; 7] = [0x80, 0x81, 0x82, 0x84, 0x88, 0x90, 0x07];
 
-/// Records of any kind, moves of any size a byte holds, stitches the most of them.
+/// Records of any kind, moves of any size a byte holds, stitches the most of them; each move 0
+/// one time in four, so that records which don't move (an end, a kind no source names) come up,
+/// one in sixteen.
 fn arb_records() -> impl Strategy<Value = Vec<(u8, i8, i8)>> {
     let kind = prop_oneof![6 => Just(0x80u8), 4 => prop::sample::select(KINDS.to_vec())];
-    prop::collection::vec((kind, any::<i8>(), any::<i8>()), 1..400)
+    let step = || prop_oneof![3 => any::<i8>(), 1 => Just(0i8)];
+    prop::collection::vec((kind, step(), step()), 1..400)
 }
 
 /// How the test kit compresses: with or without copies, in blocks of 1 to 63 tokens or one for

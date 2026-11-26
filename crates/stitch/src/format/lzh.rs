@@ -342,7 +342,7 @@ fn token_table(bits: &mut Bits, lengths: &Code) -> Result<Code, Damaged> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_testkit::machine_files::{Lzh, lzh};
+    use vectorcraft_testkit::machine_files::{Lzh, lzh, lzh_blocks};
 
     /// Text and stitch-like bytes, and their extremes: nothing, one byte, a long run of one byte.
     /// The third is skewed so that its tokens' code lengths run from 3 to 10 bits, their counts
@@ -377,15 +377,28 @@ mod tests {
     }
 
     /// A stream that ends before the bytes asked for gives the bytes made, not whole; cut anywhere,
-    /// inside a block's tables or a copy too, it gives the bytes made before the cut, never fewer
-    /// for a later cut, and never a byte the stream doesn't hold.
+    /// inside a block's tables or a copy too, it gives a start of the stream's bytes, never fewer
+    /// for a later cut and never a byte the stream doesn't hold, and cut in a later block's count
+    /// or tables, exactly the bytes of the blocks before it.
     #[test]
     fn a_stream_cut_short_keeps_what_it_made() {
         let data = samples().remove(1);
         let ended = expand(&lzh(&data, &Lzh { copies: true, block_tokens: 300 }), data.len() + 10).unwrap();
         assert_eq!((ended.bytes.as_slice(), ended.whole), (data.as_slice(), false));
+        let mut checked = 0;
         for o in [Lzh { copies: true, block_tokens: 300 }, Lzh { copies: false, block_tokens: 50 }, Lzh { copies: true, block_tokens: 7 }] {
-            let stream = lzh(&data, &o);
+            let (stream, starts) = lzh_blocks(&data, &o);
+            // Cut anywhere from a later block's count to the end of its tables, its tokens not begun:
+            // exactly the bytes of the blocks before it.
+            let bits = u8::BITS as usize;
+            for b in starts.iter().skip(1) {
+                for cut in b.at.div_ceil(bits)..=b.tokens_at / bits {
+                    let e = expand(&stream[..cut], data.len()).unwrap();
+                    assert_eq!(e.bytes, data[..b.made], "{o:?}: cut at {cut}, in the block from bit {}", b.at);
+                    assert_eq!(e.whole, b.made == data.len(), "{o:?}: cut at {cut}");
+                    checked += 1;
+                }
+            }
             let mut before = 0;
             for cut in 0..=stream.len() {
                 let e = expand(&stream[..cut], data.len()).unwrap_or_else(|_| panic!("{o:?}: cut at {cut} refused"));
@@ -396,6 +409,7 @@ mod tests {
             }
             assert_eq!(before, data.len(), "{o:?}: whole at the end");
         }
+        assert!(checked > 0, "streams of several blocks");
     }
 
     /// A table that counts more codes than it has, one that is no complete code (too few codes or

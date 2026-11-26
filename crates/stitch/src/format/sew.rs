@@ -37,11 +37,13 @@ use crate::{Error, Pattern, Result, Thread};
 const WHAT: &str = "SEW";
 /// The most colours a SEW holds: its header lists twelve thread numbers.
 pub(crate) const MAX_COLORS: usize = 12;
-/// Where the thread numbers start, after the colour count (u16 each).
-const THREADS_AT: usize = 2;
+/// The header's numbers, the colour count and the thread numbers, are u16, little endian.
+const NUMBER_BYTES: usize = 2;
+/// Where the thread numbers start, after the colour count.
+const THREADS_AT: usize = NUMBER_BYTES;
 /// Where the header's two other tables start, after the twelve thread numbers: then the pictures,
 /// up to the stitch records. Reading leaves all of it out.
-const TABLES_AT: usize = THREADS_AT + MAX_COLORS * 2;
+const TABLES_AT: usize = THREADS_AT + MAX_COLORS * NUMBER_BYTES;
 /// Where the stitch records start, after the header and the pictures (the KDE wiki: 0x1D78).
 pub(crate) const STITCHES_AT: usize = 0x1D78;
 
@@ -54,7 +56,7 @@ pub(crate) fn losses(bytes: &[u8]) -> Vec<Loss> {
 
 pub fn read(bytes: &[u8]) -> Result<Pattern> {
     let mut r = Reader::new(bytes);
-    let (Some(count), true) = (r.take(2).map(|b| u16::from_le_bytes([b[0], b[1]])), bytes.len() > STITCHES_AT) else {
+    let (Some(count), true) = (r.take(NUMBER_BYTES).map(|b| u16::from_le_bytes([b[0], b[1]])), bytes.len() > STITCHES_AT) else {
         return Err(Error::Format(format!("the {what} file has no stitch records", what = WHAT)));
     };
     let colors = usize::from(count);
@@ -64,7 +66,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
     r.seek(THREADS_AT);
     let mut threads: Vec<Thread> = Vec::with_capacity(colors);
     for block in 0..colors {
-        let Some(b) = r.take(2) else { break };
+        let Some(b) = r.take(NUMBER_BYTES) else { break };
         let number = u16::from_le_bytes([b[0], b[1]]);
         // Janome's chart numbers its threads from 1: 0 and a number past it name none.
         let named = Palette::Jef.thread(usize::from(number));
@@ -83,7 +85,7 @@ mod tests {
     use crate::format::Format;
     use crate::{Block, Command, Stitch};
     use vectorcraft_geom::Point;
-    use vectorcraft_testkit::machine_files::{SEW_STITCHES_AT, sew, sew_from_jef};
+    use vectorcraft_testkit::machine_files::{SEW_STITCHES_AT, SEW_TABLES_AT, sew, sew_from_jef};
 
     fn design() -> Pattern {
         let mut p = Pattern::default();
@@ -110,6 +112,7 @@ mod tests {
         let jef_bytes = Format::Jef.write(&design()).unwrap();
         let sew_bytes = sew_from_jef(&jef_bytes).unwrap();
         assert_eq!(SEW_STITCHES_AT, STITCHES_AT);
+        assert_eq!(SEW_TABLES_AT, TABLES_AT, "the tables start where the KDE wiki puts them");
         let (from_sew, from_jef) = (read(&sew_bytes).unwrap(), Format::Jef.read(&jef_bytes).unwrap());
         assert_eq!(from_sew.blocks, from_jef.blocks);
         assert_eq!(from_sew.points().filter(|s| s.command == Command::Trim).count(), 1);

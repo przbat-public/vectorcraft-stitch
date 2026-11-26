@@ -327,7 +327,10 @@ Check tab and the commands' `format` never take it (`Format::readable` finds it 
 for opening); the engine lists it in
 `FORMATS` as read and not written, with no options, and in `OPEN_EXTS`, `PLACE_EXTS` and
 `UNASSOCIATED_EXTS`, not in the export's param docs; its tests build its files in the test kit
-(`crates/testkit/src/machine_files.rs`), and it has no pinned exports.
+(`crates/testkit/src/machine_files.rs`), its fuzz samples go in `EMBROIDERY_READ_ONLY`
+(`read_only_samples`, files the test kit builds) in `crates/engine/tests/import_fuzz.rs`, not in
+`EMBROIDERY` (whose samples are exports, which a format only read refuses), and it has no pinned
+exports.
 
 ## Decisions register
 
@@ -569,6 +572,10 @@ without asking the owner. A new decision gets a row here in the PR that makes it
 | 2026-11-18 | Choices of the session that read HUS, for the owner's review: a record of kind 0x88 is read as a cut, 0x82 as a stop, 0x90 as the end of the design or of a part of it (the records after it read), a kind no source names as a move with the needle up; a file cut in its last stream reads as far as its data goes (one cut earlier is refused by its header); the header's eight bytes read as the design's name; the tests' HUS files written by a compressor in the test kit (test code, no export); pyembroidery run over the owner's HUS files too, as an outside check of our reading | the real files show each: 0x88 has no move and comes before a jump, and pyembroidery reads it as a cut too; 0x82 has no move, comes between stitches and is found in the appliqué and cutwork designs, and a stop read where there was none costs a pause while one missed sews an appliqué's next step on nothing; 39 files go on after a 0x90 with a colour change and more records, which the header counts; two files end early, and pyembroidery reads one of them on into data the file doesn't hold | ignoring 0x88 and 0x82; stopping at 0x82 or at the first 0x90, as pyembroidery does | `format/hus.rs`; `a_design_reads_as_written`, `cut_and_damaged_files`, `prop_read_only_formats.rs` |
 | 2026-11-26 | Every HUS colour change (0x84) moves on one colour of the list, whether it moves the needle or not and whether anything is sewn after it: two in a row pass over two colours, one before the first stitch over the first | the project owner's choice („Każda zmiana = następny kolor (polecam)”), after a check found that the colour after two colour changes in a row depended on whether the first moved the needle: Weiler gives 0x84 as the next colour of the list, and every real file lists one more colour than its colour changes | a colour taken only for what is sewn after it; leaving it to how the changes are written | `hus::threads`; `every_colour_change_moves_on_one_colour` |
 | 2026-11-26 | HUS's estimated colours stay (the 2026-11-18 row), a VP3 export writing them as its threads' colours | the project owner's choice („Zostaje (polecam)”), asked again once a check found that a VP3 export writes the estimates into the file, where the 2026-11-18 choice took them for only a preview: whatever colours the reader gives, a VP3 export writes them the same way | no colours, as DST | `hus::COLOURS`; `vp3::thread_record` |
+| 2026-11-26 | A public-domain implementation of a format's method may be read, and cited by URL, as a source of its layout, when its licence is on the allowlist (`LicenseRef-Public-Domain`); its code is never copied. Haruhiko Okumura's ar002 (1990) is the first: the HUS streams' bit layout, which no wiki gives, is confirmed against its source (`lzh.rs` says which rules are ar002's and which sizes HUS's) | the project owner's choice („Dopuścić ar002 jako źródło (polecam)”), after the coordinator's check found that the expander's layout rested on a program named but not cited, with no rule on reading one: the layout had been written from the method as known and checked on the owner's 6,944 files | citing nothing beyond the wikis; reading other implementations (ARJ's, LHA's, ArchiveLib's and their ports) | `format/lzh.rs` (its sources); `a_stream_written_by_hand_expands`, `a_code_of_sixteen_bits_is_read` |
+| 2026-11-26 | Writing another format over the file of an opened SEW or HUS asks first, whatever opening it said, the question and the refusal saying in words of their own that VectorCraft can't write the file again as it is, the file's own format named first; opening says nothing of it; an export in the file's own format over itself is refused for that format | the project owner's choice („Pytać najpierw (polecam)”): VectorCraft never writes either, so a file written over is gone as SEW or HUS for good, as a file whose opening lost something is (the 2026-10-22 rule) | writing over it unasked, as for a file of a format written | `fileio/embroidery/mod.rs` (`NOT_WRITTEN_NOTE`), `fileio/load.rs`, `fileio/export.rs`, `ui-egui/src/io/save.rs` (`ask_before_losing`); `writing_over_an_opened_hus_asks_first`, `writing_over_an_opened_sew_asks_first`, `replacing_an_opened_hus_asks_in_words_of_its_own`, `the_refusal_to_write_over_a_format_only_read_is_translated` |
+| 2026-11-26 | A HUS whose streams stop short of the records its header counts, or a SEW whose records run out before their end record, opens as far as it goes saying "the file ends early: the design may be incomplete", and writing over it asks first; a JEF cut short is unchanged | the project owner's choice („Otwierać z uwagą (polecam)”): two of the owner's files are cut short, and opened with no note a design missing its end could be sewn as whole | opening it saying nothing, as JEF does; refusing it | `format::Loss::EndsEarly`, `hus::losses`, `sew::losses`; `a_hus_or_sew_cut_short_says_so`, `cut_and_damaged_files` |
+| 2026-11-26 | A SEW gives its threads by block, as a JEF does: each block of records between colour changes takes the list's next thread, so colour changes in a row take one thread and one before the first record takes none, and a block of moves alone takes its thread too (opening leaves that block out); HUS's rule that every colour change moves on one colour is HUS's alone | the project owner's choice („Jak JEF, z opisem i testem (polecam)”): SEW's records are JEF's, read as JEF has read them, and no real SEW file has been seen to settle it otherwise | each colour change moving on one thread, as HUS does | `format/sew.rs`; `colour_changes_in_a_row_take_one_thread` |
 
 ## Clean-room for embroidery
 
@@ -586,16 +593,24 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   [HUS page](https://community.kde.org/Projects/Liberty/File_Formats/Husqvarna_HUS) and Jason
   Weiler's), and the KDE wiki's
   [Janome page](https://community.kde.org/Projects/Liberty/File_Formats/Janome_Embroidery_Format)
-  for SEW. EduTechWiki's pages on HUS, XXX and U?? and its overview's encoding table were written
-  by pyembroidery's author: for those formats pyembroidery is no second source, only a check that
-  we read the page as its author meant.
+  for SEW; for the method of HUS's compressed streams, Haruhiko Okumura's public-domain
+  [ar002](https://okumuralab.org/~okumura/compression/ar002/). EduTechWiki's pages on HUS, XXX and
+  U?? and its overview's encoding table were written by pyembroidery's author: for those formats
+  pyembroidery is no second source, only a check that we read the page as its author meant.
+- **Public-domain implementations:** a public-domain implementation of a format's method, its
+  licence on the allowlist (`LicenseRef-Public-Domain`), may be read and cited by URL as a source of
+  the format's layout, its facts written in our own code; its code is never copied (the 2026-11-26
+  row; ar002 is the one read so far). Every other implementation stays unread, whatever its
+  licence: GPL ones (below), permissive ones such as pyembroidery (MIT, below), and any whose
+  licence isn't on the allowlist.
 - **Behaviour of professional software:** public help pages, such as
   [Wilcom EmbroideryStudio's online help](https://docs.wilcom.com/embroiderystudio/28/en/index.htm),
   may be read and cited by URL for concepts and indicative values. Don't copy their text or tables,
   and never run or inspect those programs.
 - **`pyembroidery` (MIT)** may be used only as an outside oracle, in a throwaway environment, to
   check that our files read there and theirs read here, and that files the project owner holds, read
-  on their computer, read there as they do here (the 2026-11-18 rows). Never read its code or copy
+  on their computer, read there as they do here (the 2026-11-18 rows; this last use is a choice of
+  the session that read HUS, for the owner's review). Never read its code or copy
   it into this repository. One exception, decided by the project owner (2026-10-21): the thread
   palette tables in `crates/stitch/src/thread.rs` (each thread's screen colour and name, in
   Brother's and Janome's order) are pyembroidery's, credited in `NOTICE` with its MIT notice,
@@ -609,8 +624,8 @@ The upstream rules stand (no Adobe software, no GPL code). For embroidery specif
   Ink/Stitch's *user documentation* may be read.
 - No test files made with commercial embroidery software in the repository. Write test inputs from
   scratch in code. Files the project owner holds may be read on their computer to check a reader,
-  never committed, published or named in public text, and software among them is never run or
-  inspected (the 2026-11-18 row).
+  never committed, published or named in public text, and software among them is never run,
+  listed, unpacked or opened (the 2026-11-18 row).
 - **Real designs for testing** come from public projects whose licence allows it, made with open
   tools (today: the Emoji Embroidery Project, CC BY-SA 4.0 as its mirror's index says, digitized
   with Ink/Stitch; two radish designs' artwork licences are unverified). They are

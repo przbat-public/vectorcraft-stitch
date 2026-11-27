@@ -590,10 +590,10 @@ fn similar_areas_are_alike_in_colour_kind_and_size() {
     assert_eq!(out.similar(150, 50), vec![]);
 }
 
-/// Similar areas are of a similar shape too (the project owner's choice, 2026-11-18): two navy bars,
-/// one upright, and one at 45°, are each other's whichever way they lie, but not the navy square of
-/// about their size; a bar a little shorter is like them still. The bar at 45° has a box about
-/// square: a ratio of its box's sides would take it for the square.
+/// Similar areas are of a similar shape too (the project owner's choice, 2026-11-18): three navy
+/// bars, lying, upright and at 45°, are each other's whichever way they lie, but not the navy square
+/// of about their size; a fourth, a little shorter, is like them still. The bar at 45° has a box
+/// about square: a ratio of its box's sides would take it for the square.
 #[test]
 fn similar_areas_are_alike_in_shape_whichever_way_they_lie() {
     // Filled bars 6 to 1 (120 × 20 px, 12 × 2 mm: the window's test bar's 21 × 3.5 mm in its

@@ -82,8 +82,10 @@ const TRACE_MAKE: [&str; 2] = ["imageTrace.make", "imageTrace.makeAndExpand"];
 /// first selected image or Image Trace object in paint order, as `imageTrace.make` takes it) is a
 /// live object or the image it holds. Image Trace refuses one, and the status bar's field shows
 /// only the start of a refusal; Digitize Image… beside them, which changes it, stays on (the
-/// session's choice, 2026-11-18). The palette, a shortcut and agents still get Image Trace's
-/// refusal.
+/// session's choice, 2026-11-18). Every other way to run Make still gets Image Trace's refusal: the
+/// Image Trace panel's Trace and its Preview, the Properties panel's and the Control bar's preset
+/// list (for the live object) and Image Trace button (for the image it holds), the canvas task
+/// bar's Image Trace, the command palette, a shortcut and agents.
 pub fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     (TRACE_MAKE.contains(&id) && traces_a_live_object(app)).then_some(false)
 }

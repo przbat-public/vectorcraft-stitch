@@ -595,9 +595,10 @@ const SIMILAR_SHARE: f64 = 0.25;
 
 /// Two areas alike in size are alike in shape too when their elongations (how long each is for its
 /// width, whichever way it lies: `Regions::elongations`) lie within this share of the larger: the
-/// size rule's quarter, an estimate (the project owner's choice, 2026-11-18, „Tak, także kształt
-/// (polecam)”): a 21 × 3.5 mm bar, 6 to 1, is like bars down to 4.5 to 1, not like an 8.8 mm
-/// square of about its size, 1 to 1.
+/// size rule's quarter, an estimate, chosen while building (a similar shape too is the project
+/// owner's choice, 2026-11-18, „Tak, także kształt (polecam)”, the threshold left to the session):
+/// a 21 × 3.5 mm bar, 6 to 1, is like bars down to 4.5 to 1, not like an 8.8 mm square of about its
+/// size, 1 to 1.
 const SIMILAR_SHAPE_SHARE: f64 = 0.25;
 
 /// What a run has made so far, stage by stage: shared outputs, cheap to clone and to hand to

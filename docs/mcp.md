@@ -8611,10 +8611,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   group named "Image Trace" with a trace value, so that `imageTrace.setView`, `expand` and `release` act on it), the
   image first in it, hidden, the colour blocks after it, its embroidery's `digitizing` holding the settings it was
   made with by their file keys (all but `width`, `height` and `fit`: its size is its image's as placed), a
-  fingerprint of its objects and its size in millimetres; given as `id` with `live: true` it is digitized again in its
-  place keeping its id, and without `live` it becomes plain objects, its image back on a template layer (where the
-  live object's place isn't sewn, its image left in that place, as an image's is); the image it holds, given as `id`,
-  stands for it. A live object given (or its image) starts from the settings it keeps, as the window opens on it, for
+  fingerprint of its objects and its size in millimetres; given as `id` with `live: true` it is digitized again keeping
+  its id (where its place isn't sewn, on the layer its design goes to), and without `live` it becomes plain objects,
+  its image back on a template layer (where the live object's place isn't sewn, its image left in that place, as an
+  image's is); the image it holds, given as `id`, stands for it. A live object given (or its image) starts from the
+  settings it keeps, as the window opens on it, for
   a dry run and Create alike: a setting the request gives wins, one given as `null` is the default, the rest are the
   live object's own (the reply's `settings` says which were used). Kept settings the engine refuses (a newer
   version's, a file edited by hand, a crop outside its image once relinked) are neither a failure nor dropped
@@ -8670,10 +8671,13 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   `alternatives` after its own, its `area` (mm²), `areaCount`, `share` of the image and `sewnShare` of what is sewn
   (percent), `mergedInto` and the `choice` it took; each of `areas` gives `thread`, `kind` (`"fill"`, or `"line"` for
   an area sewn along its middle: a thin line, one kept below the smallest area too, or any area of a colour set to
-  `lines`; an area with no centre line to sew along is a `"fill"`), `sewn`, `size` `{area, width, height}` (mm², mm),
-  `widest` (its widest inscribed width, mm), its `line` (null for an area not sewn along its middle) `{width (mm: its
+  `lines`; an area with no centre line to sew along is a `"fill"`), `sewn`, `size` `{area, width, height}` (mm², mm:
+  of its own traced shape once the shapes are done, the curve its outline follows before it is made solid under its
+  islands or grown under its neighbours, as the image window's inspector gives it; of its pixels where it has none),
+  `widest` (its widest inscribed width, mm, of its pixels: the window judges satin by the shape as it is made, with the
+  islands it is made solid under and its shares of the centre lines beside it, which can be wider), its `line` (null for an area not sewn along its middle) `{width (mm: its
   pixels over its centre line's length), length (mm, of its centre line), pieces, ends, junctions}`, `box` `[left,
-  top, right, bottom]` (mm), the area it lies `inside` alone and whether it is
+  top, right, bottom]` (mm, on the page: the box `size` measures), the area it lies `inside` alone and whether it is
   `sewnOver` that one, how many smaller areas `joined` it, what it `touches` `[{area, edge, under}]` (the edge in mm;
   `under`: that one is sewn before it), the areas it is `grownUnder`, its `outline` (with `outlines: true`) and its
   `order` `{taken: "notSewn"|"sameThread"|"newThread", after: [{area, because: "detail"|"inside"|"larger"}]}`. The
@@ -8693,10 +8697,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   document settings it changes, `embroidery.setup`'s `fabric`, `fillAngle` and `joinSameColor` (refused as that
   command refuses them; no other setting): its objects are planned with them, and its Create makes them the
   document's in the same undo step, with its palette. In the app the window is a dialog: `ui.dialog.set` sets its
-  fields (the settings by their names, `areaChanges` too) and `ui.dialog.confirm` is Create, or Keep as Live Object
-  with the field `keep: "live"` (any other `keep` refused); on a live object opened again it is Convert to Plain
-  Objects, and with `keep: "live"` Update Live Object, whatever the window's coral button is; it never asks about
-  hand edits, which the window asks people about.
+  fields (the settings by their names, `areaChanges` too) and `ui.dialog.confirm` is the window's coral button, as
+  Cmd/Ctrl+Enter is (the project owner's choice, 2026-11-26): Create on a new image, Update Live Object on a live
+  object opened again; with the field `keep: "live"` it keeps a live object (Keep as Live Object, or Update Live
+  Object), with `keep: "plain"` it makes plain objects (Create, or Convert to Plain Objects on a live object opened
+  again), and any other `keep` is refused; it never asks about hand edits, which the window asks people about.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

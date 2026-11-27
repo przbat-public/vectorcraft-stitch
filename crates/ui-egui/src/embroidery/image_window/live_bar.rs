@@ -422,9 +422,10 @@ pub(crate) struct Maker {
 
 /// The Live bar's two making buttons, the coral one first: on a new image Create Embroidery
 /// Objects and Keep as Live Object; on a live object opened again (`reopened`) Update Live Object,
-/// digitizing it again in place, and Convert to Plain Objects (the project owner's choice,
-/// 2026-11-18, „Aktualizacja jako główny (polecam)”: opened to be adjusted, the coral Create turned
-/// it into plain objects without saying so).
+/// digitizing it again and keeping it live (where its place isn't sewn, on the layer its design goes
+/// to), and Convert to Plain Objects (the project owner's choice, 2026-11-18, „Aktualizacja jako
+/// główny (polecam)”: opened to be adjusted, the coral Create turned it into plain objects without
+/// saying so).
 pub(crate) fn makers(reopened: bool) -> [Maker; 2] {
     let keep = crate::et!("Keeps the image with the objects made of it, so that Digitize Image… can change them again.");
     if reopened {
@@ -640,8 +641,8 @@ fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang, room: f32) {
 
 /// The status bar's words once Create made the objects: how many, in how many threads, and the
 /// hidden template layer the image lies on afterwards (`layer`, its name: the one Create moved it
-/// to, or its own where it stayed in its place, which isn't sewn; `None` where it lies on none). The counts stand in parentheses, so that every language can write them as it
-/// inflects a count.
+/// to, or its own where it stayed in its place, which isn't sewn; `None` where it lies on none).
+/// The counts stand in parentheses, so that every language can write them as it inflects a count.
 pub(crate) fn created_words(objects: u64, threads: u64, layer: Option<&str>) -> String {
     let (objects, threads) = (objects_words(objects), threads_words(threads));
     match layer {
@@ -656,9 +657,9 @@ pub(crate) fn created_words(objects: u64, threads: u64, layer: Option<&str>) -> 
 /// The status bar's words once the window made what it made (`reply`, Create's; `layer` the name
 /// of the hidden template layer the image lies on afterwards, `None` where none): plain objects of
 /// a new image ([`created_words`]), a new live object ([`kept_live_words`]), a live object updated
-/// in place, or one converted to plain objects; told apart by whether it made a live object and
-/// whether it was made on one (the reply's `edited`, given for a live object only). What happened
-/// comes first, as the status bar shows a message's start alone when it is long.
+/// (digitized again, kept live), or one converted to plain objects; told apart by whether it made a
+/// live object and whether it was made on one (the reply's `edited`, given for a live object only).
+/// What happened comes first, as the status bar shows a message's start alone when it is long.
 pub(crate) fn made_words(reply: &Value, layer: Option<&str>) -> String {
     let objects = reply["created"]["objects"].as_u64().unwrap_or(0);
     let threads = reply["stats"]["threadCount"].as_u64().unwrap_or(0);
@@ -887,7 +888,8 @@ mod tests {
     /// What the status bar says after the window made something, by what it made and what it was
     /// open on: a new image's plain objects or live object, a live object updated (Undo bringing
     /// back the one before, not removing it) or converted (Undo bringing it back); what happened
-    /// first, and the template layer only where the image moved to one.
+    /// first, and the hidden template layer wherever the image lies on one afterwards (the one
+    /// Create moved it to, or its own).
     #[test]
     fn the_status_says_what_was_made_and_what_undo_does() {
         let reply = |live: bool, edited: Value| json!({"created": {"objects": 6, "live": live}, "stats": {"threadCount": 4}, "edited": edited});
@@ -905,7 +907,8 @@ mod tests {
         for (live, edited, said) in cases {
             assert_eq!(made_words(&reply(live, edited.clone()), Some("T")), said, "live {live}, edited {edited}");
         }
-        // The image left in its place, which isn't sewn: no template layer named.
+        // The image on no hidden template layer afterwards (left on an ordinary layer whose place
+        // isn't sewn, say): no layer named.
         assert_eq!(made_words(&reply(false, Value::Null), None), "Created 6 objects (4 threads). Undo removes them.");
         assert_eq!(
             made_words(&reply(false, json!(true)), None),

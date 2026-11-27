@@ -3,7 +3,7 @@
 //! Digitizing from an image).
 //!
 //! - **One of upstream's dialogs** (a row of the dialog registry that draws its own window): agents
-//!   reach it with `ui.inspect`, `ui.dialog.set` and `ui.dialog.confirm` (Create), Escape closes it
+//!   reach it with `ui.inspect`, `ui.dialog.set` and `ui.dialog.confirm` (the coral button), Escape closes it
 //!   (a popup open in it first), and another dialog opened (Document Setup) takes its place: there
 //!   is one dialog at a time, so the window closes, its settings remembered. Its fields are small
 //!   JSON: the engine's settings ([`SETTING_FIELDS`]), the palette its threads are matched to, and
@@ -21,16 +21,18 @@
 //!   back to the defaults. Create forgets them.
 //! - **Create** applies the run shown when it is of the settings as they are (at once), else when
 //!   it is (the window says so); then the window closes, what was made selected. Enter only commits
-//!   the field typed in; Cmd/Ctrl+Enter is Create (the coral button), the field being typed in
-//!   committed first as Enter would, a value it refuses making nothing (the project owner's choice,
-//!   2026-11-11).
+//!   the field typed in; Cmd/Ctrl+Enter is the coral button (Create, or Update Live Object on a live
+//!   object opened again), the field being typed in committed first as Enter would, a value it
+//!   refuses making nothing (the project owner's choices, 2026-11-11 and 2026-11-18).
 //! - **Keep as Live Object** makes the same as a live object, the image kept in it, which
 //!   Digitize Image… opens again with the settings it was made with (the window's remembered ones
 //!   first, in a session). On a live object opened again the two are Update Live Object (coral,
-//!   digitizing it again in place) and Convert to Plain Objects (the project owner's choice,
-//!   2026-11-18); on one whose objects were changed by hand, both ask first in the Live bar (the
-//!   project owner's choice, 2026-11-16, „Zastąpić, pytając najpierw (polecam)”).
-//!   Agents keep one with the field `keep: "live"` and `ui.dialog.confirm`, which never asks.
+//!   digitizing it again and keeping it live; where its place isn't sewn, on the layer its design
+//!   goes to) and Convert to Plain Objects (the project owner's choice, 2026-11-18); on one whose
+//!   objects were changed by hand, both ask first in the Live bar (the project owner's choice,
+//!   2026-11-16, „Zastąpić, pytając najpierw (polecam)”).
+//!   Agents keep one with the field `keep: "live"` and `ui.dialog.confirm`, which never asks,
+//!   and make plain objects of one with `keep: "plain"` (the project owner's choice, 2026-11-26).
 
 mod answers;
 pub(crate) mod colour_list;

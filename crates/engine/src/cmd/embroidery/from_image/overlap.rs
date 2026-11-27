@@ -94,8 +94,8 @@ pub(super) struct Shapes {
     /// Each area's own shape ([`Shapes::own`]) measured (working pixels): its area, and its box's
     /// width and height. What the window says of the area's size: the traced curve its outline
     /// follows, where its pixels, counted by their centres, read a curved edge short by up to a pixel
-    /// a side (a 4.2 mm dot read 3.5 mm). `None` for an empty shape (the background's), or one whose
-    /// box isn't finite.
+    /// a side (a 4 mm dot, its curve 3.8 mm across, read 3.5 mm). `None` for an empty shape (the
+    /// background's), or one whose box isn't finite.
     pub(super) measured: Vec<Option<(f64, f64, f64)>>,
 }
 

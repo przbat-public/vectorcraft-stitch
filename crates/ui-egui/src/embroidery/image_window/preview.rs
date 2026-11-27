@@ -551,8 +551,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
         draw(&mut live.preview, &painter, view);
     }
     // The areas Don't Sew leaves out, marked with dashes round them in every view but the picture
-    // itself (in Compare, on the step's side): unsewn, they show the fabric, and would otherwise be
-    // found again only by a click.
+    // itself (in Compare, on the step's side): unsewn, they show the fabric in the Stitches view,
+    // while the Colors view paints them in their thread's colour and the Shapes view draws their
+    // outline, as if they were sewn; without the dashes only a click would tell them apart.
     if view != View::Original {
         let side = if view == View::Compare { Rect::from_min_max(pos2(split_x, pane.top()), pane.max) } else { pane };
         dashed(&painter.with_clip_rect(side), outputs, &outputs.left_out_at(), xf);

@@ -201,7 +201,8 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
     if waits_for_ime(app, id) {
         return false;
     }
-    // VectorCraft Stitch: the Embroidery panel's own commands.
+    // VectorCraft Stitch: the Embroidery panel's own commands, and Image Trace's Make and Make and
+    // Expand greyed on a live object (`embroidery::menu::enabled`).
     if let Some(on) = crate::panels::embroidery::enabled(app, id) {
         return on;
     }

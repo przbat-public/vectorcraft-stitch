@@ -1,6 +1,6 @@
 # Digitizing from an image: the window's words
 
-> **Last updated:** 2026-11-17 · **Change:** the inspector's reasons from what the planner sews of an area ("No part wider than {width} mm" under "Auto: satin"; "Wider than {width} mm: tatami", "Its long parts as satin, the rest tatami", "Too short for satin") and Satin greyed where it sews none, or kept there and sewn as tatami (the project owner's choices); before that, where „Obiekt dynamiczny” comes from, said as it is; before that, Apply to Similar Areas and an area's own choices greyed out at the most area changes; before that, the Check tab's rule for a live object scaled since it was digitized; before that, the live object: Keep as Live Object, the question before hand edits are replaced, opening one again, the Object tab's Edit in Digitize Image… and its kind; before that, Apply to Similar Areas, Show in Sewing Order and its place, step 4's list of area changes and why one applies to none; before that, the area inspector: an area's facts, how Auto sews it and why, why Satin isn't offered, and its stitches (the inspector PR); before that, Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
+> **Last updated:** 2026-11-18 · **Change:** the fixes after the area inspector was seen in the app: one name for the live object, „żywy obiekt” (the Object tab's kind, the Check tab's rule, the question, Image Trace's refusal, said as itself: „żywy obiekt: edytuj go w…”), Update Live Object and Convert to Plain Objects on a live object opened again and their status words, Apply to Similar Areas by size and proportions and "Applied to N Similar Areas", the angle greyed where no tatami rows are sewn, Show in Sewing Order greyed on an area left out, Satin's reasons without a second width, the inspector's reasons without full stops, step 4 saying "not sewn", „2,83 piksela”, threads („nici”) in the status bar (the project owner's choices), Create's words without the template layer where the image lies on no hidden one, and the notes and tooltips that named Create or a place saying the act instead; before that, the inspector's reasons from what the planner sews of an area ("No part wider than {width} mm" under "Auto: satin"; "Wider than {width} mm: tatami", "Its long parts as satin, the rest tatami", "Too short for satin") and Satin greyed where it sews none, or kept there and sewn as tatami (the project owner's choices); before that, where „Obiekt dynamiczny” comes from, said as it is; before that, Apply to Similar Areas and an area's own choices greyed out at the most area changes; before that, the Check tab's rule for a live object scaled since it was digitized; before that, the live object: Keep as Live Object, the question before hand edits are replaced, opening one again, the Object tab's Edit in Digitize Image… and its kind; before that, Apply to Similar Areas, Show in Sewing Order and its place, step 4's list of area changes and why one applies to none; before that, the area inspector: an area's facts, how Auto sews it and why, why Satin isn't offered, and its stitches (the inspector PR); before that, Embroidery Settings…'s tooltip names what closes, and the Shapes step's notes say „Wyżej/Niżej” (the review of PR #38); before that, the Stitches step's rules made short enough for their fields; before that, the Stitches step's outline rows and their warning; before that, the Stitches step's rows and notes; before that, the Shapes step's controls and notes (the window's second part); before that, ↺ named by the row's thread, and two Polish tooltips made commands; before that, nothing to sew said by its cause (every color left out, or every area the background); before that, what the number of colors counts, beside the threads (a note and a row's words); before that, the first part of the window (the window, its preview, the Image and Colors steps, the Live bar and Create): every word it draws, in English and Polish, for the project owner's review.
 
 The project owner asked for the window's words to come back for review here, in English and Polish (the decision of 2026-11-11 on note 09's corrections to the mockups).
 
@@ -37,9 +37,16 @@ The tables below list the window's own words in the order the code draws them; w
 - The colour list's two tooltips that were descriptions in Polish are commands, as in English: "Szyj te kolory jako jeden.", "Szyj te kolory znowu, tak jak wybierze Auto.".
 - The Shapes step's field for thin lines keeps the owner's words, "Thin lines sewn along their middle below [1 mm]" („Cienkie linie szyte środkiem poniżej”), its field after them; languages that put "below" after the number reword it so that the field can follow: Japanese, Korean, Turkish and Chinese name the width's upper limit ("the upper limit of the width of thin lines sewn along their middle"), and Hindi, Hungarian, Georgian and Finnish say "width less than".
 - Nothing to sew is said by its cause: every color left out ("Nothing to sew: every color is left out."), or every area the background, which says what to do ("Nothing to sew: every area is the background. Sew the background, or crop less."); Create's refusal and the note say the same.
-- A digitized image kept live is „żywy obiekt” in Polish, the mockup's word, while „Obiekt dynamiczny”, the Object tab's word for blends, envelopes and the other live objects (the fork's own row `Live object`, added with the tab on 2026-10-25), stays as it is; the other languages take that row's word, as their catalogues give it.
+- A live object is „żywy obiekt” in Polish in every word, the mockup's word (the project owner's choice of 2026-11-18, one name): the Object tab's kind for it and for blends, envelopes and the other live objects („Żywy obiekt”, the fork's own row `Live object`, which said „Obiekt dynamiczny” before), the Check tab's rule, the question before hand edits are replaced, Image Trace's refusal; „Żywy obraz zdigitalizowany” went, as „żywy obraz” is also the idiom for a tableau vivant.
 - Create's words for a live object put its counts after a colon, "Created a live object: 23 objects (7 threads).", so that no language needs a case after "of".
 - The question before hand edits are replaced answers with "Don't Replace" and "Replace" rather than "Cancel": the window's × is "Cancel" to screen readers, and while the question shows the two would share a name and do different things.
+- The inspector's reasons and states, as a line or as a greyed control's tooltip, have no full stop; help that says what a control does is a sentence and keeps its stop.
+- Satin's reason on an area too wide says the width satin takes ("Satin sews parts up to 12 mm wide: this area is wider"), not a second width of the area's beside its box's sides, which read as two widths of one thing.
+- Step 4's row for a Don't Sew change says the area's state, "not sewn" („nieszyte”, note 09's word), as the preview's tooltip does; only the inspector's choice says "Don't sew".
+- The status words after Create, Update or Convert say what happened first, in about 30 characters before the colon, as the status bar shows a long message's start alone (the rest on hover and to screen readers).
+- The threads sewn are "threads" („nici”) in the window, the status bar's counters and the Sewing order's footer ("Threads", „Nici”); colours are only the image's (the project owner's choice of 2026-11-18).
+- The coarse image's resolution keeps both decimals ("2.83", "3.00"), so that languages giving a fraction's noun a case of its own (Polish „2,83 piksela”, Czech, Russian, Ukrainian) need one form.
+- A live object is named by its picture's name (the image it holds) in the window's title, the Object tab and the Check tab, never „Image Trace”, its group's name, which is upstream's mark of a trace.
 
 ## The window: its title, its run, and what it remembers
 
@@ -148,7 +155,7 @@ The tables below list the window's own words in the order the code draws them; w
 | {count} color besides the background, and the background's color sewn where the design encloses it.\|{count} colors besides the background, and the background's color sewn where the design encloses it. | {count} kolor oprócz tła i kolor tła szyty tam, gdzie otacza go wzór.\|{count} kolory oprócz tła i kolor tła szyty tam, gdzie otacza go wzór.\|{count} kolorów oprócz tła i kolor tła szyty tam, gdzie otacza go wzór. |
 | {count} color was too small and joined others\|{count} colors were too small and joined others | {count} kolor był za mały i dołączył do innych\|{count} kolory były za małe i dołączyły do innych\|{count} kolorów było za małych i dołączyło do innych |
 | Match to threads | Dopasuj do nici |
-| Create sets the document's thread palette to {palette}. | Utworzenie ustawi paletę nici dokumentu na {palette}. |
+| Making the objects sets the document's thread palette to {palette}. | Utworzenie obiektów ustawi paletę nici dokumentu na {palette}. |
 | Smallest area | Najmniejszy obszar |
 | Smaller specks, such as JPEG noise, join the color around them. | Mniejsze plamki, np. szum JPEG, dołączają do koloru wokół nich. |
 | {count} speck joined\|{count} specks joined | {count} plamka dołączona\|{count} plamki dołączone\|{count} plamek dołączonych |
@@ -207,8 +214,8 @@ It also uses words of the Embroidery panel and Document Setup: Fabric, Built-in 
 | Across the shape | W poprzek kształtu |
 | The direction of a fill's rows: at a fixed angle on the page, or across each shape's length. | Kierunek rzędów wypełnienia: pod stałym kątem na stronie albo w poprzek długości każdego kształtu. |
 | The fills' rows, counter-clockwise on the page. | Rzędy wypełnień, przeciwnie do ruchu wskazówek zegara na stronie. |
-| From the background to the details. The Order tab changes it after Create. | Od tła do szczegółów. Po utworzeniu zmienia ją zakładka Kolejność. |
-| Create sets these in the document's embroidery settings. | Utworzenie ustawi je w ustawieniach haftu dokumentu. |
+| From the background to the details. The Order tab changes it once the objects are made. | Od tła do szczegółów. Gdy obiekty powstaną, zmienia ją zakładka Kolejność. |
+| Making the objects sets these in the document's embroidery settings. | Utworzenie obiektów ustawi te wartości w ustawieniach haftu dokumentu. |
 
 ### Embroidery Settings…
 
@@ -244,7 +251,6 @@ A click on an area of the preview opens it beside the area. Its stitch names, Au
 | English | Polish |
 |---|---|
 | {thread} · {area} · {width} × {height} mm | {thread} · {area} · {width} × {height} mm |
-| Chosen for this area | Wybrane dla tego obszaru |
 | Sewn along its middle as one running line | Szyty środkiem jedną linią ściegu prostego |
 | No part wider than {width} mm | Żadna część nie jest szersza niż {width} mm |
 | Wider than {width} mm: tatami | Szerszy niż {width} mm: tatami |
@@ -252,14 +258,18 @@ A click on an area of the preview opens it beside the area. Its stitch names, Au
 | Too short for satin | Za krótki na satynę |
 | Too short for satin: sewn as tatami | Za krótki na satynę: szyty tatami |
 | Wider than {width} mm: tatami, its narrower parts as satin | Szerszy niż {width} mm: tatami, węższe części jako satyna |
-| Satin needs a line at least {least} mm wide: this one is {width} mm. | Satyna wymaga linii o szerokości co najmniej {least} mm: ta ma {width} mm. |
-| Satin sews parts up to {most} mm: this area is {width} mm wide. | Satyna szyje części do {most} mm: ten obszar ma {width} mm szerokości. |
+| Satin needs a line at least {least} mm wide: this one is {width} mm | Satyna wymaga linii o szerokości co najmniej {least} mm: ta ma {width} mm |
+| Satin sews parts up to {most} mm wide: this area is wider | Satyna szyje części do {most} mm szerokości: ten obszar jest szerszy |
+| Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider | Satyna szyje części do {most} mm szerokości: z częścią pod sąsiednimi obszarami ten obszar jest szerszy |
+| The angle turns tatami rows: this area has none | Kąt obraca rzędy tatami: ten obszar ich nie ma |
 | about {count} stitch\|about {count} stitches | ok. {count} ścieg\|ok. {count} ściegi\|ok. {count} ściegów |
 | Apply to {count} Similar Area\|Apply to {count} Similar Areas | Zastosuj do {count} podobnego obszaru\|Zastosuj do {count} podobnych obszarów\|Zastosuj do {count} podobnych obszarów |
-| Sets this area's stitch and angle on the areas of its color and kind about its size. | Ustawia ścieg i kąt tego obszaru na obszarach tego samego koloru i rodzaju o podobnej wielkości. |
-| That would be more than {count} area changes, the most a design takes. (Apply to Similar Areas and an area's own choices greyed out) | To byłoby ponad {count} nadpisań obszarów, a wzór przyjmuje najwyżej tyle. |
+| Applied to {count} Similar Area\|Applied to {count} Similar Areas (greyed out once every one is sewn as this area) | Zastosowano do {count} podobnego obszaru\|Zastosowano do {count} podobnych obszarów\|Zastosowano do {count} podobnych obszarów |
+| Sets this area's stitch and angle on the areas of its color and kind about its size and proportions. | Ustawia ścieg i kąt tego obszaru na obszarach tego samego koloru i rodzaju o podobnej wielkości i proporcjach. |
+| That would be more than {count} area changes, the most a design takes (Apply to Similar Areas and an area's own choices greyed out) | To byłoby ponad {count} nadpisań obszarów, a wzór przyjmuje najwyżej tyle |
 | Show in Sewing Order | Pokaż w kolejności szycia |
 | Dims what is sewn after this area. | Przygasza to, co jest szyte po tym obszarze. |
+| This area isn't sewn, so it has no place in the sewing order (Show in Sewing Order greyed out on an area left out) | Ten obszar nie jest szyty, więc nie ma miejsca w kolejności szycia |
 | Sewn {number} of {of}, after {before}, before {after} | Szyty jako {number}. z {of}, po {before}, przed {after} |
 | Sewn {number} of {of}, before {after} | Szyty jako {number}. z {of}, przed {after} |
 | Sewn {number} of {of}, after {before} | Szyty jako {number}. z {of}, po {before} |
@@ -297,7 +307,7 @@ The Stitches step's list of area changes (the mockup's Polish heading and help l
 | {count} band at most {value} mm wide joined the neighbor nearest its color\|{count} bands at most {value} mm wide joined the neighbors nearest their colors | {count} pas o szerokości najwyżej {value} mm dołączył do sąsiada o najbliższym kolorze\|{count} pasy o szerokości najwyżej {value} mm dołączyły do sąsiadów o najbliższych kolorach\|{count} pasów o szerokości najwyżej {value} mm dołączyło do sąsiadów o najbliższych kolorach |
 | Every area of {color} was smaller than {value} mm²: it joined its neighbors. | Każdy obszar koloru {color} był mniejszy niż {value} mm²: kolor dołączył do sąsiadów. |
 | The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen. | Nić wybrana dla {color}, {thread}, nie jest szara: jest szyta tak, jak ją wybrano. |
-| The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better. | Przy tym rozmiarze obraz ma {value} pikseli na milimetr, mniej niż {least}: większa kopia digitalizuje się lepiej. |
+| The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better. | Przy tym rozmiarze obraz ma {value} piksela na milimetr, mniej niż {least}: większa kopia digitalizuje się lepiej. |
 | The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}. | Obraz wczytano w rozmiarze {width} × {height} pikseli, mniejszym niż jego {fullWidth} × {fullHeight}. |
 | The image's corners don't agree on a background: every color is sewn. | Rogi obrazu nie zgadzają się co do tła: każdy kolor jest szyty. |
 | No color traced is the background's: every area is sewn. | Żaden obrysowany kolor nie jest kolorem tła: każdy obszar jest szyty. |
@@ -307,12 +317,13 @@ The Stitches step's list of area changes (the mockup's Polish heading and help l
 | Nothing in the image was traced: it is empty or transparent. | Nic w obrazie nie zostało obrysowane: jest pusty albo przezroczysty. |
 | Create Embroidery Objects | Utwórz obiekty haftu |
 | Start Over | Zacznij od nowa |
-| Create waits for the preview to be ready. | Utworzenie czeka, aż podgląd będzie gotowy. |
+| The objects are made once the preview is ready. | Obiekty powstaną, gdy podgląd będzie gotowy. |
 | The image's objects alone, with the document's fabric, thread and machine. | Same obiekty z obrazu, z tkaniną, nicią i maszyną dokumentu. |
 | Updated in {value} ms after the last change ({steps}) | Przeliczono w {value} ms po ostatniej zmianie ({steps}) |
 | {count} note\|{count} notes | {count} informacja\|{count} informacje\|{count} informacji |
 | Notes | Uwagi |
 | Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them. | Utworzono {objects} ({threads}). Obraz jest na ukrytej warstwie szablonu „{layer}”. Polecenie Cofnij je usunie. |
+| Created {objects} ({threads}). Undo removes them. | Utworzono {objects} ({threads}). Polecenie Cofnij je usunie. |
 | {count} object\|{count} objects | {count} obiekt\|{count} obiekty\|{count} obiektów |
 
 ## The live object
@@ -321,15 +332,23 @@ The Stitches step's list of area changes (the mockup's Polish heading and help l
 |---|---|
 | Keep as Live Object | Zachowaj jako żywy obiekt |
 | Keeps the image with the objects made of it, so that Digitize Image… can change them again. | Zachowuje obraz razem z obiektami z niego utworzonymi, aby „Digitalizuj obraz…” mogło je ponownie zmienić. |
-| Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back. | Jego obiekty zostały zmienione ręcznie. Ponowna digitalizacja zastąpi te zmiany; polecenie Cofnij je przywróci. |
+| The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back. | Zawartość tego żywego obiektu zmieniono ręcznie. Ponowna digitalizacja zastąpi te zmiany; polecenie Cofnij je przywróci. |
 | Replace | Zastąp |
 | Don't Replace | Nie zastępuj |
 | This live object's settings couldn't be read: the window starts from the defaults. | Nie udało się odczytać ustawień tego żywego obiektu: okno zaczyna od ustawień domyślnych. |
 | This live object was made in another thread palette: its colors are matched to the document's palette again. | Ten żywy obiekt powstał w innej palecie nici: jego kolory są ponownie dopasowywane do palety dokumentu. |
 | Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it. | Utworzono żywy obiekt: {objects} ({threads}). „Digitalizuj obraz…” zmieni go ponownie; polecenie Cofnij go usunie. |
 | Edit in Digitize Image… (the Object tab) | Edytuj w „Digitalizuj obraz”… |
-| Live digitized image (the Object tab's kind) | Żywy obraz zdigitalizowany |
-| Live digitized images scaled by more than {value}% since they were digitized: digitize them again (the Check tab's rule) | Żywe obrazy zdigitalizowane przeskalowane o więcej niż {value}% od digitalizacji: zdigitalizuj je ponownie |
+| Live object (the Object tab's kind, a live object's and a blend's or another live kind's) | Żywy obiekt |
+| Live objects scaled by more than {value}% since they were digitized: digitize them again (the Check tab's rule) | Żywe obiekty przeskalowane o więcej niż {value}% od digitalizacji: zdigitalizuj je ponownie |
+| Update Live Object (the coral button on a live object opened again) | Zaktualizuj żywy obiekt |
+| Digitizes the live object again with these settings. | Digitalizuje żywy obiekt ponownie z tymi ustawieniami. |
+| Convert to Plain Objects (the grey one beside it) | Zamień na zwykłe obiekty |
+| Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again. | Tworzy z żywego obiektu zwykłe obiekty haftu, których „Digitalizuj obraz…” już nie zmieni. |
+| Updated the live object: {objects} ({threads}). Undo brings back the earlier version. | Zaktualizowano żywy obiekt: {objects} ({threads}). Polecenie Cofnij przywróci poprzednią wersję. |
+| Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back. | Zamieniono na zwykłe obiekty: {objects} ({threads}). Obraz jest na ukrytej warstwie szablonu „{layer}”. Polecenie Cofnij przywróci żywy obiekt. |
+| Converted to plain objects: {objects} ({threads}). Undo brings the live object back. | Zamieniono na zwykłe obiekty: {objects} ({threads}). Polecenie Cofnij przywróci żywy obiekt. |
+| a live object: edit it in Digitize Image… (Object › Image Trace) (Image Trace's refusal, in the status bar) | żywy obiekt: edytuj go w „Digitalizuj obraz…” (Obiekt › Obrys obrazu) |
 
 ## Revision history
 
@@ -351,3 +370,4 @@ The Stitches step's list of area changes (the mockup's Polish heading and help l
 | 2026-11-17 | update | Apply to Similar Areas, and an area's own choices, greyed out once they would make more area changes than the engine takes, saying so. |
 | 2026-11-17 | update | Where „Obiekt dynamiczny” comes from: the Object tab's own row for blends, envelopes and the other live objects, not upstream's catalogue. |
 | 2026-11-17 | update | The inspector's reasons from what the planner sews of a filled area (the project owner's choices, 2026-11-17): "No part wider than {width} mm" („Żadna część nie jest szersza niż {width} mm”) under "Auto: satin" (it said "…: satin" under "Auto: tatami"); "Wider than {width} mm: tatami" where none is narrow enough; "Its long parts as satin, the rest tatami" where all is narrow but not all long; "Too short for satin" („Za krótki na satynę”) for a dot or a small square, under Auto and under a greyed Satin; "Too short for satin: sewn as tatami" for a Satin kept there. |
+| 2026-11-18 | update | The fixes after the area inspector was seen in the app (the project owner's choices of 2026-11-18): one name for the live object, „żywy obiekt” („Żywy obraz zdigitalizowany” and „Obiekt dynamiczny” went; the Check tab's rule; the question's subject, „Zawartość tego żywego obiektu…”; Image Trace's refusal said as itself); Update Live Object and Convert to Plain Objects with their tooltips and status words; "Applied to N Similar Areas" and Apply's tooltip saying proportions; "The angle turns tatami rows: this area has none"; Show in Sewing Order's reason on an area left out; Satin's reasons saying the width satin takes, one for the overlap; no full stop after the inspector's reasons; "Chosen for this area" removed (the Auto line stays under a choice); step 4's "not sewn"; „2,83 piksela” (the resolution with two decimals); "Threads" („Nici”) in the Sewing order's footer; Create's and Convert's status words without the template-layer sentence where the image lies on no hidden template layer afterwards; "The objects are made once the preview is ready." („Obiekty powstaną, gdy podgląd będzie gotowy.”), where the words named Create on a live object opened again, and three notes of the Stitches and Colours steps naming the act likewise ("The Order tab changes it once the objects are made", „Gdy obiekty powstaną, zmienia ją zakładka Kolejność”; "Making the objects sets…", „Utworzenie obiektów ustawi…”); Update's and Convert's tooltips true wherever the live object lies ("Digitizes the live object again with these settings.", "Makes plain embroidery objects of the live object…", „Tworzy z żywego obiektu…”); the unused "{count} color" plural gone. |

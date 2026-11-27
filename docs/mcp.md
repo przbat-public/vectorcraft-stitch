@@ -8622,7 +8622,8 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   the settings given and the defaults are used (warning `keptSettingsRefused` {why}: what blocks them; giving it, or
   `null` for it, takes the rest); kept keys this version has no setting for are left out (warning
   `keptSettingsUnknown` {keys}).
-  `imageTrace.make` and `makeAndExpand` refuse a live object ("change it in Digitize Image…"). One undo step "Digitize
+  `imageTrace.make` and `makeAndExpand` refuse a live object, said as itself, not as invalid parameters ("a live object:
+  edit it in Digitize Image… (Object › Image Trace)"); `ui.menu.list` shows their items disabled then. One undo step "Digitize
   Image", the new group selected; Nearest Connection is not run. More than 10,000
   areas is refused with what to change, as is an image that makes nothing to sew. It answers `{dryRun, created:
   {group, layer, objects, blocks, live} (null for a dry run), edited, image: {id, pixels, decoded, crop, worked, pxPerMm, limitedBy,
@@ -8693,8 +8694,9 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
   command refuses them; no other setting): its objects are planned with them, and its Create makes them the
   document's in the same undo step, with its palette. In the app the window is a dialog: `ui.dialog.set` sets its
   fields (the settings by their names, `areaChanges` too) and `ui.dialog.confirm` is Create, or Keep as Live Object
-  with the field `keep: "live"` (any other `keep` refused); it never asks about hand edits, which the window asks
-  people about.
+  with the field `keep: "live"` (any other `keep` refused); on a live object opened again it is Convert to Plain
+  Objects, and with `keep: "live"` Update Live Object, whatever the window's coral button is; it never asks about
+  hand edits, which the window asks people about.
 - **Editing stitches.** The stitch commands edit a path of literal stitches (opened from a machine file, or one an
   object was converted to) needle point by needle point, in millimetres, without a plan; a run is one of its subpaths,
   the needle points between two jumps. A needle point is

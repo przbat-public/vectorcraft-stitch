@@ -589,6 +589,32 @@ fn ui_dialog_set_keep_live_and_confirm_keep_a_live_object() {
     assert!(open_dialog(&app).expect("open again").fields.get("keep").is_none(), "not remembered");
 }
 
+/// Agents' `ui.dialog.confirm` is the window's coral button, as Cmd/Ctrl+Enter is (the project
+/// owner's choice, 2026-11-26, „Jak koralowy (polecam)”): on a live object opened again it updates
+/// it, kept live with its id, as `keep: "live"` does, and `keep: "plain"` converts it to plain
+/// objects; on a new image `keep: "plain"` is Create, as no `keep` is. Confirmed before any frame,
+/// as an agent may.
+#[test]
+fn ui_dialog_confirm_is_the_coral_button() {
+    let ctx = egui::Context::default();
+    for (keep, live) in [(None, true), (Some("live"), true), (Some("plain"), false)] {
+        let (mut app, id) = live_object(json!({"colors": 3}));
+        crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+        if let Some(keep) = keep {
+            crate::tests_synthetic::control(&mut app, &ctx, "ui.dialog.set", json!({"field": "keep", "value": keep}));
+        }
+        let reply = crate::dialogs::confirm(&mut app).unwrap();
+        assert_eq!(reply["created"]["live"], json!(live), "keep {keep:?}: {reply}");
+        assert_eq!(is_live(&app, id), live, "keep {keep:?}: the live object kept, its id too, or gone");
+    }
+    let mut app = super::tests::app();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    crate::tests_synthetic::control(&mut app, &ctx, "ui.dialog.set", json!({"field": "keep", "value": "plain"}));
+    let reply = crate::dialogs::confirm(&mut app).unwrap();
+    assert_eq!(reply["created"]["live"], json!(false), "a new image's plain objects: {reply}");
+    assert!(!is_live(&app, selected(&app)), "plain objects selected");
+}
+
 /// The settings live object `id` keeps, as the window and the command take them.
 fn kept_settings(app: &VectorcraftApp, id: NodeId) -> serde_json::Map<String, Value> {
     app.session.doc().unwrap().doc.node(id).and_then(vectorcraft_engine::cmd::embroidery::live_settings).expect("a live object")

@@ -111,10 +111,12 @@ const FIRST_VIEW: &str = "compare";
 /// The read-only field saying how the result stands, for agents (`ui.inspect`).
 const STATE: &str = "__state";
 
-/// The field agents set to keep a live object on `ui.dialog.confirm`, and its one value (note 09
-/// › The window).
+/// The field agents set on `ui.dialog.confirm` to say what it makes, and its two values (note 09
+/// › The window): a live object, or plain objects (the project owner's choice, 2026-11-26, „Jak
+/// koralowy (polecam)”); without it, what the coral button makes.
 const KEEP: &str = "keep";
 const KEEP_LIVE: &str = "live";
+const KEEP_PLAIN: &str = "plain";
 
 /// What `ui.dialog.set` takes though the window may not hold it yet
 /// (`crate::dialogs::accepts_field`): `keep`, the palette, the engine's settings and the document
@@ -675,7 +677,12 @@ fn asked_to_make(app: &mut VectorcraftApp, ctx: &egui::Context, fields: &Map<Str
 /// tab's Edit in Digitize Image… opens one): its buttons are then Update Live Object and Convert
 /// to Plain Objects (the project owner's choice, 2026-11-18).
 pub(crate) fn on_live_object(app: &VectorcraftApp) -> bool {
-    let Some(image) = app.embroidery.image_window.live.as_ref().map(|l| l.image) else { return false };
+    app.embroidery.image_window.live.as_ref().is_some_and(|l| digitizes_a_live_object(app, l.image))
+}
+
+/// Whether a window on `image` (its own id) digitizes a live object in the active document: the
+/// live object `image` lies first in, or is.
+fn digitizes_a_live_object(app: &VectorcraftApp, image: NodeId) -> bool {
     app.session
         .active()
         .and_then(|st| st.doc.node(digitized_of(st, image)))
@@ -767,16 +774,21 @@ fn closed_by_create(app: &mut VectorcraftApp, key: (u64, NodeId), reply: &Value)
     app.status(live_bar::made_words(reply, name.as_deref()));
 }
 
-/// `ui.dialog.confirm`: Create, in one go (a live object with the field `keep: "live"`, never
-/// asking about hand edits: an agent reads them in the command's dry run, `edited`): the run shown
-/// when it is of the fields as they are, else a run made now on the interface thread, as an agent
-/// asks for it.
+/// `ui.dialog.confirm`: the window's coral button in one go, as Cmd/Ctrl+Enter is (the project
+/// owner's choice, 2026-11-26, „Jak koralowy (polecam)”): Create on a new image, Update Live Object
+/// on a live object opened again; with the field `keep: "live"` a live object, with `keep: "plain"`
+/// plain objects (Convert to Plain Objects on a live object opened again). It never asks about hand
+/// edits (an agent reads them in the command's dry run, `edited`): the run shown when it is of the
+/// fields as they are, else a run made now on the interface thread, as an agent asks for it.
 pub(crate) fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
     let Some((uid, image)) = of(d) else { return Err("the image window names no image".into()) };
+    // Read of the window's own image, not of its drawn state: an agent may confirm before a frame.
+    let [coral, _] = live_bar::makers(digitizes_a_live_object(app, image));
     let making = match d.fields.get(KEEP) {
-        None | Some(Value::Null) => Making::Objects,
+        None | Some(Value::Null) => coral.making,
         Some(v) if v.as_str() == Some(KEEP_LIVE) => Making::LiveObject,
-        Some(v) => return Err(format!("{KEEP}: \"{KEEP_LIVE}\" or nothing, not {v}")),
+        Some(v) if v.as_str() == Some(KEEP_PLAIN) => Making::Objects,
+        Some(v) => return Err(format!("{KEEP}: \"{KEEP_LIVE}\", \"{KEEP_PLAIN}\" or nothing, not {v}")),
     };
     let params = params_of(&d.fields);
     if app.embroidery.image_window.live.as_ref().is_some_and(|l| l.schedule.current(&params).is_some()) {

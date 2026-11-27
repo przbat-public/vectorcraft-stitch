@@ -83,10 +83,11 @@ const TRACE_MAKE: [&str; 2] = ["imageTrace.make", "imageTrace.makeAndExpand"];
 /// `imageTrace.make` leaves out a selected object that lies inside another selected one, so there
 /// the two can differ) is a live object or the image it holds. Image Trace refuses one, and the
 /// status bar's field shows only the start of a refusal; Digitize Image… beside them, which changes
-/// it, stays on (the session's choice, 2026-11-18). Every other way to run Make still gets Image
-/// Trace's refusal: the Image Trace panel's Trace and its Preview, the Properties panel's and the
-/// Control bar's preset list (for the live object) and Image Trace button (for the image it holds),
-/// the canvas task bar's Image Trace, the command palette, a shortcut and agents.
+/// it, stays on: the hook greys only those two (the 2026-11-18 row of choices made while building
+/// the fixes). Every other way to run Make still gets Image Trace's refusal: the Image Trace
+/// panel's Trace and its Preview, the Properties panel's and the Control bar's preset list (for the
+/// live object) and Image Trace button (for the image it holds), the canvas task bar's Image Trace,
+/// the command palette, a shortcut and agents.
 pub fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     (TRACE_MAKE.contains(&id) && traces_a_live_object(app)).then_some(false)
 }

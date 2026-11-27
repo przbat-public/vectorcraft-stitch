@@ -677,8 +677,8 @@ fn a_scaled_live_object_is_named_and_shown() {
     let reply = scaled(&mut app, 1.5 / 1.05);
     let rule = &reply["rules"][0];
     assert_eq!(title(rule, "Janome JEF", Lang::EN), "Live objects scaled by more than 10% since they were digitized: digitize them again");
-    // In Polish too the one name, „żywe obiekty” (the 2026-11-16 choice: FORK.md's 2026-11-18 row on
-    // the live object's name).
+    // In Polish too the one name, „żywe obiekty” (the 2026-11-16 choice: FORK.md's 2026-11-18 row
+    // on the live object's name).
     let pl = Lang::from_code("pl").unwrap();
     crate::i18n::set_current(pl);
     let polish = title(rule, "Janome JEF", pl);

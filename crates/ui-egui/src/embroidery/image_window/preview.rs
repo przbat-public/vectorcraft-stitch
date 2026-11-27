@@ -597,8 +597,10 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     if resp.clicked() {
         resp.request_focus();
     }
-    // The keyboard: `[` and `]` step through the areas in sewing order (the embroidery tool's keys),
-    // Enter or Space opens the inspector on the area it is on.
+    // The keyboard, while the preview has it (and the app's window the system's): `[` and `]` step
+    // through the areas in sewing order (the embroidery tool's keys), in every view; Enter or Space
+    // opens the inspector on the area it is on, the area sewn first when it is on none, in any view
+    // but Original, as a click.
     let mut by_key = false;
     if resp.has_focus() {
         let (back, on, open) = ui.input_mut(|i| {
@@ -616,15 +618,22 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
                 live.preview.focused = next;
             }
         }
-        if open && let Some(at) = live.preview.focused.as_ref().and_then(|k| outputs.find(k)) {
-            super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, Some(at));
+        if open && view != View::Original {
+            let key = live.preview.focused.clone().filter(|k| outputs.find(k).is_some()).or_else(|| outputs.first_key());
+            if let Some(at) = key.as_ref().and_then(|k| outputs.find(k)) {
+                live.preview.focused = key;
+                super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, Some(at));
+            }
         }
     }
-    // A screen reader's click on the preview (neither the pointer's nor Enter's or Space's): as
-    // Enter, the inspector opens on the area the keyboard is on, the first area when it is on none;
-    // once the inspector is drawn, as a pointer's click, so that what was typed in it is its area's.
+    // A screen reader's click on the preview (AccessKit's, told apart from the click egui counts
+    // for an Enter or Space on what it last gave the keyboard, which the keys above take while the
+    // window has the system's keyboard, and nothing while it hasn't): as Enter, the inspector opens
+    // on the area the keyboard is on, the first area when it is on none; once the inspector is drawn,
+    // as a pointer's click, so that what was typed in it is its area's.
+    let read = ui.input(|i| i.has_accesskit_action_request(resp.id, egui::accesskit::Action::Click));
     let mut read_at = None;
-    if resp.clicked() && !resp.clicked_by(egui::PointerButton::Primary) && !by_key && view != View::Original {
+    if read && !by_key && view != View::Original {
         let key = live.preview.focused.clone().filter(|k| outputs.find(k).is_some()).or_else(|| outputs.first_key());
         read_at = key.as_ref().and_then(|k| outputs.find(k));
         if read_at.is_some() {

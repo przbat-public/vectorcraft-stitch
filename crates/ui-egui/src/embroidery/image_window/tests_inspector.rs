@@ -1344,3 +1344,63 @@ fn a_column_run_on_through_a_wider_stretch_is_given_no_false_reason() {
     assert!(says(&mut app, &ctx, &mut time, "Auto: satin"));
     assert!(!says(&mut app, &ctx, &mut time, "No part wider than "), "no false reason");
 }
+
+/// One frame at `time` with `events` while the app's window doesn't have the system's keyboard
+/// (another app in front, as when a check drives it over the control channel).
+fn unfocused_frame(app: &mut VectorcraftApp, ctx: &egui::Context, time: f64, events: Vec<Event>) {
+    let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1440.0, 900.0));
+    let raw = egui::RawInput { time: Some(time), screen_rect: Some(screen), events, focused: false, ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::dialogs::show(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+}
+
+/// Enter or Space opens no inspector in the Original view, as a click there doesn't; `[` and `]`
+/// still step through the areas there, as hovering outlines them.
+#[test]
+fn enter_opens_no_inspector_in_the_original_view() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    set(&mut app, super::VIEW, json!("original"));
+    click_at(&mut app, &ctx, &mut time, 190, 90);
+    keyed(&mut app, &ctx, &mut time, Key::CloseBracket, Modifiers::NONE);
+    assert_eq!(focused_number(&app), Some(1), "the keys still step");
+    for k in [Key::Enter, Key::Space] {
+        keyed(&mut app, &ctx, &mut time, k, Modifiers::NONE);
+        assert!(live(&app).inspector.is_none(), "{k:?} opens none");
+    }
+}
+
+/// Enter on the preview before `[` or `]` has stepped to an area opens the inspector on the area
+/// sewn first, as a screen reader's click does.
+#[test]
+fn enter_on_no_area_opens_the_first() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 190, 90);
+    assert!(live(&app).inspector.is_none() && focused_number(&app).is_none(), "on no area");
+    keyed(&mut app, &ctx, &mut time, Key::Enter, Modifiers::NONE);
+    assert_eq!(inspected(&app).and_then(|f| f.number), Some(1), "the first area");
+}
+
+/// While the app's window doesn't have the system's keyboard, the preview takes no keys: `]` steps
+/// nowhere and Enter opens nothing, though egui still counts an Enter as a click on what it last
+/// gave the keyboard, which read as a screen reader's click and opened the area sewn first.
+#[test]
+fn the_preview_takes_no_keys_while_the_window_has_no_keyboard() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 190, 90);
+    for k in [Key::CloseBracket, Key::Enter] {
+        time += 0.05;
+        unfocused_frame(&mut app, &ctx, time, vec![key(k, Modifiers::NONE)]);
+        time += 0.05;
+        unfocused_frame(
+            &mut app,
+            &ctx,
+            time,
+            vec![Event::Key { key: k, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE }],
+        );
+    }
+    assert_eq!(focused_number(&app), None, "no step");
+    assert!(live(&app).inspector.is_none(), "nothing opened");
+}

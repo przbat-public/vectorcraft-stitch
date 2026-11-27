@@ -642,6 +642,30 @@ fn similar_areas_compare_the_elongations_kept_with_the_lines() {
     assert!(out.similar(80, 30).contains(&square), "the square alike once it is kept as long as the bar");
 }
 
+/// Apply to Similar Areas' shapes follow the lines output they are asked of, not one kept from an
+/// earlier output: one pipeline digitizes the picture cropped to a bar and a square, then the whole
+/// of it, a second bar below them coming in (the image's stage and every stage after it made again).
+/// The upper bar is like the lower one, not the square, with the elongations a fresh pipeline works
+/// out; those kept from the crop are of its areas, the lower bar not among them.
+#[test]
+fn similar_areas_follow_the_lines_when_they_are_made_again() {
+    // The crop (the image's pixels) leaves out the lower bar, and keeps the upper one and the square
+    // whole.
+    const CROP: [u32; 4] = [0, 0, 320, 80];
+    let navy = |x: u32, y: u32| inside(x, y, [20, 20, 140, 40]) || inside(x, y, [200, 20, 249, 69]) || inside(x, y, [20, 90, 140, 110]);
+    let picture = tr::Raster::from_fn(320, 120, |x, y| if navy(x, y) { NAVY } else { WHITE });
+    let (s, image) = placed(&picture);
+    let request = |params: &Value| Arc::new(s.digitize_window_request(image, params, None, &json!({})).unwrap());
+    let whole = json!({"colors": 2});
+    let mut pipe = s.digitize_pipeline();
+    pipe.run(&request(&with(&whole, &json!({"crop": CROP}))), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let again = pipe.run(&request(&whole), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let fresh = s.digitize_pipeline().run(&request(&whole), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let lower = again.area_key(80, 100).expect("the lower bar");
+    assert_eq!(again.similar(80, 30), vec![lower], "the upper bar like the lower one, not the square");
+    assert_eq!(again.elongations, fresh.elongations, "the elongations of the lines made again, as a fresh pipeline's");
+}
+
 /// How long Apply to Similar Areas' shape rule takes on the largest working map (1,500 px a side):
 /// the pass over the region map that works out every area's elongation (`Regions::elongations`),
 /// which the window's pipeline makes each time it moves to another lines output, and

@@ -5755,6 +5755,10 @@ theme	Appearance	Външен вид
 @msg	threads that twist several colours are read in their first colour	конци, които усукват няколко цвята, се четат в първия си цвят
 @msg	the file's several designs are read as one	няколкото дизайна във файла се четат като един
 @msg	the file holds things this version doesn't read	файлът съдържа неща, които тази версия не чете
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft не може да запише този файл отново в сегашния му вид ({what}), така че замяната му го губи завинаги. Запазете под друго име, за да го запазите.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} е файлът, от който беше прочетен този документ, и VectorCraft не може да го запише отново в сегашния му вид ({what}): ако бъде презаписан, ще бъде загубен завинаги. Вместо това запишете в друг файл или подайте acknowledgeLoss: true, за да го замените въпреки това
+@msg	the file's own format, which VectorCraft reads but doesn't write	собственият формат на файла, който VectorCraft чете, но не записва
+@msg	the file ends early: the design may be incomplete	файлът свършва преждевременно: дизайнът може да е непълен
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Базирано на VectorCraft от екипа на ArtCraft. MIT ИЛИ Apache-2.0. Шрифтове: Source Sans 3, Inter, JetBrains Mono (OFL). Икони: Lucide (ISC) + VectorCraft.
@@ -5770,11 +5774,15 @@ theme	Appearance	Външен вид
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	формата има повече от {MAX_SHAPE_POINTS} точки, колкото може да има една форма, след като кривите ѝ се превърнат в отсечки: опростете я или я разделете на по-малки форми
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	форма е на повече от {MAX_COORD_MM} mm от началото или има координата, която не е число: не може да се бродира
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	формата би изисквала около {n} бода, повече от {MAX_STITCHES}, колкото може да има една форма: използвайте по-дълъг бод, по-голямо разстояние или по-малък дизайн
+@msg	not a HUS file: it does not start with a HUS signature	не е HUS файл: не започва с HUS сигнатура
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	не е PES или PEC файл: не започва с #PES или #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	не е SEW файл: посоченият в него брой цветове е {colors}, а SEW файлът посочва от 1 до {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	не е VP3 файл: не започва с %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	не е {what} файл: записът му {_1} не е DST запис
 @msg	params must be an object	параметрите трябва да са обект
 @msg	the EXP file has no stitch records	EXP файлът няма записи на бодове
+@msg	the HUS file's compressed stitches are damaged	компресираните данни за бодовете в HUS файла са повредени
+@msg	the HUS header is cut short or points past the file's {len} bytes	заглавката на HUS е съкратена или сочи след {len}-те байта на файла
 @msg	the JEF file has no stitch records	JEF файлът няма записи на бодове
 @msg	the JEF file is cut short: {len} bytes	JEF файлът е съкратен: {len} байта
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	заглавката на JEF сочи към байт {offset}, след {_1}-те байта на файла

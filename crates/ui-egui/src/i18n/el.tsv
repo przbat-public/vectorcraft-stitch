@@ -5868,6 +5868,10 @@ effect	Points	Σημεία
 @msg	threads that twist several colours are read in their first colour	οι κλωστές που συστρέφουν πολλά χρώματα διαβάζονται στο πρώτο τους χρώμα
 @msg	the file's several designs are read as one	τα πολλά σχέδια του αρχείου διαβάζονται ως ένα
 @msg	the file holds things this version doesn't read	το αρχείο περιέχει στοιχεία που αυτή η έκδοση δεν διαβάζει
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	Το VectorCraft δεν μπορεί να γράψει ξανά αυτό το αρχείο όπως είναι ({what}). Αν το αντικαταστήσετε, θα χαθεί οριστικά. Αποθηκεύστε με άλλο όνομα για να το διατηρήσετε.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	το {target} είναι το αρχείο από το οποίο διαβάστηκε αυτό το έγγραφο, και το VectorCraft δεν μπορεί να το γράψει ξανά όπως είναι ({what}): αν γράψετε πάνω του, θα χαθεί οριστικά. Γράψτε σε άλλο αρχείο ή περάστε acknowledgeLoss: true για να το αντικαταστήσετε παρ’ όλα αυτά
+@msg	the file's own format, which VectorCraft reads but doesn't write	η ίδια η μορφή του αρχείου, την οποία το VectorCraft διαβάζει αλλά δεν γράφει
+@msg	the file ends early: the design may be incomplete	το αρχείο τελειώνει πρόωρα: το σχέδιο μπορεί να είναι ελλιπές
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Βασίζεται στο VectorCraft της ομάδας ArtCraft. MIT ή Apache-2.0. Γραμματοσειρές: Source Sans 3, Inter, JetBrains Mono (OFL). Εικονίδια: Lucide (ISC) + VectorCraft.
@@ -5883,11 +5887,15 @@ effect	Points	Σημεία
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	ένα σχήμα έχει περισσότερα από τα {MAX_SHAPE_POINTS} σημεία που επιτρέπονται σε ένα σχήμα, όταν οι καμπύλες του μετατραπούν σε ευθύγραμμα τμήματα: απλοποιήστε το ή χωρίστε το σε μικρότερα σχήματα
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	ένα σχήμα βρίσκεται πάνω από {MAX_COORD_MM} mm από την αρχή ή έχει συντεταγμένη που δεν είναι αριθμός: δεν μπορεί να κεντηθεί
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	ένα σχήμα θα χρειαζόταν περίπου {n} βελονιές, περισσότερες από τις {MAX_STITCHES} που επιτρέπονται σε ένα σχήμα: χρησιμοποιήστε μακρύτερη βελονιά, μεγαλύτερη απόσταση ή μικρότερο σχέδιο
+@msg	not a HUS file: it does not start with a HUS signature	δεν είναι αρχείο HUS: δεν ξεκινά με υπογραφή HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	δεν είναι αρχείο PES ή PEC: δεν ξεκινά με #PES ή #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	δεν είναι αρχείο SEW: ο αριθμός χρωμάτων που δηλώνει είναι {colors}, ενώ ένα αρχείο SEW δηλώνει από 1 έως {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	δεν είναι αρχείο VP3: δεν ξεκινά με %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	δεν είναι αρχείο {what}: η εγγραφή του {_1} δεν είναι εγγραφή DST
 @msg	params must be an object	οι παράμετροι πρέπει να είναι αντικείμενο
 @msg	the EXP file has no stitch records	το αρχείο EXP δεν έχει εγγραφές βελονιών
+@msg	the HUS file's compressed stitches are damaged	τα συμπιεσμένα δεδομένα βελονιών του αρχείου HUS είναι κατεστραμμένα
+@msg	the HUS header is cut short or points past the file's {len} bytes	η κεφαλίδα HUS είναι κομμένη ή δείχνει πέρα από τα {len} byte του αρχείου
 @msg	the JEF file has no stitch records	το αρχείο JEF δεν έχει εγγραφές βελονιών
 @msg	the JEF file is cut short: {len} bytes	το αρχείο JEF είναι κομμένο: {len} byte
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	η κεφαλίδα JEF δείχνει στο byte {offset}, πέρα από τα {_1} byte του αρχείου

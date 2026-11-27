@@ -5754,6 +5754,10 @@ lighting	Light	光源
 @msg	threads that twist several colours are read in their first colour	由多种颜色捻成的绣线按其第一种颜色读取
 @msg	the file's several designs are read as one	文件中的多个图案作为一个读取
 @msg	the file holds things this version doesn't read	该文件包含此版本不读取的内容
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft 无法按原样再次写入此文件（{what}），因此替换该文件会使其永久丢失。要保留它，请以其他名称存储。
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	此文档读取自 {target}，而 VectorCraft 无法按原样再次写入该文件（{what}）：覆盖该文件会使其永久丢失。请改为写入其他文件；如仍要替换该文件，请传入 acknowledgeLoss: true
+@msg	the file's own format, which VectorCraft reads but doesn't write	文件本身的格式，VectorCraft 能读取但不能写入
+@msg	the file ends early: the design may be incomplete	文件提前结束：图案可能不完整
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	基于 ArtCraft 团队的 VectorCraft。MIT OR Apache-2.0。字体：Source Sans 3、Inter、JetBrains Mono (OFL)。图标：Lucide (ISC) + VectorCraft。
@@ -5769,11 +5773,15 @@ lighting	Light	光源
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	某个形状的曲线转为线段后，点数超过单个形状允许的 {MAX_SHAPE_POINTS} 个：请简化该形状或将其拆分为更小的形状
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	某个形状距原点超过 {MAX_COORD_MM} mm，或有不是数字的坐标：无法刺绣
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	某个形状约需 {n} 针，超过单个形状允许的 {MAX_STITCHES} 针：请使用更长的针迹、更宽的间距或更小的图案
+@msg	not a HUS file: it does not start with a HUS signature	不是 HUS 文件：不以 HUS 签名开头
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	不是 PES 或 PEC 文件：不以 #PES 或 #PEC 开头
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	不是 SEW 文件：指定了 {colors} 种颜色，而 SEW 文件指定 1 到 {MAX_COLORS} 种
 @msg	not a VP3 file: it does not start with %vsm%	不是 VP3 文件：不以 %vsm% 开头
 @msg	not a {what} file: its record {_1} is not a DST record	不是 {what} 文件：其第 {_1} 条记录不是 DST 记录
 @msg	params must be an object	参数必须是对象
 @msg	the EXP file has no stitch records	EXP 文件没有针迹记录
+@msg	the HUS file's compressed stitches are damaged	HUS 文件的压缩针迹数据已损坏
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS 文件头被截断，或指向的位置超出文件的 {len} 字节
 @msg	the JEF file has no stitch records	JEF 文件没有针迹记录
 @msg	the JEF file is cut short: {len} bytes	JEF 文件被截断：{len} 字节
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF 文件头指向第 {offset} 字节，超出文件的 {_1} 字节

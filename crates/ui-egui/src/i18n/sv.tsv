@@ -5939,6 +5939,10 @@ swatch	Yellow Green	Gulgrön
 @msg	threads that twist several colours are read in their first colour	trådar som tvinnar flera färger läses i sin första färg
 @msg	the file's several designs are read as one	filens flera mönster läses som ett
 @msg	the file holds things this version doesn't read	filen innehåller saker som den här versionen inte läser
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft kan inte skriva den här filen igen som den är ({what}), så om du ersätter den förloras den för gott. Spara under ett annat namn för att behålla den.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} är filen som det här dokumentet lästes från, och VectorCraft kan inte skriva den igen som den är ({what}): om du skriver över den går den förlorad för gott. Skriv till en annan fil i stället, eller ange acknowledgeLoss: true för att ersätta den ändå
+@msg	the file's own format, which VectorCraft reads but doesn't write	filens eget format, som VectorCraft läser men inte skriver
+@msg	the file ends early: the design may be incomplete	filen tar slut för tidigt: mönstret kan vara ofullständigt
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Baserat på VectorCraft från ArtCraft-teamet. MIT OR Apache-2.0. Typsnitt: Source Sans 3, Inter, JetBrains Mono (OFL). Ikoner: Lucide (ISC) + VectorCraft.
@@ -5954,11 +5958,15 @@ swatch	Yellow Green	Gulgrön
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	en form har fler än de {MAX_SHAPE_POINTS} punkter en form får ha när dess kurvor har gjorts om till sträckor: förenkla den eller dela upp den i mindre former
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en form ligger mer än {MAX_COORD_MM} mm från origo eller har en koordinat som inte är ett tal: den kan inte broderas
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en form skulle behöva omkring {n} stygn, fler än de {MAX_STITCHES} en form får ha: använd ett längre stygn, större avstånd eller ett mindre mönster
+@msg	not a HUS file: it does not start with a HUS signature	inte en HUS-fil: den börjar inte med en HUS-signatur
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	inte en PES- eller PEC-fil: den börjar inte med #PES eller #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	inte en SEW-fil: den anger {colors} färger, och en SEW-fil anger 1 till {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	inte en VP3-fil: den börjar inte med %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	inte en {what}-fil: dess post {_1} är inte en DST-post
 @msg	params must be an object	parametrarna måste vara ett objekt
 @msg	the EXP file has no stitch records	EXP-filen har inga stygnposter
+@msg	the HUS file's compressed stitches are damaged	HUS-filens komprimerade stygn är skadade
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS-huvudet är avkortat eller pekar bortom filens {len} byte
 @msg	the JEF file has no stitch records	JEF-filen har inga stygnposter
 @msg	the JEF file is cut short: {len} bytes	JEF-filen är avkortad: {len} byte
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF-huvudet pekar på byte {offset}, bortom filens {_1} byte

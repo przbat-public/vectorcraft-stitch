@@ -231,7 +231,19 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         let named = usize::try_from(number).ok().and_then(|index| Palette::Jef.thread(index));
         threads.push(named.unwrap_or_else(|| thread::unknown_thread(block, u64::from(number))));
     }
-    r.seek(offset);
+    let points = read_records(bytes, offset, "JEF")?;
+    if points.is_empty() {
+        return Err(Error::Format("the JEF file has no stitch records".into()));
+    }
+    Ok(finish(String::new(), points, &threads))
+}
+
+/// The points of the JEF records in `bytes` from byte `at` (SEW files hold the same records,
+/// [`super::sew`]): up to the end record, an unknown command or the file's end. `what` names the
+/// format in the errors.
+pub(crate) fn read_records(bytes: &[u8], at: usize, what: &str) -> Result<Vec<Stitch>> {
+    let mut r = Reader::new(bytes);
+    r.seek(at);
     let mut points: Vec<Stitch> = Vec::new();
     // Wide enough that no file overflows it: each record moves the needle at most 127 tenths.
     let (mut x, mut y) = (0i64, 0i64);
@@ -240,7 +252,7 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
         if b0 != CONTROL {
             x += i64::from(b0 as i8);
             y -= i64::from(b1 as i8);
-            add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), "JEF")?;
+            add(&mut points, Stitch::new(mm(x), mm(y), Command::Stitch), what)?;
             continue;
         }
         match b1 {
@@ -248,28 +260,50 @@ pub fn read(bytes: &[u8]) -> Result<Pattern> {
             COLOR_CHANGE => {
                 // The colour change's two delta bytes, which don't move the frame.
                 let _ = r.take(2);
-                add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), "JEF")?;
+                add(&mut points, Stitch::new(mm(x), mm(y), Command::ColorChange), what)?;
             }
             JUMP => {
                 let (Some(dx), Some(dy)) = (r.u8(), r.u8()) else { break };
                 let (dx, dy) = (i64::from(dx as i8), i64::from(dy as i8));
                 let here = Stitch::new(mm(x), mm(y), Command::Trim);
                 if dx == 0 && dy == 0 {
-                    add(&mut points, here, "JEF")?;
+                    add(&mut points, here, what)?;
                 } else {
                     x += dx;
                     y -= dy;
-                    add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), "JEF")?;
+                    add(&mut points, Stitch::new(mm(x), mm(y), Command::Jump), what)?;
                 }
             }
             // An unknown command: stop rather than guess where the needle goes next.
             _ => break,
         }
     }
-    if points.is_empty() {
-        return Err(Error::Format("the JEF file has no stitch records".into()));
+    Ok(points)
+}
+
+/// Whether the JEF records in `bytes` from byte `at` run out before their end record, as in a
+/// file cut short inside them ([`read_records`] reads up to the cut). A SEW says so on opening
+/// ([`super::sew::losses`]); JEF's own reader doesn't. An unknown command, where reading stops, is
+/// no cut.
+pub(crate) fn records_cut(bytes: &[u8], at: usize) -> bool {
+    let mut r = Reader::new(bytes);
+    r.seek(at);
+    while let Some(b0) = r.u8() {
+        let Some(b1) = r.u8() else { return true };
+        if b0 != CONTROL {
+            continue;
+        }
+        match b1 {
+            // The command's second record: a colour change's two bytes, a jump's move.
+            COLOR_CHANGE | JUMP => {
+                if r.take(RECORD_BYTES).is_none() {
+                    return true;
+                }
+            }
+            _ => return false,
+        }
     }
-    Ok(finish(String::new(), points, &threads))
+    true
 }
 
 fn short(len: usize) -> Error {

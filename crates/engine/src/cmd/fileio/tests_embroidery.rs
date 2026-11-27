@@ -193,6 +193,88 @@ fn a_vp3_keeps_the_arts_colours_and_opens_by_its_magic_bytes() {
     assert!(strokes.contains(&red), "{strokes:?}");
 }
 
+/// A SEW holding a JEF's records opens as that JEF does: the same groups, runs and needle points,
+/// in Janome's palette; placed, it comes in too. A design opened from it exports as any design does
+/// (here as DST, with the JEF's needle points).
+#[test]
+fn a_sew_opens_as_the_jef_it_holds() {
+    let mut s = art();
+    let jef = export(&mut s, "jef", json!({}));
+    let sew = vectorcraft_testkit::machine_files::sew_from_jef(&jef).unwrap();
+    let mut from_jef = Session::new();
+    open(&mut from_jef, "design.jef", &jef).unwrap();
+    let mut from_sew = Session::new();
+    let r = open(&mut from_sew, "design.sew", &sew).unwrap();
+    assert_eq!(r["format"].as_str(), Some("sew"));
+    let palette = from_sew.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id());
+    assert_eq!(palette, Some("jef"));
+    let leaves = |s: &Session| {
+        let mut v: Vec<(Option<String>, String)> = Vec::new();
+        s.doc().unwrap().doc.walk(|n| {
+            if n.children().is_none() {
+                v.push((n.name.clone(), format!("{:?} {:?}", n.appearance.stroke().map(|st| &st.paint), n.kind)));
+            }
+        });
+        v
+    };
+    assert_eq!(leaves(&from_sew), leaves(&from_jef));
+    let (dst_of_sew, dst_of_jef) = (export(&mut from_sew, "dst", json!({})), export(&mut from_jef, "dst", json!({})));
+    assert_eq!(sewn(&plan(&dst_of_sew)), sewn(&plan(&dst_of_jef)));
+    s.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
+    s.execute("file.place", &json!({"name": "design.sew", "dataBase64": b64(&sew)})).expect("places");
+}
+
+/// A HUS opens by its name and by its first bytes, in its chart's colours and with no thread
+/// palette of its own, its cut and its stop kept: exported, the cut is a cut and the stop a change
+/// to the same thread; placed, it comes in too.
+#[test]
+fn a_hus_opens_by_name_and_by_its_magic_bytes() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    let mut records: Vec<(u8, i8, i8)> = (0..30).map(|i| (0x80, 10, if i % 2 == 0 { 20 } else { -20 })).collect();
+    records.extend([(0x88, 0, 0), (0x81, 120, 0), (0x81, 120, 0), (0x80, 0, 0), (0x80, 10, 10), (0x82, 0, 0), (0x80, 10, 10), (0x80, 10, 0)]);
+    records.extend([(0x84, 0, 0), (0x81, -50, 60), (0x80, 0, 0)]);
+    records.extend((0..20).map(|i| (0x80, -8, (i % 5) as i8)));
+    records.push((0x90, 0, 0));
+    let bytes = hus(&records, &[3, 1], b"005\0\0\0\0\0", &Lzh::default());
+    let mut s = Session::new();
+    for name in ["design.hus", "design.bin"] {
+        let r = open(&mut s, name, &bytes).expect("opens");
+        assert_eq!(r["format"].as_str(), Some("hus"), "{name}");
+    }
+    let groups: Vec<String> =
+        s.doc().unwrap().doc.layers.iter().flat_map(|l| l.children().into_iter().flatten()).filter_map(|c| c.name.clone()).collect();
+    assert_eq!(groups, ["Red", "Blue"]);
+    let palette = s.doc().unwrap().doc.embroidery.as_deref().and_then(|e| e.palette.as_ref()).and_then(|p| p.id());
+    assert_eq!(palette, None, "HUS's chart is its own");
+    let dst = plan(&export(&mut s, "dst", json!({})));
+    // The stop is a change to the same thread: three blocks; the cut a trim in the first.
+    assert_eq!(dst.blocks.len(), 3);
+    assert_eq!(dst.blocks[0].stitches.iter().filter(|s| s.command == vectorcraft_stitch::Command::Trim).count(), 1);
+    s.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
+    s.execute("file.place", &json!({"name": "design.hus", "dataBase64": b64(&bytes)})).expect("places");
+}
+
+/// The formats only read (SEW, HUS) are never written: `document.formats` lists them as readable
+/// only, with no options; an export to one is refused, saying so; none is offered among the
+/// export's extensions or the embroidery check's formats.
+#[test]
+fn formats_only_read_are_not_written() {
+    let mut s = art();
+    let r = s.execute("document.formats", &json!({})).unwrap();
+    let ids = |k: &str| r[k].as_array().unwrap().iter().filter_map(|v| v.as_str().map(str::to_string)).collect::<Vec<_>>();
+    assert!(!Format::READ_ONLY.is_empty());
+    for id in Format::READ_ONLY.map(Format::id) {
+        assert!(ids("readable").contains(&id.to_string()) && !ids("writable").contains(&id.to_string()), "{id}");
+        let f = r["formats"].as_array().unwrap().iter().find(|f| f["id"] == id).unwrap();
+        assert_eq!(f["options"], json!({}), "{id}");
+        let e = s.execute("document.export", &json!({"format": id})).unwrap_err().to_string();
+        assert!(e.contains("can be opened but not written"), "{id}: {e}");
+        assert!(!export_extensions().contains(&id), "{id}");
+        assert!(!crate::cmd::embroidery::check_formats().iter().any(|(f, _)| *f == id), "{id}");
+        assert!(OPEN_EXTS.contains(&id) && PLACE_EXTS.contains(&id) && UNASSOCIATED_EXTS.contains(&id), "{id}");
+    }
+}
+
 /// Each block's needle points (where the needle goes down) and the trims, as a reader decodes
 /// them: what a machine sews.
 fn sewn(p: &vectorcraft_stitch::Pattern) -> Vec<(Vec<(i32, i32)>, usize)> {
@@ -273,7 +355,7 @@ fn an_opened_designs_thread_records_and_label_are_written_back() {
 }
 
 /// Opening a machine file says what reading it left out (a PES's own section, PE-Design's), and
-/// writing over that file is then refused unless the loss is acknowledged; a file this app wrote
+/// an export over that file is then refused unless the loss is acknowledged; a file this app wrote
 /// leaves nothing out and is written over without asking.
 #[test]
 fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
@@ -307,6 +389,134 @@ fn writing_over_a_file_whose_opening_left_something_out_asks_first() {
         }
     }
     std::fs::remove_dir_all(d).ok();
+}
+
+/// An export of the opened file `path` in its own format (a format only read) over itself, of the
+/// document or of a selection: refused for the format, never told to acknowledge a loss, which
+/// couldn't help; the file is left as it was.
+fn own_format_refused(s: &mut Session, path: &str) {
+    let before = std::fs::read(path).unwrap();
+    // The design selected, so that Export Selection is offered and reaches its check of the format.
+    s.execute("select.all", &json!({})).unwrap();
+    for command in ["document.export", "document.exportSelection"] {
+        let e = s.execute(command, &json!({"path": path})).unwrap_err().to_string();
+        assert!(e.contains("can be opened but not written") && !e.contains("acknowledgeLoss"), "{command}: {e}");
+    }
+    assert_eq!(std::fs::read(path).unwrap(), before, "untouched");
+}
+
+/// Opening a SEW whose first preview picture isn't blank says that reading it leaves things out
+/// (its header tables are tested in the stitch crate), and one whose pictures and tables are blank
+/// opens saying nothing; an export of another format over either file is refused unless the loss is
+/// acknowledged, as for a PES, since SEW is never written (the project owner's choice, 2026-11-26),
+/// the refusal saying so in words of its own, the format first; exported in its own format over
+/// itself, it is refused for that format.
+#[test]
+fn writing_over_an_opened_sew_asks_first() {
+    let d = std::env::temp_dir().join(format!("vc-embroidery-sew-loss-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let mut s = art();
+    let blank = vectorcraft_testkit::machine_files::sew_from_jef(&export(&mut s, "jef", json!({}))).unwrap();
+    let mut drawn = blank.clone();
+    // A byte of the first picture's bits (after the header's tables, past its width and height).
+    use vectorcraft_testkit::machine_files::{SEW_PICTURE_BITS_AT, SEW_PICTURES_AT};
+    drawn[SEW_PICTURES_AT + SEW_PICTURE_BITS_AT] = 0xFF;
+    let note = super::embroidery::LOSS_NOTES[7];
+    for (name, file, drawn) in [("blank.sew", &blank, false), ("drawn.sew", &drawn, true)] {
+        let path = d.join(name);
+        std::fs::write(&path, file).unwrap();
+        let path = path.to_string_lossy().to_string();
+        let mut s = Session::new();
+        let r = s.execute("document.open", &json!({"path": path})).unwrap();
+        assert_eq!(warnings(&r), if drawn { vec![note.to_string()] } else { vec![] }, "{name}: {r}");
+        let e = s.execute("document.export", &json!({"path": path, "format": "dst"})).unwrap_err().to_string();
+        assert!(e.contains(&format!("VectorCraft can't write it again as it is (“{}”", super::embroidery::NOT_WRITTEN_NOTE)), "{name}: {e}");
+        assert_eq!(e.contains(note), drawn, "{name}: {e}");
+        assert_eq!(&std::fs::read(&path).unwrap(), file, "{name}: untouched");
+        own_format_refused(&mut s, &path);
+        s.execute("document.export", &json!({"path": path, "format": "dst", "acknowledgeLoss": true})).unwrap();
+        assert_ne!(&std::fs::read(&path).unwrap(), file, "{name}");
+    }
+    std::fs::remove_dir_all(d).ok();
+}
+
+/// An opened HUS says nothing on opening (its header holds nothing its records don't give), but
+/// HUS is never written, so an export of another format over the file is refused unless the loss
+/// is acknowledged, the refusal saying why in words of its own, and the file is left as it was;
+/// another file is written without asking (the project owner's choice, 2026-11-26).
+#[test]
+fn writing_over_an_opened_hus_asks_first() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    let d = std::env::temp_dir().join(format!("vc-embroidery-hus-over-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let records: Vec<(u8, i8, i8)> = (0..20).map(|i| (0x80, 10, if i % 2 == 0 { 20 } else { -20 })).chain([(0x90, 0, 0)]).collect();
+    let bytes = hus(&records, &[3], b"over\0\0\0\0", &Lzh::default());
+    let path = d.join("design.hus");
+    std::fs::write(&path, &bytes).unwrap();
+    let (path, other) = (path.to_string_lossy().to_string(), d.join("design.jef").to_string_lossy().to_string());
+    let mut s = Session::new();
+    let r = s.execute("document.open", &json!({"path": path})).unwrap();
+    assert_eq!(warnings(&r), Vec::<String>::new(), "{r}");
+    s.execute("document.export", &json!({"path": other, "format": "jef"})).expect("another file isn't asked about");
+    let e = s.execute("document.export", &json!({"path": path, "format": "jef"})).unwrap_err().to_string();
+    assert!(e.contains(&format!("VectorCraft can't write it again as it is (“{}”)", super::embroidery::NOT_WRITTEN_NOTE)), "{e}");
+    assert!(!e.contains("left things out"), "opening left nothing out: {e}");
+    assert_eq!(std::fs::read(&path).unwrap(), bytes, "untouched");
+    own_format_refused(&mut s, &path);
+    s.execute("document.export", &json!({"path": path, "format": "jef", "acknowledgeLoss": true})).unwrap();
+    assert_ne!(std::fs::read(&path).unwrap(), bytes);
+    std::fs::remove_dir_all(d).ok();
+}
+
+/// A HUS cut short in its last stream, or a SEW cut inside its records, opens as far as it goes,
+/// saying that the file ends early, and an export over the file then names that too; a whole one
+/// opens without it (the project owner's choice, 2026-11-26).
+#[test]
+fn a_hus_or_sew_cut_short_says_so() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
+    let note = super::embroidery::LOSS_NOTES[8];
+    // y moves that don't repeat soon, so that the last stream's tokens run to its end: moves that
+    // alternate pack into a few tokens after the stream's tables, and a cut of 3 bytes takes them
+    // all, leaving no record to read.
+    let records: Vec<(u8, i8, i8)> = (0..200).map(|i| (0x80, 10, ((i * 37) % 23) as i8 - 11)).chain([(0x90, 0, 0)]).collect();
+    let whole_hus = hus(&records, &[3], b"cut\0\0\0\0\0", &Lzh::default());
+    let mut s = art();
+    let whole_sew = sew_from_jef(&export(&mut s, "jef", json!({}))).unwrap();
+    let d = std::env::temp_dir().join(format!("vc-embroidery-cut-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    for (name, whole) in [("design.hus", &whole_hus), ("design.sew", &whole_sew)] {
+        let mut s = Session::new();
+        let r = open(&mut s, name, whole).unwrap();
+        assert!(!warnings(&r).contains(&note.to_string()), "{name}: whole: {r}");
+        // A stitch's last byte and the end record, or the last stream's last tokens.
+        let cut = &whole[..whole.len() - 3];
+        let r = open(&mut s, name, cut).expect("a file cut short opens");
+        assert_eq!(warnings(&r), [note], "{name}: {r}");
+        let path = d.join(name);
+        std::fs::write(&path, cut).unwrap();
+        let path = path.to_string_lossy().to_string();
+        let mut s = Session::new();
+        s.execute("document.open", &json!({"path": path})).unwrap();
+        let e = s.execute("document.export", &json!({"path": path, "format": "dst"})).unwrap_err().to_string();
+        assert!(e.contains(note), "{name}: {e}");
+        assert_eq!(std::fs::read(&path).unwrap(), cut, "{name}: untouched");
+    }
+    std::fs::remove_dir_all(d).ok();
+}
+
+/// The export's own refusal of a format only read, which every export path's first check
+/// (`writable_format`) makes before it: called past that check, it refuses HUS and SEW before
+/// planning anything, so a document with nothing to sew gets that refusal, not one for having
+/// nothing to sew.
+#[test]
+fn the_export_refuses_a_format_only_read_itself() {
+    let mut s = Session::new();
+    s.execute("file.new", &json!({"width": 100, "height": 100, "artboards": 1})).unwrap();
+    for id in ["hus", "sew"] {
+        let f = super::formats::format(id).unwrap();
+        let e = super::embroidery::encode(&s.doc().unwrap().doc, f, &json!({})).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(e.contains(&format!("{} files can be opened but not written", f.label)), "{id}: {e}");
+    }
 }
 
 /// Where the needle starts, on the 0.1 mm grid from the design's top-left corner.

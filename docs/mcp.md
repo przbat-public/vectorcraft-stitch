@@ -8465,7 +8465,15 @@ The document's art is stitched by `document.export` to `dst`, `tap`, `t01`, `exp
 each with its earlier meaning: `stitchAngle` counts clockwise as seen, the planner's angle, so `stitchAngle` 30 is `angle`
 150. Until 2026-10-24 `angle` counted clockwise too; it now counts counter-clockwise on the page, as every angle in
 VectorCraft: a value recorded before is `180 − old`),
-and `document.open` reads such a file back as art, one group per thread. A value outside an option's range (each
+and `document.open` reads such a file back as art, one group per thread (as it does Janome `sew` and Husqvarna Viking
+`hus` files, which are read only: `document.formats` lists them as readable, not writable, an export to them is
+refused, and an export written over the file an opened one came from is refused until `acknowledgeLoss: true` is
+passed, as VectorCraft can't write that file again as it is (`document.export`, `document.exportEps`,
+`document.exportDxf` and `document.exportPdf` always; with no app, `document.exportSelection`,
+`document.exportForOffice` and `file.print` given a path too, which the app writes itself and doesn't ask about yet;
+`document.exportForWeb`, `document.exportForScreens`, `assets.export` and the exports of other kinds of file check
+nowhere: [embroidery.md](embroidery.md) › Which ways of writing check), and one in the file's own format over itself is refused for that format; a HUS cut in its last stream, or a SEW cut inside its records, opens as far as it goes, its warnings
+saying that the file ends early, and one cut earlier is refused). A value outside an option's range (each
 description gives it) is refused, not clamped, and the read commands below echo the options they planned with under
 `options`. A design that would need too many stitches, one a format can't hold (more colours than it numbers, a size
 past its header) and a document with nothing to stitch are errors of the design, not "invalid parameters": changing the
@@ -8521,10 +8529,11 @@ head (40 screen px from the centre, at the angle, counter-clockwise on the page)
 - `embroidery.setStopAfter {on?, ids?}` asks for the machine to stop after each object (Stop After, as for an appliqué
   piece to be laid down), after its cut when it has one; with `on: false` for no stop, a run's own included; left out,
   `on` toggles. It answers `{on, changed}` and refuses and passes over as `embroidery.setTrimAfter` does. No machine
-  format has a stop of its own: a stop is written as a change to the same thread (PES, PEC and JEF list the block's
-  thread again in their headers), only between two needle points of one block; one at a thread change or at the
-  design's end is that change, and nothing more is written. Opening a PES, PEC, JEF or VP3 file, a change to the same
-  thread reads back as a stop.
+  format written has a stop of its own: a stop is written as a change to the same thread (PES, PEC and JEF list the
+  block's thread again in their headers), only between two needle points of one block; one at a thread change or at
+  the design's end is that change, and nothing more is written. Opening a file of a format that names its threads
+  (PES, PEC, JEF, VP3, SEW or HUS), a change to the same thread reads back as a stop; a HUS file's 0x82 record, which
+  no source names, also reads as one.
 - `embroidery.convertToManual {ids?, …embroidery options}` converts each object given (else selected; a group or a layer
   stands for the objects in it, each converted on its own, and a compound path's member for its compound path, which
   the plan sews as one object) to manual stitches: its stitches frozen as the plan sews them

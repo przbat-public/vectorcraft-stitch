@@ -5493,6 +5493,10 @@ lighting	Light	광원
 @msg	threads that twist several colours are read in their first colour	여러 색을 꼰 실은 첫 번째 색으로 읽힙니다
 @msg	the file's several designs are read as one	파일의 여러 디자인은 하나로 읽힙니다
 @msg	the file holds things this version doesn't read	이 파일에는 이 버전이 읽지 않는 내용이 있습니다
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft는 이 파일을 있는 그대로 다시 쓸 수 없습니다({what}). 덮어쓰면 파일이 영구적으로 사라집니다. 보존하려면 다른 이름으로 저장하세요.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target}은(는) 이 문서를 읽어 온 원본 파일이며, VectorCraft는 이 파일을 있는 그대로 다시 쓸 수 없습니다({what}): 덮어쓰면 파일이 영구적으로 사라집니다. 대신 다른 파일에 쓰거나, 그래도 바꾸려면 acknowledgeLoss: true를 전달하세요
+@msg	the file's own format, which VectorCraft reads but doesn't write	파일 자체의 형식은 VectorCraft가 읽지만 쓰지는 않습니다
+@msg	the file ends early: the design may be incomplete	파일이 일찍 끝납니다: 디자인이 불완전할 수 있습니다
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft 팀의 VectorCraft를 기반으로 합니다. MIT OR Apache-2.0. 글꼴: Source Sans 3, Inter, JetBrains Mono (OFL). 아이콘: Lucide (ISC) + VectorCraft.
@@ -5507,11 +5511,15 @@ lighting	Light	광원
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	도형의 곡선을 선분으로 바꾸면 한 도형에 허용되는 {MAX_SHAPE_POINTS}개 점을 넘습니다: 도형을 단순화하거나 더 작은 도형으로 나누세요
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	도형이 원점에서 {MAX_COORD_MM}mm보다 멀리 있거나 숫자가 아닌 좌표가 있습니다: 자수할 수 없습니다
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	도형에 약 {n}땀이 필요하며, 한 도형에 허용되는 {MAX_STITCHES}땀을 넘습니다: 땀을 길게, 간격을 넓게, 또는 디자인을 작게 하세요
+@msg	not a HUS file: it does not start with a HUS signature	HUS 파일이 아닙니다: HUS 시그니처로 시작하지 않습니다
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES 또는 PEC 파일이 아닙니다: #PES 또는 #PEC로 시작하지 않습니다
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	SEW 파일이 아닙니다: 색이 {colors}가지로 지정되어 있지만, SEW 파일의 색은 1~{MAX_COLORS}가지입니다
 @msg	not a VP3 file: it does not start with %vsm%	VP3 파일이 아닙니다: %vsm%로 시작하지 않습니다
 @msg	not a {what} file: its record {_1} is not a DST record	{what} 파일이 아닙니다: 레코드 {_1}이(가) DST 레코드가 아닙니다
 @msg	params must be an object	매개변수는 객체여야 합니다
 @msg	the EXP file has no stitch records	EXP 파일에 땀 레코드가 없습니다
+@msg	the HUS file's compressed stitches are damaged	HUS 파일의 압축된 땀 데이터가 손상되었습니다
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS 헤더가 잘렸거나 파일의 {len}바이트를 넘는 위치를 가리킵니다
 @msg	the JEF file has no stitch records	JEF 파일에 땀 레코드가 없습니다
 @msg	the JEF file is cut short: {len} bytes	JEF 파일이 잘렸습니다: {len}바이트
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF 헤더가 바이트 {offset}을(를) 가리키지만, 파일은 {_1}바이트입니다

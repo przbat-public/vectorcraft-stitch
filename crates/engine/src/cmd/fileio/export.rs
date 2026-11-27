@@ -54,10 +54,12 @@ pub(super) fn serialize(s: &mut Session, p: &Value) -> Result<Value> {
 
 pub(super) fn export(s: &mut Session, p: &Value) -> Result<Value> {
     let path = str_param(p, "path");
+    // VectorCraft Stitch: the format first, so that a file of a format only read (SEW, HUS),
+    // exported over itself in that format, is refused for it, never told to acknowledge a loss.
+    let f = writable("document.export", str_param(p, "format"), path)?;
     if let Some(path) = path {
         super::check_not_lossy_overwrite(s.doc()?, path, p, "document.export")?;
     }
-    let f = writable("document.export", str_param(p, "format"), path)?;
     let expanded = expand_presets(s, "document.export", p)?;
     let p = with_black_output(s, &expanded);
     let (doc, display_doc_title) = source(s, f, &p, "document.export")?;
@@ -309,11 +311,12 @@ pub(crate) fn isolated(doc: &Document, ids: &[NodeId], name: &str) -> Option<(Do
 /// are guides, not artwork, and are left out.
 pub(super) fn export_selection(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "document.exportSelection";
-    if let Some(path) = str_param(p, "path") {
+    let path = str_param(p, "path");
+    // VectorCraft Stitch: the format first, as document.export does.
+    let f = writable(C, str_param(p, "format"), path)?;
+    if let Some(path) = path {
         super::check_not_lossy_overwrite(s.doc()?, path, p, C)?;
     }
-    let path = str_param(p, "path");
-    let f = writable(C, str_param(p, "format"), path)?;
     let expanded = expand_presets(s, C, p)?;
     let p = with_black_output(s, &expanded);
     let (d, bounds) = selection(s, C, f.id == "txt")?;

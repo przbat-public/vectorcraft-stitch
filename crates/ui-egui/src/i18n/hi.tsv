@@ -8147,6 +8147,10 @@ theme	Appearance	अपीयरेंस
 @msg	threads that twist several colours are read in their first colour	कई रंगों को बटकर बने धागे उनके पहले रंग में पढ़े जाते हैं
 @msg	the file's several designs are read as one	फ़ाइल के कई डिज़ाइन एक ही डिज़ाइन के रूप में पढ़े जाते हैं
 @msg	the file holds things this version doesn't read	फ़ाइल में ऐसी चीज़ें हैं जिन्हें यह संस्करण नहीं पढ़ता
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft इस फ़ाइल को उसके मौजूदा रूप में दोबारा नहीं लिख सकता ({what})। फ़ाइल रिप्लेस करने पर वह हमेशा के लिए खो जाएगी। मूल फ़ाइल रखने के लिए दूसरे नाम से सेव करें।
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	यह डॉक्यूमेंट {target} से पढ़ा गया था और VectorCraft उस फ़ाइल को उसके मौजूदा रूप में दोबारा नहीं लिख सकता ({what}): उसी फ़ाइल पर लिखने से वह स्थायी रूप से खो जाएगी। दूसरी फ़ाइल लिखें या फिर भी बदलने के लिए acknowledgeLoss: true दें
+@msg	the file's own format, which VectorCraft reads but doesn't write	फ़ाइल का अपना फ़ॉर्मैट, जिसे VectorCraft पढ़ता है, लेकिन लिखता नहीं
+@msg	the file ends early: the design may be incomplete	फ़ाइल समय से पहले खत्म हो जाती है: डिज़ाइन अधूरा हो सकता है
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft टीम के VectorCraft पर आधारित। MIT OR Apache-2.0। फ़ॉन्ट: Source Sans 3, Inter, JetBrains Mono (OFL)। आइकन: Lucide (ISC) + VectorCraft।
 @msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC में अधिकतम {MAX_COLORS} रंग होते हैं (हर स्टॉप एक गिना जाता है), {colors} नहीं
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 में अधिकतम {MAX_COLORS} रंग ब्लॉक होते हैं
@@ -8157,10 +8161,14 @@ theme	Appearance	अपीयरेंस
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	किसी आकृति के वक्रों को सीधे खंडों में बदलने पर उसमें एक आकृति की सीमा {MAX_SHAPE_POINTS} बिंदुओं से अधिक बिंदु हैं: उसे सरल करें या छोटी आकृतियों में बाँट दें
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	कोई आकृति मूल बिंदु से {MAX_COORD_MM} mm से अधिक दूर है, या उसका कोई निर्देशांक संख्या नहीं है: उसे सिला नहीं जा सकता
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	एक आकृति को लगभग {n} स्टिच चाहिए होंगे, जो एक आकृति की सीमा {MAX_STITCHES} से अधिक है: लंबा स्टिच, चौड़ी स्पेसिंग या छोटा डिज़ाइन इस्तेमाल करें
+@msg	not a HUS file: it does not start with a HUS signature	HUS फ़ाइल नहीं: यह किसी HUS सिग्नेचर से शुरू नहीं होती
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES या PEC फ़ाइल नहीं: यह #PES या #PEC से शुरू नहीं होती
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	SEW फ़ाइल नहीं: यह {colors} रंग बताती है, जबकि SEW फ़ाइल 1 से {MAX_COLORS} रंग बताती है
 @msg	not a VP3 file: it does not start with %vsm%	VP3 फ़ाइल नहीं: यह %vsm% से शुरू नहीं होती
 @msg	not a {what} file: its record {_1} is not a DST record	{what} फ़ाइल नहीं: इसका रिकॉर्ड {_1} DST रिकॉर्ड नहीं है
 @msg	the EXP file has no stitch records	EXP फ़ाइल में कोई स्टिच रिकॉर्ड नहीं है
+@msg	the HUS file's compressed stitches are damaged	HUS फ़ाइल के संपीड़ित स्टिच क्षतिग्रस्त हैं
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS हेडर अधूरा है या फ़ाइल के {len} बाइट से आगे की ओर इशारा करता है
 @msg	the JEF file has no stitch records	JEF फ़ाइल में कोई स्टिच रिकॉर्ड नहीं है
 @msg	the JEF file is cut short: {len} bytes	JEF फ़ाइल अधूरी है: {len} बाइट
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF हेडर बाइट {offset} की ओर इशारा करता है, जो फ़ाइल के {_1} बाइट से आगे है

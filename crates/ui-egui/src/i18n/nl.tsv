@@ -5795,6 +5795,10 @@ swatch	Bright Violet	Felviolet
 @msg	threads that twist several colours are read in their first colour	garens die meerdere kleuren ineendraaien worden in hun eerste kleur gelezen
 @msg	the file's several designs are read as one	de verschillende ontwerpen in het bestand worden als één gelezen
 @msg	the file holds things this version doesn't read	het bestand bevat dingen die deze versie niet leest
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft kan dit bestand niet opnieuw schrijven zoals het is ({what}), dus als je het vervangt, raak je het definitief kwijt. Sla het onder een andere naam op om het te bewaren.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} is het bestand waaruit dit document is gelezen, en VectorCraft kan het niet opnieuw schrijven zoals het is ({what}): als je het overschrijft, raak je het definitief kwijt. Schrijf in plaats daarvan naar een ander bestand, of geef acknowledgeLoss: true door om het toch te vervangen
+@msg	the file's own format, which VectorCraft reads but doesn't write	het eigen formaat van het bestand, een formaat dat VectorCraft wel leest maar niet schrijft
+@msg	the file ends early: the design may be incomplete	het bestand houdt te vroeg op: het ontwerp is mogelijk onvolledig
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Gebaseerd op VectorCraft van het ArtCraft-team. MIT OR Apache-2.0. Lettertypen: Source Sans 3, Inter, JetBrains Mono (OFL). Pictogrammen: Lucide (ISC) + VectorCraft.
@@ -5810,11 +5814,15 @@ swatch	Bright Violet	Felviolet
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	een vorm heeft meer dan de {MAX_SHAPE_POINTS} punten die één vorm mag hebben zodra zijn krommen in lijnstukken zijn omgezet: vereenvoudig hem of verdeel hem in kleinere vormen
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	een vorm ligt meer dan {MAX_COORD_MM} mm van de oorsprong of heeft een coördinaat die geen getal is: hij kan niet worden geborduurd
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	een vorm zou ongeveer {n} steken nodig hebben, meer dan de {MAX_STITCHES} die één vorm mag hebben: gebruik een langere steek, meer tussenruimte of een kleiner ontwerp
+@msg	not a HUS file: it does not start with a HUS signature	geen HUS-bestand: het begint niet met een HUS-signatuur
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	geen PES- of PEC-bestand: het begint niet met #PES of #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	geen SEW-bestand: het vermeldt {colors} kleuren, en een SEW-bestand vermeldt er 1 tot {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	geen VP3-bestand: het begint niet met %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	geen {what}-bestand: record {_1} is geen DST-record
 @msg	params must be an object	de parameters moeten een object zijn
 @msg	the EXP file has no stitch records	het EXP-bestand heeft geen steekrecords
+@msg	the HUS file's compressed stitches are damaged	de gecomprimeerde steken van het HUS-bestand zijn beschadigd
+@msg	the HUS header is cut short or points past the file's {len} bytes	de HUS-header is afgekapt of wijst voorbij de {len} bytes van het bestand
 @msg	the JEF file has no stitch records	het JEF-bestand heeft geen steekrecords
 @msg	the JEF file is cut short: {len} bytes	het JEF-bestand is afgekapt: {len} bytes
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	de JEF-header wijst naar byte {offset}, voorbij de {_1} bytes van het bestand

@@ -5944,6 +5944,7 @@ embroidery	No source gives a number to check these against.	Żadne źródło nie
 @plural	{count} row|{count} rows	{count} ciąg|{count} ciągi|{count} ciągów
 @plural	{count} spot|{count} spots	{count} miejsce|{count} miejsca|{count} miejsc
 @plural	{count} thread|{count} threads	{count} nić|{count} nici|{count} nici
+embroidery	Threads	Nici
 @plural	{count} error|{count} errors	{count} błąd|{count} błędy|{count} błędów
 @plural	{count} warning|{count} warnings	{count} ostrzeżenie|{count} ostrzeżenia|{count} ostrzeżeń
 @plural	{count} note|{count} notes	{count} informacja|{count} informacje|{count} informacji
@@ -5969,7 +5970,6 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Za długie
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Powyżej {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} kolor|{count} kolory|{count} kolorów
 embroidery	Embroidery: {figures}	Haft: {figures}
 embroidery	Stitches can't be planned	Nie można zaplanować ściegów
 embroidery	Click to open the Embroidery panel.	Kliknij, aby otworzyć panel Haft.
@@ -7347,7 +7347,7 @@ embroidery	Nothing to sew: every color is left out.	Nie ma czego szyć: każdy k
 embroidery	Nothing to create: every color is left out.	Nie ma czego utworzyć: każdy kolor jest pominięty.
 embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Każdy obszar koloru {color} był mniejszy niż {value} mm²: kolor dołączył do sąsiadów.
 embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Nić wybrana dla {color}, {thread}, nie jest szara: jest szyta tak, jak ją wybrano.
-embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Przy tym rozmiarze obraz ma {value} pikseli na milimetr, mniej niż {least}: większa kopia digitalizuje się lepiej.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Przy tym rozmiarze obraz ma {value} piksela na milimetr, mniej niż {least}: większa kopia digitalizuje się lepiej.
 embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Obraz wczytano w rozmiarze {width} × {height} pikseli, mniejszym niż jego {fullWidth} × {fullHeight}.
 embroidery	The image's corners don't agree on a background: every color is sewn.	Rogi obrazu nie zgadzają się co do tła: każdy kolor jest szyty.
 embroidery	No color traced is the background's: every area is sewn.	Żaden obrysowany kolor nie jest kolorem tła: każdy obszar jest szyty.

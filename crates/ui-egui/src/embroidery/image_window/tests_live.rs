@@ -111,6 +111,39 @@ fn keep_as_live_object_from_the_window() {
     assert!(status.starts_with("Created a live object: ") && status.ends_with("Undo removes it."), "{status}");
 }
 
+/// While the question before hand edits are replaced holds the buttons' place, the notes' chip takes
+/// its least room and the question's words the rest: in English and Polish the note is at its least
+/// width, where it kept 300 points, and the question's words wrap inside the bar of a window about
+/// 1,000 points wide, where they ran down past it.
+#[test]
+fn the_question_has_room_while_the_note_takes_its_least() {
+    // A screen whose window is about 1,000 points wide, and rounding of a galley's width (points).
+    const SCREEN: egui::Vec2 = vec2(1080.0, 900.0);
+    const ROUNDING: f32 = 1.0;
+    for (lang, start) in [("en", "The contents of this live object"), ("pl", "Zawartość tego żywego obiektu")] {
+        let (mut app, ctx, mut time, _) = edited_live_object_open();
+        press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
+        assert!(asking(&app), "{lang}: asked");
+        app.session.prefs.interface_language = lang.into();
+        let code = crate::i18n::Lang::from_code(lang).expect("a language");
+        let (shapes, window, _) = super::tests::drawn_on(&mut app, &ctx, &mut time, SCREEN);
+        // The note's words as drawn, in the language the frames set.
+        let note = super::live_bar::current_notes(super::tests::live_mut(&mut app), code).first().map(|n| n.words.clone()).expect("a note");
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        let drawn = |words: &str| {
+            shapes.iter().find_map(|s| match s {
+                egui::Shape::Text(t) if t.galley.text().starts_with(words) => Some(Rect::from_min_size(t.pos, t.galley.size())),
+                _ => None,
+            })
+        };
+        let chip = drawn(&note).unwrap_or_else(|| panic!("{lang}: the note drawn"));
+        assert!(chip.width() <= super::live_bar::CHIP_LEAST_WORDS + ROUNDING, "{lang}: the note at its least: {chip:?}");
+        let question = drawn(start).unwrap_or_else(|| panic!("{lang}: the question drawn"));
+        let bar = super::frame::regions(window.shrink(17.0)).bar;
+        assert!(bar.contains_rect(question), "{lang}: inside the bar: {question:?} in {bar:?}");
+    }
+}
+
 /// Digitize Image… on a live object opens the window with the settings it was made with (its area
 /// changes too; its size its image's, though it was made at a width given), unless the window was
 /// left on it in this session.

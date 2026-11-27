@@ -5671,6 +5671,7 @@ embroidery	No source gives a number to check these against.	Keine Quelle nennt e
 @plural	{count} row|{count} rows	{count} Folge|{count} Folgen
 @plural	{count} spot|{count} spots	{count} Stelle|{count} Stellen
 @plural	{count} thread|{count} threads	{count} Garn|{count} Garne
+embroidery	Threads	Garne
 @plural	{count} error|{count} errors	{count} Fehler|{count} Fehler
 @plural	{count} warning|{count} warnings	{count} Warnung|{count} Warnungen
 @plural	{count} note|{count} notes	{count} Hinweis|{count} Hinweise
@@ -5696,7 +5697,6 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	Zu lang
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Über {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} Farbe|{count} Farben
 embroidery	Embroidery: {figures}	Stickerei: {figures}
 embroidery	Stitches can't be planned	Die Stiche lassen sich nicht planen
 embroidery	Click to open the Embroidery panel.	Klicken, um das Bedienfeld „Stickerei“ zu öffnen.

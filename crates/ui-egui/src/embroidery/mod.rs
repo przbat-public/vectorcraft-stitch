@@ -3,7 +3,7 @@
 //!
 //! - [`marks`]: severity marks, drawn in code: error, warning, note, passed.
 //! - [`check_marks`]: the Check tab's findings ringed on the canvas.
-//! - [`counters`]: the status bar's stitches, colours, thread changes and time.
+//! - [`counters`]: the status bar's stitches, threads, thread changes and time.
 //! - [`fields`]: the numbers of the embroidery fields (the interface language's decimal mark, each
 //!   unit's step).
 //! - [`rows`]: a row of the embroidery settings (the Object tab's): a label, a field, where its

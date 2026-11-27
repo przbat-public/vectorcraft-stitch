@@ -6620,6 +6620,7 @@ embroidery	No source gives a number to check these against.	Nijedan izvor ne daj
 @plural	{count} row|{count} rows	{count} niz|{count} niza|{count} nizova
 @plural	{count} spot|{count} spots	{count} mjesto|{count} mjesta|{count} mjesta
 @plural	{count} thread|{count} threads	{count} konac|{count} konca|{count} konaca
+embroidery	Threads	Konci
 @plural	{count} error|{count} errors	{count} greška|{count} greške|{count} grešaka
 @plural	{count} warning|{count} warnings	{count} upozorenje|{count} upozorenja|{count} upozorenja
 @plural	{count} note|{count} notes	{count} napomena|{count} napomene|{count} napomena
@@ -6645,7 +6646,6 @@ embroidery	Median: {value} mm	Medijan: {value} mm
 embroidery	Too long	Predugi
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Preko {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} boja|{count} boje|{count} boja
 embroidery	Embroidery: {figures}	Vez: {figures}
 embroidery	Stitches can't be planned	Bodovi se ne mogu isplanirati
 embroidery	Click to open the Embroidery panel.	Kliknite da otvorite panel Vez.

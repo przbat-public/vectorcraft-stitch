@@ -5748,6 +5748,7 @@ embroidery	No source gives a number to check these against.	これらを判定�
 @plural	{count} row|{count} rows	{count} か所の連続
 @plural	{count} spot|{count} spots	{count} か所
 @plural	{count} thread|{count} threads	{count} 本の糸
+embroidery	Threads	糸
 @plural	{count} error|{count} errors	エラー {count} 件
 @plural	{count} warning|{count} warnings	警告 {count} 件
 @plural	{count} note|{count} notes	注記 {count} 件
@@ -5773,7 +5774,6 @@ embroidery	Median: {value} mm	中央値: {value} mm
 embroidery	Too long	長すぎ
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm 超: {stitches}
-@plural	{count} color|{count} colors	{count} 色
 embroidery	Embroidery: {figures}	刺繍: {figures}
 embroidery	Stitches can't be planned	針目を計画できません
 embroidery	Click to open the Embroidery panel.	クリックすると刺繍パネルが開きます。

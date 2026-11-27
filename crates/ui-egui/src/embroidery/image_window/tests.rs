@@ -1402,7 +1402,7 @@ fn the_outlines_thread_is_chosen_and_goes_back_to_the_darkest() {
 
 /// A few frames on a screen `screen` points large (the column learns its content's size, the window
 /// its own) → the last one's shapes, flattened, the window and its settings column.
-fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, screen: egui::Vec2) -> (Vec<egui::Shape>, Rect, Rect) {
+pub(super) fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, screen: egui::Vec2) -> (Vec<egui::Shape>, Rect, Rect) {
     fn flatten(s: egui::Shape, out: &mut Vec<egui::Shape>) {
         match s {
             egui::Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
@@ -1423,6 +1423,36 @@ fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, scree
     }
     let window = ctx.memory(|m| m.area_rect(egui::Id::unique("embroidery-digitize-image"))).expect("the window drawn");
     (shapes, window, frame::regions(window.shrink(17.0)).settings)
+}
+
+/// The Live bar's first note is drawn whole where the bar has room beside its buttons, on up to two
+/// rows (it was cut mid-word at 300 points with room to spare): the test picture's coarse note, in
+/// English and Polish.
+#[test]
+fn the_live_bars_note_is_drawn_whole_where_the_bar_has_room() {
+    for lang in ["en", "pl"] {
+        let mut app = app();
+        app.session.prefs.interface_language = lang.into();
+        let (mut app, ctx, mut time) = opened_with(app);
+        until(&mut app, &ctx, &mut time, ready);
+        let code = crate::i18n::Lang::from_code(lang).expect("a language");
+        let first = super::live_bar::current_notes(live_mut(&mut app), code).first().map(|n| n.words.clone()).expect("a note");
+        // Longer than the 300 points it was cut at: about 60 characters at the chip's size.
+        const LONGER_THAN_THE_OLD_ROOM: usize = 70;
+        assert!(first.chars().count() > LONGER_THAN_THE_OLD_ROOM, "{lang}: a long note: {first}");
+        let (shapes, window, _) = drawn_on(&mut app, &ctx, &mut time, vec2(1440.0, 900.0));
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        let galley = shapes
+            .iter()
+            .find_map(|s| match s {
+                egui::Shape::Text(t) if t.galley.text() == first => Some((t.galley.clone(), t.pos)),
+                _ => None,
+            })
+            .expect("the note drawn");
+        assert!(!galley.0.elided, "{lang}: whole: {first}");
+        let bar = frame::regions(window.shrink(17.0)).bar;
+        assert!(bar.contains_rect(Rect::from_min_size(galley.1, galley.0.size())), "{lang}: inside the bar");
+    }
 }
 
 /// The window open in language `lang` on step 4, its outlines and border on, their result shown.

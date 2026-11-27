@@ -6005,6 +6005,7 @@ embroidery	No source gives a number to check these against.	Nenhuma fonte dá um
 @plural	{count} row|{count} rows	{count} sequência|{count} sequências
 @plural	{count} spot|{count} spots	{count} local|{count} locais
 @plural	{count} thread|{count} threads	{count} linha|{count} linhas
+embroidery	Threads	Linhas
 @plural	{count} error|{count} errors	{count} erro|{count} erros
 @plural	{count} warning|{count} warnings	{count} aviso|{count} avisos
 @plural	{count} note|{count} notes	{count} observação|{count} observações
@@ -6030,7 +6031,6 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Longos demais
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Acima de {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} cor|{count} cores
 embroidery	Embroidery: {figures}	Bordado: {figures}
 embroidery	Stitches can't be planned	Não é possível planejar os pontos
 embroidery	Click to open the Embroidery panel.	Clique para abrir o painel Bordado.

@@ -8313,6 +8313,7 @@ embroidery	No source gives a number to check these against.	इनकी तु�
 @plural	{count} row|{count} rows	{count} पंक्ति|{count} पंक्तियाँ
 @plural	{count} spot|{count} spots	{count} जगह|{count} जगहें
 @plural	{count} thread|{count} threads	{count} धागा|{count} धागे
+embroidery	Threads	धागे
 @plural	{count} error|{count} errors	{count} त्रुटि|{count} त्रुटियाँ
 @plural	{count} warning|{count} warnings	{count} चेतावनी|{count} चेतावनियाँ
 @plural	{count} note|{count} notes	{count} नोट|{count} नोट
@@ -8338,7 +8339,6 @@ embroidery	Median: {value} mm	माध्यिका: {value} mm
 embroidery	Too long	बहुत लंबे
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm से अधिक: {stitches}
-@plural	{count} color|{count} colors	{count} रंग|{count} रंग
 embroidery	Embroidery: {figures}	कढ़ाई: {figures}
 embroidery	Stitches can't be planned	स्टिच की योजना नहीं बन सकती
 embroidery	Click to open the Embroidery panel.	कढ़ाई पैनल खोलने के लिए क्लिक करें।

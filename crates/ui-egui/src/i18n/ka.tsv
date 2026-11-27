@@ -5971,6 +5971,7 @@ embroidery	No source gives a number to check these against.	არცერთ�
 @plural	{count} row|{count} rows	მიმდევრობები: {count}
 @plural	{count} spot|{count} spots	ადგილები: {count}
 @plural	{count} thread|{count} threads	ძაფები: {count}
+embroidery	Threads	ძაფები
 @plural	{count} error|{count} errors	შეცდომები: {count}
 @plural	{count} warning|{count} warnings	გაფრთხილებები: {count}
 @plural	{count} note|{count} notes	შენიშვნები: {count}
@@ -5996,7 +5997,6 @@ embroidery	Median: {value} mm	მედიანა: {value} მმ
 embroidery	Too long	ზედმეტად გრძელი
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} მმ: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} მმ-ზე მეტი: {stitches}
-@plural	{count} color|{count} colors	ფერები: {count}
 embroidery	Embroidery: {figures}	ნაქარგობა: {figures}
 embroidery	Stitches can't be planned	ნაკერების დაგეგმვა შეუძლებელია
 embroidery	Click to open the Embroidery panel.	დააწკაპუნეთ პანელის „ნაქარგობა“ გასახსნელად.

@@ -6789,6 +6789,7 @@ embroidery	No source gives a number to check these against.	Cap font no dona cap
 @plural	{count} row|{count} rows	{count} sèrie|{count} sèries
 @plural	{count} spot|{count} spots	{count} lloc|{count} llocs
 @plural	{count} thread|{count} threads	{count} fil|{count} fils
+embroidery	Threads	Fils
 @plural	{count} error|{count} errors	{count} error|{count} errors
 @plural	{count} warning|{count} warnings	{count} advertiment|{count} advertiments
 @plural	{count} note|{count} notes	{count} nota|{count} notes
@@ -6814,7 +6815,6 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Massa llargues
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Més de {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} color|{count} colors
 embroidery	Embroidery: {figures}	Brodat: {figures}
 embroidery	Stitches can't be planned	No es poden planificar les puntades
 embroidery	Click to open the Embroidery panel.	Fes clic per obrir el tauler Brodat.

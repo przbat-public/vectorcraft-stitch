@@ -5709,6 +5709,7 @@ embroidery	No source gives a number to check these against.	沒有來源給出�
 @plural	{count} row|{count} rows	{count} 處連續
 @plural	{count} spot|{count} spots	{count} 處
 @plural	{count} thread|{count} threads	{count} 種線
+embroidery	Threads	線
 @plural	{count} error|{count} errors	{count} 個錯誤
 @plural	{count} warning|{count} warnings	{count} 個警告
 @plural	{count} note|{count} notes	{count} 條提示
@@ -5734,7 +5735,6 @@ embroidery	Median: {value} mm	中位數：{value} mm
 embroidery	Too long	過長
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm：{stitches}
 embroidery	Over {value} mm: {stitches}	超過 {value} mm：{stitches}
-@plural	{count} color|{count} colors	{count} 種顏色
 embroidery	Embroidery: {figures}	刺繡：{figures}
 embroidery	Stitches can't be planned	無法規劃針跡
 embroidery	Click to open the Embroidery panel.	按一下可開啟「刺繡」面板。

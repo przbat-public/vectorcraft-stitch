@@ -90,7 +90,7 @@ fn the_figures_show_while_the_stitches_are_wanted() {
     assert_eq!((f.colors, f.thread_changes), (3, 2));
     let full = words(&f, Variant::Named);
     assert!(said(&texts, &full), "{full}: {texts:?}");
-    assert!(full.starts_with("Embroidery: ") && full.contains(" · 3 colors · 2 thread changes · about "), "{full}");
+    assert!(full.starts_with("Embroidery: ") && full.contains(" · 3 threads · 2 thread changes · about "), "{full}");
     assert!(said(&texts, " fps"), "the timings kept: {texts:?}");
     let v = app.embroidery.counters.inspect();
     assert_eq!((&v["state"], &v["stitches"], &v["colors"], &v["threadChanges"]), (&json!("figures"), &json!(f.stitches), &json!(3), &json!(2)));
@@ -114,15 +114,15 @@ fn the_figures_show_while_the_stitches_are_wanted() {
 #[test]
 fn the_wordings() {
     let f = Figures { stitches: 4752, colors: 4, thread_changes: 3, trims: 2, jumps: 5, minutes: 6.2, speed: 650, size: Some((100.4, 70.3)) };
-    assert_eq!(words(&f, Variant::All), "4,752 stitches · 4 colors · 3 thread changes · about 7 min");
-    assert_eq!(words(&f, Variant::NoChanges), "4,752 stitches · 4 colors · about 7 min");
+    assert_eq!(words(&f, Variant::All), "4,752 stitches · 4 threads · 3 thread changes · about 7 min");
+    assert_eq!(words(&f, Variant::NoChanges), "4,752 stitches · 4 threads · about 7 min");
     assert_eq!(words(&f, Variant::Time), "4,752 stitches · about 7 min");
     assert_eq!(words(&f, Variant::Stitches), "4,752 stitches");
     crate::i18n::set_current(crate::i18n::Lang::from_code("pl").unwrap());
     let pl = words(&f, Variant::All);
     let named = words(&f, Variant::Named);
     crate::i18n::set_current(crate::i18n::Lang::EN);
-    assert!(pl.starts_with("4752 ściegi · 4 kolory · 3 zmiany nici"), "{pl}");
+    assert!(pl.starts_with("4752 ściegi · 4 nici · 3 zmiany nici"), "{pl}");
     assert!(named.starts_with("Haft: "), "{named}");
 }
 

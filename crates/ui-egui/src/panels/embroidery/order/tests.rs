@@ -93,7 +93,7 @@ fn the_list_and_its_figures() {
     assert!(words.iter().any(|w| w == "Thread change"), "{words:?}");
     assert!(words.iter().any(|w| w.starts_with("fill · tatami")), "{words:?}");
     assert!(words.iter().filter(|w| w.starts_with("<Rectangle>")).count() == 4, "{words:?}");
-    for figure in ["Design", "Stitches", "Colors", "Thread changes", "Size", "Time"] {
+    for figure in ["Design", "Stitches", "Threads", "Thread changes", "Size", "Time"] {
         assert!(words.iter().any(|w| w == figure), "{figure}: {words:?}");
     }
     assert!(words.iter().any(|w| w.starts_with("The time at 650 stitches a minute")), "{words:?}");

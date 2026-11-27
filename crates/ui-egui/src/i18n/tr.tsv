@@ -6268,6 +6268,7 @@ embroidery	No source gives a number to check these against.	Hiçbir kaynak bunla
 @plural	{count} row|{count} rows	{count} dizi
 @plural	{count} spot|{count} spots	{count} nokta
 @plural	{count} thread|{count} threads	{count} iplik
+embroidery	Threads	İplikler
 @plural	{count} error|{count} errors	{count} hata
 @plural	{count} warning|{count} warnings	{count} uyarı
 @plural	{count} note|{count} notes	{count} bilgi
@@ -6293,7 +6294,6 @@ embroidery	Median: {value} mm	Ortanca: {value} mm
 embroidery	Too long	Çok uzun
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm üzeri: {stitches}
-@plural	{count} color|{count} colors	{count} renk
 embroidery	Embroidery: {figures}	Nakış: {figures}
 embroidery	Stitches can't be planned	Dikişler planlanamıyor
 embroidery	Click to open the Embroidery panel.	Nakış panelini açmak için tıklayın.

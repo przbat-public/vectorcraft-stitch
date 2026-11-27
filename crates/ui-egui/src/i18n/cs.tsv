@@ -6091,6 +6091,7 @@ embroidery	No source gives a number to check these against.	Žádný zdroj neuv�
 @plural	{count} row|{count} rows	{count} řada|{count} řady|{count} řad
 @plural	{count} spot|{count} spots	{count} místo|{count} místa|{count} míst
 @plural	{count} thread|{count} threads	{count} nit|{count} nitě|{count} nití
+embroidery	Threads	Nitě
 @plural	{count} error|{count} errors	{count} chyba|{count} chyby|{count} chyb
 @plural	{count} warning|{count} warnings	{count} upozornění|{count} upozornění|{count} upozornění
 @plural	{count} note|{count} notes	{count} poznámka|{count} poznámky|{count} poznámek
@@ -6116,7 +6117,6 @@ embroidery	Median: {value} mm	Medián: {value} mm
 embroidery	Too long	Příliš dlouhé
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Nad {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} barva|{count} barvy|{count} barev
 embroidery	Embroidery: {figures}	Výšivka: {figures}
 embroidery	Stitches can't be planned	Stehy nelze naplánovat
 embroidery	Click to open the Embroidery panel.	Kliknutím otevřete panel Výšivka.
@@ -7492,7 +7492,7 @@ embroidery	Nothing to sew: every color is left out.	Není co šít: všechny bar
 embroidery	Nothing to create: every color is left out.	Není co vytvořit: všechny barvy jsou vynechané.
 embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Každá oblast barvy {color} byla menší než {value} mm²: připojila se k sousedům.
 embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Nit zvolená pro {color}, {thread}, není šedá: šije se tak, jak byla zvolena.
-embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Při této velikosti má obrázek {value} pixelů na milimetr, méně než {least}: větší kopie se digitalizuje lépe.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	Při této velikosti má obrázek {value} pixelu na milimetr, méně než {least}: větší kopie se digitalizuje lépe.
 embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Obrázek byl načten v rozměru {width} × {height} pixelů, menší než jeho {fullWidth} × {fullHeight}.
 embroidery	The image's corners don't agree on a background: every color is sewn.	Rohy obrázku se neshodují na pozadí: šije se každá barva.
 embroidery	No color traced is the background's: every area is sewn.	Žádná trasovaná barva není barvou pozadí: šije se každá oblast.

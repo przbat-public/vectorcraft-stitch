@@ -5705,6 +5705,7 @@ embroidery	No source gives a number to check these against.	Nessuna fonte indica
 @plural	{count} row|{count} rows	{count} serie|{count} serie
 @plural	{count} spot|{count} spots	{count} zona|{count} zone
 @plural	{count} thread|{count} threads	{count} filo|{count} fili
+embroidery	Threads	Fili
 @plural	{count} error|{count} errors	{count} errore|{count} errori
 @plural	{count} warning|{count} warnings	{count} avviso|{count} avvisi
 @plural	{count} note|{count} notes	{count} nota|{count} note
@@ -5730,7 +5731,6 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Troppo lunghi
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Oltre {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} colore|{count} colori
 embroidery	Embroidery: {figures}	Ricamo: {figures}
 embroidery	Stitches can't be planned	Impossibile pianificare i punti
 embroidery	Click to open the Embroidery panel.	Fai clic per aprire il pannello Ricamo.

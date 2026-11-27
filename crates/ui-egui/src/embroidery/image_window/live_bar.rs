@@ -9,7 +9,9 @@
 //!   its progress; the figures; stale (the last figures dimmed while a newer run is on its way);
 //!   nothing to sew; failed with the reason, the last figures kept.
 //! - **Notes:** each of digitizing's warnings in words, and what the Check tab finds on the objects
-//!   (errors and warnings), problems first: a chip with the first and "+2", a list of them all.
+//!   (errors and warnings), problems first: a chip with the first, on up to two rows in the room the
+//!   bar leaves beside its buttons (whole in its tooltip when cut even so), and "+2"; a click lists
+//!   them all.
 //! - **Screen readers** hear the bar as a polite status, said again only once a run settles.
 //! - **Create** is disabled with its reason when nothing would be made, or the settings can't be
 //!   digitized; so is **Keep as Live Object** beside it (the mockup's place, between Cancel and
@@ -48,8 +50,12 @@ const SMALL_TEXT: f32 = 11.0;
 const MARK: f32 = 12.0;
 const CHIP_PAD: f32 = 6.0;
 const NOTES_WIDTH: f32 = 420.0;
-/// The most room the chip's first note takes (points), cut short with "…" past it.
-const CHIP_WORDS: f32 = 300.0;
+/// The most rows the chip's first note takes: the Live bar is two lines tall (`frame::BAR_HEIGHT`),
+/// and two of the chip's small rows fit above its "Updated in…" line (an estimate).
+const CHIP_ROWS: usize = 2;
+/// The least room the chip's words take where the bar leaves less (points), an estimate: a few
+/// words.
+pub(super) const CHIP_LEAST_WORDS: f32 = 80.0;
 /// How strongly stale figures are dimmed (the share of their colour kept): an estimate.
 const STALE_ALPHA: f32 = 0.55;
 
@@ -226,7 +232,12 @@ pub(crate) fn warning_words(w: &Value, lang: Lang) -> Option<Note> {
             Mark::Warning,
             fill(
                 crate::et!("The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better."),
-                &[("value", &area("pxPerMm")), ("least", &numbers::decimal(lang, v["fewerThan"].as_f64().unwrap_or(0.0), words::WHOLE))],
+                // The resolution always with both its decimals ("2.83", "3.00"): a fraction, so that
+                // one form of the noun after it is right for every value (Polish „2,83 piksela”).
+                &[
+                    ("value", &numbers::fixed(lang, v["pxPerMm"].as_f64().unwrap_or(0.0), words::HUNDREDTHS)),
+                    ("least", &numbers::decimal(lang, v["fewerThan"].as_f64().unwrap_or(0.0), words::WHOLE)),
+                ],
             ),
         ),
         "decodedSmaller" => {
@@ -341,11 +352,21 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<As
     });
     let refocus = live.refocus.take();
     let mut asked = None;
+    // The room the buttons take at the bar's right, so that the chip takes what is left beside them;
+    // while the question holds their place, the chip takes its least, the question's words the room.
+    let buttons = if question.is_some() {
+        None
+    } else {
+        let [coral, grey] = makers(reopened);
+        let labels = [coral.words, grey.words, crate::et!("Cancel"), crate::et!("Start Over")];
+        Some(labels.iter().map(|l| widgets::button_width(ui, l)).sum::<f32>() + labels.len() as f32 * ui.spacing().item_spacing.x)
+    };
     ui.horizontal(|ui| {
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 status_words(ui, &pending, said_now.as_ref(), shown_figures.as_ref(), create_waiting, &announced, lang);
-                notes_chip(ui, &notes, lang);
+                let room = buttons.map_or(0.0, |b| ui.available_width() - b);
+                notes_chip(ui, &notes, lang, room);
             });
             if let Some((ms, stages)) = &updated {
                 updated_words(ui, *ms, stages, lang);
@@ -568,18 +589,23 @@ fn updated_words(ui: &mut Ui, ms: f64, stages: &[DigitizeStage], lang: Lang) {
     ui.label(RichText::new(words).size(SMALL_TEXT).color(t.text_dim));
 }
 
-/// The notes' chip: the first note and "+2" for the others; a click lists them all.
-fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang) {
+/// The notes' chip, `room` points wide at most: the first note, on up to [`CHIP_ROWS`] rows, and
+/// "+2" for the others; a click lists them all.
+fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang, room: f32) {
     let Some(first) = notes.first() else { return };
     let t = Tokens::get(ui.ctx());
     let more = notes.len() - 1;
-    // The first note cut short past its room; how many more after it, never cut.
-    let mut job = egui::text::LayoutJob::simple_singleline(first.words.clone(), FontId::proportional(SMALL_TEXT), marks::text_colour(&t, first.mark));
-    job.wrap = egui::text::TextWrapping { max_width: CHIP_WORDS, max_rows: 1, break_anywhere: true, overflow_character: Some('…') };
-    let galley = ui.painter().layout_job(job);
+    // How many more after the first, never cut; the first broken between words in the room left,
+    // cut short with "…" past its rows.
     let more_galley = (more > 0)
         .then(|| ui.painter().layout_no_wrap(format!("+{}", numbers::count(lang, more as u64)), FontId::proportional(SMALL_TEXT), t.text_dim));
     let more_width = more_galley.as_ref().map_or(0.0, |g| g.size().x + CHIP_PAD);
+    let words_room = (room - MARK - CHIP_PAD * 3.0 - more_width).max(CHIP_LEAST_WORDS);
+    let mut job =
+        egui::text::LayoutJob::simple(first.words.clone(), FontId::proportional(SMALL_TEXT), marks::text_colour(&t, first.mark), words_room);
+    job.wrap = egui::text::TextWrapping { max_width: words_room, max_rows: CHIP_ROWS, break_anywhere: false, overflow_character: Some('…') };
+    let galley = ui.painter().layout_job(job);
+    let cut = galley.elided;
     let size = vec2(MARK + CHIP_PAD * 3.0 + galley.size().x + more_width, galley.size().y.max(MARK) + CHIP_PAD);
     let (rect, resp) = ui.allocate_exact_size(size, Sense::click());
     let back = if resp.hovered() { t.hover } else { t.panel_darker };
@@ -595,6 +621,8 @@ fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang) {
     ringed(ui, &resp);
     let name = crate::etn!(notes.len() as u64, "{count} note", "{count} notes");
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, name.clone()));
+    // Cut even so: whole on hover.
+    let resp = if cut { resp.on_hover_text(&first.words) } else { resp };
     egui::Popup::from_toggle_button_response(&resp)
         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
         .accessible_name(crate::et!("Notes"))
@@ -719,6 +747,73 @@ mod tests {
         assert_eq!(specks.as_deref(), Some("1 speck smaller than 1 mm² joined the color around it"));
     }
 
+    /// The coarse picture's note writes its resolution with both decimals, a fraction in every
+    /// language, so that one form of its noun is right for every value: Polish „2,83 piksela” and
+    /// „3,00 piksela”, never „pikseli”, which is right for none of them.
+    #[test]
+    fn the_coarse_note_writes_its_resolution_as_a_fraction() {
+        let note = |code: &str, px: f64| {
+            let lang = Lang::from_code(code).expect("a language");
+            crate::i18n::set_current(lang);
+            let words = warning_words(&json!({"id": "coarse", "values": {"pxPerMm": px, "fewerThan": 4.0}}), lang).map(|n| n.words);
+            crate::i18n::set_current(Lang::EN);
+            words.unwrap_or_default()
+        };
+        assert_eq!(note("pl", 2.83), "Przy tym rozmiarze obraz ma 2,83 piksela na milimetr, mniej niż 4: większa kopia digitalizuje się lepiej.");
+        assert!(note("pl", 3.0).contains("3,00 piksela"), "{}", note("pl", 3.0));
+        assert!(note("en", 1.0).contains("1.00 pixels"), "{}", note("en", 1.0));
+        for (code, words) in [("cs", "2,83 pixelu"), ("ru", "2,83 пикселя"), ("uk", "2,83 пікселя")] {
+            assert!(note(code, 2.83).contains(words), "{code}: {}", note(code, 2.83));
+        }
+    }
+
+    /// The notes' chip shows the keyboard with the panels' focus ring, and says its first note whole
+    /// in its tooltip where the chip cuts it short.
+    #[test]
+    fn the_notes_chip_shows_the_keyboard_and_its_cut_note_whole() {
+        use egui::accesskit::{Action, ActionRequest, Role, TreeId};
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        ctx.enable_accesskit();
+        let long = "A note long enough to be cut short in the chip, ".repeat(4);
+        let notes = [Note { mark: Mark::Warning, words: long.clone(), step: 2 }];
+        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 200.0));
+        let run = |time: f64, events: Vec<egui::Event>| {
+            let raw = egui::RawInput { time: Some(time), screen_rect: Some(screen), events, ..Default::default() };
+            let mut out = ctx.run_ui(raw, |ui| notes_chip(ui, &notes, Lang::EN, CHIP_LEAST_WORDS));
+            out.textures_delta.clear();
+            let mut shapes = Vec::new();
+            out.shapes.into_iter().for_each(|c| shapes.push(c.shape));
+            (shapes, out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default())
+        };
+        let (_, nodes) = run(0.0, vec![]);
+        let (id, chip) = nodes.iter().find(|(_, n)| n.role() == Role::Button && n.label() == Some("1 note")).expect("the chip");
+        let b = chip.bounds().expect("drawn");
+        let rect = egui::Rect::from_min_max(egui::pos2(b.x0 as f32, b.y0 as f32), egui::pos2(b.x1 as f32, b.y1 as f32));
+        let focus =
+            egui::Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: *id, target_tree: TreeId::ROOT, data: None });
+        run(0.1, vec![focus]);
+        let (shapes, _) = run(0.2, vec![]);
+        let t = Tokens::get(&ctx);
+        let ring = rows::focus_colour(&t, t.panel);
+        let ringed =
+            shapes.iter().any(|s| matches!(s, egui::Shape::Rect(r) if r.stroke.color == ring && r.stroke.width > 0.0 && r.rect.contains_rect(rect)));
+        assert!(ringed, "the keyboard's ring round the chip");
+        // The pointer on the chip, still past the tooltip's wait; a frame more, as egui lays a new
+        // tooltip out unseen first.
+        let wait = f64::from(ctx.global_style().interaction.tooltip_delay);
+        run(0.3, vec![egui::Event::PointerMoved(rect.center())]);
+        run(0.3 + wait * 2.0, vec![]);
+        let (shapes, _) = run(0.4 + wait * 2.0, vec![]);
+        let text = |s: &egui::Shape| match s {
+            egui::Shape::Text(t) => Some((t.galley.text().to_string(), t.galley.elided)),
+            _ => None,
+        };
+        let texts: Vec<(String, bool)> = shapes.iter().filter_map(text).collect();
+        assert!(texts.iter().any(|(w, cut)| *w == long && *cut), "cut short in the chip: {texts:?}");
+        assert!(texts.iter().any(|(w, cut)| *w == long && !cut), "whole in its tooltip: {texts:?}");
+    }
+
     /// Notes come problems first: the check's errors, then warnings, then digitizing's notes.
     #[test]
     fn notes_put_problems_first() {
@@ -762,7 +857,9 @@ mod tests {
         let long = "A note long enough to be cut short in the chip, ".repeat(4);
         let notes = [Note { mark: Mark::Warning, words: long, step: 2 }, Note { mark: Mark::Info, words: "Short".into(), step: 1 }];
         let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 200.0))), ..Default::default() };
-        let mut out = ctx.run_ui(raw, |ui| notes_chip(ui, &notes, Lang::EN));
+        // The chip's room before it could take the bar's (points).
+        const OLD_ROOM: f32 = 300.0;
+        let mut out = ctx.run_ui(raw, |ui| notes_chip(ui, &notes, Lang::EN, OLD_ROOM));
         out.textures_delta.clear();
         let mut texts = Vec::new();
         for c in &out.shapes {

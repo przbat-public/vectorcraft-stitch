@@ -5699,6 +5699,7 @@ embroidery	No source gives a number to check these against.	Ни один ист
 @plural	{count} row|{count} rows	{count} серия|{count} серии|{count} серий
 @plural	{count} spot|{count} spots	{count} место|{count} места|{count} мест
 @plural	{count} thread|{count} threads	{count} нить|{count} нити|{count} нитей
+embroidery	Threads	Нити
 @plural	{count} error|{count} errors	{count} ошибка|{count} ошибки|{count} ошибок
 @plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения|{count} предупреждений
 @plural	{count} note|{count} notes	{count} примечание|{count} примечания|{count} примечаний
@@ -5724,7 +5725,6 @@ embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Слишком длинные
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Больше {value} мм: {stitches}
-@plural	{count} color|{count} colors	{count} цвет|{count} цвета|{count} цветов
 embroidery	Embroidery: {figures}	Вышивка: {figures}
 embroidery	Stitches can't be planned	Не удаётся спланировать стежки
 embroidery	Click to open the Embroidery panel.	Щёлкните, чтобы открыть панель «Вышивка».
@@ -7580,7 +7580,7 @@ embroidery	Nothing to sew: every color is left out.	Нечего вышиват�
 embroidery	Nothing to create: every color is left out.	Нечего создавать: все цвета пропущены.
 embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Каждая область цвета {color} была меньше {value} мм²: цвет присоединился к соседям.
 embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Нить, выбранная для {color}, {thread}, не серая: она вышивается, как выбрана.
-embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	При этом размере у изображения {value} пикселей на миллиметр, меньше {least}: копия побольше оцифруется лучше.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	При этом размере у изображения {value} пикселя на миллиметр, меньше {least}: копия побольше оцифруется лучше.
 embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Изображение прочитано в размере {width} × {height} пикселей, меньше своих {fullWidth} × {fullHeight}.
 embroidery	The image's corners don't agree on a background: every color is sewn.	Углы изображения не сходятся на фоне: вышиваются все цвета.
 embroidery	No color traced is the background's: every area is sewn.	Ни один трассированный цвет не совпадает с фоном: вышиваются все области.

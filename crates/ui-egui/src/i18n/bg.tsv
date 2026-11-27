@@ -5929,6 +5929,7 @@ embroidery	No source gives a number to check these against.	Нито един и
 @plural	{count} row|{count} rows	{count} поредица|{count} поредици
 @plural	{count} spot|{count} spots	{count} място|{count} места
 @plural	{count} thread|{count} threads	{count} нишка|{count} нишки
+embroidery	Threads	Нишки
 @plural	{count} error|{count} errors	{count} грешка|{count} грешки
 @plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения
 @plural	{count} note|{count} notes	{count} бележка|{count} бележки
@@ -5954,7 +5955,6 @@ embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Твърде дълги
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Над {value} мм: {stitches}
-@plural	{count} color|{count} colors	{count} цвят|{count} цвята
 embroidery	Embroidery: {figures}	Бродерия: {figures}
 embroidery	Stitches can't be planned	Бодовете не могат да бъдат планирани
 embroidery	Click to open the Embroidery panel.	Щракнете, за да отворите панела „Бродерия“.

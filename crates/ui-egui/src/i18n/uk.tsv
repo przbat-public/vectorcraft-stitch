@@ -5685,6 +5685,7 @@ embroidery	No source gives a number to check these against.	Жодне джер�
 @plural	{count} row|{count} rows	{count} серія|{count} серії|{count} серій
 @plural	{count} spot|{count} spots	{count} місце|{count} місця|{count} місць
 @plural	{count} thread|{count} threads	{count} нитка|{count} нитки|{count} ниток
+embroidery	Threads	Нитки
 @plural	{count} error|{count} errors	{count} помилка|{count} помилки|{count} помилок
 @plural	{count} warning|{count} warnings	{count} попередження|{count} попередження|{count} попереджень
 @plural	{count} note|{count} notes	{count} примітка|{count} примітки|{count} приміток
@@ -5710,7 +5711,6 @@ embroidery	Median: {value} mm	Медіана: {value} мм
 embroidery	Too long	Задовгі
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Понад {value} мм: {stitches}
-@plural	{count} color|{count} colors	{count} колір|{count} кольори|{count} кольорів
 embroidery	Embroidery: {figures}	Вишивка: {figures}
 embroidery	Stitches can't be planned	Не вдається спланувати стібки
 embroidery	Click to open the Embroidery panel.	Клацніть, щоб відкрити панель «Вишивка».
@@ -7092,7 +7092,7 @@ embroidery	Nothing to sew: every color is left out.	Нічого вишиват�
 embroidery	Nothing to create: every color is left out.	Нічого створювати: усі кольори пропущено.
 embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Кожна область кольору {color} була меншою за {value} мм²: колір приєднався до сусідів.
 embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Нитка, вибрана для {color}, {thread}, не сіра: вона вишивається, як вибрано.
-embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	За цього розміру зображення має {value} пікселів на міліметр, менше за {least}: більша копія оцифрується краще.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	За цього розміру зображення має {value} пікселя на міліметр, менше за {least}: більша копія оцифрується краще.
 embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Зображення прочитано в розмірі {width} × {height} пікселів, меншому за його {fullWidth} × {fullHeight}.
 embroidery	The image's corners don't agree on a background: every color is sewn.	Кути зображення не сходяться щодо тла: вишиваються всі кольори.
 embroidery	No color traced is the background's: every area is sewn.	Жоден трасований колір не є кольором тла: вишиваються всі області.

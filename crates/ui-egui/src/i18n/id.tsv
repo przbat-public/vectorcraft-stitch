@@ -5918,6 +5918,7 @@ embroidery	No source gives a number to check these against.	Tidak ada sumber yan
 @plural	{count} row|{count} rows	{count} rangkaian
 @plural	{count} spot|{count} spots	{count} tempat
 @plural	{count} thread|{count} threads	{count} benang
+embroidery	Threads	Benang
 @plural	{count} error|{count} errors	{count} kesalahan
 @plural	{count} warning|{count} warnings	{count} peringatan
 @plural	{count} note|{count} notes	{count} catatan
@@ -5943,7 +5944,6 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	Terlalu panjang
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Di atas {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} warna
 embroidery	Embroidery: {figures}	Bordir: {figures}
 embroidery	Stitches can't be planned	Jahitan tidak dapat direncanakan
 embroidery	Click to open the Embroidery panel.	Klik untuk membuka panel Bordir.

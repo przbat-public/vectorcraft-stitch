@@ -6113,6 +6113,7 @@ embroidery	No source gives a number to check these against.	Ingen källa anger e
 @plural	{count} row|{count} rows	{count} följd|{count} följder
 @plural	{count} spot|{count} spots	{count} ställe|{count} ställen
 @plural	{count} thread|{count} threads	{count} tråd|{count} trådar
+embroidery	Threads	Trådar
 @plural	{count} error|{count} errors	{count} fel|{count} fel
 @plural	{count} warning|{count} warnings	{count} varning|{count} varningar
 @plural	{count} note|{count} notes	{count} anmärkning|{count} anmärkningar
@@ -6138,7 +6139,6 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	För långa
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Över {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} färg|{count} färger
 embroidery	Embroidery: {figures}	Broderi: {figures}
 embroidery	Stitches can't be planned	Stygnen kan inte planeras
 embroidery	Click to open the Embroidery panel.	Klicka för att öppna panelen Broderi.

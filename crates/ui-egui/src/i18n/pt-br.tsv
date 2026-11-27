@@ -7684,6 +7684,6 @@ embroidery	This live object was made in another thread palette: its colors are m
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Objetos dinâmicos redimensionados em mais de {value}% desde a digitalização: digitalize-os novamente
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	um objeto de bordado dinâmico: altere-o em “Digitalizar imagem…” (Objeto › Rastreamento de Imagem)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	um objeto dinâmico: edite-o em “Digitalizar imagem…” (Objeto › Rastreamento de Imagem)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
 embroidery	That would be more than {count} area changes, the most a design takes	Isso daria mais de {count} alterações de áreas, o máximo que um desenho aceita

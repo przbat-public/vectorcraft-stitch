@@ -7213,6 +7213,6 @@ embroidery	This live object was made in another thread palette: its colors are m
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Đối tượng động bị đổi tỷ lệ hơn {value}% kể từ khi số hóa: hãy số hóa lại
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	một đối tượng thêu động: hãy thay đổi nó trong “Số hóa hình ảnh…” (Đối tượng › Vector hóa ảnh)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	một đối tượng động: hãy sửa nó trong “Số hóa hình ảnh…” (Đối tượng › Vector hóa ảnh)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
 embroidery	That would be more than {count} area changes, the most a design takes	Như vậy sẽ vượt quá {count} thay đổi vùng, mức tối đa một mẫu nhận

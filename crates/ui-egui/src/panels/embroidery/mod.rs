@@ -248,14 +248,15 @@ fn only_key(p: &Value, only: &str) -> Result<(), String> {
 }
 
 /// Whether the panel's own commands can run now (`None` for any other command): Next and Previous
-/// Finding need a finding shown, on a check of the plan shown.
+/// Finding need a finding shown, on a check of the plan shown; and the embroidery menu's say for
+/// upstream's items it greys (`crate::embroidery::menu::enabled`).
 pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     match id {
         "embroidery.nextHit" | "embroidery.previousHit" => Some(check::can_step(app)),
         "embroidery.copySettings" => Some(object::can_copy(app)),
         "embroidery.pasteSettings" => Some(object::can_paste(app)),
         "embroidery.documentSetup" | "embroidery.showRecord" => Some(app.session.active().is_some()),
-        _ => None,
+        _ => crate::embroidery::menu::enabled(app, id),
     }
 }
 

@@ -48,8 +48,11 @@ pub use from_image::{MAX_AREA_CHANGES, digitizing_target, live_digitizing, live_
 pub use manual::{CONVERT_REFUSED, ConvertJob, ConvertPlanned, RESTORE_REFUSED};
 
 /// Image Trace's refusal of a live object of a digitized image: tracing it again would lose its
-/// embroidery (the project owner's choice, 2026-11-16, „Odmówić i wskazać okno (polecam)”).
-pub const LIVE_EMBROIDERY_REFUSED: &str = "a live embroidery object: change it in Digitize Image… (Object › Image Trace)";
+/// embroidery (the project owner's choice, 2026-11-16, „Odmówić i wskazać okno (polecam)”). Said as
+/// itself, as the fork's other refusals are, not as invalid parameters: the status bar shows only a
+/// message's start, which said "invalid parameters for `imageTrace.make`"; the live object's one
+/// name (2026-11-18), and "edit it in" as the Object tab's Edit in Digitize Image… says it.
+pub const LIVE_EMBROIDERY_REFUSED: &str = "a live object: edit it in Digitize Image… (Object › Image Trace)";
 pub use nearest::{NEAREST_PASSES, NEAREST_PROGRESS, NearestFound, NearestJob};
 mod objects;
 pub(crate) mod options;

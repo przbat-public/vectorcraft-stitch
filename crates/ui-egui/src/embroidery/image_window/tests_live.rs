@@ -569,3 +569,27 @@ fn a_live_object_keeping_no_fingerprint_is_asked_about() {
     press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
     assert!(asking(&app), "asked first");
 }
+
+/// Object › Image Trace › Make and Make and Expand are greyed out where what they would trace is a
+/// live object, which Image Trace refuses: with the live object selected, or the image it holds
+/// first, the engine refusing each as the menu greys it; on a plain image they aren't, and Digitize
+/// Image… stays on.
+#[test]
+fn image_traces_make_is_greyed_on_a_live_object() {
+    let (mut app, id) = live_object(json!({"colors": 3}));
+    let image =
+        app.session.doc().ok().and_then(|st| st.doc.node(id)).and_then(|n| n.children()).and_then(|c| c.first()).map(|c| c.id).expect("its image");
+    for selected in [id, image] {
+        app.run("select.set", json!({"ids": [selected.0]})).unwrap();
+        for cmd in ["imageTrace.make", "imageTrace.makeAndExpand"] {
+            assert!(!crate::menus::enabled(&app, cmd), "{cmd} on {selected:?}");
+            let refused = app.run(cmd, json!({})).expect_err("refused");
+            assert!(refused.contains(vectorcraft_engine::cmd::embroidery::LIVE_EMBROIDERY_REFUSED), "{cmd} on {selected:?}: {refused}");
+        }
+        assert!(crate::menus::enabled(&app, "embroidery.digitizeImage"), "Digitize Image… on {selected:?}");
+    }
+    let plain = super::tests::app();
+    for cmd in ["imageTrace.make", "imageTrace.makeAndExpand"] {
+        assert!(crate::menus::enabled(&plain, cmd), "{cmd} on a plain image");
+    }
+}

@@ -7193,6 +7193,6 @@ embroidery	This live object was made in another thread palette: its colors are m
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
 embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	디지타이징 후 {value}% 넘게 크기가 조정된 라이브 개체: 다시 디지타이징하세요
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	라이브 자수 개체입니다. '이미지 디지타이징…'에서 변경하세요(개체 › 이미지 추적)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	라이브 개체입니다. ‘이미지 디지타이징…’에서 편집하세요(개체 › 이미지 추적)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
 embroidery	That would be more than {count} area changes, the most a design takes	디자인 하나에 허용되는 최대 {count}개의 영역 변경을 넘게 됩니다

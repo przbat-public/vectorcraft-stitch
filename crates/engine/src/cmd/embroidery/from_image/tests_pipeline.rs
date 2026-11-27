@@ -28,6 +28,11 @@ const MM_PER_PX: f64 = 0.1;
 /// A session holding `raster` placed at a tenth of a millimetre a pixel at the origin, selected,
 /// and the image's id.
 fn placed(raster: &tr::Raster) -> (Session, NodeId) {
+    placed_at(raster, MM_PER_PX)
+}
+
+/// [`placed`], a pixel `mm_per_px` millimetres.
+fn placed_at(raster: &tr::Raster, mm_per_px: f64) -> (Session, NodeId) {
     let mut s = super::super::test_support::blank();
     let png = raster.encode_png();
     let (width, height) = (raster.width, raster.height);
@@ -36,7 +41,7 @@ fn placed(raster: &tr::Raster) -> (Session, NodeId) {
         d.images.insert("picture".into(), ImageBlob::new("image/png", png));
         id = d.alloc_id();
         let layer = d.default_layer();
-        let xf = Affine::scale(MM_PER_PX / MM_PER_PT);
+        let xf = Affine::scale(mm_per_px / MM_PER_PT);
         let image = ImageObject { key: "picture".into(), width, height, xf, link: None, placement: Default::default(), pixels: None };
         d.insert(layer, 0, Node::new(id, NodeKind::Image(Box::new(image))))?;
         sel.set([id]);
@@ -413,6 +418,51 @@ fn areas_are_named_by_thread_and_number() {
     assert_eq!((left.place, middle.place, right.place), (Place::Left, Place::Middle, Place::Right));
     assert!(left.sewn && (left.area_mm2 - 36.0).abs() < 1.0, "{left:?}");
     assert!(out.area_at(5, 5).is_none_or(|a| !a.sewn), "the background is no area sewn");
+}
+
+/// The command's reply gives an area the size and area the window's inspector shows, of its own
+/// traced shape once the shapes are done, not of its pixels (the project owner's choice,
+/// 2026-11-26, „Jak okno (polecam)”), and its box is the one that size measures: a dot placed at
+/// 72 ppi, a pixel a point, as the app check's picture was, whose pixels (the traced shape drawn
+/// back by their centres) read it smaller than its curve.
+#[test]
+fn the_replys_area_sizes_are_the_inspectors() {
+    // Millimetres a pixel at 72 ppi (a pixel a point); the dot's middle and radius (pixels); and how
+    // near two measures given to hundredths must come (millimetres, square millimetres; a box's
+    // side is the difference of two).
+    const MM_PER_PX_72: f64 = MM_PER_PT;
+    const MIDDLE: (f64, f64) = (20.0, 20.0);
+    const RADIUS_PX: f64 = 5.7;
+    const HUNDREDTH: f64 = 0.01;
+    let in_dot = |x: u32, y: u32| (f64::from(x) + 0.5 - MIDDLE.0).hypot(f64::from(y) + 0.5 - MIDDLE.1) <= RADIUS_PX;
+    let picture = tr::Raster::from_fn(40, 40, |x, y| if in_dot(x, y) { NAVY } else { WHITE });
+    let (mut s, image) = placed_at(&picture, MM_PER_PX_72);
+    let params = json!({"colors": 2});
+    let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
+    let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let facts = out.area_at(20, 20).expect("the dot");
+    let reply = s.execute("embroidery.digitizeImage", &with(&params, &json!({"dryRun": true}))).unwrap();
+    let dot = reply["areas"].as_array().and_then(|a| a.iter().find(|x| x["color"] == json!(hex(NAVY)))).cloned().expect("the dot listed");
+    let near = |v: &Value, want: f64, by: f64| v.as_f64().is_some_and(|v| (v - want).abs() <= by);
+    let size = &dot["size"];
+    assert!(near(&size["area"], facts.area_mm2, HUNDREDTH), "area {} against the inspector's {}", size["area"], facts.area_mm2);
+    let (w, h) = facts.size_mm;
+    assert!(near(&size["width"], w, HUNDREDTH) && near(&size["height"], h, HUNDREDTH), "{size} against the inspector's {w} × {h}");
+    let side = |i: usize, j: usize| json!(dot["box"][j].as_f64().unwrap_or(0.0) - dot["box"][i].as_f64().unwrap_or(0.0));
+    assert!(near(&side(0, 2), w, 2.0 * HUNDREDTH) && near(&side(1, 3), h, 2.0 * HUNDREDTH), "the box {} that size measures", dot["box"]);
+    // What its pixels say, the reply's measure before: their count and their box, apart from the
+    // curve's, so that this test tells the two measures apart.
+    let areas = &out.lines.as_ref().expect("the lines").value.areas;
+    let a = areas.regions.at(20, 20).expect("the dot's pixels") as usize;
+    let by_pixels = areas.areas[a].pixels as f64 * MM_PER_PX_72 * MM_PER_PX_72;
+    let [x0, _, x1, _] = areas.regions.areas[a].bbox;
+    let width_by_pixels = f64::from(x1 - x0) * MM_PER_PX_72;
+    assert!(
+        (by_pixels - facts.area_mm2).abs() > HUNDREDTH,
+        "the dot's area by its pixels apart from its curve's: {by_pixels} and {}",
+        facts.area_mm2
+    );
+    assert!((width_by_pixels - w).abs() > 2.0 * HUNDREDTH, "the dot's width by its pixels apart from its curve's: {width_by_pixels} and {w}");
 }
 
 /// The Colours view's raster paints each area in its thread's own colour, the background clear.

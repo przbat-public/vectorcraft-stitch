@@ -300,7 +300,14 @@ fn areas_json(d: &Digitized, palette: Palette, listed: Listed, changed: &[Option
             let row = d.colours().rows.get(area.row)?;
             let (x, y) = stats.deepest;
             let at = w.to_image * Point::new(f64::from(x) + 0.5, f64::from(y) + 0.5);
-            let [x0, y0, x1, y1] = stats.bbox.map(f64::from);
+            // Its box, size and area: of its own traced shape once the shapes are done, the curve its
+            // outline follows, as the window's inspector gives them (the project owner's choice,
+            // 2026-11-26, „Jak okno (polecam)”); of its pixels where it has none.
+            let traced = d.shapes().measured.get(a).copied().flatten().zip(d.shapes().own.get(a).and_then(|s| s.bounds()));
+            let ([x0, y0, x1, y1], area_px) = match traced {
+                Some(((area_px, _, _), b)) => ([b.x0, b.y0, b.x1, b.y1], area_px),
+                None => (stats.bbox.map(f64::from), area.pixels as f64),
+            };
             let corners = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)].map(|(x, y)| w.to_doc * Point::new(x, y));
             let (l, t) = corners.iter().fold((f64::INFINITY, f64::INFINITY), |(l, t), p| (l.min(p.x), t.min(p.y)));
             let (r, b) = corners.iter().fold((f64::NEG_INFINITY, f64::NEG_INFINITY), |(r, b), p| (r.max(p.x), b.max(p.y)));
@@ -325,7 +332,7 @@ fn areas_json(d: &Digitized, palette: Palette, listed: Listed, changed: &[Option
                 "kind": if super::changes::made_line(d.lines(), a) { "line" } else { "fill" },
                 "sewn": area.sewn(d.colours()),
                 "size": {
-                    "area": hundredths(area.pixels as f64 / (px * px)),
+                    "area": hundredths(area_px / (px * px)),
                     "width": hundredths((x1 - x0) / px),
                     "height": hundredths((y1 - y0) / px),
                 },

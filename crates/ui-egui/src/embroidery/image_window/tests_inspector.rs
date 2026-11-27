@@ -724,24 +724,31 @@ fn satin_is_offered_only_where_it_sews_satin() {
     assert_eq!(times_said(&mut app, &ctx, &mut time, "Too short for satin"), 1, "said once, not by the Auto line too");
 }
 
-/// An area's size is that of its traced curve, not of its pixels: the 4.2 mm dot read 3.5 mm by
-/// its pixels' centres; the bar, traced along its pixels' edges, reads 21.2 × 3.5 mm either way.
-/// Each lies alone, neither made solid nor grown, so the outline drawn round it is that curve.
+/// An area's size and its area are those of its traced curve, not of its pixels: the 4 mm dot, its
+/// curve 3.8 mm across, read 3.5 mm by its pixels' centres, and its square millimetres were its
+/// pixels' count; the bar, traced along its pixels' edges, reads 21.2 × 3.5 mm either way. Each lies
+/// alone, neither made solid nor grown, so the outline drawn round it is that curve.
 #[test]
 fn an_areas_size_is_of_its_traced_curve() {
     use vectorcraft_geom::kurbo::Shape;
     // Millimetres a point, a point being 1/72 inch; and how near the two measures must come
-    // (millimetres): a twentieth, well under the third of a millimetre the pixels' centres lost.
+    // (millimetres, and square millimetres): a twentieth, well under the quarter of a millimetre the
+    // pixels' centres lost, and a twentieth of a square millimetre, well under what the dot's
+    // pixels count short of its curve.
     const MM_PER_PT: f64 = 25.4 / 72.0;
     const NEAR_MM: f64 = 0.05;
+    const NEAR_MM2: f64 = 0.05;
     let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
     until(&mut app, &ctx, &mut time, ready);
     let outputs = &live(&app).schedule.shown.as_ref().expect("a result").outputs;
     for (x, y) in [(20, 60), (40, 15)] {
         let facts = outputs.area_at(x, y).expect("an area");
-        let b = outputs.outline_at(x, y).expect("its outline").bounding_box();
+        let outline = outputs.outline_at(x, y).expect("its outline");
+        let b = outline.bounding_box();
         let (w, h) = (b.width() * MM_PER_PT, b.height() * MM_PER_PT);
         assert!((facts.size_mm.0 - w).abs() < NEAR_MM && (facts.size_mm.1 - h).abs() < NEAR_MM, "({x}, {y}): {:?} against {w} × {h}", facts.size_mm);
+        let area = outline.area().abs() * MM_PER_PT * MM_PER_PT;
+        assert!((facts.area_mm2 - area).abs() < NEAR_MM2, "({x}, {y}): {} mm² against the curve's {area} mm²", facts.area_mm2);
     }
 }
 
@@ -1193,6 +1200,42 @@ fn a_stripe_grown_by_the_overlap_is_said_wider_not_too_short() {
     assert!(!says(&mut app, &ctx, &mut time, "Too short for satin"), "not too short");
     let satin = choices(&mut app, &ctx, &mut time).into_iter().find(|(w, _)| w == "Satin").map(|(_, on)| on);
     assert_eq!(satin, Some(true), "Satin offered");
+}
+
+/// The picture of a long orange band 11.6 mm wide between two blue ones 4.9 mm wide, 40 mm long,
+/// placed at its 72 ppi (a pixel 0.35 mm), on white: the largest, the band is sewn first and grows
+/// by the overlap under both, past the 12 mm satin sews at most.
+fn capped_band() -> image::RgbaImage {
+    image::RgbaImage::from_fn(100, 140, |x, y| {
+        let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
+        image::Rgba(if inside([20, 10, 34, 124]) || inside([67, 10, 81, 124]) {
+            [30, 60, 200, 255]
+        } else if inside([34, 10, 67, 124]) {
+            [240, 130, 20, 255]
+        } else {
+            [255, 255, 255, 255]
+        })
+    })
+}
+
+/// Satin's reason on an area the overlap takes past the 12 mm satin sews at most says so, giving no
+/// second width of the area's: the orange band, 11.6 mm wide, grown under the blue bands either side.
+#[test]
+fn satins_reason_on_an_area_grown_past_it_says_the_overlap() {
+    // A point on the band right of the picture's middle, where Compare's splitter would take the
+    // click.
+    const ON_THE_BAND: (u32, u32) = (60, 60);
+    let (mut app, ctx, mut time) = opened_with(app_with(capped_band()));
+    {
+        let outputs = &live(&app).schedule.shown.as_ref().expect("a result").outputs;
+        let offer = outputs.satin_offer(ON_THE_BAND.0, ON_THE_BAND.1);
+        assert!(matches!(offer, Some(SatinOffer::TooWide { overlap: true, .. })), "too wide with the overlap: {offer:?}");
+    }
+    click_at(&mut app, &ctx, &mut time, ON_THE_BAND.0, ON_THE_BAND.1);
+    assert!(choices(&mut app, &ctx, &mut time).contains(&("Satin".to_string(), false)), "Satin greyed");
+    let words = "Satin sews parts up to 12 mm wide: with the part under its neighbors, this area is wider";
+    assert!(says(&mut app, &ctx, &mut time, words), "the overlap said");
+    assert!(!says(&mut app, &ctx, &mut time, " mm wide."), "no width of the area's");
 }
 
 /// A Satin kept where Satin isn't offered (from before, or given by an agent) says why it isn't

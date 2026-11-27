@@ -1,8 +1,9 @@
 //! The image window on a live object: Keep as Live Object, a live object opened again with its
 //! settings (its threads let go when the document's palette changed since; the defaults, said, when
 //! they can't be read), remembered angles turning with the image, the question before objects
-//! changed by hand are replaced (its arming, its keyboard and what screen readers hear), and agents
-//! keeping one with `ui.dialog.set {field: "keep", value: "live"}`.
+//! changed by hand are replaced (its arming, its keyboard and what screen readers hear), the Live
+//! bar's buttons ringed with the keyboard, step 4's notes naming no Create, and agents keeping one
+//! with `ui.dialog.set {field: "keep", value: "live"}`.
 
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers, Rect, pos2, vec2};
@@ -397,6 +398,50 @@ fn the_questions_safe_answer_is_coral_and_shows_the_keyboard() {
     assert!(!ringed(&shapes, &ctx, bounds(&all, CONVERT)), "none round Convert to Plain Objects");
 }
 
+/// The Live bar's button screen readers call `name`, the lowest of that name (the window's × is
+/// "Cancel" to them too) → its id and its box.
+fn bar_button(all: &[(egui::accesskit::NodeId, egui::accesskit::Node)], name: &str) -> (egui::accesskit::NodeId, Rect) {
+    all.iter()
+        .filter(|(_, n)| n.role() == Role::Button && n.label() == Some(name))
+        .filter_map(|(id, n)| n.bounds().map(|b| (*id, Rect::from_min_max(pos2(b.x0 as f32, b.y0 as f32), pos2(b.x1 as f32, b.y1 as f32)))))
+        .max_by(|a, b| a.1.top().total_cmp(&b.1.top()))
+        .unwrap_or_else(|| panic!("{name} drawn"))
+}
+
+/// The keyboard moved to the Live bar's button screen readers call `name`, as a screen reader moves
+/// it (AccessKit's Focus), then the frame that draws it there → that frame's shapes and nodes.
+fn keyboard_on(
+    app: &mut VectorcraftApp,
+    ctx: &egui::Context,
+    time: &mut f64,
+    name: &str,
+) -> (Vec<egui::Shape>, Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>) {
+    use egui::accesskit::{Action, ActionRequest, TreeId};
+    let (_, all) = drawn(app, ctx, time);
+    let (target_node, _) = bar_button(&all, name);
+    let focus = ActionRequest { action: Action::Focus, target_tree: TreeId::ROOT, target_node, data: None };
+    *time += 0.05;
+    frame(app, ctx, *time, vec![Event::AccessKitActionRequest(focus)]);
+    drawn(app, ctx, time)
+}
+
+/// Every button of the Live bar shows the keyboard with the panels' focus ring, not only the making
+/// buttons and the question's safe answer: Cancel and Start Over beside them, and Replace once the
+/// keyboard moves to it, Don't Replace then unringed.
+#[test]
+fn every_button_of_the_live_bar_shows_the_keyboard() {
+    let (mut app, ctx, mut time, _) = edited_live_object_open();
+    for name in ["Cancel", "Start Over"] {
+        let (shapes, all) = keyboard_on(&mut app, &ctx, &mut time, name);
+        assert!(ringed(&shapes, &ctx, bar_button(&all, name).1), "the keyboard's ring round {name}");
+    }
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
+    assert!(asking(&app), "asked");
+    let (shapes, all) = keyboard_on(&mut app, &ctx, &mut time, REPLACE);
+    assert!(ringed(&shapes, &ctx, bar_button(&all, REPLACE).1), "the keyboard's ring round Replace");
+    assert!(!ringed(&shapes, &ctx, bar_button(&all, DONT_REPLACE).1), "none round Don't Replace, the keyboard gone from it");
+}
+
 /// A picture that comes to lie first in a live object while the window is open on it (Redo of Keep
 /// as Live Object from the menu bar, which works over the window) has the window digitize that live
 /// object: it offers Update Live Object and Convert to Plain Objects, and asks before replacing
@@ -625,4 +670,24 @@ fn image_traces_make_is_greyed_on_a_live_object() {
     for cmd in ["imageTrace.make", "imageTrace.makeAndExpand"] {
         assert!(crate::menus::enabled(&plain, cmd), "{cmd} on a plain image");
     }
+}
+
+/// On a live object opened again, step 4's notes name the act, not Create, a button it doesn't
+/// have: the sewing order changes "once the objects are made", and a document setting changed is
+/// set "making the objects".
+#[test]
+fn step_4s_notes_name_no_create_on_a_live_object_opened_again() {
+    const ORDER: &str = "From the background to the details. The Order tab changes it once the objects are made.";
+    const SETS_THEM: &str = "Making the objects sets these in the document's embroidery settings.";
+    let (app, _) = live_object(json!({"colors": 3}));
+    let (mut app, ctx, mut time) = opened_with(app);
+    super::tests::set(&mut app, super::STEP, json!(4));
+    super::tests::set(&mut app, "fabric", json!("denim"));
+    until(&mut app, &ctx, &mut time, super::tests::ready);
+    let all = nodes(&mut app, &ctx, &mut time);
+    let said = |words: &str| all.iter().any(|(_, n)| n.value() == Some(words));
+    assert!(said(ORDER), "the sewing order's note");
+    assert!(said(SETS_THEM), "the document settings' note");
+    let create = all.iter().filter_map(|(_, n)| n.value().or(n.label())).find(|w| w.contains("Create"));
+    assert_eq!(create, None, "no Create named");
 }

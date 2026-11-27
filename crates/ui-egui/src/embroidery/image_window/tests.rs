@@ -847,11 +847,11 @@ fn create_applies_the_run_shown_in_one_undo_step() {
     assert_eq!(st.selection.len(), 1, "the design's group selected");
 }
 
-/// Create on an image whose place isn't sewn (its layer hidden) leaves the image there, and the
-/// status bar names no template layer: it said "The image is on the hidden template layer" of the
+/// Create on an image whose place isn't sewn (its ordinary layer hidden) leaves the image there,
+/// and the status bar names no layer: it said "The image is on the hidden template layer" of the
 /// image's own layer.
 #[test]
-fn create_names_no_template_layer_where_the_image_stays_in_its_place() {
+fn create_names_no_layer_where_the_image_stays_on_an_ordinary_layer() {
     let mut app = app();
     let image = app.session.doc().ok().and_then(|st| st.selection.objects.first().copied()).expect("the picture selected");
     let layer = app.session.doc().ok().and_then(|st| st.doc.layer_of(image)).expect("its layer");
@@ -871,6 +871,31 @@ fn create_names_no_template_layer_where_the_image_stays_in_its_place() {
     let status = app.ui.status.clone();
     assert!(status.starts_with("Created ") && status.ends_with(&format!(" ({threads} threads). Undo removes them.")), "{status}");
     assert!(!status.contains("template layer"), "{status}");
+}
+
+/// Create on an image that lies on its own hidden template layer, the one an earlier Create moved it
+/// to, leaves it there (that place isn't sewn) and names that layer: the status bar names the hidden
+/// template layer the image lies on afterwards, whichever Create put it there.
+#[test]
+fn create_names_the_template_layer_the_image_stays_on() {
+    let mut app = app();
+    let image = app.session.doc().ok().and_then(|st| st.selection.objects.first().copied()).expect("the picture selected");
+    app.run("embroidery.digitizeImage", json!({"colors": 3})).unwrap();
+    let layer = app.session.doc().ok().and_then(|st| st.doc.layer_of(image)).expect("its layer");
+    let name = app.session.doc().ok().and_then(|st| st.doc.node(layer)).and_then(|n| n.name.clone()).expect("its layer's name");
+    assert_eq!(name, "Template logo.png", "moved to a template layer of its own");
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    ctx.enable_accesskit();
+    open(&mut app, Some(image));
+    let mut time = 0.0;
+    until(&mut app, &ctx, &mut time, ready);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert!(open_dialog(&app).is_none(), "closed");
+    assert_eq!(app.session.doc().ok().and_then(|st| st.doc.layer_of(image)), Some(layer), "the image left there");
+    let status = app.ui.status.clone();
+    assert!(status.contains(&format!("The image is on the hidden template layer “{name}”.")), "{status}");
 }
 
 /// An edit to the document under the window makes it digitize again before Create: Create asked

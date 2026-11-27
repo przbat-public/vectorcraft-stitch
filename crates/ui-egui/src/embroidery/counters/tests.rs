@@ -152,12 +152,14 @@ fn new_figures_show_at_most_every_quarter_second() {
     assert_ne!(stitches(&app), first, "then shown");
 }
 
-/// A click opens the Embroidery panel at its Sewing order; the tooltip tells the figures.
+/// A click opens the Embroidery panel at its Sewing order; the tooltip tells the figures, the threads
+/// sewn as threads, as the bar says them (the project owner's choice, 2026-11-18).
 #[test]
 fn a_click_opens_the_panel_and_the_tooltip_tells_the_figures() {
     let f = Figures { stitches: 1, colors: 1, thread_changes: 0, trims: 0, jumps: 0, minutes: 0.2, speed: 650, size: Some((10.0, 5.0)) };
     let tip = tooltip(&State::Figures(f.clone()));
     assert!(tip.contains("1 stitch · 0 jumps · 0 trims") && tip.contains("10 × 5 mm") && tip.contains("650 stitches a minute"), "{tip}");
+    assert!(tip.contains("1 thread · 0 thread changes"), "threads: {tip}");
     assert!(tooltip(&State::Stale(f)).contains("before the last change"));
     assert!(tooltip(&State::Failed("too many stitches".into())).starts_with("too many stitches"));
     let mut app = app_with_art();

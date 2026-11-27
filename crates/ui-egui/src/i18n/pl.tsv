@@ -7452,7 +7452,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Zaktualizuj żywy obiekt
 embroidery	Digitizes the live object again with these settings.	Digitalizuje żywy obiekt ponownie z tymi ustawieniami.
 embroidery	Convert to Plain Objects	Zamień na zwykłe obiekty
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Tworzy z żywego obiektu zwykłe obiekty haftu, których „Digitalizuj obraz…” już nie zmieni.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Tworzy z żywego obiektu zwykłe obiekty haftu, których „Digitalizuj obraz…” już nie zmieni.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Zawartość tego żywego obiektu zmieniono ręcznie. Ponowna digitalizacja zastąpi te zmiany; polecenie Cofnij je przywróci.
 embroidery	Replace	Zastąp
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Nie udało się odczytać ustawień tego żywego obiektu: okno zaczyna od ustawień domyślnych.

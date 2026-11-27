@@ -7656,7 +7656,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	დინამიკური ობიექტის განახლება
 embroidery	Digitizes the live object again with these settings.	ხელახლა ადიგიტალიზებს დინამიკურ ობიექტს ამ პარამეტრებით.
 embroidery	Convert to Plain Objects	ჩვეულებრივ ობიექტებად გარდაქმნა
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	დინამიკური ობიექტისგან ქმნის ნაქარგობის ჩვეულებრივ ობიექტებს, რომლებსაც „სურათის დიგიტალიზაცია…“ აღარ შეცვლის.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	დინამიკური ობიექტისგან ქმნის ნაქარგობის ჩვეულებრივ ობიექტებს, რომლებსაც „სურათის დიგიტალიზაცია…“ აღარ შეცვლის.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	ამ დინამიკური ობიექტის შიგთავსი ხელით შეიცვალა. ხელახლა დიგიტალიზაცია ამ ცვლილებებს ჩაანაცვლებს; დაბრუნება მათ აღადგენს.
 embroidery	Replace	ჩანაცვლება
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	ამ დინამიკური ობიექტის პარამეტრების წაკითხვა ვერ მოხერხდა: ფანჯარა ნაგულისხმევი მნიშვნელობებით იწყება.

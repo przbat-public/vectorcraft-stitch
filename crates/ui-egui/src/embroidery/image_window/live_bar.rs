@@ -437,7 +437,7 @@ pub(crate) fn makers(reopened: bool) -> [Maker; 2] {
             Maker {
                 making: Making::Objects,
                 words: crate::et!("Convert to Plain Objects"),
-                tip: Some(crate::et!("Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.")),
+                tip: Some(crate::et!("Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.")),
             },
         ]
     } else {
@@ -845,6 +845,17 @@ mod tests {
             .collect();
         assert!(texts.iter().any(|t| t.contains("The objects are made once the preview is ready.")), "{texts:?}");
         assert!(!texts.iter().any(|t| t.contains("Create")), "no button named: {texts:?}");
+    }
+
+    /// On a live object opened again, Update's and Convert's tooltips say what each does wherever
+    /// the live object lies, with no "in its place" (where its place isn't sewn, its design goes to
+    /// the layer above); Convert's says the plain objects it makes are what Digitize Image… doesn't
+    /// change again, not the live object it removes.
+    #[test]
+    fn the_tooltips_of_update_and_convert_say_what_each_does() {
+        let [update, convert] = makers(true);
+        assert_eq!(update.tip, Some("Digitizes the live object again with these settings."));
+        assert_eq!(convert.tip, Some("Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again."));
     }
 
     /// The notes' chip shows the first note, cut short past its room, and how many more, never cut;

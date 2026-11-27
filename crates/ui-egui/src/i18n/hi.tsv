@@ -8976,7 +8976,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	लाइव ऑब्जेक्ट अपडेट करें
 embroidery	Digitizes the live object again with these settings.	इन सेटिंग के साथ लाइव ऑब्जेक्ट को फिर से डिजिटाइज़ करता है।
 embroidery	Convert to Plain Objects	सादे ऑब्जेक्ट में बदलें
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	लाइव ऑब्जेक्ट से सादे कढ़ाई ऑब्जेक्ट बनाता है, जिन्हें “इमेज डिजिटाइज़ करें…” फिर से नहीं बदलता।
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	लाइव ऑब्जेक्ट से सादे कढ़ाई ऑब्जेक्ट बनाता है, जिन्हें “इमेज डिजिटाइज़ करें…” फिर से नहीं बदलता।
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	इस लाइव ऑब्जेक्ट की सामग्री हाथ से बदली गई थी। इसे फिर से डिजिटाइज़ करने पर वे बदलाव बदल जाते हैं; पूर्ववत करें उन्हें वापस लाता है।
 embroidery	Replace	बदलें
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	इस लाइव ऑब्जेक्ट की सेटिंग पढ़ी नहीं जा सकीं: विंडो डिफ़ॉल्ट से शुरू होती है।

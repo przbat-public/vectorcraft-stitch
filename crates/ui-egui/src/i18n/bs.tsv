@@ -7392,7 +7392,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Ažuriraj živi objekat
 embroidery	Digitizes the live object again with these settings.	Ponovo digitalizira živi objekat s ovim postavkama.
 embroidery	Convert to Plain Objects	Pretvori u obične objekte
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Pravi obične objekte veza od živog objekta, koje „Digitaliziraj sliku…” više ne mijenja.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Pravi obične objekte veza od živog objekta, koje „Digitaliziraj sliku…” više ne mijenja.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Sadržaj ovog živog objekta je ručno promijenjen. Ponovna digitalizacija zamjenjuje te izmjene; Poništi ih vraća.
 embroidery	Replace	Zamijeni
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Postavke ovog živog objekta nisu se mogle pročitati: prozor počinje od zadanih.

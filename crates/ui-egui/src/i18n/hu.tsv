@@ -7581,7 +7581,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Dinamikus objektum frissítése
 embroidery	Digitizes the live object again with these settings.	Újra digitalizálja a dinamikus objektumot ezekkel a beállításokkal.
 embroidery	Convert to Plain Objects	Átalakítás egyszerű objektumokká
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	A dinamikus objektumból egyszerű hímzésobjektumokat hoz létre, amelyeket a „Kép digitalizálása…” már nem módosít.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	A dinamikus objektumból egyszerű hímzésobjektumokat hoz létre, amelyeket a „Kép digitalizálása…” már nem módosít.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Ennek a dinamikus objektumnak a tartalmát kézzel módosították. Az újbóli digitalizálás felülírja ezeket a módosításokat; a Visszavonás visszahozza őket.
 embroidery	Replace	Csere
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Ennek a dinamikus objektumnak a beállításai nem olvashatók: az ablak az alapértékekkel indul.

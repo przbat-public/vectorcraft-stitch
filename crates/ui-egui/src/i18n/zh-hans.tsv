@@ -7435,7 +7435,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	更新实时对象
 embroidery	Digitizes the live object again with these settings.	使用这些设置重新数字化实时对象。
 embroidery	Convert to Plain Objects	转换为普通对象
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	由实时对象生成普通刺绣对象，“数字化图像…”不会再更改它们。
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	由实时对象生成普通刺绣对象，“数字化图像…”不会再更改它们。
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	此实时对象的内容已被手动更改。重新数字化会替换这些更改；撤销可将其恢复。
 embroidery	Replace	替换
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	无法读取此实时对象的设置：窗口从默认值开始。

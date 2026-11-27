@@ -7183,7 +7183,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Dynamisches Objekt aktualisieren
 embroidery	Digitizes the live object again with these settings.	Digitalisiert das dynamische Objekt erneut mit diesen Einstellungen.
 embroidery	Convert to Plain Objects	In einfache Objekte umwandeln
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Erstellt aus dem dynamischen Objekt einfache Stickobjekte, die „Bild digitalisieren…“ nicht mehr ändert.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Erstellt aus dem dynamischen Objekt einfache Stickobjekte, die „Bild digitalisieren…“ nicht mehr ändert.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Der Inhalt dieses dynamischen Objekts wurde von Hand geändert. Erneutes Digitalisieren ersetzt diese Änderungen; „Rückgängig“ stellt sie wieder her.
 embroidery	Replace	Ersetzen
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Die Einstellungen dieses dynamischen Objekts konnten nicht gelesen werden: Das Fenster beginnt mit den Standardwerten.

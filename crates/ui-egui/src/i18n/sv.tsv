@@ -9082,7 +9082,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Uppdatera dynamiskt objekt
 embroidery	Digitizes the live object again with these settings.	Digitaliserar det dynamiska objektet igen med de här inställningarna.
 embroidery	Convert to Plain Objects	Konvertera till vanliga objekt
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Skapar vanliga broderiobjekt av det dynamiska objektet; ”Digitalisera bild…” ändrar dem inte igen.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Skapar vanliga broderiobjekt av det dynamiska objektet; ”Digitalisera bild…” ändrar dem inte igen.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Innehållet i det här dynamiska objektet har ändrats för hand. Att digitalisera det igen ersätter de ändringarna; Ångra tar tillbaka dem.
 embroidery	Replace	Ersätt
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Det dynamiska objektets inställningar kunde inte läsas: fönstret börjar från standardvärdena.

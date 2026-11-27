@@ -344,7 +344,7 @@ The Stitches step's list of area changes (the mockup's Polish heading and help l
 | Update Live Object (the coral button on a live object opened again) | Zaktualizuj żywy obiekt |
 | Digitizes the live object again with these settings. | Digitalizuje żywy obiekt ponownie z tymi ustawieniami. |
 | Convert to Plain Objects (the grey one beside it) | Zamień na zwykłe obiekty |
-| Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again. | Tworzy z żywego obiektu zwykłe obiekty haftu, których „Digitalizuj obraz…” już nie zmieni. |
+| Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again. | Tworzy z żywego obiektu zwykłe obiekty haftu, których „Digitalizuj obraz…” już nie zmieni. |
 | Updated the live object: {objects} ({threads}). Undo brings back the earlier version. | Zaktualizowano żywy obiekt: {objects} ({threads}). Polecenie Cofnij przywróci poprzednią wersję. |
 | Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back. | Zamieniono na zwykłe obiekty: {objects} ({threads}). Obraz jest na ukrytej warstwie szablonu „{layer}”. Polecenie Cofnij przywróci żywy obiekt. |
 | Converted to plain objects: {objects} ({threads}). Undo brings the live object back. | Zamieniono na zwykłe obiekty: {objects} ({threads}). Polecenie Cofnij przywróci żywy obiekt. |

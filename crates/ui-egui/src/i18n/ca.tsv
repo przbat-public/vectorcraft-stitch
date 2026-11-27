@@ -7577,7 +7577,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Actualitza l’objecte dinàmic
 embroidery	Digitizes the live object again with these settings.	Torna a digitalitzar l’objecte dinàmic amb aquests paràmetres.
 embroidery	Convert to Plain Objects	Converteix en objectes normals
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Crea objectes de brodat normals a partir de l’objecte dinàmic, que «Digitalitza la imatge…» ja no torna a canviar.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Crea objectes de brodat normals a partir de l’objecte dinàmic; «Digitalitza la imatge…» ja no els torna a canviar.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	El contingut d’aquest objecte dinàmic s’ha canviat a mà. Tornar-lo a digitalitzar substitueix aquests canvis; Desfés els recupera.
 embroidery	Replace	Substitueix
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	No s’han pogut llegir els paràmetres d’aquest objecte dinàmic: la finestra comença amb els valors per defecte.

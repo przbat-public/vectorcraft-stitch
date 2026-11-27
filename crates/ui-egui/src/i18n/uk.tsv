@@ -7197,7 +7197,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Оновити динамічний об’єкт
 embroidery	Digitizes the live object again with these settings.	Знову оцифровує динамічний об’єкт із цими налаштуваннями.
 embroidery	Convert to Plain Objects	Перетворити на звичайні об’єкти
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Створює з динамічного об’єкта звичайні об’єкти вишивки, які «Оцифрувати зображення…» більше не змінить.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Створює з динамічного об’єкта звичайні об’єкти вишивки, які «Оцифрувати зображення…» більше не змінить.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Вміст цього динамічного об’єкта змінено вручну. Повторне оцифрування замінить ці зміни; «Скасувати» поверне їх.
 embroidery	Replace	Замінити
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Не вдалося прочитати налаштування цього динамічного об’єкта: вікно починає зі стандартних значень.

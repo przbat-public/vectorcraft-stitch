@@ -7231,7 +7231,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	更新即時物件
 embroidery	Digitizes the live object again with these settings.	使用這些設定重新數位化即時物件。
 embroidery	Convert to Plain Objects	轉換為一般物件
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	由即時物件產生一般刺繡物件，「數位化影像…」不會再變更它們。
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	由即時物件產生一般刺繡物件，「數位化影像…」不會再變更它們。
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	此即時物件的內容已被手動變更。重新數位化會取代這些變更；復原可將其還原。
 embroidery	Replace	取代
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	無法讀取此即時物件的設定：視窗從預設值開始。

@@ -7356,7 +7356,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Perbarui objek dinamis
 embroidery	Digitizes the live object again with these settings.	Mendigitalkan objek dinamis lagi dengan pengaturan ini.
 embroidery	Convert to Plain Objects	Konversi ke objek biasa
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Membuat objek bordir biasa dari objek dinamis; “Digitalkan gambar…” tidak mengubahnya lagi.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Membuat objek bordir biasa dari objek dinamis; “Digitalkan gambar…” tidak mengubah objek biasa itu lagi.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Konten objek dinamis ini diubah secara manual. Mendigitalkannya lagi akan mengganti perubahan itu; Urungkan mengembalikannya.
 embroidery	Replace	Ganti
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Pengaturan objek dinamis ini tidak dapat dibaca: jendela dimulai dari nilai default.

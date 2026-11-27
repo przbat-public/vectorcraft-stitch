@@ -7343,7 +7343,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Обнови динамичния обект
 embroidery	Digitizes the live object again with these settings.	Дигитализира отново динамичния обект с тези настройки.
 embroidery	Convert to Plain Objects	Преобразувай в обикновени обекти
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Създава от динамичния обект обикновени обекти за бродерия, които „Дигитализиране на изображение…“ вече не променя.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Създава от динамичния обект обикновени обекти за бродерия, които „Дигитализиране на изображение…“ вече не променя.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Съдържанието на този динамичен обект е променено ръчно. Повторното дигитализиране заменя тези промени; „Отмени“ ги връща.
 embroidery	Replace	Замени
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Настройките на този динамичен обект не могат да бъдат прочетени: прозорецът започва от стандартните.

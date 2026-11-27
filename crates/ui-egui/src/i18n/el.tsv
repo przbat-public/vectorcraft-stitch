@@ -7549,7 +7549,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Ενημέρωση δυναμικού αντικειμένου
 embroidery	Digitizes the live object again with these settings.	Ψηφιοποιεί ξανά το δυναμικό αντικείμενο με αυτές τις ρυθμίσεις.
 embroidery	Convert to Plain Objects	Μετατροπή σε απλά αντικείμενα
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Δημιουργεί απλά αντικείμενα κεντήματος από το δυναμικό αντικείμενο, τα οποία η «Ψηφιοποίηση εικόνας…» δεν αλλάζει πια.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Δημιουργεί απλά αντικείμενα κεντήματος από το δυναμικό αντικείμενο, τα οποία η «Ψηφιοποίηση εικόνας…» δεν αλλάζει πια.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Το περιεχόμενο αυτού του δυναμικού αντικειμένου άλλαξε με το χέρι. Η εκ νέου ψηφιοποίηση αντικαθιστά αυτές τις αλλαγές· η Αναίρεση τις επαναφέρει.
 embroidery	Replace	Αντικατάσταση
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Δεν ήταν δυνατή η ανάγνωση των ρυθμίσεων αυτού του δυναμικού αντικειμένου: το παράθυρο ξεκινά από τις προεπιλογές.

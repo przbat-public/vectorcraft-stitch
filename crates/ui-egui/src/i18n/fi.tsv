@@ -7632,7 +7632,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Päivitä dynaaminen objekti
 embroidery	Digitizes the live object again with these settings.	Digitoi dynaamisen objektin uudelleen näillä asetuksilla.
 embroidery	Convert to Plain Objects	Muunna tavallisiksi objekteiksi
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Luo dynaamisesta objektista tavallisia kirjontaobjekteja, joita Digitoi kuva… ei enää muuta.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Luo dynaamisesta objektista tavallisia kirjontaobjekteja, joita Digitoi kuva… ei enää muuta.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Tämän dynaamisen objektin sisältöä on muutettu käsin. Uudelleen digitointi korvaa nämä muutokset; Kumoa palauttaa ne.
 embroidery	Replace	Korvaa
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Tämän dynaamisen objektin asetuksia ei voitu lukea: ikkuna alkaa oletusarvoista.

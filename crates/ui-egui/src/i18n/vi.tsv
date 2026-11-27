@@ -7198,7 +7198,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	Cập nhật đối tượng động
 embroidery	Digitizes the live object again with these settings.	Số hóa lại đối tượng động với các cài đặt này.
 embroidery	Convert to Plain Objects	Chuyển thành đối tượng thường
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Tạo các đối tượng thêu thường từ đối tượng động; “Số hóa hình ảnh…” sẽ không thay đổi chúng nữa.
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Tạo các đối tượng thêu thường từ đối tượng động; “Số hóa hình ảnh…” sẽ không thay đổi chúng nữa.
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Nội dung của đối tượng động này đã được thay đổi thủ công. Số hóa lại sẽ thay thế những thay đổi đó; Hoàn tác sẽ khôi phục chúng.
 embroidery	Replace	Thay thế
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Không đọc được cài đặt của đối tượng động này: cửa sổ bắt đầu từ giá trị mặc định.

@@ -7282,7 +7282,7 @@ embroidery	Keeps the image with the objects made of it, so that Digitize Image�
 embroidery	Update Live Object	ライブオブジェクトを更新
 embroidery	Digitizes the live object again with these settings.	この設定で、ライブオブジェクトをもう一度デジタイズします。
 embroidery	Convert to Plain Objects	通常のオブジェクトに変換
-embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	ライブオブジェクトから通常の刺繍オブジェクトを作成します。「画像をデジタイズ…」でこれらを再び変更することはできません。
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	ライブオブジェクトから通常の刺繍オブジェクトを作成します。「画像をデジタイズ…」でこれらを再び変更することはできません。
 embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	このライブオブジェクトの内容は手動で変更されています。もう一度デジタイズするとそれらの変更は置き換えられ、取り消しで元に戻せます。
 embroidery	Replace	置き換える
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	このライブオブジェクトの設定を読み取れませんでした。ウィンドウは既定値から始まります。

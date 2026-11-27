@@ -621,6 +621,10 @@ pub struct Outputs {
     /// The width up to which Auto sews each area's narrow parts as satin, by area, read of its
     /// object's settings once ([`Outputs::auto_narrow_mm`]): the inspector reads it every frame.
     auto: Arc<AutoKept>,
+    /// Each area's elongation (`Regions::elongations`), by its index, once the lines are done: what
+    /// Apply to Similar Areas' shape rule compares ([`Outputs::similar`]), worked out by the
+    /// pipeline once a lines output, so that the window's interface thread, which asks, walks no map.
+    pub(super) elongations: Option<Arc<Vec<Option<f64>>>>,
 }
 
 /// What the planner sews of an area with narrow parts as satin, each answer once worked out (`None`
@@ -912,7 +916,8 @@ impl Outputs {
 
     /// The keys of the areas alike to the one under working pixel `(x, y)`, in sewing order: of its
     /// colour and kind, their sizes within [`SIMILAR_SHARE`] of the larger, and their shapes alike
-    /// (their elongations within [`SIMILAR_SHAPE_SHARE`]); none before the image is digitized.
+    /// (their elongations within [`SIMILAR_SHAPE_SHARE`], worked out once a lines output: this walks
+    /// no map); none before the image is digitized.
     pub fn similar(&self, x: u32, y: u32) -> Vec<AreaKey> {
         let Some(d) = self.digitized() else { return vec![] };
         let areas = d.areas();
@@ -924,15 +929,7 @@ impl Outputs {
             x.row == this.row && line(b) == line(a) && (p - q).abs() <= SIMILAR_SHARE * p.max(q)
         };
         let candidates: Vec<usize> = d.order().sewn.iter().copied().filter(|&b| b != a && areas.areas.get(b).is_some_and(|x| sized(b, x))).collect();
-        // Their shapes and the area's own, in one pass over the map.
-        let mut picked = vec![false; areas.areas.len()];
-        for &b in candidates.iter().chain(std::iter::once(&a)) {
-            if let Some(p) = picked.get_mut(b) {
-                *p = true;
-            }
-        }
-        let shapes = areas.regions.elongations(|b| picked.get(b).copied().unwrap_or(false));
-        let shape = |b: usize| shapes.get(b).copied().flatten();
+        let shape = |b: usize| self.elongations.as_ref().and_then(|e| e.get(b).copied().flatten());
         let Some(own) = shape(a) else { return vec![] };
         candidates
             .into_iter()
@@ -1293,6 +1290,8 @@ pub struct Pipeline {
     shapes: Kept<ShapesKey, ShapesOut>,
     objects: Kept<ObjectsKey, ObjectsOut>,
     plan: Kept<u64, PlanOut>,
+    /// The elongations of the lines output numbered first ([`Outputs::elongations`]).
+    elongations: Option<(u64, Arc<Vec<Option<f64>>>)>,
     planning: DetachedService,
     /// The number the next output made takes.
     next: u64,
@@ -1329,6 +1328,7 @@ impl Pipeline {
             shapes: Kept::default(),
             objects: Kept::default(),
             plan: Kept::default(),
+            elongations: None,
             planning,
             next: 1,
         }
@@ -1366,6 +1366,20 @@ impl Pipeline {
         let key = LinesKey { image: image.number, colours: colours.number, settings: req.lines_settings() };
         let (lines, made) = stage(&mut self.lines, &mut self.next, key, || stages::lines_stage(&image.value, &colours.value, s))?;
         out.lines = Some(lines.clone());
+        // Each area's elongation for Apply to Similar Areas' shape rule: a pass over the whole region
+        // map, made here once a lines output (the shapes stage keeps its map), on the thread that
+        // runs the pipeline rather than each time the window's inspector asks, on its interface
+        // thread; outside the stages' times, which the window weighs to run a change at once; none
+        // in the command's runs, which compare no shapes.
+        out.elongations = Some(match &self.elongations {
+            Some((of, kept)) if *of == lines.number => kept.clone(),
+            _ => {
+                vectorcraft_doc::cancel::check()?;
+                let made = Arc::new(lines.value.areas.regions.elongations());
+                self.elongations = Some((lines.number, made.clone()));
+                made
+            }
+        });
         done(StageId::Lines, &out, made);
         let key =
             ShapesKey { image: image.number, trace: traced.number, colours: colours.number, lines: lines.number, settings: req.shapes_settings() };

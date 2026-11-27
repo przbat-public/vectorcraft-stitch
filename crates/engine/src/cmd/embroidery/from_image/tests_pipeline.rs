@@ -574,6 +574,78 @@ fn similar_areas_are_alike_in_shape_whichever_way_they_lie() {
     assert!(!out.similar(274, 44).iter().any(|k| bars.contains(k)), "the square is like no bar");
 }
 
+/// Apply to Similar Areas compares the elongations the pipeline kept with the lines
+/// (`Outputs::elongations`) and walks no map itself: given the navy square a bar's elongation, it
+/// is taken for the bar's like, which its shape alone isn't (its size already is).
+#[test]
+fn similar_areas_compare_the_elongations_kept_with_the_lines() {
+    let navy = |x: u32, y: u32| inside(x, y, [20, 20, 140, 40]) || inside(x, y, [200, 20, 249, 69]);
+    let picture = tr::Raster::from_fn(320, 120, |x, y| if navy(x, y) { NAVY } else { WHITE });
+    let (_, _, mut out) = run_of(&picture, json!({"colors": 2}));
+    let square = out.area_key(224, 44).expect("the square");
+    assert!(!out.similar(80, 30).contains(&square), "the square unlike the bar by its shape");
+    let regions = &out.lines.as_ref().expect("the lines").value.areas.regions;
+    let (bar, at) = (regions.at(80, 30).expect("the bar") as usize, regions.at(224, 44).expect("the square") as usize);
+    let mut kept = out.elongations.as_deref().cloned().expect("elongations kept with the lines");
+    kept[at] = kept[bar];
+    out.elongations = Some(Arc::new(kept));
+    assert!(out.similar(80, 30).contains(&square), "the square alike once it is kept as long as the bar");
+}
+
+/// How long Apply to Similar Areas' shape rule takes on the largest working map (1,500 px a side):
+/// the pass over the region map that works out every area's elongation (`Regions::elongations`),
+/// which the window's pipeline makes once a lines output, and `Outputs::similar` on an area of a
+/// grid of squares, which the window's interface thread runs each time the inspector works out its
+/// alike areas again. A measurement, run by hand on an idle machine:
+/// `cargo test --release -p vectorcraft-engine --lib -- --ignored --nocapture the_shape_rule_on_the_largest_working_map`.
+#[test]
+#[ignore = "a measurement, run by hand on an idle machine"]
+fn the_shape_rule_on_the_largest_working_map() {
+    // The largest working map's side (pixels), a grid of squares on it, their side and pitch
+    // (pixels: 625 squares of two colours), the times each is timed, and milliseconds a second.
+    const SIDE: u32 = super::working::MAX_WORKING_SIDE_PX as u32;
+    const SQUARE: u32 = 40;
+    const PITCH: u32 = 60;
+    const RUNS: usize = 20;
+    const MS_PER_SEC: f64 = 1000.0;
+    let picture = tr::Raster::from_fn(SIDE, SIDE, |x, y| match (x % PITCH < SQUARE && y % PITCH < SQUARE, (x / PITCH + y / PITCH) % 2) {
+        (true, 0) => ORANGE,
+        (true, _) => NAVY,
+        _ => WHITE,
+    });
+    let (_, _, out) = run_of(&picture, json!({"colors": 3}));
+    let regions = &out.shapes.as_ref().expect("the shapes").value.areas.regions;
+    assert_eq!((regions.w, regions.h), (SIDE, SIDE), "the largest working map");
+    let time = |f: &dyn Fn()| {
+        let mut ms: Vec<f64> = (0..RUNS)
+            .map(|_| {
+                let started = std::time::Instant::now();
+                f();
+                started.elapsed().as_secs_f64() * MS_PER_SEC
+            })
+            .collect();
+        ms.sort_by(f64::total_cmp);
+        (ms[RUNS / 2], ms[RUNS - 1])
+    };
+    let pass = time(&|| {
+        std::hint::black_box(regions.elongations());
+    });
+    // The middle of the first square.
+    let at = (SQUARE / 2, SQUARE / 2);
+    let similar = time(&|| {
+        std::hint::black_box(out.similar(at.0, at.1));
+    });
+    println!(
+        "{} of {} areas alike on a {SIDE} px map: the pass p50 {:.2} ms, max {:.2} ms; similar p50 {:.2} ms, max {:.2} ms",
+        out.similar(at.0, at.1).len(),
+        regions.areas.len(),
+        pass.0,
+        pass.1,
+        similar.0,
+        similar.1
+    );
+}
+
 /// An area's place in the sewing order names the areas sewn just before and after it.
 #[test]
 fn the_sewing_place_names_the_areas_either_side() {

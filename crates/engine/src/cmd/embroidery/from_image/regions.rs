@@ -573,20 +573,20 @@ impl Regions {
         Self { w, h, labels, areas, borders, adjacent, outside }
     }
 
-    /// How long each area `of` picks is for its width, whichever way it lies: the square root of the
-    /// larger second moment of its pixels about their middle over the smaller (along its own axes),
-    /// each pixel a unit square, so exactly a rectangle's long side over its short one, 1 for a
-    /// square or a disc; `None` for an area not picked. One pass over the map, each pixel's place
+    /// How long each area is for its width, whichever way it lies: the square root of the larger
+    /// second moment of its pixels about their middle over the smaller (along its own axes), each
+    /// pixel a unit square, so exactly a rectangle's long side over its short one, 1 for a square or
+    /// a disc; `None` for an area with no pixels. One pass over the whole map, each pixel's place
     /// taken from its area's box's corner, so that the sums stay small.
-    pub(super) fn elongations(&self, of: impl Fn(usize) -> bool) -> Vec<Option<f64>> {
+    pub(super) fn elongations(&self) -> Vec<Option<f64>> {
         let w = self.w as usize;
         if w == 0 {
             return vec![None; self.areas.len()];
         }
-        // Each picked area's pixels counted, and the sums of their places and of their squares.
-        let mut sums: Vec<Option<[f64; 6]>> = (0..self.areas.len()).map(|a| of(a).then_some([0.0; 6])).collect();
+        // Each area's pixels counted, and the sums of their places and of their squares.
+        let mut sums = vec![[0.0; 6]; self.areas.len()];
         for (i, &l) in self.labels.iter().enumerate() {
-            let (Some(Some(s)), Some(area)) = (sums.get_mut(l as usize), self.areas.get(l as usize)) else { continue };
+            let (Some(s), Some(area)) = (sums.get_mut(l as usize), self.areas.get(l as usize)) else { continue };
             let (x, y) = ((i % w) as f64 - f64::from(area.bbox[0]), (i / w) as f64 - f64::from(area.bbox[1]));
             let [n, sx, sy, sxx, syy, sxy] = s;
             *n += 1.0;
@@ -596,7 +596,7 @@ impl Regions {
             *syy += y * y;
             *sxy += x * y;
         }
-        sums.into_iter().map(|s| s.and_then(elongation_of)).collect()
+        sums.into_iter().map(elongation_of).collect()
     }
 
     /// The length of each area `of` picks, measured along it (pixels): the longest of the shortest

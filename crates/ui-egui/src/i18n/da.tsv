@@ -7314,7 +7314,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Åbner fanen Broderi i Dokumentopsætning. Dette vindue kommer tilbage, når Dokumentopsætning lukkes.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Valgt til dette område
 embroidery	Sewn along its middle as one running line	Broderes langs midten som én linje forsting
 embroidery	No part wider than {width} mm	Ingen del er bredere end {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Bredere end {width} mm: tatami, de smallere dele som satin
@@ -7322,14 +7321,18 @@ embroidery	Wider than {width} mm: tatami	Bredere end {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	De lange dele som satin, resten tatami
 embroidery	Too short for satin	For kort til satin
 embroidery	Too short for satin: sewn as tatami	For kort til satin: sys som tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin kræver en linje på mindst {least} mm: denne er {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin syr dele op til {most} mm: dette område er {width} mm bredt.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Satin kræver en linje på mindst {least} mm: denne er {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Satin syr op til {most} mm brede dele: dette område er bredere
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Satin syr op til {most} mm brede dele: med delen under naboerne er dette område bredere
+embroidery	The angle turns tatami rows: this area has none	Vinklen drejer tatamirækkerne: dette område har ingen
 @plural	about {count} stitch|about {count} stitches	ca. {count} sting|ca. {count} sting
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Anvend på {count} lignende område|Anvend på {count} lignende områder
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Giver områder i samme farve og slags og omtrent samme størrelse dette områdes sting og vinkel.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Anvendt på {count} lignende område|Anvendt på {count} lignende områder
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Giver områder i samme farve og slags og omtrent samme størrelse og proportioner dette områdes sting og vinkel.
 embroidery	Show in Sewing Order	Vis i syrækkefølgen
 embroidery	Dims what is sewn after this area.	Dæmper det, der sys efter dette område.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Dette område sys ikke, så det har ingen plads i syrækkefølgen
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Sys som nr. {number} af {of}, efter {before}, før {after}
 embroidery	Sewn {number} of {of}, before {after}	Sys som nr. {number} af {of}, før {after}
 embroidery	Sewn {number} of {of}, after {before}	Sys som nr. {number} af {of}, efter {before}
@@ -7363,4 +7366,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	et dynamisk broderiobjekt: ændr det i “Digitaliser billede…” (Objekt › Billedsporing)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Det ville blive mere end {count} ændringer af områder, det højeste et design tager.
+embroidery	That would be more than {count} area changes, the most a design takes	Det ville blive mere end {count} ændringer af områder, det højeste et design tager

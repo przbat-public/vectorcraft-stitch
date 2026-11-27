@@ -7189,7 +7189,6 @@ embroidery	Tatami, {value}	榻榻米，{value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	開啟「文件設定」的「刺繡」分頁。「文件設定」關閉後會回到此視窗。
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	為此區域選擇
 embroidery	Sewn along its middle as one running line	沿中線以一道平針縫製
 embroidery	No part wider than {width} mm	沒有寬於 {width} mm 的部分
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	寬於 {width} mm：榻榻米，較窄處用緞紋
@@ -7197,14 +7196,18 @@ embroidery	Wider than {width} mm: tatami	寬於 {width} mm：榻榻米
 embroidery	Its long parts as satin, the rest tatami	較長處用緞紋，其餘用榻榻米
 embroidery	Too short for satin	太短，無法用緞紋
 embroidery	Too short for satin: sewn as tatami	太短，無法用緞紋：以榻榻米繡製
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	緞紋需要至少 {least} mm 寬的線：這條為 {width} mm。
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	緞紋可繡寬至 {most} mm 的部分：此區域寬 {width} mm。
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	緞紋需要至少 {least} mm 寬的線：這條為 {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	緞紋可繡寬至 {most} mm 的部分：此區域更寬
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	緞紋可繡寬至 {most} mm 的部分：計入相鄰區域下方的部分後，此區域更寬
+embroidery	The angle turns tatami rows: this area has none	角度用於旋轉榻榻米各行：此區域沒有榻榻米行
 @plural	about {count} stitch|about {count} stitches	約 {count} 針
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	套用到 {count} 個相似區域
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	將此區域的針法和角度設定到顏色、類型相同且大小相近的區域。
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	已套用到 {count} 個相似區域
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	將此區域的針法和角度設定到顏色、類型相同且大小和比例相近的區域。
 embroidery	Show in Sewing Order	在刺繡順序中顯示
 embroidery	Dims what is sewn after this area.	淡化此區域之後繡製的部分。
+embroidery	This area isn't sewn, so it has no place in the sewing order	此區域不縫製，因此在刺繡順序中沒有位置
 embroidery	Sewn {number} of {of}, after {before}, before {after}	第 {number}/{of} 個繡製，在 {before} 之後、{after} 之前
 embroidery	Sewn {number} of {of}, before {after}	第 {number}/{of} 個繡製，在 {after} 之前
 embroidery	Sewn {number} of {of}, after {before}	第 {number}/{of} 個繡製，在 {before} 之後
@@ -7238,4 +7241,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	即時刺繡物件：請在「數位化影像…」中變更（物件 › 影像描圖）
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	這會超過 {count} 項區域變更，一個設計最多只能有這麼多。
+embroidery	That would be more than {count} area changes, the most a design takes	這會超過 {count} 項區域變更，一個設計最多只能有這麼多

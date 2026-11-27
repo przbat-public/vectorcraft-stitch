@@ -540,6 +540,40 @@ fn similar_areas_are_alike_in_colour_kind_and_size() {
     assert_eq!(out.similar(150, 50), vec![]);
 }
 
+/// Similar areas are of a similar shape too (the project owner's choice, 2026-11-18): two navy bars,
+/// one upright, and one at 45°, are each other's whichever way they lie, but not the navy square of
+/// about their size; a bar a little shorter is like them still. The bar at 45° has a box about
+/// square: a ratio of its box's sides would take it for the square.
+#[test]
+fn similar_areas_are_alike_in_shape_whichever_way_they_lie() {
+    // Filled bars 6 to 1 (120 × 20 px, 12 × 2 mm: the window's test bar's 21 × 3.5 mm in its
+    // proportions), one upright, one at 45° (from the middle of its end `AT`, along `(1, 1)`,
+    // `HALF_WIDTH_PX` either side of that line), one 5.5 to 1, and a square of a bar's size
+    // (49 × 49 px against 120 × 20).
+    const AT: (f64, f64) = (215.0, 110.0);
+    const LONG_PX: f64 = 120.0;
+    const HALF_WIDTH_PX: f64 = 10.0;
+    let slanted = |x: u32, y: u32| {
+        let (dx, dy) = (f64::from(x) + 0.5 - AT.0, f64::from(y) + 0.5 - AT.1);
+        let (along, across) = ((dx + dy) / 2f64.sqrt(), (dy - dx) / 2f64.sqrt());
+        (0.0..LONG_PX).contains(&along) && across.abs() < HALF_WIDTH_PX
+    };
+    let picture = tr::Raster::from_fn(320, 260, |x, y| {
+        let bar = inside(x, y, [20, 20, 140, 40]) || inside(x, y, [180, 20, 200, 140]) || inside(x, y, [20, 200, 130, 220]);
+        if bar || slanted(x, y) || inside(x, y, [250, 20, 299, 69]) { NAVY } else { WHITE }
+    });
+    let (_, _, out) = run_of(&picture, json!({"colors": 2}));
+    let key = |x, y| out.area_key(x, y).expect("an area");
+    let (lying, upright, diagonal, shorter, square) = (key(80, 30), key(190, 80), key(257, 152), key(75, 210), key(274, 44));
+    assert!(!lying.line && !diagonal.line && !square.line, "filled areas: {lying:?} {diagonal:?} {square:?}");
+    let alike = out.similar(80, 30);
+    assert!(alike.contains(&upright) && alike.contains(&diagonal) && alike.contains(&shorter), "the bars, upright, at 45° or shorter: {alike:?}");
+    assert!(!alike.contains(&square), "not the square of a bar's size: {alike:?}");
+    assert!(!out.similar(257, 152).contains(&square), "the bar at 45° unlike the square");
+    let bars = [lying, upright, diagonal, shorter];
+    assert!(!out.similar(274, 44).iter().any(|k| bars.contains(k)), "the square is like no bar");
+}
+
 /// An area's place in the sewing order names the areas sewn just before and after it.
 #[test]
 fn the_sewing_place_names_the_areas_either_side() {
@@ -660,6 +694,41 @@ fn an_area_left_out_by_a_change_is_not_sewn_in_the_window() {
     assert_eq!(mask.get((y * w + x) as usize), Some(&0), "the area left out isn't veiled as sewn after");
 }
 
+/// An area left out by a change keeps its number among its thread's areas, and so do the others:
+/// a name never moves to another area while the window shows it, and two areas of one thread left
+/// out are still named apart; nor does any other area's rough place move.
+#[test]
+fn an_area_left_out_keeps_its_number_and_the_others_keep_theirs() {
+    let (_, _, plain) = run_of(&three_squares(), json!({"colors": 3}));
+    // The two orange squares' numbers among the orange areas.
+    let oranges = |out: &super::pipeline::Outputs| -> Vec<Option<usize>> {
+        [(50, 50), (250, 50)].into_iter().map(|(x, y)| out.area_at(x, y).and_then(|f| f.own_number)).collect()
+    };
+    let before = oranges(&plain);
+    let mut numbers: Vec<usize> = before.iter().flatten().copied().collect();
+    numbers.sort_unstable();
+    assert_eq!(numbers, [1, 2], "numbered 1 and 2 among the orange areas");
+    let left_out = |at: &[(u32, u32)]| {
+        let changes: Vec<Value> = at
+            .iter()
+            .filter_map(|&(x, y)| plain.area_key(x, y))
+            .map(|k| json!({"at": k.at, "color": super::super::hex(k.color), "kind": "fill", "stitch": "none"}))
+            .collect();
+        run_of(&three_squares(), json!({"colors": 3, "areaChanges": changes})).2
+    };
+    // The one sewn first left out: it keeps its 1, the other its 2.
+    let first = if before.first() == Some(&Some(1)) { (50, 50) } else { (250, 50) };
+    let out = left_out(&[first]);
+    assert_eq!(oranges(&out), before, "each keeps its number");
+    let left = out.area_at(first.0, first.1).expect("the area left out");
+    assert!(!left.sewn && left.number.is_none(), "not sewn, no place in the sewing order: {left:?}");
+    // The navy square between them keeps its rough place: the design's box still holds the square
+    // left out (without it, the navy one read at the box's left or right).
+    assert_eq!(out.area_at(150, 50).map(|f| f.place), Some(Place::Middle), "the navy square in the middle");
+    // Both left out: still named apart.
+    assert_eq!(oranges(&left_out(&[(50, 50), (250, 50)])), before, "both keep theirs");
+}
+
 /// A thin area of a colour set to Fill is a fill in the window too: its key is a fill's, finds it
 /// again, and its facts and its alike areas read it so.
 #[test]
@@ -762,7 +831,7 @@ fn what_the_planner_sews_of_an_area_and_whether_satin_is_offered() {
     assert_eq!(at(145, 155), (Some(SatinParts::None), Some(SatinOffer::TooShort)), "the square");
     assert_eq!(at(360, 150).0, Some(SatinParts::Some), "the stick with its head");
     let wide = at(95, 315).1;
-    assert!(matches!(wide, Some(SatinOffer::TooWide { width_mm }) if (width_mm - 15.0).abs() < 0.3), "the wide square: {wide:?}");
+    assert!(matches!(wide, Some(SatinOffer::TooWide { width_mm, overlap: false }) if (width_mm - 15.0).abs() < 0.3), "the wide square: {wide:?}");
 }
 
 /// Two stripes 40 mm long touching on white, at a tenth of a millimetre a pixel: a red one 6.8 mm
@@ -812,7 +881,7 @@ fn an_area_grown_by_the_overlap_is_judged_as_it_is_made() {
     assert!(out.satin_created_kept(54, 240).is_some_and(|p| p != SatinParts::None), "a column at Create's width");
     let (_, _, out) = run_of(&capped_band(), json!({"colors": 3}));
     let band = out.satin_offer(128, 240);
-    assert!(matches!(band, Some(SatinOffer::TooWide { width_mm }) if (width_mm - 12.4).abs() < 0.3), "the band: {band:?}");
+    assert!(matches!(band, Some(SatinOffer::TooWide { width_mm, overlap: true }) if (width_mm - 12.4).abs() < 0.3), "the band: {band:?}");
     assert_eq!(out.satin_offer(358, 98), Some(SatinOffer::TooShort), "the square");
 }
 
@@ -850,4 +919,36 @@ fn satin_answers_are_kept_and_read_without_working_them_out() {
     assert_eq!(out.satin_kept_count(), 2, "as planned, and at its object's width");
     assert_eq!(out.satin_offer(120, 37), Some(SatinOffer::Fits));
     assert_eq!(out.satin_kept_count(), 2, "the offer's parting the one kept");
+}
+
+/// A satin answer, or an Auto width, whose query is cancelled (a newer ask, on the window's thread)
+/// is not kept: it is worked out another time. The answer was kept as having none to give, so that
+/// on a bar sewn all as satin the angle stayed open and Satin read as offered with no parting.
+#[test]
+fn a_cancelled_satin_answer_is_not_kept() {
+    use super::pipeline::SatinParts;
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6}));
+    let token = CancelToken::new();
+    token.cancel();
+    assert_eq!(cancel::scope(&token, None, || out.satin_parts(120, 37, None)), None, "not worked out");
+    assert_eq!(cancel::scope(&token, None, || out.auto_narrow_mm(120, 37)), None, "its Auto width not read");
+    assert_eq!((out.satin_kept_count(), out.auto_kept_count()), (0, 0), "nothing kept");
+    assert_eq!(out.satin_parts(120, 37, None), Some(SatinParts::All), "worked out afterwards");
+}
+
+/// The width up to which Auto sews an area's narrow parts as satin is read of its object's settings
+/// once and kept for the run: the window's inspector reads it every frame, and it asked the planner
+/// each time (a copy of the outputs without the plan, which can ask nothing, still reads it).
+#[test]
+fn the_auto_width_is_read_once_and_kept() {
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6}));
+    let mut early = out.clone();
+    early.plan = None;
+    assert_eq!(early.auto_narrow_mm(120, 37), None, "before the stitches are planned");
+    assert_eq!(out.auto_kept_count(), 0, "nothing kept before the plan");
+    let width = out.auto_narrow_mm(120, 37);
+    assert!(width.is_some_and(|w| w > 0.0), "{width:?}");
+    let _ = (out.satin_known(120, 37), out.satin_parts_auto_kept(120, 37), out.auto_narrow_mm(120, 37));
+    assert_eq!(out.auto_kept_count(), 1, "kept once");
+    assert_eq!(early.auto_narrow_mm(120, 37), width, "read of what is kept");
 }

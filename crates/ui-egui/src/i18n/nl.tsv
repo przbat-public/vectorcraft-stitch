@@ -7365,7 +7365,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Opent het tabblad Borduurwerk van Documentinstellingen. Dit venster komt terug wanneer Documentinstellingen sluit.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Gekozen voor dit vlak
 embroidery	Sewn along its middle as one running line	Langs het midden geborduurd als één lijn rechte steek
 embroidery	No part wider than {width} mm	Geen deel breder dan {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Breder dan {width} mm: tatami, de smallere delen als satijn
@@ -7373,14 +7372,18 @@ embroidery	Wider than {width} mm: tatami	Breder dan {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	De lange delen als satijn, de rest tatami
 embroidery	Too short for satin	Te kort voor satijn
 embroidery	Too short for satin: sewn as tatami	Te kort voor satijn: genaaid als tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satijn vraagt een lijn van minstens {least} mm breed: deze is {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satijn borduurt delen tot {most} mm: dit vlak is {width} mm breed.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Satijn vraagt een lijn van minstens {least} mm breed: deze is {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Satijn borduurt delen tot {most} mm breed: dit vlak is breder
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Satijn borduurt delen tot {most} mm breed: met het deel dat onder zijn buren doorloopt, is dit vlak breder
+embroidery	The angle turns tatami rows: this area has none	De hoek draait de tatamirijen: dit vlak heeft er geen
 @plural	about {count} stitch|about {count} stitches	ongeveer {count} steek|ongeveer {count} steken
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Toepassen op {count} vergelijkbaar vlak|Toepassen op {count} vergelijkbare vlakken
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Geeft de vlakken van dezelfde kleur en soort en ongeveer dezelfde grootte de steek en hoek van dit vlak.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Toegepast op {count} vergelijkbaar vlak|Toegepast op {count} vergelijkbare vlakken
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Geeft de vlakken van dezelfde kleur en soort en ongeveer dezelfde grootte en verhoudingen de steek en hoek van dit vlak.
 embroidery	Show in Sewing Order	Tonen in borduurvolgorde
 embroidery	Dims what is sewn after this area.	Dimt wat na dit vlak wordt geborduurd.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Dit vlak wordt niet geborduurd en heeft dus geen plaats in de borduurvolgorde
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Geborduurd als {number} van {of}, na {before}, vóór {after}
 embroidery	Sewn {number} of {of}, before {after}	Geborduurd als {number} van {of}, vóór {after}
 embroidery	Sewn {number} of {of}, after {before}	Geborduurd als {number} van {of}, na {before}
@@ -7414,4 +7417,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	een dynamisch borduurobject: wijzig het in ‘Afbeelding digitaliseren…’ (Object › Afbeelding traceren)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Dat zouden meer dan {count} vlakwijzigingen zijn, het meeste dat een ontwerp aanneemt.
+embroidery	That would be more than {count} area changes, the most a design takes	Dat zouden meer dan {count} vlakwijzigingen zijn, het meeste dat een ontwerp aanneemt

@@ -620,7 +620,9 @@ pub(crate) struct Segment<'a> {
 /// A strip of segments (the panel's tabs, the Object tab's parts), `height` points tall, its words
 /// `size` points, accessible as tabs: each as wide as its words and the strip's room shared out
 /// ([`strip_widths`]); words a segment can't hold are elided, whole in its tooltip and for screen
-/// readers; one that can't be chosen is greyed → the segment clicked.
+/// readers; one that can't be chosen is greyed → the segment clicked. The strip takes its own
+/// height and no more: each segment is drawn in a child that takes no room of its own, where a
+/// scope would move the next row down by the item spacing once a segment.
 pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
     let t = Tokens::get(ui.ctx());
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::hover());
@@ -638,8 +640,10 @@ pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>
         let Some(s) = items.get(i) else { continue };
         let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, height));
         left += width;
-        let resp = ui.add_enabled_ui(s.enabled, |ui| {
-            craft_ui::tabs::Tab::new(s.id, s.full, s.selected).show_at(ui, segment, |ui, resp| {
+        let builder = egui::UiBuilder::new().max_rect(segment);
+        let mut child = ui.new_child(if s.enabled { builder } else { builder.disabled() });
+        let resp = {
+            craft_ui::tabs::Tab::new(s.id, s.full, s.selected).show_at(&mut child, segment, |ui, resp| {
                 let fill = if s.selected {
                     t.button
                 } else if resp.hovered() {
@@ -662,9 +666,9 @@ pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>
                 );
                 ui.painter().galley(egui::Align2::CENTER_CENTER.align_size_within_rect(galley.size(), segment).min, galley, color);
             })
-        });
+        };
         let elided = natural.get(i).is_some_and(|n| *n > width + ELIDED_SLACK);
-        let resp = if elided || s.full != s.label { resp.inner.on_hover_text(s.full) } else { resp.inner };
+        let resp = if elided || s.full != s.label { resp.on_hover_text(s.full) } else { resp };
         if resp.clicked() && s.enabled {
             clicked = Some(i);
         }

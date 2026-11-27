@@ -7507,7 +7507,6 @@ embroidery	Tatami, {value}	Τατάμι, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Ανοίγει την καρτέλα Κέντημα της Ρύθμισης εγγράφου. Αυτό το παράθυρο επιστρέφει όταν κλείσει η Ρύθμιση εγγράφου.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Επιλέχθηκε για αυτή την περιοχή
 embroidery	Sewn along its middle as one running line	Κεντιέται στη μέση της ως μία γραμμή ευθείας βελονιάς
 embroidery	No part wider than {width} mm	Κανένα τμήμα φαρδύτερο από {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Φαρδύτερη από {width} mm: τατάμι, τα στενότερα τμήματα ως σατέν
@@ -7515,14 +7514,18 @@ embroidery	Wider than {width} mm: tatami	Φαρδύτερη από {width} mm: �
 embroidery	Its long parts as satin, the rest tatami	Τα μακριά τμήματα ως σατέν, τα υπόλοιπα τατάμι
 embroidery	Too short for satin	Πολύ κοντή για σατέν
 embroidery	Too short for satin: sewn as tatami	Πολύ κοντή για σατέν: ράβεται τατάμι
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Το σατέν θέλει γραμμή πλάτους τουλάχιστον {least} mm: αυτή είναι {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Το σατέν κεντά τμήματα έως {most} mm: αυτή η περιοχή έχει πλάτος {width} mm.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Το σατέν θέλει γραμμή πλάτους τουλάχιστον {least} mm: αυτή είναι {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Το σατέν κεντά τμήματα πλάτους έως {most} mm: αυτή η περιοχή είναι φαρδύτερη
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Το σατέν κεντά τμήματα πλάτους έως {most} mm: μαζί με το τμήμα κάτω από τις γειτονικές, αυτή η περιοχή είναι φαρδύτερη
+embroidery	The angle turns tatami rows: this area has none	Η γωνία περιστρέφει τις σειρές του τατάμι: αυτή η περιοχή δεν έχει καμία
 @plural	about {count} stitch|about {count} stitches	περίπου {count} βελονιά|περίπου {count} βελονιές
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Εφαρμογή σε {count} παρόμοια περιοχή|Εφαρμογή σε {count} παρόμοιες περιοχές
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ορίζει τη βελονιά και τη γωνία αυτής της περιοχής στις περιοχές ίδιου χρώματος και είδους και παρόμοιου μεγέθους.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Εφαρμόστηκε σε {count} παρόμοια περιοχή|Εφαρμόστηκε σε {count} παρόμοιες περιοχές
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Ορίζει τη βελονιά και τη γωνία αυτής της περιοχής στις περιοχές ίδιου χρώματος και είδους και παρόμοιου μεγέθους και αναλογιών.
 embroidery	Show in Sewing Order	Εμφάνιση στη σειρά ραφής
 embroidery	Dims what is sewn after this area.	Αχνίζει ό,τι ράβεται μετά από αυτή την περιοχή.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Αυτή η περιοχή δεν κεντιέται, άρα δεν έχει θέση στη σειρά ραφής
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Ράβεται {number}η από {of}, μετά από {before}, πριν από {after}
 embroidery	Sewn {number} of {of}, before {after}	Ράβεται {number}η από {of}, πριν από {after}
 embroidery	Sewn {number} of {of}, after {before}	Ράβεται {number}η από {of}, μετά από {before}
@@ -7556,4 +7559,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	δυναμικό αντικείμενο κεντήματος: αλλάξτε το στο «Ψηφιοποίηση εικόνας…» (Αντικείμενο › Ανίχνευση περιγραμμάτων εικόνας)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Θα ήταν περισσότερες από {count} αλλαγές περιοχών, όσες το πολύ δέχεται ένα σχέδιο.
+embroidery	That would be more than {count} area changes, the most a design takes	Θα ήταν περισσότερες από {count} αλλαγές περιοχών, όσες το πολύ δέχεται ένα σχέδιο

@@ -7136,7 +7136,6 @@ embroidery	Tatami, {value}	타타미, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	문서 설정의 자수 탭을 엽니다. 문서 설정을 닫으면 이 창이 다시 열립니다.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height}mm
-embroidery	Chosen for this area	이 영역에 선택됨
 embroidery	Sewn along its middle as one running line	가운데를 따라 러닝 스티치 한 줄로 수놓음
 embroidery	No part wider than {width} mm	{width}mm보다 넓은 부분 없음
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width}mm보다 넓음: 타타미, 좁은 부분은 새틴
@@ -7144,14 +7143,18 @@ embroidery	Wider than {width} mm: tatami	{width}mm보다 넓음: 타타미
 embroidery	Its long parts as satin, the rest tatami	긴 부분은 새틴, 나머지는 타타미
 embroidery	Too short for satin	새틴에는 너무 짧음
 embroidery	Too short for satin: sewn as tatami	새틴에는 너무 짧음: 타타미로 박음
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	새틴은 너비가 {least}mm 이상인 선이 필요합니다. 이 선은 {width}mm입니다.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	새틴은 너비 {most}mm까지의 부분을 수놓습니다. 이 영역의 너비는 {width}mm입니다.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	새틴은 너비가 {least}mm 이상인 선이 필요합니다. 이 선은 {width}mm입니다
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	새틴은 너비 {most}mm까지의 부분을 수놓습니다. 이 영역은 그보다 넓습니다
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	새틴은 너비 {most}mm까지의 부분을 수놓습니다. 이웃 영역 아래로 들어가는 부분을 포함하면 이 영역은 그보다 넓습니다
+embroidery	The angle turns tatami rows: this area has none	각도는 타타미 줄을 회전시킵니다. 이 영역에는 타타미 줄이 없습니다
 @plural	about {count} stitch|about {count} stitches	약 {count}땀
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	비슷한 영역 {count}개에 적용
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	이 영역의 스티치와 각도를 같은 색·종류이고 크기가 비슷한 영역에 설정합니다.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	비슷한 영역 {count}개에 적용됨
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	이 영역의 스티치와 각도를 같은 색·종류이고 크기와 비율이 비슷한 영역에 설정합니다.
 embroidery	Show in Sewing Order	자수 순서에서 보기
 embroidery	Dims what is sewn after this area.	이 영역 다음에 수놓는 부분을 흐리게 표시합니다.
+embroidery	This area isn't sewn, so it has no place in the sewing order	이 영역은 수놓지 않으므로 자수 순서에 자리가 없습니다
 embroidery	Sewn {number} of {of}, after {before}, before {after}	{of}개 중 {number}번째로 수놓음({before} 다음, {after} 앞)
 embroidery	Sewn {number} of {of}, before {after}	{of}개 중 {number}번째로 수놓음({after} 앞)
 embroidery	Sewn {number} of {of}, after {before}	{of}개 중 {number}번째로 수놓음({before} 다음)
@@ -7185,4 +7188,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	라이브 자수 개체입니다. '이미지 디지타이징…'에서 변경하세요(개체 › 이미지 추적)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	디자인 하나에 허용되는 최대 {count}개의 영역 변경을 넘게 됩니다.
+embroidery	That would be more than {count} area changes, the most a design takes	디자인 하나에 허용되는 최대 {count}개의 영역 변경을 넘게 됩니다

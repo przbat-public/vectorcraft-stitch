@@ -7539,7 +7539,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Megnyitja a Dokumentumbeállítás Hímzés lapját. Ez az ablak visszatér, amikor a Dokumentumbeállítás bezárul.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Ehhez a területhez választva
 embroidery	Sewn along its middle as one running line	A közepén egyetlen egyenes öltésű vonalként hímezve
 embroidery	No part wider than {width} mm	Egyik része sem szélesebb {width} mm-nél
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Szélesebb {width} mm-nél: tatami, a keskenyebb részei szaténként
@@ -7547,14 +7546,18 @@ embroidery	Wider than {width} mm: tatami	Szélesebb {width} mm-nél: tatami
 embroidery	Its long parts as satin, the rest tatami	A hosszú részei szaténként, a többi tatami
 embroidery	Too short for satin	Túl rövid a szaténhoz
 embroidery	Too short for satin: sewn as tatami	Túl rövid a szaténhoz: tatamival varrva
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	A szaténhoz legalább {least} mm széles vonal kell: ez {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	A szatén legfeljebb {most} mm-es részeket hímez: ez a terület {width} mm széles.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	A szaténhoz legalább {least} mm széles vonal kell: ez {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	A szatén legfeljebb {most} mm széles részeket hímez: ez a terület szélesebb
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	A szatén legfeljebb {most} mm széles részeket hímez: a szomszédai alá nyúló résszel együtt ez a terület szélesebb
+embroidery	The angle turns tatami rows: this area has none	A szög a tatami sorait forgatja: ennek a területnek nincsenek ilyen sorai
 @plural	about {count} stitch|about {count} stitches	kb. {count} öltés
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Alkalmazás {count} hasonló területre
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ennek a területnek az öltését és szögét beállítja az azonos színű és fajtájú, nagyjából azonos méretű területekre.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Alkalmazva {count} hasonló területre
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Ennek a területnek az öltését és szögét beállítja az azonos színű és fajtájú, nagyjából azonos méretű és arányú területekre.
 embroidery	Show in Sewing Order	Megjelenítés a varrási sorrendben
 embroidery	Dims what is sewn after this area.	Halványítja azt, amit e terület után varr.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Ez a terület nincs kihímezve, így nincs helye a varrási sorrendben
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Varrás: {number}./{of}, {before} után, {after} előtt
 embroidery	Sewn {number} of {of}, before {after}	Varrás: {number}./{of}, {after} előtt
 embroidery	Sewn {number} of {of}, after {before}	Varrás: {number}./{of}, {before} után
@@ -7588,4 +7591,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	dinamikus hímzésobjektum: a „Kép digitalizálása…” paranccsal módosítsa (Objektum › Képvektorizálás)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Így több mint {count} területmódosítás lenne, ennyit fogad el legfeljebb egy minta.
+embroidery	That would be more than {count} area changes, the most a design takes	Így több mint {count} területmódosítás lenne, ennyit fogad el legfeljebb egy minta

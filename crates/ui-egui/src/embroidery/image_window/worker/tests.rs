@@ -14,11 +14,15 @@ use super::*;
 
 /// A session holding a small picture placed and selected (an orange square on white), and its id.
 pub(crate) fn picture_session() -> (Session, vectorcraft_engine::doc::NodeId) {
+    session_of(image::RgbaImage::from_fn(120, 80, |x, y| {
+        image::Rgba(if (20..100).contains(&x) && (15..65).contains(&y) { [240, 130, 20, 255] } else { [255, 255, 255, 255] })
+    }))
+}
+
+/// A session with `picture` placed and selected, and its id.
+pub(crate) fn session_of(picture: image::RgbaImage) -> (Session, vectorcraft_engine::doc::NodeId) {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 300, "height": 300, "artboards": 1})).unwrap();
-    let picture = image::RgbaImage::from_fn(120, 80, |x, y| {
-        image::Rgba(if (20..100).contains(&x) && (15..65).contains(&y) { [240, 130, 20, 255] } else { [255, 255, 255, 255] })
-    });
     let mut png = Vec::new();
     image::DynamicImage::ImageRgba8(picture).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
     let data = vectorcraft_format::base64_encode(&png);

@@ -7155,7 +7155,6 @@ embroidery	Tatami, {value}	Татамі, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Відкриває вкладку «Вишивка» в «Параметрах документа». Це вікно повернеться, коли «Параметри документа» буде закрито.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} мм
-embroidery	Chosen for this area	Вибрано для цієї області
 embroidery	Sewn along its middle as one running line	Вишивається посередині однією лінією прямого стібка
 embroidery	No part wider than {width} mm	Жодна частина не ширша за {width} мм
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Ширша за {width} мм: татамі, вужчі частини гладдю
@@ -7163,14 +7162,18 @@ embroidery	Wider than {width} mm: tatami	Ширша за {width} мм: тата�
 embroidery	Its long parts as satin, the rest tatami	Довгі частини гладдю, решта татамі
 embroidery	Too short for satin	Закоротка для гладі
 embroidery	Too short for satin: sewn as tatami	Закоротка для гладі: шиється татамі
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Для гладі потрібна лінія завширшки щонайменше {least} мм: ця — {width} мм.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Гладь вишиває частини завширшки до {most} мм: ця область завширшки {width} мм.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Для гладі потрібна лінія завширшки щонайменше {least} мм: ця — {width} мм
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Гладь вишиває частини завширшки до {most} мм: ця область ширша
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Гладь вишиває частини завширшки до {most} мм: разом із частиною під сусідніми областями ця область ширша
+embroidery	The angle turns tatami rows: this area has none	Кут повертає ряди татамі: у цієї області їх немає
 @plural	about {count} stitch|about {count} stitches	приблизно {count} стібок|приблизно {count} стібки|приблизно {count} стібків
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Застосувати до {count} схожої області|Застосувати до {count} схожих областей|Застосувати до {count} схожих областей
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Задає стібок і кут цієї області областям того самого кольору й виду приблизно того самого розміру.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Застосовано до {count} схожої області|Застосовано до {count} схожих областей|Застосовано до {count} схожих областей
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Задає стібок і кут цієї області областям того самого кольору й виду приблизно того самого розміру й пропорцій.
 embroidery	Show in Sewing Order	Показати в порядку вишивання
 embroidery	Dims what is sewn after this area.	Приглушує те, що вишивається після цієї області.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Ця область не вишивається, тому не має місця в порядку вишивання
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Вишивається {number}-ю з {of}, після «{before}», перед «{after}»
 embroidery	Sewn {number} of {of}, before {after}	Вишивається {number}-ю з {of}, перед «{after}»
 embroidery	Sewn {number} of {of}, after {before}	Вишивається {number}-ю з {of}, після «{before}»
@@ -7204,4 +7207,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	динамічний об’єкт вишивки: змініть його в «Оцифрувати зображення…» (Об’єкт › Трасування зображення)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Це було б понад {count} змін областей — найбільше, що приймає один дизайн.
+embroidery	That would be more than {count} area changes, the most a design takes	Це було б понад {count} змін областей — найбільше, що приймає один дизайн

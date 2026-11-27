@@ -7627,7 +7627,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Abre a guia Bordado da Configuração do Documento. Esta janela volta quando a Configuração do Documento fecha.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Escolhido para esta área
 embroidery	Sewn along its middle as one running line	Bordada pelo meio como uma única linha de ponto reto
 embroidery	No part wider than {width} mm	Nenhuma parte mais larga que {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Mais larga que {width} mm: tatami, as partes mais estreitas em cetim
@@ -7635,14 +7634,18 @@ embroidery	Wider than {width} mm: tatami	Mais larga que {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	As partes longas em cetim, o resto em tatami
 embroidery	Too short for satin	Curta demais para cetim
 embroidery	Too short for satin: sewn as tatami	Curta demais para cetim: bordada em tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	O cetim precisa de uma linha com pelo menos {least} mm de largura: esta tem {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	O cetim borda partes de até {most} mm: esta área tem {width} mm de largura.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	O cetim precisa de uma linha com pelo menos {least} mm de largura: esta tem {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	O cetim borda partes de até {most} mm de largura: esta área é mais larga
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	O cetim borda partes de até {most} mm de largura: com a parte sob as áreas vizinhas, esta área é mais larga
+embroidery	The angle turns tatami rows: this area has none	O ângulo gira as fileiras de tatami: esta área não tem nenhuma
 @plural	about {count} stitch|about {count} stitches	cerca de {count} ponto|cerca de {count} pontos
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Aplicar a {count} área semelhante|Aplicar a {count} áreas semelhantes
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Aplica o ponto e o ângulo desta área às áreas da mesma cor e tipo e de tamanho parecido.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Aplicado a {count} área semelhante|Aplicado a {count} áreas semelhantes
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Aplica o ponto e o ângulo desta área às áreas da mesma cor e tipo e de tamanho e proporções parecidos.
 embroidery	Show in Sewing Order	Mostrar na ordem de bordado
 embroidery	Dims what is sewn after this area.	Esmaece o que é bordado depois desta área.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Esta área não é bordada, por isso não tem lugar na ordem de bordado
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Bordada na posição {number} de {of}, depois de {before}, antes de {after}
 embroidery	Sewn {number} of {of}, before {after}	Bordada na posição {number} de {of}, antes de {after}
 embroidery	Sewn {number} of {of}, after {before}	Bordada na posição {number} de {of}, depois de {before}
@@ -7676,4 +7679,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	um objeto de bordado dinâmico: altere-o em “Digitalizar imagem…” (Objeto › Rastreamento de Imagem)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Isso daria mais de {count} alterações de áreas, o máximo que um desenho aceita.
+embroidery	That would be more than {count} area changes, the most a design takes	Isso daria mais de {count} alterações de áreas, o máximo que um desenho aceita

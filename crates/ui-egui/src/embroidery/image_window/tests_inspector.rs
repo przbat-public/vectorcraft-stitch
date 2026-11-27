@@ -98,6 +98,92 @@ fn a_click_on_an_area_opens_its_inspector_and_one_on_the_background_closes_it() 
     assert!(live(&app).inspector.is_none(), "closed on the background");
 }
 
+/// The inspected area's box on screen, as the preview last drew it, and the popover's (its frame
+/// with its margins and stroke, as egui lays the popover out).
+fn boxes(app: &VectorcraftApp, ctx: &egui::Context) -> (egui::Rect, egui::Rect) {
+    use vectorcraft_geom::kurbo::Shape;
+    let l = live(app);
+    let (_, xf) = l.preview.last_view.expect("the preview drawn");
+    let outputs = &l.schedule.shown.as_ref().expect("a result").outputs;
+    let (x, y) = outputs.find(&l.inspector.as_ref().expect("open").key).expect("its area");
+    let b = outputs.outline_at(x, y).expect("its outline").bounding_box();
+    let point = |x, y| xf.to_screen(vectorcraft_geom::Point::new(x, y));
+    let area = egui::Rect::from_two_pos(point(b.x0, b.y0), point(b.x1, b.y1));
+    let popover = ctx.memory(|m| m.area_rect(super::inspector::popup_id())).expect("the popover drawn");
+    (area, popover)
+}
+
+#[test]
+fn the_inspector_lies_beside_its_area_never_over_it() {
+    // The space the popover keeps from its area (points): the inspector's own gap.
+    const GAP: f32 = super::frame::GAP / 2.0;
+    // Rounding of a box drawn on whole points.
+    const ROUNDING: f32 = 0.5;
+    let (mut app, ctx, mut time) = opened();
+    // The navy bar, at the design's right: no room for the popover to its right, so to its left.
+    click_at(&mut app, &ctx, &mut time, 160, 45);
+    let (area, popover) = boxes(&app, &ctx);
+    assert!(popover.right() <= area.left() - GAP + ROUNDING, "to its left, its frame clear of it: {popover:?} beside {area:?}");
+    // The orange square, at the design's left: to its right.
+    click_at(&mut app, &ctx, &mut time, 60, 50);
+    let (area, popover) = boxes(&app, &ctx);
+    assert!(popover.left() >= area.right() + GAP - ROUNDING, "to its right, clear of it: {popover:?} beside {area:?}");
+}
+
+/// Where neither side of its area has room for the popover, it lies on the side with more, over as
+/// little of the area as it can: it went to the left whenever the right had too little, over most
+/// of a wide area at the design's left. Where a side has room, it lies there, the right first.
+#[test]
+fn the_inspector_takes_the_roomier_side_where_neither_has_room() {
+    // The space the popover keeps from its area, and a popover's width with its frame (points).
+    const GAP: f32 = super::frame::GAP / 2.0;
+    const OUTER: f32 = 334.0;
+    let pane = egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1000.0, 800.0));
+    let area = |left: f32, right: f32| egui::Rect::from_min_max(egui::pos2(left, 100.0), egui::pos2(right, 300.0));
+    let beside = |left: f32, right: f32| super::inspector::beside(area(left, right), pane, OUTER);
+    assert_eq!(beside(100.0, 800.0), 800.0 + GAP, "neither has room, more at the right: there");
+    assert_eq!(beside(200.0, 900.0), 200.0 - GAP - OUTER, "neither has room, more at the left: there");
+    assert_eq!(beside(400.0, 500.0), 500.0 + GAP, "room on both sides: the right");
+    assert_eq!(beside(100.0, 300.0), 300.0 + GAP, "room at the right only");
+    assert_eq!(beside(600.0, 900.0), 600.0 - GAP - OUTER, "room at the left only");
+}
+
+/// An area with no alike areas has no Apply to Similar Areas row at all: its empty row left about a
+/// row's height blank above Show in Sewing Order. The navy square is alone in its colour; each
+/// orange square has the other for its like.
+#[test]
+fn an_area_with_no_alike_areas_keeps_no_empty_row() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    until(&mut app, &ctx, &mut time, ready);
+    // The blank between the stitch count and the checkbox: the inspector's gap and the item spacing
+    // either side, a point for rounding.
+    const ROUNDING: f32 = 1.0;
+    let spacing = ctx.global_style().spacing.item_spacing.y;
+    let most = super::frame::GAP / 2.0 + 2.0 * spacing + ROUNDING;
+    let gap = |app: &mut VectorcraftApp, time: &mut f64| {
+        let all = nodes(app, &ctx, time);
+        let bottom = all
+            .iter()
+            .filter(|(_, n)| n.role() == Role::Label && n.value().is_some_and(|v| v.starts_with("about ") && v.ends_with(" stitches")))
+            .find_map(|(_, n)| n.bounds())
+            .expect("the stitch count")
+            .y1 as f32;
+        let top = super::tests::node(&all, "Show in Sewing Order", Role::CheckBox).and_then(|n| n.bounds()).expect("the checkbox").y0 as f32;
+        top - bottom
+    };
+    click_at(&mut app, &ctx, &mut time, 150, 30);
+    assert!(inspected(&app).is_some(), "open on the navy square");
+    assert!(!says(&mut app, &ctx, &mut time, "Similar Area"), "no alike areas");
+    let alone = gap(&mut app, &mut time);
+    assert!(alone <= most, "no empty row: {alone} points between them, at most {most}");
+    keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    assert!(inspected(&app).is_some(), "open on an orange square");
+    assert!(says(&mut app, &ctx, &mut time, "Similar Area"), "its like offered");
+    let alike = gap(&mut app, &mut time);
+    assert!(alike > most, "the Apply row between them: {alike} points");
+}
+
 #[test]
 fn the_choices_follow_the_areas_kind() {
     let (mut app, ctx, mut time) = opened();
@@ -271,17 +357,23 @@ fn the_window_keeps_the_inspector_only_while_a_run_is_under_way() {
 /// inspector takes what was typed in it before it moves.
 #[test]
 fn an_angle_left_by_a_click_on_another_area_is_the_first_areas() {
-    let (mut app, ctx, mut time) = opened();
-    click_at(&mut app, &ctx, &mut time, 160, 45);
+    // The navy square, sewn as tatami rows the angle turns; the first orange square, which its
+    // popover, lying to its left, leaves uncovered.
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 150, 30);
     click(&mut app, &ctx, &mut time, "Angle", Role::TextInput);
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(Key::A, Modifiers::COMMAND), Event::Text("30".into())]);
-    click_at(&mut app, &ctx, &mut time, 150, 80);
-    assert!(inspected(&app).is_some_and(|f| f.line), "moved to the line");
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    assert!(inspected(&app).is_some_and(|f| f.color == [240, 130, 20]), "moved to the orange square");
     let changes = window_field(&app, "areaChanges").expect("the angle set");
     let all = changes.as_array().cloned().unwrap_or_default();
     assert_eq!(all.len(), 1, "{changes}");
-    assert_eq!((&all[0]["angle"], &all[0]["kind"], &all[0]["color"]), (&json!(30.0), &json!("fill"), &json!("#142878")), "the bar's: {changes}");
+    assert_eq!(
+        (&all[0]["angle"], &all[0]["kind"], &all[0]["color"]),
+        (&json!(30.0), &json!("fill"), &json!("#142878")),
+        "the navy square's: {changes}"
+    );
 }
 
 /// A click on another area moves the inspector there (the line, which the bar's popover, lying to
@@ -333,13 +425,60 @@ fn apply_to_similar_areas_changes_each() {
     assert!(r["areaChanges"].as_array().is_some_and(|s| s.iter().all(|s| s["applies"] == json!(true))), "{}", r["areaChanges"]);
 }
 
-/// A picture placed at its 72 ppi: two orange areas of about one size, one 9.9 mm wide, the other
-/// 13 mm, on white.
+/// A picture placed at its 72 ppi: two orange areas of about one size and shape, 30 mm long, one
+/// 10.9 mm wide, the other 13.1 mm, on white.
 fn narrow_and_wide() -> image::RgbaImage {
     image::RgbaImage::from_fn(200, 100, |x, y| {
         let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
-        image::Rgba(if inside([10, 8, 38, 93]) || inside([60, 18, 97, 83]) { [240, 130, 20, 255] } else { [255, 255, 255, 255] })
+        image::Rgba(if inside([10, 8, 41, 93]) || inside([60, 8, 97, 93]) { [240, 130, 20, 255] } else { [255, 255, 255, 255] })
     })
+}
+
+/// A picture placed at its 72 ppi: two navy bars, 21 × 3.5 mm and 20.5 × 3.5 mm, and a navy square
+/// of about their size, 8.8 mm a side, on white (the app check's).
+fn bars_and_a_square() -> image::RgbaImage {
+    image::RgbaImage::from_fn(200, 50, |x, y| {
+        let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
+        let navy = inside([10, 10, 70, 20]) || inside([10, 30, 68, 40]) || inside([170, 10, 195, 35]);
+        image::Rgba(if navy { [20, 40, 120, 255] } else { [255, 255, 255, 255] })
+    })
+}
+
+/// Apply to Similar Areas sets the area's stitch only on the areas of its shape: the other bar, not
+/// the square of about its size (the project owner's choice, 2026-11-18).
+#[test]
+fn apply_to_similar_areas_leaves_out_an_area_of_another_shape() {
+    let (mut app, ctx, mut time) = opened_with(app_with(bars_and_a_square()));
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    assert_eq!(similar_button(&mut app, &ctx, &mut time), Some(("Apply to 1 Similar Area".to_string(), true)), "the other bar only");
+    press_named(&mut app, &ctx, &mut time, "Apply to 1 Similar Area");
+    let changes = window_field(&app, "areaChanges").and_then(|c| c.as_array().cloned()).unwrap_or_default();
+    assert_eq!(changes.len(), 2, "the bar and the other bar: {changes:?}");
+    let in_square = |c: &serde_json::Value| c["at"][0].as_f64().is_some_and(|x| x >= 170.0);
+    assert!(!changes.iter().any(in_square), "none on the square: {changes:?}");
+}
+
+/// Apply to Similar Areas counts only the areas it would change: pressed, it is greyed out, saying
+/// it was applied; the other orange square given an angle of its own since is counted again.
+#[test]
+fn apply_to_similar_areas_counts_only_the_areas_it_would_change() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    assert_eq!(similar_button(&mut app, &ctx, &mut time), Some(("Apply to 1 Similar Area".to_string(), true)));
+    press_named(&mut app, &ctx, &mut time, "Apply to 1 Similar Area");
+    assert_eq!(similar_button(&mut app, &ctx, &mut time), Some(("Applied to 1 Similar Area".to_string(), false)), "applied: greyed, saying so");
+    // The other orange square given an angle of its own (its popover reached once this one's is
+    // closed, which lies over it): counted again from the first.
+    keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    click_at(&mut app, &ctx, &mut time, 90, 30);
+    type_into(&mut app, &ctx, &mut time, "Angle", "30");
+    let angled = window_field(&app, "areaChanges").and_then(|c| c.as_array().cloned()).unwrap_or_default();
+    assert!(angled.iter().any(|c| c["angle"] == json!(30.0)), "the angle set: {angled:?}");
+    keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    assert_eq!(similar_button(&mut app, &ctx, &mut time), Some(("Apply to 1 Similar Area".to_string(), true)), "the square with its own angle");
 }
 
 /// Apply to Similar Areas with Satin sets it only on the areas Satin is offered on: the wider of two
@@ -555,9 +694,9 @@ fn auto_says_what_the_planner_sews() {
 }
 
 /// Satin is offered only where it sews satin: on the long bar; greyed, saying why, on the 4 mm dot
-/// and the 5 mm square, where the planner finds no satin column; Apply to Similar Areas with Satin
-/// on the bar leaves out the navy square as large, too short; and a Satin kept on the dot still
-/// shows chosen, its reason that it is sewn as tatami.
+/// and the 5 mm square, where the planner finds no satin column; Apply to Similar Areas finds no
+/// area like the bar, the navy square as large being of another shape; and a Satin kept on the dot
+/// still shows chosen, its reason that it is sewn as tatami, said once.
 #[test]
 fn satin_is_offered_only_where_it_sews_satin() {
     let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
@@ -566,9 +705,9 @@ fn satin_is_offered_only_where_it_sews_satin() {
     assert_eq!(satin(&mut app, &mut time), Some(true), "the bar");
     let similar = |app: &mut VectorcraftApp, time: &mut f64| nodes(app, &ctx, time).iter().any(|(_, n)| n.label() == Some("Apply to 1 Similar Area"));
     press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
-    assert!(similar(&mut app, &mut time), "with Tatami: the navy square as large");
+    assert!(!similar(&mut app, &mut time), "with Tatami: none, the square as large unlike the bar");
     press(&mut app, &ctx, &mut time, "Satin", Role::Tab);
-    assert!(!similar(&mut app, &mut time), "with Satin: none, the square too short");
+    assert!(!similar(&mut app, &mut time), "with Satin: none");
     keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
     for (x, y) in [(20, 60), (47, 60)] {
         click_at(&mut app, &ctx, &mut time, x, y);
@@ -582,6 +721,126 @@ fn satin_is_offered_only_where_it_sews_satin() {
     click_at(&mut app, &ctx, &mut time, 20, 60);
     assert_eq!(satin(&mut app, &mut time), Some(true), "kept: shown, chosen");
     assert!(says(&mut app, &ctx, &mut time, "Too short for satin: sewn as tatami"), "its reason");
+    assert_eq!(times_said(&mut app, &ctx, &mut time, "Too short for satin"), 1, "said once, not by the Auto line too");
+}
+
+/// An area's size is that of its traced curve, not of its pixels: the 4.2 mm dot read 3.5 mm by
+/// its pixels' centres; the bar, traced along its pixels' edges, reads 21.2 × 3.5 mm either way.
+/// Each lies alone, neither made solid nor grown, so the outline drawn round it is that curve.
+#[test]
+fn an_areas_size_is_of_its_traced_curve() {
+    use vectorcraft_geom::kurbo::Shape;
+    // Millimetres a point, a point being 1/72 inch; and how near the two measures must come
+    // (millimetres): a twentieth, well under the third of a millimetre the pixels' centres lost.
+    const MM_PER_PT: f64 = 25.4 / 72.0;
+    const NEAR_MM: f64 = 0.05;
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    until(&mut app, &ctx, &mut time, ready);
+    let outputs = &live(&app).schedule.shown.as_ref().expect("a result").outputs;
+    for (x, y) in [(20, 60), (40, 15)] {
+        let facts = outputs.area_at(x, y).expect("an area");
+        let b = outputs.outline_at(x, y).expect("its outline").bounding_box();
+        let (w, h) = (b.width() * MM_PER_PT, b.height() * MM_PER_PT);
+        assert!((facts.size_mm.0 - w).abs() < NEAR_MM && (facts.size_mm.1 - h).abs() < NEAR_MM, "({x}, {y}): {:?} against {w} × {h}", facts.size_mm);
+    }
+}
+
+/// The inspector's Auto line stays under a stitch chosen, saying how Auto would sew the area and
+/// why ("Chosen for this area" said nothing the selected choice didn't): the long bar's satin
+/// under Tatami, Satin and Don't Sew alike.
+#[test]
+fn the_auto_line_stays_under_a_choice() {
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    for choice in ["Tatami", "Satin", "Don't sew"] {
+        press(&mut app, &ctx, &mut time, choice, Role::Tab);
+        until(&mut app, &ctx, &mut time, ready);
+        assert!(says(&mut app, &ctx, &mut time, "Auto: satin"), "{choice}: Auto's line");
+        assert_eq!(times_said(&mut app, &ctx, &mut time, "No part wider than "), 1, "{choice}: its reason, once");
+        assert!(!says(&mut app, &ctx, &mut time, "Chosen for this area"), "{choice}: no line saying it was chosen");
+    }
+}
+
+/// Whether the inspector's angle field can be typed in.
+fn angle_open(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Option<bool> {
+    let found = nodes(app, ctx, time);
+    super::tests::node(&found, "Angle", Role::TextInput).map(|n| !n.is_disabled())
+}
+
+/// The angle turns tatami rows only: greyed out, saying why, on the long bar sewn all as satin, and
+/// with Satin or Don't Sew chosen; open with Tatami, and on the stick, its round head tatami.
+#[test]
+fn the_angle_is_greyed_where_no_tatami_rows_are_sewn() {
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    click_at(&mut app, &ctx, &mut time, 40, 15);
+    assert_eq!(angle_open(&mut app, &ctx, &mut time), Some(false), "all satin: greyed");
+    assert!(says(&mut app, &ctx, &mut time, "The angle turns tatami rows"), "why");
+    for (choice, open) in [("Tatami", true), ("Satin", false), ("Don't sew", false)] {
+        press(&mut app, &ctx, &mut time, choice, Role::Tab);
+        until(&mut app, &ctx, &mut time, ready);
+        assert_eq!(angle_open(&mut app, &ctx, &mut time), Some(open), "{choice}");
+    }
+    keyed(&mut app, &ctx, &mut time, Key::Escape, Modifiers::NONE);
+    click_at(&mut app, &ctx, &mut time, 95, 60);
+    assert_eq!(angle_open(&mut app, &ctx, &mut time), Some(true), "the stick's head is tatami");
+}
+
+/// Show in Sewing Order is a checkbox, greyed out on an area left out, which has no place in the
+/// order, saying so; pressed there it shows nothing.
+#[test]
+fn show_in_sewing_order_is_a_checkbox_greyed_on_an_area_not_sewn() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    let order = |app: &mut VectorcraftApp, time: &mut f64| {
+        let found = nodes(app, &ctx, time);
+        super::tests::node(&found, "Show in Sewing Order", Role::CheckBox).map(|n| (!n.is_disabled(), n.toggled()))
+    };
+    assert_eq!(order(&mut app, &mut time), Some((true, Some(egui::accesskit::Toggled::False))), "a checkbox, open, unticked");
+    press(&mut app, &ctx, &mut time, "Don't sew", Role::Tab);
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(order(&mut app, &mut time).map(|(open, _)| open), Some(false), "greyed out on the area left out");
+    assert!(says(&mut app, &ctx, &mut time, "no place in the sewing order"), "saying why");
+    press(&mut app, &ctx, &mut time, "Show in Sewing Order", Role::CheckBox);
+    assert!(live(&app).inspector.as_ref().is_some_and(|i| !i.order), "not ticked");
+    assert!(!says(&mut app, &ctx, &mut time, "Sewn "), "no place said");
+}
+
+/// Satin's reason on an area too wide says the width satin takes, not a second width of the area's
+/// beside its box's sides: the stick's round head is wider than 12 mm.
+#[test]
+fn satins_reason_gives_no_second_width() {
+    let (mut app, ctx, mut time) = opened_with(app_with(satin_shapes()));
+    click_at(&mut app, &ctx, &mut time, 95, 60);
+    assert!(choices(&mut app, &ctx, &mut time).contains(&("Satin".to_string(), false)), "Satin greyed");
+    assert!(says(&mut app, &ctx, &mut time, "Satin sews parts up to 12 mm wide: this area is wider"), "the width it takes");
+    assert!(!says(&mut app, &ctx, &mut time, " mm wide."), "no width of the area's");
+}
+
+/// The value of the first text the window draws that starts with `words`.
+fn line_starting(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, words: &str) -> Option<String> {
+    nodes(app, ctx, time).into_iter().find_map(|(_, n)| n.value().or(n.label()).filter(|v| v.starts_with(words)).map(str::to_string))
+}
+
+/// The inspector's reasons end with no full stop, as its other reasons and facts do: why Satin is
+/// greyed on a line too narrow and on an area too wide, and why a choice is greyed at the most
+/// changes.
+#[test]
+fn the_inspectors_reasons_end_without_a_full_stop() {
+    let (mut app, ctx, mut time) = opened();
+    click_at(&mut app, &ctx, &mut time, 150, 80);
+    let narrow = line_starting(&mut app, &ctx, &mut time, "Satin needs a line at least").expect("the line's reason");
+    assert!(!narrow.ends_with('.'), "{narrow}");
+    click_at(&mut app, &ctx, &mut time, 60, 50);
+    let wide = line_starting(&mut app, &ctx, &mut time, "Satin sews parts up to").expect("the square's reason");
+    assert!(!wide.ends_with('.'), "{wide}");
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    let kept: Vec<serde_json::Value> =
+        (0..MAX_AREA_CHANGES).map(|i| json!({"at": [195.5, 95.5], "color": "#f08214", "kind": "fill", "angle": i % 90})).collect();
+    set(&mut app, "areaChanges", json!(kept));
+    until(&mut app, &ctx, &mut time, ready);
+    click_at(&mut app, &ctx, &mut time, 150, 30);
+    let most = line_starting(&mut app, &ctx, &mut time, "That would be more than").expect("the most changes' reason");
+    assert!(!most.ends_with('.'), "{most}");
 }
 
 /// The number in sewing order of the area the preview's keyboard is on.
@@ -636,6 +895,84 @@ fn the_list_shows_each_change_and_removes_them() {
     press_named(&mut app, &ctx, &mut time, "Reset All");
     assert_eq!(window_field(&app, "areaChanges"), None, "every one removed");
     assert!(says(&mut app, &ctx, &mut time, "Click an area in the preview"), "how to make one");
+}
+
+/// Don't Sew renames no other area: the area left out keeps its name, step 4 naming it so and
+/// saying it isn't sewn (the state, not the button's "Don't sew"), and the other area of its thread
+/// keeps its own.
+#[test]
+fn an_area_left_out_keeps_its_name_and_the_others_keep_theirs() {
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    set(&mut app, super::STEP, json!(4));
+    until(&mut app, &ctx, &mut time, ready);
+    // The two orange squares' names, and the one numbered first among them.
+    let names = |app: &VectorcraftApp| -> Vec<(String, Option<usize>)> {
+        let outputs = &live(app).schedule.shown.as_ref().expect("a result").outputs;
+        [(30, 30), (90, 30)]
+            .into_iter()
+            .map(|(x, y)| outputs.area_at(x, y).map(|f| (super::preview::area_name(&f), f.own_number)).expect("an orange area"))
+            .collect()
+    };
+    let before = names(&app);
+    let first = if before.first().is_some_and(|(_, n)| *n == Some(1)) { 30 } else { 90 };
+    click_at(&mut app, &ctx, &mut time, first, 30);
+    press(&mut app, &ctx, &mut time, "Don't sew", Role::Tab);
+    until(&mut app, &ctx, &mut time, ready);
+    assert_eq!(names(&app), before, "each orange square keeps its name and number");
+    let name = &before[usize::from(first != 30)].0;
+    assert!(says(&mut app, &ctx, &mut time, &format!("{name} · not sewn")), "step 4 names it, not sewn");
+    assert!(!says(&mut app, &ctx, &mut time, "· Don't sew"), "the state, not the button's words");
+}
+
+/// The shapes one frame paints, each group flattened into its parts.
+fn painted(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Vec<egui::Shape> {
+    fn flatten(s: egui::Shape, out: &mut Vec<egui::Shape>) {
+        match s {
+            egui::Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
+            other => out.push(other),
+        }
+    }
+    *time += 0.05;
+    let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1440.0, 900.0));
+    let raw = egui::RawInput { time: Some(*time), screen_rect: Some(screen), ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::dialogs::show(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    let mut shapes = Vec::new();
+    out.shapes.into_iter().for_each(|c| flatten(c.shape, &mut shapes));
+    shapes
+}
+
+/// An area left out by Don't Sew stays marked in the preview once its inspector is closed: dashes
+/// round it, so that it can be found again (the other areas unmarked).
+#[test]
+fn an_area_left_out_stays_marked_once_its_inspector_closes() {
+    use vectorcraft_geom::kurbo::Shape;
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    // The stitches alone, where an area left out shows only the fabric.
+    set(&mut app, super::VIEW, json!("stitches"));
+    click_at(&mut app, &ctx, &mut time, 30, 30);
+    press(&mut app, &ctx, &mut time, "Don't sew", Role::Tab);
+    until(&mut app, &ctx, &mut time, ready);
+    // Closed on the background, where the pointer stays.
+    click_at(&mut app, &ctx, &mut time, 190, 90);
+    assert!(live(&app).inspector.is_none(), "closed");
+    let on_screen = |app: &VectorcraftApp, x: u32, y: u32| {
+        let l = live(app);
+        let (_, xf) = l.preview.last_view.expect("the preview drawn");
+        let b = l.schedule.shown.as_ref().and_then(|s| s.outputs.outline_at(x, y)).expect("its outline").bounding_box();
+        let point = |x, y| xf.to_screen(vectorcraft_geom::Point::new(x, y));
+        egui::Rect::from_two_pos(point(b.x0, b.y0), point(b.x1, b.y1)).expand(2.0)
+    };
+    let (left_out, sewn) = (on_screen(&app, 30, 30), on_screen(&app, 90, 30));
+    let dashes_in = |shapes: &[egui::Shape], r: egui::Rect| {
+        shapes.iter().filter(|s| matches!(s, egui::Shape::LineSegment { points, .. } if r.contains(points[0]) && r.contains(points[1]))).count()
+    };
+    let shapes = painted(&mut app, &ctx, &mut time);
+    assert!(dashes_in(&shapes, left_out) > 0, "the area left out marked");
+    assert_eq!(dashes_in(&shapes, sewn), 0, "an area sewn isn't");
 }
 
 /// While a newer list of changes waits to run, step 4 names each change's own area: the first of two
@@ -730,8 +1067,9 @@ fn a_screen_readers_click_on_the_preview_opens_the_area_the_keyboard_is_on() {
 /// leaves an angle being typed with the area it was typed for, as a pointer's click does.
 #[test]
 fn an_angle_left_by_a_screen_readers_click_is_the_first_areas() {
-    let (mut app, ctx, mut time) = opened();
-    click_at(&mut app, &ctx, &mut time, 160, 45);
+    // The navy square, sewn as tatami rows the angle turns.
+    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    click_at(&mut app, &ctx, &mut time, 150, 30);
     click(&mut app, &ctx, &mut time, "Angle", Role::TextInput);
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(Key::A, Modifiers::COMMAND), Event::Text("30".into())]);
@@ -744,7 +1082,7 @@ fn an_angle_left_by_a_screen_readers_click_is_the_first_areas() {
     let changes = window_field(&app, "areaChanges").and_then(|c| c.as_array().cloned()).unwrap_or_default();
     assert!(
         changes.iter().any(|c| c["angle"] == json!(30.0) && c["color"] == json!("#142878") && c["kind"] == json!("fill")),
-        "the bar's: {changes:?}"
+        "the navy square's: {changes:?}"
     );
 }
 
@@ -906,7 +1244,7 @@ fn bars(n: u32) -> image::RgbaImage {
 /// `None` where it isn't drawn.
 fn similar_button(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> Option<(String, bool)> {
     let nodes = nodes(app, ctx, time);
-    let (_, n) = nodes.iter().find(|(_, n)| n.label().is_some_and(|l| l.starts_with("Apply to ")))?;
+    let (_, n) = nodes.iter().find(|(_, n)| n.label().is_some_and(|l| l.starts_with("Apply to ") || l.starts_with("Applied to ")))?;
     Some((n.label().unwrap_or_default().to_string(), !n.is_disabled()))
 }
 

@@ -472,11 +472,14 @@ pub struct AreaFacts {
     /// The image's colour it is of.
     pub color: [u8; 3],
     /// The thread it is sewn in: its name in the palette, its number among the areas of that thread
-    /// in sewing order (from 1), and its colour (`None` for the background).
+    /// in sewing order (from 1; an area a change leaves out keeps its place in that order, so that
+    /// no other area's number moves), and its colour (`None` for the background).
     pub thread_name: Option<String>,
     pub own_number: Option<usize>,
     pub thread_color: Option<[u8; 3]>,
-    /// Square millimetres.
+    /// Square millimetres: of its own traced shape once the shapes are done (the curve its outline
+    /// follows, before it is made solid under its islands or grown under its neighbours), of its
+    /// pixels until then.
     pub area_mm2: f64,
     /// A line sewn along its middle, or a fill.
     pub line: bool,
@@ -494,7 +497,7 @@ pub struct AreaFacts {
     /// How wide the line sewn along its middle is (millimetres; `None`: a filled area, or the
     /// lines aren't found yet).
     pub line_width_mm: Option<f64>,
-    /// Its box's width and height (millimetres).
+    /// Its box's width and height (millimetres), measured as its area is.
     pub size_mm: (f64, f64),
 }
 
@@ -522,7 +525,7 @@ impl AreaFacts {
         match (self.line, self.satin_width_fits()) {
             (_, true) => SatinOffer::Fits,
             (true, false) => SatinOffer::TooNarrow,
-            (false, false) => SatinOffer::TooWide { width_mm: self.widest_mm },
+            (false, false) => SatinOffer::TooWide { width_mm: self.widest_mm, overlap: false },
         }
     }
 }
@@ -544,10 +547,11 @@ pub enum SatinParts {
 pub enum SatinOffer {
     Fits,
     /// Wider than [`SATIN_AREA_MOST_MM`]: its widest (millimetres), or, where the overlap it grows
-    /// by under the areas sewn after it is what keeps it tatami, its widest and that overlap on
-    /// either side.
+    /// by under the areas sewn after it is what keeps it tatami (`overlap`), its widest and that
+    /// overlap on either side.
     TooWide {
         width_mm: f64,
+        overlap: bool,
     },
     TooNarrow,
     TooShort,
@@ -582,11 +586,19 @@ pub enum ChangeState {
     Kept(&'static str),
 }
 
-/// Two areas are alike for Apply to Similar Areas when they are of the same colour and kind and
-/// their sizes lie within this share of the larger: an estimate, checked before the inspector was
-/// built on the person's real designs and the test logos (2026-11-16), to group what a person calls
-/// alike (a fox's ears and eyes, a watermelon's seeds, a logo's letters).
+/// Two areas are alike for Apply to Similar Areas when they are of the same colour and kind, their
+/// sizes lie within this share of the larger and their shapes are alike ([`SIMILAR_SHAPE_SHARE`]):
+/// an estimate, checked before the inspector was built on the person's real designs and the test
+/// logos (2026-11-16), to group what a person calls alike (a fox's ears and eyes, a watermelon's
+/// seeds, a logo's round letters).
 const SIMILAR_SHARE: f64 = 0.25;
+
+/// Two areas alike in size are alike in shape too when their elongations (how long each is for its
+/// width, whichever way it lies: `Regions::elongations`) lie within this share of the larger: the
+/// size rule's quarter, an estimate (the project owner's choice, 2026-11-18, „Tak, także kształt
+/// (polecam)”): a 21 × 3.5 mm bar, 6 to 1, is like bars down to 4.5 to 1, not like an 8.8 mm
+/// square of about its size, 1 to 1.
+const SIMILAR_SHAPE_SHARE: f64 = 0.25;
 
 /// What a run has made so far, stage by stage: shared outputs, cheap to clone and to hand to
 /// another thread.
@@ -606,6 +618,9 @@ pub struct Outputs {
     /// stitches are planned ([`Outputs::satin_parts`]): shared by the clones of these outputs, so
     /// that the window's thread keeps there what its inspector reads.
     satin: Arc<SatinKept>,
+    /// The width up to which Auto sews each area's narrow parts as satin, by area, read of its
+    /// object's settings once ([`Outputs::auto_narrow_mm`]): the inspector reads it every frame.
+    auto: Arc<AutoKept>,
 }
 
 /// What the planner sews of an area with narrow parts as satin, each answer once worked out (`None`
@@ -616,6 +631,10 @@ type SatinKept = Mutex<HashMap<SatinOf, Option<SatinParts>>>;
 /// What a satin answer is of: the area (its index), the width asked (its bits; `None`: the width its
 /// object is planned with), and whether its object is shrunk by the overlap first.
 type SatinOf = (usize, Option<u64>, bool);
+
+/// The width up to which Auto sews an area's narrow parts as satin, by area (its index), once read
+/// (`None` where there is none: narrow parts as satin off).
+type AutoKept = Mutex<HashMap<usize, Option<f64>>>;
 
 /// The outputs are handed to the window's thread and back.
 const _: () = {
@@ -799,20 +818,33 @@ impl Outputs {
         let thread_of = |b: usize| areas.areas.get(b).and_then(|x| c.colours.rows.get(x.row)).and_then(|r| r.thread.as_ref()).map(|m| m.thread.index);
         let (mut number, mut own_number, mut box_of) = (None, None, None::<[u32; 4]>);
         if let Some(l) = lines {
-            // Numbered among the areas sewn (those of a colour not sewn come first in the order, and
-            // aren't; those a change leaves out aren't either).
+            // Numbered in sewing order among the areas sewn (those of a colour not sewn come first in
+            // the order, and aren't; those a change leaves out aren't either), and among the areas of
+            // its thread with those a change leaves out kept in their places: the order is found
+            // before the changes leave any out, so that leaving one out renames no other, and two
+            // left out of one thread are named apart.
+            let of_colour_sewn = |b: usize| areas.areas.get(b).and_then(|x| c.colours.rows.get(x.row)).is_some_and(super::colours::Colour::sewn);
             let of_sewn = |b: usize| areas.areas.get(b).is_some_and(|x| x.sewn(&c.colours));
-            let mut own = 0;
-            for (i, &b) in l.order.sewn.iter().filter(|&&b| of_sewn(b)).enumerate() {
+            let (mut sewn_before, mut own) = (0, 0);
+            for &b in l.order.sewn.iter().filter(|&&b| of_colour_sewn(b)) {
                 if thread_of(b) == thread.map(|t| t.0) {
                     own += 1;
                 }
+                if of_sewn(b) {
+                    sewn_before += 1;
+                    if b == a {
+                        number = Some(sewn_before);
+                    }
+                }
                 if b == a {
-                    number = Some(i + 1);
                     own_number = Some(own);
                 }
-                let Some(s) = areas.regions.areas.get(b) else { continue };
-                box_of = Some(box_of.map_or(s.bbox, |[x0, y0, x1, y1]| [x0.min(s.bbox[0]), y0.min(s.bbox[1]), x1.max(s.bbox[2]), y1.max(s.bbox[3])]));
+                // The design's box, for an area's rough place: of every area of a colour sewn, so
+                // that leaving one out moves no other's place either.
+                if let Some(s) = areas.regions.areas.get(b) {
+                    box_of =
+                        Some(box_of.map_or(s.bbox, |[x0, y0, x1, y1]| [x0.min(s.bbox[0]), y0.min(s.bbox[1]), x1.max(s.bbox[2]), y1.max(s.bbox[3])]));
+                }
             }
         }
         let stats = areas.regions.areas.get(a)?;
@@ -821,13 +853,17 @@ impl Outputs {
         let share = |v: f64, lo: f64, hi: f64| if hi > lo { (v - lo) / (hi - lo) } else { 0.5 };
         let [bx0, by0, bx1, by1] = stats.bbox.map(f64::from);
         let line_width_mm = lines.and_then(|l| l.lines.get(a)).and_then(Option::as_ref).map(|line| line.width_px / px_per_mm);
+        // Its size and area: of its own traced shape once the shapes are done (the curve its outline
+        // follows), of its pixels until then.
+        let measured = self.shapes.as_ref().and_then(|s| s.value.shapes.measured.get(a).copied().flatten());
         Some(AreaFacts {
             number: number.filter(|_| sewn),
             color: row.color,
             thread_name: thread.map(|t| t.2.to_string()),
-            own_number: own_number.filter(|_| sewn),
+            // Of a colour sewn only, an area a change leaves out keeping its own.
+            own_number,
             thread_color: thread.map(|t| t.1),
-            area_mm2: area.pixels as f64 / (px_per_mm * px_per_mm),
+            area_mm2: measured.map_or(area.pixels as f64, |(px, _, _)| px) / (px_per_mm * px_per_mm),
             // A line: sewn along its middle as Create makes it, once the centre lines are found.
             line: lines.map_or(area.kind == AreaKind::Line, |l| super::changes::made_line(&l.lines, a)),
             sewn,
@@ -836,7 +872,7 @@ impl Outputs {
             // Satin's measure: the shape it is made as, once the shapes are done.
             widest_mm: self.shapes.as_ref().and_then(|s| s.value.shapes.widest_px.get(a).copied()).unwrap_or(stats.widest_px) / px_per_mm,
             line_width_mm,
-            size_mm: ((bx1 - bx0) / px_per_mm, (by1 - by0) / px_per_mm),
+            size_mm: measured.map_or(((bx1 - bx0) / px_per_mm, (by1 - by0) / px_per_mm), |(_, w, h)| (w / px_per_mm, h / px_per_mm)),
         })
     }
 
@@ -875,19 +911,34 @@ impl Outputs {
     }
 
     /// The keys of the areas alike to the one under working pixel `(x, y)`, in sewing order: of its
-    /// colour and kind, their sizes within [`SIMILAR_SHARE`] of the larger; none before the image
-    /// is digitized.
+    /// colour and kind, their sizes within [`SIMILAR_SHARE`] of the larger, and their shapes alike
+    /// (their elongations within [`SIMILAR_SHAPE_SHARE`]); none before the image is digitized.
     pub fn similar(&self, x: u32, y: u32) -> Vec<AreaKey> {
         let Some(d) = self.digitized() else { return vec![] };
         let areas = d.areas();
         let Some(a) = areas.regions.at(x, y).map(|l| l as usize) else { return vec![] };
         let Some(this) = areas.areas.get(a) else { return vec![] };
         let line = |b: usize| super::changes::made_line(d.lines(), b);
-        let alike = |b: usize, x: &Area| {
+        let sized = |b: usize, x: &Area| {
             let (p, q) = (x.pixels as f64, this.pixels as f64);
             x.row == this.row && line(b) == line(a) && (p - q).abs() <= SIMILAR_SHARE * p.max(q)
         };
-        d.order().sewn.iter().filter(|&&b| b != a && areas.areas.get(b).is_some_and(|x| alike(b, x))).filter_map(|&b| key_of(&d, b)).collect()
+        let candidates: Vec<usize> = d.order().sewn.iter().copied().filter(|&b| b != a && areas.areas.get(b).is_some_and(|x| sized(b, x))).collect();
+        // Their shapes and the area's own, in one pass over the map.
+        let mut picked = vec![false; areas.areas.len()];
+        for &b in candidates.iter().chain(std::iter::once(&a)) {
+            if let Some(p) = picked.get_mut(b) {
+                *p = true;
+            }
+        }
+        let shapes = areas.regions.elongations(|b| picked.get(b).copied().unwrap_or(false));
+        let shape = |b: usize| shapes.get(b).copied().flatten();
+        let Some(own) = shape(a) else { return vec![] };
+        candidates
+            .into_iter()
+            .filter(|&b| shape(b).is_some_and(|e| (e - own).abs() <= SIMILAR_SHAPE_SHARE * e.max(own)))
+            .filter_map(|b| key_of(&d, b))
+            .collect()
     }
 
     /// Where the area under working pixel `(x, y)` is sewn among the areas sewn, once the order is
@@ -989,6 +1040,14 @@ impl Outputs {
         Some((b.build(), colors))
     }
 
+    /// The working pixel of each area a change leaves out (Don't Sew), its deepest, once the image is
+    /// digitized: where the window marks the areas left out.
+    pub fn left_out_at(&self) -> Vec<(u32, u32)> {
+        let Some(d) = self.digitized() else { return vec![] };
+        let areas = d.areas();
+        areas.areas.iter().zip(&areas.regions.areas).filter(|(a, _)| a.left_out).map(|(_, s)| s.deepest).collect()
+    }
+
     /// The shape, in document points, of the area under working pixel `(x, y)` as it is sewn (a
     /// line's centre line), once the shapes are done.
     pub fn outline_at(&self, x: u32, y: u32) -> Option<vectorcraft_geom::BezPath> {
@@ -1046,11 +1105,56 @@ impl Outputs {
     }
 
     /// Whether the satin answers the window's inspector reads of the area under working pixel
-    /// `(x, y)` are worked out: as planned, and whether Satin is offered (a line needs neither); none
-    /// is before its stitches are planned.
+    /// `(x, y)` are worked out: as planned, as Auto would sew it ([`Outputs::auto_narrow_mm`]'s),
+    /// and whether Satin is offered (a line needs none); none is before its stitches are planned.
     pub fn satin_known(&self, x: u32, y: u32) -> bool {
         let Some(facts) = self.area_at(x, y) else { return true };
-        facts.line || (self.satin_answer(x, y, None, false, false).is_some() && self.offer(&facts, x, y, false).is_some())
+        let auto = || self.auto_narrow_mm(x, y).is_none_or(|w| self.satin_answer(x, y, Some(w), false, false).is_some());
+        facts.line || (self.satin_answer(x, y, None, false, false).is_some() && self.offer(&facts, x, y, false).is_some() && auto())
+    }
+
+    /// The width up to which Auto sews the parts of the filled area under working pixel `(x, y)` as
+    /// satin, its own change aside (millimetres): narrow parts as satin as its object inherits it
+    /// (from the export settings, else the planner's default), what the inspector says Auto sews
+    /// under a stitch chosen for the area; `None` for a line, for an area of a colour sewn as Fill
+    /// (Create sets narrow parts off for its areas), with narrow parts as satin off, and before its
+    /// stitches are planned. Read of its object's settings once, then kept for the run.
+    pub fn auto_narrow_mm(&self, x: u32, y: u32) -> Option<f64> {
+        let d = self.digitized()?;
+        let a = d.areas().regions.at(x, y)? as usize;
+        let row = d.areas().areas.get(a).and_then(|area| d.colours().rows.get(area.row))?;
+        if row.job == super::settings::Job::Fill || self.area_at(x, y)?.line {
+            return None;
+        }
+        if let Some(kept) = self.auto.lock().ok().and_then(|m| m.get(&a).copied()) {
+            return kept;
+        }
+        let id = self.area_object(x, y)?;
+        let info = self.query("embroidery.info", &json!({"ids": [id.0]}))?.ok()?;
+        let width = info["fill"]["settings"]["narrowAsSatin"]["inherited"]["value"].as_f64().filter(|n| n.is_finite() && *n > 0.0);
+        if let Ok(mut kept) = self.auto.lock() {
+            kept.insert(a, width);
+        }
+        width
+    }
+
+    /// How many areas' Auto widths the run keeps ([`Outputs::auto_narrow_mm`]).
+    #[cfg(test)]
+    pub(super) fn auto_kept_count(&self) -> usize {
+        self.auto.lock().map_or(0, |m| m.len())
+    }
+
+    /// What the planner sews of the filled area under working pixel `(x, y)` as Auto would make it
+    /// ([`Outputs::auto_narrow_mm`]), as far as it is worked out already: `None` for an area Auto
+    /// parts at no width, or while it isn't.
+    pub fn satin_parts_auto_kept(&self, x: u32, y: u32) -> Option<SatinParts> {
+        self.satin_parts_kept(x, y, Some(self.auto_narrow_mm(x, y)?))
+    }
+
+    /// [`Outputs::satin_parts_auto_kept`], worked out and kept now where it isn't yet (off the
+    /// window's interface thread: the planner parts the area's object).
+    pub fn satin_parts_auto(&self, x: u32, y: u32) -> Option<SatinParts> {
+        self.satin_parts(x, y, Some(self.auto_narrow_mm(x, y)?))
     }
 
     /// How many satin answers the run keeps: more once another is worked out.
@@ -1097,7 +1201,13 @@ impl Outputs {
         let (doc, _) = self.made()?;
         let none = Some((None, None));
         let Some(id) = self.area_object(x, y) else { return none };
-        let Some(Ok(info)) = self.query("embroidery.info", &json!({"ids": [id.0]})) else { return none };
+        // A query cancelled (a newer ask, on the window's thread) is worked out another time, never
+        // kept as having none to give.
+        let info = match self.query("embroidery.info", &json!({"ids": [id.0]})) {
+            Some(Ok(info)) => info,
+            Some(Err(crate::EngineError::Cancelled)) => return None,
+            _ => return none,
+        };
         let settings = &info["fill"]["settings"];
         let Some(width) = narrow.or_else(|| settings["narrowAsSatin"]["value"].as_f64()).filter(|n| n.is_finite() && *n > 0.0) else {
             return none;
@@ -1166,7 +1276,7 @@ impl Outputs {
                 let overlap = self.shapes.as_ref()?.value.overlap;
                 let made = facts.widest_mm + 2.0 * overlap;
                 let long = || self.satin_answer(x, y, Some(width), true, work).map(|p| p.is_some_and(|p| p != SatinParts::None));
-                if made > SATIN_AREA_MOST_MM && long()? { SatinOffer::TooWide { width_mm: made } } else { SatinOffer::TooShort }
+                if made > SATIN_AREA_MOST_MM && long()? { SatinOffer::TooWide { width_mm: made, overlap: true } } else { SatinOffer::TooShort }
             }
             _ => SatinOffer::Fits,
         })

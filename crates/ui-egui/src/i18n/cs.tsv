@@ -7555,7 +7555,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Otevře kartu Výšivka v Nastavení dokumentu. Toto okno se vrátí, až se Nastavení dokumentu zavře.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Zvoleno pro tuto oblast
 embroidery	Sewn along its middle as one running line	Vyšívá se středem jako jedna čára rovného stehu
 embroidery	No part wider than {width} mm	Žádná část není širší než {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Širší než {width} mm: tatami, užší části jako satén
@@ -7563,14 +7562,18 @@ embroidery	Wider than {width} mm: tatami	Širší než {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	Dlouhé části jako satén, zbytek tatami
 embroidery	Too short for satin	Příliš krátká na satén
 embroidery	Too short for satin: sewn as tatami	Příliš krátká na satén: šije se tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satén potřebuje čáru širokou aspoň {least} mm: tato má {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satén vyšívá části do {most} mm: tato oblast je široká {width} mm.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Satén potřebuje čáru širokou aspoň {least} mm: tato má {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Satén vyšívá části široké do {most} mm: tato oblast je širší
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Satén vyšívá části široké do {most} mm: s částí pod sousedy je tato oblast širší
+embroidery	The angle turns tatami rows: this area has none	Úhel otáčí řady tatami: tato oblast žádné nemá
 @plural	about {count} stitch|about {count} stitches	asi {count} steh|asi {count} stehy|asi {count} stehů
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Použít na {count} podobnou oblast|Použít na {count} podobné oblasti|Použít na {count} podobných oblastí
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Nastaví steh a úhel této oblasti oblastem stejné barvy a druhu a podobné velikosti.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Použito na {count} podobnou oblast|Použito na {count} podobné oblasti|Použito na {count} podobných oblastí
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Nastaví steh a úhel této oblasti oblastem stejné barvy a druhu a podobné velikosti a proporcí.
 embroidery	Show in Sewing Order	Zobrazit v pořadí šití
 embroidery	Dims what is sewn after this area.	Ztlumí to, co se šije po této oblasti.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Tato oblast se nevyšívá, takže nemá místo v pořadí šití
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Šije se {number}. z {of}, po {before}, před {after}
 embroidery	Sewn {number} of {of}, before {after}	Šije se {number}. z {of}, před {after}
 embroidery	Sewn {number} of {of}, after {before}	Šije se {number}. z {of}, po {before}
@@ -7604,4 +7607,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	živý objekt výšivky: změňte ho v „Digitalizovat obrázek…“ (Objekt › Vektorizace obrazu)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	To by bylo víc než {count} změn oblastí, nejvíc, kolik návrh přijme.
+embroidery	That would be more than {count} area changes, the most a design takes	To by bylo víc než {count} změn oblastí, nejvíc, kolik návrh přijme

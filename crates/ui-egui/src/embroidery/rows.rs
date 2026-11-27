@@ -659,7 +659,7 @@ pub(crate) fn described(ui: &Ui, id: egui::Id, tip: &str) {
 }
 
 /// [`check`]'s box drawn, and its response.
-fn check_response(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32) -> egui::Response {
+pub(crate) fn check_response(ui: &mut Ui, words: &str, value: Option<bool>, back: Color32) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let c = CheckColours::on(&t, back);
     let room = (ui.available_width() - CHECK_BOX - CHECK_GAP).max(1.0);

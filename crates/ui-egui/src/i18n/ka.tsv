@@ -7614,7 +7614,6 @@ embroidery	Tatami, {value}	ტატამი, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	ხსნის დოკუმენტის პარამეტრების ნაქარგობის ჩანართს. ეს ფანჯარა დაბრუნდება, როცა დოკუმენტის პარამეტრები დაიხურება.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} მმ
-embroidery	Chosen for this area	არჩეულია ამ არისთვის
 embroidery	Sewn along its middle as one running line	იქარგება შუაზე ერთი სწორი ნაკერის ხაზად
 embroidery	No part wider than {width} mm	არცერთი ნაწილი არ არის {width} მმ-ზე განიერი
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} მმ-ზე განიერი: ტატამი, ვიწრო ნაწილები ატლასად
@@ -7622,14 +7621,18 @@ embroidery	Wider than {width} mm: tatami	{width} მმ-ზე განიე�
 embroidery	Its long parts as satin, the rest tatami	გრძელი ნაწილები ატლასად, დანარჩენი ტატამი
 embroidery	Too short for satin	ატლასისთვის ძალიან მოკლეა
 embroidery	Too short for satin: sewn as tatami	ატლასისთვის ძალიან მოკლეა: იკერება ტატამით
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	ატლასს სჭირდება მინიმუმ {least} მმ სიგანის ხაზი: ეს არის {width} მმ.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	ატლასი ქარგავს ნაწილებს {most} მმ-მდე: ამ არის სიგანეა {width} მმ.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	ატლასს სჭირდება მინიმუმ {least} მმ სიგანის ხაზი: ეს არის {width} მმ
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	ატლასი ქარგავს ნაწილებს {most} მმ სიგანემდე: ეს არე უფრო განიერია
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	ატლასი ქარგავს ნაწილებს {most} მმ სიგანემდე: მეზობლების ქვეშ შემავალ ნაწილთან ერთად ეს არე უფრო განიერია
+embroidery	The angle turns tatami rows: this area has none	კუთხე ტატამის რიგებს აბრუნებს: ამ არეს ასეთი რიგები არ აქვს
 @plural	about {count} stitch|about {count} stitches	ნაკერები: დაახლ. {count}
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	გამოყენება მსგავს არეებზე: {count}
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	ამ არის ნაკერსა და კუთხეს აყენებს იმავე ფერისა და სახის, დაახლოებით იმავე ზომის არეებზე.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	გამოყენებულია მსგავს არეებზე: {count}
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	ამ არის ნაკერსა და კუთხეს აყენებს იმავე ფერისა და სახის, დაახლოებით იმავე ზომისა და პროპორციების არეებზე.
 embroidery	Show in Sewing Order	კერვის რიგში ჩვენება
 embroidery	Dims what is sewn after this area.	აფერმკრთალებს იმას, რაც ამ არის შემდეგ იკერება.
+embroidery	This area isn't sewn, so it has no place in the sewing order	ეს არე არ იქარგება, ამიტომ მას კერვის რიგში ადგილი არ აქვს
 embroidery	Sewn {number} of {of}, after {before}, before {after}	იკერება {number} / {of}, შემდეგ: {before}, მანამდე: {after}
 embroidery	Sewn {number} of {of}, before {after}	იკერება {number} / {of}, მანამდე: {after}
 embroidery	Sewn {number} of {of}, after {before}	იკერება {number} / {of}, შემდეგ: {before}
@@ -7663,4 +7666,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	დინამიკური ნაქარგობის ობიექტი: შეცვალეთ „სურათის დიგიტალიზაცია…“-ში (ობიექტი › გამოსახულების ვექტორიზაცია)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	ეს იქნებოდა {count}-ზე მეტი ცვლილება არეებზე — მაქსიმუმი, რასაც დიზაინი იღებს.
+embroidery	That would be more than {count} area changes, the most a design takes	ეს იქნებოდა {count}-ზე მეტი ცვლილება არეებზე — მაქსიმუმი, რასაც დიზაინი იღებს

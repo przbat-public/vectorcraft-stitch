@@ -8934,7 +8934,6 @@ embroidery	Tatami, {value}	टाटामी, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	डॉक्यूमेंट सेटअप का कढ़ाई टैब खोलता है। डॉक्यूमेंट सेटअप बंद होने पर यह विंडो लौट आती है।
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	इस क्षेत्र के लिए चुना गया
 embroidery	Sewn along its middle as one running line	बीच से एक रनिंग स्टिच रेखा के रूप में सिली जाती है
 embroidery	No part wider than {width} mm	कोई भाग {width} mm से चौड़ा नहीं
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm से चौड़ा: टाटामी, संकरे भाग सैटिन के रूप में
@@ -8942,14 +8941,18 @@ embroidery	Wider than {width} mm: tatami	{width} mm से चौड़ा: ट�
 embroidery	Its long parts as satin, the rest tatami	लंबे भाग सैटिन के रूप में, बाकी टाटामी
 embroidery	Too short for satin	सैटिन के लिए बहुत छोटा
 embroidery	Too short for satin: sewn as tatami	सैटिन के लिए बहुत छोटा: टाटामी में सिला जाता है
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	सैटिन के लिए रेखा कम से कम {least} mm चौड़ी चाहिए: यह {width} mm है।
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	सैटिन {most} mm तक के भाग सिलता है: यह क्षेत्र {width} mm चौड़ा है।
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	सैटिन के लिए रेखा कम से कम {least} mm चौड़ी चाहिए: यह {width} mm है
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	सैटिन {most} mm तक चौड़े भाग सिलता है: यह क्षेत्र इससे चौड़ा है
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	सैटिन {most} mm तक चौड़े भाग सिलता है: पड़ोसियों के नीचे जाने वाले भाग को मिलाकर यह क्षेत्र इससे चौड़ा है
+embroidery	The angle turns tatami rows: this area has none	कोण टाटामी की पंक्तियों को घुमाता है: इस क्षेत्र में ऐसी पंक्तियाँ नहीं हैं
 @plural	about {count} stitch|about {count} stitches	लगभग {count} स्टिच|लगभग {count} स्टिच
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	{count} समान क्षेत्र पर लागू करें|{count} समान क्षेत्रों पर लागू करें
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	इस क्षेत्र का स्टिच और कोण उसी रंग और प्रकार के लगभग समान आकार वाले क्षेत्रों पर लगाता है।
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	{count} समान क्षेत्र पर लागू किया गया|{count} समान क्षेत्रों पर लागू किया गया
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	इस क्षेत्र का स्टिच और कोण उसी रंग और प्रकार के लगभग समान आकार और अनुपात वाले क्षेत्रों पर लगाता है।
 embroidery	Show in Sewing Order	सिलाई क्रम में दिखाएँ
 embroidery	Dims what is sewn after this area.	इस क्षेत्र के बाद सिलने वाला भाग धुँधला करता है।
+embroidery	This area isn't sewn, so it has no place in the sewing order	यह क्षेत्र नहीं सिला जाता, इसलिए सिलाई क्रम में इसका कोई स्थान नहीं है
 embroidery	Sewn {number} of {of}, after {before}, before {after}	{of} में से {number}वें स्थान पर सिला जाता है, {before} के बाद, {after} से पहले
 embroidery	Sewn {number} of {of}, before {after}	{of} में से {number}वें स्थान पर सिला जाता है, {after} से पहले
 embroidery	Sewn {number} of {of}, after {before}	{of} में से {number}वें स्थान पर सिला जाता है, {before} के बाद
@@ -8983,4 +8986,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	एक लाइव कढ़ाई ऑब्जेक्ट: इसे “इमेज डिजिटाइज़ करें…” में बदलें (ऑब्जेक्ट › इमेज ट्रेस)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	इससे {count} से अधिक क्षेत्र बदलाव हो जाएँगे, जितने अधिकतम एक डिज़ाइन लेता है।
+embroidery	That would be more than {count} area changes, the most a design takes	इससे {count} से अधिक क्षेत्र बदलाव हो जाएँगे, जितने अधिकतम एक डिज़ाइन लेता है

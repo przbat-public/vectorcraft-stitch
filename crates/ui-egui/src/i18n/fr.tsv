@@ -7550,7 +7550,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Ouvre l’onglet Broderie de Format de document. Cette fenêtre revient quand Format de document se ferme.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Choisi pour cette zone
 embroidery	Sewn along its middle as one running line	Brodée en son milieu en une seule ligne de point droit
 embroidery	No part wider than {width} mm	Aucune partie plus large que {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Plus large que {width} mm : tatami, ses parties plus étroites en satin
@@ -7558,14 +7557,18 @@ embroidery	Wider than {width} mm: tatami	Plus large que {width} mm : tatami
 embroidery	Its long parts as satin, the rest tatami	Ses parties longues en satin, le reste en tatami
 embroidery	Too short for satin	Trop courte pour le satin
 embroidery	Too short for satin: sewn as tatami	Trop courte pour le satin : brodée en tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Le satin demande une ligne d’au moins {least} mm de large : celle-ci fait {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Le satin brode des parties jusqu’à {most} mm : cette zone fait {width} mm de large.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Le satin demande une ligne d’au moins {least} mm de large : celle-ci fait {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Le satin brode des parties jusqu’à {most} mm de large : cette zone est plus large
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Le satin brode des parties jusqu’à {most} mm de large : avec la partie qui passe sous ses voisines, cette zone est plus large
+embroidery	The angle turns tatami rows: this area has none	L’angle fait tourner les rangs de tatami : cette zone n’en a pas
 @plural	about {count} stitch|about {count} stitches	environ {count} point|environ {count} points
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Appliquer à {count} zone semblable|Appliquer à {count} zones semblables
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Applique le point et l’angle de cette zone aux zones de même couleur et de même type, de taille voisine.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Appliqué à {count} zone semblable|Appliqué à {count} zones semblables
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Applique le point et l’angle de cette zone aux zones de même couleur et de même type, de taille et de proportions voisines.
 embroidery	Show in Sewing Order	Montrer dans l’ordre de broderie
 embroidery	Dims what is sewn after this area.	Estompe ce qui est brodé après cette zone.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Cette zone n’est pas brodée, elle n’a donc pas de place dans l’ordre de broderie
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Brodée en position {number} sur {of}, après {before}, avant {after}
 embroidery	Sewn {number} of {of}, before {after}	Brodée en position {number} sur {of}, avant {after}
 embroidery	Sewn {number} of {of}, after {before}	Brodée en position {number} sur {of}, après {before}
@@ -7599,4 +7602,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	un objet de broderie dynamique : modifiez-le dans « Numériser l’image… » (Objet › Vectorisation de l’image)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Cela ferait plus de {count} modifications de zones, le maximum qu’accepte un motif.
+embroidery	That would be more than {count} area changes, the most a design takes	Cela ferait plus de {count} modifications de zones, le maximum qu’accepte un motif

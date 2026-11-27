@@ -7590,7 +7590,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Avaa Asiakirjan asetusten Kirjonta-välilehden. Tämä ikkuna palaa, kun Asiakirjan asetukset suljetaan.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Valittu tälle alueelle
 embroidery	Sewn along its middle as one running line	Kirjotaan keskeltä yhtenä suorapistoviivana
 embroidery	No part wider than {width} mm	Mikään osa ei ole yli {width} mm leveä
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Yli {width} mm leveä: tatami, kapeammat osat satiinina
@@ -7598,14 +7597,18 @@ embroidery	Wider than {width} mm: tatami	Yli {width} mm leveä: tatami
 embroidery	Its long parts as satin, the rest tatami	Pitkät osat satiinina, loput tatamina
 embroidery	Too short for satin	Liian lyhyt satiinille
 embroidery	Too short for satin: sewn as tatami	Liian lyhyt satiinille: ommellaan tatamina
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satiini vaatii vähintään {least} mm leveän viivan: tämä on {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satiini kirjoo enintään {most} mm leveitä osia: tämä alue on {width} mm leveä.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Satiini vaatii vähintään {least} mm leveän viivan: tämä on {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Satiini kirjoo enintään {most} mm leveitä osia: tämä alue on leveämpi
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Satiini kirjoo enintään {most} mm leveitä osia: naapuriensa alle jäävän osan kanssa tämä alue on leveämpi
+embroidery	The angle turns tatami rows: this area has none	Kulma kääntää tatamirivejä: tällä alueella niitä ei ole
 @plural	about {count} stitch|about {count} stitches	noin {count} pisto|noin {count} pistoa
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Käytä {count} samankaltaiselle alueelle|Käytä {count} samankaltaiselle alueelle
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Asettaa tämän alueen piston ja kulman samanvärisille ja -tyyppisille, suunnilleen samankokoisille alueille.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Käytetty {count} samankaltaiselle alueelle|Käytetty {count} samankaltaiselle alueelle
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Asettaa tämän alueen piston ja kulman samanvärisille ja -tyyppisille, suunnilleen samankokoisille ja mittasuhteiltaan samanlaisille alueille.
 embroidery	Show in Sewing Order	Näytä ompelujärjestyksessä
 embroidery	Dims what is sewn after this area.	Himmentää sen, mikä ommellaan tämän alueen jälkeen.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Tätä aluetta ei kirjota, joten sillä ei ole paikkaa ompelujärjestyksessä
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Ommellaan {number}/{of}, jälkeen: {before}, ennen: {after}
 embroidery	Sewn {number} of {of}, before {after}	Ommellaan {number}/{of}, ennen: {after}
 embroidery	Sewn {number} of {of}, after {before}	Ommellaan {number}/{of}, jälkeen: {before}
@@ -7639,4 +7642,4 @@ embroidery	Live digitized images scaled by more than {value}% since they were di
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	dynaaminen kirjontaobjekti: muuta sitä kohdassa ”Digitoi kuva…” (Objekti › Kuvan jäljitys)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Siitä tulisi yli {count} aluekohtaista muutosta, enemmän kuin kuvio ottaa.
+embroidery	That would be more than {count} area changes, the most a design takes	Siitä tulisi yli {count} aluekohtaista muutosta, enemmän kuin kuvio ottaa

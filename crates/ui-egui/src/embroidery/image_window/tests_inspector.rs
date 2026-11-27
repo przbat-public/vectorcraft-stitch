@@ -538,9 +538,10 @@ fn screen_box_of(app: &VectorcraftApp, x: u32, y: u32) -> egui::Rect {
 
 /// While Apply to Similar Areas is hovered, the preview outlines the areas it would change, not an
 /// alike area sewn as this one already; where none is left to change (greyed out, "Applied to N
-/// Similar Areas"), every alike area. Of three orange squares, the middle one is given Tatami first,
-/// then the left one, and Apply sets the right one. The outlines are drawn on the preview, under the
-/// popover where it lies over them: the test reads what is painted.
+/// Similar Areas"), every alike area; with the pointer off the button, none. Of three orange squares,
+/// the middle one is given Tatami first, then the left one, and Apply sets the right one. The
+/// outlines are drawn on the preview, under the popover where it lies over them: the test reads what
+/// is painted.
 #[test]
 fn the_similar_areas_are_outlined_while_the_button_is_hovered() {
     // Slack for rounding (points): an outline's points lie on its area's box or inside it.
@@ -550,13 +551,8 @@ fn the_similar_areas_are_outlined_while_the_button_is_hovered() {
     until(&mut app, &ctx, &mut time, ready);
     click_at(&mut app, &ctx, &mut time, 30, 30);
     press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
-    // Whether the middle and the right squares are outlined while the button called `button` is
-    // hovered.
-    let outlined = |app: &mut VectorcraftApp, time: &mut f64, button: &str| {
-        let at = super::tests::centre_of(app, &ctx, time, button, Role::Button);
-        *time += 0.05;
-        frame(app, &ctx, *time, vec![Event::PointerMoved(at)]);
-        assert!(live(app).inspector.as_ref().is_some_and(|i| i.similar_shown), "{button} hovered");
+    // Whether the middle and the right squares are outlined in the frame painted now.
+    let drawn = |app: &mut VectorcraftApp, time: &mut f64| {
         let shapes = painted(app, &ctx, time);
         let dark = egui::epaint::ColorMode::Solid(super::preview::OUTLINE_DARK);
         [(90, 30), (150, 30)].map(|(x, y)| {
@@ -567,6 +563,14 @@ fn the_similar_areas_are_outlined_while_the_button_is_hovered() {
             })
         })
     };
+    // Whether they are outlined while the button called `button` is hovered.
+    let outlined = |app: &mut VectorcraftApp, time: &mut f64, button: &str| {
+        let at = super::tests::centre_of(app, &ctx, time, button, Role::Button);
+        *time += 0.05;
+        frame(app, &ctx, *time, vec![Event::PointerMoved(at)]);
+        assert!(live(app).inspector.as_ref().is_some_and(|i| i.similar_shown), "{button} hovered");
+        drawn(app, time)
+    };
     assert_eq!(outlined(&mut app, &mut time, "Apply to 1 Similar Area"), [false, true], "the one it would change, not the one sewn so");
     press_named(&mut app, &ctx, &mut time, "Apply to 1 Similar Area");
     assert_eq!(
@@ -574,6 +578,11 @@ fn the_similar_areas_are_outlined_while_the_button_is_hovered() {
         [true, true],
         "none left to change: every alike area, the middle one too"
     );
+    // The pointer off the button, at the screen's corner, outside the window: no area outlined.
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![Event::PointerMoved(egui::Pos2::ZERO)]);
+    assert!(live(&app).inspector.as_ref().is_some_and(|i| !i.similar_shown), "the inspector open, its button no longer hovered");
+    assert_eq!(drawn(&mut app, &mut time), [false, false], "off the button, no alike area outlined");
 }
 
 /// Show in Sewing Order says where the area is sewn, and ▶ moves the inspector to the area sewn

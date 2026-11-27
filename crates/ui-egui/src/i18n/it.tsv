@@ -5713,6 +5713,7 @@ embroidery	No source gives a number to check these against.	Nessuna fonte indica
 @plural	{count} row|{count} rows	{count} serie|{count} serie
 @plural	{count} spot|{count} spots	{count} zona|{count} zone
 @plural	{count} thread|{count} threads	{count} filo|{count} fili
+embroidery	Threads	Fili
 @plural	{count} error|{count} errors	{count} errore|{count} errori
 @plural	{count} warning|{count} warnings	{count} avviso|{count} avvisi
 @plural	{count} note|{count} notes	{count} nota|{count} note
@@ -5738,7 +5739,6 @@ embroidery	Median: {value} mm	Mediana: {value} mm
 embroidery	Too long	Troppo lunghi
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Oltre {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} colore|{count} colori
 embroidery	Embroidery: {figures}	Ricamo: {figures}
 embroidery	Stitches can't be planned	Impossibile pianificare i punti
 embroidery	Click to open the Embroidery panel.	Fai clic per aprire il pannello Ricamo.
@@ -7015,7 +7015,7 @@ embroidery	Cancel	Annulla
 embroidery	Digitizing…	Digitalizzazione…
 embroidery	Create Embroidery Objects	Crea oggetti di ricamo
 embroidery	Start Over	Ricomincia
-embroidery	Create waits for the preview to be ready.	La creazione attende che l’anteprima sia pronta.
+embroidery	The objects are made once the preview is ready.	Gli oggetti verranno creati quando l’anteprima sarà pronta.
 embroidery	Can't digitize it: {reason}	Impossibile digitalizzare: {reason}
 embroidery	Shapes	Forme
 embroidery	Recomputing…	Ricalcolo…
@@ -7110,7 +7110,7 @@ embroidery	Mode	Modalità
 embroidery	{value} is out of range: {low} to {high}.	{value} è fuori intervallo: da {low} a {high}.
 embroidery	Number of colors	Numero di colori
 embroidery	Match to threads	Abbina ai fili
-embroidery	Create sets the document's thread palette to {palette}.	Crea imposta la tavolozza dei fili del documento su {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Creare gli oggetti imposta la tavolozza dei fili del documento su {palette}.
 embroidery	Smallest area	Area minima
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Le macchioline più piccole, come il rumore JPEG, si uniscono al colore intorno.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} colore era troppo piccolo e si è unito ad altri|{count} colori erano troppo piccoli e si sono uniti ad altri
@@ -7130,6 +7130,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Aggiornato in {value} ms dopo l’ultima modifica ({steps})
 embroidery	Notes	Note
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Creati: {objects} ({threads}). L’immagine è sul livello modello nascosto «{layer}». Annulla li rimuove.
+embroidery	Created {objects} ({threads}). Undo removes them.	Creati: {objects} ({threads}). Annulla li rimuove.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} macchiolina più piccola di {value} mm² si è unita al colore intorno|{count} macchioline più piccole di {value} mm² si sono unite ai colori intorno
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} macchiolina più piccola di {value} mm² non aveva niente a cui unirsi ed è stata esclusa|{count} macchioline più piccole di {value} mm² non avevano niente a cui unirsi e sono state escluse
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} banda larga al massimo {value} mm si è unita alla vicina più simile al suo colore|{count} bande larghe al massimo {value} mm si sono unite alle vicine più simili ai loro colori
@@ -7162,8 +7163,8 @@ embroidery	Fixed	Fisso
 embroidery	Across the shape	Di traverso alla forma
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	La direzione delle file del riempimento: con un angolo fisso sulla pagina, o di traverso alla lunghezza di ogni forma.
 embroidery	The fills' rows, counter-clockwise on the page.	Le file dei riempimenti, in senso antiorario sulla pagina.
-embroidery	From the background to the details. The Order tab changes it after Create.	Dallo sfondo ai dettagli. La scheda Ordine lo cambia dopo Crea.
-embroidery	Create sets these in the document's embroidery settings.	Crea li imposta nelle impostazioni di ricamo del documento.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Dallo sfondo ai dettagli. La scheda Ordine lo cambia una volta creati gli oggetti.
+embroidery	Making the objects sets these in the document's embroidery settings.	Creare gli oggetti li imposta nelle impostazioni di ricamo del documento.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Contorni
 embroidery	Color outlines (running stitch)	Contorni dei colori (punto dritto)
@@ -7183,7 +7184,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Apre la scheda Ricamo di Imposta documento. Questa finestra torna quando si chiude Imposta documento.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Scelto per quest’area
 embroidery	Sewn along its middle as one running line	Ricamata lungo il centro come una sola linea a punto dritto
 embroidery	No part wider than {width} mm	Nessuna parte più larga di {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Più larga di {width} mm: tatami, le parti più strette in raso
@@ -7191,14 +7191,18 @@ embroidery	Wider than {width} mm: tatami	Più larga di {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	Le parti lunghe in raso, il resto tatami
 embroidery	Too short for satin	Troppo corta per il raso
 embroidery	Too short for satin: sewn as tatami	Troppo corta per il raso: ricamata in tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Il raso richiede una linea larga almeno {least} mm: questa è di {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Il raso ricama parti fino a {most} mm: quest’area è larga {width} mm.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Il raso richiede una linea larga almeno {least} mm: questa è di {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Il raso ricama parti larghe fino a {most} mm: quest’area è più larga
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Il raso ricama parti larghe fino a {most} mm: con la parte che passa sotto le vicine, quest’area è più larga
+embroidery	The angle turns tatami rows: this area has none	L’angolo ruota le file del tatami: quest’area non ne ha
 @plural	about {count} stitch|about {count} stitches	circa {count} punto|circa {count} punti
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Applica a {count} area simile|Applica a {count} aree simili
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Applica il punto e l’angolo di quest’area alle aree dello stesso colore e tipo e di dimensioni simili.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Applicato a {count} area simile|Applicato a {count} aree simili
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Applica il punto e l’angolo di quest’area alle aree dello stesso colore e tipo e di dimensioni e proporzioni simili.
 embroidery	Show in Sewing Order	Mostra nell’ordine di cucitura
 embroidery	Dims what is sewn after this area.	Attenua ciò che viene cucito dopo quest’area.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Quest’area non è ricamata, quindi non ha posto nell’ordine di cucitura
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Cucita in posizione {number} su {of}, dopo {before}, prima di {after}
 embroidery	Sewn {number} of {of}, before {after}	Cucita in posizione {number} su {of}, prima di {after}
 embroidery	Sewn {number} of {of}, after {before}	Cucita in posizione {number} su {of}, dopo {before}
@@ -7218,18 +7222,24 @@ embroidery	Its color isn't sewn	Il suo colore non è ricamato
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Mantieni come oggetto dinamico
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Mantiene l’immagine con gli oggetti creati da essa, così che «Digitalizza immagine…» possa modificarli di nuovo.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	I suoi oggetti sono stati modificati a mano. Digitalizzarlo di nuovo sostituisce queste modifiche; Annulla le ripristina.
+embroidery	Update Live Object	Aggiorna oggetto dinamico
+embroidery	Digitizes the live object again with these settings.	Digitalizza di nuovo l’oggetto dinamico con queste impostazioni.
+embroidery	Convert to Plain Objects	Converti in oggetti semplici
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Crea a partire dall’oggetto dinamico oggetti di ricamo semplici, che «Digitalizza immagine…» non modifica più.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Il contenuto di questo oggetto dinamico è stato modificato a mano. Digitalizzarlo di nuovo sostituisce queste modifiche; Annulla le ripristina.
 embroidery	Replace	Sostituisci
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Non è stato possibile leggere le impostazioni di questo oggetto dinamico: la finestra parte dai valori predefiniti.
 embroidery	Edit in Digitize Image…	Modifica in «Digitalizza immagine»…
-embroidery	Live digitized image	Immagine digitalizzata dinamica
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Creato un oggetto dinamico: {objects} ({threads}). «Digitalizza immagine…» lo modifica di nuovo; Annulla lo rimuove.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Aggiornato l’oggetto dinamico: {objects} ({threads}). Annulla ripristina la versione precedente.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Convertito in oggetti semplici: {objects} ({threads}). L’immagine è sul livello modello nascosto «{layer}». Annulla ripristina l’oggetto dinamico.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Convertito in oggetti semplici: {objects} ({threads}). Annulla ripristina l’oggetto dinamico.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Non sostituire
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Questo oggetto dinamico è stato creato in un'altra tavolozza di fili: i suoi colori vengono di nuovo abbinati alla tavolozza del documento.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Immagini digitalizzate dinamiche scalate di oltre il {value}% da quando sono state digitalizzate: digitalizzale di nuovo
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Oggetti dinamici scalati di oltre il {value}% da quando sono stati digitalizzati: digitalizzali di nuovo
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	un oggetto di ricamo dinamico: modificalo in «Digitalizza immagine…» (Oggetto › Ricalco immagine)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	un oggetto dinamico: modificalo in «Digitalizza immagine…» (Oggetto › Ricalco immagine)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Sarebbero più di {count} modifiche delle aree, il massimo che un motivo accetta.
+embroidery	That would be more than {count} area changes, the most a design takes	Sarebbero più di {count} modifiche delle aree, il massimo che un motivo accetta

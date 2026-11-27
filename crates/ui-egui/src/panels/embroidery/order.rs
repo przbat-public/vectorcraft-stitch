@@ -918,7 +918,7 @@ fn how_sewn(unit: &OrderUnit, several: bool) -> String {
     words.join(" · ")
 }
 
-/// The design's figures under the list: stitches, colours, thread changes, trims, jumps, the top
+/// The design's figures under the list: stitches, threads, thread changes, trims, jumps, the top
 /// thread, the size and the time (the last two estimates, said so), and the speed the time is at.
 /// The design's figures in the footer: a label and its value.
 fn figures(stats: &Value) -> [(&'static str, String); 8] {
@@ -936,7 +936,7 @@ fn figures(stats: &Value) -> [(&'static str, String); 8] {
     };
     [
         (crate::et!("Stitches"), count("stitches")),
-        (crate::et!("Colors"), count("threadCount")),
+        (crate::et!("Threads"), count("threadCount")),
         (crate::et!("Thread changes"), count("colorChanges")),
         (crate::et!("Trims"), count("trims")),
         (crate::et!("Jumps"), count("jumps")),

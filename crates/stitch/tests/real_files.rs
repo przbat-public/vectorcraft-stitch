@@ -1,8 +1,8 @@
 //! The formats only read (SEW, HUS), checked on real files on the computer that holds them: the
 //! check the project owner can run again on their own files (FORK.md › Decisions register, the
-//! 2026-11-18 rows; docs/embroidery.md › Validation), which are never committed. Skipped unless
-//! `EMBROIDERY_REAL_FILES` names a folder: every HUS and SEW file under it is read, and what the
-//! test says names none of them.
+//! 2026-11-18 rows on SEW and HUS; docs/embroidery.md › Validation), which are never committed.
+//! Skipped unless `EMBROIDERY_REAL_FILES` names a folder: every HUS and SEW file under it is read,
+//! and what the test says names none of them.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 

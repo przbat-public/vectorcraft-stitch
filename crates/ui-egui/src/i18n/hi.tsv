@@ -8321,6 +8321,7 @@ embroidery	No source gives a number to check these against.	इनकी तु�
 @plural	{count} row|{count} rows	{count} पंक्ति|{count} पंक्तियाँ
 @plural	{count} spot|{count} spots	{count} जगह|{count} जगहें
 @plural	{count} thread|{count} threads	{count} धागा|{count} धागे
+embroidery	Threads	धागे
 @plural	{count} error|{count} errors	{count} त्रुटि|{count} त्रुटियाँ
 @plural	{count} warning|{count} warnings	{count} चेतावनी|{count} चेतावनियाँ
 @plural	{count} note|{count} notes	{count} नोट|{count} नोट
@@ -8346,7 +8347,6 @@ embroidery	Median: {value} mm	माध्यिका: {value} mm
 embroidery	Too long	बहुत लंबे
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	{value} mm से अधिक: {stitches}
-@plural	{count} color|{count} colors	{count} रंग|{count} रंग
 embroidery	Embroidery: {figures}	कढ़ाई: {figures}
 embroidery	Stitches can't be planned	स्टिच की योजना नहीं बन सकती
 embroidery	Click to open the Embroidery panel.	कढ़ाई पैनल खोलने के लिए क्लिक करें।
@@ -8774,7 +8774,7 @@ embroidery	Cancel	रद्द करें
 embroidery	Digitizing…	डिजिटाइज़ हो रहा है…
 embroidery	Create Embroidery Objects	कढ़ाई ऑब्जेक्ट बनाएँ
 embroidery	Start Over	फिर से शुरू करें
-embroidery	Create waits for the preview to be ready.	बनाना प्रीव्यू तैयार होने की प्रतीक्षा करता है।
+embroidery	The objects are made once the preview is ready.	प्रीव्यू तैयार होने पर ऑब्जेक्ट बनाए जाएँगे।
 embroidery	Can't digitize it: {reason}	डिजिटाइज़ नहीं हो सकता: {reason}
 embroidery	Shapes	शेप्स
 embroidery	Recomputing…	फिर से गणना हो रही है…
@@ -8869,7 +8869,7 @@ embroidery	Mode	मोड
 embroidery	{value} is out of range: {low} to {high}.	{value} सीमा से बाहर है: {low} से {high}।
 embroidery	Number of colors	रंगों की संख्या
 embroidery	Match to threads	धागों से मिलाएँ
-embroidery	Create sets the document's thread palette to {palette}.	बनाने पर दस्तावेज़ का धागा पैलेट {palette} हो जाता है।
+embroidery	Making the objects sets the document's thread palette to {palette}.	ऑब्जेक्ट बनाने पर डॉक्यूमेंट का धागा पैलेट {palette} हो जाता है।
 embroidery	Smallest area	सबसे छोटा क्षेत्र
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	छोटे धब्बे, जैसे JPEG शोर, अपने आसपास के रंग में मिल जाते हैं।
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} रंग बहुत छोटा था और दूसरों में मिल गया|{count} रंग बहुत छोटे थे और दूसरों में मिल गए
@@ -8889,6 +8889,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	अंतिम बदलाव के बाद {value} ms में अपडेट हुआ ({steps})
 embroidery	Notes	नोट
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	बनाए गए: {objects} ({threads})। चित्र छिपी हुई टेम्पलेट परत “{layer}” पर है। पूर्ववत करें इन्हें हटाता है।
+embroidery	Created {objects} ({threads}). Undo removes them.	बनाए गए: {objects} ({threads})। पूर्ववत करें इन्हें हटाता है।
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm² से छोटा {count} धब्बा अपने आसपास के रंग में मिल गया|{value} mm² से छोटे {count} धब्बे अपने आसपास के रंगों में मिल गए
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm² से छोटे {count} धब्बे को मिलने को कुछ नहीं था और उसे छोड़ दिया गया|{value} mm² से छोटे {count} धब्बों को मिलने को कुछ नहीं था और उन्हें छोड़ दिया गया
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	अधिकतम {value} mm चौड़ी {count} पट्टी अपने रंग के सबसे निकट पड़ोसी में मिल गई|अधिकतम {value} mm चौड़ी {count} पट्टियाँ अपने रंगों के सबसे निकट पड़ोसियों में मिल गईं
@@ -8921,8 +8922,8 @@ embroidery	Fixed	निश्चित
 embroidery	Across the shape	आकृति के आर-पार
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	फ़िल की पंक्तियों की दिशा: पेज पर एक निश्चित कोण पर, या हर आकृति की लंबाई के आर-पार।
 embroidery	The fills' rows, counter-clockwise on the page.	फ़िल की पंक्तियाँ, पेज पर घड़ी की उलटी दिशा में।
-embroidery	From the background to the details. The Order tab changes it after Create.	पृष्ठभूमि से विवरणों तक। बनाने के बाद क्रम टैब इसे बदलता है।
-embroidery	Create sets these in the document's embroidery settings.	बनाने पर ये दस्तावेज़ की कढ़ाई सेटिंग्स में सेट हो जाते हैं।
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	पृष्ठभूमि से विवरणों तक। ऑब्जेक्ट बनाए जाने के बाद क्रम टैब इसे बदलता है।
+embroidery	Making the objects sets these in the document's embroidery settings.	ऑब्जेक्ट बनाने पर ये डॉक्यूमेंट की कढ़ाई सेटिंग्स में सेट हो जाते हैं।
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	रूपरेखाएँ
 embroidery	Color outlines (running stitch)	रंगों की रूपरेखाएँ (रनिंग स्टिच)
@@ -8942,7 +8943,6 @@ embroidery	Tatami, {value}	टाटामी, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	डॉक्यूमेंट सेटअप का कढ़ाई टैब खोलता है। डॉक्यूमेंट सेटअप बंद होने पर यह विंडो लौट आती है।
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	इस क्षेत्र के लिए चुना गया
 embroidery	Sewn along its middle as one running line	बीच से एक रनिंग स्टिच रेखा के रूप में सिली जाती है
 embroidery	No part wider than {width} mm	कोई भाग {width} mm से चौड़ा नहीं
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	{width} mm से चौड़ा: टाटामी, संकरे भाग सैटिन के रूप में
@@ -8950,14 +8950,18 @@ embroidery	Wider than {width} mm: tatami	{width} mm से चौड़ा: ट�
 embroidery	Its long parts as satin, the rest tatami	लंबे भाग सैटिन के रूप में, बाकी टाटामी
 embroidery	Too short for satin	सैटिन के लिए बहुत छोटा
 embroidery	Too short for satin: sewn as tatami	सैटिन के लिए बहुत छोटा: टाटामी में सिला जाता है
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	सैटिन के लिए रेखा कम से कम {least} mm चौड़ी चाहिए: यह {width} mm है।
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	सैटिन {most} mm तक के भाग सिलता है: यह क्षेत्र {width} mm चौड़ा है।
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	सैटिन के लिए रेखा कम से कम {least} mm चौड़ी चाहिए: यह {width} mm है
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	सैटिन {most} mm तक चौड़े भाग सिलता है: यह क्षेत्र इससे चौड़ा है
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	सैटिन {most} mm तक चौड़े भाग सिलता है: पड़ोसियों के नीचे जाने वाले भाग को मिलाकर यह क्षेत्र इससे चौड़ा है
+embroidery	The angle turns tatami rows: this area has none	कोण टाटामी की पंक्तियों को घुमाता है: इस क्षेत्र में ऐसी पंक्तियाँ नहीं हैं
 @plural	about {count} stitch|about {count} stitches	लगभग {count} स्टिच|लगभग {count} स्टिच
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	{count} समान क्षेत्र पर लागू करें|{count} समान क्षेत्रों पर लागू करें
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	इस क्षेत्र का स्टिच और कोण उसी रंग और प्रकार के लगभग समान आकार वाले क्षेत्रों पर लगाता है।
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	{count} समान क्षेत्र पर लागू किया गया|{count} समान क्षेत्रों पर लागू किया गया
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	इस क्षेत्र का स्टिच और कोण उसी रंग और प्रकार के लगभग समान आकार और अनुपात वाले क्षेत्रों पर लगाता है।
 embroidery	Show in Sewing Order	सिलाई क्रम में दिखाएँ
 embroidery	Dims what is sewn after this area.	इस क्षेत्र के बाद सिलने वाला भाग धुँधला करता है।
+embroidery	This area isn't sewn, so it has no place in the sewing order	यह क्षेत्र नहीं सिला जाता, इसलिए सिलाई क्रम में इसका कोई स्थान नहीं है
 embroidery	Sewn {number} of {of}, after {before}, before {after}	{of} में से {number}वें स्थान पर सिला जाता है, {before} के बाद, {after} से पहले
 embroidery	Sewn {number} of {of}, before {after}	{of} में से {number}वें स्थान पर सिला जाता है, {after} से पहले
 embroidery	Sewn {number} of {of}, after {before}	{of} में से {number}वें स्थान पर सिला जाता है, {before} के बाद
@@ -8977,18 +8981,24 @@ embroidery	Its color isn't sewn	इसका रंग नहीं सिला
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	लाइव ऑब्जेक्ट के रूप में रखें
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	इमेज को उससे बने ऑब्जेक्ट के साथ रखता है, ताकि “इमेज डिजिटाइज़ करें…” उन्हें फिर से बदल सके।
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	इसके ऑब्जेक्ट हाथ से बदले गए थे। इसे फिर से डिजिटाइज़ करने पर वे बदलाव बदल जाते हैं; पूर्ववत करें उन्हें वापस लाता है।
+embroidery	Update Live Object	लाइव ऑब्जेक्ट अपडेट करें
+embroidery	Digitizes the live object again with these settings.	इन सेटिंग के साथ लाइव ऑब्जेक्ट को फिर से डिजिटाइज़ करता है।
+embroidery	Convert to Plain Objects	सादे ऑब्जेक्ट में बदलें
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	लाइव ऑब्जेक्ट से सादे कढ़ाई ऑब्जेक्ट बनाता है, जिन्हें “इमेज डिजिटाइज़ करें…” फिर से नहीं बदलता।
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	इस लाइव ऑब्जेक्ट की सामग्री हाथ से बदली गई थी। इसे फिर से डिजिटाइज़ करने पर वे बदलाव बदल जाते हैं; पूर्ववत करें उन्हें वापस लाता है।
 embroidery	Replace	बदलें
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	इस लाइव ऑब्जेक्ट की सेटिंग पढ़ी नहीं जा सकीं: विंडो डिफ़ॉल्ट से शुरू होती है।
 embroidery	Edit in Digitize Image…	“इमेज डिजिटाइज़ करें” में संपादित करें…
-embroidery	Live digitized image	लाइव डिजिटाइज़ की गई इमेज
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	लाइव ऑब्जेक्ट बनाया गया: {objects} ({threads})। “इमेज डिजिटाइज़ करें…” इसे फिर से बदलता है; पूर्ववत करें इसे हटाता है।
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	लाइव ऑब्जेक्ट अपडेट किया गया: {objects} ({threads})। पूर्ववत करें पिछला संस्करण वापस लाता है।
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	सादे ऑब्जेक्ट में बदला गया: {objects} ({threads})। चित्र छिपी हुई टेम्पलेट परत “{layer}” पर है। पूर्ववत करें लाइव ऑब्जेक्ट वापस लाता है।
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	सादे ऑब्जेक्ट में बदला गया: {objects} ({threads})। पूर्ववत करें लाइव ऑब्जेक्ट वापस लाता है।
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	न बदलें
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	यह लाइव ऑब्जेक्ट किसी दूसरे धागा पैलेट में बना था: इसके रंग फिर से दस्तावेज़ के पैलेट से मिलाए जाते हैं।
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	डिजिटाइज़ होने के बाद {value}% से अधिक स्केल की गई लाइव डिजिटाइज़ इमेज: उन्हें फिर से डिजिटाइज़ करें
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	डिजिटाइज़ होने के बाद {value}% से अधिक स्केल किए गए लाइव ऑब्जेक्ट: उन्हें फिर से डिजिटाइज़ करें
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	एक लाइव कढ़ाई ऑब्जेक्ट: इसे “इमेज डिजिटाइज़ करें…” में बदलें (ऑब्जेक्ट › इमेज ट्रेस)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	एक लाइव ऑब्जेक्ट: इसे “इमेज डिजिटाइज़ करें…” में संपादित करें (ऑब्जेक्ट › इमेज ट्रेस)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	इससे {count} से अधिक क्षेत्र बदलाव हो जाएँगे, जितने अधिकतम एक डिज़ाइन लेता है।
+embroidery	That would be more than {count} area changes, the most a design takes	इससे {count} से अधिक क्षेत्र बदलाव हो जाएँगे, जितने अधिकतम एक डिज़ाइन लेता है

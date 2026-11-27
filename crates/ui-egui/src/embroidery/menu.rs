@@ -3,7 +3,7 @@
 //! check's marks on the canvas); the document tab's mode, "Stitches" while the canvas shows them;
 //! and a person's Convert to Manual Stitches, Restore Object and Nearest Connection from the
 //! command palette or a shortcut, run as the Embroidery panel runs them, and Digitize Image…, which opens
-//! its window.
+//! its window; and upstream's Image Trace › Make and Make and Expand greyed on a live object.
 
 use serde_json::{Value, json};
 use vectorcraft_engine::DocState;
@@ -72,6 +72,37 @@ pub fn stitch_preview_options() -> Item {
             Item::Cmd("Show Check Marks", "view.checkMarks", Value::Null),
         ],
     )
+}
+
+/// Upstream's Image Trace items that make a trace, which the fork greys on a live object.
+const TRACE_MAKE: [&str; 2] = ["imageTrace.make", "imageTrace.makeAndExpand"];
+
+/// Whether command `id`'s item can be chosen, for upstream's items the fork greys (`None` for any
+/// other command): Object › Image Trace › Make and Make and Expand while what they would trace (the
+/// first selected image or Image Trace object in paint order, as the Image Trace panel reads it;
+/// `imageTrace.make` leaves out a selected object that lies inside another selected one, so there
+/// the two can differ) is a live object or the image it holds. Image Trace refuses one, and the
+/// status bar's field shows only the start of a refusal; Digitize Image… beside them, which changes
+/// it, stays on: the hook greys only those two (the 2026-11-18 row of choices made while building
+/// the fixes). Every other way to run Make still gets Image Trace's refusal: the Image Trace
+/// panel's Trace and its Preview, the Properties panel's and the Control bar's preset list (for the
+/// live object) and Image Trace button (for the image it holds), the canvas task bar's Image Trace,
+/// the command palette, a shortcut and agents.
+pub fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
+    (TRACE_MAKE.contains(&id) && traces_a_live_object(app)).then_some(false)
+}
+
+/// Whether what Image Trace would trace now is a live object of a digitized image, or the image
+/// one holds first.
+fn traces_a_live_object(app: &VectorcraftApp) -> bool {
+    let Some(st) = app.session.active() else { return false };
+    let traceable =
+        |n: &vectorcraft_engine::doc::Node| crate::panels::image_trace::is_trace(n) || matches!(n.kind, vectorcraft_engine::doc::NodeKind::Image(_));
+    let Some(target) = st.selection.in_paint_order(&st.doc).into_iter().find(|id| st.doc.node(*id).is_some_and(traceable)) else {
+        return false;
+    };
+    let object = vectorcraft_engine::cmd::embroidery::digitizing_target(&st.doc, target);
+    st.doc.node(object).is_some_and(|n| vectorcraft_engine::cmd::embroidery::live_digitizing(n).is_some())
 }
 
 /// Whether command `id`'s item is checked, for the stitch view's commands: as the active

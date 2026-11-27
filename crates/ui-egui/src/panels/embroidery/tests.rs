@@ -402,6 +402,37 @@ fn the_tabs_are_tabs() {
     }
 }
 
+/// A strip of segments takes its own height and no more: what follows it starts one item spacing
+/// below it, however many segments it has and whether one is greyed (each segment drawn in a scope
+/// moved the next row down by the spacing once a segment: 25 points under the inspector's four
+/// choices).
+#[test]
+fn a_strip_of_segments_takes_only_its_own_height() {
+    // The strip's height and its words' size (points), the inspector's choices'.
+    const HEIGHT: f32 = 24.0;
+    const SIZE: f32 = 12.0;
+    // A layout's rounding to whole points.
+    const ROUNDING: f32 = 0.5;
+    let ctx = egui::Context::default();
+    let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(400.0, 200.0))), ..Default::default() };
+    let labels = ["Auto", "Tatami", "Satin", "Don't sew"];
+    let (mut strip, mut next, mut spacing) = (egui::Rect::NOTHING, egui::Rect::NOTHING, 0.0);
+    let mut out = ctx.run_ui(raw, |ui| {
+        let items: Vec<super::Segment<'_>> = labels
+            .iter()
+            .enumerate()
+            .map(|(i, l)| super::Segment { id: egui::Id::unique(("segment", i)), label: l, full: l, selected: i == 0, enabled: i != 2 })
+            .collect();
+        let top = ui.cursor().top();
+        super::segments(ui, HEIGHT, SIZE, &items);
+        strip = egui::Rect::from_min_max(egui::pos2(0.0, top), egui::pos2(1.0, top + HEIGHT));
+        next = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover()).0;
+        spacing = ui.spacing().item_spacing.y;
+    });
+    out.textures_delta.clear();
+    assert!((next.top() - strip.bottom() - spacing).abs() <= ROUNDING, "one spacing below: {next:?} after {strip:?}, spacing {spacing}");
+}
+
 /// The tab labels the whole window draws along the dock's top, `window` points wide: each one's
 /// words, where they lie, and the box they are clipped to.
 fn dock_tab_labels(app: &mut VectorcraftApp, ctx: &egui::Context, window: egui::Vec2, labels: &[&str]) -> Vec<(String, egui::Rect, egui::Rect)> {

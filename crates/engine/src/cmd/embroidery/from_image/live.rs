@@ -7,8 +7,9 @@
 //! - **Made** from Create's plain design: the image (which Create moved to a template layer, or left
 //!   where it was) goes into the design's group, hidden; the group is named as Image Trace names
 //!   its objects and given a trace value; the template layer Create added goes.
-//! - **Digitized again** in place: the live object keeps its id and what was set on it (its
-//!   visibility, lock, look, Trim After and Stop After); its objects are new.
+//! - **Digitized again** in its place, or where its place isn't sewn on the layer its design goes
+//!   to, as Create's does: the live object keeps its id and what was set on it (its visibility,
+//!   lock, look, Trim After and Stop After); its objects are new.
 //! - **What it keeps** is in the source image's frame: the settings by their file keys, the size
 //!   aside (the object's size is its image's, as placed, so that a live object scaled on the canvas
 //!   is digitized again at its size); a change's angle turned into the image as the page shows it

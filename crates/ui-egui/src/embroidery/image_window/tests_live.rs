@@ -1,8 +1,9 @@
 //! The image window on a live object: Keep as Live Object, a live object opened again with its
 //! settings (its threads let go when the document's palette changed since; the defaults, said, when
 //! they can't be read), remembered angles turning with the image, the question before objects
-//! changed by hand are replaced (its arming, its keyboard and what screen readers hear), and agents
-//! keeping one with `ui.dialog.set {field: "keep", value: "live"}`.
+//! changed by hand are replaced (its arming, its keyboard and what screen readers hear), the Live
+//! bar's buttons ringed with the keyboard, step 4's notes naming no Create, and agents keeping one
+//! with `ui.dialog.set {field: "keep", value: "live"}`.
 
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers, Rect, pos2, vec2};
@@ -17,9 +18,13 @@ use crate::VectorcraftApp;
 const ORANGE: &str = "#f08214";
 
 /// The question's words, its safe answer and its other one.
-const QUESTION: &str = "Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.";
+const QUESTION: &str = "The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.";
 const DONT_REPLACE: &str = "Don't Replace";
 const REPLACE: &str = "Replace";
+
+/// The coral and the grey button on a live object opened again.
+const UPDATE: &str = "Update Live Object";
+const CONVERT: &str = "Convert to Plain Objects";
 
 /// The one object selected.
 fn selected(app: &VectorcraftApp) -> NodeId {
@@ -105,6 +110,39 @@ fn keep_as_live_object_from_the_window() {
     assert!(is_live(&app, selected(&app)), "the live object selected");
     let status = app.ui.status.clone();
     assert!(status.starts_with("Created a live object: ") && status.ends_with("Undo removes it."), "{status}");
+}
+
+/// While the question before hand edits are replaced holds the buttons' place, the notes' chip takes
+/// its least room and the question's words the rest: in English and Polish the note is at its least
+/// width, where it kept 300 points, and the question's words wrap inside the bar of a window about
+/// 1,000 points wide, where they ran down past it.
+#[test]
+fn the_question_has_room_while_the_note_takes_its_least() {
+    // A screen whose window is about 1,000 points wide, and rounding of a galley's width (points).
+    const SCREEN: egui::Vec2 = vec2(1080.0, 900.0);
+    const ROUNDING: f32 = 1.0;
+    for (lang, start) in [("en", "The contents of this live object"), ("pl", "Zawartość tego żywego obiektu")] {
+        let (mut app, ctx, mut time, _) = edited_live_object_open();
+        press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
+        assert!(asking(&app), "{lang}: asked");
+        app.session.prefs.interface_language = lang.into();
+        let code = crate::i18n::Lang::from_code(lang).expect("a language");
+        let (shapes, window, _) = super::tests::drawn_on(&mut app, &ctx, &mut time, SCREEN);
+        // The note's words as drawn, in the language the frames set.
+        let note = super::live_bar::current_notes(super::tests::live_mut(&mut app), code).first().map(|n| n.words.clone()).expect("a note");
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        let drawn = |words: &str| {
+            shapes.iter().find_map(|s| match s {
+                egui::Shape::Text(t) if t.galley.text().starts_with(words) => Some(Rect::from_min_size(t.pos, t.galley.size())),
+                _ => None,
+            })
+        };
+        let chip = drawn(&note).unwrap_or_else(|| panic!("{lang}: the note drawn"));
+        assert!(chip.width() <= super::live_bar::CHIP_LEAST_WORDS + ROUNDING, "{lang}: the note at its least: {chip:?}");
+        let question = drawn(start).unwrap_or_else(|| panic!("{lang}: the question drawn"));
+        let bar = super::frame::regions(window.shrink(17.0)).bar;
+        assert!(bar.contains_rect(question), "{lang}: inside the bar: {question:?} in {bar:?}");
+    }
 }
 
 /// Digitize Image… on a live object opens the window with the settings it was made with (its area
@@ -238,15 +276,16 @@ fn a_window_left_for_another_document_remembers_its_images_placement() {
     assert!(!(0.01..=179.99).contains(&off), "turned with the image: {angle}");
 }
 
-/// Keep as Live Object or Create on a live object whose objects were changed by hand asks first, in
-/// the Live bar: Don't Replace takes the keyboard, screen readers hear the question on its buttons,
-/// Don't Replace and Escape keep the window open with nothing made (the keyboard back on the button
-/// that asked), and Replace makes it.
+/// Update Live Object or Convert to Plain Objects on a live object whose objects were changed by
+/// hand asks first, in the Live bar: Don't Replace takes the keyboard, screen readers hear the
+/// question on its buttons, Don't Replace and Escape keep the window open with nothing made (the
+/// keyboard back on the button that asked), and Replace makes it, saying so: Undo brings the hand
+/// edits back.
 #[test]
 fn replacing_hand_edits_is_asked_first() {
     let (mut app, ctx, mut time, id) = edited_live_object_open();
     let steps = undo_steps(&app);
-    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
     assert!(asking(&app) && open_dialog(&app).is_some() && undo_steps(&app) == steps, "asked, nothing made");
     assert_eq!(focused(&mut app, &ctx, &mut time).as_deref(), Some(DONT_REPLACE), "the safe answer has the keyboard");
     let all = nodes(&mut app, &ctx, &mut time);
@@ -256,43 +295,256 @@ fn replacing_hand_edits_is_asked_first() {
     until(&mut app, &ctx, &mut time, armed);
     press(&mut app, &ctx, &mut time, DONT_REPLACE, Role::Button);
     assert!(!asking(&app) && open_dialog(&app).is_some(), "Don't Replace keeps the window");
-    assert_eq!(focused(&mut app, &ctx, &mut time).as_deref(), Some("Keep as Live Object"), "the keyboard back where it asked");
-    // Create (Cmd/Ctrl+Enter) asks too; Escape answers the question, not the window.
+    assert_eq!(focused(&mut app, &ctx, &mut time).as_deref(), Some(UPDATE), "the keyboard back where it asked");
+    // Convert to Plain Objects asks too, its Replace converting; Escape answers the question, not
+    // the window.
+    press(&mut app, &ctx, &mut time, CONVERT, Role::Button);
+    assert_eq!(live(&app).question.map(|q| q.making), Some(super::Making::Objects), "Convert asks too");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Escape, Modifiers::NONE)]);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![]);
+    assert!(!asking(&app), "Escape answers it");
+    // Cmd/Ctrl+Enter is the coral button's: Update.
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
-    assert!(asking(&app), "Create asks too");
+    assert_eq!(live(&app).question.map(|q| q.making), Some(super::Making::LiveObject), "Cmd/Ctrl+Enter asks as Update");
     time += 0.05;
     frame(&mut app, &ctx, time, vec![let_go(Key::Enter, Modifiers::COMMAND), key(Key::Escape, Modifiers::NONE)]);
     time += 0.05;
     frame(&mut app, &ctx, time, vec![]);
     assert!(!asking(&app) && open_dialog(&app).is_some(), "Escape leaves the question, the window open");
     assert_eq!(undo_steps(&app), steps, "nothing made");
-    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
     until(&mut app, &ctx, &mut time, armed);
     press(&mut app, &ctx, &mut time, REPLACE, Role::Button);
     until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
     assert_eq!(undo_steps(&app), steps + 1, "made");
     assert_eq!(selected(&app), id, "the live object kept its id");
-    let edited = app.session.doc().unwrap().doc.node(id).and_then(vectorcraft_engine::cmd::embroidery::live_edited);
-    assert_eq!(edited, Some(false), "its objects as made");
+    let edited = |app: &VectorcraftApp| app.session.doc().unwrap().doc.node(id).and_then(vectorcraft_engine::cmd::embroidery::live_edited);
+    assert_eq!(edited(&app), Some(false), "its objects as made");
+    let status = app.ui.status.clone();
+    assert!(status.starts_with("Updated the live object: ") && status.ends_with("Undo brings back the earlier version."), "{status}");
+    app.run("edit.undo", json!({})).unwrap();
+    assert_eq!(edited(&app), Some(true), "Undo brings the hand edits back");
 }
 
-/// The question answers neither the second click of a double-click on the button that asked (its
-/// Replace lies where Create was) nor a key held from asking: only once the double-click time has
-/// passed with no mouse button, Enter or Space held. Cmd/Ctrl+Enter while it shows doesn't turn Keep as Live Object's
-/// question into Create's.
+/// One frame's shapes, each group flattened into its parts, and its accessibility nodes.
+fn drawn(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64) -> (Vec<egui::Shape>, Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>) {
+    fn flatten(s: egui::Shape, out: &mut Vec<egui::Shape>) {
+        match s {
+            egui::Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
+            other => out.push(other),
+        }
+    }
+    *time += 0.05;
+    let raw = egui::RawInput { time: Some(*time), screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(1440.0, 900.0))), ..Default::default() };
+    let mut out = ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        crate::dialogs::show(app, ui.ctx());
+    });
+    out.textures_delta.clear();
+    let mut shapes = Vec::new();
+    out.shapes.into_iter().for_each(|c| flatten(c.shape, &mut shapes));
+    (shapes, out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default())
+}
+
+/// The box of the button screen readers call `name`.
+fn bounds(all: &[(egui::accesskit::NodeId, egui::accesskit::Node)], name: &str) -> Rect {
+    let b = node(all, name, Role::Button).and_then(|n| n.bounds()).unwrap_or_else(|| panic!("{name} drawn"));
+    Rect::from_min_max(pos2(b.x0 as f32, b.y0 as f32), pos2(b.x1 as f32, b.y1 as f32))
+}
+
+/// Whether a button at `r` is filled coral: a box filled so about where it lies (its centre within
+/// a point, rounding of a box drawn on whole points).
+fn coral(shapes: &[egui::Shape], ctx: &egui::Context, r: Rect) -> bool {
+    const NEAR: f32 = 1.0;
+    let t = crate::theme::Tokens::get(ctx);
+    shapes.iter().any(|s| matches!(s, egui::Shape::Rect(b) if b.fill == t.accent_strong && b.rect.center().distance(r.center()) < NEAR))
+}
+
+/// Whether the keyboard's ring is drawn round `r`, as the panels draw it on the window's fill.
+fn ringed(shapes: &[egui::Shape], ctx: &egui::Context, r: Rect) -> bool {
+    let t = crate::theme::Tokens::get(ctx);
+    let ring = crate::embroidery::rows::focus_colour(&t, t.panel);
+    shapes.iter().any(|s| matches!(s, egui::Shape::Rect(b) if b.stroke.color == ring && b.stroke.width > 0.0 && b.rect.contains_rect(r)))
+}
+
+/// The question's safe answer, Don't Replace, is the coral button, in the coral button's place at
+/// the bar's right and at least as wide, and shows the keyboard with the panels' focus ring; Replace
+/// is grey, unringed. Answered, the keyboard and its ring go back to the button that asked.
+#[test]
+fn the_questions_safe_answer_is_coral_and_shows_the_keyboard() {
+    let (mut app, ctx, mut time, _) = edited_live_object_open();
+    let (_, all) = drawn(&mut app, &ctx, &mut time);
+    let update = bounds(&all, UPDATE);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
+    assert!(asking(&app), "asked");
+    let (shapes, all) = drawn(&mut app, &ctx, &mut time);
+    let (keep, replace) = (bounds(&all, DONT_REPLACE), bounds(&all, REPLACE));
+    assert!(coral(&shapes, &ctx, keep), "Don't Replace coral");
+    assert!(!coral(&shapes, &ctx, replace), "Replace grey");
+    assert!(keep.left() > replace.right(), "Don't Replace at the right, the coral button's place");
+    // Whole points either way.
+    const ROUNDING: f32 = 0.5;
+    assert!(keep.width() >= update.width() - ROUNDING, "as wide as the coral button at least: {keep:?} for {update:?}");
+    assert!(ringed(&shapes, &ctx, keep), "the keyboard's ring round Don't Replace");
+    assert!(!ringed(&shapes, &ctx, replace), "none round Replace");
+    until(&mut app, &ctx, &mut time, armed);
+    press(&mut app, &ctx, &mut time, DONT_REPLACE, Role::Button);
+    assert!(!asking(&app), "answered");
+    let (shapes, all) = drawn(&mut app, &ctx, &mut time);
+    assert!(ringed(&shapes, &ctx, bounds(&all, UPDATE)), "the ring back round Update Live Object");
+    assert!(!ringed(&shapes, &ctx, bounds(&all, CONVERT)), "none round Convert to Plain Objects");
+}
+
+/// The Live bar's button screen readers call `name`, the lowest of that name (the window's × is
+/// "Cancel" to them too) → its id and its box.
+fn bar_button(all: &[(egui::accesskit::NodeId, egui::accesskit::Node)], name: &str) -> (egui::accesskit::NodeId, Rect) {
+    all.iter()
+        .filter(|(_, n)| n.role() == Role::Button && n.label() == Some(name))
+        .filter_map(|(id, n)| n.bounds().map(|b| (*id, Rect::from_min_max(pos2(b.x0 as f32, b.y0 as f32), pos2(b.x1 as f32, b.y1 as f32)))))
+        .max_by(|a, b| a.1.top().total_cmp(&b.1.top()))
+        .unwrap_or_else(|| panic!("{name} drawn"))
+}
+
+/// The keyboard moved to the Live bar's button screen readers call `name`, as a screen reader moves
+/// it (AccessKit's Focus), then the frame that draws it there → that frame's shapes and nodes.
+fn keyboard_on(
+    app: &mut VectorcraftApp,
+    ctx: &egui::Context,
+    time: &mut f64,
+    name: &str,
+) -> (Vec<egui::Shape>, Vec<(egui::accesskit::NodeId, egui::accesskit::Node)>) {
+    use egui::accesskit::{Action, ActionRequest, TreeId};
+    let (_, all) = drawn(app, ctx, time);
+    let (target_node, _) = bar_button(&all, name);
+    let focus = ActionRequest { action: Action::Focus, target_tree: TreeId::ROOT, target_node, data: None };
+    *time += 0.05;
+    frame(app, ctx, *time, vec![Event::AccessKitActionRequest(focus)]);
+    drawn(app, ctx, time)
+}
+
+/// Every button of the Live bar shows the keyboard with the panels' focus ring, not only the making
+/// buttons and the question's safe answer: Cancel and Start Over beside them, and Replace once the
+/// keyboard moves to it, Don't Replace then unringed.
+#[test]
+fn every_button_of_the_live_bar_shows_the_keyboard() {
+    let (mut app, ctx, mut time, _) = edited_live_object_open();
+    for name in ["Cancel", "Start Over"] {
+        let (shapes, all) = keyboard_on(&mut app, &ctx, &mut time, name);
+        assert!(ringed(&shapes, &ctx, bar_button(&all, name).1), "the keyboard's ring round {name}");
+    }
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
+    assert!(asking(&app), "asked");
+    let (shapes, all) = keyboard_on(&mut app, &ctx, &mut time, REPLACE);
+    assert!(ringed(&shapes, &ctx, bar_button(&all, REPLACE).1), "the keyboard's ring round Replace");
+    assert!(!ringed(&shapes, &ctx, bar_button(&all, DONT_REPLACE).1), "none round Don't Replace, the keyboard gone from it");
+}
+
+/// A picture that comes to lie first in a live object while the window is open on it (Redo of Keep
+/// as Live Object from the menu bar, which works over the window) has the window digitize that live
+/// object: it offers Update Live Object and Convert to Plain Objects, and asks before replacing
+/// objects changed by hand. Both read the picture alone, a plain image: Create, and no question.
+#[test]
+fn a_picture_that_comes_to_lie_in_a_live_object_is_digitized_as_it() {
+    let mut app = app();
+    let picture = app.session.doc().ok().and_then(|st| st.selection.objects.first().copied()).expect("the picture selected");
+    let reply = app.run("embroidery.digitizeImage", json!({"colors": 3, "live": true})).unwrap();
+    let id = NodeId(reply["created"]["group"].as_u64().expect("made"));
+    let first =
+        |app: &VectorcraftApp| app.session.doc().ok().and_then(|st| st.doc.node(id)).and_then(|n| n.children()).and_then(|c| c.first()).map(|c| c.id);
+    assert_eq!(first(&app), Some(picture), "the live object holds the picture itself");
+    app.run("edit.undo", json!({})).unwrap();
+    app.run("select.set", json!({"ids": [picture.0]})).unwrap();
+    let (mut app, ctx, mut time) = opened_with(app);
+    assert!(node(&nodes(&mut app, &ctx, &mut time), "Create Embroidery Objects", Role::Button).is_some(), "a plain picture's");
+    app.run("edit.redo", json!({})).unwrap();
+    assert_eq!(first(&app), Some(picture), "in the live object again");
+    until(&mut app, &ctx, &mut time, super::tests::ready);
+    let all = nodes(&mut app, &ctx, &mut time);
+    assert!(node(&all, UPDATE, Role::Button).is_some() && node(&all, CONVERT, Role::Button).is_some(), "the live object's");
+    // An object of it moved by hand: Update asks first.
+    let child = {
+        let doc = &app.session.doc().unwrap().doc;
+        let blocks = doc.node(id).and_then(|n| n.children()).expect("its children");
+        blocks.get(1).and_then(|b| b.children()).and_then(|c| c.first()).map(|o| o.id).expect("an object")
+    };
+    app.run("select.set", json!({"ids": [child.0]})).unwrap();
+    app.run("object.move", json!({"dx": 5, "dy": 0})).unwrap();
+    until(&mut app, &ctx, &mut time, super::tests::ready);
+    let steps = undo_steps(&app);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
+    // Read without `asking`, which needs the window open: replacing them unasked closed it.
+    let asked = app.embroidery.image_window.live.as_ref().is_some_and(|l| l.question.is_some());
+    assert!(asked && undo_steps(&app) == steps, "asked first, nothing made");
+}
+
+/// On a live object opened again the coral button is Update Live Object and the grey one Convert to
+/// Plain Objects (the project owner's choice, 2026-11-18); Update digitizes it again in place,
+/// keeping it live, and says Undo brings back the earlier version.
+#[test]
+fn a_live_object_opened_again_offers_update_and_convert() {
+    let (app, id) = live_object(json!({"colors": 3}));
+    let (mut app, ctx, mut time) = opened_with(app);
+    let all = nodes(&mut app, &ctx, &mut time);
+    for (name, shown) in [(UPDATE, true), (CONVERT, true), ("Create Embroidery Objects", false), ("Keep as Live Object", false)] {
+        assert_eq!(node(&all, name, Role::Button).is_some(), shown, "{name}");
+    }
+    let (shapes, all) = drawn(&mut app, &ctx, &mut time);
+    assert!(coral(&shapes, &ctx, bounds(&all, UPDATE)), "Update Live Object coral");
+    assert!(!coral(&shapes, &ctx, bounds(&all, CONVERT)), "Convert to Plain Objects grey");
+    let steps = undo_steps(&app);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    assert_eq!(undo_steps(&app), steps + 1, "one undo step");
+    assert!(is_live(&app, id) && selected(&app) == id, "still live, its id kept");
+    let status = app.ui.status.clone();
+    assert!(status.starts_with("Updated the live object: ") && status.ends_with("Undo brings back the earlier version."), "{status}");
+}
+
+/// Convert to Plain Objects on a live object opened again makes plain objects in its place, saying
+/// Undo brings the live object back, which Undo does.
+#[test]
+fn converting_a_live_object_says_undo_brings_it_back() {
+    let (app, id) = live_object(json!({"colors": 3}));
+    let (mut app, ctx, mut time) = opened_with(app);
+    press(&mut app, &ctx, &mut time, CONVERT, Role::Button);
+    until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
+    assert!(app.session.doc().unwrap().doc.node(id).is_none(), "the live object gone");
+    assert!(!is_live(&app, selected(&app)), "plain objects selected");
+    let status = app.ui.status.clone();
+    assert!(status.starts_with("Converted to plain objects: ") && status.ends_with("Undo brings the live object back."), "{status}");
+    app.run("edit.undo", json!({})).unwrap();
+    assert!(is_live(&app, id), "Undo brings it back");
+}
+
+/// The window opened on a live object names it by its picture, as the Object tab and the Check tab
+/// do: its group's own name, upstream's mark of a trace, is "Image Trace" for every one.
+#[test]
+fn the_window_names_the_picture_a_live_object_holds() {
+    let (mut app, _) = live_object(json!({"colors": 3}));
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    let title = super::words::title_facts(&app, open_dialog(&app).expect("the window opens"));
+    assert!(title.as_deref().is_some_and(|t| t.starts_with("logo.png · ")), "{title:?}");
+}
+
+/// The question answers neither the second click of a double-click on the button that asked nor a
+/// key held from asking: only once the double-click time has passed with no mouse button, Enter or
+/// Space held. Cmd/Ctrl+Enter (Update's) while it shows doesn't turn Convert to Plain Objects'
+/// question into Update's.
 #[test]
 fn the_question_answers_neither_a_double_click_nor_a_held_key() {
     let (mut app, ctx, mut time, _) = edited_live_object_open();
     let steps = undo_steps(&app);
-    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    press(&mut app, &ctx, &mut time, CONVERT, Role::Button);
     // The next click at once, as the second of a double-click: answers nothing.
     press(&mut app, &ctx, &mut time, REPLACE, Role::Button);
     assert!(asking(&app) && undo_steps(&app) == steps, "a double-click's second click answers nothing");
     // Cmd/Ctrl+Enter while it shows asks nothing anew.
     time += 0.05;
     frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
-    assert_eq!(live(&app).question.map(|q| q.making), Some(super::Making::LiveObject), "still Keep as Live Object's");
+    assert_eq!(live(&app).question.map(|q| q.making), Some(super::Making::Objects), "still Convert's");
     // Enter held down: never armed, however long.
     let held = Event::Key { key: Key::Enter, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
     time += 0.05;
@@ -337,33 +589,59 @@ fn ui_dialog_set_keep_live_and_confirm_keep_a_live_object() {
     assert!(open_dialog(&app).expect("open again").fields.get("keep").is_none(), "not remembered");
 }
 
+/// Agents' `ui.dialog.confirm` is the window's coral button, as Cmd/Ctrl+Enter is (the project
+/// owner's choice, 2026-11-26, „Jak koralowy (polecam)”): on a live object opened again it updates
+/// it, kept live with its id, as `keep: "live"` does, and `keep: "plain"` converts it to plain
+/// objects; on a new image `keep: "plain"` is Create, as no `keep` is. Confirmed before any frame,
+/// as an agent may.
+#[test]
+fn ui_dialog_confirm_is_the_coral_button() {
+    let ctx = egui::Context::default();
+    for (keep, live) in [(None, true), (Some("live"), true), (Some("plain"), false)] {
+        let (mut app, id) = live_object(json!({"colors": 3}));
+        crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+        if let Some(keep) = keep {
+            crate::tests_synthetic::control(&mut app, &ctx, "ui.dialog.set", json!({"field": "keep", "value": keep}));
+        }
+        let reply = crate::dialogs::confirm(&mut app).unwrap();
+        assert_eq!(reply["created"]["live"], json!(live), "keep {keep:?}: {reply}");
+        assert_eq!(is_live(&app, id), live, "keep {keep:?}: the live object kept, its id too, or gone");
+    }
+    let mut app = super::tests::app();
+    crate::menus::invoke(&mut app, "embroidery.digitizeImage", json!({}));
+    crate::tests_synthetic::control(&mut app, &ctx, "ui.dialog.set", json!({"field": "keep", "value": "plain"}));
+    let reply = crate::dialogs::confirm(&mut app).unwrap();
+    assert_eq!(reply["created"]["live"], json!(false), "a new image's plain objects: {reply}");
+    assert!(!is_live(&app, selected(&app)), "plain objects selected");
+}
+
 /// The settings live object `id` keeps, as the window and the command take them.
 fn kept_settings(app: &VectorcraftApp, id: NodeId) -> serde_json::Map<String, Value> {
     app.session.doc().unwrap().doc.node(id).and_then(vectorcraft_engine::cmd::embroidery::live_settings).expect("a live object")
 }
 
-/// Start Over on a live object's window, then Keep as Live Object, keeps none of the settings it
+/// Start Over on a live object's window, then Update Live Object, keeps none of the settings it
 /// had kept: the window's own runs start from its fields alone, never from what the live object
 /// keeps, so that no kept one comes back.
 #[test]
-fn start_over_then_keep_as_live_object_keeps_none_of_its_settings() {
+fn start_over_then_update_keeps_none_of_its_settings() {
     let changes = json!([{"at": [100.5, 20.5], "color": ORANGE, "kind": "fill", "stitch": "none"}]);
     let (app, id) = live_object(json!({"colors": 3, "areaChanges": changes, "colorOutlines": true}));
     let (mut app, ctx, mut time) = opened_with(app);
     assert_eq!(field(open_dialog(&app).unwrap(), "areaChanges")[0]["stitch"], json!("none"), "opened with its change");
     super::start_over(&mut app);
     until(&mut app, &ctx, &mut time, super::tests::ready);
-    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
     until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
     let kept = kept_settings(&app, id);
     assert!(kept.get("areaChanges").is_none_or(|c| c.as_array().is_some_and(Vec::is_empty)), "no change: {kept:?}");
     assert_eq!(kept.get("colorOutlines"), Some(&json!(false)), "the default: {kept:?}");
 }
 
-/// Reset All on a live object's window, then Keep as Live Object, keeps none of the changes it had
+/// Reset All on a live object's window, then Update Live Object, keeps none of the changes it had
 /// kept, and its other settings as they were.
 #[test]
-fn reset_all_then_keep_as_live_object_keeps_none_of_its_changes() {
+fn reset_all_then_update_keeps_none_of_its_changes() {
     let changes = json!([{"at": [100.5, 20.5], "color": ORANGE, "kind": "fill", "stitch": "none"}]);
     let (app, id) = live_object(json!({"colors": 3, "areaChanges": changes, "colorOutlines": true}));
     let (mut app, ctx, mut time) = opened_with(app);
@@ -371,7 +649,7 @@ fn reset_all_then_keep_as_live_object_keeps_none_of_its_changes() {
     press(&mut app, &ctx, &mut time, "Reset All", Role::Button);
     assert_eq!(field(open_dialog(&app).unwrap(), "areaChanges"), Value::Null, "the changes reset");
     until(&mut app, &ctx, &mut time, super::tests::ready);
-    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
     until(&mut app, &ctx, &mut time, |app| open_dialog(app).is_none());
     let kept = kept_settings(&app, id);
     assert!(kept.get("areaChanges").is_none_or(|c| c.as_array().is_some_and(Vec::is_empty)), "no change: {kept:?}");
@@ -379,7 +657,7 @@ fn reset_all_then_keep_as_live_object_keeps_none_of_its_changes() {
 }
 
 /// A live object keeping no fingerprint (a file of an older version, or one edited by hand) is taken
-/// as edited: Keep as Live Object on it asks before replacing its objects.
+/// as edited: Update Live Object on it asks before replacing its objects.
 #[test]
 fn a_live_object_keeping_no_fingerprint_is_asked_about() {
     let (mut app, id) = live_object(json!({"colors": 3}));
@@ -392,6 +670,50 @@ fn a_live_object_keeping_no_fingerprint_is_asked_about() {
         })
         .unwrap();
     let (mut app, ctx, mut time) = opened_with(app);
-    press(&mut app, &ctx, &mut time, "Keep as Live Object", Role::Button);
+    press(&mut app, &ctx, &mut time, UPDATE, Role::Button);
     assert!(asking(&app), "asked first");
+}
+
+/// Object › Image Trace › Make and Make and Expand are greyed out where what they would trace is a
+/// live object, which Image Trace refuses: with the live object selected, or the image it holds
+/// first, the engine refusing each as the menu greys it; on a plain image they aren't, and Digitize
+/// Image… stays on.
+#[test]
+fn image_traces_make_is_greyed_on_a_live_object() {
+    let (mut app, id) = live_object(json!({"colors": 3}));
+    let image =
+        app.session.doc().ok().and_then(|st| st.doc.node(id)).and_then(|n| n.children()).and_then(|c| c.first()).map(|c| c.id).expect("its image");
+    for selected in [id, image] {
+        app.run("select.set", json!({"ids": [selected.0]})).unwrap();
+        for cmd in ["imageTrace.make", "imageTrace.makeAndExpand"] {
+            assert!(!crate::menus::enabled(&app, cmd), "{cmd} on {selected:?}");
+            let refused = app.run(cmd, json!({})).expect_err("refused");
+            assert!(refused.contains(vectorcraft_engine::cmd::embroidery::LIVE_EMBROIDERY_REFUSED), "{cmd} on {selected:?}: {refused}");
+        }
+        assert!(crate::menus::enabled(&app, "embroidery.digitizeImage"), "Digitize Image… on {selected:?}");
+    }
+    let plain = super::tests::app();
+    for cmd in ["imageTrace.make", "imageTrace.makeAndExpand"] {
+        assert!(crate::menus::enabled(&plain, cmd), "{cmd} on a plain image");
+    }
+}
+
+/// On a live object opened again, step 4's notes name the act, not Create, a button it doesn't
+/// have: the sewing order changes "once the objects are made", and a document setting changed is
+/// set "making the objects".
+#[test]
+fn step_4s_notes_name_no_create_on_a_live_object_opened_again() {
+    const ORDER: &str = "From the background to the details. The Order tab changes it once the objects are made.";
+    const SETS_THEM: &str = "Making the objects sets these in the document's embroidery settings.";
+    let (app, _) = live_object(json!({"colors": 3}));
+    let (mut app, ctx, mut time) = opened_with(app);
+    super::tests::set(&mut app, super::STEP, json!(4));
+    super::tests::set(&mut app, "fabric", json!("denim"));
+    until(&mut app, &ctx, &mut time, super::tests::ready);
+    let all = nodes(&mut app, &ctx, &mut time);
+    let said = |words: &str| all.iter().any(|(_, n)| n.value() == Some(words));
+    assert!(said(ORDER), "the sewing order's note");
+    assert!(said(SETS_THEM), "the document settings' note");
+    let create = all.iter().filter_map(|(_, n)| n.value().or(n.label())).find(|w| w.contains("Create"));
+    assert_eq!(create, None, "no Create named");
 }

@@ -185,7 +185,7 @@ pub fn title(rule: &Value, format: &str, lang: Lang) -> String {
         ("layers", true) => crate::et!("{value} or more layers of stitches on one spot"),
         ("pointMissed", true) => crate::et!("Entry or exit points missed by more than {value} mm"),
         ("stitchesScaled", true) => crate::et!("Manual stitches or stitches from a file scaled by more than {value}%"),
-        ("liveObjectScaled", true) => crate::et!("Live digitized images scaled by more than {value}% since they were digitized: digitize them again"),
+        ("liveObjectScaled", true) => crate::et!("Live objects scaled by more than {value}% since they were digitized: digitize them again"),
         ("threadMismatch", true) => crate::et!("Threads unlike the art's color (over {value})"),
         ("notSewn", _) if hits == 0 => crate::et!("Everything is sewn"),
         ("notSewn", _) => crate::et!("Art that isn't sewn"),
@@ -266,7 +266,7 @@ pub(crate) fn hit_line(app: &VectorcraftApp, doc: Option<&Document>, id: &str, h
     let name = || {
         // The object a hit is about: its unit's, or the one it names (a live object's).
         let object = hit["id"].as_u64().or_else(|| hit_objects(hit).first().copied())?;
-        let shown = doc.and_then(|d| d.node(NodeId(object))).map(|n| crate::panels::layers::shown_name(app, n, lang));
+        let shown = doc.and_then(|d| d.node(NodeId(object))).map(|n| super::object_name(app, n, lang));
         Some(shown.unwrap_or_else(|| format!("#{object}")))
     };
     let line = match id {

@@ -4,7 +4,7 @@
 //! made the document's on Create, the window saying so); the rules that choose each area's stitch,
 //! read only, each saying where its value comes from (the owner's choice: they change with the
 //! fabric, or through Embroidery Settings…); and the sewing order, from the background to the
-//! details (the owner's choice: the Order tab changes it after Create).
+//! details (the owner's choice: the Order tab changes it once the objects are made).
 
 use egui::Ui;
 use serde_json::{Map, Value, json};
@@ -129,9 +129,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     }
     outlines_section(app, ui, d, &reply, lang);
     rows::heading(ui, crate::et!("Sewing order"));
-    note(ui, crate::et!("From the background to the details. The Order tab changes it after Create."));
+    note(ui, crate::et!("From the background to the details. The Order tab changes it once the objects are made."));
     if DOCUMENT_FIELDS.iter().any(|k| d.fields.contains_key(*k)) {
-        note(ui, crate::et!("Create sets these in the document's embroidery settings."));
+        note(ui, crate::et!("Making the objects sets these in the document's embroidery settings."));
     }
     // The rest of the document's settings (the fabric's values, the thread, the machine): Document
     // Setup's tab, the window coming back when it closes.
@@ -175,8 +175,14 @@ fn changes_section(app: &VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let mut remove = None;
     for (i, c) in list.iter().enumerate() {
         let line = c["kind"] == "line";
-        let what: Vec<String> =
-            [c["stitch"].as_str().map(|s| vocabulary::stitch(s, line)), c["angle"].as_f64().map(|a| degrees.show(a))].into_iter().flatten().collect();
+        // Don't Sew said as the state it leaves the area in, "not sewn" (note 09's word, the button's
+        // being "Don't sew"); its angle, which sews nothing, not said.
+        let left_out = c["stitch"].as_str() == Some("none");
+        let what: Vec<String> = if left_out {
+            vec![crate::et!("Not sewn").to_string()]
+        } else {
+            [c["stitch"].as_str().map(|s| vocabulary::stitch(s, line)), c["angle"].as_f64().map(|a| degrees.show(a))].into_iter().flatten().collect()
+        };
         let what = what.join(" · ");
         let state = area_of(c).and_then(|area| made_with.get(&area)).and_then(|&j| states.get(j));
         ui.horizontal(|ui| {
@@ -185,7 +191,9 @@ fn changes_section(app: &VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
             }
             ui.vertical(|ui| match state {
                 Some(vectorcraft_engine::cmd::embroidery::AreaChangeState::Applies(facts)) => {
-                    ui.label(egui::RichText::new(format!("{} · {what}", super::preview::area_name(facts))).color(t.text));
+                    let name = super::preview::area_name(facts);
+                    let words = if left_out { fill(crate::et!("{name} · not sewn"), &[("name", &name)]) } else { format!("{name} · {what}") };
+                    ui.label(egui::RichText::new(words).color(t.text));
                 }
                 Some(vectorcraft_engine::cmd::embroidery::AreaChangeState::Kept(why)) => {
                     ui.label(egui::RichText::new(&what).color(t.text_dim));

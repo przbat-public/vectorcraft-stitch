@@ -248,15 +248,25 @@ fn only_key(p: &Value, only: &str) -> Result<(), String> {
 }
 
 /// Whether the panel's own commands can run now (`None` for any other command): Next and Previous
-/// Finding need a finding shown, on a check of the plan shown.
+/// Finding need a finding shown, on a check of the plan shown; and the embroidery menu's say for
+/// upstream's items it greys (`crate::embroidery::menu::enabled`).
 pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     match id {
         "embroidery.nextHit" | "embroidery.previousHit" => Some(check::can_step(app)),
         "embroidery.copySettings" => Some(object::can_copy(app)),
         "embroidery.pasteSettings" => Some(object::can_paste(app)),
         "embroidery.documentSetup" | "embroidery.showRecord" => Some(app.session.active().is_some()),
-        _ => None,
+        _ => crate::embroidery::menu::enabled(app, id),
     }
+}
+
+/// The name the Embroidery panel gives object `n` in `lang`: a live object of a digitized image by
+/// its picture (its first child, as the Layers panel names that image; Create names plain objects
+/// after their image too), any other object as the Layers panel names it. A live object's own name
+/// is upstream's mark of a trace, "Image Trace", the same for every one.
+pub(crate) fn object_name(app: &VectorcraftApp, n: &vectorcraft_doc::Node, lang: crate::i18n::Lang) -> String {
+    let picture = n.children().and_then(|c| c.first()).filter(|_| vectorcraft_engine::cmd::embroidery::live_digitizing(n).is_some());
+    crate::panels::layers::shown_name(app, picture.map_or(n, |p| p.as_ref()), lang)
 }
 
 /// `ui.embroideryPanel {tab?: "object"|"order"|"check"|"stitches", part?: "fill"|"stroke",
@@ -620,7 +630,9 @@ pub(crate) struct Segment<'a> {
 /// A strip of segments (the panel's tabs, the Object tab's parts), `height` points tall, its words
 /// `size` points, accessible as tabs: each as wide as its words and the strip's room shared out
 /// ([`strip_widths`]); words a segment can't hold are elided, whole in its tooltip and for screen
-/// readers; one that can't be chosen is greyed → the segment clicked.
+/// readers; one that can't be chosen is greyed → the segment clicked. The strip takes its own
+/// height and no more: each segment is drawn in a child that takes no room of its own, where a
+/// scope would move the next row down by the item spacing once a segment.
 pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>]) -> Option<usize> {
     let t = Tokens::get(ui.ctx());
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::hover());
@@ -638,8 +650,10 @@ pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>
         let Some(s) = items.get(i) else { continue };
         let segment = Rect::from_min_size(egui::pos2(left, rect.top()), vec2(width, height));
         left += width;
-        let resp = ui.add_enabled_ui(s.enabled, |ui| {
-            craft_ui::tabs::Tab::new(s.id, s.full, s.selected).show_at(ui, segment, |ui, resp| {
+        let builder = egui::UiBuilder::new().max_rect(segment);
+        let mut child = ui.new_child(if s.enabled { builder } else { builder.disabled() });
+        let resp = {
+            craft_ui::tabs::Tab::new(s.id, s.full, s.selected).show_at(&mut child, segment, |ui, resp| {
                 let fill = if s.selected {
                     t.button
                 } else if resp.hovered() {
@@ -662,9 +676,9 @@ pub(crate) fn segments(ui: &mut Ui, height: f32, size: f32, items: &[Segment<'_>
                 );
                 ui.painter().galley(egui::Align2::CENTER_CENTER.align_size_within_rect(galley.size(), segment).min, galley, color);
             })
-        });
+        };
         let elided = natural.get(i).is_some_and(|n| *n > width + ELIDED_SLACK);
-        let resp = if elided || s.full != s.label { resp.inner.on_hover_text(s.full) } else { resp.inner };
+        let resp = if elided || s.full != s.label { resp.on_hover_text(s.full) } else { resp };
         if resp.clicked() && s.enabled {
             clicked = Some(i);
         }

@@ -7,12 +7,15 @@
 //!   open popup, which dialogs leave Escape to (another popup opened closes it). It follows its area
 //!   through every recompute by the area's key (its deepest point, colour and kind), and closes when
 //!   the area is gone.
-//! - **Placed** beside its area, to its right, else to its left, inside the preview, which it never
-//!   leaves: over the design, never over the settings.
+//! - **Placed** beside its area, to its right, else to its left, else (neither side with room) on
+//!   the side with more, inside the preview, which it never leaves: over the design, never over the
+//!   settings, and over its area only where neither side has room.
 //! - **How Auto sews it** is what the planner sews of it, from the planner's own parting of its
 //!   object: "Auto: satin" where every part is a satin column, the reason true of the area as it is
-//!   made (grown by the overlap under the areas sewn after it). Worked out off the interface thread
-//!   ([`super::answers`]): the line and its reason show once the answer is in.
+//!   made (grown by the overlap under the areas sewn after it); said under a stitch chosen too,
+//!   dimmed, as Auto would make it (under Don't Sew, of the area as it is left out, which isn't
+//!   grown), so that what the choice changes stays in sight. Worked out off
+//!   the interface thread ([`super::answers`]): the line and its reason show once the answer is in.
 //! - **Its choices** follow the area's kind: a filled area Auto, Tatami, Satin, Don't Sew; a line
 //!   Auto, Running Stitch, Satin, Don't Sew. Satin is offered on a filled area only where the whole
 //!   area is at most 12 mm wide (the project owner's choice, „Do 12 mm szerokości (polecam)”) and the
@@ -20,11 +23,15 @@
 //!   zadziała (polecam)”), by the widths alone until that answer is in; and on a line from 1 mm wide.
 //!   Elsewhere it is greyed out, the reason said under the choices, unless the area's choice is
 //!   Satin already or the reason above says it in the same words.
-//! - **The angle** of a filled area's rows: Auto (the document's), or a degree of its own, ↺ back.
+//! - **The angle** of a filled area's rows: Auto (the document's), or a degree of its own, ↺ back;
+//!   greyed out, saying why, where no tatami rows are sewn (every part a satin column, or the area
+//!   left out).
 //! - **A change** is the window's `areaChanges` entry for the area: one per area, under the key of
 //!   the change that already applied to it if one did; Auto with no angle of its own removes it.
 //! - **Apply to Similar Areas** sets the area's stitch and angle on the areas of its colour and kind
-//!   about its size (outlined in the preview while the button is hovered); **Show in Sewing
+//!   about its size and proportions (the project owner's choice, 2026-11-18), counting those it
+//!   would change, greyed out once every one is sewn as this one (outlined in the preview while
+//!   the button is hovered); **Show in Sewing
 //!   Order** dims what is sewn after the area and says where it is sewn, ◀ ▶ walking the order.
 
 use egui::{Color32, Id, Pos2, Rect, RichText, Ui, vec2};
@@ -81,14 +88,17 @@ pub(crate) struct Inspected {
     pub(crate) fresh: bool,
 }
 
-/// The areas Apply to Similar Areas sets, whether the engine takes the changes that makes, and
-/// whether every area's answer is in (with Satin, whether it is offered on each), with what they
-/// were worked out of: worked out again only when that changes, not each frame (a design of a
-/// thousand alike dots would otherwise find every one of them a frame).
+/// The areas alike to the inspected one (with Satin, those it is offered on), those of them Apply to
+/// Similar Areas would change (not sewn as this area already; on Auto, every one), whether the
+/// engine takes the changes that makes, and whether every area's answer is in (with Satin, whether
+/// it is offered on each), with what they were worked out of: worked out again only when that
+/// changes, not each frame (a design of a thousand alike dots would otherwise find every one of
+/// them a frame).
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Similar {
     of: SimilarOf,
     pub(crate) keys: Vec<AreaKey>,
+    pub(crate) changing: Vec<AreaKey>,
     room: bool,
     complete: bool,
 }
@@ -167,11 +177,12 @@ pub(crate) fn show(
     let Some(rect) = outputs.outline_at(at.0, at.1).map(|path| screen_box(&path, &to_screen)) else { return close(&ctx, inspector) };
     // Kept open in egui's memory for this frame, which drops a popup no one keeps.
     egui::Popup::open_id(&ctx, popup_id());
-    // Beside the area: to its right where the popover fits, else to its left; the pane holds it.
-    let right = rect.right() + GAP;
-    let left = if right + WIDTH <= pane.right() { right } else { rect.left() - GAP - WIDTH };
+    // Beside the area, its frame clear of it ([`beside`]); the pane holds it. The popover is its
+    // width and its frame's margins and stroke.
+    let frame = egui::Frame::popup(&ctx.global_style());
+    let outer = WIDTH + frame.total_margin().sum().x;
+    let left = beside(rect, pane, outer);
     egui::Area::new(popup_id()).order(egui::Order::Foreground).fixed_pos(Pos2::new(left, rect.top())).constrain_to(pane).show(&ctx, |ui| {
-        let frame = egui::Frame::popup(ui.style());
         // Taller than the pane (the window at its smallest, words that wrap more in a language), its
         // body scrolls inside it rather than being cut off. Its height is the content's up to that
         // room, whatever height it had the frame before (egui lays an area out in that), so that it
@@ -196,6 +207,16 @@ fn screen_box(path: &vectorcraft_geom::BezPath, to_screen: &impl Fn(Point) -> Po
     use vectorcraft_geom::kurbo::Shape;
     let b = path.bounding_box();
     Rect::from_two_pos(to_screen(Point::new(b.x0, b.y0)), to_screen(Point::new(b.x1, b.y1)))
+}
+
+/// Where the popover's left edge goes beside `rect` (its area's box on screen) in `pane`, the
+/// popover `outer` points wide with its frame: to the area's right where it fits, else to its left
+/// where it fits; where neither side has room, on the side with more, so that the pane, holding it,
+/// pushes it over as little of the area as it can.
+pub(super) fn beside(rect: Rect, pane: Rect, outer: f32) -> f32 {
+    let (right, left_of) = (rect.right() + GAP, rect.left() - GAP - outer);
+    let roomier_right = pane.right() - rect.right() >= rect.left() - pane.left();
+    if right + outer <= pane.right() || (left_of < pane.left() && roomier_right) { right } else { left_of }
 }
 
 /// The popover's contents for the area under working pixel `at`, whose facts are `facts`, inspected
@@ -244,12 +265,34 @@ fn body(
     let known = outputs.satin_known(at.0, at.1);
     let parts = outputs.satin_parts_kept(at.0, at.1, None);
     let offer = outputs.satin_offer_kept(at.0, at.1).unwrap_or_else(|| facts.satin_offer_by_widths());
-    if stitch.is_none() && !sewn.is_empty() && known {
-        let sewn = if parts == Some(SatinParts::All) { "satin" } else { sewn };
-        ui.label(RichText::new(vocabulary::auto(&vocabulary::sewn_as(sewn, part["rule"].as_str()))).color(t.text));
+    let created = outputs.satin_created_kept(at.0, at.1);
+    // How Auto sews it, and why: as planned while it is the area's; under a stitch chosen, as Auto
+    // would make it (its own parting, worked out off the interface thread too), dimmed, so that what
+    // the choice changes stays in sight. The object's own settings are the choice's then.
+    let (auto, why) = if stitch.is_none() {
+        let word =
+            (!sewn.is_empty()).then(|| vocabulary::sewn_as(if parts == Some(SatinParts::All) { "satin" } else { sewn }, part["rule"].as_str()));
+        (word, auto_reason(facts, narrow_mm(&part), &Planned { parts, created }, lang))
+    } else {
+        let parts = outputs.satin_parts_auto_kept(at.0, at.1);
+        let word = if facts.line {
+            "running"
+        } else if parts == Some(SatinParts::All) {
+            "satin"
+        } else {
+            "tatami"
+        };
+        (Some(vocabulary::sewn_as(word, None)), auto_reason(facts, outputs.auto_narrow_mm(at.0, at.1), &Planned { parts, created }, lang))
+    };
+    // With a Satin kept where it isn't offered, the reason under the choices says why it isn't sewn
+    // as satin: the Auto line's reason, where that reason starts with it, isn't said twice ("Too
+    // short for satin", then "Too short for satin: sewn as tatami").
+    let kept = if stitch.as_deref() == Some("satin") { kept_satin_reason(facts, offer, lang) } else { None };
+    let why = why.filter(|w| known && !kept.as_ref().is_some_and(|k| k.starts_with(w.as_str())));
+    if let Some(auto) = auto.filter(|_| known) {
+        let colour = if stitch.is_none() { t.text } else { t.text_dim };
+        ui.label(RichText::new(vocabulary::auto(&auto)).color(colour));
     }
-    let planned = Planned { parts, created: outputs.satin_created_kept(at.0, at.1), offer };
-    let why = if known || stitch.is_some() { reason(facts, stitch.as_deref(), &part, &planned, lang) } else { None };
     if let Some(why) = &why {
         ui.label(RichText::new(why.as_str()).small().color(t.text_dim));
     }
@@ -259,7 +302,7 @@ fn body(
     let held = fields.get(CHANGES).and_then(Value::as_array).map_or(0, Vec::len);
     let full = held >= MAX_AREA_CHANGES && applying_to(fields, outputs, key).is_empty();
     let most = numbers::count(lang, u64::try_from(MAX_AREA_CHANGES).unwrap_or(u64::MAX));
-    let too_many = fill(crate::et!("That would be more than {count} area changes, the most a design takes."), &[("count", &most)]);
+    let too_many = fill(crate::et!("That would be more than {count} area changes, the most a design takes"), &[("count", &most)]);
     // The choices by the area's kind: Satin only where it sews satin.
     let ids = if facts.line { LINE_CHOICES } else { FILL_CHOICES };
     let labels: Vec<String> = ids.iter().map(|id| vocabulary::stitch(id, facts.line)).collect();
@@ -282,14 +325,18 @@ fn body(
     if full {
         ui.label(RichText::new(too_many.as_str()).small().color(t.text_dim));
     }
-    // Why Satin isn't offered, unless it is the area's choice already (its reason above says so) or
-    // the reason above says it in the same words (an area too short for satin, sewn by Auto).
-    if let Some(not) = satin_reason(facts, offer, lang).filter(|not| shown != "satin" && why.as_ref() != Some(not)) {
+    // Why Satin isn't offered: with Satin kept where it isn't (a live object made before, or an
+    // agent's), why it isn't sewn as satin there; else unless the reason above says it in the same
+    // words (an area too short for satin, sewn by Auto).
+    let not = if shown == "satin" { kept } else { satin_reason(facts, offer, lang).filter(|not| why.as_ref() != Some(not)) };
+    if let Some(not) = not {
         ui.label(RichText::new(not).small().color(t.text_dim));
     }
-    // A filled area's rows.
+    // A filled area's rows, their angle greyed out where no tatami rows are sewn: every part a
+    // satin column (as planned), or the area left out; offered until that answer is in.
     if !facts.line {
-        ui.add_enabled_ui(!full, |ui| angle_row(ui, fields, outputs, key, stitch.as_deref(), angle, &part, lang));
+        let rows = shown != "none" && parts != Some(SatinParts::All);
+        ui.add_enabled_ui(!full, |ui| angle_row(ui, fields, outputs, key, stitch.as_deref(), angle, &part, rows, lang));
     }
     // Its stitches as planned.
     if let Some(n) = part["sewing"]["stitches"].as_u64() {
@@ -315,30 +362,49 @@ fn body(
     }
     let similar = open.similar.clone();
     open.similar_shown = false;
-    ui.horizontal_wrapped(|ui| {
-        if let Some(similar) = similar.filter(|s| !s.keys.is_empty()) {
-            let n = u64::try_from(similar.keys.len()).unwrap_or(u64::MAX);
-            let words = crate::etn!(n, "Apply to {count} Similar Area", "Apply to {count} Similar Areas");
-            let tip = crate::et!("Sets this area's stitch and angle on the areas of its color and kind about its size.");
+    // Its row only where there are alike areas: an empty one would take a row's height.
+    if let Some(similar) = similar.filter(|s| !s.keys.is_empty()) {
+        ui.horizontal_wrapped(|ui| {
+            let count = |keys: &[AreaKey]| u64::try_from(keys.len()).unwrap_or(u64::MAX);
+            // Once every alike area is sewn as this one, greyed out where it was, saying so.
+            let applied = similar.changing.is_empty();
+            let words = if applied {
+                crate::etn!(count(&similar.keys), "Applied to {count} Similar Area", "Applied to {count} Similar Areas")
+            } else {
+                crate::etn!(count(&similar.changing), "Apply to {count} Similar Area", "Apply to {count} Similar Areas")
+            };
+            let tip = crate::et!("Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.");
             // No more changes than the engine takes, and with Satin, once whether it is offered on
             // each is known.
-            let resp = ui
-                .add_enabled((stitch.is_some() || angle.is_some()) && similar.room && similar.complete, egui::Button::new(words))
-                .on_hover_text(tip);
+            let enabled = (stitch.is_some() || angle.is_some()) && similar.room && similar.complete && !applied;
+            let resp = ui.add_enabled(enabled, egui::Button::new(words)).on_hover_text(tip);
             let resp = if similar.room { resp } else { resp.on_disabled_hover_text(too_many.as_str()) };
             // Outlined while the pointer is on it, greyed out too: which areas are alike.
             open.similar_shown = resp.contains_pointer();
             if resp.clicked() {
-                set_many(fields, outputs, &similar.keys, stitch.as_deref(), angle);
+                set_many(fields, outputs, &similar.changing, stitch.as_deref(), angle);
             }
-        }
-        let order =
-            ui.selectable_label(open.order, crate::et!("Show in Sewing Order")).on_hover_text(crate::et!("Dims what is sewn after this area."));
-        if order.clicked() {
-            open.order = !open.order;
-        }
-    });
-    if open.order {
+        });
+    }
+    // Show in Sewing Order: a checkbox on its own row, greyed out on an area left out, which has no
+    // place in the order (its tick kept for when it is sewn again).
+    let tip = if facts.sewn {
+        crate::et!("Dims what is sewn after this area.")
+    } else {
+        crate::et!("This area isn't sewn, so it has no place in the sewing order")
+    };
+    let words = crate::et!("Show in Sewing Order");
+    let order = ui.add_enabled_ui(facts.sewn, |ui| crate::embroidery::rows::check_response(ui, words, Some(open.order && facts.sewn), t.panel)).inner;
+    crate::embroidery::rows::described(ui, order.id, tip);
+    let order = if facts.sewn { order.on_hover_text(tip) } else { order.on_disabled_hover_text(tip) };
+    if order.clicked() {
+        open.order = !open.order;
+    }
+    // Greyed out, why said under it, as the inspector's other greyed controls say it.
+    if !facts.sewn {
+        ui.label(RichText::new(tip).small().color(t.text_dim));
+    }
+    if open.order && facts.sewn {
         place_row(ui, outputs, open, at, lang);
     }
 }
@@ -381,7 +447,9 @@ fn place_row(ui: &mut Ui, outputs: &DigitizeOutputs, open: &mut Inspected, at: (
 }
 
 /// The angle of a filled area's rows: Auto's (the document's, shown with where it comes from) or
-/// one of its own, typed, with ↺ back to Auto.
+/// one of its own, typed, with ↺ back to Auto. Where no tatami rows are sewn (`rows` false: every
+/// part a satin column, or the area left out) its field is greyed out, saying why, ↺ still taking
+/// back an angle kept.
 #[allow(clippy::too_many_arguments)]
 fn angle_row(
     ui: &mut Ui,
@@ -391,6 +459,7 @@ fn angle_row(
     stitch: Option<&str>,
     angle: Option<f64>,
     part: &Value,
+    rows: bool,
     lang: crate::i18n::Lang,
 ) {
     let auto = part["settings"]["angle"]["value"].as_f64();
@@ -404,21 +473,28 @@ fn angle_row(
     let mut back = false;
     ui.horizontal(|ui| {
         crate::widgets::field_label(ui, crate::et!("Angle"));
-        taken = fields::number_field(
-            ui,
-            ("digitize-inspector", "angle"),
-            angle.or(auto),
-            &format,
-            &fields::Look::default(),
-            super::colours_step::FIELD_WIDTH,
-            &(range.0..=range.1),
-        );
+        taken = ui
+            .add_enabled_ui(rows, |ui| {
+                fields::number_field(
+                    ui,
+                    ("digitize-inspector", "angle"),
+                    angle.or(auto),
+                    &format,
+                    &fields::Look::default(),
+                    super::colours_step::FIELD_WIDTH,
+                    &(range.0..=range.1),
+                )
+            })
+            .inner;
         if angle.is_some() {
             back = crate::embroidery::rows::restore(ui, crate::et!("Back to Auto"), crate::et!("Back to Auto")).clicked();
         } else {
             ui.label(RichText::new(crate::et!("Auto")).small().color(Tokens::get(ui.ctx()).text_dim));
         }
     });
+    if !rows {
+        ui.label(RichText::new(crate::et!("The angle turns tatami rows: this area has none")).small().color(Tokens::get(ui.ctx()).text_dim));
+    }
     if let Some(v) = taken.filter(|v| v.is_finite()) {
         set(fields, outputs, key, stitch, Some(v));
     } else if back {
@@ -426,40 +502,25 @@ fn angle_row(
     }
 }
 
-/// What the planner sews of a filled area, as far as its answers are in: as planned (`parts`), at
-/// the width Create would give it with Satin chosen (`created`), and whether Satin is offered
-/// (`offer`, by the widths alone until that is in).
+/// What the planner sews of a filled area, as far as its answers are in: as planned (`parts`), and
+/// at the width Create would give it with Satin chosen (`created`).
 struct Planned {
     parts: Option<SatinParts>,
     created: Option<SatinParts>,
-    offer: SatinOffer,
 }
 
-/// Why the area is sewn as it is: its choice's (a Satin kept where Satin isn't offered, why it isn't
-/// sewn as satin there), a line's, or how the planner sews a filled area at the width narrow parts
-/// as satin is set to in `part` (its fill as `embroidery.info` gives it), from `planned`. Wider or
-/// not is of the area as it is made: grown by the overlap under the areas sewn after it, an area no
-/// wider as traced has no satin column at that width but one at Create's. `None` with narrow parts
-/// as satin off, or every part a satin column though one is wider (a column runs on through a short
-/// stretch wider than the width), rather than a reason that isn't true. Built from these, never from
-/// the engine's words.
-fn reason(facts: &AreaFacts, chosen: Option<&str>, part: &Value, planned: &Planned, lang: crate::i18n::Lang) -> Option<String> {
-    if let Some(chosen) = chosen {
-        // Satin chosen where it isn't offered (kept from before, or given by an agent: the command
-        // takes it anywhere).
-        if chosen == "satin" {
-            match planned.offer {
-                SatinOffer::TooShort if !facts.line => return Some(crate::et!("Too short for satin: sewn as tatami").to_string()),
-                SatinOffer::TooWide { .. } | SatinOffer::TooNarrow => return satin_reason(facts, planned.offer, lang),
-                _ => {}
-            }
-        }
-        return Some(crate::et!("Chosen for this area").to_string());
-    }
+/// Why Auto sews the area as it does: a line's, or how the planner sews a filled area at `narrow`,
+/// the width up to which Auto sews its parts as satin, from `planned` (as Auto would make it). Wider
+/// or not is of the area as it is made: grown by the overlap under the areas sewn after it, an area
+/// no wider as traced has no satin column at that width but one at Create's. `None` with narrow
+/// parts as satin off, or every part a satin column though one is wider (a column runs on through a
+/// short stretch wider than the width), rather than a reason that isn't true. Built from these, never
+/// from the engine's words.
+fn auto_reason(facts: &AreaFacts, narrow: Option<f64>, planned: &Planned, lang: crate::i18n::Lang) -> Option<String> {
     if facts.line {
         return Some(crate::et!("Sewn along its middle as one running line").to_string());
     }
-    let narrow = narrow_mm(part)?;
+    let narrow = narrow?;
     let width = numbers::decimal(lang, narrow, MM_DECIMALS);
     let wider = facts.widest_mm > narrow;
     let columns_created = planned.created.is_some_and(|c| c != SatinParts::None);
@@ -478,19 +539,37 @@ fn narrow_mm(part: &Value) -> Option<f64> {
     part["settings"]["narrowAsSatin"]["value"].as_f64().filter(|n| *n > 0.0)
 }
 
+/// Why a Satin kept where Satin isn't offered (`offer`: a live object made before, or an agent's,
+/// as the command takes it anywhere) isn't sewn as satin: too short, sewn as tatami; too wide; too
+/// narrow a line. `None` where it is offered.
+fn kept_satin_reason(facts: &AreaFacts, offer: SatinOffer, lang: crate::i18n::Lang) -> Option<String> {
+    match offer {
+        SatinOffer::TooShort if !facts.line => Some(crate::et!("Too short for satin: sewn as tatami").to_string()),
+        SatinOffer::TooWide { .. } | SatinOffer::TooNarrow => satin_reason(facts, offer, lang),
+        _ => None,
+    }
+}
+
 /// Why Satin isn't offered on the area (`offer`): too wide a filled area, too narrow a line, or a
-/// filled area too short for a satin column (a dot, a small square); `None` where it is offered.
+/// filled area too short for a satin column (a dot, a small square); `None` where it is offered. A
+/// reason, said with no full stop, as the inspector's other reasons are.
 fn satin_reason(facts: &AreaFacts, offer: SatinOffer, lang: crate::i18n::Lang) -> Option<String> {
     let mm = |v: f64| numbers::decimal(lang, v, MM_DECIMALS);
     Some(match offer {
         SatinOffer::Fits => return None,
         SatinOffer::TooNarrow => fill(
-            crate::et!("Satin needs a line at least {least} mm wide: this one is {width} mm."),
+            crate::et!("Satin needs a line at least {least} mm wide: this one is {width} mm"),
             &[("least", &mm(SATIN_LINE_LEAST_MM)), ("width", &mm(facts.line_width_mm.unwrap_or_default()))],
         ),
-        SatinOffer::TooWide { width_mm } => fill(
-            crate::et!("Satin sews parts up to {most} mm: this area is {width} mm wide."),
-            &[("most", &mm(SATIN_AREA_MOST_MM)), ("width", &mm(width_mm))],
+        // The width it takes said, not a second width of the area's (its widest, inscribed, beside
+        // its box's sides in the facts above): wider as it is, or with the part it grows by under
+        // its neighbours.
+        SatinOffer::TooWide { overlap: false, .. } => {
+            fill(crate::et!("Satin sews parts up to {most} mm wide: this area is wider"), &[("most", &mm(SATIN_AREA_MOST_MM))])
+        }
+        SatinOffer::TooWide { overlap: true, .. } => fill(
+            crate::et!("Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider"),
+            &[("most", &mm(SATIN_AREA_MOST_MM))],
         ),
         SatinOffer::TooShort => crate::et!("Too short for satin").to_string(),
     })
@@ -572,9 +651,28 @@ fn similar_of(
     } else {
         alike
     };
+    // Those a press would change: not sewn as this area already, each as the changes applying to
+    // it set it (worked out once for every change, not once a key); on Auto, every one.
+    let changing = if stitch.is_none() && angle.is_none() {
+        keys.clone()
+    } else {
+        let mut set: std::collections::HashMap<(u32, u32), (Option<String>, Option<f64>)> = std::collections::HashMap::new();
+        for c in changes(fields) {
+            let Some(place) = key_of(&c).and_then(|k| outputs.find(&k)) else { continue };
+            let held = set.entry(place).or_default();
+            if let Some(s) = c.get("stitch").and_then(Value::as_str) {
+                held.0 = Some(s.to_string());
+            }
+            if let Some(a) = c.get("angle").and_then(Value::as_f64) {
+                held.1 = Some(a);
+            }
+        }
+        let wanted = (stitch.map(str::to_string), angle);
+        keys.iter().filter(|k| outputs.find(k).and_then(|p| set.get(&p)).cloned().unwrap_or_default() != wanted).cloned().collect()
+    };
     // Past the most by themselves: not counted change by change.
-    let room = keys.len() <= MAX_AREA_CHANGES && set_many(&mut fields.clone(), outputs, &keys, stitch, angle) <= MAX_AREA_CHANGES;
-    Similar { of, keys, room, complete }
+    let room = changing.len() <= MAX_AREA_CHANGES && set_many(&mut fields.clone(), outputs, &changing, stitch, angle) <= MAX_AREA_CHANGES;
+    Similar { of, keys, changing, room, complete }
 }
 
 /// Each of `keys`' areas' stitch and angle set at once (Apply to Similar Areas): every change that

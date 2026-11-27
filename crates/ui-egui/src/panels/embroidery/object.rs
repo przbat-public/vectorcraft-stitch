@@ -342,7 +342,7 @@ fn header(app: &VectorcraftApp, ui: &mut Ui, ids: &[NodeId], info: Option<&Objec
     let one = ids.first().filter(|_| ids.len() == 1).and_then(|id| app.session.active()?.doc.node(*id));
     let title = match (one, ids.len()) {
         (_, 0) => crate::et!("Nothing selected").to_string(),
-        (Some(n), _) => crate::panels::layers::shown_name(app, n, lang),
+        (Some(n), _) => super::object_name(app, n, lang),
         (None, n) => crate::etn!(n as u64, "{count} object", "{count} objects"),
     };
     let subtitle = match one {
@@ -411,7 +411,7 @@ fn kind_words(n: &vectorcraft_doc::Node, info: Option<&ObjectSettings>) -> Strin
     }
     let kind = match &n.kind {
         // A live object of a digitized image (Keep as Live Object): a group to upstream.
-        NodeKind::Group { .. } if vectorcraft_engine::cmd::embroidery::live_digitizing(n).is_some() => crate::et!("Live digitized image"),
+        NodeKind::Group { .. } if vectorcraft_engine::cmd::embroidery::live_digitizing(n).is_some() => crate::et!("Live object"),
         NodeKind::Path { guide: true, .. } => crate::et!("Guide"),
         NodeKind::Path { .. } if literal => crate::et!("Stitches from a file"),
         NodeKind::Path { .. } => crate::et!("Path"),

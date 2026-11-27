@@ -692,7 +692,7 @@ fn the_palette_change_is_said_and_applied_on_create() {
     set(&mut app, "colorChoices", json!([{"color": "#f08214", "thread": {"palette": "jef", "index": 30}}]));
     until(&mut app, &ctx, &mut time, ready);
     let said = |nodes: &[(egui::accesskit::NodeId, egui::accesskit::Node)]| {
-        nodes.iter().any(|(_, n)| n.value() == Some("Create sets the document's thread palette to Brother (PES)."))
+        nodes.iter().any(|(_, n)| n.value() == Some("Making the objects sets the document's thread palette to Brother (PES)."))
     };
     assert!(!said(&nodes(&mut app, &ctx, &mut time)), "the document's own: nothing to say");
     click_named(&mut app, &ctx, &mut time, "Match to threads");
@@ -845,6 +845,57 @@ fn create_applies_the_run_shown_in_one_undo_step() {
     assert!(status.ends_with("”. Undo removes them."), "{status}");
     let st = app.session.doc().expect("a document");
     assert_eq!(st.selection.len(), 1, "the design's group selected");
+}
+
+/// Create on an image whose place isn't sewn (its ordinary layer hidden) leaves the image there,
+/// and the status bar names no layer: it said "The image is on the hidden template layer" of the
+/// image's own layer.
+#[test]
+fn create_names_no_layer_where_the_image_stays_on_an_ordinary_layer() {
+    let mut app = app();
+    let image = app.session.doc().ok().and_then(|st| st.selection.objects.first().copied()).expect("the picture selected");
+    let layer = app.session.doc().ok().and_then(|st| st.doc.layer_of(image)).expect("its layer");
+    app.session
+        .edit("hide", |d, _| {
+            d.node_mut(layer).ok_or(vectorcraft_engine::EngineError::NoNode(layer))?.visible = false;
+            Ok(())
+        })
+        .unwrap();
+    let (mut app, ctx, mut time) = opened_with(app);
+    let threads = reply(&mut app)["stats"]["threadCount"].as_u64().expect("figures");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert!(open_dialog(&app).is_none(), "closed");
+    let st = app.session.doc().expect("a document");
+    assert_eq!(st.doc.layer_of(image), Some(layer), "the image in its place");
+    let status = app.ui.status.clone();
+    assert!(status.starts_with("Created ") && status.ends_with(&format!(" ({threads} threads). Undo removes them.")), "{status}");
+    assert!(!status.contains("template layer"), "{status}");
+}
+
+/// Create on an image that lies on its own hidden template layer, the one an earlier Create moved it
+/// to, leaves it there (that place isn't sewn) and names that layer: the status bar names the hidden
+/// template layer the image lies on afterwards, whichever Create put it there.
+#[test]
+fn create_names_the_template_layer_the_image_stays_on() {
+    let mut app = app();
+    let image = app.session.doc().ok().and_then(|st| st.selection.objects.first().copied()).expect("the picture selected");
+    app.run("embroidery.digitizeImage", json!({"colors": 3})).unwrap();
+    let layer = app.session.doc().ok().and_then(|st| st.doc.layer_of(image)).expect("its layer");
+    let name = app.session.doc().ok().and_then(|st| st.doc.node(layer)).and_then(|n| n.name.clone()).expect("its layer's name");
+    assert_eq!(name, "Template logo.png", "moved to a template layer of its own");
+    let ctx = egui::Context::default();
+    crate::theme::install_fonts(&ctx);
+    ctx.enable_accesskit();
+    open(&mut app, Some(image));
+    let mut time = 0.0;
+    until(&mut app, &ctx, &mut time, ready);
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert!(open_dialog(&app).is_none(), "closed");
+    assert_eq!(app.session.doc().ok().and_then(|st| st.doc.layer_of(image)), Some(layer), "the image left there");
+    let status = app.ui.status.clone();
+    assert!(status.contains(&format!("The image is on the hidden template layer “{name}”.")), "{status}");
 }
 
 /// An edit to the document under the window makes it digitize again before Create: Create asked
@@ -1217,7 +1268,7 @@ fn choose(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &
 }
 
 /// The note saying that Create sets the window's document settings in the document.
-const SETS_THEM: &str = "Create sets these in the document's embroidery settings.";
+const SETS_THEM: &str = "Making the objects sets these in the document's embroidery settings.";
 
 /// Whether `nodes` say `words`.
 fn says(nodes: &[(egui::accesskit::NodeId, egui::accesskit::Node)], words: &str) -> bool {
@@ -1376,7 +1427,7 @@ fn the_outlines_thread_is_chosen_and_goes_back_to_the_darkest() {
 
 /// A few frames on a screen `screen` points large (the column learns its content's size, the window
 /// its own) → the last one's shapes, flattened, the window and its settings column.
-fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, screen: egui::Vec2) -> (Vec<egui::Shape>, Rect, Rect) {
+pub(super) fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, screen: egui::Vec2) -> (Vec<egui::Shape>, Rect, Rect) {
     fn flatten(s: egui::Shape, out: &mut Vec<egui::Shape>) {
         match s {
             egui::Shape::Vec(v) => v.into_iter().for_each(|s| flatten(s, out)),
@@ -1397,6 +1448,36 @@ fn drawn_on(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, scree
     }
     let window = ctx.memory(|m| m.area_rect(egui::Id::unique("embroidery-digitize-image"))).expect("the window drawn");
     (shapes, window, frame::regions(window.shrink(17.0)).settings)
+}
+
+/// The Live bar's first note is drawn whole where the bar has room beside its buttons, on up to two
+/// rows (it was cut mid-word at 300 points with room to spare): the test picture's coarse note, in
+/// English and Polish.
+#[test]
+fn the_live_bars_note_is_drawn_whole_where_the_bar_has_room() {
+    for lang in ["en", "pl"] {
+        let mut app = app();
+        app.session.prefs.interface_language = lang.into();
+        let (mut app, ctx, mut time) = opened_with(app);
+        until(&mut app, &ctx, &mut time, ready);
+        let code = crate::i18n::Lang::from_code(lang).expect("a language");
+        let first = super::live_bar::current_notes(live_mut(&mut app), code).first().map(|n| n.words.clone()).expect("a note");
+        // Longer than the 300 points it was cut at: about 60 characters at the chip's size.
+        const LONGER_THAN_THE_OLD_ROOM: usize = 70;
+        assert!(first.chars().count() > LONGER_THAN_THE_OLD_ROOM, "{lang}: a long note: {first}");
+        let (shapes, window, _) = drawn_on(&mut app, &ctx, &mut time, vec2(1440.0, 900.0));
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+        let galley = shapes
+            .iter()
+            .find_map(|s| match s {
+                egui::Shape::Text(t) if t.galley.text() == first => Some((t.galley.clone(), t.pos)),
+                _ => None,
+            })
+            .expect("the note drawn");
+        assert!(!galley.0.elided, "{lang}: whole: {first}");
+        let bar = frame::regions(window.shrink(17.0)).bar;
+        assert!(bar.contains_rect(Rect::from_min_size(galley.1, galley.0.size())), "{lang}: inside the bar");
+    }
 }
 
 /// The window open in language `lang` on step 4, its outlines and border on, their result shown.

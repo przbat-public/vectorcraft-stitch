@@ -6121,6 +6121,7 @@ embroidery	No source gives a number to check these against.	Ingen källa anger e
 @plural	{count} row|{count} rows	{count} följd|{count} följder
 @plural	{count} spot|{count} spots	{count} ställe|{count} ställen
 @plural	{count} thread|{count} threads	{count} tråd|{count} trådar
+embroidery	Threads	Trådar
 @plural	{count} error|{count} errors	{count} fel|{count} fel
 @plural	{count} warning|{count} warnings	{count} varning|{count} varningar
 @plural	{count} note|{count} notes	{count} anmärkning|{count} anmärkningar
@@ -6146,7 +6147,6 @@ embroidery	Median: {value} mm	Median: {value} mm
 embroidery	Too long	För långa
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Över {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} färg|{count} färger
 embroidery	Embroidery: {figures}	Broderi: {figures}
 embroidery	Stitches can't be planned	Stygnen kan inte planeras
 embroidery	Click to open the Embroidery panel.	Klicka för att öppna panelen Broderi.
@@ -8880,7 +8880,7 @@ embroidery	Cancel	Avbryt
 embroidery	Digitizing…	Digitaliserar…
 embroidery	Create Embroidery Objects	Skapa broderiobjekt
 embroidery	Start Over	Börja om
-embroidery	Create waits for the preview to be ready.	Skapandet väntar tills förhandsvisningen är klar.
+embroidery	The objects are made once the preview is ready.	Objekten skapas när förhandsvisningen är klar.
 embroidery	Can't digitize it: {reason}	Kan inte digitaliseras: {reason}
 embroidery	Shapes	Former
 embroidery	Recomputing…	Räknar om…
@@ -8975,7 +8975,7 @@ embroidery	Mode	Läge
 embroidery	{value} is out of range: {low} to {high}.	{value} ligger utanför intervallet: {low} till {high}.
 embroidery	Number of colors	Antal färger
 embroidery	Match to threads	Matcha mot trådar
-embroidery	Create sets the document's thread palette to {palette}.	Skapa ställer in dokumentets trådpalett på {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Att skapa objekten ställer in dokumentets trådpalett på {palette}.
 embroidery	Smallest area	Minsta område
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Mindre fläckar, som JPEG-brus, går upp i färgen runt dem.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} färg var för liten och gick upp i andra|{count} färger var för små och gick upp i andra
@@ -8995,6 +8995,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Uppdaterat på {value} ms efter senaste ändringen ({steps})
 embroidery	Notes	Anteckningar
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Skapade {objects} ({threads}). Bilden ligger på det dolda mallagret ”{layer}”. Ångra tar bort dem.
+embroidery	Created {objects} ({threads}). Undo removes them.	Skapade {objects} ({threads}). Ångra tar bort dem.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} fläck mindre än {value} mm² gick upp i färgen runt den|{count} fläckar mindre än {value} mm² gick upp i färgerna runt dem
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} fläck mindre än {value} mm² hade inget att gå upp i och utelämnades|{count} fläckar mindre än {value} mm² hade inget att gå upp i och utelämnades
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} band högst {value} mm brett gick upp i grannen närmast dess färg|{count} band högst {value} mm breda gick upp i grannarna närmast deras färger
@@ -9027,8 +9028,8 @@ embroidery	Fixed	Fast
 embroidery	Across the shape	Tvärs över formen
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Riktningen för fyllningens rader: i en fast vinkel på sidan, eller tvärs över varje forms längd.
 embroidery	The fills' rows, counter-clockwise on the page.	Fyllningarnas rader, moturs på sidan.
-embroidery	From the background to the details. The Order tab changes it after Create.	Från bakgrunden till detaljerna. Fliken Ordning ändrar den efter Skapa.
-embroidery	Create sets these in the document's embroidery settings.	Skapa ställer in dem i dokumentets broderiinställningar.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Från bakgrunden till detaljerna. Fliken Ordning ändrar den när objekten har skapats.
+embroidery	Making the objects sets these in the document's embroidery settings.	Att skapa objekten ställer in de här värdena i dokumentets broderiinställningar.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Konturer
 embroidery	Color outlines (running stitch)	Färgkonturer (rakstygn)
@@ -9048,7 +9049,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Öppnar fliken Broderi i Dokumentinställningar. Det här fönstret kommer tillbaka när Dokumentinställningar stängs.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Valt för det här området
 embroidery	Sewn along its middle as one running line	Broderas längs mitten som en enda linje rakstygn
 embroidery	No part wider than {width} mm	Ingen del bredare än {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Bredare än {width} mm: tatami, de smalare delarna som satin
@@ -9056,14 +9056,18 @@ embroidery	Wider than {width} mm: tatami	Bredare än {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	De långa delarna som satin, resten tatami
 embroidery	Too short for satin	För kort för satin
 embroidery	Too short for satin: sewn as tatami	För kort för satin: sys som tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin kräver en linje som är minst {least} mm bred: den här är {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin broderar delar upp till {most} mm: det här området är {width} mm brett.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Satin kräver en linje som är minst {least} mm bred: den här är {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Satin broderar delar upp till {most} mm breda: det här området är bredare
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Satin broderar delar upp till {most} mm breda: med delen under grannområdena är det här området bredare
+embroidery	The angle turns tatami rows: this area has none	Vinkeln vrider tatamiraderna: det här området har inga
 @plural	about {count} stitch|about {count} stitches	cirka {count} stygn|cirka {count} stygn
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Tillämpa på {count} liknande område|Tillämpa på {count} liknande områden
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Ger områden med samma färg och sort och ungefär samma storlek det här områdets stygn och vinkel.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Tillämpat på {count} liknande område|Tillämpat på {count} liknande områden
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Ger områden med samma färg och sort och ungefär samma storlek och proportioner det här områdets stygn och vinkel.
 embroidery	Show in Sewing Order	Visa i sömnadsordningen
 embroidery	Dims what is sewn after this area.	Tonar ned det som sys efter det här området.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Det här området broderas inte, så det har ingen plats i sömnadsordningen
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Sys som nr {number} av {of}, efter {before}, före {after}
 embroidery	Sewn {number} of {of}, before {after}	Sys som nr {number} av {of}, före {after}
 embroidery	Sewn {number} of {of}, after {before}	Sys som nr {number} av {of}, efter {before}
@@ -9083,18 +9087,24 @@ embroidery	Its color isn't sewn	Dess färg broderas inte
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Behåll som dynamiskt objekt
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Behåller bilden tillsammans med objekten som gjorts av den, så att ”Digitalisera bild…” kan ändra dem igen.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Dess objekt har ändrats för hand. Att digitalisera det igen ersätter de ändringarna; Ångra tar tillbaka dem.
+embroidery	Update Live Object	Uppdatera dynamiskt objekt
+embroidery	Digitizes the live object again with these settings.	Digitaliserar det dynamiska objektet igen med de här inställningarna.
+embroidery	Convert to Plain Objects	Konvertera till vanliga objekt
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Skapar vanliga broderiobjekt av det dynamiska objektet; ”Digitalisera bild…” ändrar dem inte igen.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Innehållet i det här dynamiska objektet har ändrats för hand. Att digitalisera det igen ersätter de ändringarna; Ångra tar tillbaka dem.
 embroidery	Replace	Ersätt
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Det dynamiska objektets inställningar kunde inte läsas: fönstret börjar från standardvärdena.
 embroidery	Edit in Digitize Image…	Redigera i ”Digitalisera bild”…
-embroidery	Live digitized image	Dynamiskt digitaliserad bild
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Skapade ett dynamiskt objekt: {objects} ({threads}). ”Digitalisera bild…” ändrar det igen; Ångra tar bort det.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Uppdaterade det dynamiska objektet: {objects} ({threads}). Ångra tar tillbaka den tidigare versionen.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Konverterade till vanliga objekt: {objects} ({threads}). Bilden ligger på det dolda mallagret ”{layer}”. Ångra tar tillbaka det dynamiska objektet.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Konverterade till vanliga objekt: {objects} ({threads}). Ångra tar tillbaka det dynamiska objektet.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Ersätt inte
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Det här dynamiska objektet gjordes i en annan trådpalett: dess färger matchas mot dokumentets palett igen.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Dynamiskt digitaliserade bilder skalade med mer än {value} % sedan de digitaliserades: digitalisera dem igen
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Dynamiska objekt skalade med mer än {value} % sedan de digitaliserades: digitalisera dem igen
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	ett dynamiskt broderiobjekt: ändra det i ”Digitalisera bild…” (Objekt › Bildkalkering)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	ett dynamiskt objekt: redigera det i ”Digitalisera bild…” (Objekt › Bildkalkering)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Det skulle bli fler än {count} områdesändringar, det mesta en design tar.
+embroidery	That would be more than {count} area changes, the most a design takes	Det skulle bli fler än {count} områdesändringar, det mesta en design tar

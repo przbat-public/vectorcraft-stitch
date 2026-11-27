@@ -9,15 +9,21 @@
 //!   its progress; the figures; stale (the last figures dimmed while a newer run is on its way);
 //!   nothing to sew; failed with the reason, the last figures kept.
 //! - **Notes:** each of digitizing's warnings in words, and what the Check tab finds on the objects
-//!   (errors and warnings), problems first: a chip with the first and "+2", a list of them all.
+//!   (errors and warnings), problems first: a chip with the first, on up to two rows in the room the
+//!   bar leaves beside its buttons (whole in its tooltip when cut even so), and "+2"; a click lists
+//!   them all.
 //! - **Screen readers** hear the bar as a polite status, said again only once a run settles.
 //! - **Create** is disabled with its reason when nothing would be made, or the settings can't be
 //!   digitized; so is **Keep as Live Object** beside it (the mockup's place, between Cancel and
-//!   Create).
+//!   Create). On a live object opened again they are **Update Live Object** (coral) and **Convert
+//!   to Plain Objects** (the project owner's choice, 2026-11-18).
 //! - **The question** before a live object's objects changed by hand are replaced takes the
-//!   buttons' place (one dialog at a time): its words, Don't Replace (which takes the keyboard) and
-//!   Replace; they answer only once the double-click time has passed with no mouse button, Enter or
-//!   Space held, and the keyboard goes back to the button that asked when it is let go.
+//!   buttons' place (one dialog at a time): its words, Don't Replace (the safe answer, coral, in the
+//!   coral button's place, taking the keyboard) and Replace; they answer only once the double-click
+//!   time has passed with no mouse button, Enter or Space held, and the keyboard goes back to the
+//!   button that asked when it is let go. Its words wrap in rows of about one length.
+//! - **The keyboard** shows on the bar's buttons with the panels' focus ring (upstream's buttons
+//!   draw none).
 
 use egui::{Align, Color32, FontId, Layout, RichText, Sense, Stroke, Ui, pos2, vec2};
 use serde_json::Value;
@@ -29,6 +35,7 @@ use crate::VectorcraftApp;
 use crate::embroidery::counters::{self, Figures};
 use crate::embroidery::marks::{self, Mark};
 use crate::embroidery::numbers;
+use crate::embroidery::rows;
 use crate::embroidery::text::fill;
 use crate::i18n::Lang;
 use crate::panels::embroidery::check;
@@ -43,8 +50,12 @@ const SMALL_TEXT: f32 = 11.0;
 const MARK: f32 = 12.0;
 const CHIP_PAD: f32 = 6.0;
 const NOTES_WIDTH: f32 = 420.0;
-/// The most room the chip's first note takes (points), cut short with "…" past it.
-const CHIP_WORDS: f32 = 300.0;
+/// The most rows the chip's first note takes: the Live bar is two lines tall (`frame::BAR_HEIGHT`),
+/// and two of the chip's small rows fit above its "Updated in…" line (an estimate).
+const CHIP_ROWS: usize = 2;
+/// The least room the chip's words take where the bar leaves less (points), an estimate: a few
+/// words.
+pub(super) const CHIP_LEAST_WORDS: f32 = 80.0;
 /// How strongly stale figures are dimmed (the share of their colour kept): an estimate.
 const STALE_ALPHA: f32 = 0.55;
 
@@ -221,7 +232,12 @@ pub(crate) fn warning_words(w: &Value, lang: Lang) -> Option<Note> {
             Mark::Warning,
             fill(
                 crate::et!("The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better."),
-                &[("value", &area("pxPerMm")), ("least", &numbers::decimal(lang, v["fewerThan"].as_f64().unwrap_or(0.0), words::WHOLE))],
+                // The resolution always with both its decimals ("2.83", "3.00"): a fraction, so that
+                // one form of the noun after it is right for every value (Polish „2,83 piksela”).
+                &[
+                    ("value", &numbers::fixed(lang, v["pxPerMm"].as_f64().unwrap_or(0.0), words::HUNDREDTHS)),
+                    ("least", &numbers::decimal(lang, v["fewerThan"].as_f64().unwrap_or(0.0), words::WHOLE)),
+                ],
             ),
         ),
         "decodedSmaller" => {
@@ -311,6 +327,7 @@ pub(crate) fn current_notes(live: &mut Live, lang: Lang) -> Vec<Note> {
 /// what was asked.
 pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<Asked> {
     let lang = crate::i18n::current();
+    let reopened = super::on_live_object(app);
     let live = app.embroidery.image_window.live.as_mut()?;
     let said_now = said(live, now);
     let refused = create_refused(live, now);
@@ -335,11 +352,21 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<As
     });
     let refocus = live.refocus.take();
     let mut asked = None;
+    // The room the buttons take at the bar's right, so that the chip takes what is left beside them;
+    // while the question holds their place, the chip takes its least, the question's words the room.
+    let buttons = if question.is_some() {
+        None
+    } else {
+        let [coral, grey] = makers(reopened);
+        let labels = [coral.words, grey.words, crate::et!("Cancel"), crate::et!("Start Over")];
+        Some(labels.iter().map(|l| widgets::button_width(ui, l)).sum::<f32>() + labels.len() as f32 * ui.spacing().item_spacing.x)
+    };
     ui.horizontal(|ui| {
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 status_words(ui, &pending, said_now.as_ref(), shown_figures.as_ref(), create_waiting, &announced, lang);
-                notes_chip(ui, &notes, lang);
+                let room = buttons.map_or(0.0, |b| ui.available_width() - b);
+                notes_chip(ui, &notes, lang, room);
             });
             if let Some((ms, stages)) = &updated {
                 updated_words(ui, *ms, stages, lang);
@@ -347,33 +374,85 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, now: f64) -> Option<As
         });
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             if let Some((armed, focus)) = question {
-                asked = replace_question(ui, armed, focus);
+                let [coral, _] = makers(reopened);
+                asked = replace_question(ui, armed, focus, widgets::button_width(ui, coral.words));
                 return;
             }
-            let create = widgets::primary_button_enabled(ui, crate::et!("Create Embroidery Objects"), refused.is_none());
-            if refocus == Some(Making::Objects) {
-                create.request_focus();
+            let [coral, grey] = makers(reopened);
+            let first = widgets::primary_button_enabled(ui, coral.words, refused.is_none());
+            let second = ui.add_enabled_ui(refused.is_none(), |ui| widgets::secondary_button(ui, grey.words)).inner;
+            for (maker, resp) in [(coral, first), (grey, second)] {
+                if refocus == Some(maker.making) {
+                    resp.request_focus();
+                }
+                ringed(ui, &resp);
+                let resp = match maker.tip {
+                    Some(tip) => resp.on_hover_text(tip),
+                    None => resp,
+                };
+                if with_refusal(resp, refused.as_deref()).clicked() {
+                    asked = Some(match maker.making {
+                        Making::Objects => Asked::Create,
+                        Making::LiveObject => Asked::KeepLive,
+                    });
+                }
             }
-            if with_refusal(create, refused.as_deref()).clicked() {
-                asked = Some(Asked::Create);
-            }
-            let keep = ui.add_enabled_ui(refused.is_none(), |ui| widgets::secondary_button(ui, crate::et!("Keep as Live Object"))).inner;
-            if refocus == Some(Making::LiveObject) {
-                keep.request_focus();
-            }
-            let tip = crate::et!("Keeps the image with the objects made of it, so that Digitize Image… can change them again.");
-            if with_refusal(keep.on_hover_text(tip), refused.as_deref()).clicked() {
-                asked = Some(Asked::KeepLive);
-            }
-            if widgets::secondary_button(ui, crate::et!("Cancel")).clicked() {
+            let cancel = widgets::secondary_button(ui, crate::et!("Cancel"));
+            ringed(ui, &cancel);
+            if cancel.clicked() {
                 asked = Some(Asked::Cancel);
             }
-            if widgets::secondary_button(ui, crate::et!("Start Over")).clicked() {
+            let start_over = widgets::secondary_button(ui, crate::et!("Start Over"));
+            ringed(ui, &start_over);
+            if start_over.clicked() {
                 asked = Some(Asked::StartOver);
             }
         });
     });
     asked
+}
+
+/// One of the Live bar's two making buttons: what it makes, its words and its tooltip.
+#[derive(Clone, Copy)]
+pub(crate) struct Maker {
+    pub(crate) making: Making,
+    pub(crate) words: &'static str,
+    tip: Option<&'static str>,
+}
+
+/// The Live bar's two making buttons, the coral one first: on a new image Create Embroidery
+/// Objects and Keep as Live Object; on a live object opened again (`reopened`) Update Live Object,
+/// digitizing it again and keeping it live (where its place isn't sewn, on the layer its design goes
+/// to), and Convert to Plain Objects (the project owner's choice, 2026-11-18, „Aktualizacja jako
+/// główny (polecam)”: opened to be adjusted, the coral Create turned it into plain objects without
+/// saying so).
+pub(crate) fn makers(reopened: bool) -> [Maker; 2] {
+    let keep = crate::et!("Keeps the image with the objects made of it, so that Digitize Image… can change them again.");
+    if reopened {
+        [
+            Maker {
+                making: Making::LiveObject,
+                words: crate::et!("Update Live Object"),
+                tip: Some(crate::et!("Digitizes the live object again with these settings.")),
+            },
+            Maker {
+                making: Making::Objects,
+                words: crate::et!("Convert to Plain Objects"),
+                tip: Some(crate::et!("Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.")),
+            },
+        ]
+    } else {
+        [
+            Maker { making: Making::Objects, words: crate::et!("Create Embroidery Objects"), tip: None },
+            Maker { making: Making::LiveObject, words: crate::et!("Keep as Live Object"), tip: Some(keep) },
+        ]
+    }
+}
+
+/// The keyboard's place on a button of the bar or its notes chip, ringed as the Object tab rings
+/// its buttons (upstream's buttons draw none), on the window's fill.
+fn ringed(ui: &Ui, resp: &egui::Response) {
+    rows::focus_ring(ui, resp, resp.rect.expand(rows::FOCUS_GAP), Tokens::get(ui.ctx()).panel);
 }
 
 /// `button`, disabled with the reason Create is refused (`refused`) in its tooltip.
@@ -392,28 +471,65 @@ pub(crate) fn question_id() -> egui::Id {
 
 /// The question before objects changed by hand are replaced, in place of the bar's buttons (one
 /// dialog at a time): its words, Don't Replace and Replace, each described by its words for screen
-/// readers. They answer once it is `armed`; Don't Replace, the safe answer, takes the keyboard when
-/// it first shows (`focus`) → its answer.
-fn replace_question(ui: &mut Ui, armed: bool, focus: bool) -> Option<Asked> {
-    let words = crate::et!("Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.");
+/// readers. They answer once it is `armed`; Don't Replace, the safe answer, is the coral one, in
+/// the coral button's place and at least as wide, so that a double-click on the coral button lands
+/// on it, and takes the keyboard when it first shows (`focus`), so that Enter lands on it whichever
+/// button asked (a double-click on the grey one lands on Replace, held back by the arming alone);
+/// both ringed while they have the keyboard → its answer.
+fn replace_question(ui: &mut Ui, armed: bool, focus: bool, coral_width: f32) -> Option<Asked> {
+    let words =
+        crate::et!("The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.");
     let described = |ui: &Ui, resp: &egui::Response| ui.ctx().accesskit_node_builder(resp.id, |node| node.set_description(words));
     let mut asked = None;
-    let replace = widgets::primary_button(ui, crate::et!("Replace"));
-    described(ui, &replace);
-    if replace.clicked() && armed {
-        asked = Some(Asked::Replace);
-    }
-    let keep = widgets::secondary_button(ui, crate::et!("Don't Replace"));
+    // As wide as the coral button it stands for at least, so that it holds the whole of its place.
+    let keep = widgets::primary_button_width(ui, crate::et!("Don't Replace"), coral_width);
     described(ui, &keep);
     if focus {
         keep.request_focus();
     }
+    ringed(ui, &keep);
     if keep.clicked() && armed {
         asked = Some(Asked::KeepEdits);
     }
+    let replace = widgets::secondary_button(ui, crate::et!("Replace"));
+    described(ui, &replace);
+    ringed(ui, &replace);
+    if replace.clicked() && armed {
+        asked = Some(Asked::Replace);
+    }
     let t = Tokens::get(ui.ctx());
-    ui.add(egui::Label::new(RichText::new(words).size(SMALL_TEXT).color(t.text_strong)).wrap());
+    ui.add(egui::Label::new(even_rows(ui, words, &FontId::proportional(SMALL_TEXT), t.text_strong)));
     asked
+}
+
+/// How many times the question's width is halved toward the narrowest that keeps its rows: to
+/// within a 256th of its room (about 2 points of 500), an estimate.
+const EVEN_ROW_STEPS: u32 = 8;
+
+/// `words` laid out in the room `ui` has left, in as many rows as they take there but at the
+/// narrowest width that keeps that many, so that the rows come out about as long as one another
+/// (egui fills each row before the next: words just past the room leave a last word alone on its
+/// row), aligned to their left.
+fn even_rows(ui: &Ui, words: &str, font: &FontId, colour: Color32) -> std::sync::Arc<egui::Galley> {
+    let room = ui.available_width().max(0.0);
+    let laid = |width: f32| ui.painter().layout(words.to_string(), font.clone(), colour, width);
+    let full = laid(room);
+    let rows = full.rows.len();
+    if rows < 2 || !room.is_finite() {
+        return full;
+    }
+    // Narrower than the room shared out by its rows, the words take more rows: the narrowest
+    // width keeping them lies between.
+    let (mut narrow, mut wide) = (room / rows as f32, room);
+    for _ in 0..EVEN_ROW_STEPS {
+        let middle = (narrow + wide) / 2.0;
+        if laid(middle).rows.len() > rows {
+            narrow = middle;
+        } else {
+            wide = middle;
+        }
+    }
+    laid(wide)
 }
 
 /// The bar's first words: how the result stands, and the figures (dimmed while stale); a polite
@@ -422,7 +538,7 @@ fn status_words(ui: &mut Ui, pending: &Freshness, said: Option<&Said>, last: Opt
     let t = Tokens::get(ui.ctx());
     let mut parts: Vec<(String, Color32)> = Vec::new();
     if create_waiting {
-        parts.push((crate::et!("Create waits for the preview to be ready.").to_string(), t.text));
+        parts.push((crate::et!("The objects are made once the preview is ready.").to_string(), t.text));
     }
     match pending {
         Freshness::Pending { notice: true, progress } => parts.push((words::recomputing(*progress), t.text)),
@@ -474,18 +590,23 @@ fn updated_words(ui: &mut Ui, ms: f64, stages: &[DigitizeStage], lang: Lang) {
     ui.label(RichText::new(words).size(SMALL_TEXT).color(t.text_dim));
 }
 
-/// The notes' chip: the first note and "+2" for the others; a click lists them all.
-fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang) {
+/// The notes' chip, `room` points wide at most: the first note, on up to [`CHIP_ROWS`] rows, and
+/// "+2" for the others; a click lists them all.
+fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang, room: f32) {
     let Some(first) = notes.first() else { return };
     let t = Tokens::get(ui.ctx());
     let more = notes.len() - 1;
-    // The first note cut short past its room; how many more after it, never cut.
-    let mut job = egui::text::LayoutJob::simple_singleline(first.words.clone(), FontId::proportional(SMALL_TEXT), marks::text_colour(&t, first.mark));
-    job.wrap = egui::text::TextWrapping { max_width: CHIP_WORDS, max_rows: 1, break_anywhere: true, overflow_character: Some('…') };
-    let galley = ui.painter().layout_job(job);
+    // How many more after the first, never cut; the first broken between words in the room left,
+    // cut short with "…" past its rows.
     let more_galley = (more > 0)
         .then(|| ui.painter().layout_no_wrap(format!("+{}", numbers::count(lang, more as u64)), FontId::proportional(SMALL_TEXT), t.text_dim));
     let more_width = more_galley.as_ref().map_or(0.0, |g| g.size().x + CHIP_PAD);
+    let words_room = (room - MARK - CHIP_PAD * 3.0 - more_width).max(CHIP_LEAST_WORDS);
+    let mut job =
+        egui::text::LayoutJob::simple(first.words.clone(), FontId::proportional(SMALL_TEXT), marks::text_colour(&t, first.mark), words_room);
+    job.wrap = egui::text::TextWrapping { max_width: words_room, max_rows: CHIP_ROWS, break_anywhere: false, overflow_character: Some('…') };
+    let galley = ui.painter().layout_job(job);
+    let cut = galley.elided;
     let size = vec2(MARK + CHIP_PAD * 3.0 + galley.size().x + more_width, galley.size().y.max(MARK) + CHIP_PAD);
     let (rect, resp) = ui.allocate_exact_size(size, Sense::click());
     let back = if resp.hovered() { t.hover } else { t.panel_darker };
@@ -498,8 +619,11 @@ fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang) {
     if let Some(g) = more_galley {
         ui.painter().galley(pos2(words_left + words_width + CHIP_PAD, rect.center().y - g.size().y / 2.0), g, t.text_dim);
     }
+    ringed(ui, &resp);
     let name = crate::etn!(notes.len() as u64, "{count} note", "{count} notes");
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, name.clone()));
+    // Cut even so: whole on hover.
+    let resp = if cut { resp.on_hover_text(&first.words) } else { resp };
     egui::Popup::from_toggle_button_response(&resp)
         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
         .accessible_name(crate::et!("Notes"))
@@ -516,17 +640,60 @@ fn notes_chip(ui: &mut Ui, notes: &[Note], lang: Lang) {
 }
 
 /// The status bar's words once Create made the objects: how many, in how many threads, and the
-/// template layer the image moved to (`layer`, its name). The counts stand in parentheses, so that
-/// every language can write them as it inflects a count.
-pub(crate) fn created_words(objects: u64, threads: u64, layer: &str) -> String {
-    fill(
-        crate::et!("Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them."),
-        &[
-            ("objects", &crate::etn!(objects, "{count} object", "{count} objects")),
-            ("threads", &crate::etn!(threads, "{count} thread", "{count} threads")),
-            ("layer", layer),
-        ],
-    )
+/// hidden template layer the image lies on afterwards (`layer`, its name: the one Create moved it
+/// to, or its own where it stayed in its place, which isn't sewn; `None` where it lies on none).
+/// The counts stand in parentheses, so that every language can write them as it inflects a count.
+pub(crate) fn created_words(objects: u64, threads: u64, layer: Option<&str>) -> String {
+    let (objects, threads) = (objects_words(objects), threads_words(threads));
+    match layer {
+        Some(layer) => fill(
+            crate::et!("Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them."),
+            &[("objects", &objects), ("threads", &threads), ("layer", layer)],
+        ),
+        None => fill(crate::et!("Created {objects} ({threads}). Undo removes them."), &[("objects", &objects), ("threads", &threads)]),
+    }
+}
+
+/// The status bar's words once the window made what it made (`reply`, Create's; `layer` the name
+/// of the hidden template layer the image lies on afterwards, `None` where none): plain objects of
+/// a new image ([`created_words`]), a new live object ([`kept_live_words`]), a live object updated
+/// (digitized again, kept live), or one converted to plain objects; told apart by whether it made a
+/// live object and whether it was made on one (the reply's `edited`, given for a live object only).
+/// What happened comes first, as the status bar shows a message's start alone when it is long.
+pub(crate) fn made_words(reply: &Value, layer: Option<&str>) -> String {
+    let objects = reply["created"]["objects"].as_u64().unwrap_or(0);
+    let threads = reply["stats"]["threadCount"].as_u64().unwrap_or(0);
+    let on_live = !reply["edited"].is_null();
+    match (reply["created"]["live"].as_bool() == Some(true), on_live) {
+        (true, false) => kept_live_words(objects, threads),
+        (true, true) => fill(
+            crate::et!("Updated the live object: {objects} ({threads}). Undo brings back the earlier version."),
+            &[("objects", &objects_words(objects)), ("threads", &threads_words(threads))],
+        ),
+        (false, true) => match layer {
+            Some(layer) => fill(
+                crate::et!(
+                    "Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back."
+                ),
+                &[("objects", &objects_words(objects)), ("threads", &threads_words(threads)), ("layer", layer)],
+            ),
+            None => fill(
+                crate::et!("Converted to plain objects: {objects} ({threads}). Undo brings the live object back."),
+                &[("objects", &objects_words(objects)), ("threads", &threads_words(threads))],
+            ),
+        },
+        (false, false) => created_words(objects, threads, layer),
+    }
+}
+
+/// `objects` in words ("23 objects"), as the status bar's words count them.
+fn objects_words(objects: u64) -> String {
+    crate::etn!(objects, "{count} object", "{count} objects")
+}
+
+/// `threads` in words ("7 threads").
+fn threads_words(threads: u64) -> String {
+    crate::etn!(threads, "{count} thread", "{count} threads")
 }
 
 /// The status bar's words once Keep as Live Object made the live object: of how many objects, in
@@ -581,6 +748,73 @@ mod tests {
         assert_eq!(specks.as_deref(), Some("1 speck smaller than 1 mm² joined the color around it"));
     }
 
+    /// The coarse picture's note writes its resolution with both decimals, a fraction in every
+    /// language, so that one form of its noun is right for every value: Polish „2,83 piksela” and
+    /// „3,00 piksela”, never „pikseli”, which is right for none of them.
+    #[test]
+    fn the_coarse_note_writes_its_resolution_as_a_fraction() {
+        let note = |code: &str, px: f64| {
+            let lang = Lang::from_code(code).expect("a language");
+            crate::i18n::set_current(lang);
+            let words = warning_words(&json!({"id": "coarse", "values": {"pxPerMm": px, "fewerThan": 4.0}}), lang).map(|n| n.words);
+            crate::i18n::set_current(Lang::EN);
+            words.unwrap_or_default()
+        };
+        assert_eq!(note("pl", 2.83), "Przy tym rozmiarze obraz ma 2,83 piksela na milimetr, mniej niż 4: większa kopia digitalizuje się lepiej.");
+        assert!(note("pl", 3.0).contains("3,00 piksela"), "{}", note("pl", 3.0));
+        assert!(note("en", 1.0).contains("1.00 pixels"), "{}", note("en", 1.0));
+        for (code, words) in [("cs", "2,83 pixelu"), ("ru", "2,83 пикселя"), ("uk", "2,83 пікселя")] {
+            assert!(note(code, 2.83).contains(words), "{code}: {}", note(code, 2.83));
+        }
+    }
+
+    /// The notes' chip shows the keyboard with the panels' focus ring, and says its first note whole
+    /// in its tooltip where the chip cuts it short.
+    #[test]
+    fn the_notes_chip_shows_the_keyboard_and_its_cut_note_whole() {
+        use egui::accesskit::{Action, ActionRequest, Role, TreeId};
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        ctx.enable_accesskit();
+        let long = "A note long enough to be cut short in the chip, ".repeat(4);
+        let notes = [Note { mark: Mark::Warning, words: long.clone(), step: 2 }];
+        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 200.0));
+        let run = |time: f64, events: Vec<egui::Event>| {
+            let raw = egui::RawInput { time: Some(time), screen_rect: Some(screen), events, ..Default::default() };
+            let mut out = ctx.run_ui(raw, |ui| notes_chip(ui, &notes, Lang::EN, CHIP_LEAST_WORDS));
+            out.textures_delta.clear();
+            let mut shapes = Vec::new();
+            out.shapes.into_iter().for_each(|c| shapes.push(c.shape));
+            (shapes, out.platform_output.accesskit_update.map(|u| u.nodes).unwrap_or_default())
+        };
+        let (_, nodes) = run(0.0, vec![]);
+        let (id, chip) = nodes.iter().find(|(_, n)| n.role() == Role::Button && n.label() == Some("1 note")).expect("the chip");
+        let b = chip.bounds().expect("drawn");
+        let rect = egui::Rect::from_min_max(egui::pos2(b.x0 as f32, b.y0 as f32), egui::pos2(b.x1 as f32, b.y1 as f32));
+        let focus =
+            egui::Event::AccessKitActionRequest(ActionRequest { action: Action::Focus, target_node: *id, target_tree: TreeId::ROOT, data: None });
+        run(0.1, vec![focus]);
+        let (shapes, _) = run(0.2, vec![]);
+        let t = Tokens::get(&ctx);
+        let ring = rows::focus_colour(&t, t.panel);
+        let ringed =
+            shapes.iter().any(|s| matches!(s, egui::Shape::Rect(r) if r.stroke.color == ring && r.stroke.width > 0.0 && r.rect.contains_rect(rect)));
+        assert!(ringed, "the keyboard's ring round the chip");
+        // The pointer on the chip, still past the tooltip's wait; a frame more, as egui lays a new
+        // tooltip out unseen first.
+        let wait = f64::from(ctx.global_style().interaction.tooltip_delay);
+        run(0.3, vec![egui::Event::PointerMoved(rect.center())]);
+        run(0.3 + wait * 2.0, vec![]);
+        let (shapes, _) = run(0.4 + wait * 2.0, vec![]);
+        let text = |s: &egui::Shape| match s {
+            egui::Shape::Text(t) => Some((t.galley.text().to_string(), t.galley.elided)),
+            _ => None,
+        };
+        let texts: Vec<(String, bool)> = shapes.iter().filter_map(text).collect();
+        assert!(texts.iter().any(|(w, cut)| *w == long && *cut), "cut short in the chip: {texts:?}");
+        assert!(texts.iter().any(|(w, cut)| *w == long && !cut), "whole in its tooltip: {texts:?}");
+    }
+
     /// Notes come problems first: the check's errors, then warnings, then digitizing's notes.
     #[test]
     fn notes_put_problems_first() {
@@ -593,6 +827,38 @@ mod tests {
         assert_eq!(marks, [Mark::Error, Mark::Warning, Mark::Info], "a rule that passed is no note");
     }
 
+    /// While Create, Update or Convert waits for the preview, the status says the objects are made
+    /// once it is ready, naming no button: a live object opened again has no Create.
+    #[test]
+    fn the_status_says_the_objects_wait_for_the_preview() {
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 200.0))), ..Default::default() };
+        let mut out = ctx.run_ui(raw, |ui| status_words(ui, &Freshness::Fresh, None, None, true, "", Lang::EN));
+        out.textures_delta.clear();
+        let texts: Vec<String> = out
+            .shapes
+            .iter()
+            .filter_map(|c| match &c.shape {
+                egui::Shape::Text(t) => Some(t.galley.text().to_string()),
+                _ => None,
+            })
+            .collect();
+        assert!(texts.iter().any(|t| t.contains("The objects are made once the preview is ready.")), "{texts:?}");
+        assert!(!texts.iter().any(|t| t.contains("Create")), "no button named: {texts:?}");
+    }
+
+    /// On a live object opened again, Update's and Convert's tooltips say what each does wherever
+    /// the live object lies, with no "in its place" (where its place isn't sewn, its design goes to
+    /// the layer above); Convert's says the plain objects it makes are what Digitize Image… doesn't
+    /// change again, not the live object it removes.
+    #[test]
+    fn the_tooltips_of_update_and_convert_say_what_each_does() {
+        let [update, convert] = makers(true);
+        assert_eq!(update.tip, Some("Digitizes the live object again with these settings."));
+        assert_eq!(convert.tip, Some("Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again."));
+    }
+
     /// The notes' chip shows the first note, cut short past its room, and how many more, never cut;
     /// screen readers hear how many notes there are.
     #[test]
@@ -603,7 +869,9 @@ mod tests {
         let long = "A note long enough to be cut short in the chip, ".repeat(4);
         let notes = [Note { mark: Mark::Warning, words: long, step: 2 }, Note { mark: Mark::Info, words: "Short".into(), step: 1 }];
         let raw = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 200.0))), ..Default::default() };
-        let mut out = ctx.run_ui(raw, |ui| notes_chip(ui, &notes, Lang::EN));
+        // The chip's room before it could take the bar's (points).
+        const OLD_ROOM: f32 = 300.0;
+        let mut out = ctx.run_ui(raw, |ui| notes_chip(ui, &notes, Lang::EN, OLD_ROOM));
         out.textures_delta.clear();
         let mut texts = Vec::new();
         for c in &out.shapes {
@@ -617,11 +885,87 @@ mod tests {
         assert!(nodes.iter().any(|(_, n)| n.label() == Some("2 notes")));
     }
 
+    /// What the status bar says after the window made something, by what it made and what it was
+    /// open on: a new image's plain objects or live object, a live object updated (Undo bringing
+    /// back the one before, not removing it) or converted (Undo bringing it back); what happened
+    /// first, and the hidden template layer wherever the image lies on one afterwards (the one
+    /// Create moved it to, or its own).
+    #[test]
+    fn the_status_says_what_was_made_and_what_undo_does() {
+        let reply = |live: bool, edited: Value| json!({"created": {"objects": 6, "live": live}, "stats": {"threadCount": 4}, "edited": edited});
+        let cases = [
+            (false, Value::Null, "Created 6 objects (4 threads). The image is on the hidden template layer “T”. Undo removes them."),
+            (true, Value::Null, "Created a live object: 6 objects (4 threads). Digitize Image… changes it again; Undo removes it."),
+            (true, json!(false), "Updated the live object: 6 objects (4 threads). Undo brings back the earlier version."),
+            (true, json!(true), "Updated the live object: 6 objects (4 threads). Undo brings back the earlier version."),
+            (
+                false,
+                json!(true),
+                "Converted to plain objects: 6 objects (4 threads). The image is on the hidden template layer “T”. Undo brings the live object back.",
+            ),
+        ];
+        for (live, edited, said) in cases {
+            assert_eq!(made_words(&reply(live, edited.clone()), Some("T")), said, "live {live}, edited {edited}");
+        }
+        // The image on no hidden template layer afterwards (left on an ordinary layer whose place
+        // isn't sewn, say): no layer named.
+        assert_eq!(made_words(&reply(false, Value::Null), None), "Created 6 objects (4 threads). Undo removes them.");
+        assert_eq!(
+            made_words(&reply(false, json!(true)), None),
+            "Converted to plain objects: 6 objects (4 threads). Undo brings the live object back."
+        );
+    }
+
+    /// The question's words wrap in rows of about one length, at every room that takes two rows, in
+    /// English and in Polish: egui fills each row before the next, which left a last word alone.
+    #[test]
+    fn the_questions_rows_are_about_one_length() {
+        // The bar's widths tried (points): from the room two rows need to a whole row, a step apart;
+        // and the least a row is of the longest, an estimate (a lone last word was a tenth).
+        const WIDTHS: std::ops::Range<u32> = 300..1400;
+        const STEP: usize = 3;
+        const EVEN_SHARE: f32 = 0.5;
+        let ctx = egui::Context::default();
+        crate::theme::install_fonts(&ctx);
+        let mut two_rows = 0;
+        for code in ["en", "pl"] {
+            crate::i18n::set_current(Lang::from_code(code).expect("a language"));
+            let words = crate::et!(
+                "The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back."
+            )
+            .to_string();
+            for width in WIDTHS.step_by(STEP) {
+                let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(width as f32, 100.0));
+                let raw = egui::RawInput { screen_rect: Some(screen), ..Default::default() };
+                let mut out = ctx.run_ui(raw, |ui| {
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| replace_question(ui, false, false, 0.0));
+                });
+                out.textures_delta.clear();
+                let galley = out.shapes.iter().find_map(|c| match &c.shape {
+                    egui::Shape::Text(t) if t.galley.text() == words => Some(t.galley.clone()),
+                    _ => None,
+                });
+                let Some(galley) = galley.filter(|g| g.rows.len() == 2) else { continue };
+                two_rows += 1;
+                let longest = galley.rows.iter().map(|r| r.rect().width()).fold(0.0_f32, f32::max);
+                for row in &galley.rows {
+                    assert!(
+                        row.rect().width() >= EVEN_SHARE * longest,
+                        "{code} at {width}: rows {:?}",
+                        galley.rows.iter().map(|r| r.text()).collect::<Vec<_>>()
+                    );
+                }
+            }
+        }
+        crate::i18n::set_current(Lang::EN);
+        assert!(two_rows > 0, "some width gave two rows");
+    }
+
     /// Create's words: how many objects, in how many threads, and the layer the image moved to.
     #[test]
     fn create_says_what_it_made() {
         assert_eq!(
-            created_words(23, 7, "Template logo.png"),
+            created_words(23, 7, Some("Template logo.png")),
             "Created 23 objects (7 threads). The image is on the hidden template layer “Template logo.png”. Undo removes them."
         );
     }

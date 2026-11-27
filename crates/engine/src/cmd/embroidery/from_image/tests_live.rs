@@ -478,18 +478,19 @@ fn upstreams_view_expand_and_release_work_on_a_live_object() {
 }
 
 #[test]
-fn image_trace_refuses_a_live_embroidery_object() {
+fn image_trace_refuses_a_live_object_in_its_own_words() {
+    let refused = crate::cmd::embroidery::LIVE_EMBROIDERY_REFUSED;
     let (mut s, live, _) = live_made(json!({"colors": 3}));
     for cmd in ["imageTrace.make", "imageTrace.makeAndExpand"] {
         let e = s.execute(cmd, &json!({"id": live.0})).unwrap_err().to_string();
-        assert!(e.contains("Digitize Image"), "{cmd}: {e}");
+        assert_eq!(e, refused, "{cmd}: the refusal as itself, not as invalid parameters");
     }
     let e = crate::cmd::buildcmds::TraceRun::prepare(&s, "imageTrace.make", &json!({"id": live.0})).map(|_| ()).unwrap_err().to_string();
-    assert!(e.contains("Digitize Image"), "the panel's run: {e}");
+    assert_eq!(e, refused, "the panel's run");
     // Its image, which it holds first: the same.
     let image = node(&s, live).children().and_then(|c| c.first()).map(|c| c.id).expect("its image");
     let e = s.execute("imageTrace.make", &json!({"id": image.0})).unwrap_err().to_string();
-    assert!(e.contains("Digitize Image"), "its image: {e}");
+    assert_eq!(e, refused, "its image");
 }
 
 /// The Check tab warns of a live object scaled more than ±10 % since it was digitized, by its

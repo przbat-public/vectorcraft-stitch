@@ -5977,6 +5977,7 @@ embroidery	No source gives a number to check these against.	Geen enkele bron gee
 @plural	{count} row|{count} rows	{count} reeks|{count} reeksen
 @plural	{count} spot|{count} spots	{count} plek|{count} plekken
 @plural	{count} thread|{count} threads	{count} draad|{count} draden
+embroidery	Threads	Draden
 @plural	{count} error|{count} errors	{count} fout|{count} fouten
 @plural	{count} warning|{count} warnings	{count} waarschuwing|{count} waarschuwingen
 @plural	{count} note|{count} notes	{count} opmerking|{count} opmerkingen
@@ -6002,7 +6003,6 @@ embroidery	Median: {value} mm	Mediaan: {value} mm
 embroidery	Too long	Te lang
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Boven {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} kleur|{count} kleuren
 embroidery	Embroidery: {figures}	Borduurwerk: {figures}
 embroidery	Stitches can't be planned	De steken kunnen niet worden gepland
 embroidery	Click to open the Embroidery panel.	Klik om het deelvenster Borduurwerk te openen.
@@ -7205,7 +7205,7 @@ embroidery	Cancel	Annuleren
 embroidery	Digitizing…	Bezig met digitaliseren…
 embroidery	Create Embroidery Objects	Borduurobjecten maken
 embroidery	Start Over	Opnieuw beginnen
-embroidery	Create waits for the preview to be ready.	Het maken wacht tot de voorvertoning klaar is.
+embroidery	The objects are made once the preview is ready.	De objecten worden gemaakt zodra de voorvertoning klaar is.
 embroidery	Can't digitize it: {reason}	Kan niet worden gedigitaliseerd: {reason}
 embroidery	Shapes	Vormen
 embroidery	Recomputing…	Opnieuw berekenen…
@@ -7300,7 +7300,7 @@ embroidery	Mode	Modus
 embroidery	{value} is out of range: {low} to {high}.	{value} valt buiten het bereik: {low} tot {high}.
 embroidery	Number of colors	Aantal kleuren
 embroidery	Match to threads	Afstemmen op draden
-embroidery	Create sets the document's thread palette to {palette}.	Maken stelt het draadpalet van het document in op {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Het maken van de objecten stelt het garenpalet van het document in op {palette}.
 embroidery	Smallest area	Kleinste vlak
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Kleinere spikkels, zoals JPEG-ruis, gaan op in de kleur eromheen.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} kleur was te klein en ging op in andere|{count} kleuren waren te klein en gingen op in andere
@@ -7320,6 +7320,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Bijgewerkt in {value} ms na de laatste wijziging ({steps})
 embroidery	Notes	Opmerkingen
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Gemaakt: {objects} ({threads}). De afbeelding staat op de verborgen sjabloonlaag ‘{layer}’. Ongedaan maken verwijdert ze.
+embroidery	Created {objects} ({threads}). Undo removes them.	Gemaakt: {objects} ({threads}). Ongedaan maken verwijdert ze.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} spikkel kleiner dan {value} mm² ging op in de kleur eromheen|{count} spikkels kleiner dan {value} mm² gingen op in de kleuren eromheen
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} spikkel kleiner dan {value} mm² kon nergens in opgaan en is weggelaten|{count} spikkels kleiner dan {value} mm² konden nergens in opgaan en zijn weggelaten
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} band van hoogstens {value} mm breed ging op in de buur die het dichtst bij zijn kleur ligt|{count} banden van hoogstens {value} mm breed gingen op in de buren die het dichtst bij hun kleuren liggen
@@ -7352,8 +7353,8 @@ embroidery	Fixed	Vast
 embroidery	Across the shape	Dwars op de vorm
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	De richting van de rijen van een vulling: onder een vaste hoek op de pagina, of dwars op de lengte van elke vorm.
 embroidery	The fills' rows, counter-clockwise on the page.	De rijen van de vullingen, tegen de klok in op de pagina.
-embroidery	From the background to the details. The Order tab changes it after Create.	Van de achtergrond naar de details. Het tabblad Volgorde wijzigt hem na Maken.
-embroidery	Create sets these in the document's embroidery settings.	Maken stelt ze in de borduurinstellingen van het document in.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Van de achtergrond naar de details. Het tabblad Volgorde wijzigt hem zodra de objecten zijn gemaakt.
+embroidery	Making the objects sets these in the document's embroidery settings.	Het maken van de objecten stelt deze waarden in de borduurinstellingen van het document in.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Contouren
 embroidery	Color outlines (running stitch)	Kleurcontouren (rechte steek)
@@ -7373,7 +7374,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Opent het tabblad Borduurwerk van Documentinstellingen. Dit venster komt terug wanneer Documentinstellingen sluit.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Gekozen voor dit vlak
 embroidery	Sewn along its middle as one running line	Langs het midden geborduurd als één lijn rechte steek
 embroidery	No part wider than {width} mm	Geen deel breder dan {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Breder dan {width} mm: tatami, de smallere delen als satijn
@@ -7381,14 +7381,18 @@ embroidery	Wider than {width} mm: tatami	Breder dan {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	De lange delen als satijn, de rest tatami
 embroidery	Too short for satin	Te kort voor satijn
 embroidery	Too short for satin: sewn as tatami	Te kort voor satijn: genaaid als tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satijn vraagt een lijn van minstens {least} mm breed: deze is {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satijn borduurt delen tot {most} mm: dit vlak is {width} mm breed.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Satijn vraagt een lijn van minstens {least} mm breed: deze is {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Satijn borduurt delen tot {most} mm breed: dit vlak is breder
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Satijn borduurt delen tot {most} mm breed: met het deel dat onder zijn buren doorloopt, is dit vlak breder
+embroidery	The angle turns tatami rows: this area has none	De hoek draait de tatamirijen: dit vlak heeft er geen
 @plural	about {count} stitch|about {count} stitches	ongeveer {count} steek|ongeveer {count} steken
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Toepassen op {count} vergelijkbaar vlak|Toepassen op {count} vergelijkbare vlakken
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Geeft de vlakken van dezelfde kleur en soort en ongeveer dezelfde grootte de steek en hoek van dit vlak.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Toegepast op {count} vergelijkbaar vlak|Toegepast op {count} vergelijkbare vlakken
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Geeft de vlakken van dezelfde kleur en soort en ongeveer dezelfde grootte en verhoudingen de steek en hoek van dit vlak.
 embroidery	Show in Sewing Order	Tonen in borduurvolgorde
 embroidery	Dims what is sewn after this area.	Dimt wat na dit vlak wordt geborduurd.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Dit vlak wordt niet geborduurd en heeft dus geen plaats in de borduurvolgorde
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Geborduurd als {number} van {of}, na {before}, vóór {after}
 embroidery	Sewn {number} of {of}, before {after}	Geborduurd als {number} van {of}, vóór {after}
 embroidery	Sewn {number} of {of}, after {before}	Geborduurd als {number} van {of}, na {before}
@@ -7408,18 +7412,24 @@ embroidery	Its color isn't sewn	De kleur wordt niet geborduurd
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Behouden als dynamisch object
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Bewaart de afbeelding bij de objecten die ervan zijn gemaakt, zodat ‘Afbeelding digitaliseren…’ ze opnieuw kan wijzigen.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	De objecten zijn met de hand gewijzigd. Opnieuw digitaliseren vervangt die wijzigingen; Ongedaan maken brengt ze terug.
+embroidery	Update Live Object	Dynamisch object bijwerken
+embroidery	Digitizes the live object again with these settings.	Digitaliseert het dynamische object opnieuw met deze instellingen.
+embroidery	Convert to Plain Objects	Omzetten naar gewone objecten
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Maakt van het dynamische object gewone borduurobjecten, die ‘Afbeelding digitaliseren…’ niet meer wijzigt.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	De inhoud van dit dynamische object is met de hand gewijzigd. Opnieuw digitaliseren vervangt die wijzigingen; Ongedaan maken brengt ze terug.
 embroidery	Replace	Vervangen
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	De instellingen van dit dynamische object konden niet worden gelezen: het venster begint met de standaardwaarden.
 embroidery	Edit in Digitize Image…	Bewerken in ‘Afbeelding digitaliseren’…
-embroidery	Live digitized image	Dynamisch gedigitaliseerde afbeelding
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Dynamisch object gemaakt: {objects} ({threads}). ‘Afbeelding digitaliseren…’ wijzigt het opnieuw; Ongedaan maken verwijdert het.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Dynamisch object bijgewerkt: {objects} ({threads}). Ongedaan maken brengt de vorige versie terug.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Omgezet naar gewone objecten: {objects} ({threads}). De afbeelding staat op de verborgen sjabloonlaag ‘{layer}’. Ongedaan maken brengt het dynamische object terug.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Omgezet naar gewone objecten: {objects} ({threads}). Ongedaan maken brengt het dynamische object terug.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Niet vervangen
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Dit dynamische object is gemaakt in een ander garenpalet: de kleuren worden opnieuw gekoppeld aan het palet van het document.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Dynamisch gedigitaliseerde afbeeldingen die sinds het digitaliseren meer dan {value}% geschaald zijn: digitaliseer ze opnieuw
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Dynamische objecten die sinds het digitaliseren meer dan {value}% geschaald zijn: digitaliseer ze opnieuw
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	een dynamisch borduurobject: wijzig het in ‘Afbeelding digitaliseren…’ (Object › Afbeelding traceren)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	een dynamisch object: bewerk het in ‘Afbeelding digitaliseren…’ (Object › Afbeelding traceren)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Dat zouden meer dan {count} vlakwijzigingen zijn, het meeste dat een ontwerp aanneemt.
+embroidery	That would be more than {count} area changes, the most a design takes	Dat zouden meer dan {count} vlakwijzigingen zijn, het meeste dat een ontwerp aanneemt

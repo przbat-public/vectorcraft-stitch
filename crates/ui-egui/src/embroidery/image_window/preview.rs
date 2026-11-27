@@ -80,9 +80,9 @@ const FADED_ORIGINAL: u8 = 90;
 
 /// The hovered area's outline: a dark line under a light one, as stitch editing marks its
 /// selection (points), in two fixed tones that contrast whatever lies under them.
-const OUTLINE_DARK_WIDTH: f32 = 3.0;
+pub(super) const OUTLINE_DARK_WIDTH: f32 = 3.0;
 const OUTLINE_LIGHT_WIDTH: f32 = 1.0;
-const OUTLINE_DARK: Color32 = Color32::from_rgb(20, 20, 20);
+pub(super) const OUTLINE_DARK: Color32 = Color32::from_rgb(20, 20, 20);
 const OUTLINE_LIGHT: Color32 = Color32::from_rgb(245, 245, 245);
 
 /// Compare's handle: its round grip's radius and the split line's width (points); at least the
@@ -550,6 +550,14 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     } else {
         draw(&mut live.preview, &painter, view);
     }
+    // The areas Don't Sew leaves out, marked with dashes round them in every view but the picture
+    // itself (in Compare, on the step's side): unsewn, they show the fabric in the Stitches view,
+    // while the Colors view paints them in their thread's colour and the Shapes view draws their
+    // outline, as if they were sewn; without the dashes only a click would tell them apart.
+    if view != View::Original {
+        let side = if view == View::Compare { Rect::from_min_max(pos2(split_x, pane.top()), pane.max) } else { pane };
+        dashed(&painter.with_clip_rect(side), outputs, &outputs.left_out_at(), xf);
+    }
     // Show in Sewing Order: what is sewn after the area inspected veiled in the fabric's colour.
     let inspected = live.inspector.as_ref().and_then(|i| outputs.find(&i.key).map(|at| (i.clone(), at)));
     if let Some((_, at)) = inspected.as_ref().filter(|(i, _)| i.order)
@@ -557,9 +565,10 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     {
         textured_quad(&painter, tex, q, Color32::WHITE);
     }
-    // Apply to Similar Areas hovered: the areas it sets outlined, as the inspector worked them out.
+    // Apply to Similar Areas hovered: the areas it would set outlined, as the inspector worked them
+    // out; where none is left to set (every one sewn as the inspected area already), every alike area.
     if let Some((i, _)) = inspected.as_ref().filter(|(i, _)| i.similar_shown) {
-        for key in i.similar.iter().flat_map(|s| &s.keys) {
+        for key in i.similar.iter().flat_map(|s| if s.changing.is_empty() { &s.keys } else { &s.changing }) {
             if let Some(path) = outputs.find(key).and_then(|(x, y)| outputs.outline_at(x, y)) {
                 outline(&painter, &path, xf);
             }
@@ -589,8 +598,10 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     if resp.clicked() {
         resp.request_focus();
     }
-    // The keyboard: `[` and `]` step through the areas in sewing order (the embroidery tool's keys),
-    // Enter or Space opens the inspector on the area it is on.
+    // The keyboard, while the preview has it (and the app's window the system's): `[` and `]` step
+    // through the areas in sewing order (the embroidery tool's keys), in every view; Enter or Space
+    // opens the inspector on the area it is on, the area sewn first when it is on none, in any view
+    // but Original, as a click.
     let mut by_key = false;
     if resp.has_focus() {
         let (back, on, open) = ui.input_mut(|i| {
@@ -608,15 +619,22 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
                 live.preview.focused = next;
             }
         }
-        if open && let Some(at) = live.preview.focused.as_ref().and_then(|k| outputs.find(k)) {
-            super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, Some(at));
+        if open && view != View::Original {
+            let key = live.preview.focused.clone().filter(|k| outputs.find(k).is_some()).or_else(|| outputs.first_key());
+            if let Some(at) = key.as_ref().and_then(|k| outputs.find(k)) {
+                live.preview.focused = key;
+                super::inspector::clicked(&ctx, &mut live.inspector, &d.fields, outputs, Some(at));
+            }
         }
     }
-    // A screen reader's click on the preview (neither the pointer's nor Enter's or Space's): as
-    // Enter, the inspector opens on the area the keyboard is on, the first area when it is on none;
-    // once the inspector is drawn, as a pointer's click, so that what was typed in it is its area's.
+    // A screen reader's click on the preview (AccessKit's, told apart from the click egui counts
+    // for an Enter or Space on what it last gave the keyboard, which the keys above take while the
+    // window has the system's keyboard, and nothing while it hasn't): as Enter, the inspector opens
+    // on the area the keyboard is on, the first area when it is on none; once the inspector is drawn,
+    // as a pointer's click, so that what was typed in it is its area's.
+    let read = ui.input(|i| i.has_accesskit_action_request(resp.id, egui::accesskit::Action::Click));
     let mut read_at = None;
-    if resp.clicked() && !resp.clicked_by(egui::PointerButton::Primary) && !by_key && view != View::Original {
+    if read && !by_key && view != View::Original {
         let key = live.preview.focused.clone().filter(|k| outputs.find(k).is_some()).or_else(|| outputs.first_key());
         read_at = key.as_ref().and_then(|k| outputs.find(k));
         if read_at.is_some() {
@@ -711,6 +729,29 @@ fn outline(painter: &egui::Painter, path: &vectorcraft_geom::BezPath, xf: ViewXf
     for (width, colour) in [(OUTLINE_DARK_WIDTH, OUTLINE_DARK), (OUTLINE_LIGHT_WIDTH, OUTLINE_LIGHT)] {
         for l in &lines {
             painter.add(Shape::line(l.clone(), Stroke::new(width, colour)));
+        }
+    }
+}
+
+/// The dashes round an area left out (points): each dash and the gap after it, as the canvas dashes
+/// an object its shown stitches aren't of yet (`embroidery/overlay.rs`), an estimate.
+const LEFT_OUT_DASHES: (f32, f32) = (4.0, 3.0);
+
+/// The most dashes drawn round the areas left out in a frame, whatever the zoom and however many
+/// are left out: the canvas's own cap for its dashed outlines (`overlay::PENDING_DASHES_MAX`, a few
+/// outlines the size of the window), an estimate.
+const LEFT_OUT_DASHES_MAX: usize = crate::embroidery::overlay::PENDING_DASHES_MAX;
+
+/// The areas left out at working pixels `at` dashed round, in the hovered outline's two tones (each
+/// tone its own share of the dashes): told apart from the solid outline of the area hovered or
+/// inspected. Only where the painter shows, at most [`LEFT_OUT_DASHES_MAX`] dashes.
+fn dashed(painter: &egui::Painter, outputs: &DigitizeOutputs, at: &[(u32, u32)], xf: ViewXf) {
+    let clip = painter.clip_rect().expand(OUTLINE_DARK_WIDTH);
+    let lines: Vec<Vec<Pos2>> = at.iter().filter_map(|&(x, y)| outputs.outline_at(x, y)).flat_map(|path| screen_lines(&path, xf)).collect();
+    for (width, colour) in [(OUTLINE_DARK_WIDTH, OUTLINE_DARK), (OUTLINE_LIGHT_WIDTH, OUTLINE_LIGHT)] {
+        let mut budget = LEFT_OUT_DASHES_MAX / 2;
+        for line in &lines {
+            crate::embroidery::overlay::dash(painter, line, Stroke::new(width, colour), LEFT_OUT_DASHES, clip, &mut budget);
         }
     }
 }

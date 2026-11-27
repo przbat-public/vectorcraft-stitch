@@ -90,7 +90,7 @@ fn the_figures_show_while_the_stitches_are_wanted() {
     assert_eq!((f.colors, f.thread_changes), (3, 2));
     let full = words(&f, Variant::Named);
     assert!(said(&texts, &full), "{full}: {texts:?}");
-    assert!(full.starts_with("Embroidery: ") && full.contains(" · 3 colors · 2 thread changes · about "), "{full}");
+    assert!(full.starts_with("Embroidery: ") && full.contains(" · 3 threads · 2 thread changes · about "), "{full}");
     assert!(said(&texts, " fps"), "the timings kept: {texts:?}");
     let v = app.embroidery.counters.inspect();
     assert_eq!((&v["state"], &v["stitches"], &v["colors"], &v["threadChanges"]), (&json!("figures"), &json!(f.stitches), &json!(3), &json!(2)));
@@ -114,15 +114,15 @@ fn the_figures_show_while_the_stitches_are_wanted() {
 #[test]
 fn the_wordings() {
     let f = Figures { stitches: 4752, colors: 4, thread_changes: 3, trims: 2, jumps: 5, minutes: 6.2, speed: 650, size: Some((100.4, 70.3)) };
-    assert_eq!(words(&f, Variant::All), "4,752 stitches · 4 colors · 3 thread changes · about 7 min");
-    assert_eq!(words(&f, Variant::NoChanges), "4,752 stitches · 4 colors · about 7 min");
+    assert_eq!(words(&f, Variant::All), "4,752 stitches · 4 threads · 3 thread changes · about 7 min");
+    assert_eq!(words(&f, Variant::NoChanges), "4,752 stitches · 4 threads · about 7 min");
     assert_eq!(words(&f, Variant::Time), "4,752 stitches · about 7 min");
     assert_eq!(words(&f, Variant::Stitches), "4,752 stitches");
     crate::i18n::set_current(crate::i18n::Lang::from_code("pl").unwrap());
     let pl = words(&f, Variant::All);
     let named = words(&f, Variant::Named);
     crate::i18n::set_current(crate::i18n::Lang::EN);
-    assert!(pl.starts_with("4752 ściegi · 4 kolory · 3 zmiany nici"), "{pl}");
+    assert!(pl.starts_with("4752 ściegi · 4 nici · 3 zmiany nici"), "{pl}");
     assert!(named.starts_with("Haft: "), "{named}");
 }
 
@@ -152,12 +152,14 @@ fn new_figures_show_at_most_every_quarter_second() {
     assert_ne!(stitches(&app), first, "then shown");
 }
 
-/// A click opens the Embroidery panel at its Sewing order; the tooltip tells the figures.
+/// A click opens the Embroidery panel at its Sewing order; the tooltip tells the figures, the threads
+/// sewn as threads, as the bar says them (the project owner's choice, 2026-11-18).
 #[test]
 fn a_click_opens_the_panel_and_the_tooltip_tells_the_figures() {
     let f = Figures { stitches: 1, colors: 1, thread_changes: 0, trims: 0, jumps: 0, minutes: 0.2, speed: 650, size: Some((10.0, 5.0)) };
     let tip = tooltip(&State::Figures(f.clone()));
     assert!(tip.contains("1 stitch · 0 jumps · 0 trims") && tip.contains("10 × 5 mm") && tip.contains("650 stitches a minute"), "{tip}");
+    assert!(tip.contains("1 thread · 0 thread changes"), "threads: {tip}");
     assert!(tooltip(&State::Stale(f)).contains("before the last change"));
     assert!(tooltip(&State::Failed("too many stitches".into())).starts_with("too many stitches"));
     let mut app = app_with_art();

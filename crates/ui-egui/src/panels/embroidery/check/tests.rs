@@ -676,11 +676,20 @@ fn a_scaled_live_object_is_named_and_shown() {
     // 50 % larger in all.
     let reply = scaled(&mut app, 1.5 / 1.05);
     let rule = &reply["rules"][0];
-    assert_eq!(title(rule, "Janome JEF", Lang::EN), "Live digitized images scaled by more than 10% since they were digitized: digitize them again");
+    assert_eq!(title(rule, "Janome JEF", Lang::EN), "Live objects scaled by more than 10% since they were digitized: digitize them again");
+    // In Polish too the one name, „żywe obiekty” (the 2026-11-16 choice: FORK.md's 2026-11-18 row
+    // on the live object's name).
+    let pl = Lang::from_code("pl").unwrap();
+    crate::i18n::set_current(pl);
+    let polish = title(rule, "Janome JEF", pl);
+    crate::i18n::set_current(Lang::EN);
+    assert!(polish.starts_with("Żywe obiekty przeskalowane o więcej niż"), "the rule in Polish: {polish}");
     let doc = app.session.doc().unwrap().doc.clone();
-    let shown = crate::panels::layers::shown_name(&app, doc.node(NodeId(live)).unwrap(), Lang::EN);
     let line = hit_line(&app, Some(&doc), "liveObjectScaled", &rule["examples"][0], Lang::EN);
-    assert_eq!(line, Some(format!("{shown}: 50% larger")));
+    // Named by its picture, as the Object tab names it, not by its group's "Image Trace".
+    let picture = doc.node(NodeId(live)).and_then(|n| n.children()).and_then(|c| c.first()).and_then(|i| i.name.clone()).expect("its picture's name");
+    assert_eq!(line, Some(format!("{picture}: 50% larger")));
+    assert!(line.as_deref().is_some_and(|l| !l.starts_with("Image Trace")), "{line:?}");
     // Show selects it, and the stitches of what it holds stand out for a moment.
     app.ui.embroidery_panel.tab = Tab::Check;
     let ctx = egui::Context::default();

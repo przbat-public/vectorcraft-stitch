@@ -5707,6 +5707,7 @@ embroidery	No source gives a number to check these against.	Ни один ист
 @plural	{count} row|{count} rows	{count} серия|{count} серии|{count} серий
 @plural	{count} spot|{count} spots	{count} место|{count} места|{count} мест
 @plural	{count} thread|{count} threads	{count} нить|{count} нити|{count} нитей
+embroidery	Threads	Нити
 @plural	{count} error|{count} errors	{count} ошибка|{count} ошибки|{count} ошибок
 @plural	{count} warning|{count} warnings	{count} предупреждение|{count} предупреждения|{count} предупреждений
 @plural	{count} note|{count} notes	{count} примечание|{count} примечания|{count} примечаний
@@ -5732,7 +5733,6 @@ embroidery	Median: {value} mm	Медиана: {value} мм
 embroidery	Too long	Слишком длинные
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} мм: {stitches}
 embroidery	Over {value} mm: {stitches}	Больше {value} мм: {stitches}
-@plural	{count} color|{count} colors	{count} цвет|{count} цвета|{count} цветов
 embroidery	Embroidery: {figures}	Вышивка: {figures}
 embroidery	Stitches can't be planned	Не удаётся спланировать стежки
 embroidery	Click to open the Embroidery panel.	Щёлкните, чтобы открыть панель «Вышивка».
@@ -7483,7 +7483,7 @@ embroidery	Cancel	Отмена
 embroidery	Digitizing…	Оцифровка…
 embroidery	Create Embroidery Objects	Создать объекты вышивки
 embroidery	Start Over	Начать заново
-embroidery	Create waits for the preview to be ready.	Создание дождётся готовности просмотра.
+embroidery	The objects are made once the preview is ready.	Объекты будут созданы, когда просмотр будет готов.
 embroidery	Can't digitize it: {reason}	Не удаётся оцифровать: {reason}
 embroidery	Shapes	Фигуры
 embroidery	Recomputing…	Пересчёт…
@@ -7578,7 +7578,7 @@ embroidery	Mode	Режим
 embroidery	{value} is out of range: {low} to {high}.	{value} вне диапазона: от {low} до {high}.
 embroidery	Number of colors	Число цветов
 embroidery	Match to threads	Подобрать нити
-embroidery	Create sets the document's thread palette to {palette}.	Создание сменит палитру нитей документа на {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Создание объектов сменит палитру нитей документа на {palette}.
 embroidery	Smallest area	Наименьшая область
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Мелкие пятнышки, например шум JPEG, присоединяются к цвету вокруг.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} цвет был слишком мал и присоединился к другим|{count} цвета были слишком малы и присоединились к другим|{count} цветов были слишком малы и присоединились к другим
@@ -7588,7 +7588,7 @@ embroidery	Nothing to sew: every color is left out.	Нечего вышиват�
 embroidery	Nothing to create: every color is left out.	Нечего создавать: все цвета пропущены.
 embroidery	Every area of {color} was smaller than {value} mm²: it joined its neighbors.	Каждая область цвета {color} была меньше {value} мм²: цвет присоединился к соседям.
 embroidery	The thread chosen for {color}, {thread}, isn't gray: it is sewn as chosen.	Нить, выбранная для {color}, {thread}, не серая: она вышивается, как выбрана.
-embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	При этом размере у изображения {value} пикселей на миллиметр, меньше {least}: копия побольше оцифруется лучше.
+embroidery	The image has {value} pixels a millimeter at this size, fewer than {least}: a larger copy of it digitizes better.	При этом размере у изображения {value} пикселя на миллиметр, меньше {least}: копия побольше оцифруется лучше.
 embroidery	The image was read at {width} × {height} pixels, smaller than its {fullWidth} × {fullHeight}.	Изображение прочитано в размере {width} × {height} пикселей, меньше своих {fullWidth} × {fullHeight}.
 embroidery	The image's corners don't agree on a background: every color is sewn.	Углы изображения не сходятся на фоне: вышиваются все цвета.
 embroidery	No color traced is the background's: every area is sewn.	Ни один трассированный цвет не совпадает с фоном: вышиваются все области.
@@ -7598,6 +7598,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Обновлено за {value} мс после последнего изменения ({steps})
 embroidery	Notes	Заметки
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Создано: {objects} ({threads}). Изображение на скрытом слое шаблона «{layer}». «Отменить» их удалит.
+embroidery	Created {objects} ({threads}). Undo removes them.	Создано: {objects} ({threads}). «Отменить» их удалит.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} пятнышко меньше {value} мм² присоединилось к цвету вокруг|{count} пятнышка меньше {value} мм² присоединились к цветам вокруг|{count} пятнышек меньше {value} мм² присоединились к цветам вокруг
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} пятнышку меньше {value} мм² не к чему было присоединиться, и оно пропущено|{count} пятнышкам меньше {value} мм² не к чему было присоединиться, и они пропущены|{count} пятнышкам меньше {value} мм² не к чему было присоединиться, и они пропущены
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} полоса шириной не больше {value} мм присоединилась к соседу, ближайшему по цвету|{count} полосы шириной не больше {value} мм присоединились к соседям, ближайшим по цвету|{count} полос шириной не больше {value} мм присоединились к соседям, ближайшим по цвету
@@ -7630,8 +7631,8 @@ embroidery	Fixed	Фиксированный
 embroidery	Across the shape	Поперёк формы
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Направление рядов заливки: под фиксированным углом на странице или поперёк длины каждой формы.
 embroidery	The fills' rows, counter-clockwise on the page.	Ряды заливок, против часовой стрелки на странице.
-embroidery	From the background to the details. The Order tab changes it after Create.	От фона к деталям. Вкладка «Порядок» меняет его после создания.
-embroidery	Create sets these in the document's embroidery settings.	Создание запишет их в настройки вышивки документа.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	От фона к деталям. Вкладка «Порядок» меняет его после создания объектов.
+embroidery	Making the objects sets these in the document's embroidery settings.	Создание объектов запишет эти значения в настройки вышивки документа.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Контуры
 embroidery	Color outlines (running stitch)	Контуры цветов (прямой стежок)
@@ -7651,7 +7652,6 @@ embroidery	Tatami, {value}	Татами, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Открывает вкладку «Вышивка» в «Параметрах документа». Это окно вернётся, когда «Параметры документа» закроются.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} мм
-embroidery	Chosen for this area	Выбрано для этой области
 embroidery	Sewn along its middle as one running line	Вышивается по середине одной линией прямого стежка
 embroidery	No part wider than {width} mm	Ни одна часть не шире {width} мм
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Шире {width} мм: татами, более узкие части гладью
@@ -7659,14 +7659,18 @@ embroidery	Wider than {width} mm: tatami	Шире {width} мм: татами
 embroidery	Its long parts as satin, the rest tatami	Длинные части гладью, остальное татами
 embroidery	Too short for satin	Слишком короткая для глади
 embroidery	Too short for satin: sewn as tatami	Слишком короткая для глади: шьётся татами
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Для глади нужна линия шириной не менее {least} мм: эта — {width} мм.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Гладь вышивает части шириной до {most} мм: эта область шириной {width} мм.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Для глади нужна линия шириной не менее {least} мм: эта — {width} мм
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Гладь вышивает части шириной до {most} мм: эта область шире
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Гладь вышивает части шириной до {most} мм: вместе с частью под соседними областями эта область шире
+embroidery	The angle turns tatami rows: this area has none	Угол поворачивает ряды татами: у этой области их нет
 @plural	about {count} stitch|about {count} stitches	примерно {count} стежок|примерно {count} стежка|примерно {count} стежков
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Применить к {count} похожей области|Применить к {count} похожим областям|Применить к {count} похожим областям
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Задаёт стежок и угол этой области областям того же цвета и вида примерно того же размера.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Применено к {count} похожей области|Применено к {count} похожим областям|Применено к {count} похожим областям
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Задаёт стежок и угол этой области областям того же цвета и вида примерно того же размера и пропорций.
 embroidery	Show in Sewing Order	Показать в порядке вышивки
 embroidery	Dims what is sewn after this area.	Приглушает то, что вышивается после этой области.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Эта область не вышивается, поэтому у неё нет места в порядке вышивки
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Вышивается {number}-й из {of}, после «{before}», перед «{after}»
 embroidery	Sewn {number} of {of}, before {after}	Вышивается {number}-й из {of}, перед «{after}»
 embroidery	Sewn {number} of {of}, after {before}	Вышивается {number}-й из {of}, после «{before}»
@@ -7686,18 +7690,24 @@ embroidery	Its color isn't sewn	Её цвет не вышивается
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Сохранить как динамический объект
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Сохраняет изображение вместе с созданными из него объектами, чтобы «Оцифровать изображение…» могло снова их изменить.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Его объекты были изменены вручную. Повторная оцифровка заменит эти изменения; «Отменить» вернёт их.
+embroidery	Update Live Object	Обновить динамический объект
+embroidery	Digitizes the live object again with these settings.	Заново оцифровывает динамический объект с этими настройками.
+embroidery	Convert to Plain Objects	Преобразовать в обычные объекты
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Создаёт из динамического объекта обычные объекты вышивки, которые «Оцифровать изображение…» больше не изменит.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Содержимое этого динамического объекта было изменено вручную. Повторная оцифровка заменит эти изменения; «Отменить» вернёт их.
 embroidery	Replace	Заменить
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Не удалось прочитать настройки этого динамического объекта: окно открывается с настройками по умолчанию.
 embroidery	Edit in Digitize Image…	Изменить в «Оцифровать изображение»…
-embroidery	Live digitized image	Динамическое оцифрованное изображение
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Создан динамический объект: {objects} ({threads}). «Оцифровать изображение…» снова его изменит; «Отменить» его удалит.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Обновлён динамический объект: {objects} ({threads}). «Отменить» вернёт предыдущую версию.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Преобразовано в обычные объекты: {objects} ({threads}). Изображение на скрытом слое шаблона «{layer}». «Отменить» вернёт динамический объект.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Преобразовано в обычные объекты: {objects} ({threads}). «Отменить» вернёт динамический объект.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Не заменять
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Этот динамический объект создан в другой палитре ниток: его цвета снова сопоставляются с палитрой документа.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Динамические оцифрованные изображения, масштабированные больше чем на {value} % после оцифровки: оцифруйте их заново
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Динамические объекты, масштабированные больше чем на {value} % после оцифровки: оцифруйте их заново
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	динамический объект вышивки: измените его в «Оцифровать изображение…» (Объект › Трассировка изображения)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	динамический объект: измените его в «Оцифровать изображение…» (Объект › Трассировка изображения)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Получилось бы больше {count} изменений областей — это максимум для одного дизайна.
+embroidery	That would be more than {count} area changes, the most a design takes	Получилось бы больше {count} изменений областей — это максимум для одного дизайна

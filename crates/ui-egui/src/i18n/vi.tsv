@@ -5694,6 +5694,7 @@ embroidery	No source gives a number to check these against.	Không nguồn nào 
 @plural	{count} row|{count} rows	{count} chuỗi
 @plural	{count} spot|{count} spots	{count} chỗ
 @plural	{count} thread|{count} threads	{count} chỉ
+embroidery	Threads	Chỉ
 @plural	{count} error|{count} errors	{count} lỗi
 @plural	{count} warning|{count} warnings	{count} cảnh báo
 @plural	{count} note|{count} notes	{count} ghi chú
@@ -5719,7 +5720,6 @@ embroidery	Median: {value} mm	Trung vị: {value} mm
 embroidery	Too long	Quá dài
 embroidery	{from}–{to} mm: {stitches}	{from}–{to} mm: {stitches}
 embroidery	Over {value} mm: {stitches}	Trên {value} mm: {stitches}
-@plural	{count} color|{count} colors	{count} màu
 embroidery	Embroidery: {figures}	Thêu: {figures}
 embroidery	Stitches can't be planned	Không thể lên kế hoạch mũi thêu
 embroidery	Click to open the Embroidery panel.	Bấm để mở bảng Thêu.
@@ -6996,7 +6996,7 @@ embroidery	Cancel	Hủy
 embroidery	Digitizing…	Đang số hóa…
 embroidery	Create Embroidery Objects	Tạo đối tượng thêu
 embroidery	Start Over	Bắt đầu lại
-embroidery	Create waits for the preview to be ready.	Việc tạo sẽ chờ bản xem trước sẵn sàng.
+embroidery	The objects are made once the preview is ready.	Các đối tượng sẽ được tạo khi bản xem trước sẵn sàng.
 embroidery	Can't digitize it: {reason}	Không thể số hóa: {reason}
 embroidery	Shapes	Hình dạng
 embroidery	Recomputing…	Đang tính lại…
@@ -7091,7 +7091,7 @@ embroidery	Mode	Chế độ
 embroidery	{value} is out of range: {low} to {high}.	{value} nằm ngoài phạm vi: từ {low} đến {high}.
 embroidery	Number of colors	Số màu
 embroidery	Match to threads	Khớp với chỉ
-embroidery	Create sets the document's thread palette to {palette}.	Tạo sẽ đặt bảng chỉ của tài liệu thành {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Việc tạo các đối tượng sẽ đặt bảng màu chỉ của tài liệu thành {palette}.
 embroidery	Smallest area	Vùng nhỏ nhất
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Các đốm nhỏ hơn, như nhiễu JPEG, nhập vào màu xung quanh.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} màu quá nhỏ và đã nhập vào các màu khác
@@ -7111,6 +7111,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Đã cập nhật trong {value} ms sau thay đổi cuối ({steps})
 embroidery	Notes	Ghi chú
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Đã tạo {objects} ({threads}). Hình nằm trên lớp mẫu ẩn “{layer}”. Hoàn tác sẽ gỡ bỏ chúng.
+embroidery	Created {objects} ({threads}). Undo removes them.	Đã tạo {objects} ({threads}). Hoàn tác sẽ gỡ bỏ chúng.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} đốm nhỏ hơn {value} mm² đã nhập vào màu xung quanh
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} đốm nhỏ hơn {value} mm² không có gì để nhập vào nên đã bị bỏ
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} dải rộng tối đa {value} mm đã nhập vào vùng lân cận có màu gần nhất
@@ -7143,8 +7144,8 @@ embroidery	Fixed	Cố định
 embroidery	Across the shape	Ngang qua hình
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Hướng các hàng của phần tô: theo một góc cố định trên trang, hoặc ngang qua chiều dài của từng hình.
 embroidery	The fills' rows, counter-clockwise on the page.	Các hàng của phần tô, ngược chiều kim đồng hồ trên trang.
-embroidery	From the background to the details. The Order tab changes it after Create.	Từ nền đến chi tiết. Thẻ Thứ tự thay đổi nó sau khi Tạo.
-embroidery	Create sets these in the document's embroidery settings.	Tạo sẽ đặt chúng vào cài đặt thêu của tài liệu.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Từ nền đến chi tiết. Thẻ Thứ tự thay đổi nó sau khi các đối tượng được tạo.
+embroidery	Making the objects sets these in the document's embroidery settings.	Việc tạo các đối tượng sẽ đặt các giá trị này vào cài đặt thêu của tài liệu.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Đường viền
 embroidery	Color outlines (running stitch)	Đường viền màu (mũi chạy)
@@ -7164,7 +7165,6 @@ embroidery	Tatami, {value}	Tatami, {value}
 embroidery	Opens the Embroidery tab of Document Setup. This window comes back when Document Setup closes.	Mở thẻ Thêu của Thiết lập tài liệu. Cửa sổ này quay lại khi Thiết lập tài liệu đóng.
 # VectorCraft Stitch: Image window, the area inspector: an area's facts, how Auto sews it and why, Satin's reasons, its stitches (drafted with AI assistance from the English meaning, for review)
 embroidery	{thread} · {area} · {width} × {height} mm	{thread} · {area} · {width} × {height} mm
-embroidery	Chosen for this area	Đã chọn cho vùng này
 embroidery	Sewn along its middle as one running line	Thêu dọc giữa thành một đường mũi chạy
 embroidery	No part wider than {width} mm	Không phần nào rộng hơn {width} mm
 embroidery	Wider than {width} mm: tatami, its narrower parts as satin	Rộng hơn {width} mm: tatami, các phần hẹp hơn thành satin
@@ -7172,14 +7172,18 @@ embroidery	Wider than {width} mm: tatami	Rộng hơn {width} mm: tatami
 embroidery	Its long parts as satin, the rest tatami	Các phần dài thành satin, phần còn lại tatami
 embroidery	Too short for satin	Quá ngắn để may satin
 embroidery	Too short for satin: sewn as tatami	Quá ngắn để may satin: may tatami
-embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm.	Satin cần đường rộng ít nhất {least} mm: đường này rộng {width} mm.
-embroidery	Satin sews parts up to {most} mm: this area is {width} mm wide.	Satin thêu các phần rộng tới {most} mm: vùng này rộng {width} mm.
+embroidery	Satin needs a line at least {least} mm wide: this one is {width} mm	Satin cần đường rộng ít nhất {least} mm: đường này rộng {width} mm
+embroidery	Satin sews parts up to {most} mm wide: this area is wider	Satin thêu các phần rộng tới {most} mm: vùng này rộng hơn
+embroidery	Satin sews parts up to {most} mm wide: with the part under its neighbors, this area is wider	Satin thêu các phần rộng tới {most} mm: tính cả phần nằm dưới các vùng lân cận, vùng này rộng hơn
+embroidery	The angle turns tatami rows: this area has none	Góc xoay các hàng tatami: vùng này không có hàng nào
 @plural	about {count} stitch|about {count} stitches	khoảng {count} mũi
 # VectorCraft Stitch: Image window, the area inspector: Apply to Similar Areas, and Show in Sewing Order with its place and ◀ ▶ (drafted with AI assistance from the English meaning, for review)
 @plural	Apply to {count} Similar Area|Apply to {count} Similar Areas	Áp dụng cho {count} vùng tương tự
-embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size.	Đặt mũi và góc của vùng này cho các vùng cùng màu, cùng loại và có kích thước tương tự.
+@plural	Applied to {count} Similar Area|Applied to {count} Similar Areas	Đã áp dụng cho {count} vùng tương tự
+embroidery	Sets this area's stitch and angle on the areas of its color and kind about its size and proportions.	Đặt mũi và góc của vùng này cho các vùng cùng màu, cùng loại và có kích thước và tỷ lệ tương tự.
 embroidery	Show in Sewing Order	Hiện trong thứ tự thêu
 embroidery	Dims what is sewn after this area.	Làm mờ những gì được thêu sau vùng này.
+embroidery	This area isn't sewn, so it has no place in the sewing order	Vùng này không được thêu nên không có vị trí trong thứ tự thêu
 embroidery	Sewn {number} of {of}, after {before}, before {after}	Thêu thứ {number}/{of}, sau {before}, trước {after}
 embroidery	Sewn {number} of {of}, before {after}	Thêu thứ {number}/{of}, trước {after}
 embroidery	Sewn {number} of {of}, after {before}	Thêu thứ {number}/{of}, sau {before}
@@ -7199,18 +7203,24 @@ embroidery	Its color isn't sewn	Màu của nó không được thêu
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Giữ làm đối tượng động
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Giữ hình ảnh cùng các đối tượng tạo từ nó, để “Số hóa hình ảnh…” có thể thay đổi chúng lần nữa.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Các đối tượng của nó đã được thay đổi thủ công. Số hóa lại sẽ thay thế những thay đổi đó; Hoàn tác sẽ khôi phục chúng.
+embroidery	Update Live Object	Cập nhật đối tượng động
+embroidery	Digitizes the live object again with these settings.	Số hóa lại đối tượng động với các cài đặt này.
+embroidery	Convert to Plain Objects	Chuyển thành đối tượng thường
+embroidery	Makes plain embroidery objects of the live object; Digitize Image… doesn't change them again.	Tạo các đối tượng thêu thường từ đối tượng động; “Số hóa hình ảnh…” sẽ không thay đổi chúng nữa.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Nội dung của đối tượng động này đã được thay đổi thủ công. Số hóa lại sẽ thay thế những thay đổi đó; Hoàn tác sẽ khôi phục chúng.
 embroidery	Replace	Thay thế
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Không đọc được cài đặt của đối tượng động này: cửa sổ bắt đầu từ giá trị mặc định.
 embroidery	Edit in Digitize Image…	Sửa trong “Số hóa hình ảnh”…
-embroidery	Live digitized image	Hình ảnh số hóa động
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Đã tạo đối tượng động: {objects} ({threads}). “Số hóa hình ảnh…” sẽ thay đổi nó lần nữa; Hoàn tác sẽ gỡ bỏ nó.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Đã cập nhật đối tượng động: {objects} ({threads}). Hoàn tác sẽ khôi phục phiên bản trước.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Đã chuyển thành đối tượng thường: {objects} ({threads}). Hình nằm trên lớp mẫu ẩn “{layer}”. Hoàn tác sẽ khôi phục đối tượng động.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Đã chuyển thành đối tượng thường: {objects} ({threads}). Hoàn tác sẽ khôi phục đối tượng động.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Không thay thế
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Đối tượng động này được tạo bằng một bảng chỉ khác: màu của nó được ghép lại với bảng màu của tài liệu.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Hình ảnh số hóa động bị đổi tỷ lệ hơn {value}% kể từ khi số hóa: hãy số hóa lại
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Đối tượng động bị đổi tỷ lệ hơn {value}% kể từ khi số hóa: hãy số hóa lại
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
-@msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	một đối tượng thêu động: hãy thay đổi nó trong “Số hóa hình ảnh…” (Đối tượng › Vector hóa ảnh)
+@msg	a live object: edit it in Digitize Image… (Object › Image Trace)	một đối tượng động: hãy sửa nó trong “Số hóa hình ảnh…” (Đối tượng › Vector hóa ảnh)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)
-embroidery	That would be more than {count} area changes, the most a design takes.	Như vậy sẽ vượt quá {count} thay đổi vùng, mức tối đa một mẫu nhận.
+embroidery	That would be more than {count} area changes, the most a design takes	Như vậy sẽ vượt quá {count} thay đổi vùng, mức tối đa một mẫu nhận

@@ -28,6 +28,11 @@ const MM_PER_PX: f64 = 0.1;
 /// A session holding `raster` placed at a tenth of a millimetre a pixel at the origin, selected,
 /// and the image's id.
 fn placed(raster: &tr::Raster) -> (Session, NodeId) {
+    placed_at(raster, MM_PER_PX)
+}
+
+/// [`placed`], a pixel `mm_per_px` millimetres.
+fn placed_at(raster: &tr::Raster, mm_per_px: f64) -> (Session, NodeId) {
     let mut s = super::super::test_support::blank();
     let png = raster.encode_png();
     let (width, height) = (raster.width, raster.height);
@@ -36,7 +41,7 @@ fn placed(raster: &tr::Raster) -> (Session, NodeId) {
         d.images.insert("picture".into(), ImageBlob::new("image/png", png));
         id = d.alloc_id();
         let layer = d.default_layer();
-        let xf = Affine::scale(MM_PER_PX / MM_PER_PT);
+        let xf = Affine::scale(mm_per_px / MM_PER_PT);
         let image = ImageObject { key: "picture".into(), width, height, xf, link: None, placement: Default::default(), pixels: None };
         d.insert(layer, 0, Node::new(id, NodeKind::Image(Box::new(image))))?;
         sel.set([id]);
@@ -415,6 +420,51 @@ fn areas_are_named_by_thread_and_number() {
     assert!(out.area_at(5, 5).is_none_or(|a| !a.sewn), "the background is no area sewn");
 }
 
+/// The command's reply gives an area the size and area the window's inspector shows, of its own
+/// traced shape once the shapes are done, not of its pixels (the project owner's choice,
+/// 2026-11-26, „Jak okno (polecam)”), and its box is the one that size measures: a dot placed at
+/// 72 ppi, a pixel a point, as the app check's picture was, whose pixels (the traced shape drawn
+/// back by their centres) read it smaller than its curve.
+#[test]
+fn the_replys_area_sizes_are_the_inspectors() {
+    // Millimetres a pixel at 72 ppi (a pixel a point); the dot's middle and radius (pixels); and how
+    // near two measures given to hundredths must come (millimetres, square millimetres; a box's
+    // side is the difference of two).
+    const MM_PER_PX_72: f64 = MM_PER_PT;
+    const MIDDLE: (f64, f64) = (20.0, 20.0);
+    const RADIUS_PX: f64 = 5.7;
+    const HUNDREDTH: f64 = 0.01;
+    let in_dot = |x: u32, y: u32| (f64::from(x) + 0.5 - MIDDLE.0).hypot(f64::from(y) + 0.5 - MIDDLE.1) <= RADIUS_PX;
+    let picture = tr::Raster::from_fn(40, 40, |x, y| if in_dot(x, y) { NAVY } else { WHITE });
+    let (mut s, image) = placed_at(&picture, MM_PER_PX_72);
+    let params = json!({"colors": 2});
+    let req = Arc::new(s.digitize_window_request(image, &params, None, &json!({})).unwrap());
+    let out = s.digitize_pipeline().run(&req, &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let facts = out.area_at(20, 20).expect("the dot");
+    let reply = s.execute("embroidery.digitizeImage", &with(&params, &json!({"dryRun": true}))).unwrap();
+    let dot = reply["areas"].as_array().and_then(|a| a.iter().find(|x| x["color"] == json!(hex(NAVY)))).cloned().expect("the dot listed");
+    let near = |v: &Value, want: f64, by: f64| v.as_f64().is_some_and(|v| (v - want).abs() <= by);
+    let size = &dot["size"];
+    assert!(near(&size["area"], facts.area_mm2, HUNDREDTH), "area {} against the inspector's {}", size["area"], facts.area_mm2);
+    let (w, h) = facts.size_mm;
+    assert!(near(&size["width"], w, HUNDREDTH) && near(&size["height"], h, HUNDREDTH), "{size} against the inspector's {w} × {h}");
+    let side = |i: usize, j: usize| json!(dot["box"][j].as_f64().unwrap_or(0.0) - dot["box"][i].as_f64().unwrap_or(0.0));
+    assert!(near(&side(0, 2), w, 2.0 * HUNDREDTH) && near(&side(1, 3), h, 2.0 * HUNDREDTH), "the box {} that size measures", dot["box"]);
+    // What its pixels say, the reply's measure before: their count and their box, apart from the
+    // curve's, so that this test tells the two measures apart.
+    let areas = &out.lines.as_ref().expect("the lines").value.areas;
+    let a = areas.regions.at(20, 20).expect("the dot's pixels") as usize;
+    let by_pixels = areas.areas[a].pixels as f64 * MM_PER_PX_72 * MM_PER_PX_72;
+    let [x0, _, x1, _] = areas.regions.areas[a].bbox;
+    let width_by_pixels = f64::from(x1 - x0) * MM_PER_PX_72;
+    assert!(
+        (by_pixels - facts.area_mm2).abs() > HUNDREDTH,
+        "the dot's area by its pixels apart from its curve's: {by_pixels} and {}",
+        facts.area_mm2
+    );
+    assert!((width_by_pixels - w).abs() > 2.0 * HUNDREDTH, "the dot's width by its pixels apart from its curve's: {width_by_pixels} and {w}");
+}
+
 /// The Colours view's raster paints each area in its thread's own colour, the background clear.
 #[test]
 fn the_painted_raster_uses_the_threads_colours() {
@@ -540,6 +590,137 @@ fn similar_areas_are_alike_in_colour_kind_and_size() {
     assert_eq!(out.similar(150, 50), vec![]);
 }
 
+/// Similar areas are of a similar shape too (the project owner's choice, 2026-11-18): three navy
+/// bars, lying, upright and at 45°, are each other's whichever way they lie, but not the navy square
+/// of about their size; a fourth, a little shorter, is like them still. The bar at 45° has a box
+/// about square: a ratio of its box's sides would take it for the square.
+#[test]
+fn similar_areas_are_alike_in_shape_whichever_way_they_lie() {
+    // Filled bars 6 to 1 (120 × 20 px, 12 × 2 mm: the window's test bar's 21 × 3.5 mm in its
+    // proportions), one upright, one at 45° (from the middle of its end `AT`, along `(1, 1)`,
+    // `HALF_WIDTH_PX` either side of that line), one 5.5 to 1, and a square of a bar's size
+    // (49 × 49 px against 120 × 20).
+    const AT: (f64, f64) = (215.0, 110.0);
+    const LONG_PX: f64 = 120.0;
+    const HALF_WIDTH_PX: f64 = 10.0;
+    let slanted = |x: u32, y: u32| {
+        let (dx, dy) = (f64::from(x) + 0.5 - AT.0, f64::from(y) + 0.5 - AT.1);
+        let (along, across) = ((dx + dy) / 2f64.sqrt(), (dy - dx) / 2f64.sqrt());
+        (0.0..LONG_PX).contains(&along) && across.abs() < HALF_WIDTH_PX
+    };
+    let picture = tr::Raster::from_fn(320, 260, |x, y| {
+        let bar = inside(x, y, [20, 20, 140, 40]) || inside(x, y, [180, 20, 200, 140]) || inside(x, y, [20, 200, 130, 220]);
+        if bar || slanted(x, y) || inside(x, y, [250, 20, 299, 69]) { NAVY } else { WHITE }
+    });
+    let (_, _, out) = run_of(&picture, json!({"colors": 2}));
+    let key = |x, y| out.area_key(x, y).expect("an area");
+    let (lying, upright, diagonal, shorter, square) = (key(80, 30), key(190, 80), key(257, 152), key(75, 210), key(274, 44));
+    assert!(!lying.line && !diagonal.line && !square.line, "filled areas: {lying:?} {diagonal:?} {square:?}");
+    let alike = out.similar(80, 30);
+    assert!(alike.contains(&upright) && alike.contains(&diagonal) && alike.contains(&shorter), "the bars, upright, at 45° or shorter: {alike:?}");
+    assert!(!alike.contains(&square), "not the square of a bar's size: {alike:?}");
+    assert!(!out.similar(257, 152).contains(&square), "the bar at 45° unlike the square");
+    let bars = [lying, upright, diagonal, shorter];
+    assert!(!out.similar(274, 44).iter().any(|k| bars.contains(k)), "the square is like no bar");
+}
+
+/// Apply to Similar Areas compares the elongations the pipeline kept with the lines
+/// (`Outputs::elongations`) and walks no map itself: given the navy square a bar's elongation, it
+/// is taken for the bar's like, which its shape alone isn't (its size already is).
+#[test]
+fn similar_areas_compare_the_elongations_kept_with_the_lines() {
+    let navy = |x: u32, y: u32| inside(x, y, [20, 20, 140, 40]) || inside(x, y, [200, 20, 249, 69]);
+    let picture = tr::Raster::from_fn(320, 120, |x, y| if navy(x, y) { NAVY } else { WHITE });
+    let (_, _, mut out) = run_of(&picture, json!({"colors": 2}));
+    let square = out.area_key(224, 44).expect("the square");
+    assert!(!out.similar(80, 30).contains(&square), "the square unlike the bar by its shape");
+    let regions = &out.lines.as_ref().expect("the lines").value.areas.regions;
+    let (bar, at) = (regions.at(80, 30).expect("the bar") as usize, regions.at(224, 44).expect("the square") as usize);
+    let mut kept = out.elongations.as_deref().cloned().expect("elongations kept with the lines");
+    kept[at] = kept[bar];
+    out.elongations = Some(Arc::new(kept));
+    assert!(out.similar(80, 30).contains(&square), "the square alike once it is kept as long as the bar");
+}
+
+/// Apply to Similar Areas' shapes follow the lines output they are asked of, not one kept from an
+/// earlier output: one pipeline digitizes the picture cropped to a bar and a square, then the whole
+/// of it, a second bar below them coming in (the image's stage and every stage after it made again).
+/// The upper bar is like the lower one, not the square, with the elongations a fresh pipeline works
+/// out; those kept from the crop are of its areas, the lower bar not among them.
+#[test]
+fn similar_areas_follow_the_lines_when_they_are_made_again() {
+    // The crop (the image's pixels) leaves out the lower bar, and keeps the upper one and the square
+    // whole.
+    const CROP: [u32; 4] = [0, 0, 320, 80];
+    let navy = |x: u32, y: u32| inside(x, y, [20, 20, 140, 40]) || inside(x, y, [200, 20, 249, 69]) || inside(x, y, [20, 90, 140, 110]);
+    let picture = tr::Raster::from_fn(320, 120, |x, y| if navy(x, y) { NAVY } else { WHITE });
+    let (s, image) = placed(&picture);
+    let request = |params: &Value| Arc::new(s.digitize_window_request(image, params, None, &json!({})).unwrap());
+    let whole = json!({"colors": 2});
+    let mut pipe = s.digitize_pipeline();
+    pipe.run(&request(&with(&whole, &json!({"crop": CROP}))), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let again = pipe.run(&request(&whole), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let fresh = s.digitize_pipeline().run(&request(&whole), &|_, _| true, &mut |_, _, _| {}).unwrap();
+    let lower = again.area_key(80, 100).expect("the lower bar");
+    assert_eq!(again.similar(80, 30), vec![lower], "the upper bar like the lower one, not the square");
+    assert_eq!(again.elongations, fresh.elongations, "the elongations of the lines made again, as a fresh pipeline's");
+}
+
+/// How long Apply to Similar Areas' shape rule takes on the largest working map (1,500 px a side):
+/// the pass over the region map that works out every area's elongation (`Regions::elongations`),
+/// which the window's pipeline makes each time it moves to another lines output, and
+/// `Outputs::similar` on an area of a
+/// grid of squares, which the window's interface thread runs each time the inspector works out its
+/// alike areas again. A measurement, run by hand on an idle machine:
+/// `cargo test --release -p vectorcraft-engine --lib -- --ignored --nocapture the_shape_rule_on_the_largest_working_map`.
+#[test]
+#[ignore = "a measurement, run by hand on an idle machine"]
+fn the_shape_rule_on_the_largest_working_map() {
+    // The largest working map's side (pixels), a grid of squares on it, their side and pitch
+    // (pixels: 625 squares of two colours), the times each is timed, and milliseconds a second.
+    const SIDE: u32 = super::working::MAX_WORKING_SIDE_PX as u32;
+    const SQUARE: u32 = 40;
+    const PITCH: u32 = 60;
+    const RUNS: usize = 20;
+    const MS_PER_SEC: f64 = 1000.0;
+    let picture = tr::Raster::from_fn(SIDE, SIDE, |x, y| match (x % PITCH < SQUARE && y % PITCH < SQUARE, (x / PITCH + y / PITCH) % 2) {
+        (true, 0) => ORANGE,
+        (true, _) => NAVY,
+        _ => WHITE,
+    });
+    let (_, _, out) = run_of(&picture, json!({"colors": 3}));
+    let regions = &out.shapes.as_ref().expect("the shapes").value.areas.regions;
+    assert_eq!((regions.w, regions.h), (SIDE, SIDE), "the largest working map");
+    let time = |f: &dyn Fn()| {
+        let mut ms: Vec<f64> = (0..RUNS)
+            .map(|_| {
+                let started = std::time::Instant::now();
+                f();
+                started.elapsed().as_secs_f64() * MS_PER_SEC
+            })
+            .collect();
+        ms.sort_by(f64::total_cmp);
+        (ms[RUNS / 2], ms[RUNS - 1])
+    };
+    let pass = time(&|| {
+        std::hint::black_box(regions.elongations());
+    });
+    // The middle of the first square.
+    let at = (SQUARE / 2, SQUARE / 2);
+    let similar = time(&|| {
+        std::hint::black_box(out.similar(at.0, at.1));
+    });
+    println!(
+        "{} of {} areas alike on a {SIDE} px map: the pass p50 {:.2} ms, max {:.2} ms; similar p50 {:.2} ms, max {:.2} ms",
+        out.similar(at.0, at.1).len(),
+        regions.areas.len(),
+        pass.0,
+        pass.1,
+        similar.0,
+        similar.1
+    );
+}
+
 /// An area's place in the sewing order names the areas sewn just before and after it.
 #[test]
 fn the_sewing_place_names_the_areas_either_side() {
@@ -660,6 +841,41 @@ fn an_area_left_out_by_a_change_is_not_sewn_in_the_window() {
     assert_eq!(mask.get((y * w + x) as usize), Some(&0), "the area left out isn't veiled as sewn after");
 }
 
+/// An area left out by a change keeps its number among its thread's areas, and so do the others:
+/// a name never moves to another area while the window shows it, and two areas of one thread left
+/// out are still named apart; nor does any other area's rough place move.
+#[test]
+fn an_area_left_out_keeps_its_number_and_the_others_keep_theirs() {
+    let (_, _, plain) = run_of(&three_squares(), json!({"colors": 3}));
+    // The two orange squares' numbers among the orange areas.
+    let oranges = |out: &super::pipeline::Outputs| -> Vec<Option<usize>> {
+        [(50, 50), (250, 50)].into_iter().map(|(x, y)| out.area_at(x, y).and_then(|f| f.own_number)).collect()
+    };
+    let before = oranges(&plain);
+    let mut numbers: Vec<usize> = before.iter().flatten().copied().collect();
+    numbers.sort_unstable();
+    assert_eq!(numbers, [1, 2], "numbered 1 and 2 among the orange areas");
+    let left_out = |at: &[(u32, u32)]| {
+        let changes: Vec<Value> = at
+            .iter()
+            .filter_map(|&(x, y)| plain.area_key(x, y))
+            .map(|k| json!({"at": k.at, "color": super::super::hex(k.color), "kind": "fill", "stitch": "none"}))
+            .collect();
+        run_of(&three_squares(), json!({"colors": 3, "areaChanges": changes})).2
+    };
+    // The one sewn first left out: it keeps its 1, the other its 2.
+    let first = if before.first() == Some(&Some(1)) { (50, 50) } else { (250, 50) };
+    let out = left_out(&[first]);
+    assert_eq!(oranges(&out), before, "each keeps its number");
+    let left = out.area_at(first.0, first.1).expect("the area left out");
+    assert!(!left.sewn && left.number.is_none(), "not sewn, no place in the sewing order: {left:?}");
+    // The navy square between them keeps its rough place: the design's box still holds the square
+    // left out (without it, the navy one read at the box's left or right).
+    assert_eq!(out.area_at(150, 50).map(|f| f.place), Some(Place::Middle), "the navy square in the middle");
+    // Both left out: still named apart.
+    assert_eq!(oranges(&left_out(&[(50, 50), (250, 50)])), before, "both keep theirs");
+}
+
 /// A thin area of a colour set to Fill is a fill in the window too: its key is a fill's, finds it
 /// again, and its facts and its alike areas read it so.
 #[test]
@@ -762,7 +978,7 @@ fn what_the_planner_sews_of_an_area_and_whether_satin_is_offered() {
     assert_eq!(at(145, 155), (Some(SatinParts::None), Some(SatinOffer::TooShort)), "the square");
     assert_eq!(at(360, 150).0, Some(SatinParts::Some), "the stick with its head");
     let wide = at(95, 315).1;
-    assert!(matches!(wide, Some(SatinOffer::TooWide { width_mm }) if (width_mm - 15.0).abs() < 0.3), "the wide square: {wide:?}");
+    assert!(matches!(wide, Some(SatinOffer::TooWide { width_mm, overlap: false }) if (width_mm - 15.0).abs() < 0.3), "the wide square: {wide:?}");
 }
 
 /// Two stripes 40 mm long touching on white, at a tenth of a millimetre a pixel: a red one 6.8 mm
@@ -812,7 +1028,7 @@ fn an_area_grown_by_the_overlap_is_judged_as_it_is_made() {
     assert!(out.satin_created_kept(54, 240).is_some_and(|p| p != SatinParts::None), "a column at Create's width");
     let (_, _, out) = run_of(&capped_band(), json!({"colors": 3}));
     let band = out.satin_offer(128, 240);
-    assert!(matches!(band, Some(SatinOffer::TooWide { width_mm }) if (width_mm - 12.4).abs() < 0.3), "the band: {band:?}");
+    assert!(matches!(band, Some(SatinOffer::TooWide { width_mm, overlap: true }) if (width_mm - 12.4).abs() < 0.3), "the band: {band:?}");
     assert_eq!(out.satin_offer(358, 98), Some(SatinOffer::TooShort), "the square");
 }
 
@@ -850,4 +1066,38 @@ fn satin_answers_are_kept_and_read_without_working_them_out() {
     assert_eq!(out.satin_kept_count(), 2, "as planned, and at its object's width");
     assert_eq!(out.satin_offer(120, 37), Some(SatinOffer::Fits));
     assert_eq!(out.satin_kept_count(), 2, "the offer's parting the one kept");
+}
+
+/// A satin answer, or an Auto width, whose query is cancelled (a newer ask, on the window's thread)
+/// is not kept: it is worked out another time. Kept, it read as having none to give for the rest of
+/// the run: a bar sewn all as satin read "Auto: tatami" with no reason, and Satin read as offered
+/// even on an area too short for it (a dot); kept now, it would also leave open the angle field this
+/// branch greys there.
+#[test]
+fn a_cancelled_satin_answer_is_not_kept() {
+    use super::pipeline::SatinParts;
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6}));
+    let token = CancelToken::new();
+    token.cancel();
+    assert_eq!(cancel::scope(&token, None, || out.satin_parts(120, 37, None)), None, "not worked out");
+    assert_eq!(cancel::scope(&token, None, || out.auto_narrow_mm(120, 37)), None, "its Auto width not read");
+    assert_eq!((out.satin_kept_count(), out.auto_kept_count()), (0, 0), "nothing kept");
+    assert_eq!(out.satin_parts(120, 37, None), Some(SatinParts::All), "worked out afterwards");
+}
+
+/// The width up to which Auto sews an area's narrow parts as satin is read of its object's settings
+/// once and kept for the run: the window's inspector reads it every frame, and it asked the planner
+/// each time (a copy of the outputs without the plan, which can ask nothing, still reads it).
+#[test]
+fn the_auto_width_is_read_once_and_kept() {
+    let (_, _, out) = run_of(&satin_shapes(), json!({"colors": 6}));
+    let mut early = out.clone();
+    early.plan = None;
+    assert_eq!(early.auto_narrow_mm(120, 37), None, "before the stitches are planned");
+    assert_eq!(out.auto_kept_count(), 0, "nothing kept before the plan");
+    let width = out.auto_narrow_mm(120, 37);
+    assert!(width.is_some_and(|w| w > 0.0), "{width:?}");
+    let _ = (out.satin_known(120, 37), out.satin_parts_auto_kept(120, 37), out.auto_narrow_mm(120, 37));
+    assert_eq!(out.auto_kept_count(), 1, "kept once");
+    assert_eq!(early.auto_narrow_mm(120, 37), width, "read of what is kept");
 }

@@ -91,6 +91,20 @@ pub(super) struct Shapes {
     /// lines it grows under, measured as an area's own widest is (`super::regions::widest_of`); its
     /// own widest where it is made as traced. The overlap along its other edges is satin's to add.
     pub(super) widest_px: Vec<f64>,
+    /// Each area's own shape ([`Shapes::own`]) measured (working pixels): its area, and its box's
+    /// width and height. What the window says of the area's size: the traced curve its outline
+    /// follows, where its pixels, counted by their centres, read a curved edge short by up to a pixel
+    /// a side (a 4 mm dot, its curve 3.8 mm across, read 3.5 mm). `None` for an empty shape (the
+    /// background's), or one whose box isn't finite.
+    pub(super) measured: Vec<Option<(f64, f64, f64)>>,
+}
+
+/// A shape's area and its box's width and height (working pixels), [`Shapes::measured`]'s: `None`
+/// for an empty one, or one whose box isn't finite.
+fn measure(p: &PathData) -> Option<(f64, f64, f64)> {
+    let b = p.bounds()?;
+    let (a, w, h) = (area(p), b.width(), b.height());
+    [a, w, h].iter().all(|v| v.is_finite()).then_some((a, w, h))
 }
 
 /// The union of `paths`, refit to [`PRECISION_PX`]; `None` when the path operations refuse it.
@@ -495,7 +509,8 @@ pub(super) fn shaped(
     }
     // Measured on the lines each area was grown under, the union made (`grown_under`).
     let widest_px = made_widest(areas, &over, &grown_under, &shares, &line)?;
-    Ok(Shapes { shapes, own, grown_under, doubled_px, failed, widest_px })
+    let measured = own.iter().map(measure).collect();
+    Ok(Shapes { shapes, own, grown_under, doubled_px, failed, widest_px, measured })
 }
 
 /// Each area's widest part as it is made (working pixels; [`Shapes::widest_px`]): `over` lists the

@@ -38,16 +38,17 @@ pub(crate) fn title_facts(app: &VectorcraftApp, d: &Dialog) -> Option<String> {
     let st = app.session.active()?;
     let id = vectorcraft_engine::doc::NodeId(d.fields.get(super::IMAGE).and_then(Value::as_u64)?);
     let node = st.doc.node(id)?;
-    let image = match &node.kind {
-        vectorcraft_engine::doc::NodeKind::Image(i) => Some(i.as_ref()),
-        _ => node.children().and_then(|c| c.first()).and_then(|c| match &c.kind {
-            vectorcraft_engine::doc::NodeKind::Image(i) => Some(i.as_ref()),
-            _ => None,
-        }),
-    }?;
+    // The picture digitized: the image, or the one an Image Trace object (a live object too) holds
+    // first. Its name is the picture's; the object's own is upstream's mark of a trace, the same for
+    // every one ("Image Trace").
+    let picture = match &node.kind {
+        vectorcraft_engine::doc::NodeKind::Image(_) => node,
+        _ => node.children()?.first()?.as_ref(),
+    };
+    let vectorcraft_engine::doc::NodeKind::Image(image) = &picture.kind else { return None };
     let lang = crate::i18n::current();
     let name: String =
-        node.name.clone().unwrap_or_else(|| crate::et!("Image").to_string()).chars().take(crate::embroidery::vocabulary::MAX_SHOWN).collect();
+        picture.name.clone().unwrap_or_else(|| crate::et!("Image").to_string()).chars().take(crate::embroidery::vocabulary::MAX_SHOWN).collect();
     let format = st.doc.images.get(&image.key).map_or_else(String::new, |b| format_name(&b.mime));
     let (w, h) = (numbers::count(lang, u64::from(image.width)), numbers::count(lang, u64::from(image.height)));
     let size = app.embroidery.image_window.live.as_ref().and_then(|l| l.schedule.shown.as_ref()).and_then(|s| s.outputs.size_mm());

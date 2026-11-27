@@ -1,4 +1,4 @@
-//! The status bar's embroidery counters: "4,752 stitches · 4 colours · 3 thread changes · about
+//! The status bar's embroidery counters: "4,752 stitches · 4 threads · 3 thread changes · about
 //! 7 min" at the bar's right end, for the active document, while its stitches are wanted (the
 //! stitch view, or the Embroidery panel, open: the project owner's choice). Nothing is computed
 //! for them alone: the scheduler adds `embroidery.stats` to every plan wanted
@@ -94,11 +94,11 @@ impl State {
 /// The wordings of the figures, longest first.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Variant {
-    /// "Embroidery: stitches · colours · thread changes · time".
+    /// "Embroidery: stitches · threads · thread changes · time".
     Named,
-    /// "stitches · colours · thread changes · time".
+    /// "stitches · threads · thread changes · time".
     All,
-    /// "stitches · colours · time".
+    /// "stitches · threads · time".
     NoChanges,
     /// "stitches · time".
     Time,
@@ -113,13 +113,15 @@ impl Variant {
 /// The figures in `variant`'s words.
 pub fn words(f: &Figures, variant: Variant) -> String {
     let stitches = crate::etn!(f.stitches, "{count} stitch", "{count} stitches");
-    let colors = crate::etn!(f.colors, "{count} color", "{count} colors");
+    // The threads sewn, "threads" as the image window says them (the window's word for what is
+    // sewn; "colours" is the image's).
+    let threads = crate::etn!(f.colors, "{count} thread", "{count} threads");
     let changes = crate::etn!(f.thread_changes, "{count} thread change", "{count} thread changes");
     let time = minutes_words(f.minutes);
     match variant {
-        Variant::Named => fill(crate::et!("Embroidery: {figures}"), &[("figures", &[stitches, colors, changes, time].join(" · "))]),
-        Variant::All => [stitches, colors, changes, time].join(" · "),
-        Variant::NoChanges => [stitches, colors, time].join(" · "),
+        Variant::Named => fill(crate::et!("Embroidery: {figures}"), &[("figures", &[stitches, threads, changes, time].join(" · "))]),
+        Variant::All => [stitches, threads, changes, time].join(" · "),
+        Variant::NoChanges => [stitches, threads, time].join(" · "),
         Variant::Time => [stitches, time].join(" · "),
         Variant::Stitches => stitches,
     }
@@ -266,7 +268,7 @@ fn tooltip(state: &State) -> String {
                 ]
                 .join(" · "),
                 [
-                    crate::etn!(f.colors, "{count} color", "{count} colors"),
+                    crate::etn!(f.colors, "{count} thread", "{count} threads"),
                     crate::etn!(f.thread_changes, "{count} thread change", "{count} thread changes"),
                 ]
                 .join(" · "),

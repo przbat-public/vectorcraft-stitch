@@ -141,9 +141,11 @@ pub(crate) fn answer(ask: &Ask, answered: &AtomicU64, shown: &dyn Fn()) {
 }
 
 /// The satin answers of the areas under working pixels `at` of `outputs`, worked out and kept there:
-/// as planned, and whether Satin is offered (at the width Create would give it); `shown` asked to
-/// draw the window again once the first area's are in. Stops once cancelled (the scope's progress);
-/// a panic is caught (a bug), the answers it would have given left unkept.
+/// as planned, as Auto would sew it, and whether Satin is offered (at the width Create would give
+/// it), for every area: an area asked again later is held by this ask ([`Answers::ask`]), so it
+/// must find all three; `shown` asked to draw the window again once the first area's (the
+/// inspector's own) are in. Stops once cancelled (the scope's progress); a panic is caught (a
+/// bug), the answers it would have given left unkept.
 fn work_out(outputs: &DigitizeOutputs, at: &[(u32, u32)], shown: &dyn Fn()) {
     // The panic is logged by the guard; the answers are read from the outputs, not returned.
     let _ = vectorcraft_engine::guard::catch_panic(|| {
@@ -151,8 +153,10 @@ fn work_out(outputs: &DigitizeOutputs, at: &[(u32, u32)], shown: &dyn Fn()) {
             if vectorcraft_engine::doc::cancel::is_cancelled() {
                 return;
             }
-            // Kept in the outputs, where the inspector reads them.
-            let _ = (outputs.satin_parts(x, y, None), outputs.satin_offer(x, y));
+            // Kept in the outputs, where the inspector reads them; as Auto would sew it is what its
+            // Auto line says under a stitch chosen (the same answer as planned, kept once, where the
+            // area has no change of its own).
+            let _ = (outputs.satin_parts(x, y, None), outputs.satin_offer(x, y), outputs.satin_parts_auto(x, y));
             if i == 0 {
                 shown();
             }
@@ -226,6 +230,31 @@ mod tests {
             assert!(Instant::now() < deadline, "answered in time");
             std::thread::sleep(Duration::from_millis(5));
         }
+    }
+
+    /// Every area of an ask has its answers worked out, as Auto would sew it too: an alike area
+    /// asked after the inspector's own, with a stitch of its own, lacked that one, and the inspector
+    /// waited for it there for good (the ask holding the area never sent again).
+    #[test]
+    fn every_area_of_an_ask_has_its_answers_worked_out() {
+        // Two orange squares alike, the second sewn as Tatami by a change of its own; the working
+        // pixels at their middles.
+        const FIRST: (u32, u32) = (40, 40);
+        const SECOND: (u32, u32) = (120, 40);
+        let (s, id) = super::super::worker::tests::session_of(image::RgbaImage::from_fn(160, 80, |x, y| {
+            let square = (20..60).contains(&x) || (100..140).contains(&x);
+            image::Rgba(if square && (20..60).contains(&y) { [240, 130, 20, 255] } else { [255, 255, 255, 255] })
+        }));
+        let change = json!({"at": [SECOND.0, SECOND.1], "color": "#f08214", "kind": "fill", "stitch": "tatami"});
+        let request = s.digitize_window_request(id, &json!({"colors": 2, "areaChanges": [change]}), None, &Value::Null).unwrap();
+        let out = s.digitize_pipeline().run(&request, &|_, _| true, &mut |_, _, _| {}).unwrap();
+        let (mut answers, rx, answered) = Answers::held();
+        answers.ask(&out, &[FIRST, SECOND]);
+        answer(&rx.try_recv().expect("sent"), &answered, &|| {});
+        assert!(out.satin_known(FIRST.0, FIRST.1), "the first");
+        assert!(out.satin_known(SECOND.0, SECOND.1), "the second, as Auto would sew it too");
+        answers.ask(&out, &[SECOND]);
+        assert!(rx.try_recv().is_err(), "held by the ask before");
     }
 
     /// In the frame, an ask is worked out at once.

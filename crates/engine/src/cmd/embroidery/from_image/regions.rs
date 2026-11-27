@@ -41,6 +41,29 @@ pub(super) const NEIGHBOURS: [(i64, i64); 8] = [(1, 0), (1, -1), (0, -1), (-1, -
 /// A pixel's four side neighbours, those across its edges, in the same turn.
 const SIDES: [(i64, i64); 4] = [(1, 0), (0, -1), (-1, 0), (0, 1)];
 
+/// A pixel's own second moment about its middle along either axis (pixels squared): a unit
+/// square's, 1/12, added to the spread of an area's pixels so that a band n pixels wide measures
+/// n²/12 across, as a solid band does.
+const PIXEL_MOMENT: f64 = 1.0 / 12.0;
+
+/// How long an area is for its width from the sums [`Regions::elongations`] takes of its pixels
+/// (their count, the sums of their places, of their places' squares and of their products): the
+/// square root of the larger of its second moments about its middle along its own axes over the
+/// smaller; `None` for no pixels.
+fn elongation_of([n, sx, sy, sxx, syy, sxy]: [f64; 6]) -> Option<f64> {
+    if n <= 0.0 {
+        return None;
+    }
+    let (mx, my) = (sx / n, sy / n);
+    let (xx, yy, xy) = (sxx / n - mx * mx + PIXEL_MOMENT, syy / n - my * my + PIXEL_MOMENT, sxy / n - mx * my);
+    // The moments along the area's own axes: the eigenvalues of [[xx, xy], [xy, yy]].
+    let middle = (xx + yy) / 2.0;
+    let apart = (((xx - yy) / 2.0).powi(2) + xy * xy).sqrt();
+    let (long, short) = (middle + apart, middle - apart);
+    let ratio = (long / short).sqrt();
+    (short > 0.0 && ratio.is_finite()).then_some(ratio)
+}
+
 /// The width (pixels) of a shape across a pixel `d2` squared pixels from its edge: twice its distance
 /// to the edge and the half pixel past it to the edge's own middle, and a pixel more where the
 /// shape's middle lies between two pixels as deep (`even`, an even width).
@@ -548,6 +571,32 @@ impl Regions {
             v.sort_unstable();
         }
         Self { w, h, labels, areas, borders, adjacent, outside }
+    }
+
+    /// How long each area is for its width, whichever way it lies: the square root of the larger
+    /// second moment of its pixels about their middle over the smaller (along its own axes), each
+    /// pixel a unit square, so exactly a rectangle's long side over its short one, 1 for a square or
+    /// a disc; `None` for an area with no pixels. One pass over the whole map, each pixel's place
+    /// taken from its area's box's corner, so that the sums stay small.
+    pub(super) fn elongations(&self) -> Vec<Option<f64>> {
+        let w = self.w as usize;
+        if w == 0 {
+            return vec![None; self.areas.len()];
+        }
+        // Each area's pixels counted, and the sums of their places and of their squares.
+        let mut sums = vec![[0.0; 6]; self.areas.len()];
+        for (i, &l) in self.labels.iter().enumerate() {
+            let (Some(s), Some(area)) = (sums.get_mut(l as usize), self.areas.get(l as usize)) else { continue };
+            let (x, y) = ((i % w) as f64 - f64::from(area.bbox[0]), (i / w) as f64 - f64::from(area.bbox[1]));
+            let [n, sx, sy, sxx, syy, sxy] = s;
+            *n += 1.0;
+            *sx += x;
+            *sy += y;
+            *sxx += x * x;
+            *syy += y * y;
+            *sxy += x * y;
+        }
+        sums.into_iter().map(elongation_of).collect()
     }
 
     /// The length of each area `of` picks, measured along it (pixels): the longest of the shortest

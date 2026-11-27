@@ -4,7 +4,7 @@
 //! made the document's on Create, the window saying so); the rules that choose each area's stitch,
 //! read only, each saying where its value comes from (the owner's choice: they change with the
 //! fabric, or through Embroidery Settings…); and the sewing order, from the background to the
-//! details (the owner's choice: the Order tab changes it after Create).
+//! details (the owner's choice: the Order tab changes it once the objects are made).
 
 use egui::Ui;
 use serde_json::{Map, Value, json};
@@ -129,9 +129,9 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     }
     outlines_section(app, ui, d, &reply, lang);
     rows::heading(ui, crate::et!("Sewing order"));
-    note(ui, crate::et!("From the background to the details. The Order tab changes it after Create."));
+    note(ui, crate::et!("From the background to the details. The Order tab changes it once the objects are made."));
     if DOCUMENT_FIELDS.iter().any(|k| d.fields.contains_key(*k)) {
-        note(ui, crate::et!("Create sets these in the document's embroidery settings."));
+        note(ui, crate::et!("Making the objects sets these in the document's embroidery settings."));
     }
     // The rest of the document's settings (the fabric's values, the thread, the machine): Document
     // Setup's tab, the window coming back when it closes.

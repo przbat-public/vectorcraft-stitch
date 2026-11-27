@@ -692,7 +692,7 @@ fn the_palette_change_is_said_and_applied_on_create() {
     set(&mut app, "colorChoices", json!([{"color": "#f08214", "thread": {"palette": "jef", "index": 30}}]));
     until(&mut app, &ctx, &mut time, ready);
     let said = |nodes: &[(egui::accesskit::NodeId, egui::accesskit::Node)]| {
-        nodes.iter().any(|(_, n)| n.value() == Some("Create sets the document's thread palette to Brother (PES)."))
+        nodes.iter().any(|(_, n)| n.value() == Some("Making the objects sets the document's thread palette to Brother (PES)."))
     };
     assert!(!said(&nodes(&mut app, &ctx, &mut time)), "the document's own: nothing to say");
     click_named(&mut app, &ctx, &mut time, "Match to threads");
@@ -845,6 +845,32 @@ fn create_applies_the_run_shown_in_one_undo_step() {
     assert!(status.ends_with("”. Undo removes them."), "{status}");
     let st = app.session.doc().expect("a document");
     assert_eq!(st.selection.len(), 1, "the design's group selected");
+}
+
+/// Create on an image whose place isn't sewn (its layer hidden) leaves the image there, and the
+/// status bar names no template layer: it said "The image is on the hidden template layer" of the
+/// image's own layer.
+#[test]
+fn create_names_no_template_layer_where_the_image_stays_in_its_place() {
+    let mut app = app();
+    let image = app.session.doc().ok().and_then(|st| st.selection.objects.first().copied()).expect("the picture selected");
+    let layer = app.session.doc().ok().and_then(|st| st.doc.layer_of(image)).expect("its layer");
+    app.session
+        .edit("hide", |d, _| {
+            d.node_mut(layer).ok_or(vectorcraft_engine::EngineError::NoNode(layer))?.visible = false;
+            Ok(())
+        })
+        .unwrap();
+    let (mut app, ctx, mut time) = opened_with(app);
+    let threads = reply(&mut app)["stats"]["threadCount"].as_u64().expect("figures");
+    time += 0.05;
+    frame(&mut app, &ctx, time, vec![key(Key::Enter, Modifiers::COMMAND)]);
+    assert!(open_dialog(&app).is_none(), "closed");
+    let st = app.session.doc().expect("a document");
+    assert_eq!(st.doc.layer_of(image), Some(layer), "the image in its place");
+    let status = app.ui.status.clone();
+    assert!(status.starts_with("Created ") && status.ends_with(&format!(" ({threads} threads). Undo removes them.")), "{status}");
+    assert!(!status.contains("template layer"), "{status}");
 }
 
 /// An edit to the document under the window makes it digitize again before Create: Create asked
@@ -1217,7 +1243,7 @@ fn choose(app: &mut VectorcraftApp, ctx: &egui::Context, time: &mut f64, name: &
 }
 
 /// The note saying that Create sets the window's document settings in the document.
-const SETS_THEM: &str = "Create sets these in the document's embroidery settings.";
+const SETS_THEM: &str = "Making the objects sets these in the document's embroidery settings.";
 
 /// Whether `nodes` say `words`.
 fn says(nodes: &[(egui::accesskit::NodeId, egui::accesskit::Node)], words: &str) -> bool {

@@ -6973,7 +6973,7 @@ embroidery	Cancel	Abbrechen
 embroidery	Digitizing…	Wird digitalisiert…
 embroidery	Create Embroidery Objects	Stickobjekte erstellen
 embroidery	Start Over	Neu beginnen
-embroidery	Create waits for the preview to be ready.	Das Erstellen wartet, bis die Vorschau fertig ist.
+embroidery	The objects are made once the preview is ready.	Die Objekte werden erstellt, sobald die Vorschau fertig ist.
 embroidery	Can't digitize it: {reason}	Kann nicht digitalisiert werden: {reason}
 embroidery	Shapes	Formen
 embroidery	Recomputing…	Wird neu berechnet…
@@ -7068,7 +7068,7 @@ embroidery	Mode	Modus
 embroidery	{value} is out of range: {low} to {high}.	{value} liegt außerhalb des Bereichs: {low} bis {high}.
 embroidery	Number of colors	Anzahl der Farben
 embroidery	Match to threads	An Garne anpassen
-embroidery	Create sets the document's thread palette to {palette}.	Erstellen setzt die Garnpalette des Dokuments auf {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Das Erstellen der Objekte setzt die Garnpalette des Dokuments auf {palette}.
 embroidery	Smallest area	Kleinste Fläche
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Kleinere Sprenkel, etwa JPEG-Rauschen, gehen in der Farbe um sie herum auf.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} Farbe war zu klein und ging in anderen auf|{count} Farben waren zu klein und gingen in anderen auf
@@ -7088,6 +7088,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	In {value} ms nach der letzten Änderung aktualisiert ({steps})
 embroidery	Notes	Hinweise
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Erstellt: {objects} ({threads}). Das Bild liegt auf der ausgeblendeten Vorlagenebene „{layer}“. „Rückgängig“ entfernt sie.
+embroidery	Created {objects} ({threads}). Undo removes them.	Erstellt: {objects} ({threads}). „Rückgängig“ entfernt sie.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} Sprenkel kleiner als {value} mm² ging in der Farbe um ihn herum auf|{count} Sprenkel kleiner als {value} mm² gingen in den Farben um sie herum auf
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} Sprenkel kleiner als {value} mm² hatte nichts zum Anschließen und wurde weggelassen|{count} Sprenkel kleiner als {value} mm² hatten nichts zum Anschließen und wurden weggelassen
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} Streifen, höchstens {value} mm breit, ging im Nachbarn auf, der seiner Farbe am nächsten ist|{count} Streifen, höchstens {value} mm breit, gingen in den Nachbarn auf, die ihren Farben am nächsten sind
@@ -7120,8 +7121,8 @@ embroidery	Fixed	Fest
 embroidery	Across the shape	Quer zur Form
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Die Richtung der Reihen einer Fläche: in einem festen Winkel auf der Seite oder quer zur Länge jeder Form.
 embroidery	The fills' rows, counter-clockwise on the page.	Die Reihen der Flächen, gegen den Uhrzeigersinn auf der Seite.
-embroidery	From the background to the details. The Order tab changes it after Create.	Vom Hintergrund zu den Details. Der Reiter „Reihenfolge“ ändert sie nach dem Erstellen.
-embroidery	Create sets these in the document's embroidery settings.	Erstellen setzt sie in den Sticheinstellungen des Dokuments.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Vom Hintergrund zu den Details. Der Reiter „Reihenfolge“ ändert sie, sobald die Objekte erstellt sind.
+embroidery	Making the objects sets these in the document's embroidery settings.	Das Erstellen der Objekte setzt diese Werte in den Stickeinstellungen des Dokuments.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Konturen
 embroidery	Color outlines (running stitch)	Farbkonturen (Geradstich)
@@ -7179,17 +7180,23 @@ embroidery	Its color isn't sewn	Ihre Farbe wird nicht gestickt
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Als dynamisches Objekt behalten
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Behält das Bild bei den daraus erstellten Objekten, damit „Bild digitalisieren…“ sie erneut ändern kann.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Seine Objekte wurden von Hand geändert. Erneutes Digitalisieren ersetzt diese Änderungen; „Rückgängig“ stellt sie wieder her.
+embroidery	Update Live Object	Dynamisches Objekt aktualisieren
+embroidery	Digitizes the live object again with these settings.	Digitalisiert das dynamische Objekt erneut mit diesen Einstellungen.
+embroidery	Convert to Plain Objects	In einfache Objekte umwandeln
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Erstellt aus dem dynamischen Objekt einfache Stickobjekte, die „Bild digitalisieren…“ nicht mehr ändert.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Der Inhalt dieses dynamischen Objekts wurde von Hand geändert. Erneutes Digitalisieren ersetzt diese Änderungen; „Rückgängig“ stellt sie wieder her.
 embroidery	Replace	Ersetzen
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Die Einstellungen dieses dynamischen Objekts konnten nicht gelesen werden: Das Fenster beginnt mit den Standardwerten.
 embroidery	Edit in Digitize Image…	In „Bild digitalisieren“ bearbeiten…
-embroidery	Live digitized image	Dynamisch digitalisiertes Bild
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Dynamisches Objekt erstellt: {objects} ({threads}). „Bild digitalisieren…“ ändert es erneut; „Rückgängig“ entfernt es.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Dynamisches Objekt aktualisiert: {objects} ({threads}). „Rückgängig“ holt die vorherige Version zurück.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	In einfache Objekte umgewandelt: {objects} ({threads}). Das Bild liegt auf der ausgeblendeten Vorlagenebene „{layer}“. „Rückgängig“ holt das dynamische Objekt zurück.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	In einfache Objekte umgewandelt: {objects} ({threads}). „Rückgängig“ holt das dynamische Objekt zurück.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Nicht ersetzen
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Dieses dynamische Objekt wurde in einer anderen Garnpalette erstellt: Seine Farben werden erneut der Palette des Dokuments zugeordnet.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Dynamisch digitalisierte Bilder, seit dem Digitalisieren um mehr als {value} % skaliert: erneut digitalisieren
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Dynamische Objekte, seit dem Digitalisieren um mehr als {value} % skaliert: erneut digitalisieren
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	ein dynamisches Stickobjekt: ändern Sie es in „Bild digitalisieren…“ (Objekt › Bildnachzeichner)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

@@ -7146,7 +7146,7 @@ embroidery	Cancel	Batal
 embroidery	Digitizing…	Mendigitalkan…
 embroidery	Create Embroidery Objects	Buat objek bordir
 embroidery	Start Over	Mulai ulang
-embroidery	Create waits for the preview to be ready.	Pembuatan menunggu pratinjau siap.
+embroidery	The objects are made once the preview is ready.	Objek dibuat setelah pratinjau siap.
 embroidery	Can't digitize it: {reason}	Tidak dapat didigitalkan: {reason}
 embroidery	Shapes	Bentuk
 embroidery	Recomputing…	Menghitung ulang…
@@ -7241,7 +7241,7 @@ embroidery	Mode	Mode
 embroidery	{value} is out of range: {low} to {high}.	{value} di luar rentang: {low} hingga {high}.
 embroidery	Number of colors	Jumlah warna
 embroidery	Match to threads	Cocokkan dengan benang
-embroidery	Create sets the document's thread palette to {palette}.	Buat menetapkan palet benang dokumen ke {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Pembuatan objek menetapkan palet benang dokumen ke {palette}.
 embroidery	Smallest area	Area terkecil
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Bintik yang lebih kecil, seperti derau JPEG, bergabung dengan warna di sekitarnya.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} warna terlalu kecil dan bergabung dengan yang lain
@@ -7261,6 +7261,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Diperbarui dalam {value} ms setelah perubahan terakhir ({steps})
 embroidery	Notes	Catatan
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Dibuat {objects} ({threads}). Gambar ada di lapisan templat tersembunyi “{layer}”. Urungkan menghapusnya.
+embroidery	Created {objects} ({threads}). Undo removes them.	Dibuat {objects} ({threads}). Urungkan menghapusnya.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} bintik lebih kecil dari {value} mm² bergabung dengan warna di sekitarnya
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} bintik lebih kecil dari {value} mm² tidak punya tempat bergabung dan diabaikan
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} pita selebar paling banyak {value} mm bergabung dengan tetangga yang warnanya paling dekat
@@ -7293,8 +7294,8 @@ embroidery	Fixed	Tetap
 embroidery	Across the shape	Melintang bentuk
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Arah baris isian: pada sudut tetap di halaman, atau melintang panjang setiap bentuk.
 embroidery	The fills' rows, counter-clockwise on the page.	Baris isian, berlawanan arah jarum jam di halaman.
-embroidery	From the background to the details. The Order tab changes it after Create.	Dari latar ke detail. Tab Urutan mengubahnya setelah Buat.
-embroidery	Create sets these in the document's embroidery settings.	Buat menetapkannya di pengaturan bordir dokumen.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Dari latar ke detail. Tab Urutan mengubahnya setelah objek dibuat.
+embroidery	Making the objects sets these in the document's embroidery settings.	Pembuatan objek menetapkannya di pengaturan bordir dokumen.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Garis tepi
 embroidery	Color outlines (running stitch)	Garis tepi warna (jahitan lurus)
@@ -7352,17 +7353,23 @@ embroidery	Its color isn't sewn	Warnanya tidak dibordir
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Simpan sebagai objek dinamis
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Menyimpan gambar bersama objek yang dibuat darinya, agar “Digitalkan gambar…” dapat mengubahnya lagi.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Objeknya diubah secara manual. Mendigitalkannya lagi akan mengganti perubahan itu; Urungkan mengembalikannya.
+embroidery	Update Live Object	Perbarui objek dinamis
+embroidery	Digitizes the live object again with these settings.	Mendigitalkan objek dinamis lagi dengan pengaturan ini.
+embroidery	Convert to Plain Objects	Konversi ke objek biasa
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Membuat objek bordir biasa dari objek dinamis; “Digitalkan gambar…” tidak mengubahnya lagi.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Konten objek dinamis ini diubah secara manual. Mendigitalkannya lagi akan mengganti perubahan itu; Urungkan mengembalikannya.
 embroidery	Replace	Ganti
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Pengaturan objek dinamis ini tidak dapat dibaca: jendela dimulai dari nilai default.
 embroidery	Edit in Digitize Image…	Edit di “Digitalkan gambar”…
-embroidery	Live digitized image	Gambar terdigitalkan dinamis
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Objek dinamis dibuat: {objects} ({threads}). “Digitalkan gambar…” mengubahnya lagi; Urungkan menghapusnya.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Objek dinamis diperbarui: {objects} ({threads}). Urungkan mengembalikan versi sebelumnya.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Dikonversi ke objek biasa: {objects} ({threads}). Gambar ada di lapisan templat tersembunyi “{layer}”. Urungkan mengembalikan objek dinamis.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Dikonversi ke objek biasa: {objects} ({threads}). Urungkan mengembalikan objek dinamis.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Jangan ganti
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Objek dinamis ini dibuat dengan palet benang lain: warnanya dicocokkan lagi dengan palet dokumen.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Gambar terdigitalkan dinamis yang diskalakan lebih dari {value}% sejak didigitalkan: digitalkan lagi
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Objek dinamis yang diskalakan lebih dari {value}% sejak didigitalkan: digitalkan lagi
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	objek bordir dinamis: ubah di “Digitalkan gambar…” (Objek › Image Trace)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

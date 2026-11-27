@@ -7371,7 +7371,7 @@ embroidery	Cancel	Mégse
 embroidery	Digitizing…	Digitalizálás…
 embroidery	Create Embroidery Objects	Hímzésobjektumok létrehozása
 embroidery	Start Over	Újrakezdés
-embroidery	Create waits for the preview to be ready.	A létrehozás megvárja, amíg az előnézet elkészül.
+embroidery	The objects are made once the preview is ready.	Az objektumok akkor jönnek létre, amikor az előnézet elkészül.
 embroidery	Can't digitize it: {reason}	Nem digitalizálható: {reason}
 embroidery	Shapes	Alakzatok
 embroidery	Recomputing…	Újraszámítás…
@@ -7466,7 +7466,7 @@ embroidery	Mode	Mód
 embroidery	{value} is out of range: {low} to {high}.	{value} a tartományon kívül esik: {low}–{high}.
 embroidery	Number of colors	Színek száma
 embroidery	Match to threads	Szálakhoz igazítás
-embroidery	Create sets the document's thread palette to {palette}.	A létrehozás a dokumentum szálpalettáját erre állítja: {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Az objektumok létrehozása a dokumentum cérnapalettáját erre állítja: {palette}.
 embroidery	Smallest area	Legkisebb terület
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	A kisebb foltok, például a JPEG-zaj, a körülöttük lévő színhez csatlakoznak.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} szín túl kicsi volt, és másokhoz csatlakozott
@@ -7486,6 +7486,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Frissítve {value} ms alatt az utolsó változtatás után ({steps})
 embroidery	Notes	Megjegyzések
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Létrejött: {objects} ({threads}). A kép a rejtett „{layer}” sablonrétegen van. A Visszavonás eltávolítja őket.
+embroidery	Created {objects} ({threads}). Undo removes them.	Létrejött: {objects} ({threads}). A Visszavonás eltávolítja őket.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} {value} mm²-nél kisebb folt a körülötte lévő színhez csatlakozott
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} {value} mm²-nél kisebb foltnak nem volt mihez csatlakoznia, ezért kimaradt
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} legfeljebb {value} mm széles sáv a színéhez legközelebbi szomszédhoz csatlakozott
@@ -7518,8 +7519,8 @@ embroidery	Fixed	Rögzített
 embroidery	Across the shape	Az alakzaton keresztben
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	A kitöltés sorainak iránya: rögzített szögben az oldalon, vagy minden alakzat hosszán keresztben.
 embroidery	The fills' rows, counter-clockwise on the page.	A kitöltések sorai, az óramutató járásával ellentétesen az oldalon.
-embroidery	From the background to the details. The Order tab changes it after Create.	A háttértől a részletekig. A létrehozás után a Sorrend lap módosítja.
-embroidery	Create sets these in the document's embroidery settings.	A létrehozás beállítja őket a dokumentum hímzésbeállításaiban.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	A háttértől a részletekig. Miután az objektumok létrejöttek, a Sorrend lap módosítja.
+embroidery	Making the objects sets these in the document's embroidery settings.	Az objektumok létrehozása beállítja őket a dokumentum hímzési beállításaiban.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Körvonalak
 embroidery	Color outlines (running stitch)	Színek körvonalai (egyenes öltés)
@@ -7577,17 +7578,23 @@ embroidery	Its color isn't sewn	A színe nincs kihímezve
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Megtartás dinamikus objektumként
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Megtartja a képet a belőle készült objektumokkal, hogy a „Kép digitalizálása…” újra módosíthassa őket.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Az objektumait kézzel módosították. Az újbóli digitalizálás felülírja ezeket a módosításokat; a Visszavonás visszahozza őket.
+embroidery	Update Live Object	Dinamikus objektum frissítése
+embroidery	Digitizes the live object again with these settings.	Újra digitalizálja a dinamikus objektumot ezekkel a beállításokkal.
+embroidery	Convert to Plain Objects	Átalakítás egyszerű objektumokká
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	A dinamikus objektumból egyszerű hímzésobjektumokat hoz létre, amelyeket a „Kép digitalizálása…” már nem módosít.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Ennek a dinamikus objektumnak a tartalmát kézzel módosították. Az újbóli digitalizálás felülírja ezeket a módosításokat; a Visszavonás visszahozza őket.
 embroidery	Replace	Csere
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Ennek a dinamikus objektumnak a beállításai nem olvashatók: az ablak az alapértékekkel indul.
 embroidery	Edit in Digitize Image…	Szerkesztés a „Kép digitalizálása” ablakban…
-embroidery	Live digitized image	Dinamikus digitalizált kép
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Létrejött egy dinamikus objektum: {objects} ({threads}). A „Kép digitalizálása…” újra módosítja; a Visszavonás eltávolítja.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Frissült a dinamikus objektum: {objects} ({threads}). A Visszavonás visszahozza a korábbi verziót.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Egyszerű objektumokká alakítva: {objects} ({threads}). A kép a rejtett „{layer}” sablonrétegen van. A Visszavonás visszahozza a dinamikus objektumot.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Egyszerű objektumokká alakítva: {objects} ({threads}). A Visszavonás visszahozza a dinamikus objektumot.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Nincs csere
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Ez a dinamikus objektum egy másik cérnapalettában készült: a színei újra a dokumentum palettájához igazodnak.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	A digitalizálás óta több mint {value}%-kal átméretezett dinamikus digitalizált képek: digitalizálja őket újra
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	A digitalizálás óta több mint {value}%-kal átméretezett dinamikus objektumok: digitalizálja őket újra
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	dinamikus hímzésobjektum: a „Kép digitalizálása…” paranccsal módosítsa (Objektum › Képvektorizálás)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

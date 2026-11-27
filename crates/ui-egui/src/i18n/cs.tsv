@@ -7387,7 +7387,7 @@ embroidery	Cancel	Zrušit
 embroidery	Digitizing…	Probíhá digitalizace…
 embroidery	Create Embroidery Objects	Vytvořit objekty výšivky
 embroidery	Start Over	Začít znovu
-embroidery	Create waits for the preview to be ready.	Vytvoření počká, až bude náhled připravený.
+embroidery	The objects are made once the preview is ready.	Objekty se vytvoří, až bude náhled připravený.
 embroidery	Can't digitize it: {reason}	Nelze digitalizovat: {reason}
 embroidery	Shapes	Tvary
 embroidery	Recomputing…	Přepočítávání…
@@ -7482,7 +7482,7 @@ embroidery	Mode	Režim
 embroidery	{value} is out of range: {low} to {high}.	{value} je mimo rozsah: {low} až {high}.
 embroidery	Number of colors	Počet barev
 embroidery	Match to threads	Přiřadit k nitím
-embroidery	Create sets the document's thread palette to {palette}.	Vytvoření nastaví paletu nití dokumentu na {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Vytvoření objektů nastaví paletu nití dokumentu na {palette}.
 embroidery	Smallest area	Nejmenší oblast
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Menší skvrnky, třeba šum JPEG, se připojí k barvě kolem sebe.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} barva byla příliš malá a připojila se k jiným|{count} barvy byly příliš malé a připojily se k jiným|{count} barev bylo příliš malých a připojilo se k jiným
@@ -7502,6 +7502,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Aktualizováno za {value} ms po poslední změně ({steps})
 embroidery	Notes	Poznámky
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Vytvořeno: {objects} ({threads}). Obrázek je na skryté vrstvě šablony „{layer}“. Odstraníte je příkazem Zpět.
+embroidery	Created {objects} ({threads}). Undo removes them.	Vytvořeno: {objects} ({threads}). Odstraníte je příkazem Zpět.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} skvrnka menší než {value} mm² se připojila k barvě kolem sebe|{count} skvrnky menší než {value} mm² se připojily k barvám kolem sebe|{count} skvrnek menších než {value} mm² se připojilo k barvám kolem sebe
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} skvrnka menší než {value} mm² se neměla k čemu připojit a byla vynechána|{count} skvrnky menší než {value} mm² se neměly k čemu připojit a byly vynechány|{count} skvrnek menších než {value} mm² se nemělo k čemu připojit a bylo vynecháno
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} pruh široký nejvýš {value} mm se připojil k sousedovi nejbližšímu své barvě|{count} pruhy široké nejvýš {value} mm se připojily k sousedům nejbližším svým barvám|{count} pruhů širokých nejvýš {value} mm se připojilo k sousedům nejbližším svým barvám
@@ -7534,8 +7535,8 @@ embroidery	Fixed	Pevný
 embroidery	Across the shape	Napříč tvarem
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Směr řad výplně: pod pevným úhlem na stránce, nebo napříč délkou každého tvaru.
 embroidery	The fills' rows, counter-clockwise on the page.	Řady výplní, proti směru hodinových ručiček na stránce.
-embroidery	From the background to the details. The Order tab changes it after Create.	Od pozadí k detailům. Karta Pořadí ho po vytvoření změní.
-embroidery	Create sets these in the document's embroidery settings.	Vytvoření je nastaví v nastavení vyšívání dokumentu.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Od pozadí k detailům. Karta Pořadí ho změní, až se objekty vytvoří.
+embroidery	Making the objects sets these in the document's embroidery settings.	Vytvoření objektů nastaví tyto hodnoty v nastavení vyšívání dokumentu.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Obrysy
 embroidery	Color outlines (running stitch)	Obrysy barev (rovný steh)
@@ -7593,17 +7594,23 @@ embroidery	Its color isn't sewn	Jeho barva se nevyšívá
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Ponechat jako živý objekt
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Ponechá obrázek s objekty z něj vytvořenými, aby je „Digitalizovat obrázek…“ mohl znovu změnit.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Jeho objekty byly ručně změněny. Opětovná digitalizace tyto změny nahradí; příkaz Zpět je vrátí.
+embroidery	Update Live Object	Aktualizovat živý objekt
+embroidery	Digitizes the live object again with these settings.	Znovu digitalizuje živý objekt s těmito nastaveními.
+embroidery	Convert to Plain Objects	Převést na obyčejné objekty
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Vytvoří ze živého objektu obyčejné objekty výšivky, které už „Digitalizovat obrázek…“ znovu nezmění.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Obsah tohoto živého objektu byl ručně změněn. Opětovná digitalizace tyto změny nahradí; příkaz Zpět je vrátí.
 embroidery	Replace	Nahradit
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Nastavení tohoto živého objektu nelze přečíst: okno začíná s výchozími hodnotami.
 embroidery	Edit in Digitize Image…	Upravit v „Digitalizovat obrázek“…
-embroidery	Live digitized image	Živý digitalizovaný obrázek
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Vytvořen živý objekt: {objects} ({threads}). „Digitalizovat obrázek…“ ho znovu změní; odstraníte ho příkazem Zpět.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Aktualizován živý objekt: {objects} ({threads}). Předchozí verzi vrátíte příkazem Zpět.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Převedeno na obyčejné objekty: {objects} ({threads}). Obrázek je na skryté vrstvě šablony „{layer}“. Živý objekt vrátíte příkazem Zpět.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Převedeno na obyčejné objekty: {objects} ({threads}). Živý objekt vrátíte příkazem Zpět.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Nenahrazovat
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Tento živý objekt vznikl v jiné paletě nití: jeho barvy se znovu přiřadí k paletě dokumentu.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Živé digitalizované obrázky se změnou velikosti o víc než {value} % od digitalizace: digitalizujte je znovu
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Živé objekty se změnou velikosti o víc než {value} % od digitalizace: digitalizujte je znovu
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	živý objekt výšivky: změňte ho v „Digitalizovat obrázek…“ (Objekt › Vektorizace obrazu)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

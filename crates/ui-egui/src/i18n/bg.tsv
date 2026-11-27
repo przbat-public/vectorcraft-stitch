@@ -7133,7 +7133,7 @@ embroidery	Cancel	Отказ
 embroidery	Digitizing…	Дигитализиране…
 embroidery	Create Embroidery Objects	Създай обекти за бродерия
 embroidery	Start Over	Започни отначало
-embroidery	Create waits for the preview to be ready.	Създаването изчаква прегледа да е готов.
+embroidery	The objects are made once the preview is ready.	Обектите ще бъдат създадени, когато прегледът е готов.
 embroidery	Can't digitize it: {reason}	Не може да се дигитализира: {reason}
 embroidery	Shapes	Фигури
 embroidery	Recomputing…	Преизчисляване…
@@ -7228,7 +7228,7 @@ embroidery	Mode	Режим
 embroidery	{value} is out of range: {low} to {high}.	{value} е извън обхвата: от {low} до {high}.
 embroidery	Number of colors	Брой цветове
 embroidery	Match to threads	Съпоставяне с нишки
-embroidery	Create sets the document's thread palette to {palette}.	Създаването задава палитрата с нишки на документа на {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Създаването на обектите задава палитрата конци на документа на {palette}.
 embroidery	Smallest area	Най-малка област
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	По-малките петънца, като шума на JPEG, се сливат с цвета около тях.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} цвят беше твърде малък и се сля с други|{count} цвята бяха твърде малки и се сляха с други
@@ -7248,6 +7248,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Обновено за {value} мс след последната промяна ({steps})
 embroidery	Notes	Бележки
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Създадени: {objects} ({threads}). Изображението е на скрития шаблонен слой „{layer}“. „Отмени“ ги премахва.
+embroidery	Created {objects} ({threads}). Undo removes them.	Създадени: {objects} ({threads}). „Отмени“ ги премахва.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} петънце, по-малко от {value} мм², се сля с цвета около него|{count} петънца, по-малки от {value} мм², се сляха с цветовете около тях
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} петънце, по-малко от {value} мм², нямаше с какво да се слее и беше пропуснато|{count} петънца, по-малки от {value} мм², нямаха с какво да се слеят и бяха пропуснати
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} ивица, широка най-много {value} мм, се сля със съседа, най-близък до цвета ѝ|{count} ивици, широки най-много {value} мм, се сляха със съседите, най-близки до цветовете им
@@ -7280,8 +7281,8 @@ embroidery	Fixed	Фиксиран
 embroidery	Across the shape	Напречно на фигурата
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Посоката на редовете на запълването: под фиксиран ъгъл на страницата или напречно на дължината на всяка фигура.
 embroidery	The fills' rows, counter-clockwise on the page.	Редовете на запълванията, обратно на часовниковата стрелка на страницата.
-embroidery	From the background to the details. The Order tab changes it after Create.	От фона към детайлите. Разделът „Ред“ го променя след създаването.
-embroidery	Create sets these in the document's embroidery settings.	Създаването ги задава в настройките за бродерия на документа.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	От фона към детайлите. Разделът „Ред“ го променя, след като обектите бъдат създадени.
+embroidery	Making the objects sets these in the document's embroidery settings.	Създаването на обектите задава тези стойности в настройките за бродиране на документа.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Контури
 embroidery	Color outlines (running stitch)	Контури на цветовете (прав бод)
@@ -7339,17 +7340,23 @@ embroidery	Its color isn't sewn	Цветът ѝ не се бродира
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Запази като динамичен обект
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Запазва изображението заедно с обектите, създадени от него, за да може „Дигитализиране на изображение…“ да ги промени отново.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Обектите му са променени ръчно. Повторното дигитализиране заменя тези промени; „Отмени“ ги връща.
+embroidery	Update Live Object	Обнови динамичния обект
+embroidery	Digitizes the live object again with these settings.	Дигитализира отново динамичния обект с тези настройки.
+embroidery	Convert to Plain Objects	Преобразувай в обикновени обекти
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Създава от динамичния обект обикновени обекти за бродерия, които „Дигитализиране на изображение…“ вече не променя.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Съдържанието на този динамичен обект е променено ръчно. Повторното дигитализиране заменя тези промени; „Отмени“ ги връща.
 embroidery	Replace	Замени
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Настройките на този динамичен обект не могат да бъдат прочетени: прозорецът започва от стандартните.
 embroidery	Edit in Digitize Image…	Редактирай в „Дигитализиране на изображение“…
-embroidery	Live digitized image	Динамично дигитализирано изображение
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Създаден е динамичен обект: {objects} ({threads}). „Дигитализиране на изображение…“ го променя отново; „Отмени“ го премахва.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Обновен е динамичният обект: {objects} ({threads}). „Отмени“ връща предишната версия.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Преобразувано в обикновени обекти: {objects} ({threads}). Изображението е на скрития шаблонен слой „{layer}“. „Отмени“ връща динамичния обект.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Преобразувано в обикновени обекти: {objects} ({threads}). „Отмени“ връща динамичния обект.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Не заменяй
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Този динамичен обект е създаден с друга палитра от конци: цветовете му се съпоставят отново с палитрата на документа.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Динамични дигитализирани изображения, мащабирани с над {value}%, откакто са дигитализирани: дигитализирайте ги отново
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Динамични обекти, мащабирани с над {value}%, откакто са дигитализирани: дигитализирайте ги отново
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	динамичен обект за бродерия: променете го в „Дигитализиране на изображение…“ (Обект › Трасиране на изображение)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

@@ -264,7 +264,10 @@ fn palette_section(app: &VectorcraftApp, ui: &mut Ui, d: &mut Dialog) {
     let document = app.session.active().map(|st| vectorcraft_engine::cmd::embroidery::thread_palette_id(&st.doc));
     let now = d.str(super::PALETTE);
     if document.is_some_and(|p| p != now) {
-        note(ui, &fill(crate::et!("Create sets the document's thread palette to {palette}."), &[("palette", &vocabulary::palette(&now))]));
+        note(
+            ui,
+            &fill(crate::et!("Making the objects sets the document's thread palette to {palette}."), &[("palette", &vocabulary::palette(&now))]),
+        );
     }
 }
 

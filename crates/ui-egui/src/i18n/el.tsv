@@ -7339,7 +7339,7 @@ embroidery	Cancel	Ακύρωση
 embroidery	Digitizing…	Ψηφιοποίηση…
 embroidery	Create Embroidery Objects	Δημιουργία αντικειμένων κεντήματος
 embroidery	Start Over	Από την αρχή
-embroidery	Create waits for the preview to be ready.	Η δημιουργία περιμένει να ετοιμαστεί η προεπισκόπηση.
+embroidery	The objects are made once the preview is ready.	Τα αντικείμενα θα δημιουργηθούν μόλις ετοιμαστεί η προεπισκόπηση.
 embroidery	Can't digitize it: {reason}	Δεν είναι δυνατή η ψηφιοποίηση: {reason}
 embroidery	Shapes	Σχήματα
 embroidery	Recomputing…	Επανυπολογισμός…
@@ -7434,7 +7434,7 @@ embroidery	Mode	Λειτουργία
 embroidery	{value} is out of range: {low} to {high}.	Το {value} είναι εκτός εύρους: {low} έως {high}.
 embroidery	Number of colors	Αριθμός χρωμάτων
 embroidery	Match to threads	Αντιστοίχιση με κλωστές
-embroidery	Create sets the document's thread palette to {palette}.	Η δημιουργία ορίζει την παλέτα κλωστών του εγγράφου σε {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	Η δημιουργία των αντικειμένων ορίζει την παλέτα κλωστών του εγγράφου σε {palette}.
 embroidery	Smallest area	Μικρότερη περιοχή
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Μικρότερες κηλίδες, όπως ο θόρυβος JPEG, ενώνονται με το χρώμα γύρω τους.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} χρώμα ήταν πολύ μικρό και ενώθηκε με άλλα|{count} χρώματα ήταν πολύ μικρά και ενώθηκαν με άλλα
@@ -7454,6 +7454,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Ενημερώθηκε σε {value} ms μετά την τελευταία αλλαγή ({steps})
 embroidery	Notes	Σημειώσεις
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	Δημιουργήθηκαν: {objects} ({threads}). Η εικόνα είναι στο κρυφό επίπεδο προτύπου «{layer}». Η Αναίρεση τα αφαιρεί.
+embroidery	Created {objects} ({threads}). Undo removes them.	Δημιουργήθηκαν: {objects} ({threads}). Η Αναίρεση τα αφαιρεί.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} κηλίδα μικρότερη από {value} mm² ενώθηκε με το χρώμα γύρω της|{count} κηλίδες μικρότερες από {value} mm² ενώθηκαν με τα χρώματα γύρω τους
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} κηλίδα μικρότερη από {value} mm² δεν είχε με τι να ενωθεί και παραλείφθηκε|{count} κηλίδες μικρότερες από {value} mm² δεν είχαν με τι να ενωθούν και παραλείφθηκαν
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} λωρίδα πλάτους έως {value} mm ενώθηκε με τη γειτονική που είναι πιο κοντά στο χρώμα της|{count} λωρίδες πλάτους έως {value} mm ενώθηκαν με τις γειτονικές που είναι πιο κοντά στα χρώματά τους
@@ -7486,8 +7487,8 @@ embroidery	Fixed	Σταθερή
 embroidery	Across the shape	Εγκάρσια στο σχήμα
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	Η κατεύθυνση των σειρών του γεμίσματος: σε σταθερή γωνία στη σελίδα ή εγκάρσια στο μήκος κάθε σχήματος.
 embroidery	The fills' rows, counter-clockwise on the page.	Οι σειρές των γεμισμάτων, αριστερόστροφα στη σελίδα.
-embroidery	From the background to the details. The Order tab changes it after Create.	Από το φόντο προς τις λεπτομέρειες. Η καρτέλα Σειρά την αλλάζει μετά τη δημιουργία.
-embroidery	Create sets these in the document's embroidery settings.	Η δημιουργία τα ορίζει στις ρυθμίσεις κεντήματος του εγγράφου.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Από το φόντο προς τις λεπτομέρειες. Η καρτέλα Σειρά την αλλάζει μόλις δημιουργηθούν τα αντικείμενα.
+embroidery	Making the objects sets these in the document's embroidery settings.	Η δημιουργία των αντικειμένων ορίζει αυτές τις τιμές στις ρυθμίσεις κεντήματος του εγγράφου.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Περιγράμματα
 embroidery	Color outlines (running stitch)	Περιγράμματα χρωμάτων (ευθεία βελονιά)
@@ -7545,17 +7546,23 @@ embroidery	Its color isn't sewn	Το χρώμα της δεν κεντιέται
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Διατήρηση ως δυναμικό αντικείμενο
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Διατηρεί την εικόνα μαζί με τα αντικείμενα που φτιάχτηκαν από αυτήν, ώστε η «Ψηφιοποίηση εικόνας…» να μπορεί να τα αλλάξει ξανά.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Τα αντικείμενά του άλλαξαν με το χέρι. Η εκ νέου ψηφιοποίηση αντικαθιστά αυτές τις αλλαγές· η Αναίρεση τις επαναφέρει.
+embroidery	Update Live Object	Ενημέρωση δυναμικού αντικειμένου
+embroidery	Digitizes the live object again with these settings.	Ψηφιοποιεί ξανά το δυναμικό αντικείμενο με αυτές τις ρυθμίσεις.
+embroidery	Convert to Plain Objects	Μετατροπή σε απλά αντικείμενα
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Δημιουργεί απλά αντικείμενα κεντήματος από το δυναμικό αντικείμενο, τα οποία η «Ψηφιοποίηση εικόνας…» δεν αλλάζει πια.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Το περιεχόμενο αυτού του δυναμικού αντικειμένου άλλαξε με το χέρι. Η εκ νέου ψηφιοποίηση αντικαθιστά αυτές τις αλλαγές· η Αναίρεση τις επαναφέρει.
 embroidery	Replace	Αντικατάσταση
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	Δεν ήταν δυνατή η ανάγνωση των ρυθμίσεων αυτού του δυναμικού αντικειμένου: το παράθυρο ξεκινά από τις προεπιλογές.
 embroidery	Edit in Digitize Image…	Επεξεργασία στην «Ψηφιοποίηση εικόνας»…
-embroidery	Live digitized image	Δυναμική ψηφιοποιημένη εικόνα
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	Δημιουργήθηκε δυναμικό αντικείμενο: {objects} ({threads}). Η «Ψηφιοποίηση εικόνας…» το αλλάζει ξανά· η Αναίρεση το αφαιρεί.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	Ενημερώθηκε το δυναμικό αντικείμενο: {objects} ({threads}). Η Αναίρεση επαναφέρει την προηγούμενη έκδοση.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	Μετατράπηκε σε απλά αντικείμενα: {objects} ({threads}). Η εικόνα είναι στο κρυφό επίπεδο προτύπου «{layer}». Η Αναίρεση επαναφέρει το δυναμικό αντικείμενο.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	Μετατράπηκε σε απλά αντικείμενα: {objects} ({threads}). Η Αναίρεση επαναφέρει το δυναμικό αντικείμενο.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	Χωρίς αντικατάσταση
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Αυτό το δυναμικό αντικείμενο δημιουργήθηκε σε άλλη παλέτα κλωστών: τα χρώματά του αντιστοιχίζονται ξανά στην παλέτα του εγγράφου.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Δυναμικές ψηφιοποιημένες εικόνες με κλιμάκωση πάνω από {value}% από την ψηφιοποίησή τους: ψηφιοποιήστε τις ξανά
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Δυναμικά αντικείμενα με κλιμάκωση πάνω από {value}% από την ψηφιοποίησή τους: ψηφιοποιήστε τα ξανά
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	δυναμικό αντικείμενο κεντήματος: αλλάξτε το στο «Ψηφιοποίηση εικόνας…» (Αντικείμενο › Ανίχνευση περιγραμμάτων εικόνας)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

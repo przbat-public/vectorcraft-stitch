@@ -7072,7 +7072,7 @@ embroidery	Cancel	キャンセル
 embroidery	Digitizing…	デジタイズ中…
 embroidery	Create Embroidery Objects	刺繍オブジェクトを作成
 embroidery	Start Over	最初からやり直す
-embroidery	Create waits for the preview to be ready.	作成はプレビューの準備ができるまで待ちます。
+embroidery	The objects are made once the preview is ready.	プレビューの準備ができたらオブジェクトを作成します。
 embroidery	Can't digitize it: {reason}	デジタイズできません：{reason}
 embroidery	Shapes	シェイプ
 embroidery	Recomputing…	再計算中…
@@ -7167,7 +7167,7 @@ embroidery	Mode	モード
 embroidery	{value} is out of range: {low} to {high}.	{value} は範囲外です: {low}～{high}。
 embroidery	Number of colors	色の数
 embroidery	Match to threads	糸に合わせる
-embroidery	Create sets the document's thread palette to {palette}.	作成すると、ドキュメントの糸パレットが {palette} になります。
+embroidery	Making the objects sets the document's thread palette to {palette}.	オブジェクトを作成すると、ドキュメントの糸パレットが {palette} になります。
 embroidery	Smallest area	最小の領域
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	これより小さい点 (JPEG のノイズなど) は、周りの色に加わります。
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 色が小さすぎて、ほかの色に加わりました
@@ -7187,6 +7187,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	最後の変更から {value} ms で更新 ({steps})
 embroidery	Notes	メモ
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	{objects}を作成しました ({threads})。画像は非表示のテンプレートレイヤー「{layer}」にあります。取り消しで削除できます。
+embroidery	Created {objects} ({threads}). Undo removes them.	{objects}を作成しました ({threads})。取り消しで削除できます。
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{value} mm² より小さい点 {count} 個が周りの色に加わりました
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{value} mm² より小さい点 {count} 個は加わる先がなく、除かれました
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	幅 {value} mm 以下の帯 {count} 本が、色の最も近い隣に加わりました
@@ -7219,8 +7220,8 @@ embroidery	Fixed	固定
 embroidery	Across the shape	形状を横切る
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	塗りの列の向き: ページ上の固定の角度、またはそれぞれの形状の長さを横切る向き。
 embroidery	The fills' rows, counter-clockwise on the page.	塗りの列、ページ上で反時計回り。
-embroidery	From the background to the details. The Order tab changes it after Create.	背景から細部へ。作成後に縫い順タブで変更できます。
-embroidery	Create sets these in the document's embroidery settings.	作成すると、これらがドキュメントの刺繍設定になります。
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	背景から細部へ。オブジェクトの作成後に縫い順タブで変更できます。
+embroidery	Making the objects sets these in the document's embroidery settings.	オブジェクトを作成すると、これらの値がドキュメントの刺繍設定になります。
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	輪郭線
 embroidery	Color outlines (running stitch)	色の輪郭線（ランニングステッチ）
@@ -7278,17 +7279,23 @@ embroidery	Its color isn't sewn	その色は縫いません
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	ライブオブジェクトとして保持
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	画像をそこから作成したオブジェクトと一緒に保持し、「画像をデジタイズ…」で再び変更できるようにします。
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	オブジェクトが手動で変更されています。もう一度デジタイズするとそれらの変更は置き換えられ、取り消しで元に戻せます。
+embroidery	Update Live Object	ライブオブジェクトを更新
+embroidery	Digitizes the live object again with these settings.	この設定で、ライブオブジェクトをもう一度デジタイズします。
+embroidery	Convert to Plain Objects	通常のオブジェクトに変換
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	ライブオブジェクトから通常の刺繍オブジェクトを作成します。「画像をデジタイズ…」でこれらを再び変更することはできません。
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	このライブオブジェクトの内容は手動で変更されています。もう一度デジタイズするとそれらの変更は置き換えられ、取り消しで元に戻せます。
 embroidery	Replace	置き換える
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	このライブオブジェクトの設定を読み取れませんでした。ウィンドウは既定値から始まります。
 embroidery	Edit in Digitize Image…	「画像をデジタイズ」で編集…
-embroidery	Live digitized image	ライブのデジタイズ画像
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	ライブオブジェクトを作成しました：{objects} ({threads})。「画像をデジタイズ…」で再び変更でき、取り消しで削除できます。
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	ライブオブジェクトを更新しました：{objects} ({threads})。取り消しで以前のバージョンに戻せます。
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	通常のオブジェクトに変換しました：{objects} ({threads})。画像は非表示のテンプレートレイヤー「{layer}」にあります。取り消しでライブオブジェクトに戻せます。
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	通常のオブジェクトに変換しました：{objects} ({threads})。取り消しでライブオブジェクトに戻せます。
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	置き換えない
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	このライブオブジェクトは別の糸パレットで作成されました。色はドキュメントのパレットに改めて合わせられます。
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	デジタイズ後に {value}% を超えて拡大縮小されたライブのデジタイズ画像：もう一度デジタイズしてください
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	デジタイズ後に {value}% を超えて拡大縮小されたライブオブジェクト：もう一度デジタイズしてください
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	ライブの刺繍オブジェクトです。「画像をデジタイズ…」で変更してください（オブジェクト › 画像トレース）
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

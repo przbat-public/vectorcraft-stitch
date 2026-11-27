@@ -7021,7 +7021,7 @@ embroidery	Cancel	取消
 embroidery	Digitizing…	正在數位化…
 embroidery	Create Embroidery Objects	建立刺繡物件
 embroidery	Start Over	重新開始
-embroidery	Create waits for the preview to be ready.	建立將等待預覽就緒。
+embroidery	The objects are made once the preview is ready.	預覽就緒後即建立物件。
 embroidery	Can't digitize it: {reason}	無法數位化：{reason}
 embroidery	Shapes	形狀
 embroidery	Recomputing…	正在重新計算…
@@ -7116,7 +7116,7 @@ embroidery	Mode	模式
 embroidery	{value} is out of range: {low} to {high}.	{value} 超出範圍：{low} 到 {high}。
 embroidery	Number of colors	顏色數
 embroidery	Match to threads	匹配到線
-embroidery	Create sets the document's thread palette to {palette}.	建立時會將文件的線色盤設為 {palette}。
+embroidery	Making the objects sets the document's thread palette to {palette}.	建立物件時會將文件的線色盤設為 {palette}。
 embroidery	Smallest area	最小區域
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	更小的斑點（如 JPEG 雜訊）會併入周圍的顏色。
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 種顏色太小，已併入其他顏色
@@ -7136,6 +7136,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	上次變更後 {value} ms 內更新（{steps}）
 embroidery	Notes	注意事項
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	已建立 {objects}（{threads}）。影像位於隱藏的範本圖層「{layer}」上。復原可將其移除。
+embroidery	Created {objects} ({threads}). Undo removes them.	已建立 {objects}（{threads}）。復原可將其移除。
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} 個小於 {value} mm² 的斑點已併入周圍的顏色
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} 個小於 {value} mm² 的斑點無處可併入，已略去
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} 條寬度不超過 {value} mm 的色帶已併入顏色最接近的相鄰區域
@@ -7168,8 +7169,8 @@ embroidery	Fixed	固定
 embroidery	Across the shape	橫跨形狀
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	填色各行的方向：頁面上的固定角度，或橫跨每個形狀的長度。
 embroidery	The fills' rows, counter-clockwise on the page.	填色的行，在頁面上按逆時針方向。
-embroidery	From the background to the details. The Order tab changes it after Create.	從背景到細節。建立後可在「順序」分頁中變更。
-embroidery	Create sets these in the document's embroidery settings.	建立時會將這些設為文件的刺繡設定。
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	從背景到細節。建立物件後可在「順序」分頁中變更。
+embroidery	Making the objects sets these in the document's embroidery settings.	建立物件時會將這些設為文件的刺繡設定。
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	輪廓線
 embroidery	Color outlines (running stitch)	顏色輪廓線（平針）
@@ -7227,17 +7228,23 @@ embroidery	Its color isn't sewn	其顏色不縫製
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	保留為即時物件
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	將影像與由其產生的物件保存在一起，以便「數位化影像…」可以再次變更它們。
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	其物件已被手動變更。重新數位化會取代這些變更；復原可將其還原。
+embroidery	Update Live Object	更新即時物件
+embroidery	Digitizes the live object again with these settings.	使用這些設定重新數位化即時物件。
+embroidery	Convert to Plain Objects	轉換為一般物件
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	由即時物件產生一般刺繡物件，「數位化影像…」不會再變更它們。
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	此即時物件的內容已被手動變更。重新數位化會取代這些變更；復原可將其還原。
 embroidery	Replace	取代
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	無法讀取此即時物件的設定：視窗從預設值開始。
 embroidery	Edit in Digitize Image…	在「數位化影像」中編輯…
-embroidery	Live digitized image	即時數位化影像
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	已建立即時物件：{objects}（{threads}）。「數位化影像…」可再次變更它；復原可將其移除。
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	已更新即時物件：{objects}（{threads}）。復原可找回先前的版本。
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	已轉換為一般物件：{objects}（{threads}）。影像位於隱藏的範本圖層「{layer}」上。復原可找回即時物件。
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	已轉換為一般物件：{objects}（{threads}）。復原可找回即時物件。
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	不取代
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	此即時物件是以另一個線色板製作的：其顏色將重新配對文件的色板。
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	數位化後縮放超過 {value}% 的即時數位化影像：請重新數位化
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	數位化後縮放超過 {value}% 的即時物件：請重新數位化
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	即時刺繡物件：請在「數位化影像…」中變更（物件 › 影像描圖）
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

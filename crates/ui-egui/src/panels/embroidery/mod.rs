@@ -259,6 +259,15 @@ pub(crate) fn enabled(app: &VectorcraftApp, id: &str) -> Option<bool> {
     }
 }
 
+/// The name the Embroidery panel gives object `n` in `lang`: a live object of a digitized image by
+/// its picture (its first child, as the Layers panel names that image; Create names plain objects
+/// after their image too), any other object as the Layers panel names it. A live object's own name
+/// is upstream's mark of a trace, "Image Trace", the same for every one.
+pub(crate) fn object_name(app: &VectorcraftApp, n: &vectorcraft_doc::Node, lang: crate::i18n::Lang) -> String {
+    let picture = n.children().and_then(|c| c.first()).filter(|_| vectorcraft_engine::cmd::embroidery::live_digitizing(n).is_some());
+    crate::panels::layers::shown_name(app, picture.map_or(n, |p| p.as_ref()), lang)
+}
+
 /// `ui.embroideryPanel {tab?: "object"|"order"|"check"|"stitches", part?: "fill"|"stroke",
 /// format?: a format's id, or null, scope?: "selection"|"design", filter?: "all"|"jumps"|"trims"|
 /// "stops"|"short"|"long"}`: show the panel, at `tab`; `part` the one the Object tab shows; `format`

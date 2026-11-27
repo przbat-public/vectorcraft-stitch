@@ -7367,7 +7367,7 @@ embroidery	Cancel	Cancel·la
 embroidery	Digitizing…	S’està digitalitzant…
 embroidery	Create Embroidery Objects	Crea objectes de brodat
 embroidery	Start Over	Torna a començar
-embroidery	Create waits for the preview to be ready.	La creació espera que la previsualització sigui a punt.
+embroidery	The objects are made once the preview is ready.	Els objectes es crearan quan la previsualització sigui a punt.
 embroidery	Can't digitize it: {reason}	No es pot digitalitzar: {reason}
 embroidery	Shapes	Formes
 embroidery	Recomputing…	S’està recalculant…
@@ -7462,7 +7462,7 @@ embroidery	Mode	Mode
 embroidery	{value} is out of range: {low} to {high}.	{value} és fora de l’interval: de {low} a {high}.
 embroidery	Number of colors	Nombre de colors
 embroidery	Match to threads	Fes coincidir amb els fils
-embroidery	Create sets the document's thread palette to {palette}.	En crear-los, la paleta de fils del document passa a ser {palette}.
+embroidery	Making the objects sets the document's thread palette to {palette}.	En crear els objectes, la paleta de fils del document passa a ser {palette}.
 embroidery	Smallest area	Àrea més petita
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	Les taques més petites, com el soroll del JPEG, s’uneixen al color del voltant.
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} color era massa petit i s’ha unit a d’altres|{count} colors eren massa petits i s’han unit a d’altres
@@ -7482,6 +7482,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	Actualitzat en {value} ms després de l’últim canvi ({steps})
 embroidery	Notes	Notes
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	S’han creat {objects} ({threads}). La imatge és a la capa de plantilla oculta «{layer}». Desfés els suprimeix.
+embroidery	Created {objects} ({threads}). Undo removes them.	S’han creat {objects} ({threads}). Desfés els suprimeix.
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} taca de menys de {value} mm² s’ha unit al color del voltant|{count} taques de menys de {value} mm² s’han unit als colors del voltant
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} taca de menys de {value} mm² no tenia res a què unir-se i s’ha deixat fora|{count} taques de menys de {value} mm² no tenien res a què unir-se i s’han deixat fora
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} franja de com a màxim {value} mm d’ample s’ha unit al veí més proper al seu color|{count} franges de com a màxim {value} mm d’ample s’han unit als veïns més propers als seus colors
@@ -7514,8 +7515,8 @@ embroidery	Fixed	Fix
 embroidery	Across the shape	A través de la forma
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	La direcció de les files del farciment: amb un angle fix a la pàgina, o a través de la llargada de cada forma.
 embroidery	The fills' rows, counter-clockwise on the page.	Les files dels farciments, en sentit antihorari a la pàgina.
-embroidery	From the background to the details. The Order tab changes it after Create.	Del fons als detalls. La pestanya Ordre el canvia després de crear-los.
-embroidery	Create sets these in the document's embroidery settings.	En crear-los, passen a la configuració de brodat del document.
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	Del fons als detalls. La pestanya Ordre el canvia després de crear els objectes.
+embroidery	Making the objects sets these in the document's embroidery settings.	En crear els objectes, aquests paràmetres passen a la configuració de brodat del document.
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	Contorns
 embroidery	Color outlines (running stitch)	Contorns dels colors (punt endavant)
@@ -7573,17 +7574,23 @@ embroidery	Its color isn't sewn	El seu color no es brodeja
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	Conserva com a objecte dinàmic
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	Conserva la imatge amb els objectes que se n’han fet, perquè «Digitalitza la imatge…» els pugui tornar a canviar.
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	Els seus objectes s’han canviat a mà. Tornar-lo a digitalitzar substitueix aquests canvis; Desfés els recupera.
+embroidery	Update Live Object	Actualitza l’objecte dinàmic
+embroidery	Digitizes the live object again with these settings.	Torna a digitalitzar l’objecte dinàmic amb aquests paràmetres.
+embroidery	Convert to Plain Objects	Converteix en objectes normals
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	Crea objectes de brodat normals a partir de l’objecte dinàmic, que «Digitalitza la imatge…» ja no torna a canviar.
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	El contingut d’aquest objecte dinàmic s’ha canviat a mà. Tornar-lo a digitalitzar substitueix aquests canvis; Desfés els recupera.
 embroidery	Replace	Substitueix
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	No s’han pogut llegir els paràmetres d’aquest objecte dinàmic: la finestra comença amb els valors per defecte.
 embroidery	Edit in Digitize Image…	Edita a «Digitalitza la imatge»…
-embroidery	Live digitized image	Imatge digitalitzada dinàmica
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	S’ha creat un objecte dinàmic: {objects} ({threads}). «Digitalitza la imatge…» el torna a canviar; Desfés el suprimeix.
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	S’ha actualitzat l’objecte dinàmic: {objects} ({threads}). Desfés recupera la versió anterior.
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	S’ha convertit en objectes normals: {objects} ({threads}). La imatge és a la capa de plantilla oculta «{layer}». Desfés recupera l’objecte dinàmic.
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	S’ha convertit en objectes normals: {objects} ({threads}). Desfés recupera l’objecte dinàmic.
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	No substitueixis
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	Aquest objecte dinàmic es va fer amb una altra paleta de fils: els seus colors es tornen a associar amb la paleta del document.
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	Imatges digitalitzades dinàmiques escalades més d’un {value} % des que es van digitalitzar: torneu-les a digitalitzar
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	Objectes dinàmics escalats més d’un {value} % des que es van digitalitzar: torneu-los a digitalitzar
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	un objecte de brodat dinàmic: canvieu-lo a «Digitalitza la imatge…» (Objecte › Traçat d’imatge)
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

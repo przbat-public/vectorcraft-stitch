@@ -1457,7 +1457,8 @@ fn the_object_tab_offers_edit_in_digitize_image_for_a_live_object() {
     select(&mut app, &[live]);
     let mut time = 0.0;
     let drawn = ready(&mut app, &ctx, &mut time);
-    assert!(drawn.has("Live digitized image"), "{:?}", drawn.words);
+    assert!(drawn.has("Live object"), "its kind, the live object's one name: {:?}", drawn.words);
+    assert!(drawn.has("logo.png") && !drawn.has("Image Trace"), "named by its picture: {:?}", drawn.words);
     time += 0.05;
     frame_with_dialogs(&mut app, &ctx, time, vec![drawn.click("Edit in Digitize Image…")]);
     let d = app.ui.dialog.as_ref().filter(|d| d.kind == crate::embroidery::image_window::KIND).expect("the window opens");

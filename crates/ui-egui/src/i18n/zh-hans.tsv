@@ -7225,7 +7225,7 @@ embroidery	Cancel	取消
 embroidery	Digitizing…	正在数字化…
 embroidery	Create Embroidery Objects	创建刺绣对象
 embroidery	Start Over	重新开始
-embroidery	Create waits for the preview to be ready.	创建将等待预览就绪。
+embroidery	The objects are made once the preview is ready.	预览就绪后即创建对象。
 embroidery	Can't digitize it: {reason}	无法数字化：{reason}
 embroidery	Shapes	形状
 embroidery	Recomputing…	正在重新计算…
@@ -7320,7 +7320,7 @@ embroidery	Mode	模式
 embroidery	{value} is out of range: {low} to {high}.	{value} 超出范围：{low} 到 {high}。
 embroidery	Number of colors	颜色数
 embroidery	Match to threads	匹配到线
-embroidery	Create sets the document's thread palette to {palette}.	创建时会将文档的线色板设为 {palette}。
+embroidery	Making the objects sets the document's thread palette to {palette}.	创建对象时会将文档的线色板设为 {palette}。
 embroidery	Smallest area	最小区域
 embroidery	Smaller specks, such as JPEG noise, join the color around them.	更小的斑点（如 JPEG 噪点）会并入周围的颜色。
 @plural	{count} color was too small and joined others|{count} colors were too small and joined others	{count} 种颜色太小，已并入其他颜色
@@ -7340,6 +7340,7 @@ embroidery	The image's objects alone, with the document's fabric, thread and mac
 embroidery	Updated in {value} ms after the last change ({steps})	上次更改后 {value} ms 内更新（{steps}）
 embroidery	Notes	注意事项
 embroidery	Created {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo removes them.	已创建 {objects}（{threads}）。图像位于隐藏的模板图层“{layer}”上。撤销可将其移除。
+embroidery	Created {objects} ({threads}). Undo removes them.	已创建 {objects}（{threads}）。撤销可将其移除。
 @plural	{count} speck smaller than {value} mm² joined the color around it|{count} specks smaller than {value} mm² joined the colors around them	{count} 个小于 {value} mm² 的斑点已并入周围的颜色
 @plural	{count} speck smaller than {value} mm² had nothing to join and was left out|{count} specks smaller than {value} mm² had nothing to join and were left out	{count} 个小于 {value} mm² 的斑点无处可并入，已略去
 @plural	{count} band at most {value} mm wide joined the neighbor nearest its color|{count} bands at most {value} mm wide joined the neighbors nearest their colors	{count} 条宽度不超过 {value} mm 的色带已并入颜色最接近的相邻区域
@@ -7372,8 +7373,8 @@ embroidery	Fixed	固定
 embroidery	Across the shape	横跨形状
 embroidery	The direction of a fill's rows: at a fixed angle on the page, or across each shape's length.	填色各行的方向：页面上的固定角度，或横跨每个形状的长度。
 embroidery	The fills' rows, counter-clockwise on the page.	填色的行，在页面上按逆时针方向。
-embroidery	From the background to the details. The Order tab changes it after Create.	从背景到细节。创建后可在“顺序”选项卡中更改。
-embroidery	Create sets these in the document's embroidery settings.	创建时会将这些设为文档的刺绣设置。
+embroidery	From the background to the details. The Order tab changes it once the objects are made.	从背景到细节。创建对象后可在“顺序”选项卡中更改。
+embroidery	Making the objects sets these in the document's embroidery settings.	创建对象时会将这些设为文档的刺绣设置。
 # VectorCraft Stitch: the image window's outlines (drafted with AI assistance from the English meaning, for review)
 embroidery	Outlines	轮廓线
 embroidery	Color outlines (running stitch)	颜色轮廓线（平针）
@@ -7431,17 +7432,23 @@ embroidery	Its color isn't sewn	其颜色不缝制
 # VectorCraft Stitch: Digitize Image… on a live object: Keep as Live Object, opening one again, the question before hand edits are replaced, the Object tab's Edit in Digitize Image… (drafted with AI assistance from the English meaning, for review)
 embroidery	Keep as Live Object	保留为实时对象
 embroidery	Keeps the image with the objects made of it, so that Digitize Image… can change them again.	将图像与由其生成的对象保存在一起，以便“数字化图像…”可以再次更改它们。
-embroidery	Its objects were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	其对象已被手动更改。重新数字化会替换这些更改；撤销可将其恢复。
+embroidery	Update Live Object	更新实时对象
+embroidery	Digitizes the live object again with these settings.	使用这些设置重新数字化实时对象。
+embroidery	Convert to Plain Objects	转换为普通对象
+embroidery	Makes plain embroidery objects of the live object, which Digitize Image… doesn't change again.	由实时对象生成普通刺绣对象，“数字化图像…”不会再更改它们。
+embroidery	The contents of this live object were changed by hand. Digitizing it again replaces those changes; Undo brings them back.	此实时对象的内容已被手动更改。重新数字化会替换这些更改；撤销可将其恢复。
 embroidery	Replace	替换
 embroidery	This live object's settings couldn't be read: the window starts from the defaults.	无法读取此实时对象的设置：窗口从默认值开始。
 embroidery	Edit in Digitize Image…	在“数字化图像”中编辑…
-embroidery	Live digitized image	实时数字化图像
 embroidery	Created a live object: {objects} ({threads}). Digitize Image… changes it again; Undo removes it.	已创建实时对象：{objects}（{threads}）。“数字化图像…”可再次更改它；撤销可将其移除。
+embroidery	Updated the live object: {objects} ({threads}). Undo brings back the earlier version.	已更新实时对象：{objects}（{threads}）。撤销可找回之前的版本。
+embroidery	Converted to plain objects: {objects} ({threads}). The image is on the hidden template layer “{layer}”. Undo brings the live object back.	已转换为普通对象：{objects}（{threads}）。图像位于隐藏的模板图层“{layer}”上。撤销可找回实时对象。
+embroidery	Converted to plain objects: {objects} ({threads}). Undo brings the live object back.	已转换为普通对象：{objects}（{threads}）。撤销可找回实时对象。
 # VectorCraft Stitch: Digitize Image… on a live object: the question's Don't Replace, and a live object made in another thread palette (drafted with AI assistance from the English meaning, for review)
 embroidery	Don't Replace	不替换
 embroidery	This live object was made in another thread palette: its colors are matched to the document's palette again.	此实时对象是用另一个线色板制作的：其颜色将重新匹配文档的色板。
 # VectorCraft Stitch: the Check tab: a live digitized image scaled since it was digitized (drafted with AI assistance from the English meaning, for review)
-embroidery	Live digitized images scaled by more than {value}% since they were digitized: digitize them again	数字化后缩放超过 {value}% 的实时数字化图像：请重新数字化
+embroidery	Live objects scaled by more than {value}% since they were digitized: digitize them again	数字化后缩放超过 {value}% 的实时对象：请重新数字化
 # VectorCraft Stitch: Image Trace's refusal of a live object of a digitized image, said in the status bar (drafted with AI assistance from the English meaning, for review)
 @msg	a live embroidery object: change it in Digitize Image… (Object › Image Trace)	实时刺绣对象：请在“数字化图像…”中更改（对象 › 图像描摹）
 # VectorCraft Stitch: the area inspector: Apply to Similar Areas and an area's own choices greyed out at the most area changes (drafted with AI assistance from the English meaning, for review)

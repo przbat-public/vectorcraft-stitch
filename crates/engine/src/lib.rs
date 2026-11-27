@@ -31,7 +31,7 @@ pub use cmd::create::constrain_click;
 pub use cmd::distortcmds::perspective_click;
 // VectorCraft Stitch: `PlanKey` and `Planned`, for the stitch preview.
 pub use cmd::embroidery::{Options as EmbroideryOptions, PlanKey as EmbroideryPlanKey, Planned as EmbroideryPlanned, Planner as EmbroideryPlanner};
-pub use cmd::fileio::embroidery::LOSS_NOTES as EMBROIDERY_LOSS_NOTES;
+pub use cmd::fileio::embroidery::{LOSS_NOTES as EMBROIDERY_LOSS_NOTES, NOT_WRITTEN_NOTE as EMBROIDERY_NOT_WRITTEN_NOTE};
 pub use cmd::params::{check_keys, check_params};
 pub use cmd::pathops::auto_simplify_level;
 pub use cmd::rasterfx::{export_pdf, flatten_raster_effects};

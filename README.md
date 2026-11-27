@@ -17,7 +17,8 @@
 > [!NOTE]
 > **This is VectorCraft Stitch, a fork of VectorCraft that adds machine embroidery:** the art is
 > planned into stitches (fills, satin columns, running lines) and written as DST, TAP, T01, EXP,
-> PES, PEC, JEF and VP3 machine files, which also open as art. What the fork works on, and how it
+> PES, PEC, JEF and VP3 machine files, which also open as art, as Janome SEW and Husqvarna Viking
+> HUS files do (read only). What the fork works on, and how it
 > keeps up with VectorCraft, is in [FORK.md](FORK.md); the embroidery itself is in
 > [docs/embroidery.md](docs/embroidery.md). As a modified version it shows none of the ArtCraft
 > marks (`docs/brand/LICENSE-brand.txt`).

@@ -5513,6 +5513,10 @@ theme	Appearance	Giao diện
 @msg	threads that twist several colours are read in their first colour	các sợi chỉ xoắn nhiều màu được đọc theo màu đầu tiên
 @msg	the file's several designs are read as one	nhiều thiết kế trong tệp được đọc thành một
 @msg	the file holds things this version doesn't read	tệp chứa những thứ mà phiên bản này không đọc
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft không thể ghi lại tệp này nguyên trạng ({what}), nên thay thế sẽ mất tệp vĩnh viễn. Hãy lưu với tên khác để giữ lại.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} là tệp mà tài liệu này được đọc từ đó, và VectorCraft không thể ghi lại tệp này nguyên trạng ({what}): ghi đè lên tệp sẽ mất nó vĩnh viễn. Thay vào đó, hãy ghi vào tệp khác, hoặc truyền acknowledgeLoss: true để vẫn thay thế tệp
+@msg	the file's own format, which VectorCraft reads but doesn't write	định dạng riêng của tệp, định dạng mà VectorCraft đọc được nhưng không ghi
+@msg	the file ends early: the design may be incomplete	tệp kết thúc sớm: thiết kế có thể chưa đầy đủ
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Dựa trên VectorCraft của nhóm ArtCraft. MIT OR Apache-2.0. Phông chữ: Source Sans 3, Inter, JetBrains Mono (OFL). Biểu tượng: Lucide (ISC) + VectorCraft.
@@ -5527,11 +5531,15 @@ theme	Appearance	Giao diện
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	một hình có nhiều hơn mức {MAX_SHAPE_POINTS} điểm cho phép của một hình khi các đường cong của nó được chuyển thành đoạn thẳng: hãy đơn giản hóa hình hoặc chia nó thành các hình nhỏ hơn
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	một hình nằm cách gốc tọa độ hơn {MAX_COORD_MM} mm hoặc có tọa độ không phải là số: không thể thêu
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	một hình sẽ cần khoảng {n} mũi thêu, nhiều hơn mức {MAX_STITCHES} cho phép của một hình: hãy dùng mũi dài hơn, khoảng cách rộng hơn hoặc thiết kế nhỏ hơn
+@msg	not a HUS file: it does not start with a HUS signature	không phải tệp HUS: tệp không bắt đầu bằng chữ ký HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	không phải tệp PES hay PEC: tệp không bắt đầu bằng #PES hay #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	không phải tệp SEW: tệp nêu {colors} màu, còn tệp SEW nêu từ 1 đến {MAX_COLORS} màu
 @msg	not a VP3 file: it does not start with %vsm%	không phải tệp VP3: tệp không bắt đầu bằng %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	không phải tệp {what}: bản ghi {_1} của tệp không phải bản ghi DST
 @msg	params must be an object	tham số phải là một đối tượng
 @msg	the EXP file has no stitch records	tệp EXP không có bản ghi mũi thêu
+@msg	the HUS file's compressed stitches are damaged	dữ liệu mũi thêu đã nén của tệp HUS bị hỏng
+@msg	the HUS header is cut short or points past the file's {len} bytes	phần đầu HUS bị cắt cụt hoặc trỏ tới vị trí vượt quá {len} byte của tệp
 @msg	the JEF file has no stitch records	tệp JEF không có bản ghi mũi thêu
 @msg	the JEF file is cut short: {len} bytes	tệp JEF bị cắt cụt: {len} byte
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	phần đầu JEF trỏ tới byte {offset}, vượt quá {_1} byte của tệp

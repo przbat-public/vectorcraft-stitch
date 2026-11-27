@@ -5900,6 +5900,10 @@ imageTrace	Outline	Körvonal
 @msg	threads that twist several colours are read in their first colour	a több színt összesodró szálak az első színükben olvasódnak be
 @msg	the file's several designs are read as one	a fájl több mintája egyként olvasódik be
 @msg	the file holds things this version doesn't read	a fájl olyan dolgokat tartalmaz, amelyeket ez a verzió nem olvas
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	A VectorCraft nem tudja újra kiírni ezt a fájlt úgy, ahogy van ({what}), ezért a felülírásával végleg elvész. A megtartásához mentsd más néven.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	ebből a fájlból olvasódott be ez a dokumentum: {target}; a VectorCraft nem tudja újra kiírni a fájlt úgy, ahogy van ({what}), ezért a felülírásával végleg elveszne. Írj inkább egy másik fájlba, vagy add meg az acknowledgeLoss: true értéket, hogy mégis felülírd
+@msg	the file's own format, which VectorCraft reads but doesn't write	a fájl saját formátuma, amelyet a VectorCraft olvas, de nem ír
+@msg	the file ends early: the design may be incomplete	a fájl idő előtt véget ér: a minta hiányos lehet
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Az ArtCraft csapat VectorCraft programján alapul. MIT OR Apache-2.0. Betűtípusok: Source Sans 3, Inter, JetBrains Mono (OFL). Ikonok: Lucide (ISC) + VectorCraft.
@@ -5915,11 +5919,15 @@ imageTrace	Outline	Körvonal
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	egy alakzatnak több pontja van, mint az egy alakzatnak megengedett {MAX_SHAPE_POINTS}, ha a görbéit szakaszokra bontjuk: egyszerűsítse, vagy ossza fel kisebb alakzatokra
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	egy alakzat több mint {MAX_COORD_MM} mm-re van az origótól, vagy olyan koordinátája van, amely nem szám: nem hímezhető
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	egy alakzathoz körülbelül {n} öltés kellene, több, mint az egy alakzatnak megengedett {MAX_STITCHES}: használjon hosszabb öltést, nagyobb sortávolságot vagy kisebb mintát
+@msg	not a HUS file: it does not start with a HUS signature	nem HUS-fájl: nem HUS-aláírással kezdődik
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	nem PES- vagy PEC-fájl: nem #PES vagy #PEC kezdetű
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	nem SEW-fájl: {colors} színt ad meg, egy SEW-fájl pedig 1–{MAX_COLORS} színt ad meg
 @msg	not a VP3 file: it does not start with %vsm%	nem VP3-fájl: nem %vsm% kezdetű
 @msg	not a {what} file: its record {_1} is not a DST record	nem {what}-fájl: a(z) {_1}. rekordja nem DST-rekord
 @msg	params must be an object	a paramétereknek objektumnak kell lenniük
 @msg	the EXP file has no stitch records	az EXP-fájlnak nincsenek öltésrekordjai
+@msg	the HUS file's compressed stitches are damaged	a HUS-fájl tömörített öltései sérültek
+@msg	the HUS header is cut short or points past the file's {len} bytes	a HUS-fejléc csonka, vagy a fájl {len} bájtján túlra mutat
 @msg	the JEF file has no stitch records	a JEF-fájlnak nincsenek öltésrekordjai
 @msg	the JEF file is cut short: {len} bytes	a JEF-fájl csonka: {len} bájt
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	a JEF-fejléc a(z) {offset}. bájtra mutat, a fájl {_1} bájtján túlra

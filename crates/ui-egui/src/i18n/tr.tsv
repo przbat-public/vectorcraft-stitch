@@ -6100,6 +6100,10 @@ axis	Y Axis	Y ekseni
 @msg	threads that twist several colours are read in their first colour	birkaç rengin büküldüğü iplikler ilk renkleriyle okunur
 @msg	the file's several designs are read as one	dosyadaki birden çok tasarım tek bir tasarım olarak okunur
 @msg	the file holds things this version doesn't read	dosya bu sürümün okumadığı öğeler içeriyor
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft bu dosyayı olduğu gibi yeniden yazamaz ({what}), bu nedenle onu değiştirirseniz tamamen kaybolur. Saklamak için başka bir adla kaydedin.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target}, bu belgenin okunduğu dosyadır ve VectorCraft onu olduğu gibi yeniden yazamaz ({what}): üzerine yazılırsa tamamen kaybolur. Bunun yerine başka bir dosya yazın veya yine de değiştirmek için acknowledgeLoss: true geçirin
+@msg	the file's own format, which VectorCraft reads but doesn't write	dosyanın kendi biçimi, VectorCraft'ın okuduğu ama yazmadığı bir biçim
+@msg	the file ends early: the design may be incomplete	dosya erken bitiyor: tasarım eksik olabilir
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft ekibinin VectorCraft'ına dayanır. MIT VEYA Apache-2.0. Yazı Tipleri: Source Sans 3, Inter, JetBrains Mono (OFL). Simgeler: Lucide (ISC) + VectorCraft.
 @msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC en fazla {MAX_COLORS} renk taşır (her durma bir renk sayılır), {colors} değil
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 en fazla {MAX_COLORS} renk bloğu tutar
@@ -6110,11 +6114,15 @@ axis	Y Axis	Y ekseni
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	bir şeklin eğrileri doğru parçalarına dönüştürüldüğünde bir şeklin alabileceği {MAX_SHAPE_POINTS} noktadan fazla noktası var: şekli basitleştirin veya daha küçük şekillere bölün
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	bir şekil başlangıç noktasından {MAX_COORD_MM} mm'den daha uzakta ya da sayı olmayan bir koordinatı var: dikilemez
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	bir şekil yaklaşık {n} dikiş gerektirir, bu bir şeklin alabileceği {MAX_STITCHES} dikişten fazla: daha uzun bir dikiş, daha geniş bir aralık veya daha küçük bir tasarım kullanın
+@msg	not a HUS file: it does not start with a HUS signature	HUS dosyası değil: bir HUS imzasıyla başlamıyor
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES veya PEC dosyası değil: #PES ya da #PEC ile başlamıyor
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	SEW dosyası değil: {colors} renk belirtiyor, bir SEW dosyası ise 1 ile {MAX_COLORS} arasında renk belirtir
 @msg	not a VP3 file: it does not start with %vsm%	VP3 dosyası değil: %vsm% ile başlamıyor
 @msg	not a {what} file: its record {_1} is not a DST record	{what} dosyası değil: {_1} numaralı kaydı bir DST kaydı değil
 @msg	params must be an object	parametreler bir nesne olmalı
 @msg	the EXP file has no stitch records	EXP dosyasında dikiş kaydı yok
+@msg	the HUS file's compressed stitches are damaged	HUS dosyasının sıkıştırılmış dikişleri bozuk
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS başlığı eksik ya da dosyanın {len} baytının ötesine işaret ediyor
 @msg	the JEF file has no stitch records	JEF dosyasında dikiş kaydı yok
 @msg	the JEF file is cut short: {len} bytes	JEF dosyası eksik: {len} bayt
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF başlığı {offset}. bayta işaret ediyor, dosyanın {_1} baytının ötesine

@@ -1,6 +1,6 @@
-//! Embroidery files: `document.open` reads a design's stitches as paths, `document.export`
-//! stitches the document's art and writes a machine file (DST, TAP, T01, EXP, PES, PEC, JEF or
-//! VP3).
+//! Embroidery files: `document.open` reads a design's stitches as paths (also from Janome SEW and
+//! Husqvarna Viking HUS files, which are never written), `document.export` stitches the document's
+//! art and writes a machine file (DST, TAP, T01, EXP, PES, PEC, JEF or VP3).
 //!
 //! Reading draws each colour block as a group of thin lines in the thread's colour, so the design
 //! looks like it will sew, and can be measured, traced over or recoloured. Writing takes every
@@ -21,9 +21,10 @@
 //! thread), `minStitch` (mm) and `splitLength` (mm: a longer satin stitch is split). A value
 //! outside its range is refused.
 //!
-//! The parts: [`import`] (a design read as art, with notes of what reading it left out, which
-//! make writing over the file ask first: [`is_loss`]) and [`encode`] (the export: its options, and
-//! the stitches `cmd::embroidery` plans from the document's art, written in the format).
+//! The parts: [`import`] (a design read as art, with notes of what reading it left out, which make
+//! writing over the file ask first where writing is checked: [`is_loss`]) and [`encode`] (the
+//! export: its options, and the stitches `cmd::embroidery` plans from the document's art, written
+//! in the format).
 
 mod import;
 
@@ -40,9 +41,22 @@ pub use import::LOSS_NOTES;
 pub(super) use import::import;
 
 /// Whether `note`, said when a file was opened, says that reading a machine file left something
-/// out ([`LOSS_NOTES`]): writing over that file then asks first.
+/// out ([`LOSS_NOTES`]): writing over that file then asks first where writing is checked.
 pub(super) fn is_loss(note: &str) -> bool {
     LOSS_NOTES.contains(&note)
+}
+
+/// Why writing over a file of a format VectorCraft reads but doesn't write (SEW, HUS) asks first
+/// where writing is checked (docs/embroidery.md › Which ways of writing check), whatever opening
+/// it said: a file written over it can't be made one of that format again (the
+/// project owner's choice, 2026-11-26). Not said on opening, which may leave nothing out: the
+/// question and the refusal name it first among what writing over the file loses, in words of
+/// their own (VectorCraft can't write the file again as it is), not as something reading left out.
+pub const NOT_WRITTEN_NOTE: &str = "the file's own format, which VectorCraft reads but doesn't write";
+
+/// [`NOT_WRITTEN_NOTE`] for a file of the format `id` opened, when VectorCraft only reads it.
+pub(super) fn not_written_loss(id: &str) -> Option<&'static str> {
+    StitchFormat::readable(id).filter(|f| !f.writes()).map(|_| NOT_WRITTEN_NOTE)
 }
 
 const C: &str = "document.export";
@@ -144,15 +158,19 @@ pub const OPTIONS: &[FormatOption] =
     &[STITCH, SPACING, LENGTH, ANGLE, PULL, PULL_PERCENT, PUSH, EXPAND, NARROW, WEIGHT, UNDERLAY, JUMP, TRIM, MIN_STITCH, SPLIT];
 
 /// The entry of `f` in the formats `document.open` and `document.export` know: as the stitch crate
-/// describes it ([`StitchFormat::spec`]), read and written, with the embroidery options.
+/// describes it ([`StitchFormat::spec`]), read, and written with the embroidery options when the
+/// stitch crate writes it (SEW and HUS are only read).
 pub(super) const fn format(f: StitchFormat) -> Format {
     let s = f.spec();
-    Format { id: s.id, label: s.label, extensions: s.extensions, mime: s.mime, read: true, write: true, raster: false, options: OPTIONS }
+    let write = f.writes();
+    let options = if write { OPTIONS } else { &[] };
+    Format { id: s.id, label: s.label, extensions: s.extensions, mime: s.mime, read: true, write, raster: false, options }
 }
 
-/// Whether `id` names an embroidery format: one the stitch crate reads and writes.
+/// Whether `id` names an embroidery format: one the stitch crate reads (and, but for SEW and HUS,
+/// writes).
 pub(crate) fn is_format(id: &str) -> bool {
-    StitchFormat::from_id(id).is_some()
+    StitchFormat::readable(id).is_some()
 }
 
 /// `file.formatOptions`' value of an option of format `id`: for an embroidery format, unset
@@ -175,14 +193,20 @@ pub(crate) fn options(p: &Value) -> Result<Options> {
     }
 }
 
-/// The export's note when it writes a stop: no format has one, so it is a change to the same
-/// thread, which machines take differently (`docs/embroidery.md` › The formats).
+/// The export's note when it writes a stop: no format written has one, so it is a change to the
+/// same thread, which machines take differently (`docs/embroidery.md` › The formats).
 pub(crate) const STOPS_WRITTEN: &str = "each stop is written as a change to the same thread: a single-needle machine stops there, a multi-needle machine only where its operator sets a stop on that change";
 
 /// Write a machine file from the document's visible art: its stitch plan, as the format writes it.
 pub(super) fn encode(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let opts = options(p)?;
-    let format = StitchFormat::from_id(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
+    let format = StitchFormat::readable(f.id).ok_or_else(|| bad(C, format!("{} is not an embroidery format", f.label)))?;
+    // A backstop: every export path refuses a format only read before it gets here
+    // (`writable_format`), and `Format::write` refuses it too; this keeps a new caller from
+    // planning a whole design only to fail at the end.
+    if !format.writes() {
+        return Err(bad(C, format!("{} files can be opened but not written (see document.formats)", f.label)));
+    }
     let plan = service::plan_afresh(doc, &opts).map_err(PlanError::error)?;
     if plan.is_empty() {
         // What was left out says why, when something was. The document's, not the parameters'.

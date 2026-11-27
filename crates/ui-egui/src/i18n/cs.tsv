@@ -5917,6 +5917,10 @@ mark-style	Japanese	Japonské
 @msg	threads that twist several colours are read in their first colour	nitě skané z několika barev se čtou v první barvě
 @msg	the file's several designs are read as one	několik návrhů v souboru se čte jako jeden
 @msg	the file holds things this version doesn't read	soubor obsahuje věci, které tato verze nečte
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft neumí tento soubor znovu zapsat v současné podobě ({what}), takže se soubor nahrazením nenávratně ztratí. Chcete-li ho zachovat, uložte dokument pod jiným názvem.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} je soubor, ze kterého byl tento dokument načten, a VectorCraft ho neumí znovu zapsat v současné podobě ({what}): jeho přepsáním by se nenávratně ztratil. Místo toho zapište do jiného souboru, nebo předejte acknowledgeLoss: true, chcete-li ho přesto nahradit
+@msg	the file's own format, which VectorCraft reads but doesn't write	vlastní formát souboru, který VectorCraft čte, ale nezapisuje
+@msg	the file ends early: the design may be incomplete	soubor končí předčasně: návrh může být neúplný
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Založeno na VectorCraft od týmu ArtCraft. MIT OR Apache-2.0. Písma: Source Sans 3, Inter, JetBrains Mono (OFL). Ikony: Lucide (ISC) + VectorCraft.
@@ -5932,11 +5936,15 @@ mark-style	Japanese	Japonské
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	tvar má víc než {MAX_SHAPE_POINTS} bodů, které smí mít jeden tvar, jakmile se jeho křivky převedou na úsečky: zjednodušte jej nebo jej rozdělte na menší tvary
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	tvar leží dál než {MAX_COORD_MM} mm od počátku nebo má souřadnici, která není číslo: nelze jej vyšít
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	tvar by potřeboval asi {n} stehů, víc než {MAX_STITCHES}, které smí mít jeden tvar: použijte delší steh, větší rozestup nebo menší návrh
+@msg	not a HUS file: it does not start with a HUS signature	není to soubor HUS: nezačíná signaturou HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	není to soubor PES ani PEC: nezačíná #PES ani #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	není to soubor SEW: uvádí počet barev {colors}, ale soubor SEW jich uvádí 1 až {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	není to soubor VP3: nezačíná %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	není to soubor {what}: jeho záznam {_1} není záznam DST
 @msg	params must be an object	parametry musí být objekt
 @msg	the EXP file has no stitch records	soubor EXP nemá žádné záznamy stehů
+@msg	the HUS file's compressed stitches are damaged	komprimované stehy souboru HUS jsou poškozené
+@msg	the HUS header is cut short or points past the file's {len} bytes	hlavička HUS je zkrácená nebo ukazuje za {len} bajtů souboru
 @msg	the JEF file has no stitch records	soubor JEF nemá žádné záznamy stehů
 @msg	the JEF file is cut short: {len} bytes	soubor JEF je zkrácený: {len} bajtů
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	hlavička JEF ukazuje na bajt {offset}, za {_1} bajtů souboru

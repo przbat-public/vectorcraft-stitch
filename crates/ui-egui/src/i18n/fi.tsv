@@ -5880,6 +5880,10 @@ mark-style	Japanese	Japanilainen
 @msg	threads that twist several colours are read in their first colour	useita värejä yhteen kiertävät langat luetaan ensimmäisellä värillään
 @msg	the file's several designs are read as one	tiedoston useat mallit luetaan yhtenä
 @msg	the file holds things this version doesn't read	tiedostossa on asioita, joita tämä versio ei lue
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft ei osaa kirjoittaa tätä tiedostoa uudelleen sellaisenaan ({what}), joten korvaaminen hävittää sen pysyvästi. Säilytä se tallentamalla toisella nimellä.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} on tiedosto, josta tämä asiakirja luettiin, eikä VectorCraft osaa kirjoittaa sitä uudelleen sellaisenaan ({what}): sen yli kirjoittaminen hävittäisi sen pysyvästi. Kirjoita sen sijaan toiseen tiedostoon tai anna acknowledgeLoss: true korvataksesi sen silti
+@msg	the file's own format, which VectorCraft reads but doesn't write	tiedoston oma muoto, jota VectorCraft lukee, mutta ei kirjoita
+@msg	the file ends early: the design may be incomplete	tiedosto päättyy ennenaikaisesti: malli voi olla vajaa
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Perustuu ArtCraft-tiimin VectorCraftiin. MIT OR Apache-2.0. Fontit: Source Sans 3, Inter, JetBrains Mono (OFL). Kuvakkeet: Lucide (ISC) + VectorCraft.
@@ -5895,11 +5899,15 @@ mark-style	Japanese	Japanilainen
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	muodossa on enemmän kuin muodolle sallitut {MAX_SHAPE_POINTS} pistettä, kun sen käyrät on muutettu janoiksi: yksinkertaista se tai jaa se pienemmiksi muodoiksi
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	muoto on yli {MAX_COORD_MM} mm:n päässä origosta tai sillä on koordinaatti, joka ei ole luku: sitä ei voi kirjoa
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	muoto tarvitsisi noin {n} pistoa, enemmän kuin muodolle sallitut {MAX_STITCHES}: käytä pidempää pistoa, suurempaa väliä tai pienempää mallia
+@msg	not a HUS file: it does not start with a HUS signature	ei HUS-tiedosto: se ei ala HUS-tunnisteella
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ei PES- eikä PEC-tiedosto: se ei ala #PES tai #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	ei SEW-tiedosto: se ilmoittaa {colors} väriä, mutta SEW-tiedosto ilmoittaa 1–{MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	ei VP3-tiedosto: se ei ala %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	ei {what}-tiedosto: sen tietue {_1} ei ole DST-tietue
 @msg	params must be an object	parametrien on oltava objekti
 @msg	the EXP file has no stitch records	EXP-tiedostossa ei ole pistotietueita
+@msg	the HUS file's compressed stitches are damaged	HUS-tiedoston pakatut pistot ovat vaurioituneet
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS-otsake on katkennut tai osoittaa tiedoston {len} tavun ohi
 @msg	the JEF file has no stitch records	JEF-tiedostossa ei ole pistotietueita
 @msg	the JEF file is cut short: {len} bytes	JEF-tiedosto on katkennut: {len} tavua
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF-otsake osoittaa tavuun {offset}, tiedoston {_1} tavun ohi

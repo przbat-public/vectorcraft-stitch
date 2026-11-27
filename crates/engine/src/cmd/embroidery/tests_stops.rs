@@ -307,6 +307,79 @@ fn a_change_to_the_same_thread_opens_as_a_stop() {
     }
 }
 
+/// A SEW and a HUS, which are only read and name their threads, open neighbouring blocks in one
+/// thread the same way: one group, with a stop after the run before the change.
+#[test]
+fn a_change_to_the_same_thread_opens_as_a_stop_in_a_sew_or_hus() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus, sew_from_jef};
+    /// HUS's records for a stitch and a colour change (Jason Weiler's HUS page).
+    const STITCH: u8 = 0x80;
+    const COLOUR_CHANGE: u8 = 0x84;
+    let sew = sew_from_jef(&StitchFormat::Jef.write(&stopped_design()).unwrap()).unwrap();
+    let records = [
+        (STITCH, 0, 0),
+        (STITCH, 10, 0),
+        (STITCH, 10, 0),
+        (COLOUR_CHANGE, 0, 0),
+        (STITCH, 10, 0),
+        (STITCH, 10, 0),
+        (COLOUR_CHANGE, 0, 0),
+        (STITCH, 0, 20),
+        (STITCH, 10, 0),
+    ];
+    // Numbers of HUS's chart: the first two blocks in one thread, the third in another.
+    let hus = hus(&records, &[3, 3, 1], b"stops\0\0\0", &Lzh::default());
+    for (name, bytes) in [("stops.sew", sew), ("stops.hus", hus)] {
+        let mut s = Session::new();
+        run(&mut s, "document.open", json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(&bytes)}));
+        let doc = s.doc().unwrap().doc.clone();
+        let groups = doc.layers[0].children().unwrap();
+        let stopped: Vec<bool> = doc.layers[0]
+            .children()
+            .into_iter()
+            .flatten()
+            .flat_map(|g| g.children().into_iter().flatten())
+            .map(|r| r.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|r| r.stop_after))
+            .collect();
+        assert_eq!(groups.len(), 2, "{name}");
+        assert_eq!(stopped, [true, false, false], "{name}");
+        assert_eq!(run(&mut s, "embroidery.stats", json!({}))["stops"], json!(1), "{name}");
+    }
+}
+
+/// A block that sews nothing (the jump alone that a HUS's last colour change leaves when it moves
+/// the needle, or one between two colour changes) makes no group and no stop: the run before a last
+/// such block doesn't stop (nothing is sewn after it), and the blocks round one in the middle, in
+/// one thread, open as one group with the stop between that the colour changes make.
+#[test]
+fn a_block_that_sews_nothing_makes_no_stop() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    /// HUS's records for a stitch and a colour change (Jason Weiler's HUS page).
+    const STITCH: u8 = 0x80;
+    const COLOUR_CHANGE: u8 = 0x84;
+    // The last colour change moves: a block of its jump alone, in the thread of the one before.
+    let last = [(STITCH, 0, 0), (STITCH, 10, 0), (STITCH, 10, 0), (COLOUR_CHANGE, 5, 0)];
+    let last = hus(&last, &[3, 3], b"last\0\0\0\0", &Lzh::default());
+    // Two colour changes in a row, the first moving: a block of its jump alone, in another thread,
+    // between two blocks of one.
+    let middle = [(STITCH, 0, 0), (STITCH, 10, 0), (COLOUR_CHANGE, 5, 0), (COLOUR_CHANGE, 0, 0), (STITCH, 10, 0), (STITCH, 10, 0)];
+    let middle = hus(&middle, &[3, 7, 3], b"middle\0\0", &Lzh::default());
+    for (name, bytes, want, stops) in [("last.hus", last, vec![false], 0), ("middle.hus", middle, vec![true, false], 1)] {
+        let mut s = Session::new();
+        run(&mut s, "document.open", json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(&bytes)}));
+        let doc = s.doc().unwrap().doc.clone();
+        let groups = doc.layers[0].children().unwrap();
+        let stopped: Vec<bool> = groups
+            .iter()
+            .flat_map(|g| g.children().into_iter().flatten())
+            .map(|r| r.extras().embroidery.as_deref().and_then(|e| e.stitches.as_ref()).is_some_and(|r| r.stop_after))
+            .collect();
+        assert_eq!(groups.len(), 1, "{name}");
+        assert_eq!(stopped, want, "{name}");
+        assert_eq!(run(&mut s, "embroidery.stats", json!({}))["stops"], json!(stops), "{name}");
+    }
+}
+
 /// A change to the same thread with a cut on each side of it and two runs on each side (a cut and a
 /// jump between them), then a block of another thread, written to bytes: millimetres, y 0.
 fn cut_around_a_stop() -> Pattern {

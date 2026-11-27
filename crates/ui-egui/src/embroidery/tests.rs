@@ -321,3 +321,44 @@ fn passed_over_objects_are_said_with_their_reasons_in_words() {
         "1 object converted to manual stitches: Restore Object brings it back · 2 objects passed over: locked (1), not sewn (1)"
     );
 }
+
+/// Export As writing another format over an opened HUS, a format VectorCraft reads but doesn't
+/// write, asks in words of its own, never as what opening left out (it left nothing out), and
+/// shows the note in the interface's language; nothing is written while the question waits.
+#[test]
+fn replacing_an_opened_hus_asks_in_words_of_its_own() {
+    use vectorcraft_testkit::machine_files::{Lzh, hus};
+    let d = std::env::temp_dir().join(format!("vc-ui-hus-over-{}", std::process::id()));
+    std::fs::create_dir_all(&d).unwrap();
+    let records: Vec<(u8, i8, i8)> = (0..20).map(|i| (0x80, 10, if i % 2 == 0 { 20 } else { -20 })).chain([(0x90, 0, 0)]).collect();
+    let bytes = hus(&records, &[3], b"askfirst", &Lzh::default());
+    let path = d.join("design.hus");
+    std::fs::write(&path, &bytes).unwrap();
+    let path = path.to_string_lossy().to_string();
+    let services = Services {
+        read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
+        write: Some(Box::new(|p: &str, b: &[u8]| std::fs::write(p, b).map_err(|e| e.to_string()))),
+        ..Default::default()
+    };
+    let mut app = VectorcraftApp::new(Session::new(), services);
+    crate::io::open_path(&mut app, &path).unwrap();
+    let note = vectorcraft_engine::EMBROIDERY_NOT_WRITTEN_NOTE;
+    let polish = crate::i18n::Lang::from_code("pl").expect("Polish");
+    for lang in [crate::i18n::Lang::EN, polish] {
+        crate::i18n::set_current(lang);
+        let r = app.run("file.exportAs", json!({"path": path, "format": "jef"})).unwrap();
+        assert_eq!(r["pending"], crate::dialogs::confirm::KIND, "{}: {r}", lang.code());
+        let detail = app.ui.dialog.as_ref().unwrap().str("detail");
+        let shown = format!("“{}”", crate::i18n::message(lang, note));
+        let frame = crate::et!(
+            "VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it."
+        );
+        assert_eq!(detail, crate::i18n::fmt(frame, &[("what", &shown)]), "{}", lang.code());
+        assert!(!detail.contains("can't read yet"), "{detail}");
+        assert_eq!(detail.contains(note), lang == crate::i18n::Lang::EN, "{}: the note in the language: {detail}", lang.code());
+        app.ui.dialog = None;
+    }
+    crate::i18n::set_current(crate::i18n::Lang::EN);
+    assert_eq!(std::fs::read(&path).unwrap(), bytes, "nothing is written before OK");
+    std::fs::remove_dir_all(d).ok();
+}

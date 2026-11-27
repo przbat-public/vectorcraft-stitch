@@ -5744,6 +5744,10 @@ swatch	Bright Violet	Violet cerah
 @msg	threads that twist several colours are read in their first colour	benang yang memilin beberapa warna dibaca dengan warna pertamanya
 @msg	the file's several designs are read as one	beberapa desain dalam file dibaca sebagai satu
 @msg	the file holds things this version doesn't read	file berisi hal-hal yang tidak dibaca versi ini
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft tidak dapat menulis kembali file ini apa adanya ({what}), sehingga mengganti file akan membuatnya hilang permanen. Simpan dengan nama lain untuk mempertahankannya.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	dokumen ini dibaca dari {target}, dan VectorCraft tidak dapat menulis kembali file itu apa adanya ({what}): menimpanya akan membuat file itu hilang permanen. Tulis file lain saja, atau berikan acknowledgeLoss: true untuk tetap menggantinya
+@msg	the file's own format, which VectorCraft reads but doesn't write	format file itu sendiri, yang dibaca tetapi tidak ditulis oleh VectorCraft
+@msg	the file ends early: the design may be incomplete	file berakhir lebih awal: desain mungkin tidak lengkap
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Berdasarkan VectorCraft dari tim ArtCraft. MIT OR Apache-2.0. Font: Source Sans 3, Inter, JetBrains Mono (OFL). Ikon: Lucide (ISC) + VectorCraft.
@@ -5759,11 +5763,15 @@ swatch	Bright Violet	Violet cerah
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	sebuah bentuk memiliki lebih dari {MAX_SHAPE_POINTS} titik yang boleh dimiliki satu bentuk setelah kurvanya diubah menjadi ruas garis: sederhanakan bentuk itu atau bagi menjadi bentuk yang lebih kecil
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	sebuah bentuk berada lebih dari {MAX_COORD_MM} mm dari titik asal atau memiliki koordinat yang bukan angka: tidak dapat dibordir
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	sebuah bentuk akan memerlukan sekitar {n} jahitan, lebih dari {MAX_STITCHES} yang boleh dimiliki satu bentuk: gunakan jahitan lebih panjang, jarak lebih lebar, atau desain lebih kecil
+@msg	not a HUS file: it does not start with a HUS signature	bukan file HUS: tidak diawali tanda tangan HUS
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	bukan file PES atau PEC: tidak diawali #PES atau #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	bukan file SEW: file ini menyebutkan {colors} warna, sedangkan file SEW menyebutkan 1 hingga {MAX_COLORS} warna
 @msg	not a VP3 file: it does not start with %vsm%	bukan file VP3: tidak diawali %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	bukan file {what}: rekamannya {_1} bukan rekaman DST
 @msg	params must be an object	parameter harus berupa objek
 @msg	the EXP file has no stitch records	file EXP tidak memiliki rekaman jahitan
+@msg	the HUS file's compressed stitches are damaged	jahitan terkompresi dalam file HUS rusak
+@msg	the HUS header is cut short or points past the file's {len} bytes	header HUS terpotong atau menunjuk melewati {len} byte file
 @msg	the JEF file has no stitch records	file JEF tidak memiliki rekaman jahitan
 @msg	the JEF file is cut short: {len} bytes	file JEF terpotong: {len} byte
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	header JEF menunjuk ke byte {offset}, melewati {_1} byte file

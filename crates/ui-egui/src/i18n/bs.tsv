@@ -6452,6 +6452,10 @@ shape	Open	Otvoren
 @msg	threads that twist several colours are read in their first colour	konci koji uvijaju više boja čitaju se u svojoj prvoj boji
 @msg	the file's several designs are read as one	više dizajna iz datoteke čita se kao jedan
 @msg	the file holds things this version doesn't read	datoteka sadrži stvari koje ova verzija ne čita
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft ne može ponovo zapisati ovu datoteku onakvu kakva jeste ({what}), pa se zamjenom ona trajno gubi. Sačuvajte pod drugim nazivom da je zadržite.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} je datoteka iz koje je ovaj dokument pročitan i koju VectorCraft ne može ponovo zapisati onakvu kakva jeste ({what}): njenim prepisivanjem bi se trajno izgubila. Umjesto toga zapišite u drugu datoteku ili proslijedite acknowledgeLoss: true da je ipak zamijenite
+@msg	the file's own format, which VectorCraft reads but doesn't write	vlastiti format datoteke, koji VectorCraft čita, ali ne zapisuje
+@msg	the file ends early: the design may be incomplete	datoteka se prerano završava: dizajn je možda nepotpun
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Zasnovano na VectorCraftu tima ArtCraft. MIT OR Apache-2.0. Fontovi: Source Sans 3, Inter, JetBrains Mono (OFL). Ikone: Lucide (ISC) + VectorCraft.
 @msg	PEC carries at most {MAX_COLORS} colours (each stop counts as one), not {colors}	PEC nosi najviše {MAX_COLORS} boja (svako zaustavljanje se broji kao jedna), a ne {colors}
 @msg	VP3 holds at most {MAX_COLORS} colour blocks	VP3 sadrži najviše {MAX_COLORS} blokova boja
@@ -6462,11 +6466,15 @@ shape	Open	Otvoren
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	oblik ima više od {MAX_SHAPE_POINTS} tačaka koliko jedan oblik smije imati kada se njegove krive pretvore u duži: pojednostavite ga ili ga podijelite na manje oblike
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	oblik leži više od {MAX_COORD_MM} mm od ishodišta ili ima koordinatu koja nije broj: ne može se vesti
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	oblik bi trebao oko {n} bodova, više od {MAX_STITCHES} koliko jedan oblik smije imati: koristite duži bod, veći razmak ili manji dizajn
+@msg	not a HUS file: it does not start with a HUS signature	nije HUS datoteka: ne počinje s HUS potpisom
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	nije PES ni PEC datoteka: ne počinje s #PES ni #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	nije SEW datoteka: broj boja naveden u njoj je {colors}, a SEW datoteka navodi od 1 do {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	nije VP3 datoteka: ne počinje s %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	nije {what} datoteka: njen zapis {_1} nije DST zapis
 @msg	params must be an object	parametri moraju biti objekat
 @msg	the EXP file has no stitch records	EXP datoteka nema zapisa bodova
+@msg	the HUS file's compressed stitches are damaged	komprimirani podaci bodova HUS datoteke su oštećeni
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS zaglavlje je skraćeno ili pokazuje iza {len} bajtova datoteke
 @msg	the JEF file has no stitch records	JEF datoteka nema zapisa bodova
 @msg	the JEF file is cut short: {len} bytes	JEF datoteka je skraćena: {len} bajtova
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF zaglavlje pokazuje na bajt {offset}, iza {_1} bajtova datoteke

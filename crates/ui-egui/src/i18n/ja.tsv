@@ -5575,6 +5575,10 @@ lighting	Light	ライト
 @msg	threads that twist several colours are read in their first colour	複数の色を撚り合わせた糸は最初の色で読み込まれます
 @msg	the file's several designs are read as one	ファイル内の複数のデザインは 1 つとして読み込まれます
 @msg	the file holds things this version doesn't read	このファイルには、このバージョンが読み込まない内容が含まれています
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft ではこのファイルをそのままの形で書き出し直せないため（{what}）、置き換えるとファイルは完全に失われます。保持するには別の名前で保存してください。
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} はこのドキュメントの読み込み元のファイルで、VectorCraft ではそのままの形で書き出し直せません ({what}): 上書きするとファイルは完全に失われます。代わりに別のファイルに書き出すか、それでも置き換えるには acknowledgeLoss: true を指定してください
+@msg	the file's own format, which VectorCraft reads but doesn't write	ファイル本来の形式は、VectorCraft では読み込めますが書き出せません
+@msg	the file ends early: the design may be incomplete	ファイルが途中で終わっています: デザインが不完全な可能性があります
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	ArtCraft チームの VectorCraft をもとにしています。MIT OR Apache-2.0。フォント：Source Sans 3、Inter、JetBrains Mono (OFL)。アイコン：Lucide (ISC) + VectorCraft。
@@ -5589,11 +5593,15 @@ lighting	Light	ライト
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	図形の曲線を線分に変換すると、1 つの図形に許される {MAX_SHAPE_POINTS} 点を超えます: 図形を単純化するか、小さな図形に分割してください
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	図形が原点から {MAX_COORD_MM} mm より離れているか、数値でない座標を持っています: 刺繍できません
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	図形に約 {n} 針が必要で、1 つの図形に許される {MAX_STITCHES} 針を超えます: 針目を長く、間隔を広く、またはデザインを小さくしてください
+@msg	not a HUS file: it does not start with a HUS signature	HUS ファイルではありません: HUS のシグネチャで始まっていません
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	PES または PEC ファイルではありません: #PES または #PEC で始まっていません
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	SEW ファイルではありません: {colors} 色が指定されていますが、SEW ファイルの色は 1～{MAX_COLORS} 色です
 @msg	not a VP3 file: it does not start with %vsm%	VP3 ファイルではありません: %vsm% で始まっていません
 @msg	not a {what} file: its record {_1} is not a DST record	{what} ファイルではありません: レコード {_1} が DST のレコードではありません
 @msg	params must be an object	パラメーターはオブジェクトである必要があります
 @msg	the EXP file has no stitch records	EXP ファイルに針目のレコードがありません
+@msg	the HUS file's compressed stitches are damaged	HUS ファイルの圧縮された針目データが破損しています
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS ヘッダーが途中で切れているか、ファイルの {len} バイトを超える位置を指しています
 @msg	the JEF file has no stitch records	JEF ファイルに針目のレコードがありません
 @msg	the JEF file is cut short: {len} bytes	JEF ファイルが途中で切れています: {len} バイト
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF ヘッダーがバイト {offset} を指していますが、ファイルは {_1} バイトしかありません

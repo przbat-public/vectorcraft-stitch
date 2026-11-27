@@ -5744,6 +5744,10 @@ swatch	Bright Violet	Kraftig violet
 @msg	threads that twist several colours are read in their first colour	tråde, der snor flere farver sammen, læses i deres første farve
 @msg	the file's several designs are read as one	filens flere designs læses som ét
 @msg	the file holds things this version doesn't read	filen indeholder ting, som denne version ikke læser
+embroidery	VectorCraft can't write this file again as it is ({what}), so replacing it loses it for good. Save under another name to keep it.	VectorCraft kan ikke skrive denne fil igen, som den er ({what}), så hvis du erstatter den, går den tabt for altid. Gem under et andet navn for at beholde den.
+@msg	{target} is the file this document was read from, and VectorCraft can't write it again as it is ({what}): writing over it would lose it for good. Write another file instead, or pass acknowledgeLoss: true to replace it anyway	{target} er den fil, dette dokument blev læst fra, og VectorCraft kan ikke skrive den igen, som den er ({what}): hvis du overskriver den, går den tabt for altid. Skriv til en anden fil i stedet, eller angiv acknowledgeLoss: true for at erstatte den alligevel
+@msg	the file's own format, which VectorCraft reads but doesn't write	filens eget format, som VectorCraft læser, men ikke skriver
+@msg	the file ends early: the design may be incomplete	filen slutter for tidligt: designet er måske ufuldstændigt
 
 # The About box: this fork is based on VectorCraft by the ArtCraft team, in plain text (FORK.md).
 	Based on VectorCraft by the ArtCraft team. MIT OR Apache-2.0. Fonts: Source Sans 3, Inter, JetBrains Mono (OFL). Icons: Lucide (ISC) + VectorCraft.	Baseret på VectorCraft fra ArtCraft-teamet. MIT OR Apache-2.0. Skrifttyper: Source Sans 3, Inter, JetBrains Mono (OFL). Ikoner: Lucide (ISC) + VectorCraft.
@@ -5759,11 +5763,15 @@ swatch	Bright Violet	Kraftig violet
 @msg	a shape has more than the {MAX_SHAPE_POINTS} points one shape may have once its curves are flattened: simplify it, or split it into smaller shapes	en figur har flere end de {MAX_SHAPE_POINTS} punkter, en figur må have, når dens kurver er gjort til linjestykker: forenkl den, eller del den op i mindre figurer
 @msg	a shape lies more than {MAX_COORD_MM} mm from the origin, or has a coordinate that isn't a number: it can't be stitched	en figur ligger mere end {MAX_COORD_MM} mm fra origo eller har en koordinat, der ikke er et tal: den kan ikke broderes
 @msg	a shape would need about {n} stitches, more than the {MAX_STITCHES} one shape may have: use a longer stitch, wider spacing or a smaller design	en figur ville kræve omkring {n} sting, flere end de {MAX_STITCHES}, en figur må have: brug et længere sting, større afstand eller et mindre design
+@msg	not a HUS file: it does not start with a HUS signature	ikke en HUS-fil: den begynder ikke med en HUS-signatur
 @msg	not a PES or PEC file: it does not start with #PES or #PEC	ikke en PES- eller PEC-fil: den begynder ikke med #PES eller #PEC
+@msg	not a SEW file: it names {colors} colours, and a SEW file names 1 to {MAX_COLORS}	ikke en SEW-fil: den angiver {colors} farver, og en SEW-fil angiver 1 til {MAX_COLORS}
 @msg	not a VP3 file: it does not start with %vsm%	ikke en VP3-fil: den begynder ikke med %vsm%
 @msg	not a {what} file: its record {_1} is not a DST record	ikke en {what}-fil: dens post {_1} er ikke en DST-post
 @msg	params must be an object	parametrene skal være et objekt
 @msg	the EXP file has no stitch records	EXP-filen har ingen stingposter
+@msg	the HUS file's compressed stitches are damaged	HUS-filens komprimerede sting er beskadigede
+@msg	the HUS header is cut short or points past the file's {len} bytes	HUS-headeren er afkortet eller peger ud over filens {len} byte
 @msg	the JEF file has no stitch records	JEF-filen har ingen stingposter
 @msg	the JEF file is cut short: {len} bytes	JEF-filen er afkortet: {len} byte
 @msg	the JEF header points at byte {offset}, past the file's {_1} bytes	JEF-headeren peger på byte {offset}, efter filens {_1} byte

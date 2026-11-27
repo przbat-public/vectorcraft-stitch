@@ -677,6 +677,12 @@ fn a_scaled_live_object_is_named_and_shown() {
     let reply = scaled(&mut app, 1.5 / 1.05);
     let rule = &reply["rules"][0];
     assert_eq!(title(rule, "Janome JEF", Lang::EN), "Live objects scaled by more than 10% since they were digitized: digitize them again");
+    // In Polish too the one name, „żywe obiekty” (the 2026-11-16 choice: FORK.md's row of 2026-11-18).
+    let pl = Lang::from_code("pl").unwrap();
+    crate::i18n::set_current(pl);
+    let polish = title(rule, "Janome JEF", pl);
+    crate::i18n::set_current(Lang::EN);
+    assert!(polish.starts_with("Żywe obiekty przeskalowane o więcej niż"), "the rule in Polish: {polish}");
     let doc = app.session.doc().unwrap().doc.clone();
     let line = hit_line(&app, Some(&doc), "liveObjectScaled", &rule["examples"][0], Lang::EN);
     // Named by its picture, as the Object tab names it, not by its group's "Image Trace".

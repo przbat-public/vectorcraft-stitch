@@ -362,7 +362,7 @@ fn body(
     }
     let similar = open.similar.clone();
     open.similar_shown = false;
-    // Its row only where there are alike areas: an empty row took a row's height.
+    // Its row only where there are alike areas: an empty one would take a row's height.
     if let Some(similar) = similar.filter(|s| !s.keys.is_empty()) {
         ui.horizontal_wrapped(|ui| {
             let count = |keys: &[AreaKey]| u64::try_from(keys.len()).unwrap_or(u64::MAX);

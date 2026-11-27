@@ -148,9 +148,9 @@ fn the_inspector_takes_the_roomier_side_where_neither_has_room() {
     assert_eq!(beside(600.0, 900.0), 600.0 - GAP - OUTER, "room at the left only");
 }
 
-/// An area with no alike areas has no Apply to Similar Areas row at all: its empty row left about a
-/// row's height blank above Show in Sewing Order. The navy square is alone in its colour; each
-/// orange square has the other for its like.
+/// An area with no alike areas has no Apply to Similar Areas row at all: an empty one would leave
+/// about a row's height blank above Show in Sewing Order, on a row of its own. The navy square is
+/// alone in its colour; each orange square has the other for its like.
 #[test]
 fn an_area_with_no_alike_areas_keeps_no_empty_row() {
     let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
@@ -511,15 +511,69 @@ fn apply_to_similar_areas_stops_at_the_most_changes() {
     assert!(button.is_some_and(|n| n.is_disabled()), "greyed out");
 }
 
-/// While Apply to Similar Areas is hovered, the preview outlines the areas it would change.
+/// Three orange squares alike, and a navy one apart.
+fn four_squares() -> image::RgbaImage {
+    image::RgbaImage::from_fn(260, 100, |x, y| {
+        let inside = |[x0, y0, x1, y1]: [u32; 4]| (x0..x1).contains(&x) && (y0..y1).contains(&y);
+        image::Rgba(if inside([10, 10, 50, 50]) || inside([70, 10, 110, 50]) || inside([130, 10, 170, 50]) {
+            [240, 130, 20, 255]
+        } else if inside([190, 10, 230, 50]) {
+            [20, 40, 120, 255]
+        } else {
+            [255, 255, 255, 255]
+        })
+    })
+}
+
+/// The box on screen of the area under working pixel `(x, y)`, its outline's as the preview was last
+/// drawn.
+fn screen_box_of(app: &VectorcraftApp, x: u32, y: u32) -> egui::Rect {
+    use vectorcraft_geom::kurbo::Shape;
+    let l = live(app);
+    let (_, xf) = l.preview.last_view.expect("the preview drawn");
+    let b = l.schedule.shown.as_ref().and_then(|s| s.outputs.outline_at(x, y)).expect("its outline").bounding_box();
+    let point = |x, y| xf.to_screen(vectorcraft_geom::Point::new(x, y));
+    egui::Rect::from_two_pos(point(b.x0, b.y0), point(b.x1, b.y1))
+}
+
+/// While Apply to Similar Areas is hovered, the preview outlines the areas it would change, not an
+/// alike area sewn as this one already; where none is left to change (greyed out, "Applied to N
+/// Similar Areas"), every alike area. Of three orange squares, the middle one is given Tatami first,
+/// then the left one, and Apply sets the right one. The outlines are drawn on the preview, under the
+/// popover where it lies over them: the test reads what is painted.
 #[test]
 fn the_similar_areas_are_outlined_while_the_button_is_hovered() {
-    let (mut app, ctx, mut time) = opened_with(app_with(three_squares()));
+    // Slack for rounding (points): an outline's points lie on its area's box or inside it.
+    const ROUNDING: f32 = 2.0;
+    let (mut app, ctx, mut time) = opened_with(app_with(four_squares()));
+    set(&mut app, "areaChanges", json!([{"at": [90.5, 30.5], "color": "#f08214", "kind": "fill", "stitch": "tatami"}]));
+    until(&mut app, &ctx, &mut time, ready);
     click_at(&mut app, &ctx, &mut time, 30, 30);
-    let at = super::tests::centre_of(&mut app, &ctx, &mut time, "Apply to 1 Similar Area", Role::Button);
-    time += 0.05;
-    frame(&mut app, &ctx, time, vec![Event::PointerMoved(at)]);
-    assert!(live(&app).inspector.as_ref().is_some_and(|i| i.similar_shown), "hovered");
+    press(&mut app, &ctx, &mut time, "Tatami", Role::Tab);
+    // Whether the middle and the right squares are outlined while the button called `button` is
+    // hovered.
+    let outlined = |app: &mut VectorcraftApp, time: &mut f64, button: &str| {
+        let at = super::tests::centre_of(app, &ctx, time, button, Role::Button);
+        *time += 0.05;
+        frame(app, &ctx, *time, vec![Event::PointerMoved(at)]);
+        assert!(live(app).inspector.as_ref().is_some_and(|i| i.similar_shown), "{button} hovered");
+        let shapes = painted(app, &ctx, time);
+        let dark = egui::epaint::ColorMode::Solid(super::preview::OUTLINE_DARK);
+        [(90, 30), (150, 30)].map(|(x, y)| {
+            let r = screen_box_of(app, x, y).expand(ROUNDING);
+            shapes.iter().any(|s| {
+                matches!(s, egui::Shape::Path(p) if p.stroke.width == super::preview::OUTLINE_DARK_WIDTH && p.stroke.color == dark
+                    && p.points.iter().all(|q| r.contains(*q)))
+            })
+        })
+    };
+    assert_eq!(outlined(&mut app, &mut time, "Apply to 1 Similar Area"), [false, true], "the one it would change, not the one sewn so");
+    press_named(&mut app, &ctx, &mut time, "Apply to 1 Similar Area");
+    assert_eq!(
+        outlined(&mut app, &mut time, "Applied to 2 Similar Areas"),
+        [true, true],
+        "none left to change: every alike area, the middle one too"
+    );
 }
 
 /// Show in Sewing Order says where the area is sewn, and ▶ moves the inspector to the area sewn

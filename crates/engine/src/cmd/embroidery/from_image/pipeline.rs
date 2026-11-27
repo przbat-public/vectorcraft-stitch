@@ -624,7 +624,8 @@ pub struct Outputs {
     auto: Arc<AutoKept>,
     /// Each area's elongation (`Regions::elongations`), by its index, once the lines are done: what
     /// Apply to Similar Areas' shape rule compares ([`Outputs::similar`]), worked out by the
-    /// pipeline once a lines output, so that the window's interface thread, which asks, walks no map.
+    /// pipeline each time it moves to another lines output, so that an ask (the window's inspector's,
+    /// on its interface thread) walks no map.
     pub(super) elongations: Option<Arc<Vec<Option<f64>>>>,
 }
 
@@ -917,7 +918,7 @@ impl Outputs {
 
     /// The keys of the areas alike to the one under working pixel `(x, y)`, in sewing order: of its
     /// colour and kind, their sizes within [`SIMILAR_SHARE`] of the larger, and their shapes alike
-    /// (their elongations within [`SIMILAR_SHAPE_SHARE`], worked out once a lines output: this walks
+    /// (their elongations within [`SIMILAR_SHAPE_SHARE`], worked out with the lines output: this walks
     /// no map); none before the image is digitized.
     pub fn similar(&self, x: u32, y: u32) -> Vec<AreaKey> {
         let Some(d) = self.digitized() else { return vec![] };
@@ -1291,7 +1292,8 @@ pub struct Pipeline {
     shapes: Kept<ShapesKey, ShapesOut>,
     objects: Kept<ObjectsKey, ObjectsOut>,
     plan: Kept<u64, PlanOut>,
-    /// The elongations of the lines output numbered first ([`Outputs::elongations`]).
+    /// The elongations last worked out, with the number of the lines output they are of
+    /// ([`Outputs::elongations`]): reused while a run's lines output is that one.
     elongations: Option<(u64, Arc<Vec<Option<f64>>>)>,
     planning: DetachedService,
     /// The number the next output made takes.
@@ -1368,10 +1370,10 @@ impl Pipeline {
         let (lines, made) = stage(&mut self.lines, &mut self.next, key, || stages::lines_stage(&image.value, &colours.value, s))?;
         out.lines = Some(lines.clone());
         // Each area's elongation for Apply to Similar Areas' shape rule: a pass over the whole region
-        // map, made here once a lines output (the shapes stage keeps its map), on the thread that
-        // runs the pipeline rather than each time the window's inspector asks, on its interface
-        // thread; outside the stages' times, which the window weighs to run a change at once; none
-        // in the command's runs, which compare no shapes.
+        // map, made here each time the pipeline moves to another lines output (the shapes stage keeps
+        // its map), on the thread that runs the pipeline rather than each time the window's inspector
+        // asks, on its interface thread; outside the stages' times, which the window weighs to run a
+        // change at once; none in the command's runs, which compare no shapes.
         out.elongations = Some(match &self.elongations {
             Some((of, kept)) if *of == lines.number => kept.clone(),
             _ => {

@@ -644,7 +644,8 @@ fn similar_areas_compare_the_elongations_kept_with_the_lines() {
 
 /// How long Apply to Similar Areas' shape rule takes on the largest working map (1,500 px a side):
 /// the pass over the region map that works out every area's elongation (`Regions::elongations`),
-/// which the window's pipeline makes once a lines output, and `Outputs::similar` on an area of a
+/// which the window's pipeline makes each time it moves to another lines output, and
+/// `Outputs::similar` on an area of a
 /// grid of squares, which the window's interface thread runs each time the inspector works out its
 /// alike areas again. A measurement, run by hand on an idle machine:
 /// `cargo test --release -p vectorcraft-engine --lib -- --ignored --nocapture the_shape_rule_on_the_largest_working_map`.
@@ -1044,8 +1045,10 @@ fn satin_answers_are_kept_and_read_without_working_them_out() {
 }
 
 /// A satin answer, or an Auto width, whose query is cancelled (a newer ask, on the window's thread)
-/// is not kept: it is worked out another time. The answer was kept as having none to give, so that
-/// on a bar sewn all as satin the angle stayed open and Satin read as offered with no parting.
+/// is not kept: it is worked out another time. Kept, it read as having none to give for the rest of
+/// the run: a bar sewn all as satin read "Auto: tatami" with no reason, and Satin read as offered
+/// even on an area too short for it (a dot); kept now, it would also leave open the angle field this
+/// branch greys there.
 #[test]
 fn a_cancelled_satin_answer_is_not_kept() {
     use super::pipeline::SatinParts;

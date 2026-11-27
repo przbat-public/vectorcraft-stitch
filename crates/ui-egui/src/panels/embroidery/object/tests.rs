@@ -1459,6 +1459,13 @@ fn the_object_tab_offers_edit_in_digitize_image_for_a_live_object() {
     let drawn = ready(&mut app, &ctx, &mut time);
     assert!(drawn.has("Live object"), "its kind, the live object's one name: {:?}", drawn.words);
     assert!(drawn.has("logo.png") && !drawn.has("Image Trace"), "named by its picture: {:?}", drawn.words);
+    // In Polish too its one name, „żywy obiekt” (the 2026-11-16 choice, FORK.md's row of 2026-11-18;
+    // every live kind's since the project owner's choice of 2026-11-26).
+    crate::i18n::set_current(Lang::from_code("pl").unwrap());
+    let polish = ready(&mut app, &ctx, &mut time);
+    crate::i18n::set_current(Lang::EN);
+    assert!(polish.has("Żywy obiekt"), "its kind in Polish: {:?}", polish.words);
+    let drawn = ready(&mut app, &ctx, &mut time);
     time += 0.05;
     frame_with_dialogs(&mut app, &ctx, time, vec![drawn.click("Edit in Digitize Image…")]);
     let d = app.ui.dialog.as_ref().filter(|d| d.kind == crate::embroidery::image_window::KIND).expect("the window opens");

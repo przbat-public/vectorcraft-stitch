@@ -80,9 +80,9 @@ const FADED_ORIGINAL: u8 = 90;
 
 /// The hovered area's outline: a dark line under a light one, as stitch editing marks its
 /// selection (points), in two fixed tones that contrast whatever lies under them.
-const OUTLINE_DARK_WIDTH: f32 = 3.0;
+pub(super) const OUTLINE_DARK_WIDTH: f32 = 3.0;
 const OUTLINE_LIGHT_WIDTH: f32 = 1.0;
-const OUTLINE_DARK: Color32 = Color32::from_rgb(20, 20, 20);
+pub(super) const OUTLINE_DARK: Color32 = Color32::from_rgb(20, 20, 20);
 const OUTLINE_LIGHT: Color32 = Color32::from_rgb(245, 245, 245);
 
 /// Compare's handle: its round grip's radius and the split line's width (points); at least the
@@ -565,8 +565,8 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut Ui, d: &mut Dialog, now: f
     {
         textured_quad(&painter, tex, q, Color32::WHITE);
     }
-    // Apply to Similar Areas hovered: the areas it sets outlined, as the inspector worked them out
-    // (once every one is sewn as the inspected area, the alike areas it was applied to).
+    // Apply to Similar Areas hovered: the areas it would set outlined, as the inspector worked them
+    // out; where none is left to set (every one sewn as the inspected area already), every alike area.
     if let Some((i, _)) = inspected.as_ref().filter(|(i, _)| i.similar_shown) {
         for key in i.similar.iter().flat_map(|s| if s.changing.is_empty() { &s.keys } else { &s.changing }) {
             if let Some(path) = outputs.find(key).and_then(|(x, y)| outputs.outline_at(x, y)) {
